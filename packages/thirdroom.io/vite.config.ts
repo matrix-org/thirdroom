@@ -16,9 +16,5 @@ export default defineConfig({
   },
   define: {
     "process.env.NODE_ENV": process.env.NODE_ENV,
-    MATRIX_HOMESERVER:
-      process.env.NODE_ENV === "production"
-        ? "https://matrix.thirdroom.io"
-        : undefined,
   },
 });
