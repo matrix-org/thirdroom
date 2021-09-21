@@ -1,5 +1,15 @@
-import matrix, { ICreateClientOpts, MatrixClient } from "@robertlong/matrix-js-sdk";
-import React, { createContext, PropsWithChildren, useMemo, useState, useCallback, useEffect } from "react";
+import matrix, {
+  ICreateClientOpts,
+  MatrixClient,
+} from "@robertlong/matrix-js-sdk";
+import React, {
+  createContext,
+  PropsWithChildren,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 
 function waitForSync(client: MatrixClient) {
   return new Promise<void>((resolve) => {
@@ -32,14 +42,14 @@ async function initClient(clientOptions: ICreateClientOpts, guest?: boolean) {
 }
 
 interface ClientContextProps {
-  client?: MatrixClient
-  loading: boolean
-  authenticated: boolean,
-  error?: Error,
-  login: (userName: string, password: string) => Promise<void>
-  registerGuest: (displayName: string) => Promise<void>
-  register: (userName: string, password: string) => Promise<void>
-  logout: () => void
+  client?: MatrixClient;
+  loading: boolean;
+  authenticated: boolean;
+  error?: Error;
+  login: (userName: string, password: string) => Promise<void>;
+  registerGuest: (displayName: string) => Promise<void>;
+  register: (userName: string, password: string) => Promise<void>;
+  logout: () => void;
 }
 
 export const ClientContext = createContext<ClientContextProps>({
@@ -47,24 +57,31 @@ export const ClientContext = createContext<ClientContextProps>({
   loading: false,
   authenticated: false,
   error: undefined,
-  login: (username: string, password: string) => Promise.reject("uninitialized"),
+  login: (username: string, password: string) =>
+    Promise.reject("uninitialized"),
   registerGuest: (displayName: string) => Promise.reject("uninitialized"),
-  register: (username: string, password: string) => Promise.reject("uninitialized"),
-  logout: () => { throw new Error("uninitialized") },
+  register: (username: string, password: string) =>
+    Promise.reject("uninitialized"),
+  logout: () => {
+    throw new Error("uninitialized");
+  },
 });
 
 interface ClientContextProviderState {
-  client?: MatrixClient
-  loading: boolean
-  authenticated: boolean
+  client?: MatrixClient;
+  loading: boolean;
+  authenticated: boolean;
 }
 
-const { protocol, host } = window.location;
-// Assume homeserver is hosted on same domain (proxied in development by vite)
-const homeserverUrl = `${protocol}//${host}`;
+declare var MATRIX_HOMESERVER: string | undefined;
+const homeserverUrl =
+  MATRIX_HOMESERVER || `${window.location.protocol}//${window.location.host}`;
 
 export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
-  const [state, setState] = useState<ClientContextProviderState>({ loading: true, authenticated: false });
+  const [state, setState] = useState<ClientContextProviderState>({
+    loading: true,
+    authenticated: false,
+  });
 
   useEffect(() => {
     async function restore() {
@@ -93,16 +110,18 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
         throw err;
       }
     }
-    
-    restore().then((client) => {
-      if (client) {
-        setState({ client, loading: false, authenticated: true });
-      } else {
+
+    restore()
+      .then((client) => {
+        if (client) {
+          setState({ client, loading: false, authenticated: true });
+        } else {
+          setState({ client: undefined, loading: false, authenticated: false });
+        }
+      })
+      .catch(() => {
         setState({ client: undefined, loading: false, authenticated: false });
-      }
-    }).catch(() => {
-      setState({ client: undefined, loading: false, authenticated: false });
-    });
+      });
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -139,12 +158,15 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
       const { user_id, device_id, access_token } =
         await registrationClient.registerGuest({});
 
-      const client = await initClient({
-        baseUrl: homeserverUrl,
-        accessToken: access_token,
-        userId: user_id,
-        deviceId: device_id,
-      }, true);
+      const client = await initClient(
+        {
+          baseUrl: homeserverUrl,
+          accessToken: access_token,
+          userId: user_id,
+          deviceId: device_id,
+        },
+        true
+      );
 
       localStorage.setItem(
         "matrix-auth-store",
@@ -193,11 +215,16 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
     setState({ client: undefined, loading: false, authenticated: false });
   }, []);
 
-  const context = useMemo(() => ({ ...state, login, registerGuest, register, logout }), [state]);
+  const context = useMemo(
+    () => ({ ...state, login, registerGuest, register, logout }),
+    [state]
+  );
 
   if (state.loading) {
     return <div>Loading...</div>;
   }
 
-  return <ClientContext.Provider value={context}>{children}</ClientContext.Provider>;
+  return (
+    <ClientContext.Provider value={context}>{children}</ClientContext.Provider>
+  );
 }
