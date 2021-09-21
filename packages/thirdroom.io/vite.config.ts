@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [reactRefresh()],
   server: {
     proxy: {
-      "/_matrix": "https://thirdroom.io/",
+      "/_matrix": "https://matrix.thirdroom.io/",
     },
   },
   resolve: {
