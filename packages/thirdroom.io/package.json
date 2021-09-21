@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "tsc && cross-env NODE_ENV=production vite build",
     "serve": "vite preview",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -t -d dist"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.7.6",
