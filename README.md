@@ -59,7 +59,7 @@ The client currently includes one environment variable: `MATRIX_HOMESERVER_URL`.
 
 Example:
 ```
-export MATRIX_HOMESERVER_URL=https://matrix.thirdroom.io yarn build
+MATRIX_HOMESERVER_URL=https://matrix.thirdroom.io yarn build
 ```
 
 Next you'll need to set up a Matrix Homeserver. We recommend using [this Ansible Playbook](https://github.com/spantaleev/matrix-docker-ansible-deploy). Even if you don't know about Ansible yet, you should be able to get up and running fairly quickly.
