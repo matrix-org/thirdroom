@@ -77,6 +77,8 @@ const homeserverUrl =
   process.env.MATRIX_HOMESERVER_URL ||
   `${window.location.protocol}//${window.location.host}`;
 
+const CURRENT_SESSION_VERSION = 1;
+
 export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
   const [state, setState] = useState<ClientContextProviderState>({
     loading: true,
@@ -89,7 +91,14 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
         const authStore = localStorage.getItem("matrix-auth-store");
 
         if (authStore) {
-          const { user_id, device_id, access_token } = JSON.parse(authStore);
+          const { user_id, device_id, access_token, session_version } =
+            JSON.parse(authStore);
+
+          // Use session_version to force clients to log out
+          if (!session_version || session_version < CURRENT_SESSION_VERSION) {
+            localStorage.removeItem("matrix-auth-store");
+            return;
+          }
 
           const client = await initClient({
             baseUrl: homeserverUrl,
@@ -100,7 +109,12 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
 
           localStorage.setItem(
             "matrix-auth-store",
-            JSON.stringify({ user_id, device_id, access_token })
+            JSON.stringify({
+              user_id,
+              device_id,
+              access_token,
+              session_version: CURRENT_SESSION_VERSION,
+            })
           );
 
           return client;
@@ -140,7 +154,12 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
 
       localStorage.setItem(
         "matrix-auth-store",
-        JSON.stringify({ user_id, device_id, access_token })
+        JSON.stringify({
+          user_id,
+          device_id,
+          access_token,
+          session_version: CURRENT_SESSION_VERSION,
+        })
       );
 
       setState({ client, loading: false, authenticated: true });
@@ -170,7 +189,12 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
 
       localStorage.setItem(
         "matrix-auth-store",
-        JSON.stringify({ user_id, device_id, access_token })
+        JSON.stringify({
+          user_id,
+          device_id,
+          access_token,
+          session_version: CURRENT_SESSION_VERSION,
+        })
       );
 
       setState({ client, loading: false, authenticated: true });
@@ -199,7 +223,12 @@ export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
 
       localStorage.setItem(
         "matrix-auth-store",
-        JSON.stringify({ user_id, device_id, access_token })
+        JSON.stringify({
+          user_id,
+          device_id,
+          access_token,
+          session_version: CURRENT_SESSION_VERSION,
+        })
       );
 
       setState({ client, loading: false, authenticated: true });
