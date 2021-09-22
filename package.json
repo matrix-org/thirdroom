@@ -6,7 +6,10 @@
     "npm": "^7.24.0"
   },
   "scripts": {
-    "start": "lerna run dev --scope thirdroom.io"
+    "bootstrap": "lerna bootstrap",
+    "clean": "lerna clean",
+    "start": "lerna run dev --scope thirdroom.io",
+    "build": "lerna run build"
   },
   "workspaces": [
     "./packages/core",
