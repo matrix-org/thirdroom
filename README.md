@@ -26,8 +26,9 @@ A browser-based open metaverse client
 After you've installed node.js locally, run the following commands.
 
 ```
-npm install -g yarn lerna
-lerna bootstrap
+npm install -g yarn
+yarn
+yarn bootstrap
 yarn start
 ```
 
