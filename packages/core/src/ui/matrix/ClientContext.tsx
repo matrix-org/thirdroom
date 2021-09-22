@@ -73,13 +73,9 @@ interface ClientContextProviderState {
   authenticated: boolean;
 }
 
-let homeserverUrl: string;
-
-if (process.env.NODE_ENV === "production") {
-  homeserverUrl = "https://matrix.thirdroom.io";
-} else {
-  homeserverUrl = `${window.location.protocol}//${window.location.host}`;
-}
+const homeserverUrl =
+  process.env.MATRIX_HOMESERVER_URL ||
+  `${window.location.protocol}//${window.location.host}`;
 
 export function ClientContextProvider({ children }: PropsWithChildren<{}>) {
   const [state, setState] = useState<ClientContextProviderState>({

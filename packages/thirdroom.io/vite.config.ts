@@ -15,6 +15,8 @@ export default defineConfig({
     },
   },
   define: {
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+    "process.env.MATRIX_HOMESERVER_URL": process.env.MATRIX_HOMESERVER_URL
+      ? JSON.stringify(process.env.MATRIX_HOMESERVER_URL)
+      : undefined,
   },
 });

@@ -9,9 +9,8 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && cross-env NODE_ENV=production vite build",
-    "serve": "vite preview",
-    "deploy": "gh-pages -t -d dist"
+    "build": "tsc && vite build",
+    "serve": "vite preview"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.7.6",
@@ -19,7 +18,6 @@
     "@thirdroom/core": "^0.0.1",
     "bitecs": "^0.3.21-4a",
     "buffer": "^6.0.3",
-    "classnames": "^2.3.1",
     "downshift": "^6.1.7",
     "events": "^3.3.0",
     "gl-matrix": "^3.3.0",
@@ -31,8 +29,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react-refresh": "^1.3.6",
-    "cross-env": "^7.0.3",
-    "vite": "^2.5.10",
-    "vite-tsconfig-paths": "^3.3.14"
+    "vite": "^2.5.10"
   }
 }

@@ -57,9 +57,5 @@
     "rimraf": "^3.0.2",
     "three": "^0.132.2",
     "typescript": "^4.4.3"
-  },
-  "dependencies": {
-    "cross-env": "^7.0.3",
-    "gh-pages": "^3.2.3"
   }
 }
