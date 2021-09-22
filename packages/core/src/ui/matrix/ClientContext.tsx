@@ -73,9 +73,7 @@ interface ClientContextProviderState {
   authenticated: boolean;
 }
 
-const homeserverUrl =
-  process.env.MATRIX_HOMESERVER_URL ||
-  `${window.location.protocol}//${window.location.host}`;
+const homeserverUrl = process.env.MATRIX_HOMESERVER_URL as string;
 
 const CURRENT_SESSION_VERSION = 1;
 
