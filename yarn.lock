@@ -1105,10 +1105,10 @@
   dependencies:
     "@octokit/openapi-types" "^10.2.2"
 
-"@robertlong/matrix-js-sdk@^12.5.0-dev5":
-  version "12.5.0-dev5"
-  resolved "https://registry.yarnpkg.com/@robertlong/matrix-js-sdk/-/matrix-js-sdk-12.5.0-dev5.tgz#ecad2c5c975c82ec2b487286573be2512ca4673c"
-  integrity sha512-wjKjpQBkxaeumgyLo2OTsD7151w805GzfOc7l24qZtNKDzpqEwVbLt/59ldEnC1DleBGdbKxPsPCLdNHv6n1AA==
+"@robertlong/matrix-js-sdk@12.5.0-dev7", "@robertlong/matrix-js-sdk@^12.5.0-dev7":
+  version "12.5.0-dev7"
+  resolved "https://registry.yarnpkg.com/@robertlong/matrix-js-sdk/-/matrix-js-sdk-12.5.0-dev7.tgz#79cffddee90ad18c443ac19ebebd308fbb8abf3d"
+  integrity sha512-snbE7oL0aScAqtA1Xh/lUVzeVTYPZ06PTvdV76SUb9qDs16LevuvTEkfP9NnyPKlauTeJ98ey3AbQGEraPJXTw==
   dependencies:
     "@babel/runtime" "^7.12.5"
     another-json "^0.2.0"

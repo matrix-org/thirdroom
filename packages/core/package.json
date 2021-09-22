@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "^0.7.6",
-    "@robertlong/matrix-js-sdk": "^12.5.0-dev5",
+    "@robertlong/matrix-js-sdk": "^12.5.0-dev7",
     "@types/events": "^3.0.0",
     "@types/node": "^16.9.4",
     "@types/react-dom": "^17.0.9",

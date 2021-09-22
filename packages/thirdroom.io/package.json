@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.7.6",
-    "@robertlong/matrix-js-sdk": "^12.5.0-dev5",
+    "@robertlong/matrix-js-sdk": "12.5.0-dev7",
     "@thirdroom/core": "^0.0.1",
     "bitecs": "^0.3.21-4a",
     "buffer": "^6.0.3",
