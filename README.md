@@ -9,6 +9,8 @@
   <br/>
 </div>
 
+![Matrix](https://img.shields.io/matrix/thirdroom-dev:matrix.org)
+
 # Third Room
 
 A browser-based open metaverse client
