@@ -9,7 +9,7 @@
   <br/>
 </div>
 
-![Matrix](https://img.shields.io/matrix/thirdroom-dev:matrix.org)
+[![Matrix](https://img.shields.io/matrix/thirdroom-dev:matrix.org)](https://matrix.to/#/#thirdroom-dev:matrix.org)
 
 # Third Room
 
