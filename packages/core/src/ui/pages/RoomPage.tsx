@@ -90,7 +90,7 @@ export function RoomPage() {
 					<b>Avatar Url:</b> {avatarUrl}
 				</p>
 				<ChangeSceneForm onSubmit={onChangeScene} />
-				<Button type="button" onClick={enter}>
+				<Button className="enter-room" type="button" onClick={enter}>
 					Enter Room
 				</Button>
 			</div>

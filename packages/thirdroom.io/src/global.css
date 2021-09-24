@@ -88,7 +88,7 @@ form {
 	background-color: inherit;
 }
 
-form button {
+form button, .enter-room {
 	min-width: 100px;
 	margin-top:10px;
 	height: 50px;
@@ -100,12 +100,12 @@ form button {
 	cursor: pointer;
 }
 
-form button[type="submit"] {
-	min-width: 180px;
+form button:hover, .enter-room:hover {
+	background-color: #2a2a2a;
 }
 
-form button:hover {
-	background-color: #2a2a2a;
+form button[type="submit"], .enter-room {
+	min-width: 180px;
 }
 
 .error {
