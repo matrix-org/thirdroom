@@ -35,46 +35,46 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
   const roomAccess = watch("roomAccess");
 
   return (
-      <form onSubmit={(e) => handleSubmit(onSubmit)(e).catch(setError)}>
-        <InputField
-          type="string"
-		      className="input-field"
-          autoComplete="off"
-          label="Room Name"
-          error={errors.name}
-          {...register("name", { required: true })}
-        />
-        <InputField
-          label="Scene glTF"
-		      className="input-field"
-          type="file"
-          accept="model/gltf-binary"
-          error={errors.scene}
-          {...register("scene")}
-        />
-        <FormSelectInputField
-          label="Room Access"
-          name="roomAccess"
-          options={RoomAccessOptions}
-          control={control}
-          rules={{ required: true }}
-          error={errors.roomAccess}
-        />
-        {roomAccess === RoomAccess.RegisteredUsers && (
-          <InputField
-            prefix="#"
-			      className="input-field"
-            postfix={`:${location.hostname}`}
-            label="Room Alias"
-            placeholder="example"
-            error={errors.roomAlias}
-            {...register("alias")}
-          />
-        )}
-        {error && <ErrorMessage>{error.message}</ErrorMessage>}
-        <Button disabled={isSubmitting} type="submit">
-          Create Room
-        </Button>
-      </form>
+    <form onSubmit={(e) => handleSubmit(onSubmit)(e).catch(setError)}>
+			<InputField
+				type="string"
+				className="input-field"
+				autoComplete="off"
+				label="Room Name"
+				error={errors.name}
+				{...register("name", { required: true })}
+			/>
+			<InputField
+				label="Scene glTF"
+				className="input-field"
+				type="file"
+				accept="model/gltf-binary"
+				error={errors.scene}
+				{...register("scene")}
+			/>
+			<FormSelectInputField
+				label="Room Access"
+				name="roomAccess"
+				options={RoomAccessOptions}
+				control={control}
+				rules={{ required: true }}
+				error={errors.roomAccess}
+			/>
+			{roomAccess === RoomAccess.RegisteredUsers && (
+			<InputField
+				prefix="#"
+				className="input-field"
+				postfix={`:${location.hostname}`}
+				label="Room Alias"
+				placeholder="example"
+				error={errors.roomAlias}
+				{...register("alias")}
+			/>
+			)}
+			{error && <ErrorMessage>{error.message}</ErrorMessage>}
+			<Button disabled={isSubmitting} type="submit">
+				Create Room
+			</Button>
+		</form>
   );
 }
