@@ -11,3 +11,104 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.register-container, .login-container, .create-room-container {
+	background: #e0e0e0;
+	box-shadow:  20px 20px 60px #d8d8d8,
+             	-20px -20px 60px #ffffff;
+	margin: 15% auto;
+	max-width: 350px;
+	padding: 25px;
+	background-color: #fdfdfd;
+	border-radius: 40px;
+	box-sizing: border-box;
+	display: block;
+	text-align: center;
+	/* box-shadow: 2px 2px 63px #00000042; */
+}
+
+.select-input-container {
+	padding: 10px;
+}
+
+.select-input-container label {
+	padding-right: 10px;
+}
+
+.select-input-container li {
+	list-style: none;
+	text-align: left;
+	background-color: #fdfdfd;
+	padding: 5px;
+}
+
+.select-input-container li:hover {
+	list-style: none;
+	text-align: left;
+	background-color: #3a3a3a;
+	color: white;
+}
+
+
+.register-container .container-content, .login-container .container-content, .input-container {
+	padding-bottom:25px;
+}
+
+form {
+	padding-bottom:20px;
+}
+
+.file-select, .input-field {
+	padding: 12px 0px;
+}
+
+.file-select label {
+	padding-bottom: 20px;
+}
+
+
+.input-field label{
+	padding-right: 10px;
+	padding-bottom: 10px;
+}
+
+.input-field input[type=string], .input-container input {
+	padding: 8px;
+	border-radius: 10px;
+	border: .5px solid #0b0b0b85;
+	margin-top: 10px;
+}
+
+.input-field input[type=file], .input-container input[type=file] {
+	border: none;
+}
+
+.input-field {
+	padding:10px;
+	background-color: inherit;
+}
+
+form button {
+	min-width: 100px;
+	margin-top:10px;
+	height: 50px;
+	border-radius: 40px;
+	border: none;
+	background-color: #3a3a3a;
+	font-weight: bold;
+	color: white;
+	cursor: pointer;
+}
+
+form button[type="submit"] {
+	min-width: 180px;
+}
+
+form button:hover {
+	background-color: #2a2a2a;
+}
+
+.error {
+	color: red;
+	padding:10px;
+}

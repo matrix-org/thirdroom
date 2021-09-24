@@ -38,6 +38,7 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
       <form onSubmit={(e) => handleSubmit(onSubmit)(e).catch(setError)}>
         <InputField
           type="string"
+		  className="input-field"
           autoComplete="off"
           label="Room Name"
           error={errors.name}
@@ -45,6 +46,7 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
         />
         <InputField
           label="Scene glTF"
+		  className="input-field"
           type="file"
           accept="model/gltf-binary"
           error={errors.scene}
@@ -61,6 +63,7 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
         {roomAccess === RoomAccess.RegisteredUsers && (
           <InputField
             prefix="#"
+			className="input-field"
             postfix={`:${location.hostname}`}
             label="Room Alias"
             placeholder="example"

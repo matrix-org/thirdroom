@@ -36,7 +36,7 @@ export const SelectInputField = forwardRef<HTMLButtonElement, SelectInputFieldPr
   } = useSelect<SelectOption>({ items: options, itemToString, onSelectedItemChange });
 
   return (
-    <div>
+    <div className="select-input-container">
       <label {...getLabelProps()}>{label}</label>
       <button ref={ref} type="button" {...getToggleButtonProps({ onBlur })}>
         {itemToString(selectedItem) || "Select..."}
@@ -47,7 +47,7 @@ export const SelectInputField = forwardRef<HTMLButtonElement, SelectInputFieldPr
             <li
               style={
                 highlightedIndex === index
-                  ? { backgroundColor: '#bde4ff' }
+                  ? { backgroundColor: '#3a3a3a' }
                   : {}
               }
               key={item.name}

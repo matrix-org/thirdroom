@@ -44,5 +44,5 @@ export function ErrorMessage({ name, error, children }: ErrorMessageProps) {
     console.error(error);
   }, [error]);
 
-  return <div>{children || getErrorMessage(error, name)}</div>
+  return <div className="error">{children || getErrorMessage(error, name)}</div>
 }

@@ -17,10 +17,12 @@ export function RegisterPage() {
   );
 
   return (
-    <div>
-      <h1>Register</h1>
-      <AuthForm submitLabel="Register" submittingLabel="Registering..."  onSubmit={onSubmit} />
-      <Link to="/login">Login</Link>
-    </div>
+	<div className="register-container">
+		<div className="container-content">
+			<h2>Register</h2>
+			<AuthForm submitLabel="Register" submittingLabel="Registering..."  onSubmit={onSubmit} />
+			<Link to="/login">Login</Link>
+		</div>
+	</div>
   );
 }
