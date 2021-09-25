@@ -12,12 +12,71 @@ code {
     monospace;
 }
 
+.app {
+	display: inherit;
+}
+
+.home-page {
+	display: flex;
+	flex-direction: column;
+}
+
+.dashboard-actions {
+	border-radius: 0px 0px 40px 0px;
+	max-width: 360px;
+	background: #e0e0e0;
+	box-shadow: 20px 20px 60px #d8d8d852, -20px -20px 60px #ffffff;
+	display: block;
+	padding: 30px;
+}
+
+.room-link-container {
+	box-sizing: border-box;
+	display: flex;
+	max-width: 150px;
+	margin-bottom: 15px;
+	flex-direction: column;
+	text-align: center;
+}
+
+.rooms-container {
+	display: flex;
+	flex-direction: row;
+}
+
+.room-link-container li {
+	list-style: none;
+	margin: 0 auto;
+}
+
+.room-link-thumb {
+	display: block;
+	background: black;
+	width: 100%;
+	height: 90px;
+}
+
+.room-link-title-container {
+	padding: 10px 0px;
+	background: rgb(228, 228, 228);
+	width:100%;
+	display: flex;
+	max-height: 20px;
+}
+
+.rooms-container a {
+	margin: 10px;
+	display: flex;
+	flex-direction: column;
+	width: 150px;
+}
+
 .register-container, .login-container, .create-room-container {
 	background: #e0e0e0;
 	box-shadow:  20px 20px 60px #d8d8d8,
              	-20px -20px 60px #ffffff;
 	margin: 15% auto;
-	max-width: 350px;
+	max-width: 360px;
 	padding: 25px;
 	background-color: #fdfdfd;
 	border-radius: 40px;
