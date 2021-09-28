@@ -45,7 +45,7 @@ function generateMatrixWellKnown(homeserverUrl: string): Plugin {
 }
 
 const homeserverUrl =
-  process.env.MATRIX_HOMESERVER_URL || "https://matrix.xpp.world.io";
+process.env.MATRIX_HOMESERVER_URL || "https://matrix.thirdroom.io";
 
 // https://vitejs.dev/config/
 export default defineConfig({

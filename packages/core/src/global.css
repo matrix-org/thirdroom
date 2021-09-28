@@ -1,0 +1,168 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.app {
+	display: inherit;
+}
+
+.home-page {
+	display: flex;
+	flex-direction: column;
+}
+
+.dashboard-actions {
+	max-width: 360px;
+	display: block;
+	padding: 30px;
+}
+
+.room-link-container {
+	box-sizing: border-box;
+	display: flex;
+	max-width: 150px;
+	margin-bottom: 15px;
+	flex-direction: column;
+	text-align: center;
+}
+
+.rooms-container {
+	display: flex;
+	flex-direction: row;
+}
+
+.room-link-container li {
+	list-style: none;
+	margin: 0 auto;
+}
+
+.room-link-thumb {
+	display: block;
+	background: black;
+	width: 100%;
+	height: 90px;
+}
+
+.room-link-title-container {
+	padding: 10px 0px;
+	background: rgb(228, 228, 228);
+	width:100%;
+	display: flex;
+	max-height: 20px;
+}
+
+.rooms-container a {
+	margin: 10px;
+	display: flex;
+	flex-direction: column;
+	width: 150px;
+}
+
+.register-container, .login-container, .create-room-container {
+	background: #e0e0e0;
+	box-shadow:  20px 20px 60px #d8d8d8,
+             	-20px -20px 60px #ffffff;
+	margin: 15% auto;
+	max-width: 360px;
+	padding: 25px;
+	background-color: #fdfdfd;
+	border-radius: 40px;
+	box-sizing: border-box;
+	display: block;
+	text-align: center;
+}
+
+.select-input-container {
+	padding: 10px;
+}
+
+.select-input-container label {
+	padding-right: 10px;
+}
+
+.select-input-container li {
+	list-style: none;
+	text-align: left;
+	background-color: #fdfdfd;
+	padding: 5px;
+}
+
+.select-input-container li:hover {
+	list-style: none;
+	text-align: left;
+	background-color: #3a3a3a;
+	color: white;
+}
+
+.register-container .container-content, .login-container .container-content, .input-container {
+	padding-bottom:25px;
+}
+
+form {
+	padding-bottom:20px;
+}
+
+.file-select, .input-field {
+	padding: 12px 0px;
+}
+
+.file-select label {
+	padding-bottom: 20px;
+}
+
+
+.input-field label{
+	padding-right: 10px;
+	padding-bottom: 10px;
+}
+
+.input-field input[type=string], .input-container input {
+	padding: 8px;
+	border-radius: 10px;
+	border: .5px solid #0b0b0b85;
+	margin-top: 10px;
+}
+
+.input-field input[type=file], .input-container input[type=file] {
+	border: none;
+}
+
+.input-field {
+	padding:10px;
+	background-color: inherit;
+}
+
+form button, .enter-room {
+	min-width: 100px;
+	margin-top:10px;
+	height: 50px;
+	border-radius: 40px;
+	border: none;
+	background-color: #3a3a3a;
+	font-weight: bold;
+	color: white;
+	cursor: pointer;
+}
+
+form button:hover, .enter-room:hover {
+	background-color: #2a2a2a;
+}
+
+form button[type="submit"], .enter-room {
+	min-width: 180px;
+}
+
+.error {
+	color: red;
+	padding:10px;
+}
