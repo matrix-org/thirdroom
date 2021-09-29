@@ -26,10 +26,12 @@ export function CreateRoomPage() {
   );
 
   return (
-    <div>
-      <h1>Create Room</h1>
-      <CreateRoomForm onSubmit={onSubmit} />
-      <Link to="/">Back to dashboard</Link>
+    <div className="create-room-container">
+      <div className="container-content">
+        <h1>Create Room</h1>
+        <CreateRoomForm onSubmit={onSubmit} />
+        <Link to="/">Back to dashboard</Link>
+      </div>
     </div>
   );
 }

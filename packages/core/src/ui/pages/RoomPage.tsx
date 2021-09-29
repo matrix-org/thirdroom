@@ -81,28 +81,30 @@ export function RoomPage() {
       return <Viewport groupCall={groupCall} onChangeRoom={onChangeRoom} sceneUrl={sceneUrl} />;
     } else {
       return (
-        <>
-          <p>
-            <b>Scene Url:</b> {sceneUrl}
-          </p>
-          <p>
-            <b>Avatar Url:</b> {avatarUrl}
-          </p>
-          <ChangeSceneForm onSubmit={onChangeScene} />
-          <Button type="button" onClick={enter}>
-            Enter Room
-          </Button>
-        </>
+		<div className="create-room-container">
+			<div className="container-content">
+				<p>
+					<b>Scene Url:</b> {sceneUrl}
+				</p>
+				<p>
+					<b>Avatar Url:</b> {avatarUrl}
+				</p>
+				<ChangeSceneForm onSubmit={onChangeScene} />
+				<Button className="enter-room" type="button" onClick={enter}>
+					Enter Room
+				</Button>
+			</div>
+		</div>
       );
     }
   };
 
   return (
-    <div>
-      {!entered && <h1>Room</h1>}
-      {view()}
-      {!entered && <Link to="/">Back to dashboard</Link>}
-    </div>
+	<div>
+		{!entered && <h1>Room</h1>}
+		{view()}
+		{!entered && <Link to="/">Back to dashboard</Link>}
+	</div>
   );
 }
 interface ViewportProps {

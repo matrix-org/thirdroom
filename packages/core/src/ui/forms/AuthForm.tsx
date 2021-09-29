@@ -26,8 +26,8 @@ export function AuthForm({ onSubmit, submitLabel, submittingLabel }: AuthFormPro
 
   return (
     <form onSubmit={(e) => handleSubmit(onSubmit)(e).catch(onError)}>
-      <InputField disabled={isSubmitting} label="Username" error={errors.userName} {...register("userName", { required: true })} />
-      <InputField disabled={isSubmitting}  label="Password" type="password" error={errors.password} {...register("password", { required: true })} />
+      <InputField className="input-field" disabled={isSubmitting} label="Username" error={errors.userName} {...register("userName", { required: true })} />
+      <InputField className="input-field" disabled={isSubmitting}  label="Password" type="password" error={errors.password} {...register("password", { required: true })} />
       {error && <ErrorMessage>{error.message}</ErrorMessage>}
       <Button disabled={isSubmitting} type="submit">{isSubmitting ? submittingLabel : submitLabel}</Button>
     </form>
