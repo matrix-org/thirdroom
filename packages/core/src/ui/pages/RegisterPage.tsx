@@ -1,12 +1,12 @@
 import React, { useCallback, useContext } from "react";
 import { AuthForm } from "../forms/AuthForm";
 import { ClientContext } from "../matrix/ClientContext";
-import { useRedirectFrom } from "../router/useRedirectFrom";
+import { useAuthRedirect } from "../router/useAuthRedirect";
 import { Link } from "react-router-dom";
 
 export function RegisterPage() {
   const { register } = useContext(ClientContext);
-  const redirect = useRedirectFrom();
+  const redirect = useAuthRedirect();
 
   const onSubmit = useCallback(
     async ({ userName, password }: { userName: string; password: string }) => {
@@ -17,12 +17,16 @@ export function RegisterPage() {
   );
 
   return (
-	<div className="register-container">
-		<div className="container-content">
-			<h2>Register</h2>
-			<AuthForm submitLabel="Register" submittingLabel="Registering..."  onSubmit={onSubmit} />
-			<Link to="/login">Login</Link>
-		</div>
-	</div>
+    <div className="register-container">
+      <div className="container-content">
+        <h2>Register</h2>
+        <AuthForm
+          submitLabel="Register"
+          submittingLabel="Registering..."
+          onSubmit={onSubmit}
+        />
+        <Link to="/login">Login</Link>
+      </div>
+    </div>
   );
 }

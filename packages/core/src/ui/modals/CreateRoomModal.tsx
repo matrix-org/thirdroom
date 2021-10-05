@@ -1,10 +1,16 @@
 import React, { useCallback, useContext } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Modal, ModalProps } from "./Modal";
+import { useHistory } from "react-router-dom";
 import { CreateRoomForm, CreateRoomFormFields } from "../forms/CreateRoomForm";
 import { ClientContext } from "../matrix/ClientContext";
 import { createRoom } from "../matrix/createRoom";
 
-export function CreateRoomPage() {
+type CreateRoomModalProps = Pick<ModalProps, "isOpen" | "onRequestClose">;
+
+export function CreateRoomModal({
+  isOpen,
+  onRequestClose,
+}: CreateRoomModalProps) {
   const history = useHistory();
   const { client } = useContext(ClientContext);
 
@@ -31,12 +37,13 @@ export function CreateRoomPage() {
   );
 
   return (
-    <div className="create-room-container">
-      <div className="container-content">
-        <h1>Create Room</h1>
-        <CreateRoomForm onSubmit={onSubmit} />
-        <Link to="/">Back to dashboard</Link>
+    <Modal isOpen={isOpen} onRequestClose={onRequestClose}>
+      <div className="create-room-container">
+        <div className="container-content">
+          <h1>Create Room</h1>
+          <CreateRoomForm onSubmit={onSubmit} />
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

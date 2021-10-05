@@ -1,2 +1,2 @@
 export * from "./AuthenticatedRoute";
-export * from "./useRedirectFrom";
+export * from "./useAuthRedirect";

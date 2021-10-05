@@ -1,32 +1,29 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Link, useParams, useHistory, useLocation } from "react-router-dom";
+import React, { useCallback, useContext, useState } from "react";
+import { useParams, useHistory, useLocation } from "react-router-dom";
 import { ErrorMessage } from "../input/ErrorMessage";
 import { useRoom } from "../matrix/useRoom";
 import { useScene } from "../matrix/useScene";
-import {
-  ChangeSceneForm,
-  ChangeSceneFormFields,
-} from "../forms/ChangeSceneForm";
 import { useRoomProfile } from "../matrix/useRoomProfile";
 import { useGroupCall } from "../matrix/useGroupCall";
 import { Button } from "../input/Button";
 import { useWorld } from "../../world/useWorld";
 import { GroupCall } from "@robertlong/matrix-js-sdk/lib/webrtc/groupCall";
+import { Room } from "@robertlong/matrix-js-sdk";
+import { ClientContext } from "../matrix";
+import { RoomSettingsModal } from "../modals/RoomSettingsModal";
+import { ProfileModal } from "../modals";
 
-enum RoomView {
-  Init = "init",
-  Setup = "setup",
-  Room = "room",
+enum ModalId {
+  RoomSettings,
+  Profile,
 }
 
 export function RoomPage() {
-  const history = useHistory();
   const { roomId: maybeRoomId } = useParams<{ roomId: string }>();
   const { hash } = useLocation();
   const roomId = maybeRoomId || hash;
   const { loading, error, room } = useRoom(roomId);
-  const { sceneUrl, uploadAndChangeScene } = useScene(room);
-  const { avatarUrl } = useRoomProfile(room);
+  const { sceneUrl } = useScene(room);
   const {
     loading: groupCallLoading,
     entered,
@@ -35,82 +32,87 @@ export function RoomPage() {
     enter,
   } = useGroupCall(room);
 
-  const [groupCallError, setGroupCallError] = useState<Error | undefined>();
+  if (error || groupCallLoadingError) {
+    return <ErrorMessage error={error || groupCallLoadingError} />;
+  }
+
+  if (loading || groupCallLoading || !room || !groupCall || !sceneUrl) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <RoomView
+      room={room}
+      groupCall={groupCall}
+      sceneUrl={sceneUrl}
+      entered={entered}
+      onEnter={enter}
+    />
+  );
+}
+
+interface RoomViewProps {
+  room: Room;
+  groupCall: GroupCall;
+  entered: boolean;
+  onEnter: () => void;
+  sceneUrl: string;
+}
+
+function RoomView({
+  room,
+  groupCall,
+  entered,
+  onEnter,
+  sceneUrl,
+}: RoomViewProps) {
+  const history = useHistory();
+  const { logout } = useContext(ClientContext);
 
   const onChangeRoom = useCallback((roomId) => {
     history.push(`/room/${roomId}`);
   }, []);
 
-  const onChangeScene = useCallback(
-    (data: ChangeSceneFormFields) => {
-      if (data.scene.length > 0) {
-        uploadAndChangeScene(data.scene[0]);
-      }
-    },
-    [uploadAndChangeScene]
-  );
+  const canvasRef = useWorld(groupCall, onChangeRoom, sceneUrl);
 
-  const view = () => {
-    if (loading || groupCallLoading) {
-      return <div>Loading...</div>;
-    }
+  const [modalId, setModalId] = useState<ModalId | undefined>();
 
-    if (error || groupCallLoadingError || groupCallError) {
-      return (
-        <ErrorMessage
-          error={error || groupCallLoadingError || groupCallError}
-        />
-      );
-    }
-
-    if (groupCall && entered) {
-      return (
-        <Viewport
-          groupCall={groupCall}
-          onChangeRoom={onChangeRoom}
-          sceneUrl={sceneUrl}
-        />
-      );
-    } else {
-      return (
-        <div className="create-room-container">
-          <div className="container-content">
-            <p>
-              <b>Scene Url:</b> {sceneUrl}
-            </p>
-            <p>
-              <b>Avatar Url:</b> {avatarUrl}
-            </p>
-            <ChangeSceneForm onSubmit={onChangeScene} />
-            <Button className="enter-room" type="button" onClick={enter}>
-              Enter Room
-            </Button>
-          </div>
-        </div>
-      );
-    }
-  };
+  const onLogout = useCallback(() => {
+    logout();
+    history.push("/");
+  }, []);
 
   return (
     <div>
-      {!entered && <h1>Room</h1>}
-      {view()}
-      {!entered && <Link to="/">Back to dashboard</Link>}
-    </div>
-  );
-}
-interface ViewportProps {
-  groupCall: GroupCall;
-  sceneUrl?: string;
-  onChangeRoom: (roomId: string) => void;
-}
-
-function Viewport({ groupCall, onChangeRoom, sceneUrl }: ViewportProps) {
-  const canvasRef = useWorld(groupCall, onChangeRoom, sceneUrl);
-
-  return (
-    <div style={{ width: "100vw", height: "100vh", backgroundColor: "#000" }}>
-      <canvas ref={canvasRef} />
+      <div style={{ width: "100vw", height: "100vh", backgroundColor: "#000" }}>
+        <canvas ref={canvasRef} />
+        {!entered && (
+          <div className="create-room-container">
+            <div className="container-content">
+              <Button onClick={() => setModalId(ModalId.RoomSettings)}>
+                Room Settings
+              </Button>
+              <Button onClick={() => setModalId(ModalId.Profile)}>
+                Profile
+              </Button>
+              <Button onClick={onLogout}>Logout</Button>
+              <Button className="enter-room" type="button" onClick={onEnter}>
+                Enter Room
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      {modalId === ModalId.RoomSettings && (
+        <RoomSettingsModal
+          room={room}
+          isOpen
+          onRequestClose={() => setModalId(undefined)}
+        />
+      )}
+      {modalId === ModalId.Profile && (
+        <ProfileModal isOpen onRequestClose={() => setModalId(undefined)} />
+      )}
     </div>
   );
 }

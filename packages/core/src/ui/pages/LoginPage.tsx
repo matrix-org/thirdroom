@@ -2,11 +2,11 @@ import React, { useCallback, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthForm } from "../forms/AuthForm";
 import { ClientContext } from "../matrix/ClientContext";
-import { useRedirectFrom } from "../router/useRedirectFrom";
+import { useAuthRedirect } from "../router/useAuthRedirect";
 
 export function LoginPage() {
   const { login } = useContext(ClientContext);
-  const redirect = useRedirectFrom();
+  const redirect = useAuthRedirect();
 
   const onSubmit = useCallback(
     async ({ userName, password }: { userName: string; password: string }) => {

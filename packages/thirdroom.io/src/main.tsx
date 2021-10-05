@@ -9,15 +9,25 @@ import {
   RoomPage,
   LoginPage,
   RegisterPage,
-  ProfilePage,
-  CreateRoomPage,
+  NotFoundPage,
+  CreateRoomModal,
+  ProfileModal,
 } from "@thirdroom/core";
+import { HomePage } from "./HomePage";
 
 function Routes() {
   return (
     <HashRouter>
       <Switch>
-        <AuthenticatedRoute path="/" exact>
+        <AuthenticatedRoute
+          redirectAuthed
+          redirectPath="/dashboard"
+          path="/"
+          exact
+        >
+          <HomePage />
+        </AuthenticatedRoute>
+        <AuthenticatedRoute path="/dashboard">
           <DashboardPage />
         </AuthenticatedRoute>
         <Route path="/login" exact>
@@ -26,27 +36,15 @@ function Routes() {
         <Route path="/register" exact>
           <RegisterPage />
         </Route>
-        <Route path="/profile" exact>
-          <ProfilePage />
-        </Route>
-        <Route path="/create" exact>
-          <CreateRoomPage />
-        </Route>
         <Route path="/room/:roomId*">
           <RoomPage />
         </Route>
         <Route path="*">
-          <NoMatch />
+          <NotFoundPage />
         </Route>
       </Switch>
     </HashRouter>
   );
-}
-
-function NoMatch() {
-  const location = useLocation();
-  console.log(location);
-  return <div>No Match</div>;
 }
 
 ReactDOM.render(

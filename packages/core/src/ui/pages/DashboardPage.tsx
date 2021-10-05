@@ -1,10 +1,22 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, {
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 import { Link, useHistory } from "react-router-dom";
 import { Button } from "../input/Button";
 import { ClientContext } from "../matrix/ClientContext";
 import { useRoomList } from "../matrix/useRoomList";
+import { CreateRoomModal, ProfileModal } from "../modals";
+import { ModalProps, useModal } from "../modals/Modal";
 
-export function DashboardPage() {
+enum ModalId {
+  CreateRoom,
+  Profile,
+}
+
+export function DashboardPage({ children }: PropsWithChildren<{}>) {
   const { logout } = useContext(ClientContext);
   const rooms = useRoomList();
   const history = useHistory();
@@ -15,14 +27,18 @@ export function DashboardPage() {
     history.push(`/room/${roomId}`);
   }, [roomId]);
 
+  const [modalId, setModalId] = useState<ModalId | undefined>();
+
   return (
     <div className="app home-page">
       <div className="dashboard-actions">
         <div>
           <h1>Dashboard</h1>
           <nav>
-            <Link to="/create">Create Room</Link>{" "}
-            <Link to="/profile">Profile</Link>{" "}
+            <Button onClick={() => setModalId(ModalId.CreateRoom)}>
+              Create Room
+            </Button>{" "}
+            <Button onClick={() => setModalId(ModalId.Profile)}>Profile</Button>{" "}
             <Button onClick={logout}>Logout</Button>
           </nav>
         </div>
@@ -37,7 +53,10 @@ export function DashboardPage() {
         <h2>Recent Rooms:</h2>
         <ul className="rooms-container">
           {rooms.map((room) => (
-            <Link to={`/room/${room.getCanonicalAlias() || room.roomId}`}>
+            <Link
+              key={room.roomId}
+              to={`/room/${room.getCanonicalAlias() || room.roomId}`}
+            >
               <div className="room-link-container">
                 <div className="room-link-thumb" />
                 <div className="room-link-title-container">
@@ -48,6 +67,12 @@ export function DashboardPage() {
           ))}
         </ul>
       </div>
+      {modalId === ModalId.CreateRoom && (
+        <CreateRoomModal isOpen onRequestClose={() => setModalId(undefined)} />
+      )}
+      {modalId === ModalId.Profile && (
+        <ProfileModal isOpen onRequestClose={() => setModalId(undefined)} />
+      )}
     </div>
   );
 }

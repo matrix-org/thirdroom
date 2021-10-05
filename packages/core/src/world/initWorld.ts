@@ -207,5 +207,6 @@ export async function initWorld(
   return {
     setSceneUrl,
     dispose,
+    audioListener,
   };
 }

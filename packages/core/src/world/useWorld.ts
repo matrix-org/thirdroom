@@ -2,6 +2,7 @@ import { useEffect, useRef, useContext, useCallback } from "react";
 import { GroupCall } from "@robertlong/matrix-js-sdk/lib/webrtc/groupCall";
 import { initWorld } from "./initWorld";
 import { ClientContext } from "../ui/matrix/ClientContext";
+import { AudioListener } from "three";
 
 export function useWorld(
   groupCall: GroupCall,
@@ -11,6 +12,7 @@ export function useWorld(
   const { client } = useContext(ClientContext);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const setSceneUrlRef = useRef<(sceneUrl: string) => Promise<void>>();
+  const audioListenerRef = useRef<AudioListener>();
 
   useEffect(() => {
     let dispose: () => void | undefined;
@@ -25,6 +27,7 @@ export function useWorld(
       ).then((result) => {
         dispose = result.dispose;
         setSceneUrlRef.current = result.setSceneUrl;
+        audioListenerRef.current = result.audioListener;
       });
     }
 
@@ -40,6 +43,18 @@ export function useWorld(
       setSceneUrlRef.current(sceneUrl);
     }
   }, [sceneUrl]);
+
+  useEffect(() => {
+    function onEnter() {
+      audioListenerRef.current?.context.resume();
+    }
+
+    groupCall.on("entered", onEnter);
+
+    return () => {
+      groupCall.removeListener("entered", onEnter);
+    };
+  }, [groupCall]);
 
   return canvasRef;
 }
