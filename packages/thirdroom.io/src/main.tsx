@@ -1,11 +1,21 @@
 import "./global.css";
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter, Switch, Route } from "react-router-dom";
-import { DashboardPage, AuthenticatedRoute, ClientContextProvider, RoomPage, LoginPage, RegisterPage, ProfilePage, CreateRoomPage } from "@thirdroom/core";
+import { HashRouter, Switch, Route, useLocation } from "react-router-dom";
+import {
+  DashboardPage,
+  AuthenticatedRoute,
+  ClientContextProvider,
+  RoomPage,
+  LoginPage,
+  RegisterPage,
+  ProfilePage,
+  CreateRoomPage,
+} from "@thirdroom/core";
+
 function Routes() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Switch>
         <AuthenticatedRoute path="/" exact>
           <DashboardPage />
@@ -22,12 +32,21 @@ function Routes() {
         <Route path="/create" exact>
           <CreateRoomPage />
         </Route>
-        <Route path="/room/:roomId" exact>
+        <Route path="/room/:roomId*">
           <RoomPage />
         </Route>
+        <Route path="*">
+          <NoMatch />
+        </Route>
       </Switch>
-    </BrowserRouter>
+    </HashRouter>
   );
+}
+
+function NoMatch() {
+  const location = useLocation();
+  console.log(location);
+  return <div>No Match</div>;
 }
 
 ReactDOM.render(

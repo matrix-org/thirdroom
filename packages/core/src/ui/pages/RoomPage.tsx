@@ -19,19 +19,11 @@ enum RoomView {
   Room = "room",
 }
 
-function parseRoomIdParam(roomIdParam: string) {
-  if (roomIdParam.startsWith("!")) {
-    return roomIdParam;
-  }
-
-  return `#${roomIdParam}`;
-}
-
 export function RoomPage() {
   const history = useHistory();
-  const { roomId: roomIdParam } = useParams<{ roomId: string }>();
-  const { state } = useLocation<{ autoEnter: boolean }>();
-  const roomId = parseRoomIdParam(roomIdParam);
+  const { roomId: maybeRoomId } = useParams<{ roomId: string }>();
+  const { hash } = useLocation();
+  const roomId = maybeRoomId || hash;
   const { loading, error, room } = useRoom(roomId);
   const { sceneUrl, uploadAndChangeScene } = useScene(room);
   const { avatarUrl } = useRoomProfile(room);
@@ -46,7 +38,7 @@ export function RoomPage() {
   const [groupCallError, setGroupCallError] = useState<Error | undefined>();
 
   const onChangeRoom = useCallback((roomId) => {
-    history.push(`/room/${roomId.replace("#", "")}`, { autoEnter: true });
+    history.push(`/room/${roomId}`);
   }, []);
 
   const onChangeScene = useCallback(
@@ -57,12 +49,6 @@ export function RoomPage() {
     },
     [uploadAndChangeScene]
   );
-
-  useEffect(() => {
-    if (room && state && state.autoEnter) {
-      enter();
-    }
-  }, [room, state]);
 
   const view = () => {
     if (loading || groupCallLoading) {
@@ -78,39 +64,45 @@ export function RoomPage() {
     }
 
     if (groupCall && entered) {
-      return <Viewport groupCall={groupCall} onChangeRoom={onChangeRoom} sceneUrl={sceneUrl} />;
+      return (
+        <Viewport
+          groupCall={groupCall}
+          onChangeRoom={onChangeRoom}
+          sceneUrl={sceneUrl}
+        />
+      );
     } else {
       return (
-		<div className="create-room-container">
-			<div className="container-content">
-				<p>
-					<b>Scene Url:</b> {sceneUrl}
-				</p>
-				<p>
-					<b>Avatar Url:</b> {avatarUrl}
-				</p>
-				<ChangeSceneForm onSubmit={onChangeScene} />
-				<Button className="enter-room" type="button" onClick={enter}>
-					Enter Room
-				</Button>
-			</div>
-		</div>
+        <div className="create-room-container">
+          <div className="container-content">
+            <p>
+              <b>Scene Url:</b> {sceneUrl}
+            </p>
+            <p>
+              <b>Avatar Url:</b> {avatarUrl}
+            </p>
+            <ChangeSceneForm onSubmit={onChangeScene} />
+            <Button className="enter-room" type="button" onClick={enter}>
+              Enter Room
+            </Button>
+          </div>
+        </div>
       );
     }
   };
 
   return (
-	<div>
-		{!entered && <h1>Room</h1>}
-		{view()}
-		{!entered && <Link to="/">Back to dashboard</Link>}
-	</div>
+    <div>
+      {!entered && <h1>Room</h1>}
+      {view()}
+      {!entered && <Link to="/">Back to dashboard</Link>}
+    </div>
   );
 }
 interface ViewportProps {
   groupCall: GroupCall;
   sceneUrl?: string;
-  onChangeRoom: (roomId: string) => void
+  onChangeRoom: (roomId: string) => void;
 }
 
 function Viewport({ groupCall, onChangeRoom, sceneUrl }: ViewportProps) {

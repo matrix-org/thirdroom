@@ -21,26 +21,27 @@ export function DashboardPage() {
         <div>
           <h1>Dashboard</h1>
           <nav>
-            <Link to="/create">Create Room</Link> <Link to="/profile">Profile</Link>{" "}
+            <Link to="/create">Create Room</Link>{" "}
+            <Link to="/profile">Profile</Link>{" "}
             <Button onClick={logout}>Logout</Button>
           </nav>
         </div>
         <div>
-          <input onChange={(e) => setRoomId(e.target.value)} value={roomId}/>
-          <button type="button" onClick={onNavigate}>Go</button>
+          <input onChange={(e) => setRoomId(e.target.value)} value={roomId} />
+          <button type="button" onClick={onNavigate}>
+            Go
+          </button>
         </div>
       </div>
       <div className="recent-rooms">
         <h2>Recent Rooms:</h2>
         <ul className="rooms-container">
           {rooms.map((room) => (
-            <Link to={`/room/${room.roomId}`}>
+            <Link to={`/room/${room.getCanonicalAlias() || room.roomId}`}>
               <div className="room-link-container">
-                <div className="room-link-thumb"/>
+                <div className="room-link-thumb" />
                 <div className="room-link-title-container">
-                <li key={room.roomId}>
-                  {room.name}
-                </li>
+                  <li key={room.roomId}>{room.name}</li>
                 </div>
               </div>
             </Link>

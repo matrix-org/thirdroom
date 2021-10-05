@@ -16,9 +16,14 @@ export function CreateRoomPage() {
 
       const sceneFile = scene.length > 0 ? scene[0] : undefined;
 
-      const room = await createRoom(client, { name, scene: sceneFile, roomAccess, alias });
+      const room = await createRoom(client, {
+        name,
+        scene: sceneFile,
+        roomAccess,
+        alias,
+      });
 
-      const roomId = room.getCanonicalAlias()?.replace("#", "") || room.roomId;
+      const roomId = room.getCanonicalAlias() || room.roomId;
 
       history.push(`/room/${roomId}`);
     },
