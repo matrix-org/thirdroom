@@ -22,6 +22,7 @@
   "peerDependencies": {
     "@dimforge/rapier3d-compat": "*",
     "@robertlong/matrix-js-sdk": "*",
+    "@robertlong/matrix-react-sdk": "*",
     "bitecs": "*",
     "buffer": "*",
     "classnames": "*",
@@ -36,7 +37,8 @@
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "^0.7.6",
-    "@robertlong/matrix-js-sdk": "^12.5.0-dev7",
+    "@robertlong/matrix-js-sdk": "13.0.0-dev1",
+    "@robertlong/matrix-react-sdk": "3.31.0-dev1",
     "@types/events": "^3.0.0",
     "@types/node": "^16.9.4",
     "@types/react-dom": "^17.0.9",

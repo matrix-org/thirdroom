@@ -1,23 +1,11 @@
-import {
-  AmbientLight,
-  Object3D,
-  Mesh,
-  SkinnedMesh,
-  InterleavedBufferAttribute,
-  PlaneGeometry,
-  MeshBasicMaterial,
-  DoubleSide,
-} from "three";
+import { AmbientLight, Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { addObject3DEntity, getObject3D, setObject3D } from "./three";
 import { World } from "./World";
 import { addRigidBodyComponent } from "./physics";
 import { addLinkComponent } from "./links";
 
-export async function EnvironmentModule(
-  world: World,
-  { initialSceneUrl }: { initialSceneUrl?: string }
-) {
+export function EnvironmentModule(world: World) {
   const scene = getObject3D(world, world.sceneEid);
   world.environmentEid = addObject3DEntity(world, new Object3D(), scene);
 
@@ -59,10 +47,6 @@ export async function EnvironmentModule(
     scene.add(new AmbientLight());
 
     getObject3D(world, world.playerRigEid).position.set(0, 1, 0);
-  }
-
-  if (initialSceneUrl) {
-    await setSceneUrl(initialSceneUrl);
   }
 
   return { setSceneUrl };

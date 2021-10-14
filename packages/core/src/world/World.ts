@@ -1,7 +1,6 @@
 import { WebGLRenderer, Object3D, ArrowHelper } from "three";
-import { NetworkTemplate } from "./networking";
+import { NetworkTemplate, ParticipantChannel } from "./networking";
 import { ActionMap, ActionState } from "./input";
-import { GroupCallParticipant } from "@robertlong/matrix-js-sdk/lib/webrtc/groupCallParticipant";
 import Rapier from "@dimforge/rapier3d-compat";
 
 export interface World {
@@ -32,9 +31,10 @@ export interface World {
   networkTemplateIds: Map<NetworkTemplate, number>;
   networkIdToTemplate: Map<number, NetworkTemplate>;
   networkIdToEntity: Map<number, number>;
-  localParticipantId: number;
-  participantToParticipantId: Map<GroupCallParticipant, number>;
-  participantIdToParticipant: Map<number, GroupCallParticipant>;
+  participantChannels: ParticipantChannel[];
+  localUserParticipantId: number;
+  userIdToParticipantId: Map<string, number>;
+  participantIdToUserId: Map<number, string>;
 
   // Rendering
   renderer: WebGLRenderer;

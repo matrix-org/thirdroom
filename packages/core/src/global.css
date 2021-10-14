@@ -183,3 +183,8 @@ form button[type="submit"],
   color: red;
   padding: 10px;
 }
+
+.viewport {
+  width: 100vw;
+  height: 100vh;
+}

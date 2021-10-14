@@ -1,4 +1,9 @@
-import { MatrixClient, Room } from "@robertlong/matrix-js-sdk";
+import {
+  GroupCallIntent,
+  GroupCallType,
+  MatrixClient,
+  Room,
+} from "@robertlong/matrix-js-sdk";
 import { Preset } from "@robertlong/matrix-js-sdk/lib/@types/partials";
 import { fetchRoom } from "./fetchRoom";
 
@@ -35,6 +40,13 @@ export async function createRoom(
   });
 
   const room = await fetchRoom(client, room_id);
+
+  await client.createGroupCall(
+    room_id,
+    GroupCallType.Voice,
+    GroupCallIntent.Room,
+    true
+  );
 
   if (sceneUrl) {
     await client.sendStateEvent(

@@ -3,13 +3,10 @@ import {
   defineComponent,
   defineQuery,
   Types,
-  Not,
   exitQuery,
   enterQuery,
   addEntity,
 } from "bitecs";
-import { GroupCall } from "@robertlong/matrix-js-sdk/lib/webrtc/groupCall";
-import { GroupCallParticipant } from "@robertlong/matrix-js-sdk/lib/webrtc/groupCallParticipant";
 import { World } from "./World";
 
 export enum NetworkMessageType {
@@ -20,7 +17,7 @@ export enum NetworkMessageType {
 
 export interface NetworkMessage {
   type: NetworkMessageType;
-  sender: GroupCallParticipant;
+  senderId: number;
   networkId: number;
   templateId?: number;
   lastOwned?: number;
@@ -40,30 +37,22 @@ const createdNetworkedQuery = enterQuery(updatedNetworkedQuery);
 const deletedNetworkedQuery = exitQuery(updatedNetworkedQuery);
 
 export function isMine(world: World, eid: number) {
-  return Networked.ownerId[eid] === world.localParticipantId;
+  return Networked.ownerId[eid] === world.localUserParticipantId;
 }
 
-export function isMessageSenderOwner(
-  message: NetworkMessage,
-  world: World,
-  eid: number
-) {
+export function isMessageSenderOwner(message: NetworkMessage, eid: number) {
   if (message.lastOwned! > Networked.lastOwned[eid]) {
     return true;
   }
 
-  const localOwnerId = Networked.ownerId[eid];
-  const localOwner = world.participantIdToParticipant.get(localOwnerId)!;
-  const senderMxId = message.sender.member.userId;
-
   return (
     message.lastOwned === Networked.lastOwned[eid] &&
-    senderMxId > localOwner.member.userId
+    message.senderId > Networked.ownerId[eid]
   );
 }
 
 export function takeOwnership(world: World, eid: number) {
-  Networked.ownerId[eid] = world.localParticipantId;
+  Networked.ownerId[eid] = world.localUserParticipantId;
   Networked.lastOwned[eid] = performance.now(); // TODO: use network time
 }
 
@@ -103,10 +92,12 @@ export function addNetworkedComponent(
   Networked.templateId[eid] = templateId;
   Networked.networkId[eid] = createNetworkId();
   Networked.lastOwned[eid] = performance.now(); // TODO: use network time
-  Networked.ownerId[eid] = world.localParticipantId;
+  Networked.ownerId[eid] = world.localUserParticipantId;
 }
 
-interface ParticipantChannel {
+export interface ParticipantChannel {
+  participantId: number;
+  userId: string;
   datachannel: RTCDataChannel;
   firstSync: boolean;
 }
@@ -114,21 +105,21 @@ interface ParticipantChannel {
 export interface NetworkTemplate {
   onCreate: (
     world: World,
-    sender: GroupCallParticipant,
+    senderId: number,
     entityId: number,
     networkId: number,
     data: any
   ) => void;
   onUpdate: (
     world: World,
-    sender: GroupCallParticipant,
+    senderId: number,
     entityId: number,
     networkId: number,
     data: any
   ) => void;
   onDelete: (
     world: World,
-    sender: GroupCallParticipant,
+    senderId: number,
     entityId: number,
     networkId: number
   ) => void;
@@ -141,41 +132,40 @@ let nextParticipantId = 0;
 export function NetworkingModule(
   world: World,
   {
-    groupCall,
+    localUserId,
     networkTickInterval,
-  }: { groupCall: GroupCall; networkTickInterval: number }
+  }: { localUserId: string; networkTickInterval: number }
 ) {
-  const participantChannels: {
-    datachannel: RTCDataChannel;
-    firstSync: boolean;
-  }[] = [];
+  world.participantChannels = [];
   const inboundNetworkMessages: NetworkMessage[] = [];
   let lastNetworkTick = 0;
 
   world.networkTemplates = [];
   world.networkTemplateIds = new Map();
   world.networkIdToEntity = new Map();
-  world.localParticipantId = nextParticipantId++;
-  world.participantToParticipantId = new Map([
-    [groupCall.localParticipant, world.localParticipantId],
+  world.localUserParticipantId = nextParticipantId++;
+  world.userIdToParticipantId = new Map([
+    [localUserId, world.localUserParticipantId],
   ]);
-  world.participantIdToParticipant = new Map([
-    [world.localParticipantId, groupCall.localParticipant],
+  world.participantIdToUserId = new Map([
+    [world.localUserParticipantId, localUserId],
   ]);
 
-  const onDatachannel = (
-    datachannel: RTCDataChannel,
-    sender: GroupCallParticipant
-  ) => {
+  function onAddParticipant(userId: string, datachannel: RTCDataChannel) {
     let participantChannel: ParticipantChannel;
     let participantId: number;
 
     function onDatachannelOpen() {
-      participantChannel = { datachannel, firstSync: true };
-      participantChannels.push(participantChannel);
       participantId = nextParticipantId++;
-      world.participantToParticipantId.set(sender, participantId);
-      world.participantIdToParticipant.set(participantId, sender);
+      participantChannel = {
+        participantId,
+        userId,
+        datachannel,
+        firstSync: true,
+      };
+      world.participantChannels.push(participantChannel);
+      world.userIdToParticipantId.set(userId, participantId);
+      world.participantIdToUserId.set(participantId, userId);
     }
 
     if (datachannel.readyState === "open") {
@@ -195,7 +185,7 @@ export function NetworkingModule(
 
       inboundNetworkMessages.push({
         type,
-        sender,
+        senderId: participantId,
         networkId,
         templateId,
         data,
@@ -204,18 +194,30 @@ export function NetworkingModule(
     });
 
     datachannel.addEventListener("close", () => {
-      const index = participantChannels.indexOf(participantChannel);
+      const index = world.participantChannels.indexOf(participantChannel);
 
       if (index !== -1) {
-        participantChannels.splice(index, 1);
+        world.participantChannels.splice(index, 1);
       }
 
-      world.participantToParticipantId.delete(sender);
-      world.participantIdToParticipant.delete(participantId);
+      world.userIdToParticipantId.delete(userId);
+      world.participantIdToUserId.delete(participantId);
     });
-  };
+  }
 
-  groupCall.on("datachannel", onDatachannel);
+  function onRemoveParticipant(userId: string) {
+    const index = world.participantChannels.findIndex(
+      (participantChannel) => participantChannel.userId === userId
+    );
+
+    if (index !== -1) {
+      world.participantChannels.splice(index, 1);
+    }
+
+    const participantId = world.userIdToParticipantId.get(userId);
+    world.userIdToParticipantId.delete(userId);
+    world.participantIdToUserId.delete(participantId!);
+  }
 
   const ReceiveMessagesSystem = (world: World) => {
     while (inboundNetworkMessages.length) {
@@ -228,15 +230,13 @@ export function NetworkingModule(
         Networked.templateId[eid] = message.templateId!;
         Networked.networkId[eid] = message.networkId;
         Networked.lastOwned[eid] = message.lastOwned!;
-        Networked.ownerId[eid] = world.participantToParticipantId.get(
-          message.sender
-        )!;
+        Networked.ownerId[eid] = message.senderId;
         const template = world.networkTemplates[message.templateId!];
         world.networkIdToEntity.set(message.networkId, eid);
 
         template.onCreate(
           world,
-          message.sender,
+          message.senderId,
           eid,
           message.networkId,
           message.data
@@ -252,7 +252,7 @@ export function NetworkingModule(
 
         template.onUpdate(
           world,
-          message.sender,
+          message.senderId,
           entityId,
           message.networkId,
           message.data
@@ -262,7 +262,7 @@ export function NetworkingModule(
         const templateId = Networked.templateId[entityId];
         const template = world.networkTemplates[templateId];
 
-        template.onDelete(world, message.sender, entityId, message.networkId);
+        template.onDelete(world, message.senderId, entityId, message.networkId);
       }
     }
 
@@ -283,8 +283,8 @@ export function NetworkingModule(
       d: data,
     });
 
-    for (let i = 0; i < participantChannels.length; i++) {
-      participantChannels[i].datachannel.send(createPayload);
+    for (let i = 0; i < world.participantChannels.length; i++) {
+      world.participantChannels[i].datachannel.send(createPayload);
     }
   }
 
@@ -310,8 +310,8 @@ export function NetworkingModule(
       d: data,
     });
 
-    for (let i = 0; i < participantChannels.length; i++) {
-      const participantChannel = participantChannels[i];
+    for (let i = 0; i < world.participantChannels.length; i++) {
+      const participantChannel = world.participantChannels[i];
 
       let payload;
 
@@ -331,8 +331,8 @@ export function NetworkingModule(
       n: networkId,
     });
 
-    for (let i = 0; i < participantChannels.length; i++) {
-      participantChannels[i].datachannel.send(deletePayload);
+    for (let i = 0; i < world.participantChannels.length; i++) {
+      world.participantChannels[i].datachannel.send(deletePayload);
     }
   }
 
@@ -385,8 +385,8 @@ export function NetworkingModule(
         broadcastDeleteMessage(networkId);
       }
 
-      for (let i = 0; i < participantChannels.length; i++) {
-        participantChannels[i].firstSync = false;
+      for (let i = 0; i < world.participantChannels.length; i++) {
+        world.participantChannels[i].firstSync = false;
       }
 
       lastNetworkTick = now;
@@ -396,12 +396,18 @@ export function NetworkingModule(
   };
 
   const dispose = () => {
-    for (const { datachannel } of participantChannels) {
+    for (const { datachannel } of world.participantChannels) {
       datachannel.close();
     }
 
-    groupCall.removeListener("datachannel", onDatachannel);
+    world.participantChannels.length = 0;
   };
 
-  return { ReceiveMessagesSystem, SendMessagesSystem, dispose };
+  return {
+    ReceiveMessagesSystem,
+    SendMessagesSystem,
+    dispose,
+    onAddParticipant,
+    onRemoveParticipant,
+  };
 }

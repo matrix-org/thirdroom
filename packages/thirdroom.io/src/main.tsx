@@ -1,7 +1,7 @@
 import "./global.css";
 import React from "react";
 import ReactDOM from "react-dom";
-import { HashRouter, Switch, Route, useLocation } from "react-router-dom";
+import { HashRouter, Switch, Route } from "react-router-dom";
 import {
   DashboardPage,
   AuthenticatedRoute,
@@ -10,10 +10,11 @@ import {
   LoginPage,
   RegisterPage,
   NotFoundPage,
-  CreateRoomModal,
-  ProfileModal,
+  MatrixRoomManager,
 } from "@thirdroom/core";
 import { HomePage } from "./HomePage";
+
+const roomManager = new MatrixRoomManager();
 
 function Routes() {
   return (
@@ -24,24 +25,16 @@ function Routes() {
           redirectPath="/dashboard"
           path="/"
           exact
-        >
-          <HomePage />
-        </AuthenticatedRoute>
-        <AuthenticatedRoute path="/dashboard">
-          <DashboardPage />
-        </AuthenticatedRoute>
-        <Route path="/login" exact>
-          <LoginPage />
-        </Route>
-        <Route path="/register" exact>
-          <RegisterPage />
-        </Route>
-        <Route path="/room/:roomId*">
-          <RoomPage />
-        </Route>
-        <Route path="*">
-          <NotFoundPage />
-        </Route>
+          component={HomePage}
+        />
+        <AuthenticatedRoute path="/dashboard" component={DashboardPage} />
+        <Route path="/login" exact component={LoginPage} />
+        <Route path="/register" exact component={RegisterPage} />
+        <Route
+          path="/room/:roomId*"
+          render={() => <RoomPage roomManager={roomManager} />}
+        />
+        <Route path="*" component={NotFoundPage} />
       </Switch>
     </HashRouter>
   );

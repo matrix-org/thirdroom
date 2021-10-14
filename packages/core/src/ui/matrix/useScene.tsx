@@ -55,36 +55,42 @@ export function useScene(room?: Room) {
     };
   }, [room]);
 
-  const changeSceneUrl = useCallback(async (newMxcSceneUrl: string): Promise<string | undefined> => {
-    if (!client || !room) {
-      throw new Error("Room is not set");
-    }
+  const changeSceneUrl = useCallback(
+    async (newMxcSceneUrl: string): Promise<string | undefined> => {
+      if (!client || !room) {
+        throw new Error("Room is not set");
+      }
 
-    await client.sendStateEvent(
-      room.roomId,
-      "me.robertlong.scene",
-      {
-        sceneUrl: newMxcSceneUrl,
-      },
-      ""
-    )
+      await client.sendStateEvent(
+        room.roomId,
+        "me.robertlong.scene",
+        {
+          sceneUrl: newMxcSceneUrl,
+        },
+        ""
+      );
 
-    const sceneUrl = client.mxcUrlToHttp(newMxcSceneUrl) || undefined;
+      const sceneUrl = client.mxcUrlToHttp(newMxcSceneUrl) || undefined;
 
-    setSceneUrl(sceneUrl);
+      setSceneUrl(sceneUrl);
 
-    return sceneUrl;
-  }, [room, client]);
+      return sceneUrl;
+    },
+    [room, client]
+  );
 
-  const uploadAndChangeScene = useCallback(async (scene: File | Blob): Promise<string | undefined> => {
-    if (!client || !room) {
-      throw new Error("Room is not set");
-    }
+  const uploadAndChangeScene = useCallback(
+    async (scene: File | Blob): Promise<string | undefined> => {
+      if (!client || !room) {
+        throw new Error("Room is not set");
+      }
 
-    const newMxcSceneUrl = await client.uploadContent(scene);
+      const newMxcSceneUrl = await client.uploadContent(scene);
 
-    return changeSceneUrl(newMxcSceneUrl);
-  }, [room, client, changeSceneUrl]);
+      return changeSceneUrl(newMxcSceneUrl);
+    },
+    [room, client, changeSceneUrl]
+  );
 
   return { sceneUrl, changeSceneUrl, uploadAndChangeScene };
 }
