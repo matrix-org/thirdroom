@@ -163,7 +163,7 @@ export async function initWorld(
 
   const { LinkSystem } = LinkModule(world, { onChangeRoom });
 
-  const { setSceneUrl } = await EnvironmentModule(world, { initialSceneUrl });
+  const { setSceneUrl } = await EnvironmentModule(world, { initialSceneUrl, audioListener });
 
   const { PhysicsSystem } = await PhysicsModule(world);
 

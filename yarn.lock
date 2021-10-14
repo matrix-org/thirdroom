@@ -4844,6 +4844,11 @@ text-extensions@^1.0.0:
   resolved "https://registry.yarnpkg.com/text-extensions/-/text-extensions-1.9.0.tgz#1853e45fee39c945ce6f6c36b2d659b5aabc2a26"
   integrity sha512-wiBrwC1EhBelW12Zy26JeOUkQ5mRu+5o8rpsJk5+2t+Y5vE7e842qtZDQ2g1NpX/29HdyFeJ4nSIhI47ENSxlQ==
 
+three-omi@^0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/three-omi/-/three-omi-0.0.1.tgz#6cc7170d09f8d8cd1f5b6357c705a890169a0167"
+  integrity sha512-8NGetSwTPf6EvvO/ByxJnqcMbCjKp0Dm7PygbRMLCqMduempTlY+cGtpLI214JZTgGwnef0JHmMAEKRXzarIpQ==
+
 three@^0.132.2:
   version "0.132.2"
   resolved "https://registry.yarnpkg.com/three/-/three-0.132.2.tgz#95eb1856147237c03e887cbbe56f964b6fb40b5e"

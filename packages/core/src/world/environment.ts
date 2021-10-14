@@ -1,4 +1,5 @@
 import {
+  AudioListener,
   AmbientLight,
   Object3D,
   Mesh,
@@ -13,10 +14,14 @@ import { addObject3DEntity, getObject3D, setObject3D } from "./three";
 import { World } from "./World";
 import { addRigidBodyComponent } from "./physics";
 import { addLinkComponent } from "./links";
+import { GLTFAudioEmitterExtension } from "three-omi";
 
 export async function EnvironmentModule(
   world: World,
-  { initialSceneUrl }: { initialSceneUrl?: string }
+  {
+    initialSceneUrl,
+    audioListener,
+  }: { initialSceneUrl?: string; audioListener: AudioListener }
 ) {
   const scene = getObject3D(world, world.sceneEid);
   world.environmentEid = addObject3DEntity(world, new Object3D(), scene);
@@ -27,6 +32,10 @@ export async function EnvironmentModule(
     const { scene } = await gltfLoader.loadAsync(sceneUrl);
 
     setObject3D(world, world.environmentEid, scene);
+
+    gltfLoader.register(
+      (parser) => new GLTFAudioEmitterExtension(parser, audioListener)
+    );
 
     scene.traverse((child: any) => {
       if (child === scene) {
