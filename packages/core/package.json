@@ -61,6 +61,6 @@
   },
   "dependencies": {
     "react-modal": "^3.14.3",
-    "three-omi": "^0.0.1"
+    "three-omi": "^0.1.2"
   }
 }
