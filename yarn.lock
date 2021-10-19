@@ -1121,22 +1121,6 @@
     request "^2.88.2"
     unhomoglyph "^1.0.6"
 
-"@robertlong/matrix-js-sdk@^12.5.0-dev7":
-  version "12.5.0-dev9"
-  resolved "https://registry.yarnpkg.com/@robertlong/matrix-js-sdk/-/matrix-js-sdk-12.5.0-dev9.tgz#dc26c48b55db91f6c52b3ef83f8ca492a02962b7"
-  integrity sha512-Jc2DknJghLGVstCo4bk1WSWFg0+/0HTqMqq0/+ViqALXvx6yVa9uM5q4rVEm+TquumO4CsGbP1tcMNBrhMbyUA==
-  dependencies:
-    "@babel/runtime" "^7.12.5"
-    another-json "^0.2.0"
-    browser-request "^0.3.3"
-    bs58 "^4.0.1"
-    content-type "^1.0.4"
-    loglevel "^1.7.1"
-    p-retry "^4.5.0"
-    qs "^6.9.6"
-    request "^2.88.2"
-    unhomoglyph "^1.0.6"
-
 "@rollup/pluginutils@^4.1.1":
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-4.1.1.tgz#1d4da86dd4eded15656a57d933fda2b9a08d47ec"
@@ -4962,10 +4946,10 @@ text-extensions@^1.0.0:
   resolved "https://registry.yarnpkg.com/text-extensions/-/text-extensions-1.9.0.tgz#1853e45fee39c945ce6f6c36b2d659b5aabc2a26"
   integrity sha512-wiBrwC1EhBelW12Zy26JeOUkQ5mRu+5o8rpsJk5+2t+Y5vE7e842qtZDQ2g1NpX/29HdyFeJ4nSIhI47ENSxlQ==
 
-three-omi@^0.1.2:
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/three-omi/-/three-omi-0.1.2.tgz#b490a575436f33f3086a9806fe24fc84c0fb8f6e"
-  integrity sha512-ylo6pf/396UhWryqY8+KPvUXXba1Jm6C+p5Q86SZdDQqd9WNuFUdtCS9ZHk0XSh84nTHY/3+gCKAW530bD4gbQ==
+three-omi@^0.1.3:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/three-omi/-/three-omi-0.1.3.tgz#97f5a4103ae46f8e553ad4509cdf8d5796af1670"
+  integrity sha512-Ot80ZwSHz7FmIMMRWOHbBAc5t0U0S4TCsQw5SvTbceZH2CToH+aNMHZk8Fmro+eKI31njx6z66Sy84T/v2JwIw==
 
 three@^0.132.2:
   version "0.132.2"

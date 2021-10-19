@@ -29,13 +29,13 @@ export async function EnvironmentModule(
   async function setSceneUrl(sceneUrl: string) {
     const gltfLoader = new GLTFLoader();
 
-    const { scene } = await gltfLoader.loadAsync(sceneUrl);
-
-    setObject3D(world, world.environmentEid, scene);
-
     gltfLoader.register(
       (parser) => new GLTFAudioEmitterExtension(parser, audioListener)
     );
+
+    const { scene } = await gltfLoader.loadAsync(sceneUrl);
+
+    setObject3D(world, world.environmentEid, scene);
 
     scene.traverse((child: any) => {
       if (child === scene) {
