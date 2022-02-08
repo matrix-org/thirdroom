@@ -21,7 +21,9 @@ A browser-based open metaverse client
 - [Rapier.js](https://rapier.rs/) WASM based physics engine
 - Implements the [Open Metaverse Interoperability group](https://omigroup.org)'s standards for glTF extensions
 
-📺 [Watch the talk here](https://youtu.be/e26UJRCGfGk?t=2266)
+[Learn more about Third Room and our roadmap here](https://github.com/matrix-org/thirdroom/discussions/20)
+
+## NOTE 2/8/2022: This project is undergoing a transition from a personal side project to a full time project managed by a team. We will be doing large refactoring of the repository in the coming weeks. Please do not start new projects against this repo as-is!
 
 ## Local Development
 
@@ -41,6 +43,7 @@ Thirdroom comes configured out of the box to communicate with the thirdroom.io h
 ## Hosting your own server
 
 Thirdroom is a single page web app and can be hosted on a wide variety of services including:
+
 - [Netlify](https://www.netlify.com/)
 - [Cloudflare Worker Sites](https://developers.cloudflare.com/workers/platform/sites)
 - [Digital Ocean App Platform](https://www.digitalocean.com/products/app-platform/)
@@ -49,6 +52,7 @@ Thirdroom is a single page web app and can be hosted on a wide variety of servic
 - And many many more!
 
 You can also host the client yourself with:
+
 - [Caddy](https://caddyserver.com/docs/)
 - [Nginx](https://nginx.org)
 - Or any other web server
@@ -58,6 +62,7 @@ There is one main requirement for hosting, URL rewriting. Thirdroom only emits a
 The client currently includes one environment variable: `MATRIX_HOMESERVER_URL`. You'll want to set this to the path to your Matrix homeserver. Otherwise your client will be set to `https://matrix.thirdroom.io`. Which is fine in development, but you'll want to change it when testing against your own homeserver or deploying to production.
 
 Example:
+
 ```
 MATRIX_HOMESERVER_URL=https://matrix.thirdroom.io yarn build
 ```
@@ -87,21 +92,21 @@ matrix_domain: thirdroom.io
 # you won't be required to define this variable (see `docs/configuring-playbook-ssl-certificates.md`).
 #
 # Example value: someone@example.com
-matrix_ssl_lets_encrypt_support_email: 'xxxxxx'
+matrix_ssl_lets_encrypt_support_email: "xxxxxx"
 
 # A shared secret (between Coturn and Synapse) used for authentication.
 # You can put any string here, but generating a strong one is preferred (e.g. `pwgen -s 64 1`).
-matrix_coturn_turn_static_auth_secret: 'xxxxxx'
+matrix_coturn_turn_static_auth_secret: "xxxxxx"
 
 # A secret used to protect access keys issued by the server.
 # You can put any string here, but generating a strong one is preferred (e.g. `pwgen -s 64 1`).
-matrix_synapse_macaroon_secret_key: 'xxxxxx'
+matrix_synapse_macaroon_secret_key: "xxxxxx"
 
 # A Postgres password to use for the superuser Postgres user (called `matrix` by default).
 #
 # The playbook creates additional Postgres users and databases (one for each enabled service)
 # using this superuser account.
-matrix_postgres_connection_password: 'xxxxxx'
+matrix_postgres_connection_password: "xxxxxx"
 
 matrix_synapse_workers_enabled: true
 
@@ -123,6 +128,7 @@ matrix_synapse_rc_message:
 Thirdroom.io is hosted on a Shared 2 CPU, 2GB RAM Digital Ocean box that costs $15/mo. You could go with a cheaper or more expensive option on any host you please. Because we rely on homeserver federation for fetching rooms on other servers, you probably should pick an option with at least 2GB of RAM and 2 CPUs, but you may be able to get away with less with little to no performance cost.
 
 > ## NOTE:
+>
 > Your server hardware will not affect your room capacity in thirdroom! Voice/Datachannels are established over peer to peer WebRTC connections. This means that room capacity is largely dependent on your user's network bandwidth. If you have expensive scenes to render that will also make it harder for your room to achieve larger numbers of users. You shouldn't expect more than around 12 concurrent users in a room.
 
 You will need to configure Synapse to use a TURN server. The matrix-docker-ansible-deploy comes with one ([Coturn](https://github.com/coturn/coturn)) configured out of the box.
