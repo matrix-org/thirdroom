@@ -8,7 +8,7 @@ import {
   createRouter,
 } from 'hydrogen-view-sdk';
 import assetPaths from './assetPaths';
-import { RootViewModel } from './viewModels/RoomViewModel';
+import { RootViewModel } from './viewModels/RootViewModel';
 import { RootView } from './ui/views/RootView'
 
 function renderRootView(root: HTMLElement, vm: RootViewModel) {

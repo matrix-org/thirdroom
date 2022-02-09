@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { RootViewModel } from "../../viewModels/RoomViewModel";
+import { RootViewModel } from "../../viewModels/RootViewModel";
 
 import { SessionView } from './SessionView';
 import { LoginView } from './LoginView';
