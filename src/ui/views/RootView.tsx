@@ -5,23 +5,14 @@ import { RootViewModel } from "../../viewModels/RootViewModel";
 import { SessionView } from './SessionView';
 import { LoginView } from './LoginView';
 
+import { useVMProp } from '../hooks/useVMProp';
+
 interface IRootView {
   vm: RootViewModel,
 };
 
 export function RootView({ vm }: IRootView) {
-  const [activeSection, setActiveSection] = useState(vm.activeSection);
-
-  useEffect(() => {
-    const dispose = vm.disposableOn('change', (changedProp: string) => {
-      console.log(changedProp, ': ', vm.activeSection);
-      if (changedProp === 'activeSection') {
-        setActiveSection(vm.activeSection);
-      }
-    });
-
-    return () => dispose();
-  }, [vm]);
+  const activeSection = useVMProp(vm, 'activeSection');
   
   switch (activeSection) {
     case 'login': return vm.loginViewModel !== null
