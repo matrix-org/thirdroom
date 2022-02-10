@@ -20,77 +20,74 @@ export class RootViewModel extends ViewModel {
   }
 
   async load() { 
-    this.navigation.observe('login').subscribe(() => {
-      this._applyNavigation()
-      console.log(`navigation changes: login`)
-    });
-    this.navigation.observe('session').subscribe(() => {
-      this._applyNavigation()
-      console.log(`navigation changes: session`)
-    });
+    this.navigation.observe('login').subscribe(() => this._applyNavigation());
+    this.navigation.observe('session').subscribe(() => this._applyNavigation());
     this._applyNavigation();
   }
 
   private async _applyNavigation() {
     const loginSegment = this.navigation.path.get('login');
     const sessionSegment = this.navigation.path.get('session');
-    console.log(loginSegment, sessionSegment)
 
-    if (loginSegment) {
-      this._viewLogin(loginSegment);
-    } else if (sessionSegment) {
-      this._viewSession(sessionSegment);
-    }else {
+    const loadOrLogin = async () => {
       const sessions = await this.platform.sessionInfoStorage.getAll();
-      if (sessions.length === 0) {
-        this.navigation.push('login');
-      } else {
+      if (sessions.length > 0) {
         this.navigation.push('session', sessions[0].id);
+      } else {
+        this.navigation.push('login');
       }
     };
+    
+    if (loginSegment) {
+      this._viewLogin();
+      return;
+    }
+    if (sessionSegment) {
+      const sessionId = sessionSegment.value;
+      if (sessionId === true) {
+        loadOrLogin();
+        return;
+      }
+      await this._client.startWithExistingSession(sessionId);
+      if (this._client.loadStatus.get() === 'Error') {
+        loadOrLogin();
+        return;
+      }
+      this._viewSession();
+      return;
+    }
+
+    loadOrLogin();
   }
 
-  private _viewLogin(segment: typeof Segment) {
+  private _viewLogin() {
     this._setSection(() => {
       this._loginViewModel = new LoginViewModel(this.childOptions({
         client: this._client,
         ready: () => {
+          // TODO: pass session id after login
           this.navigation.push('session');
         }
       }));
     });
   }
 
-  private _viewSession(segment: typeof Segment) {
-    // TODO: don't use async await here
-    this._setSection(async () => {
-      let sessionId = segment.value;
-      const sessions = await this.platform.sessionInfoStorage.getAll();
-      if (sessionId === true) {
-        sessionId = sessions[0].id;
-      }
-      if (!sessionId || !sessions.find((session: any) => session.id === sessionId)) {
-        this.navigation.push('login');
-        return;
-      }
-      // TODO: handle login failed.
-      await this._client.startWithExistingSession(sessionId);
-
+  private _viewSession() {
+    this._setSection(() => {
       this._sessionViewModel = new SessionViewModel(this.childOptions({
         client: this._client,
       }));
     });
   }
 
-  private async _setSection(setter: () => void) {
-        this._loginViewModel = this.disposeTracked(this._loginViewModel);
-        this._sessionViewModel = this.disposeTracked(this._sessionViewModel);
-        // TODO: Don't use async await here
-        await setter();
-        this._loginViewModel && this.track(this._loginViewModel);
-        this._sessionViewModel && this.track(this._sessionViewModel);
-        console.log(this.activeSection);
-        this.emitChange('activeSection');
+  private _setSection(setter: () => void) {
+    this._loginViewModel = this.disposeTracked(this._loginViewModel);
+    this._sessionViewModel = this.disposeTracked(this._sessionViewModel);
+    setter();
+    this._loginViewModel && this.track(this._loginViewModel);
+    this._sessionViewModel && this.track(this._sessionViewModel);
+
+    this.emitChange('activeSection');
   }
   
   get activeSection() {
