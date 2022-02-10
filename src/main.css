@@ -1,3 +1,5 @@
+@custom-selector :--heading h1, h2, h3, h4, h5, h6;
+
 :root {
   /* background colors */
   --bg-surface: #ffffff;
@@ -100,11 +102,53 @@ code {
   -webkit-tap-highlight-color: transparent;
 }
 
+:--heading {
+  margin: 0;
+  padding: 0;
+}
+
 a {
   color: var(--tc-link);
   text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 b {
   font-weight: var(--fw-semi-bold);
+}
+label {
+  margin: 0;
+  padding: 0;
+}
+button,
+textarea {
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  border: none;
+}
+button {
+  max-width: 100%;
+  text-transform: none;
+  text-align: inherit;
+  overflow: visible;
+  -webkit-appearance: button;
+}
+textarea,
+input,
+input[type],
+input[type=text],
+input[type=username],
+input[type=password],
+input[type=email], {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
