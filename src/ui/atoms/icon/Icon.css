@@ -1,0 +1,19 @@
+.icon {
+  display: inline-block;
+  mask-repeat: no-repeat;
+  mask-size: cover;
+  background-color: var(--ic-surface-normal);
+
+  background-size: cover;
+  background-repeat: no-repeat;
+
+  &--normal {
+    @util size(var(--ic-normal));
+  }
+  &--small {
+    @util size(var(--ic-normal));
+  }
+  &--extra-small {
+    @util size(var(--ic-normal));
+  }
+}
