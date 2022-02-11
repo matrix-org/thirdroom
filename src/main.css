@@ -43,6 +43,13 @@
   --ic-small: 16px;
   --ic-extra-small: 15px;
 
+  /* icon color */
+  --ic-surface-normal: #000000;
+  --ic-primary-normal: #ffffff;
+  --ic-secondary-normal: #ffffff;
+  --ic-positive-normal: #ffffff;
+  --ic-danger-normal: #ffffff;
+
   /* avatar sizes */
   --av-large: 50px;
   --av-normal: 35px;
