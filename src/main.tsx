@@ -4,6 +4,7 @@ import './main.css'
 
 import {
   Platform,
+  Segment,
   Navigation,
   createRouter,
 } from 'hydrogen-view-sdk';
@@ -20,7 +21,7 @@ function renderRootView(root: HTMLElement, vm: RootViewModel) {
   )
 }
 
-function allowChilds(parent, child) {
+function allowChilds(parent: typeof Segment, child: typeof Segment) {
   const { type } = child;
 
   switch (parent?.type) {
@@ -35,7 +36,7 @@ function allowChilds(parent, child) {
 }
 }
 
-async function getFirstExistingSession(platform) {
+async function getFirstExistingSession(platform: typeof Platform) {
   const sessions = await platform.sessionInfoStorage.getAll();
   if (!sessions) return undefined;
   return sessions[0];
