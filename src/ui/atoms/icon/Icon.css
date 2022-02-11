@@ -11,9 +11,9 @@
     @util size(var(--ic-normal));
   }
   &--small {
-    @util size(var(--ic-normal));
+    @util size(var(--ic-small));
   }
   &--extra-small {
-    @util size(var(--ic-normal));
+    @util size(var(--ic-extra-small));
   }
 }
