@@ -1,16 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @custom-selector :--heading h1, h2, h3, h4, h5, h6;
 
 :root {
   /* background colors */
-  --bg-surface: #ffffff;
-  --bg-primary: #7000ff;
-  --bg-secondary: #1f1f1f;
-  --bg-positive: #45ee42;
-  --bg-danger: #ee4242;
+  --bg-surface: hsl(0, 0%, 100%);
+  --bg-surface-hover: hsl(0, 0%, 90%);
+  --bg-surface-active: hsl(0, 0%, 85%);
+  --bg-primary: hsl(266, 100%, 50%);
+  --bg-primary-hover: hsl(266, 100%, 40%);
+  --bg-primary-active: hsl(266, 100%, 35%);
+  --bg-secondary: hsl(0, 0%, 12%);
+  --bg-secondary-hover: hsl(0, 0%, 22%);
+  --bg-secondary-active: hsl(0, 0%, 27%);
+  --bg-positive: hsl(119, 83%, 60%);
+  --bg-positive-hover: hsl(119, 83%, 50%);
+  --bg-positive-active: hsl(119, 83%, 45%);
+  --bg-danger: hsl(0, 83%, 60%);
+  --bg-danger-hover: hsl(0, 83%, 55%);
+  --bg-danger-active: hsl(0, 83%, 50%);
 
   /* shades colors */
-  --sc-normal: hsla(0, 0, 0, 20%);
-  --sc-low: hsla(0, 0, 0, 10%);
+  --sc-light-normal: hsla(0, 0, 100, 20%);
+  --sc-light-low: hsla(0, 0, 100, 10%);
+  --sc-dark-normal: hsla(0, 0, 0, 20%);
+  --sc-dark-low: hsla(0, 0, 0, 10%);
 
   /* text colors */
   --tc-surface-high: hsl(0, 0%, 12%);
@@ -82,13 +95,14 @@
   --ls-b3: 0px;
 
   /* font weights */
-  --fw-semi-bold: 500;
+  --fw-semi-bold: 600;
+  --fw-medium: 500;
   --fw-regular: 400;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -125,7 +139,7 @@ a {
 b {
   font-weight: var(--fw-semi-bold);
 }
-label {
+p, label {
   margin: 0;
   padding: 0;
 }
