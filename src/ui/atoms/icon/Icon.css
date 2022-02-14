@@ -1,5 +1,10 @@
+@define-mixin size $value {
+  &--$(value) {
+    @util size(var(--ic-$value));
+  }
+}
+
 .icon {
-  display: inline-block;
   mask-repeat: no-repeat;
   mask-size: cover;
   background-color: var(--ic-surface-normal);
@@ -7,13 +12,7 @@
   background-size: cover;
   background-repeat: no-repeat;
 
-  &--normal {
-    @util size(var(--ic-normal));
-  }
-  &--small {
-    @util size(var(--ic-small));
-  }
-  &--extra-small {
-    @util size(var(--ic-extra-small));
-  }
+  @mixin size normal;
+  @mixin size small;
+  @mixin size extra-small;
 }
