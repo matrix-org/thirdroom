@@ -168,7 +168,7 @@ input[type],
 input[type=text],
 input[type=username],
 input[type=password],
-input[type=email], {
+input[type=email] {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;

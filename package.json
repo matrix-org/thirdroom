@@ -1,5 +1,5 @@
 {
-  "name": "thirdroom-ui",
+  "name": "thirdroom",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "hydrogen-view-sdk": "^0.0.5",
+    "postcss": "^8.4.6",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },
@@ -15,12 +16,7 @@
     "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@vitejs/plugin-react": "^1.0.7",
-    "postcss-extend": "^1.0.5",
-    "postcss-import": "^14.0.2",
-    "postcss-mixins": "^9.0.1",
-    "postcss-nested": "^5.0.6",
     "postcss-preset-env": "^7.3.1",
-    "postcss-utilities": "^0.8.4",
     "typescript": "^4.4.4",
     "vite": "^2.7.2"
   }

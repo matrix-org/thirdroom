@@ -27,7 +27,7 @@ export function Button({
 }: IButton) {
   return (
     <button
-      className={`${className ? `${className} ` : ''}btn btn-${variant} btn--${size}`}
+      className={`${className ? `${className} ` : ''}Button Button-${variant} Button--${size}`}
       type={type}
       onClick={onClick}
       disabled={disabled}

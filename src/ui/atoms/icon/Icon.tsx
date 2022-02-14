@@ -24,5 +24,5 @@ export function Icon({
     style.maskImage = `url(${src})`;
   }
 
-  return <span className={`icon icon--${size}`} style={style} />;
+  return <span className={`Icon Icon--${size}`} style={style} />;
 }

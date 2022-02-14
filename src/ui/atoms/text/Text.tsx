@@ -21,7 +21,7 @@ export function Text({
   const classes = [];
   if (className) classes.push(className);
 
-  classes.push(`text text-${variant} text-w--${weight}`);
+  classes.push(`Text Text-${variant} Text--${weight}`);
 
   const textClass = classes.join(' ');
   if (type === 'span') return <span className={textClass} style={style}>{ children }</span>;
