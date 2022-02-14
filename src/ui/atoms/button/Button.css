@@ -1,0 +1,63 @@
+@define-mixin variant $name {
+  &-$(name) {
+    background-color: var(--bg-$(name));
+    .text {
+      color: var(--tc-$(name)-high);
+      font-weight: var(--fw-semi-bold);
+    }
+    .icon {
+      background-color: var(--ic-$(name)-normal);
+    }
+    
+    @media (hover: hover) {
+      &:hover {
+        background-color: var(--bg-$(name)-hover);
+      }
+    }
+    &:focus {
+      outline: none;
+      box-shadow: var(--bg-$(name)-hover);
+    }
+    &:active {
+      background-color: var(--bg-$(name)-active);
+    }
+  }
+}
+
+.btn {
+  @util center;
+  border-radius: var(--br-normal);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &--normal {
+    padding: var(--sp-tight) var(--sp-normal);
+  }
+  &--small {
+    padding: var(--sp-extra-tight) var(--sp-tight);
+  }
+  &--extra-small {
+    padding: var(--sp-ultra-tight) var(--sp-extra-tight);
+  }
+
+  &--normal .text:not(:only-child) {
+    padding: 0 var(--sp-extra-tight);
+  }
+  &--small, &--extra-small {
+    .text:not(:only-child) {
+      padding: 0 var(--sp-ultra-tight);
+    }
+  }
+
+  @mixin variant surface;
+  @mixin variant primary;
+  @mixin variant secondary;
+  @mixin variant positive;
+  @mixin variant danger;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: no-drop;
+  }
+}
