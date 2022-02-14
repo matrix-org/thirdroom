@@ -4,7 +4,7 @@ import './Text.css';
 interface IText {
   className?: string | undefined,
   style?: React.CSSProperties | undefined,
-  variant?:'h2' | 's1' | 'b1' | 'b2' | 'b3',
+  variant?: 'h2' | 's1' | 'b1' | 'b2' | 'b3',
   weight?: 'regular' | 'medium' | 'semi-bold',
   type?: undefined | 'span' | 'div',
   children: React.ReactNode,
