@@ -4,8 +4,8 @@
 :root {
   /* background colors */
   --bg-surface: hsl(0, 0%, 100%);
-  --bg-surface-hover: hsl(0, 0%, 90%);
-  --bg-surface-active: hsl(0, 0%, 85%);
+  --bg-surface-hover: hsl(0, 0%, 87%);
+  --bg-surface-active: hsl(0, 0%, 82%);
   --bg-primary: hsl(266, 100%, 50%);
   --bg-primary-hover: hsl(266, 100%, 40%);
   --bg-primary-active: hsl(266, 100%, 35%);
@@ -16,14 +16,14 @@
   --bg-positive-hover: hsl(119, 83%, 50%);
   --bg-positive-active: hsl(119, 83%, 45%);
   --bg-danger: hsl(0, 83%, 60%);
-  --bg-danger-hover: hsl(0, 83%, 55%);
-  --bg-danger-active: hsl(0, 83%, 50%);
+  --bg-danger-hover: hsl(0, 83%, 53%);
+  --bg-danger-active: hsl(0, 83%, 47%);
 
   /* shades colors */
-  --sc-light-normal: hsla(0, 0, 100, 20%);
-  --sc-light-low: hsla(0, 0, 100, 10%);
-  --sc-dark-normal: hsla(0, 0, 0, 20%);
-  --sc-dark-low: hsla(0, 0, 0, 10%);
+  --sc-light-normal: hsla(0, 0%, 100%, 20%);
+  --sc-light-low: hsla(0, 0%, 100%, 10%);
+  --sc-dark-normal: hsla(0, 0%, 0%, 20%);
+  --sc-dark-low: hsla(0, 0%, 0%, 10%);
 
   /* text colors */
   --tc-surface-high: hsl(0, 0%, 12%);
