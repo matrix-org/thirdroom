@@ -134,18 +134,16 @@
 
 /* Button size */
 .Button--normal {
-  padding: var(--sp-tight) var(--sp-normal);
+  padding: var(--sp-tight);
 }
 .Button--small {
-  padding: var(--sp-extra-tight) var(--sp-tight);
+  padding: var(--sp-extra-tight);
 }
 .Button--extra-small {
-  padding: var(--sp-ultra-tight) var(--sp-extra-tight);
+  padding: var(--sp-ultra-tight);
 }
 
-.Button--normal .Text:not(:only-child) {
-  padding: 0 var(--sp-extra-tight);
-}
+.Button--normal,
 .Button--small,
 .Button--extra-small {
   & .Text:not(:only-child) {

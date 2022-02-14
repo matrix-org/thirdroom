@@ -57,7 +57,7 @@
   --ic-extra-small: 15px;
 
   /* icon color */
-  --ic-surface-normal: #000000;
+  --ic-surface-normal: hsl(0, 0%, 12%);
   --ic-primary-normal: #ffffff;
   --ic-secondary-normal: #ffffff;
   --ic-positive-normal: #ffffff;
