@@ -11,6 +11,7 @@ interface IIconButton {
   isCircle?: boolean,
   shadedSurface?: boolean,
   iconSrc: string,
+  label: string,
   type?: 'button' | 'submit' | 'reset',
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean,
@@ -23,6 +24,7 @@ export function IconButton({
   isCircle = false,
   shadedSurface = false,
   iconSrc,
+  label,
   type = 'button',
   onClick,
   disabled = false,
@@ -40,6 +42,7 @@ export function IconButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={label}
     >
       <Icon size={size} src={iconSrc} />
     </RawButton>
