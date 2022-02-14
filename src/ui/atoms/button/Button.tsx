@@ -9,6 +9,7 @@ interface IButton {
   variant?: 'surface' | 'primary' | 'secondary' | 'positive' | 'danger',
   size?: 'normal' | 'small' | 'extra-small',
   iconSrc?: string,
+  iconPlacement?: 'start' | 'end',
   type?: 'button' | 'submit' | 'reset',
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
   children: React.ReactNode,
@@ -20,11 +21,14 @@ export function Button({
   variant = 'surface',
   size = 'normal',
   iconSrc = undefined,
+  iconPlacement = 'start',
   type = 'button',
   onClick,
   children,
   disabled = false,
 }: IButton) {
+  const icon =  iconSrc ? <Icon size={size} src={iconSrc} /> : null;
+
   return (
     <button
       className={`${className ? `${className} ` : ''}Button Button-${variant} Button--${size}`}
@@ -32,11 +36,12 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
     >
-      { iconSrc && <Icon size={size} src={iconSrc} />}
+      { iconPlacement === 'start' && icon }
       { typeof children === 'string'
         ? <Text variant={size === 'extra-small' ? 'b3' : 'b2'}>{children}</Text>
         : children
       }
+      { iconPlacement === 'end' && icon }
     </button>
   );
 }
