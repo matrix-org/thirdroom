@@ -3,132 +3,9 @@
   justify-content: center;
   align-items: center;
   border-radius: var(--br-normal);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: no-drop;
-  }
   & .Text {
     font-weight: var(--fw-semi-bold);
-  }
-}
-
-/* Button variant */
-.Button-surface {
-  background-color: var(--bg-surface);
-  & .Text {
-    color: var(--tc-surface-high);
-  }
-  & .Icon {
-    background-color: var(--ic-surface-normal);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--bg-surface-hover);
-    }
-  }
-  &:focus {
-    outline: none;
-    box-shadow: var(--bg-surface-hover);
-  }
-  &:active {
-    background-color: var(--bg-surface-active);
-  }
-}
-
-.Button-primary {
-  background-color: var(--bg-primary);
-  & .Text {
-    color: var(--tc-primary-high);
-  }
-  & .Icon {
-    background-color: var(--ic-primary-normal);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--bg-primary-hover);
-    }
-  }
-  &:focus {
-    outline: none;
-    box-shadow: var(--bg-primary-hover);
-  }
-  &:active {
-    background-color: var(--bg-primary-active);
-  }
-}
-
-.Button-secondary {
-  background-color: var(--bg-secondary);
-  & .Text {
-    color: var(--tc-secondary-high);
-  }
-  & .Icon {
-    background-color: var(--ic-secondary-normal);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--bg-secondary-hover);
-    }
-  }
-  &:focus {
-    outline: none;
-    box-shadow: var(--bg-secondary-hover);
-  }
-  &:active {
-    background-color: var(--bg-secondary-active);
-  }
-}
-
-.Button-positive {
-  background-color: var(--bg-positive);
-  & .Text {
-    color: var(--tc-positive-high);
-  }
-  & .Icon {
-    background-color: var(--ic-positive-normal);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--bg-positive-hover);
-    }
-  }
-  &:focus {
-    outline: none;
-    box-shadow: var(--bg-positive-hover);
-  }
-  &:active {
-    background-color: var(--bg-positive-active);
-  }
-}
-
-.Button-danger {
-  background-color: var(--bg-danger);
-  & .Text {
-    color: var(--tc-danger-high);
-  }
-  & .Icon {
-    background-color: var(--ic-danger-normal);
-  }
-  
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--bg-danger-hover);
-    }
-  }
-  &:focus {
-    outline: none;
-    box-shadow: var(--bg-danger-hover);
-  }
-  &:active {
-    background-color: var(--bg-danger-active);
   }
 }
 
@@ -141,6 +18,7 @@
 }
 .Button--extra-small {
   padding: var(--sp-ultra-tight);
+  border-radius: var(--br-small);
 }
 
 .Button--normal,

@@ -1,0 +1,123 @@
+.RawButton-surface,
+.RawButton-primary,
+.RawButton-secondary,
+.RawButton-positive,
+.RawButton-danger {
+  cursor: pointer;
+  transition: background-color 100ms ease-in-out;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: no-drop;
+  }
+}
+
+.RawButton-surface {
+  background-color: var(--bg-surface);
+  & .Text {
+    color: var(--tc-surface-high);
+  }
+  & .Icon {
+    background-color: var(--ic-surface-normal);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-surface-hover);
+    }
+  }
+  &:focus {
+    box-shadow: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.RawButton-primary {
+  background-color: var(--bg-primary);
+  & .Text {
+    color: var(--tc-primary-high);
+  }
+  & .Icon {
+    background-color: var(--ic-primary-normal);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-primary-hover);
+    }
+  }
+  &:focus {
+    box-shadow: var(--bg-primary-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-active);
+  }
+}
+
+.RawButton-secondary {
+  background-color: var(--bg-secondary);
+  & .Text {
+    color: var(--tc-secondary-high);
+  }
+  & .Icon {
+    background-color: var(--ic-secondary-normal);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-secondary-hover);
+    }
+  }
+  &:focus {
+    box-shadow: var(--bg-secondary-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-active);
+  }
+}
+
+.RawButton-positive {
+  background-color: var(--bg-positive);
+  & .Text {
+    color: var(--tc-positive-high);
+  }
+  & .Icon {
+    background-color: var(--ic-positive-normal);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-positive-hover);
+    }
+  }
+  &:focus {
+    box-shadow: var(--bg-positive-hover);
+  }
+  &:active {
+    background-color: var(--bg-positive-active);
+  }
+}
+
+.RawButton-danger {
+  background-color: var(--bg-danger);
+  & .Text {
+    color: var(--tc-danger-high);
+  }
+  & .Icon {
+    background-color: var(--ic-danger-normal);
+  }
+  
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-danger-hover);
+    }
+  }
+  &:focus {
+    box-shadow: var(--bg-danger-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-active);
+  }
+}

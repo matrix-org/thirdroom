@@ -3,6 +3,7 @@ import './Button.css';
 
 import { Text } from '../text/Text';
 import { Icon } from '../icon/Icon';
+import { RawButton } from './RawButton';
 
 interface IButton {
   className?: string,
@@ -28,10 +29,14 @@ export function Button({
   disabled = false,
 }: IButton) {
   const icon =  iconSrc ? <Icon size={size} src={iconSrc} /> : null;
-
+  const classes: string[] = [];
+  if (className) classes.push(className);
+  classes.push(`Button Button--${size}`);
+  
   return (
-    <button
-      className={`${className ? `${className} ` : ''}Button Button-${variant} Button--${size}`}
+    <RawButton
+      className={classes.join(' ')}
+      variant={variant}
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -42,6 +47,6 @@ export function Button({
         : children
       }
       { iconPlacement === 'end' && icon }
-    </button>
+    </RawButton>
   );
 }
