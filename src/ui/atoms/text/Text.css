@@ -1,0 +1,29 @@
+@define-mixin variant $type {
+  &-$(type) {
+    font-size: var(--fs-$type);
+    letter-spacing: var(--ls-$type);
+    line-height: var(--lh-$type);
+  }
+}
+
+@define-mixin weight $type {
+  &-w--$(type) {
+    font-weight: var(--fw-$type);
+  }
+}
+
+.text {
+  margin: 0;
+  padding: 0;
+  color: var(--tc-surface-high);
+  
+  @mixin variant h2;
+  @mixin variant s1;
+  @mixin variant b2;
+  @mixin variant b1;
+  @mixin variant b3;
+
+  @mixin weight regular;
+  @mixin weight medium;
+  @mixin weight semi-bold;
+}
