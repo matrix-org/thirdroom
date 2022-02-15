@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import './RootView.css';
 
 import { RootViewModel } from "../../viewModels/RootViewModel";
 
+import { Text } from "../atoms/text/Text";
 import { SessionView } from './SessionView';
 import { LoginView } from './LoginView';
 
@@ -14,14 +16,11 @@ interface IRootView {
 export function RootView({ vm }: IRootView) {
   const activeSection = useVMProp(vm, 'activeSection');
   
-  switch (activeSection) {
-    case 'login': return vm.loginViewModel !== null
-      ? <LoginView vm={vm.loginViewModel} />
-      : <p>failed to load loginViewModel</p>;
-    case 'session': return vm.sessionViewModel !== null
-      ? <SessionView vm={vm.sessionViewModel} />
-      : <p>failed to load sessionViewModel</p>;
-    case 'error': return <p>Loading failed</p>;
-    default: return <p>Something went wrong!</p>
-  }
+  return (
+    <div className="RootView">
+      {activeSection === 'login' && <LoginView vm={vm.loginViewModel!} />}
+      {activeSection === 'session' && <SessionView vm={vm.sessionViewModel!} />}
+      {activeSection === 'error' && <Text>Error occurred</Text>}
+    </div>
+  );
 }

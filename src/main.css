@@ -100,13 +100,22 @@
   --fw-regular: 400;
 }
 
+html, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
+  height: 100%;
+  background-color: var(--bg-surface);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-variant-ligatures: no-contextual;
+
   font-size: var(--fs-b1);
   line-height: var(--lh-b1);
   letter-spacing: var(--ls-b1);
