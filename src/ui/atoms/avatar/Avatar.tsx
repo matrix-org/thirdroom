@@ -24,7 +24,7 @@ export function Avatar({
   if (size === 'extra-small') textSize = 'b3';
   
   const classes = ['Avatar'];
-  classes.push(`Avatar-${size}`)
+  classes.push(`Avatar--${size}`)
   if (isCircle) classes.push('Avatar--circle');
   classes.push('noselect');
 

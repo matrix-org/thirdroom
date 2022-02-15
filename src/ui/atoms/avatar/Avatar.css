@@ -18,19 +18,19 @@
   }
 }
 
-.Avatar-large {
+.Avatar--large {
   width: var(--av-large);
   height: var(--av-large);
 }
-.Avatar-normal {
+.Avatar--normal {
   width: var(--av-normal);
   height: var(--av-normal);
 }
-.Avatar-small {
+.Avatar--small {
   width: var(--av-small);
   height: var(--av-small);
 }
-.Avatar-extra-small {
+.Avatar--extra-small {
   width: var(--av-extra-small);
   height: var(--av-extra-small);
   border-radius: var(--br-small);
