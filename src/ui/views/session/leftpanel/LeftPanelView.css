@@ -1,0 +1,4 @@
+.LeftPanelView {
+  display: flex;
+  background-color: var(--bg-surface);
+}

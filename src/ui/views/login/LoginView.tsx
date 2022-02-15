@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { LoginViewModel } from '../../viewModels/LoginViewModel';
+import { LoginViewModel } from '../../../viewModels/LoginViewModel';
 
 interface ILoginView {
   vm: LoginViewModel,
