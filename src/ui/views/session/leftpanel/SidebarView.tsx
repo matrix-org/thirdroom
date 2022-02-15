@@ -10,7 +10,7 @@ import SearchIC from '../../../../../res/ic/search.svg';
 
 export function SidebarView() {
   return (
-    <div className="SidebarView">
+    <div className="SidebarView flex flex-column items-center">
       <IconButton
         label="Home"
         variant="secondary"

@@ -16,7 +16,7 @@ export function SessionView({ vm }: ISessionView) {
   window.svm = vm;
   
   return (
-    <div className="SessionView">
+    <div className="SessionView flex">
       <LeftPanelView />
       <RoomView />
     </div>

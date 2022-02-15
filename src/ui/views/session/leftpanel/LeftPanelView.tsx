@@ -6,7 +6,7 @@ import { RoomListView } from "./RoomListView";
 
 export function LeftPanelView() {
   return (
-    <div className="LeftPanelView">
+    <div className="LeftPanelView flex">
       <SidebarView />
       <RoomListView />
     </div>
