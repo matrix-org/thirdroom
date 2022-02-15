@@ -4,6 +4,7 @@ import './SessionView.css';
 import { SessionViewModel } from '../../../viewModels/SessionViewModel';
 
 import { LeftPanelView } from './leftpanel/LeftPanelView';
+import { RoomView } from './room/RoomView';
 
 interface ISessionView {
   vm: SessionViewModel,
@@ -17,6 +18,7 @@ export function SessionView({ vm }: ISessionView) {
   return (
     <div className="SessionView">
       <LeftPanelView />
+      <RoomView />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 .LeftPanelView {
   display: flex;
   background-color: var(--bg-surface);
+  border-right: 1px solid red;
 }

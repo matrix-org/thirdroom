@@ -1,4 +1,25 @@
 .RoomListView {
   width: 500px;
+  display: flex;
+  flex-direction: column;
+  
+  & header {
+    display: flex;
+    align-items: center;
+
+    min-height: 110px;
+  }
+}
+
+.RoomListView header,
+.RoomListView__content {
+  padding: 0 var(--sp-extra-loose);
+}
+
+
+.RoomListView__content {
+  flex: 1;
+  min-height: 0;
+
   background-color: var(--sc-dark-low);
 }
