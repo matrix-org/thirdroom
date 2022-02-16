@@ -103,6 +103,9 @@
   --fw-semi-bold: 600;
   --fw-medium: 500;
   --fw-regular: 400;
+
+  /* other */
+  --scrollbar-width: 8px;
 }
 
 html, #root {
