@@ -33,13 +33,7 @@ function allowChilds(parent: typeof Segment, child: typeof Segment) {
         return type === 'chat';
     default:
         return false;
-}
-}
-
-async function getFirstExistingSession(platform: typeof Platform) {
-  const sessions = await platform.sessionInfoStorage.getAll();
-  if (!sessions) return undefined;
-  return sessions[0];
+  }
 }
 
 async function main() {
@@ -69,7 +63,7 @@ async function main() {
   const vm = new RootViewModel({
     platform,
     navigation,
-    urlRouter,
+    urlCreator: urlRouter,
   });
   vm.load();
   window.rootViewModel = vm;
