@@ -1,0 +1,9 @@
+.RoomTile {
+  padding: var(--sp-extra-tight);
+  background-color: var(--sc-dark-low);
+  border-radius: var(--br-normal);
+
+  & .Text {
+    margin: 0 var(--sp-extra-tight);
+  }
+}
