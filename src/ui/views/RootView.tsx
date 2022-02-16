@@ -1,9 +1,9 @@
 import React from "react";
 import './RootView.css';
 
-import { RootViewModel } from "../../viewModels/RootViewModel";
+import { RootViewModel } from '../../viewModels/RootViewModel';
 
-import { Text } from "../atoms/text/Text";
+import { Text } from '../atoms/text/Text';
 import { SessionView } from './session/SessionView';
 import { LoginView } from './login/LoginView';
 

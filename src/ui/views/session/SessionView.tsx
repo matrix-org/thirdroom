@@ -1,7 +1,7 @@
 import React from "react";
 import './SessionView.css';
 
-import { SessionViewModel } from '../../../viewModels/SessionViewModel';
+import { SessionViewModel } from '../../../viewModels/session/SessionViewModel';
 
 import { LeftPanelView } from './leftpanel/LeftPanelView';
 import { RoomView } from './room/RoomView';
@@ -17,7 +17,7 @@ export function SessionView({ vm }: ISessionView) {
   
   return (
     <div className="SessionView flex">
-      <LeftPanelView />
+      <LeftPanelView vm={vm.leftPanelViewModel} />
       <RoomView />
     </div>
   );

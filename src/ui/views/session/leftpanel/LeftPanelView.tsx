@@ -1,14 +1,21 @@
 import React from "react";
 import './LeftPanelView.css';
 
-import { SidebarView } from './SidebarView';
-import { RoomListView } from "./RoomListView";
+import { LeftPanelViewModel } from '../../../../viewModels/session/leftpanel/LeftPanelViewModel';
 
-export function LeftPanelView() {
+import { SidebarView } from './SidebarView';
+import { RoomListView } from './RoomListView';
+
+interface ILeftPanelView {
+  vm: LeftPanelViewModel,
+}
+
+export function LeftPanelView({ vm }: ILeftPanelView) {
+
   return (
     <div className="LeftPanelView flex">
-      <SidebarView />
-      <RoomListView />
+      <SidebarView vm={vm.sidebarViewModel} />
+      <RoomListView vm={vm.roomListViewModel} />
     </div>
   );
 }
