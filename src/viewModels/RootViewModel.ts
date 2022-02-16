@@ -1,11 +1,10 @@
 import {
   Client,
   ViewModel,
-  Segment,
 } from 'hydrogen-view-sdk';
 
-import { SessionViewModel } from './SessionViewModel';
-import { LoginViewModel } from './LoginViewModel';
+import { SessionViewModel } from './session/SessionViewModel';
+import { LoginViewModel } from './login/LoginViewModel';
 
 export class RootViewModel extends ViewModel {
   private _client: typeof Client; 
@@ -17,11 +16,12 @@ export class RootViewModel extends ViewModel {
     this._loginViewModel = null;
     this._sessionViewModel = null;
     this._client = new Client(options.platform);
+    this.track(this._client);
   }
 
   async load() { 
-    this.navigation.observe('login').subscribe(() => this._applyNavigation());
-    this.navigation.observe('session').subscribe(() => this._applyNavigation());
+    this.track(this.navigation.observe('login').subscribe(() => this._applyNavigation()));
+    this.track(this.navigation.observe('session').subscribe(() => this._applyNavigation()));
     this._applyNavigation();
   }
 
