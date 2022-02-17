@@ -1,7 +1,7 @@
 import "./global.css";
 import React from "react";
 import ReactDOM from "react-dom";
-import { HashRouter, Switch, Route, useLocation } from "react-router-dom";
+import { HashRouter, Switch, Route } from "react-router-dom";
 import {
   DashboardPage,
   AuthenticatedRoute,
@@ -10,9 +10,7 @@ import {
   LoginPage,
   RegisterPage,
   NotFoundPage,
-  CreateRoomModal,
-  ProfileModal,
-} from "@thirdroom/core";
+} from "./ui";
 import { HomePage } from "./HomePage";
 
 function Routes() {

@@ -55,11 +55,6 @@ export default defineConfig({
       "/_matrix": homeserverUrl,
     },
   },
-  resolve: {
-    alias: {
-      "@thirdroom/core": "@thirdroom/core/src",
-    },
-  },
   define: {
     "process.env.MATRIX_HOMESERVER_URL": JSON.stringify(homeserverUrl),
   },
