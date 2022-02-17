@@ -4,7 +4,7 @@ import {
 } from 'hydrogen-view-sdk';
 
 import { SidebarViewModel } from './SidebarViewModel';
-import { RoomListViewModel } from './RoomListViewModal';
+import { RoomListViewModel } from './RoomListViewModel';
 
 export class LeftPanelViewModel extends ViewModel {
   private _client: typeof Client;
