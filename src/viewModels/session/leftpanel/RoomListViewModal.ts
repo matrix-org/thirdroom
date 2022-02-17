@@ -14,6 +14,21 @@ export class RoomListViewModel extends ViewModel {
     this.track(
       this.navigation.observe('room').subscribe(() => this.emitChange('activeRoomId'))
     );
+
+    this.track(this.invites.subscribe(this._getRoomChangesHandles()));
+    this.track(this.rooms.subscribe(this._getRoomChangesHandles()));
+  }
+
+  private _getRoomChangesHandles() {
+    const handleChange = () => {
+      this.emitChange('allRooms');
+    };
+    
+    return {
+      onAdd: handleChange,
+      onUpdate: () => undefined,
+      onRemove: handleChange,
+    }
   }
 
   getRoomAvatarHttpUrl(roomOrInvite: typeof Room | typeof Invite, size: number) {
