@@ -3,7 +3,7 @@ import './RoomListView.css';
 
 import { Room } from 'hydrogen-view-sdk';
 
-import { RoomListViewModel } from '../../../../viewModels/session/leftpanel/RoomListViewModal';
+import { RoomListViewModel } from '../../../../viewModels/session/leftpanel/RoomListViewModel';
 
 import { Text } from '../../../atoms/text/Text';
 import { Button } from '../../../atoms/button/Button';
