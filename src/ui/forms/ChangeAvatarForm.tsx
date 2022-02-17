@@ -13,7 +13,7 @@ interface ChangeAvatarFormProps {
 }
 
 export function ChangeAvatarForm({ onSubmit }: ChangeAvatarFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ChangeAvatarFormFields>();
 
   const [error, setError] = useState<Error | null>(null);
 

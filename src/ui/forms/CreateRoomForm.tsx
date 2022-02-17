@@ -30,7 +30,7 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
     register,
     control,
     formState: { isSubmitting, errors },
-  } = useForm();
+  } = useForm<CreateRoomFormFields>();
   const [error, setError] = useState<Error | null>(null);
   const roomAccess = watch("roomAccess");
 
@@ -67,7 +67,7 @@ export function CreateRoomForm({ onSubmit }: CreateRoomFormProps) {
         postfix={`:${location.hostname}`}
         label="Room Alias"
         placeholder="example"
-        error={errors.roomAlias}
+        error={errors.alias}
         {...register("alias")}
       />
       )}

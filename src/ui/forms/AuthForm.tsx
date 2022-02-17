@@ -16,7 +16,7 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ onSubmit, submitLabel, submittingLabel }: AuthFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthFormFields>();
 
   const [error, setError] = useState<Error | null>(null);
 

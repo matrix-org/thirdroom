@@ -13,7 +13,7 @@ interface ChangeSceneFormProps {
 }
 
 export function ChangeSceneForm({ onSubmit }: ChangeSceneFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ChangeSceneFormFields>();
 
   const [error, setError] = useState<Error | null>(null);
 

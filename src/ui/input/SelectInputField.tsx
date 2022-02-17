@@ -1,5 +1,5 @@
 import React, { forwardRef, useCallback } from "react";
-import { useController, UseControllerProps } from "react-hook-form";
+import { FieldValues, useController, UseControllerProps } from "react-hook-form";
 import { useSelect, UseSelectStateChange } from "downshift";
 import { ErrorMessage, ErrorMessageValue } from "./ErrorMessage";
 
@@ -62,13 +62,13 @@ export const SelectInputField = forwardRef<HTMLButtonElement, SelectInputFieldPr
   );
 });
 
-type FormSelectInputFieldProps = UseControllerProps & {
+type FormSelectInputFieldProps<F extends FieldValues> = UseControllerProps<F> & {
   label: string,
   options: SelectOption[],
   error?: ErrorMessageValue,
 }
 
-export function FormSelectInputField({ label, name, control, defaultValue, rules, shouldUnregister, options, error } : FormSelectInputFieldProps) {
+export function FormSelectInputField<F extends FieldValues>({ label, name, control, defaultValue, rules, shouldUnregister, options, error } : FormSelectInputFieldProps<F>) {
   const { field: fieldProps } = useController({ name, control ,defaultValue, rules, shouldUnregister });
   
   return <SelectInputField label={label} {...fieldProps} options={options} error={error} />;
