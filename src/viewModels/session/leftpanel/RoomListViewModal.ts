@@ -10,6 +10,10 @@ export class RoomListViewModel extends ViewModel {
     this._session = options.session;
     this.invites = options.invites;
     this.rooms = options.rooms;
+
+    this.track(
+      this.navigation.observe('room').subscribe(() => this.emitChange('activeRoomId'))
+    );
   }
 
   getRoomAvatarHttpUrl(roomOrInvite: typeof Room | typeof Invite, size: number) {
@@ -26,5 +30,11 @@ export class RoomListViewModel extends ViewModel {
     const joinedRooms = Array.from(this.rooms.values());
 
     return invitedRooms.concat(joinedRooms); 
+  }
+
+  get activeRoomId() {
+    const segment = this.navigation.path.get('room');
+    if (!segment) return null;
+    return segment.value;
   }
 }

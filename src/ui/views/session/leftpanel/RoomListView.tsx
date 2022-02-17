@@ -21,6 +21,7 @@ interface IRoomListView {
 
 export function RoomListView({ vm }: IRoomListView) {
   const allRooms: typeof Room[] = useVMProp(vm, 'allRooms');
+  const activeRoom: string = useVMProp(vm, 'activeRoomId');
   
   return (
     <div className="RoomListView flex flex-column">
@@ -39,6 +40,8 @@ export function RoomListView({ vm }: IRoomListView) {
               allRooms.map((room) => (
                 <RoomTile
                   key={room.id}
+                  isActive={room.id === activeRoom}
+                  openRoomUrl={vm.urlCreator.openRoomActionUrl(room.id)}
                   name={room.name}
                   avatarUrl={vm.getRoomAvatarHttpUrl(room, 32)}
                 />

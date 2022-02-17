@@ -1,9 +1,36 @@
-.RoomTile {
+.RoomTile,
+.RoomTile--active {
   padding: var(--sp-extra-tight);
-  background-color: var(--sc-dark-low);
   border-radius: var(--br-normal);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: none;
+  }
 
   & .Text {
     margin: 0 var(--sp-extra-tight);
+  }
+}
+
+.RoomTile {
+  background-color: var(--sc-dark-low);
+  &:hover {
+    background-color: var(--sc-dark-normal);
+  }
+}
+
+.RoomTile--active {
+  background-color: var(--bg-secondary);
+  & .Text {
+    color: var(--tc-secondary-high);
+  }
+  
+  &:hover,
+  &:focus {
+    background-color: var(--bg-secondary-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-active);
   }
 }

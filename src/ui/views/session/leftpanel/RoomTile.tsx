@@ -6,14 +6,21 @@ import { Avatar } from '../../../atoms/avatar/Avatar';
 interface IRoomTile {
   name: string,
   avatarUrl: string,
+  isActive?: boolean,
+  openRoomUrl: string,
 }
 
 export function RoomTile({
   name,
   avatarUrl,
+  isActive = false,
+  openRoomUrl,
 }: IRoomTile) {
   return (
-    <div className="RoomTile flex items-center">
+    <a
+      href={openRoomUrl}
+      className={`RoomTile${isActive ? '--active' : ''} flex items-center`}
+    >
       <Avatar
         name={name}
         bgColor="var(--bg-primary)"
@@ -22,6 +29,6 @@ export function RoomTile({
       <Text className="truncate" variant="b2" weight="semi-bold">
         {name}
       </Text>
-    </div>
+    </a>
   );
 }

@@ -28,7 +28,8 @@
     }
   }
 
-  & .RoomTile {
+  & .RoomTile,
+  & .RoomTile--active {
     margin-bottom: var(--sp-tight);
   }
 }
