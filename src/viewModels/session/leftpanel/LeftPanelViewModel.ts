@@ -17,7 +17,7 @@ export class LeftPanelViewModel extends ViewModel {
     this._session = options.session;
 
     this._sidebarViewModel = new SidebarViewModel(this.childOptions({
-      // TODO: pass user profile for now
+      user: this._session.user,
     }));
     this.track(this._sidebarViewModel);
 
