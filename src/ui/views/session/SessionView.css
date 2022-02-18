@@ -1,7 +1,7 @@
 .SessionView {
   height: 100%;
 
-  positive: relative;
+  position: relative;
 
   & > div > header {
     min-height: 110px;

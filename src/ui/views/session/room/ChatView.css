@@ -1,5 +1,14 @@
 .ChatView {
-  height: 100%;
+  width: 400px;
+  height: 80vh;
+  position: absolute;
+  top: 50%;
+  right: var(--sp-normal);
+  transform: translateY(-50%);
+  
+  box-shadow: 0 0 8px var(--sc-dark-normal);
+  border-radius: var(--br-normal);
+  background-color: var(--bg-surface);
 
   & .RoomView {
     background-color: transparent;
@@ -11,6 +20,16 @@
 .RoomView_body {
   display: flex;
   flex-direction: column;
+}
+
+.RoomHeader {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-normal);
+
+  & .room-description {
+    margin-left: var(--sp-normal);
+  }
 }
 
 .RoomView_body,
