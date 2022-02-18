@@ -466,9 +466,9 @@ debug@^4.1.0:
     ms "2.1.2"
 
 dompurify@^2.3.0:
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.3.5.tgz#c83ed5a3ae5ce23e52efe654ea052ffb358dd7e3"
-  integrity sha512-kD+f8qEaa42+mjdOpKeztu9Mfx5bv9gVLO6K9jRx4uGvh6Wv06Srn4jr1wPNY2OOUGGSKHNFN+A8MA3v0E0QAQ==
+  version "2.3.6"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.3.6.tgz#2e019d7d7617aacac07cbbe3d88ae3ad354cf875"
+  integrity sha512-OFP2u/3T1R5CEgWCEONuJ1a5+MFKnOYpkywpUSxv/dj1LeBT1erK+JwM7zK0ROy2BRhqVCf0LRw/kHqKuMkVGg==
 
 electron-to-chromium@^1.4.17:
   version "1.4.67"
@@ -635,10 +635,10 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-hydrogen-view-sdk@^0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.5.tgz#74efb54c92a86f2d65a1407186582272e2f6c616"
-  integrity sha512-rhHDIeqwGknvAn3W1gKjnKq96SFtRz5+Up1SpTP/tY65EhHf8q1A6Qv8p4qDAP0rVIyLWXaOR6JK4n774ogWWA==
+hydrogen-view-sdk@0.0.8:
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.8.tgz#9c9268cc96890568406393686717729d81a28635"
+  integrity sha512-n4Lr8mZZ//hpYCtnYCsr44Ep0bg9TwCQ5C4HiK+7gGeEeZvOYBp3HMDPMLGXp2mQId9ZrbL1cBRwq1ZfHiUTGw==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.3.tgz"
     another-json "^0.2.0"
