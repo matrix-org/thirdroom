@@ -1,0 +1,101 @@
+.ChatView {
+  height: 100%;
+
+  & .RoomView {
+    background-color: transparent;
+    height: 100%;
+  }
+}
+
+.ChatView .RoomView,
+.RoomView_body {
+  display: flex;
+  flex-direction: column;
+}
+
+.RoomView_body,
+.Timeline {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.Timeline {
+  height: 0;
+  overflow: hidden;
+  overflow-y: scroll;
+
+  & ul {
+    padding: 0;
+    & li {
+      list-style: none;
+    }
+  }
+}
+
+.AnnouncementView {
+  text-align: center;
+}
+
+.Timeline_message {
+  display: grid;
+  grid-template:
+    "avatar sender" auto
+    "avatar body" auto
+    "time body" 1fr
+    "time reactions" auto / 30px 1fr;
+  column-gap: 8px;
+  padding: 4px;
+  margin: 0 12px;
+  box-sizing: border-box;
+
+  &:hover .Timeline_messageOptions {
+    display: block;
+  }
+}
+
+.Timeline_messageSender {
+  grid-area: sender;
+}
+
+.Timeline_messageAvatar {
+  grid-area: avatar;
+
+  & .avatar {
+    background-color: var(--bg-primary);
+    border-radius: 50%;
+    height: 30px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+  }
+}
+
+.Timeline_messageBody {
+  grid-area: body;
+}
+
+.Timeline_messageReactions {
+  grid-area: reactions;
+}
+
+.Timeline_messageOptions {
+  display: none;
+  grid-area: body;
+  align-self: start;
+  justify-self: end;
+  margin-top: -12px;
+  margin-right: 4px;
+  border: #ccc 1px solid;
+  height: 24px;
+  width: 24px;
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 0;
+  text-align: center;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.ReplyPreviewView {
+  display: none;
+}

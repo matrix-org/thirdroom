@@ -31,7 +31,7 @@ export function ChatView({
   }, [roomId]);
 
   return (
-    <div className="ChatView grow" id="ChatView">
+    <div className="ChatView" id="ChatView">
     </div>
   );
 }
