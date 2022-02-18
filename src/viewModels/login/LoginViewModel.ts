@@ -1,12 +1,23 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
   Client,
   ViewModel,
 } from 'hydrogen-view-sdk';
 
+type Options = {
+  client: typeof Client
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class LoginViewModel extends ViewModel {
   private _client: typeof Client;
   
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this._client = options.client;
   }

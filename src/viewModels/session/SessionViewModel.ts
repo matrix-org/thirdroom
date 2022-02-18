@@ -1,4 +1,7 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
   Client,
   Session,
   ViewModel,
@@ -8,6 +11,15 @@ import { LeftPanelViewModel } from './leftpanel/LeftPanelViewModel';
 import { RoomViewModel } from './room/RoomViewModel';
 import { InviteViewModel } from './room/InviteViewModel';
 
+type Options = {
+  client: typeof Client
+  session: typeof Session
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class SessionViewModel extends ViewModel {
   private _client: typeof Client;
   private _session: typeof Session;
@@ -16,7 +28,7 @@ export class SessionViewModel extends ViewModel {
   private _inviteViewModel: InviteViewModel | null;
   private _activeRoomId: string | null;
   
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this._client = options.client;
     this._session = options.client.session;

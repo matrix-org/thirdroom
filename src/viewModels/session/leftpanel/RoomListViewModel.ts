@@ -1,11 +1,25 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
   ViewModel,
   Room,
   Invite,
+  Session,
 } from 'hydrogen-view-sdk';
 
+type Options = {
+  session: typeof Session
+  invites: typeof Invite[]
+  rooms: typeof Room[]
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class RoomListViewModel extends ViewModel {
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this._session = options.session;
     this.invites = options.invites;

@@ -1,12 +1,24 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
+  Room,
   RoomViewModel as ChatViewModel,
   ViewModel,
 } from 'hydrogen-view-sdk';
 
+type Options = {
+  room: typeof Room
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class RoomViewModel extends ViewModel {
   private _chatViewModel: typeof ChatViewModel | null;
   
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this.room = options.room;
     this._chatViewModel = null;

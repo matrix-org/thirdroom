@@ -1,4 +1,7 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
   Client,
   ViewModel,
 } from 'hydrogen-view-sdk';
@@ -6,12 +9,19 @@ import {
 import { SessionViewModel } from './session/SessionViewModel';
 import { LoginViewModel } from './login/LoginViewModel';
 
+type Options = {
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class RootViewModel extends ViewModel {
   private _client: typeof Client; 
   private _loginViewModel: LoginViewModel | null;
   private _sessionViewModel: SessionViewModel | null;
 
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this._loginViewModel = null;
     this._sessionViewModel = null;

@@ -1,17 +1,30 @@
 import {
+  Platform,
+  URLRouter,
+  Navigation,
   Client,
+  Session,
   ViewModel,
 } from 'hydrogen-view-sdk';
 
 import { SidebarViewModel } from './SidebarViewModel';
 import { RoomListViewModel } from './RoomListViewModel';
 
+type Options = {
+  client: typeof Client
+  session: typeof Session
+  platform: typeof Platform
+  urlCreator: typeof URLRouter
+  navigation: typeof Navigation
+  emitChange?: (params: any) => void
+}
+
 export class LeftPanelViewModel extends ViewModel {
   private _client: typeof Client;
   private _sidebarViewModel: SidebarViewModel;
   private _roomListViewModel: RoomListViewModel;
   
-  constructor(options) {
+  constructor(options: Options) {
     super(options);
     this._client = options.client;
     this._session = options.session;
