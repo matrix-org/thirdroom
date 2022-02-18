@@ -66,7 +66,6 @@ async function main() {
     urlCreator: urlRouter,
   });
   vm.load();
-  window.rootViewModel = vm;
 
   renderRootView(root, vm)
 }

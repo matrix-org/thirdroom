@@ -13,8 +13,6 @@ export function RoomView({
   vm,
   roomId,
 }: IRoomView) {
-  window.roomView = vm;
-  
   return (
     <div className="RoomView grow">
       <ChatView roomId={roomId} vm={vm.chatViewModel} />

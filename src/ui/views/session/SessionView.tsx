@@ -18,9 +18,6 @@ interface ISessionView {
 export function SessionView({ vm }: ISessionView) {
   const activeSection = useVMProp(vm, 'activeSection');
   const activeRoomId = useVMProp(vm, 'activeRoomId');
-  // TODO:
-  window.svm = vm;
-  console.log(activeSection)
 
   return (
     <div className="SessionView flex">

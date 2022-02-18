@@ -17,7 +17,6 @@ export function ChatView({
   React.useEffect(() => {
     const chatView = new ChatViewConstructor(vm);
     const chatViewHtml = chatView.mount();
-    window.chatViewHtml = chatViewHtml
 
     const chatContainer = document.getElementById('ChatView');
     chatContainer?.append(chatViewHtml);
