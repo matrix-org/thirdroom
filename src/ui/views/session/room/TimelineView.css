@@ -1,0 +1,16 @@
+.TimelineView {
+  & .Timeline {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.Timeline_messageAvatar {
+  pointer-events: none;
+}
+.Timeline_scroller {
+  padding-bottom: var(--sp-extra-loose) !important;
+}
+.Timeline_jumpDown {
+  bottom: var(--sp-extra-loose) !important;
+}
