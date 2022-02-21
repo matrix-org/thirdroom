@@ -2,8 +2,13 @@ import React from "react";
 import './ChatView.css';
 import {
   RoomViewModel as ChatViewModel,
-  RoomView as ChatViewConstructor,
 } from 'hydrogen-view-sdk';
+
+import { Text } from '../../../atoms/text/Text';
+import { TimelineView } from './TimelineView';
+import { ComposerView } from "./ComposerView";
+
+import { useVMProp } from '../../../hooks/useVMProp';
 
 interface IChatView {
   vm: typeof ChatViewModel,
@@ -14,23 +19,24 @@ export function ChatView({
   vm,
   roomId,
 }: IChatView) {
-  React.useEffect(() => {
-    const chatView = new ChatViewConstructor(vm);
-    const chatViewHtml = chatView.mount();
-
-    const chatContainer = document.getElementById('ChatView');
-    chatContainer?.append(chatViewHtml);
-
-    return () => {
-      chatView.unmount();
-      if (chatContainer?.hasChildNodes()) {
-        chatContainer?.removeChild(chatContainer?.childNodes[0]);
-      }
-    }
-  }, [roomId]);
+  const timelineViewModel = useVMProp(vm, 'timelineViewModel');
+  window.chatViewModel = vm
 
   return (
-    <div className="ChatView" id="ChatView">
+    <div className="ChatView flex flex-column" id="ChatView">
+      <header className="flex items-center">
+        <Text variant="s1" weight="semi-bold">{vm.name}</Text>
+      </header>
+      {
+        vm.timelineViewModel
+          ? <TimelineView roomId={roomId} vm={vm.timelineViewModel} />
+          : (
+            <div className="grow flex justify-center items-center">
+              <Text>loading...</Text>
+            </div>
+          )
+      }
+      <ComposerView vm={vm.composerViewModel} />
     </div>
   );
 }
