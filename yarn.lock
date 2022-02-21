@@ -635,7 +635,7 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-hydrogen-view-sdk@0.0.8:
+hydrogen-view-sdk@^0.0.8:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.8.tgz#9c9268cc96890568406393686717729d81a28635"
   integrity sha512-n4Lr8mZZ//hpYCtnYCsr44Ep0bg9TwCQ5C4HiK+7gGeEeZvOYBp3HMDPMLGXp2mQId9ZrbL1cBRwq1ZfHiUTGw==
