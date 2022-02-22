@@ -49,7 +49,7 @@ export function SidebarView({ vm }: ISidebarView) {
       <div className="SidebarView__sticky flex flex-column items-center">
         <Avatar
           isCircle
-          name={vm.userId.slice(1)}
+          name={vm.userId}
           bgColor="var(--bg-primary-active)"
         />
       </div>
