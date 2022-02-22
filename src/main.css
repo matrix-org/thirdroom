@@ -9,6 +9,7 @@
 :root {
   /* background colors */
   --bg-surface: hsl(0, 0%, 100%);
+  --bg-surface-low: hsl(0, 0%, 92%);
   --bg-surface-hover: hsl(0, 0%, 87%);
   --bg-surface-active: hsl(0, 0%, 82%);
   --bg-primary: hsl(266, 100%, 50%);
@@ -29,6 +30,7 @@
   --sc-light-low: hsla(0, 0%, 100%, 10%);
   --sc-dark-normal: hsla(0, 0%, 0%, 20%);
   --sc-dark-low: hsla(0, 0%, 0%, 10%);
+  --sc-dark-extra-low: hsla(0, 0%, 0%, 5%);
 
   /* text colors */
   --tc-surface-high: hsl(0, 0%, 12%);
@@ -106,6 +108,15 @@
 
   /* other */
   --scrollbar-width: 8px;
+  
+  --usercolor1: #368BD6;
+  --usercolor2: #AC3BA8;
+  --usercolor3: #03B381;
+  --usercolor4: #E64F7A;
+  --usercolor5: #FF812D;
+  --usercolor6: #2DC2C5;
+  --usercolor7: #5C56F5;
+  --usercolor8: #74D12C;
 }
 
 html, #root {

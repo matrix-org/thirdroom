@@ -1,6 +1,5 @@
 import React from "react";
 import './TimelineView.css';
-import "hydrogen-view-sdk/style.css";
 import {
   TimelineViewModel,
   TimelineView as TimelineViewConstructor,

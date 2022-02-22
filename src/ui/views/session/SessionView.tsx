@@ -20,7 +20,7 @@ export function SessionView({ vm }: ISessionView) {
   const activeRoomId = useVMProp(vm, 'activeRoomId');
 
   return (
-    <div className="_SessionView flex">
+    <div className="SessionView flex">
       <LeftPanelView vm={vm.leftPanelViewModel} />
       <div className="grow flex flex-column">
         <header className="flex items-center justify-end">
