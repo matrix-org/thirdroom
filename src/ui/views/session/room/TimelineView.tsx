@@ -16,16 +16,19 @@ export function TimelineView({
   vm,
 }: ITimelineView) {
   React.useEffect(() => {
-    const timelineView = new TimelineViewConstructor(vm);
-    const timelineViewHtml = timelineView.mount();
+    const tv = new TimelineViewConstructor(vm);
+    const tvDOM = tv.mount();
 
-    const chatContainer = document.getElementById('TimelineView');
-    chatContainer?.append(timelineViewHtml);
+    const tvScroll = tvDOM.querySelector('.Timeline_scroller');
+    tvScroll.classList.add('Scroll', 'Scroll--vertical', 'Scroll--auto');
+
+    const tvContainer = document.getElementById('TimelineView');
+    tvContainer?.append(tvDOM);
 
     return () => {
-      timelineView.unmount();
-      if (chatContainer?.hasChildNodes()) {
-        chatContainer?.removeChild(chatContainer?.childNodes[0]);
+      tv.unmount();
+      if (tvContainer?.hasChildNodes()) {
+        tvContainer?.removeChild(tvContainer?.childNodes[0]);
       }
     }
   }, [roomId, vm]);
