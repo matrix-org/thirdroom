@@ -7,10 +7,10 @@
   &:hover {
     text-decoration: none;
   }
+}
 
-  & .Text {
-    margin: 0 var(--sp-extra-tight);
-  }
+.RoomTile__info {
+  padding: var(--sp-extra-tight) var(--sp-tight);
 }
 
 .RoomTile {

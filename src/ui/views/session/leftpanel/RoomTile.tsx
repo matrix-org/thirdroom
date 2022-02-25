@@ -1,10 +1,11 @@
 import './RoomTile.css';
 
 import { Text } from '../../../atoms/text/Text';
-import { Avatar } from '../../../atoms/avatar/Avatar';
+import { Thumbnail } from '../../../atoms/thumbnail/Thumbnail';
 
 interface IRoomTile {
   name: string,
+  roomColor: string,
   avatarUrl: string,
   isActive?: boolean,
   openRoomUrl: string,
@@ -12,6 +13,7 @@ interface IRoomTile {
 
 export function RoomTile({
   name,
+  roomColor,
   avatarUrl,
   isActive = false,
   openRoomUrl,
@@ -19,16 +21,19 @@ export function RoomTile({
   return (
     <a
       href={openRoomUrl}
-      className={`RoomTile${isActive ? '--active' : ''} flex items-center`}
+      className={`RoomTile${isActive ? '--active' : ''} flex items-start`}
     >
-      <Avatar
+      <Thumbnail
+        className="shrink-0"
         name={name}
-        bgColor="var(--bg-primary)"
+        bgColor={roomColor}
         imageSrc={avatarUrl}
       />
-      <Text className="truncate" variant="b2" weight="semi-bold">
-        {name}
-      </Text>
+      <div className="RoomTile__info grow flex flex-column">
+        <Text className="truncate" variant="b2" weight="semi-bold">
+          {name}
+        </Text>
+      </div>
     </a>
   );
 }

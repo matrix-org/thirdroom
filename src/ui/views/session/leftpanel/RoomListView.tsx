@@ -40,6 +40,7 @@ export function RoomListView({ vm }: IRoomListView) {
               allRooms.map((room) => (
                 <RoomTile
                   key={room.id}
+                  roomColor={vm.getRoomColor(room)}
                   isActive={room.id === activeRoom}
                   openRoomUrl={vm.urlCreator.openRoomActionUrl(room.id)}
                   name={room.name || 'Empty room'}
