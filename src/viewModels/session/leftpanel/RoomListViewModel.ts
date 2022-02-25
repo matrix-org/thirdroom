@@ -7,6 +7,7 @@ import {
   Invite,
   Session,
 } from 'hydrogen-view-sdk';
+import { colorMXID } from '../../colorMXID';
 
 type Options = {
   session: typeof Session
@@ -45,8 +46,13 @@ export class RoomListViewModel extends ViewModel {
     }
   }
 
+  getRoomColor(roomOrInvite: typeof Room | typeof Invite) {
+    const { avatarColorId } = roomOrInvite;
+    return colorMXID(avatarColorId);
+  }
+
   getRoomAvatarHttpUrl(roomOrInvite: typeof Room | typeof Invite, size: number) {
-    const avatarUrl = roomOrInvite.avatarUrl;
+    const { avatarUrl } = roomOrInvite;
     if (avatarUrl) {
       const imageSize = size * this.platform.devicePixelRatio;
       return this._session.mediaRepository.mxcUrlThumbnail(avatarUrl, imageSize, imageSize, "crop");
