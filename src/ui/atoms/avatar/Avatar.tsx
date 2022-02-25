@@ -4,6 +4,7 @@ import './Avatar.css';
 import { Text } from '../text/Text';
 
 interface IAvatar {
+  className?: string,
   name: string,
   bgColor: string,
   isCircle?: boolean,
@@ -12,6 +13,7 @@ interface IAvatar {
 };
 
 export function Avatar({
+  className,
   name,
   bgColor,
   isCircle = false,
@@ -27,6 +29,7 @@ export function Avatar({
   classes.push(`Avatar--${size}`)
   if (isCircle) classes.push('Avatar--circle');
   classes.push('noselect');
+  if (className) classes.push(className);
 
   const style: React.CSSProperties = {};
   if (!imageSrc)  style.backgroundColor = bgColor;
