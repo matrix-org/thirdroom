@@ -6,6 +6,7 @@ import {
   RoomViewModel as ChatViewModel,
   ViewModel,
 } from 'hydrogen-view-sdk';
+import { colorMXID } from '../../colorMXID';
 
 type Options = {
   room: typeof Room
@@ -32,6 +33,26 @@ export class RoomViewModel extends ViewModel {
     this._chatViewModel.load();
   }
 
+  
+  getRoomColor() {
+    const { avatarColorId } = this.room;
+    return colorMXID(avatarColorId);
+  }
+
+  getRoomAvatarHttpUrl(size?: number) {
+    const { avatarUrl, mediaRepository } = this.room;
+    if (avatarUrl) {
+      if (!size) return mediaRepository.mxcUrl(avatarUrl);
+      const imageSize = size * this.platform.devicePixelRatio;
+      return mediaRepository.mxcUrlThumbnail(avatarUrl, imageSize, imageSize, "crop");
+    }
+    return null;
+  }
+
+  get name() {
+    return this.room.name;
+  }
+  
   get chatViewModel() {
     return this._chatViewModel;
   }
