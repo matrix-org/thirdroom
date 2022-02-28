@@ -2,6 +2,7 @@ import React from 'react';
 import './Scroll.css';
 
 interface IScroll {
+  className?: string,
   direction?: 'horizontal' | 'vertical' | 'both',
   visibility?: 'visible' | 'invisible' | 'auto',
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void,
@@ -9,14 +10,18 @@ interface IScroll {
 }
 
 export function Scroll({
+  className,
   direction = 'vertical',
   visibility = 'auto',
   onScroll = undefined,
   children,
 }: IScroll) {
+  const classes = [`Scroll Scroll--${direction} Scroll--${visibility}`];
+  if (className) classes.push(className);
+  
   return (
     <div
-      className={`Scroll Scroll--${direction} Scroll--${visibility}`}
+      className={classes.join(' ')}
       onScroll={onScroll}
     >
       {children}
