@@ -55,6 +55,7 @@ export class SessionViewModel extends ViewModel {
   }
 
   private _handleRoomView(roomId: string | undefined | boolean) {
+    if (this._activeRoomFlow === roomId) return;
     this._roomViewModel = this.disposeTracked(this._roomViewModel);;
     this._inviteViewModel = this.disposeTracked(this._inviteViewModel);;
     this._activeRoomId = null;
