@@ -1,0 +1,42 @@
+.RoomLoading {
+  background-color: var(--sc-dark-normal);
+}
+
+.RoomLoading_preview {
+  padding: var(--sp-extra-loose);
+  position: relative;
+  overflow: hidden;
+  
+  & > div:first-child {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+
+    filter: blur(8px);
+  }
+  & > * {
+    z-index: 1;
+  }
+}
+
+.RoomLoading__card {
+  max-width: 490px;
+  width: 100%;
+  padding: var(--sp-loose);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-normal);
+}
+
+.RoomLoading__avatar {
+  width: 600px;
+  background-color: var(--bg-surface);
+
+  & > div {
+    padding: var(--sp-loose);
+  }
+}
