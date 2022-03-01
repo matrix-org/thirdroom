@@ -1,10 +1,5 @@
 .ChatView {
-  width: 400px;
-  height: 80vh;
-  position: absolute;
-  top: 50%;
-  right: var(--sp-normal);
-  transform: translateY(-50%);
+  height: 100%;
   overflow: hidden;
   
   box-shadow: 0 0 8px var(--sc-dark-normal);
