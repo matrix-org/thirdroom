@@ -1,9 +1,9 @@
 import React from 'react';
-import './IconButton.css';
 
 import { Icon } from '../icon/Icon';
 import { RawButton } from './RawButton';
 
+import './IconButton.css';
 interface IIconButton {
   className?: string,
   variant?: 'surface' | 'primary' | 'secondary' | 'positive' | 'danger',

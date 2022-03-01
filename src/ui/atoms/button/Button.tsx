@@ -1,10 +1,10 @@
 import React from 'react';
-import './Button.css';
 
 import { Text } from '../text/Text';
 import { Icon } from '../icon/Icon';
 import { RawButton } from './RawButton';
 
+import './Button.css';
 interface IButton {
   className?: string,
   variant?: 'surface' | 'primary' | 'secondary' | 'positive' | 'danger',
