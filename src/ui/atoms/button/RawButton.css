@@ -6,6 +6,10 @@
   cursor: pointer;
   transition: background-color 100ms ease-in-out;
 
+  & .Icon {
+    flex-shrink: 0;
+  }
+  
   &:disabled {
     opacity: 0.5;
     cursor: no-drop;
