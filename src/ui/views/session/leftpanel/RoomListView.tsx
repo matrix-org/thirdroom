@@ -42,7 +42,7 @@ export function RoomListView({ vm }: IRoomListView) {
                   key={room.id}
                   roomColor={vm.getRoomColor(room)}
                   isActive={room.id === activeRoom}
-                  openRoomUrl={vm.urlCreator.openRoomActionUrl(room.id)}
+                  onClick={() => vm.navigation.push('room', room.id)}
                   name={room.name || 'Empty room'}
                   avatarUrl={vm.getRoomAvatarHttpUrl(room, 32)}
                 />
