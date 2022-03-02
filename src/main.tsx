@@ -22,18 +22,12 @@ function renderRootView(root: HTMLElement, vm: RootViewModel) {
 }
 
 function allowChilds(parent: typeof Segment, child: typeof Segment) {
-  const { type } = child;
+  const parentType = parent?.type;
 
-  switch (parent?.type) {
-    case undefined:
-        return type === 'session' || type === 'login';
-    case 'session':
-        return type === 'room';
-    case 'room':
-        return type === 'chat';
-    default:
-        return false;
-  }
+  if (parentType === undefined) return ['session', 'login'].includes(child.type);
+  if (parentType === 'session') return ['left-panel'].includes(child.type);
+  if (parentType === 'left-panel') return ['room'].includes(child.type);
+  return false;
 }
 
 async function main() {
