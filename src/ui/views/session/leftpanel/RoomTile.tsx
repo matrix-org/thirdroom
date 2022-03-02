@@ -8,7 +8,7 @@ interface IRoomTile {
   roomColor: string,
   avatarUrl: string,
   isActive?: boolean,
-  openRoomUrl: string,
+  onClick: () => void,
 }
 
 export function RoomTile({
@@ -16,11 +16,11 @@ export function RoomTile({
   roomColor,
   avatarUrl,
   isActive = false,
-  openRoomUrl,
+  onClick,
 }: IRoomTile) {
   return (
-    <a
-      href={openRoomUrl}
+    <button
+      onClick={onClick}
       className={`RoomTile${isActive ? '--active' : ''} flex items-start`}
     >
       <Thumbnail
@@ -34,6 +34,6 @@ export function RoomTile({
           {name}
         </Text>
       </div>
-    </a>
+    </button>
   );
 }

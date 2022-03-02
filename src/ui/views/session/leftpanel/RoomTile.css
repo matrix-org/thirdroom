@@ -1,5 +1,6 @@
 .RoomTile,
 .RoomTile--active {
+  width: 100%;
   padding: var(--sp-extra-tight);
   border-radius: var(--br-normal);
   cursor: pointer;
