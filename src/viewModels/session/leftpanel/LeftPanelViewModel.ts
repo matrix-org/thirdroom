@@ -23,6 +23,7 @@ export class LeftPanelViewModel extends ViewModel {
   private _client: typeof Client;
   private _sidebarViewModel: SidebarViewModel;
   private _roomListViewModel: RoomListViewModel;
+  private _panelState: 'initial' | 'open' | 'close';
   
   constructor(options: Options) {
     super(options);
@@ -40,6 +41,29 @@ export class LeftPanelViewModel extends ViewModel {
       rooms: this._client.session.rooms,
     }));
     this.track(this._roomListViewModel);
+
+    this._panelState = 'initial';
+    this.navigation.push('left-panel', 'initial');
+    this._setupNavigation();
+  }
+
+  private _setupNavigation() {
+    this.track(this.navigation.observe('left-panel').subscribe(() => {
+      const segment = this.navigation.path.get('left-panel');
+      this._handlePanelState(segment.value);
+    }));
+
+    this.track(this.navigation.observe('room').subscribe(() => {
+      this._handlePanelState('initial');
+    }));
+  }
+
+  private _handlePanelState(state: any) {
+    if (state === 'open') this._panelState = 'open';
+    else if (state === 'close') this._panelState = 'close';
+    else this._panelState = 'initial';
+
+    this.emitChange('panelState');
   }
 
   get sidebarViewModel() {
@@ -48,5 +72,9 @@ export class LeftPanelViewModel extends ViewModel {
 
   get roomListViewModel() {
     return this._roomListViewModel;
+  }
+
+  get panelState () {
+    return this._panelState;
   }
 }
