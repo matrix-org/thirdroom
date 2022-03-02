@@ -2,7 +2,7 @@
   background-color: var(--sc-dark-normal);
 }
 
-.RoomLoading_preview {
+.RoomLoading__preview {
   padding: var(--sp-extra-loose);
   position: relative;
   overflow: hidden;
@@ -30,6 +30,10 @@
   padding: var(--sp-loose);
   background-color: var(--bg-surface);
   border-radius: var(--br-normal);
+
+  & > div:first-child {
+    margin-right: var(--sp-normal);
+  }
 }
 
 .RoomLoading__avatar {

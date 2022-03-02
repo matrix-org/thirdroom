@@ -41,7 +41,7 @@ export function RoomPreview({
             imageSrc={vm.getRoomAvatarHttpUrl()}
           />
           <Text variant="h2" weight="semi-bold">{roomName}</Text>
-          <Button variant="primary" onClick={() => alert('Join room')}>Join room</Button>
+          <Button variant="primary" onClick={() => vm.setRoomFlow('load')}>Join room</Button>
         </div>
       </Scroll>
     </div>

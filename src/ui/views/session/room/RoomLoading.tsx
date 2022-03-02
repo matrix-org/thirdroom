@@ -18,18 +18,20 @@ export function RoomLoading({
 }: IRoomLoading) {
   return (
     <div className="RoomLoading grow flex">
-      <div className="RoomLoading_preview grow flex flex-column items-start">
+      <div className="RoomLoading__preview grow flex flex-column items-start">
         <div style={{ backgroundImage: `url(${vm.getRoomAvatarHttpUrl()})` }} />
         <div className="grow">
           <Button
             iconSrc={ArrowBackIC}
-            onClick={() => alert('back to dashboard')}
+            onClick={() => vm.setRoomFlow('preview')}
           >
             Back to Dashbaord
           </Button>
         </div>
         <div className="RoomLoading__card flex">
-          <div />
+          <div>
+            <Button variant="primary" onClick={() => vm.setRoomFlow('loaded')}>Enter</Button>
+          </div>
           <div className="grow">
             <Text className="truncate" variant="b2" weight="semi-bold">Home</Text>
             <Text className="truncate" variant="h2" weight="semi-bold">{vm.name || 'Empty room'}</Text>

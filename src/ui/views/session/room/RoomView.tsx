@@ -26,7 +26,11 @@ export function RoomFloatingView({
 
   return (
     <>
-      <Button size="small" iconSrc={GridIC} onClick={() => alert('open overlay')}>Open Overlay [Esc]</Button>
+      <Button
+        size="small"
+        iconSrc={GridIC}
+        onClick={() => vm.toggleLeftPanel()}
+      >Open Overlay [Esc]</Button>
       <div className={`RoomView__chat${chatVisibility ? ' RoomView__chat--visible' : ''}`}>
         <ChatView roomId={roomId} vm={vm.chatViewModel} />
       </div>
@@ -41,7 +45,7 @@ export function RoomFloatingView({
           onClick={() => setChatVisibility(!chatVisibility)}
         />
         <IconButton shadedSurface={true} label="Settings" size="small" iconSrc={SettingIC} onClick={() => alert('Settings')}/>
-        <IconButton variant="danger" label="Logout" size="small" iconSrc={LogoutIC} onClick={() => alert('Logout')}/>
+        <IconButton variant="danger" label="Logout" size="small" iconSrc={LogoutIC} onClick={() => vm.setRoomFlow('preview')}/>
       </div>
     </>
   );
