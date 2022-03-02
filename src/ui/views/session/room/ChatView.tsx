@@ -20,7 +20,6 @@ export function ChatView({
   roomId,
 }: IChatView) {
   const timelineViewModel = useVMProp(vm, 'timelineViewModel');
-  window.chatViewModel = vm
 
   return (
     <div className="ChatView flex flex-column" id="ChatView">
