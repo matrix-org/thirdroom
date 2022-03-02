@@ -55,7 +55,8 @@ export class SessionViewModel extends ViewModel {
   }
 
   private _handleRoomView(roomId: string | undefined | boolean) {
-    if (this._activeRoomFlow === roomId) return;
+    if (this._activeRoomId === roomId) return;
+
     this._roomViewModel = this.disposeTracked(this._roomViewModel);;
     this._inviteViewModel = this.disposeTracked(this._inviteViewModel);;
     this._activeRoomId = null;
@@ -64,7 +65,6 @@ export class SessionViewModel extends ViewModel {
     const roomOrInvite = rooms.get(roomId) || invites.get(roomId);
 
     if (roomId === undefined || roomOrInvite === undefined) {
-      this.emitChange('activeSection');
       this.emitChange('activeRoomId');
       return;
     }
@@ -78,22 +78,18 @@ export class SessionViewModel extends ViewModel {
       this._roomViewModel = new RoomViewModel(this.childOptions({
         room: roomOrInvite,
       }));
-      this._roomViewModel.load();
       this.track(this._roomViewModel);
     }
     this._activeRoomId = roomOrInvite.id;
-    this.emitChange('activeSection');
     this.emitChange('activeRoomId');
-  }
-
-  get activeSection() {
-    if (this._roomViewModel) return 'room';
-    if (this._inviteViewModel) return 'invite';
-    return 'none';
   }
 
   get activeRoomId() {
     return this._activeRoomId;
+  }
+
+  get isActiveRoomInvite() {
+    return this._session.invites.get(this._activeRoomId) !== undefined;
   }
   
   get leftPanelViewModel() {
