@@ -2,13 +2,4 @@
   height: 100%;
 
   position: relative;
-
-  & > div > header {
-    min-height: 110px;
-    padding: 0 var(--sp-extra-loose);
-
-    & > * {
-      margin-left: var(--sp-normal);
-    }
-  }
 }
