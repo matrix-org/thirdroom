@@ -25,7 +25,7 @@ export class LoginViewModel extends ViewModel {
   async login(homeserver: string, username: string, password: string) {
     const loginOptions = await this._client.queryLogin(homeserver).result;
     await this._client.startWithLogin(loginOptions.password(username, password));
-    this._options.ready();
+    this._options.ready(this._client.sessionId);
   }
   
   get defaultHomeserver() {

@@ -38,7 +38,7 @@ export function RoomLoading({
           </div>
         </div>
       </div>
-      <div className="RoomLoading__avatar flex flex-column">
+      <div className="RoomLoading__avatar shrink-0 flex flex-column">
         <div className="flex justify-end">
           <Button iconSrc={SettingIC} onClick={() => alert('settings')}>Settings</Button>
         </div>

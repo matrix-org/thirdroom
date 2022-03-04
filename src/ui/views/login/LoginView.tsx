@@ -29,7 +29,7 @@ export function LoginView({ vm }: ILoginView) {
   }
   
   return (
-    <form onSubmit={handleLogin}>
+    <form style={{ height: '100%' }} className="flex flex-column justify-center items-center" onSubmit={handleLogin}>
       <label htmlFor="homeserver">Homeserver</label>
       <input defaultValue={vm.defaultHomeserver} name="homeserver" placeholder="homeserver" required />
       <br />

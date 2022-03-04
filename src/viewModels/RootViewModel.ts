@@ -20,11 +20,14 @@ export class RootViewModel extends ViewModel {
   private _client: typeof Client; 
   private _loginViewModel: LoginViewModel | null;
   private _sessionViewModel: SessionViewModel | null;
+  private _error: boolean;
 
   constructor(options: Options) {
     super(options);
     this._loginViewModel = null;
     this._sessionViewModel = null;
+    this._error = false;
+
     this._client = new Client(options.platform);
     this.track(this._client);
   }
@@ -39,44 +42,47 @@ export class RootViewModel extends ViewModel {
     const loginSegment = this.navigation.path.get('login');
     const sessionSegment = this.navigation.path.get('session');
 
-    const loadOrLogin = async () => {
-      const sessions = await this.platform.sessionInfoStorage.getAll();
-      if (sessions.length > 0) {
-        this.navigation.push('session', sessions[0].id);
-      } else {
-        this.navigation.push('login');
-      }
-    };
+    const sessions = await this.platform.sessionInfoStorage.getAll();
     
     if (loginSegment) {
+      if (sessions.length > 0) {
+        this.navigation.push('session', sessions[0].id);
+        return;
+      }
       this._viewLogin();
       return;
     }
-    if (sessionSegment) {
-      const sessionId = sessionSegment.value;
-      if (sessionId === true) {
-        loadOrLogin();
+    if (sessionSegment && sessions[0]) {
+      const sessionId = sessions[0].id;
+      console.log(sessionSegment)
+      if (sessionSegment.value !== sessionId) {
+        this.navigation.push('session', sessionId);
         return;
       }
+
       await this._client.startWithExistingSession(sessionId);
       if (this._client.loadStatus.get() === 'Error') {
-        loadOrLogin();
+        this._error = true;
+        this.emitChange('activeSection');
         return;
       }
       this._viewSession();
       return;
     }
 
-    loadOrLogin();
+    if (sessions.length > 0) {
+      this.navigation.push('session', sessions[0].id);
+    } else {
+      this.navigation.push('login');
+    }
   }
 
   private _viewLogin() {
     this._setSection(() => {
       this._loginViewModel = new LoginViewModel(this.childOptions({
         client: this._client,
-        ready: () => {
-          // TODO: pass session id after login
-          this.navigation.push('session');
+        ready: (sessionId: string) => {
+          this.navigation.push('session', sessionId);
         }
       }));
     });
@@ -99,14 +105,17 @@ export class RootViewModel extends ViewModel {
 
     this.emitChange('activeSection');
   }
+
+  async logout() {
+    await this._client.startLogout(this._client.sessionId);
+    this.navigation.push('login');
+  }
   
   get activeSection() {
-    if (this._sessionViewModel) {
-        return 'session';
-    } else if (this._loginViewModel) {
-        return 'login';
-    }
-    return 'error';
+    if (this._sessionViewModel) return 'session';
+    if (this._loginViewModel) return 'login';
+    if (this._error) return 'error';
+    return 'loading';
   }
 
   
