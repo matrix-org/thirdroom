@@ -2,6 +2,7 @@ import {
   Platform,
   URLRouter,
   Navigation,
+  Segment,
   Client,
   ViewModel,
 } from 'hydrogen-view-sdk';
@@ -33,37 +34,36 @@ export class RootViewModel extends ViewModel {
   }
 
   async load() { 
-    this.track(this.navigation.observe('login').subscribe(() => this._applyNavigation()));
-    this.track(this.navigation.observe('session').subscribe(() => this._applyNavigation()));
-    this._applyNavigation();
-  }
-
-  private async _applyNavigation() {
+    this.track(this.navigation.observe('login').subscribe((value: any) => this._applyNavigation(value, 'login')));
+    this.track(this.navigation.observe('session').subscribe((value: any) => this._applyNavigation(value, 'session')));
     const loginSegment = this.navigation.path.get('login');
     const sessionSegment = this.navigation.path.get('session');
+    
+    const activeSegment: typeof Segment = loginSegment || sessionSegment;
+    if (activeSegment) {
+      this._applyNavigation(activeSegment.value, activeSegment.type);
+    } else {
+      this._applyNavigation(undefined, undefined);
+    }
+  }
 
+  private async _applyNavigation(value: any, type: string | undefined) {
     const sessions = await this.platform.sessionInfoStorage.getAll();
     
-    if (loginSegment) {
-      if (sessions.length > 0) {
-        this.navigation.push('session', sessions[0].id);
-        return;
-      }
+    if (type === 'login' && sessions.length === 0) {
       this._viewLogin();
       return;
     }
-    if (sessionSegment && sessions[0]) {
+    if (type === 'session' && sessions.length > 0) {
       const sessionId = sessions[0].id;
-      console.log(sessionSegment)
-      if (sessionSegment.value !== sessionId) {
+      if (value !== sessionId) {
         this.navigation.push('session', sessionId);
         return;
       }
 
       await this._client.startWithExistingSession(sessionId);
       if (this._client.loadStatus.get() === 'Error') {
-        this._error = true;
-        this.emitChange('activeSection');
+        this._viewError();
         return;
       }
       this._viewSession();
@@ -96,7 +96,14 @@ export class RootViewModel extends ViewModel {
     });
   }
 
+  private _viewError() {
+    this._setSection(() => {
+      this._error = true;
+    });
+  }
+
   private _setSection(setter: () => void) {
+    this._error = false;
     this._loginViewModel = this.disposeTracked(this._loginViewModel);
     this._sessionViewModel = this.disposeTracked(this._sessionViewModel);
     setter();
