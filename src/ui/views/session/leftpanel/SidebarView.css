@@ -1,0 +1,17 @@
+.SidebarView {
+  background-color: var(--bg-primary);
+  width: 80px;
+}
+
+.SidebarView__scrollable {
+  padding: var(--sp-normal) 0;
+
+  & .IconButton {
+    margin-bottom: var(--sp-normal);
+  }
+}
+
+.SidebarView__sticky {
+  padding: var(--sp-normal) 0;
+  background-color: var(--sc-dark-normal);
+}

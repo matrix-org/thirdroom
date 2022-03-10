@@ -1,0 +1,41 @@
+.Avatar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--br-normal);
+  background-color: var(--sc-dark-low);
+  overflow: hidden;
+
+  & .Text {
+    color: white;
+  }
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: none;
+  }
+}
+
+.Avatar--large {
+  width: var(--av-large);
+  height: var(--av-large);
+}
+.Avatar--normal {
+  width: var(--av-normal);
+  height: var(--av-normal);
+}
+.Avatar--small {
+  width: var(--av-small);
+  height: var(--av-small);
+}
+.Avatar--extra-small {
+  width: var(--av-extra-small);
+  height: var(--av-extra-small);
+  border-radius: var(--br-small);
+}
+
+.Avatar--circle {
+  border-radius: 50%;
+}

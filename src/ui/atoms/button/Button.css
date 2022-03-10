@@ -1,0 +1,30 @@
+.Button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--br-normal);
+
+  & .Text {
+    font-weight: var(--fw-semi-bold);
+  }
+}
+
+/* Button size */
+.Button--normal {
+  padding: var(--sp-tight);
+}
+.Button--small {
+  padding: var(--sp-extra-tight);
+}
+.Button--extra-small {
+  padding: var(--sp-ultra-tight);
+  border-radius: var(--br-small);
+}
+
+.Button--normal,
+.Button--small,
+.Button--extra-small {
+  & .Text:not(:only-child) {
+    padding: 0 var(--sp-ultra-tight);
+  }
+}

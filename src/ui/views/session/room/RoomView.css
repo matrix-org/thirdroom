@@ -1,0 +1,49 @@
+.RoomView {
+  background: var(--sc-dark-normal);
+  position: relative;
+}
+
+.RoomView__3d {
+
+}
+
+.RoomView > .Button,
+.RoomView__chat,
+.RoomView__controls {
+  position: absolute;
+}
+
+.RoomView > .Button {
+  left: var(--sp-normal);
+  top: var(--sp-normal);
+}
+
+.RoomView__chat {
+  --chat-width: 400px;
+  
+  width: var(--chat-width);
+  height: calc(100% - 140px);
+  top: var(--sp-normal);
+  right: var(--sp-normal);
+  transition: transform 200ms cubic-bezier(0.07, 0.79, 0.53, 0.91);
+  transform: translateX(calc(var(--chat-width) + var(--sp-extra-loose)));
+}
+.RoomView__chat--visible {
+  transform: translateX(0);
+}
+
+.RoomView__controls {
+  bottom: var(--sp-normal);
+  right: var(--sp-normal);
+
+  padding: var(--sp-extra-tight);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-normal);
+
+  & > .IconButton {
+    margin-right: var(--sp-extra-tight);
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}

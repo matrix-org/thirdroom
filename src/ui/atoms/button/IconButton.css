@@ -1,0 +1,19 @@
+.IconButton {
+  border-radius: var(--br-normal);
+  line-height: 0;
+}
+
+/* Button size */
+.IconButton--normal {
+  padding: var(--sp-tight);
+}
+.IconButton--small {
+  padding: var(--sp-extra-tight);
+  border-radius: var(--br-small);
+}
+.IconButton--circle {
+  border-radius: 50%;
+}
+.IconButton--shaded {
+  background-color: var(--sc-dark-low);
+}

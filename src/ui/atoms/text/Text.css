@@ -1,0 +1,40 @@
+.Text {
+  margin: 0;
+  padding: 0;
+  color: var(--tc-surface-high);
+}
+.Text-h2 {
+  font-size: var(--fs-h2);
+  letter-spacing: var(--ls-h2);
+  line-height: var(--lh-h2);
+}
+.Text-s1 {
+  font-size: var(--fs-s1);
+  letter-spacing: var(--ls-s1);
+  line-height: var(--lh-s1);
+}
+.Text-b1 {
+  font-size: var(--fs-b1);
+  letter-spacing: var(--ls-b1);
+  line-height: var(--lh-b1);
+}
+.Text-b2 {
+  font-size: var(--fs-b2);
+  letter-spacing: var(--ls-b2);
+  line-height: var(--lh-b2);
+}
+.Text-b3 {
+  font-size: var(--fs-b3);
+  letter-spacing: var(--ls-b3);
+  line-height: var(--lh-b3);
+}
+
+.Text--regular {
+  font-weight: var(--fw-regular);
+}
+.Text--medium {
+  font-weight: var(--fw-medium);
+}
+.Text--semi-bold {
+  font-weight: var(--fw-semi-bold);
+}

@@ -1,0 +1,35 @@
+.RoomListView {
+  width: 500px;
+  
+  & > header {
+    min-height: 110px;
+  }
+}
+
+.RoomListView > header,
+.RoomListView__content {
+  padding: 0 var(--sp-extra-loose);
+}
+
+.RoomListView__container {
+  background-color: var(--sc-dark-low);
+}
+
+.RoomListView__content {
+  min-height: 100%;
+
+  & header {
+    height: 60px;
+
+    & .Button {
+      margin-left: var(--sp-normal);
+      padding: 0;
+      background-color: transparent;
+    }
+  }
+
+  & .RoomTile,
+  & .RoomTile--active {
+    margin-bottom: var(--sp-tight);
+  }
+}

@@ -1,0 +1,30 @@
+.RoomPreview {
+  background-color: var(--bg-surface);
+
+  & > header {
+    min-height: 110px;
+    padding: 0 var(--sp-extra-loose);
+
+    & > * {
+      margin-left: var(--sp-normal);
+    }
+  }
+
+  & > .Scroll {
+    background-color: var(--sc-dark-low);
+  }
+}
+
+.RoomPreview__content {
+  padding: var(--sp-extra-loose);
+  padding-top: 60px;
+  padding-left: 0;
+
+  & > .Text {
+    margin-top: var(--sp-normal);
+  }
+  & .Button {
+    margin-top: var(--sp-normal);
+    min-width: 160px;
+  }
+}

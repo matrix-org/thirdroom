@@ -1,0 +1,25 @@
+.ComposerView {
+  min-height: 42.5px;
+  padding: 0 var(--sp-normal);
+
+  & input {
+    position: relative;
+    top: -20px;
+    
+    height: 45px;
+    min-width: 0;
+    width: 100%;
+    padding: 0 var(--sp-normal);
+    border: none;
+    border-radius: 45px;
+    background-color: var(--bg-surface-low);
+
+    font-size: var(--fs-b1);
+    line-height: var(--lh-b1);
+    letter-spacing: var(--ls-b1);
+
+    &:focus {
+      outline: 2px solid var(--bg-primary);
+    }
+  }
+}

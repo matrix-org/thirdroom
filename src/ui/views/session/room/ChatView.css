@@ -1,0 +1,14 @@
+.ChatView {
+  height: 100%;
+  overflow: hidden;
+  
+  box-shadow: 0 0 8px var(--sc-dark-normal);
+  border-radius: var(--br-normal);
+  background-color: var(--bg-surface);
+
+  & > header {
+    min-height: 60px;
+    padding: 0 var(--sp-normal);
+    box-shadow: 0 0 4px 0 var(--sc-dark-low);
+  }
+}
