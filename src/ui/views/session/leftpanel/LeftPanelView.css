@@ -8,6 +8,7 @@
   position: absolute;
   top: 0;
   left: 0;
+  bottom: 0;
   z-index: 99;
   transition: transform 200ms cubic-bezier(0.07, 0.79, 0.53, 0.91);
   box-shadow: 0 0 8px var(--sc-dark-normal);

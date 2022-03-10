@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import './SessionView.css';
 
 import { SessionViewModel } from '../../../viewModels/session/SessionViewModel';
@@ -10,17 +10,24 @@ import { RoomLoading } from "./room/RoomLoading";
 import { RoomView } from './room/RoomView';
 
 import { useVMProp } from '../../hooks/useVMProp';
+import { useEngine } from "../../hooks/useEngine";
 
 interface ISessionView {
   vm: SessionViewModel,
 };
 
 export function SessionView({ vm }: ISessionView) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEngine(canvasRef);
+
   return (
-    <div className="SessionView flex">
-      <LeftPanelView vm={vm.leftPanelViewModel} />
-      <MiddleView vm={vm} />
-    </div>
+    <>
+      <canvas className="SessionView__viewport" ref={canvasRef} />
+      <div className="SessionView flex">
+        <LeftPanelView vm={vm.leftPanelViewModel} />
+        <MiddleView vm={vm} />
+      </div>
+    </>
   );
 }
 

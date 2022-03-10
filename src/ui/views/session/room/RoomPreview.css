@@ -1,4 +1,6 @@
 .RoomPreview {
+  background-color: var(--bg-surface);
+
   & > header {
     min-height: 110px;
     padding: 0 var(--sp-extra-loose);
