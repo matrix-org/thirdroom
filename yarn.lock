@@ -271,7 +271,7 @@
   dependencies:
     postcss-value-parser "^4.2.0"
 
-"@dimforge/rapier3d-compat@0.7.6", "@dimforge/rapier3d-compat@^0.7.6":
+"@dimforge/rapier3d-compat@0.7.6":
   version "0.7.6"
   resolved "https://registry.yarnpkg.com/@dimforge/rapier3d-compat/-/rapier3d-compat-0.7.6.tgz#c51c655aceb9dcef959c667f19d7f600d13c087b"
   integrity sha512-A+IZSlkyBXlLKxVi4XTfjvySjZ8Lq7qZ0pE5U+renkQnDOjx+yhRMOhL1awqvLt6SJXId6kx8gaz0O8kxw8LLA==
@@ -390,10 +390,10 @@ base64-arraybuffer@^0.2.0:
   resolved "https://registry.yarnpkg.com/base64-arraybuffer/-/base64-arraybuffer-0.2.0.tgz#4b944fac0191aa5907afe2d8c999ccc57ce80f45"
   integrity sha512-7emyCsu1/xiBXgQZrscw/8KPRT44I4Yq9Pe6EGs3aPRTsWuggML1/1DTuZUuIaJPIm1FTDUVXl4x/yW8s0kQDQ==
 
-bitecs@^0.3.35:
-  version "0.3.35"
-  resolved "https://registry.yarnpkg.com/bitecs/-/bitecs-0.3.35.tgz#6f60b633c071112d66511892d9864114a5b8d0c4"
-  integrity sha512-cFx2tWubeWkRuyZjqUpd/m+PdvD5JUdPZ+lmem4bEB2P2hZVjKn8OFOHkQwKCl7SOWbivbiv4Rz4DcBWbecPJA==
+bitecs@0.3.36:
+  version "0.3.36"
+  resolved "https://registry.yarnpkg.com/bitecs/-/bitecs-0.3.36.tgz#e6b20fb03470dff033d6cbdf56fe87f8d4ee7310"
+  integrity sha512-Qx3WnsFtfyKoERGoNo6X2lHqkqYGqbiYKkXls35uh7AuZ0t0Qzqu5rlSjjSDz+wYSknurAzLY9XuimqG6rUwBg==
 
 browserslist@^4.17.5, browserslist@^4.19.1:
   version "4.19.1"
@@ -1071,13 +1071,10 @@ three@^0.138.3:
   resolved "https://registry.yarnpkg.com/three/-/three-0.138.3.tgz#7be5153d79dcbf9e9baad82e7faf8c29edda4ed0"
   integrity sha512-4t1cKC8gimNyJChJbaklg8W/qj3PpsLJUIFm5LIuAy/hVxxNm1ru2FGTSfbTSsuHmC/7ipsyuGKqrSAKLNtkzg==
 
-threecs@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/threecs/-/threecs-0.0.9.tgz#4184af4f33db0a20d82fc59b43227d32c4612d29"
-  integrity sha512-PAIZpJsK+noaKrrrbwN//58iPWE4WtipUt5YI8manVY9kc6jvt/FmfLwuVl20kCqge5+dk2UZZX7y0vv85ScSA==
-  dependencies:
-    "@dimforge/rapier3d-compat" "^0.7.6"
-    bitecs "^0.3.35"
+threecs@0.0.10:
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/threecs/-/threecs-0.0.10.tgz#56a4479353b55eefb1bbcdd757827ce0b6595517"
+  integrity sha512-6omuDsGpRWC8zGA4FBM9wAAbH7wdyXmisFvcaZPnWdre7Z6tq+n50q2eSvZg6kSaoWX69gV3YBxeKyPqsTnsiw==
 
 to-fast-properties@^2.0.0:
   version "2.0.0"

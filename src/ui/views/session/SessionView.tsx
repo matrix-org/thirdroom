@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import './SessionView.css';
 
 import { SessionViewModel } from '../../../viewModels/session/SessionViewModel';
@@ -12,13 +12,16 @@ import { RoomView } from './room/RoomView';
 import { useVMProp } from '../../hooks/useVMProp';
 import { useEngine } from "../../hooks/useEngine";
 
+import sceneUrl from "../../../../res/gltf/Box.glb?url";
+import { EngineState } from "../../../engine/initEngine";
+
 interface ISessionView {
   vm: SessionViewModel,
 };
 
 export function SessionView({ vm }: ISessionView) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEngine(canvasRef);
+  useEngine(canvasRef, sceneUrl);
 
   return (
     <>

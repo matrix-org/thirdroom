@@ -1,50 +1,83 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { initEngine, Engine, EngineState } from "../../engine/initEngine";
+import {
+  Engine,
+  EngineState,
+  createEngine,
+  loadEngine,
+  loadWorld,
+  enterWorld,
+  exitWorld,
+  disposeEngine,
+} from "../../engine/initEngine";
 
-export function useEngine(canvasRef: RefObject<HTMLCanvasElement>) {
+interface UseEngineProps {
+  state: EngineState;
+  error?: Error;
+  enterWorld: () => void;
+  exitWorld: () => void;
+}
+
+export function useEngine(canvasRef: RefObject<HTMLCanvasElement>, sceneUrl?: string): UseEngineProps {
   const engineRef = useRef<Engine>();
   const [engineState, setEngineState] = useState({
     state: EngineState.Uninitialized,
-    error: null
+    error: undefined
   });
 
   useEffect(() => {
     function onEngineStateChanged(state: EngineState) {
-      setEngineState({ state, error: null });
+      setEngineState({ state, error: undefined });
     }
 
+    let engine: Engine | undefined;
+
     if (canvasRef.current) {
-      engineRef.current = initEngine(canvasRef.current);
-      engineRef.current.addListener("state-changed", onEngineStateChanged);
+      engine = engineRef.current = createEngine();
+      (window as unknown as any)["engine"] = engine;
+      engine.addListener("state-changed", onEngineStateChanged);
+      loadEngine(engine, canvasRef.current).then(() => {
+        if (engineRef.current && sceneUrl) {
+          loadWorld(engineRef.current, sceneUrl);
+        }
+      });
     }
 
     return () => {
-      if (engineRef.current) {
-        engineRef.current.dispose();
-        engineRef.current.removeListener("state-changed", onEngineStateChanged);
+      if (engine) {
+        engine.removeListener("state-changed", onEngineStateChanged);
+        disposeEngine(engine); 
+        engineRef.current = undefined;
       }
     };
   }, []);
 
-  const loadWorld = useCallback(() => {
-    if (!engineRef.current) return;
-    engineRef.current.loadWorld();
+  useEffect(() => {
+    if (engineRef.current && engineRef.current.state !== EngineState.Uninitialized && sceneUrl) {
+      loadWorld(engineRef.current, sceneUrl);
+    }
+  }, [sceneUrl]);
+
+  const onEnterWorld = useCallback(() => {
+    if (!engineRef.current) {
+      console.warn("Cannot enter world before engine has loaded.");
+      return;
+    }
+
+    enterWorld(engineRef.current);
   }, []);
 
-  const enterWorld = useCallback(() => {
-    if (!engineRef.current) return;
-    engineRef.current.enterWorld();
+  const onExitWorld = useCallback(() => {
+    if (!engineRef.current) {
+      console.warn("Cannot exit world before engine has loaded.");
+      return;
+    }
+
+    exitWorld(engineRef.current);
   }, []);
 
-  const exitWorld = useCallback(() => {
-    if (!engineRef.current) return;
-    engineRef.current.exitWorld();
-  }, []);
-
-  const dispose = useCallback(() => {
-    if (!engineRef.current) return;
-    engineRef.current.dispose();
-  }, []);
-
-  return { ...engineState, loadWorld, enterWorld, exitWorld, dispose };
+  return {
+    ...engineState,
+    enterWorld: onEnterWorld,
+    exitWorld: onExitWorld,
+  };
 }
