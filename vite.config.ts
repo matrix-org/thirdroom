@@ -5,6 +5,12 @@ import postcssPresetEnv from 'postcss-preset-env';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    dedupe: [
+      "three",
+      "bitecs",
+    ],
+  },
   css: {
     postcss: {
       plugins: [

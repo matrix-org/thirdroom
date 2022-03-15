@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
-    "bitecs": "0.3.36",
+    "bitecs": "0.3.37",
     "events": "^3.3.0",
     "hydrogen-view-sdk": "0.0.9",
     "postcss": "^8.4.6",

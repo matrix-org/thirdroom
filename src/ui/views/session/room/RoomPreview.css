@@ -1,4 +1,5 @@
 .RoomPreview {
+  pointer-events: all;
   background-color: var(--bg-surface);
 
   & > header {

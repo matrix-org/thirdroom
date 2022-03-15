@@ -1,6 +1,7 @@
 .LeftPanelView {
   height: inherit;
   background-color: var(--bg-surface);
+  pointer-events: all;
 }
 
 .LeftPanelView--open,

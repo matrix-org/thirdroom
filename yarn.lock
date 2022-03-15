@@ -390,10 +390,10 @@ base64-arraybuffer@^0.2.0:
   resolved "https://registry.yarnpkg.com/base64-arraybuffer/-/base64-arraybuffer-0.2.0.tgz#4b944fac0191aa5907afe2d8c999ccc57ce80f45"
   integrity sha512-7emyCsu1/xiBXgQZrscw/8KPRT44I4Yq9Pe6EGs3aPRTsWuggML1/1DTuZUuIaJPIm1FTDUVXl4x/yW8s0kQDQ==
 
-bitecs@0.3.36:
-  version "0.3.36"
-  resolved "https://registry.yarnpkg.com/bitecs/-/bitecs-0.3.36.tgz#e6b20fb03470dff033d6cbdf56fe87f8d4ee7310"
-  integrity sha512-Qx3WnsFtfyKoERGoNo6X2lHqkqYGqbiYKkXls35uh7AuZ0t0Qzqu5rlSjjSDz+wYSknurAzLY9XuimqG6rUwBg==
+bitecs@0.3.37:
+  version "0.3.37"
+  resolved "https://registry.yarnpkg.com/bitecs/-/bitecs-0.3.37.tgz#1b44a249a7ed9ffa284da6d143b063683f156e34"
+  integrity sha512-tNfvOjXjV7tsIdtXeT6TfhiC3Z/W6TkgiEaWCD1CCKKpy+c52v9bEsJp0OEfJu6A4TfvLwKg4UBZSrO30u5frA==
 
 browserslist@^4.17.5, browserslist@^4.19.1:
   version "4.19.1"

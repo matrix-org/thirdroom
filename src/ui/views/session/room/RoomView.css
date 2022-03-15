@@ -3,8 +3,8 @@
   position: relative;
 }
 
-.RoomView__3d {
-
+.RoomView > :not(.RoomView__3d) {
+  pointer-events: all;
 }
 
 .RoomView > .Button,

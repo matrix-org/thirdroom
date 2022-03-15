@@ -1,5 +1,6 @@
 .RoomLoading {
   background-color: var(--sc-dark-normal);
+  pointer-events: all;
 }
 
 .RoomLoading__preview {
