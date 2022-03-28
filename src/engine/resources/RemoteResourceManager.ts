@@ -1,4 +1,5 @@
-import { ResourceDefinition, ResourceManagerCommand, ResourceMessage, ResourceState, IResourceMessage, IPostMessageTarget } from "./ResourceManager";
+import { WorkerMessages, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
+import { ResourceDefinition, ResourceState } from "./ResourceManager";
 
 export type RemoteResourceLoaderFactory<RemoteResource = undefined> = (
   manager: RemoteResourceManager
@@ -17,7 +18,7 @@ export interface RemoteResourceLoader<RemoteResource = undefined> {
 export interface RemoteResourceManager {
   buffer: SharedArrayBuffer;
   view: Uint32Array;
-  postMessageTarget: IPostMessageTarget;
+  postMessageTarget: WorkerMessageTarget;
   store: Map<number, RemoteResourceInfo<any>>;
   resourceLoaders: Map<string, RemoteResourceLoader<any>>
 }
@@ -29,28 +30,7 @@ export interface RemoteResourceInfo<RemoteResource = undefined> {
   remoteResource?: RemoteResource;
 }
 
-export interface LoadResourceMessage extends IResourceMessage {
-  command: ResourceManagerCommand.Load;
-  resourceId: number;
-  resourceDef: ResourceDefinition;
-}
-
-export interface AddResourceRefMessage extends IResourceMessage {
-  command: ResourceManagerCommand.AddRef;
-  resourceId: number;
-}
-
-export interface RemoveResourceRefMessage extends IResourceMessage {
-  command: ResourceManagerCommand.RemoveRef;
-  resourceId: number;
-}
-
-export type RemoteResourceMessage =
-| LoadResourceMessage
-| AddResourceRefMessage
-| RemoveResourceRefMessage;
-
-export function createRemoteResourceManager(buffer: SharedArrayBuffer, postMessageTarget: IPostMessageTarget): RemoteResourceManager {
+export function createRemoteResourceManager(buffer: SharedArrayBuffer, postMessageTarget: WorkerMessageTarget): RemoteResourceManager {
   return {
     buffer,
     view: new Uint32Array(buffer),
@@ -83,10 +63,10 @@ export function loadRemoteResource(
   });
 
   manager.postMessageTarget.postMessage({
-    command: ResourceManagerCommand.Load,
+    type: WorkerMessageType.LoadResource,
     resourceId,
     resourceDef,
-  } as RemoteResourceMessage, transferList);
+  }, transferList);
 
   return resourceId;
 }
@@ -96,9 +76,9 @@ export function addRemoteResourceRef(
   resourceId: number
 ) {
   manager.postMessageTarget.postMessage({
-    command: ResourceManagerCommand.AddRef,
+    type: WorkerMessageType.AddResourceRef,
     resourceId,
-  } as RemoteResourceMessage);
+  });
 }
 
 export function removeRemoteResourceRef(
@@ -106,25 +86,25 @@ export function removeRemoteResourceRef(
   resourceId: number
 ) {
   manager.postMessageTarget.postMessage({
-    command: ResourceManagerCommand.RemoveRef,
+    type: WorkerMessageType.RemoveResourceRef,
     resourceId,
-  } as RemoteResourceMessage);
+  });
 }
 
 export function processResourceMessage(
   manager: RemoteResourceManager,
-  message: ResourceMessage,
+  message: WorkerMessages,
 ) {
-  switch (message.command) {
-    case ResourceManagerCommand.Loaded: {
+  switch (message.type) {
+    case WorkerMessageType.ResourceLoaded: {
       remoteResourceLoaded(manager, message.resourceId, message.remoteResource);
       break;
     }
-    case ResourceManagerCommand.LoadError: {
+    case WorkerMessageType.ResourceLoadError: {
       remoteResourceLoadError(manager, message.resourceId, message.error);
       break;
     }
-    case ResourceManagerCommand.Disposed: {
+    case WorkerMessageType.ResourceDisposed: {
       remoteResourceDisposed(manager, message.resourceId);
       break;
     }

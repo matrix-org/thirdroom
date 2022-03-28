@@ -2,17 +2,17 @@ import { addViewMatrix4, addViewVector3, addViewVector4 } from "./component/tran
 import { addView, createCursorBuffer } from './allocator/CursorBuffer'
 import { maxEntities } from "./config";
 import { processResourceMessage, registerRemoteResourceLoader, RemoteResourceManager, createRemoteResourceManager } from "./resources/RemoteResourceManager";
-import { IPostMessageTarget, ResourceState } from "./resources/ResourceManager";
+import { ResourceState } from "./resources/ResourceManager";
 import { GLTFRemoteResourceLoader, loadRemoteGLTF } from "./resources/GLTFResourceLoader";
 import { createRemoteMesh, MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapReadBuffer, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, getInputButtonHeld, InputState } from "./input/InputManager";
-import { InputArray, Input } from "./input/InputKeys";
+import { Input } from "./input/InputKeys";
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { createRemoteUnlitMaterial, MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
 import { createRemoteBoxGeometry, GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
 
-const workerScope = globalThis as typeof globalThis & IPostMessageTarget;
+const workerScope = globalThis as typeof globalThis & Worker;
 
 workerScope.addEventListener("message", onMessage);
 
@@ -96,7 +96,7 @@ async function init(inputTripleBuffer: TripleBufferState, renderWorkerPort: Mess
   state.inputTripleBuffer = inputTripleBuffer;
   state.inputStates = inputTripleBuffer.buffers
     .map(buffer => createCursorBuffer(buffer))
-    .map(buffer => createInputState(InputArray, buffer));
+    .map(buffer => createInputState(buffer));
 
   if (renderWorkerPort) {
     state.renderWorkerPort = renderWorkerPort;

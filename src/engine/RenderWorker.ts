@@ -20,12 +20,39 @@ import { GLTFResourceLoader } from "./resources/GLTFResourceLoader";
 import { MeshResourceLoader } from "./resources/MeshResourceLoader";
 import { MaterialResourceLoader } from "./resources/MaterialResourceLoader";
 import { GeometryResourceLoader } from "./resources/GeometryResourceLoader";
-
-const objects: Object3D[] = [];
+import { InitializeRenderWorkerMessage, RenderWorkerResizeMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 
 if (typeof (window as any) === "undefined") {
   self.window = self;
-  globalThis.addEventListener("message", onMainThreadMessage);
+  globalThis.addEventListener("message", onMessage);
+}
+
+function onMessage({ data }: MessageEvent) {
+  if (typeof data !== "object") {
+    return;
+  }
+
+  const message = data as WorkerMessages;
+
+  switch (message.type) {
+    case WorkerMessageType.InitializeRenderWorker:
+      onInit(message);
+      break;
+    case WorkerMessageType.RenderWorkerResize:
+      onResize(message);
+      break;
+    // case "addEntity": {
+    //   const eid = args[0];
+    //   const resourceId = args[1];
+    //   addObject3DQueue.push([eid, resourceId])
+    //   break;
+    // }
+    // case "addCamera": {
+    //   const eid = args[0];
+    //   addCameraQueue.push(eid)
+    //   break;
+    // }
+  }
 }
 
 const state: {
@@ -41,39 +68,10 @@ const state: {
   scene: undefined,
   resourceManager: undefined,
 };
-
+const objects: Object3D[] = [];
 const addObject3DQueue: [number, number][] = [];
 const addCameraQueue: number[] = [];
 const cameras: PerspectiveCamera[] = [];
-
-function onMainThreadMessage({ data }: MessageEvent) {
-  if (!Array.isArray(data)) {
-    processRemoteResourceMessage(state.resourceManager!, data);
-    return;
-  }
-
-  const [type, ...args] = data;
-
-  switch (type) {
-    case "init":
-      init(args[0], args[1], args[2], args[3]);
-      break;
-    case "resize":
-      resize(args[0], args[1]);
-      break;
-    case "addEntity": {
-      const eid = args[0];
-      const resourceId = args[1];
-      addObject3DQueue.push([eid, resourceId])
-      break;
-    }
-    case "addCamera": {
-      const eid = args[0];
-      addCameraQueue.push(eid)
-      break;
-    }
-  }
-}
 
 type Object3DEntity = (Object3D | Mesh | PerspectiveCamera) & { eid: number}
 
@@ -96,22 +94,21 @@ const addCamera = (eid: number, obj: PerspectiveCamera = new PerspectiveCamera(
   state.scene!.add(obj);
 }
 
-export function resize(width: number, height: number) {
+function onResize({ canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
   state.needsResize = true;
-  state.canvasWidth = width;
-  state.canvasHeight = height;
+  state.canvasWidth = canvasWidth;
+  state.canvasHeight = canvasHeight;
 }
 
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 
-export const init = async (
-  gameWorkerPort: MessagePort,
-  canvas: HTMLCanvasElement,
-  initCanvasWidth: number,
-  initCanvasHeight: number
-) => {
-
-  gameWorkerPort.onmessage = onMainThreadMessage
+async function onInit({
+  canvasTarget,
+  gameWorkerMessageTarget,
+  initialCanvasWidth,
+  initialCanvasHeight
+}: InitializeRenderWorkerMessage) {
+  gameWorkerMessageTarget.addEventListener("message", onMessage as EventListener);
   
   const size = maxEntities
 
@@ -131,12 +128,12 @@ export const init = async (
       worldMatrixNeedsUpdate: addView(buffer, Uint8Array, size),
     }));
   
-    state.canvasWidth = initCanvasWidth;
-    state.canvasHeight = initCanvasHeight;
+    state.canvasWidth = initialCanvasWidth;
+    state.canvasHeight = initialCanvasHeight;
   
     const scene = state.scene = new Scene();
 
-    const resourceManager = createResourceManager(gameWorkerPort);
+    const resourceManager = createResourceManager(gameWorkerMessageTarget);
     registerResourceLoader(resourceManager, GLTFResourceLoader);
     registerResourceLoader(resourceManager, GeometryResourceLoader);
     registerResourceLoader(resourceManager, MaterialResourceLoader);
@@ -145,16 +142,7 @@ export const init = async (
   
     scene.add(new AmbientLight(0xffffff, 0.5));
   
-    // const boxMaterial = new MeshBasicMaterial({ color: 0xff0000 });
-    // const boxGeometry = new BoxBufferGeometry();
-    // const box = new Mesh(boxGeometry, boxMaterial);
-    // scene.add(box);
-  
-    const renderer = new WebGLRenderer({ antialias: true, canvas });
-  
-    // const euler = new Euler();
-    // const quat = new Quaternion();
-    // const pos = new Vector3();
+    const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
 
     const eulers = Array(maxEntities).fill(null).map(() => new Euler())
     const quats = Array(maxEntities).fill(null).map(() => new Quaternion())
@@ -228,10 +216,15 @@ export const init = async (
       }
     });
     
-    gameWorkerPort.postMessage(["start", workerFrameRate, tripleBuffer, resourceManager.buffer]);
+    gameWorkerMessageTarget.postMessage({
+      type: WorkerMessageType.InitializeGameWorkerRenderState,
+      workerFrameRate,
+      tripleBuffer,
+      resourceManagerBuffer: resourceManager.buffer
+    });
 
     console.log("RenderWorker initialized");
 }
 
 // for when renderer is on main thread
-export const postMessage = (data: any) => onMainThreadMessage({ data } as MessageEvent);
+export const postMessage = (data: any) => onMessage({ data } as MessageEvent);

@@ -1,15 +1,11 @@
-import { RemoteResourceMessage } from "./RemoteResourceManager";
-
-export interface IPostMessageTarget {
-  postMessage(message: any, transfer?: Transferable[]): void;
-}
+import { WorkerMessages, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;
   view: Uint32Array;
   store: Map<number, ResourceInfo<any, any>>;
   resourceLoaders: Map<string, ResourceLoader<any, any, any>>;
-  postMessageTarget: IPostMessageTarget;
+  workerMessageTarget: WorkerMessageTarget;
 }
 
 export type ResourceLoaderFactory<
@@ -36,7 +32,7 @@ export interface ResourceLoaderResponse<Resource, RemoteResource = undefined> {
   name?: string;
   resource: Resource;
   remoteResource?: RemoteResource;
-  transferList?: Transferable[];
+  transferList?: (Transferable | OffscreenCanvas )[];
 }
 
 export interface ResourceInfo<Resource, RemoteResource = undefined> {
@@ -56,41 +52,7 @@ export enum ResourceState {
   Error = "error",
 }
 
-export interface IResourceMessage {
-  command: ResourceManagerCommand;
-}
 
-export type ResourceMessage =
-  | LoadedResourceMessage<any>
-  | LoadErrorResourceMessage<any>
-  | DisposedResourceMessage;
-
-export enum ResourceManagerCommand {
-  Load = "load",
-  Loaded = "loaded",
-  LoadError = "load-error",
-  AddRef = "add-ref",
-  RemoveRef = "remove-ref",
-  Disposed = "disposed",
-}
-
-export interface LoadedResourceMessage<RemoteResource = undefined>
-  extends IResourceMessage {
-  command: ResourceManagerCommand.Loaded;
-  resourceId: number;
-  remoteResource?: RemoteResource;
-}
-
-export interface LoadErrorResourceMessage<Error> extends IResourceMessage {
-  command: ResourceManagerCommand.LoadError;
-  resourceId: number;
-  error: Error;
-}
-
-export interface DisposedResourceMessage extends IResourceMessage {
-  command: ResourceManagerCommand.Disposed;
-  resourceId: number;
-}
 
 export interface ResourceDefinition {
   type: string;
@@ -99,7 +61,7 @@ export interface ResourceDefinition {
 }
 
 export function createResourceManager(
-  postMessageTarget: IPostMessageTarget
+  workerMessageTarget: WorkerMessageTarget
 ): ResourceManager {
   const buffer = new SharedArrayBuffer(4);
 
@@ -108,7 +70,7 @@ export function createResourceManager(
     view: new Uint32Array(buffer),
     store: new Map(),
     resourceLoaders: new Map(),
-    postMessageTarget,
+    workerMessageTarget,
   };
 }
 
@@ -122,16 +84,16 @@ export function registerResourceLoader(
 
 export function processRemoteResourceMessage(
   manager: ResourceManager,
-  message: RemoteResourceMessage
+  message: WorkerMessages
 ) {
-  switch (message.command) {
-    case ResourceManagerCommand.Load:
+  switch (message.type) {
+    case WorkerMessageType.LoadResource:
       loadResource(manager, message.resourceId, message.resourceDef);
       break;
-    case ResourceManagerCommand.AddRef:
+    case WorkerMessageType.AddResourceRef:
       addResourceRef(manager, message.resourceId);
       break;
-    case ResourceManagerCommand.RemoveRef:
+    case WorkerMessageType.RemoveResourceRef:
       removeResourceRef(manager, message.resourceId);
       break;
   }
@@ -178,23 +140,23 @@ async function loadResource<
     resourceInfo.resource = response.resource;
     resourceInfo.state = ResourceState.Loaded;
 
-    manager.postMessageTarget.postMessage(
+    manager.workerMessageTarget.postMessage(
       {
-        command: ResourceManagerCommand.Loaded,
+        type: WorkerMessageType.ResourceLoaded,
         resourceId,
         remoteResource: response.remoteResource,
-      } as LoadedResourceMessage<RemoteResource>,
+      },
       response.transferList
     );
   } catch (error: any) {
     console.error(error);
     resourceInfo.state = ResourceState.Error;
     resourceInfo.error = error;
-    manager.postMessageTarget.postMessage({
-      command: ResourceManagerCommand.LoadError,
+    manager.workerMessageTarget.postMessage({
+      type: WorkerMessageType.ResourceLoadError,
       resourceId,
       error,
-    } as LoadErrorResourceMessage<typeof error>);
+    });
   }
 
   return resourceInfo;
@@ -232,10 +194,10 @@ function removeResourceRef(manager: ResourceManager, resourceId: number) {
 
     manager.store.delete(resourceId);
 
-    manager.postMessageTarget.postMessage({
-      command: ResourceManagerCommand.Disposed,
+    manager.workerMessageTarget.postMessage({
+      type: WorkerMessageType.ResourceDisposed,
       resourceId,
-    } as ResourceMessage);
+    });
   } else {
     if (loader.removeRef) {
       loader.removeRef(resourceId);

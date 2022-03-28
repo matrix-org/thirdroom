@@ -1,6 +1,11 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { TripleBufferState } from "./TripleBuffer";
+import {
+  GameWorkerMessageTarget,
+  RenderWorkerMessageTarget,
+  WorkerMessageType,
+} from "./WorkerMessage";
 
 export async function initRenderWorker(
   canvas: HTMLCanvasElement,
@@ -11,8 +16,8 @@ export async function initRenderWorker(
 
   let renderWorker: Worker | typeof import("./RenderWorker");
   let canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  let renderWorkerMessageTarget: typeof import("./RenderWorker") | MessagePort;
-  let gameWorkerMessageTarget: Worker | MessagePort;
+  let renderWorkerMessageTarget: RenderWorkerMessageTarget;
+  let gameWorkerMessageTarget: GameWorkerMessageTarget;
 
   if (supportsOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
@@ -33,20 +38,24 @@ export async function initRenderWorker(
   }
 
   gameWorkerMessageTarget.postMessage(
-    ["init", inputTripleBuffer, renderWorkerMessageTarget],
+    {
+      type: WorkerMessageType.InitializeGameWorker,
+      inputTripleBuffer,
+      renderWorkerMessageTarget,
+    },
     renderWorkerMessageTarget instanceof MessagePort
       ? [renderWorkerMessageTarget]
       : undefined
   );
 
   renderWorkerMessageTarget.postMessage(
-    [
-      "init",
+    {
+      type: WorkerMessageType.InitializeRenderWorker,
       gameWorkerMessageTarget,
       canvasTarget,
-      canvas.clientWidth,
-      canvas.clientHeight,
-    ],
+      canvasWidth: canvas.clientWidth,
+      canvasHeight: canvas.clientHeight,
+    },
     gameWorkerMessageTarget instanceof MessagePort &&
       canvasTarget instanceof OffscreenCanvas
       ? [gameWorkerMessageTarget, canvasTarget]
@@ -54,11 +63,11 @@ export async function initRenderWorker(
   );
 
   function onResize() {
-    renderWorkerMessageTarget.postMessage([
-      "resize",
-      canvas.clientWidth,
-      canvas.clientHeight,
-    ]);
+    renderWorkerMessageTarget.postMessage({
+      type: WorkerMessageType.RenderWorkerResize,
+      canvasWidth: canvas.clientWidth,
+      canvasHeight: canvas.clientHeight,
+    });
   }
 
   window.addEventListener("resize", onResize);
