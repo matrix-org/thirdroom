@@ -13,6 +13,8 @@ export enum WorkerMessageType {
   AddResourceRef = "add-resource-ref",
   RemoveResourceRef = "remove-resource-ref",
   ResourceDisposed = "resource-disposed",
+  AddRenderable = "add-renderable",
+  RemoveRenderable = "remove-renderable",
 }
 
 export interface WorkerMessage {
@@ -63,10 +65,10 @@ export interface DisposedResourceMessage extends WorkerMessage {
   resourceId: number;
 }
 
-export interface LoadResourceMessage extends WorkerMessage {
+export interface LoadResourceMessage<Def extends ResourceDefinition> extends WorkerMessage {
   type: WorkerMessageType.LoadResource;
   resourceId: number;
-  resourceDef: ResourceDefinition;
+  resourceDef: Def;
 }
 
 export interface AddResourceRefMessage extends WorkerMessage {
@@ -79,6 +81,17 @@ export interface RemoveResourceRefMessage extends WorkerMessage {
   resourceId: number;
 }
 
+export interface AddRenderableMessage extends WorkerMessage {
+  type: WorkerMessageType.AddRenderable;
+  eid: number;
+  resourceId: number;
+}
+
+export interface RemoveRenderableMessage extends WorkerMessage {
+  type: WorkerMessageType.RemoveRenderable;
+  eid: number;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -87,9 +100,11 @@ export type WorkerMessages =
   | LoadedResourceMessage<any>
   | LoadErrorResourceMessage<any>
   | DisposedResourceMessage
-  | LoadResourceMessage
+  | LoadResourceMessage<any>
   | AddResourceRefMessage
-  | RemoveResourceRefMessage;
+  | RemoveResourceRefMessage
+  | AddRenderableMessage
+  | RemoveRenderableMessage;
 
 export type WorkerMessageTarget = {
   postMessage(

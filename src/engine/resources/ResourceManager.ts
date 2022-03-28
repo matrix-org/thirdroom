@@ -1,4 +1,4 @@
-import { WorkerMessages, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
+import { AddResourceRefMessage, LoadResourceMessage, RemoveResourceRefMessage, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;
@@ -82,31 +82,13 @@ export function registerResourceLoader(
   manager.resourceLoaders.set(loader.type, loader);
 }
 
-export function processRemoteResourceMessage(
-  manager: ResourceManager,
-  message: WorkerMessages
-) {
-  switch (message.type) {
-    case WorkerMessageType.LoadResource:
-      loadResource(manager, message.resourceId, message.resourceDef);
-      break;
-    case WorkerMessageType.AddResourceRef:
-      addResourceRef(manager, message.resourceId);
-      break;
-    case WorkerMessageType.RemoveResourceRef:
-      removeResourceRef(manager, message.resourceId);
-      break;
-  }
-}
-
-async function loadResource<
+export async function onLoadResource<
   Def extends ResourceDefinition,
   Resource,
   RemoteResource = undefined
 >(
   manager: ResourceManager,
-  resourceId: number,
-  resourceDef: Def
+  { resourceDef, resourceId }: LoadResourceMessage<Def>
 ): Promise<ResourceInfo<Resource, RemoteResource>> {
   const { type } = resourceDef;
   const loader: ResourceLoader<Def, Resource, RemoteResource> =
@@ -162,7 +144,7 @@ async function loadResource<
   return resourceInfo;
 }
 
-function addResourceRef(manager: ResourceManager, resourceId: number) {
+export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddResourceRefMessage) {
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {
@@ -178,7 +160,7 @@ function addResourceRef(manager: ResourceManager, resourceId: number) {
   resourceInfo.refCount++;
 }
 
-function removeResourceRef(manager: ResourceManager, resourceId: number) {
+export function onRemoveResourceRef(manager: ResourceManager, { resourceId }: RemoveResourceRefMessage) {
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {
@@ -207,7 +189,7 @@ function removeResourceRef(manager: ResourceManager, resourceId: number) {
   }
 }
 
-export async function asyncLoadResource<Resource>(
+export async function loadResource<Resource>(
   manager: ResourceManager,
   resourceId: number
 ): Promise<Resource | undefined> {

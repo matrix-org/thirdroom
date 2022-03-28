@@ -23,14 +23,14 @@ const entities: number[] = [];
 const rigidBodies: RAPIER.RigidBody[] = [];
 
 const Transform = {
-  position: addViewVector3(renderableBuffer, maxEntities),
-  scale: addViewVector3(renderableBuffer, maxEntities),
-  rotation: addViewVector3(renderableBuffer, maxEntities),
-  quaternion: addViewVector4(renderableBuffer, maxEntities),
+  position: addViewVector3(gameBuffer, maxEntities),
+  scale: addViewVector3(gameBuffer, maxEntities),
+  rotation: addViewVector3(gameBuffer, maxEntities),
+  quaternion: addViewVector4(gameBuffer, maxEntities),
 
-  localMatrix: addViewMatrix4(renderableBuffer, maxEntities),
+  localMatrix: addViewMatrix4(gameBuffer, maxEntities),
   worldMatrix: addViewMatrix4(renderableBuffer, maxEntities),
-  matrixAutoUpdate: addView(renderableBuffer, Uint8Array, maxEntities),
+  matrixAutoUpdate: addView(gameBuffer, Uint8Array, maxEntities),
   worldMatrixNeedsUpdate: addView(renderableBuffer, Uint8Array, maxEntities),
 
   parent: addView(gameBuffer, Uint32Array, maxEntities),
