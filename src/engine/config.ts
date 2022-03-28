@@ -1,0 +1,1 @@
+export const maxEntities = 2000;
