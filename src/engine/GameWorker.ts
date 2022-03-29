@@ -1,9 +1,8 @@
 import { addViewMatrix4, addViewVector3, addViewVector4 } from "./component/transform";
 import { addView, createCursorBuffer } from './allocator/CursorBuffer'
-import { maxEntities } from "./config";
-import { processResourceMessage, registerRemoteResourceLoader, RemoteResourceManager, createRemoteResourceManager } from "./resources/RemoteResourceManager";
-import { ResourceState } from "./resources/ResourceManager";
-import { GLTFRemoteResourceLoader, loadRemoteGLTF } from "./resources/GLTFResourceLoader";
+import { maxEntities, tickRate } from "./config";
+import { registerRemoteResourceLoader, RemoteResourceManager, createRemoteResourceManager } from "./resources/RemoteResourceManager";
+import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
 import { createRemoteMesh, MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapReadBuffer, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, getInputButtonHeld, InputState } from "./input/InputManager";
@@ -11,10 +10,31 @@ import { Input } from "./input/InputKeys";
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { createRemoteUnlitMaterial, MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
 import { createRemoteBoxGeometry, GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
+import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
-workerScope.addEventListener("message", onMessage);
+async function onInitMessage({ data }: { data: WorkerMessages } ) {
+  if (typeof data !== "object") {
+    return;
+  }
+
+  const message = data as WorkerMessages;
+
+  if (message.type === WorkerMessageType.InitializeGameWorker) {
+    const state = await onInit(message);
+
+    if (state.renderWorkerMessagePort) {
+      state.renderWorkerMessagePort.addEventListener("message", onMessage(state));
+      state.renderWorkerMessagePort.start();
+    }
+
+    workerScope.removeEventListener("message", onInitMessage);
+    workerScope.addEventListener("message", onMessage(state));
+  }
+}
+
+workerScope.addEventListener("message", onInitMessage);
 
 const gameBuffer = createCursorBuffer();
 const renderableBuffer = createCursorBuffer();
@@ -32,6 +52,7 @@ const Transform = {
   worldMatrix: addViewMatrix4(renderableBuffer, maxEntities),
   matrixAutoUpdate: addView(gameBuffer, Uint8Array, maxEntities),
   worldMatrixNeedsUpdate: addView(renderableBuffer, Uint8Array, maxEntities),
+  interpolate: addView(renderableBuffer, Uint8Array, maxEntities),
 
   parent: addView(gameBuffer, Uint32Array, maxEntities),
   firstChild: addView(gameBuffer, Uint32Array, maxEntities),
@@ -39,77 +60,83 @@ const Transform = {
   nextSibling: addView(gameBuffer, Uint32Array, maxEntities),
 };
 
-const state: {
-  tripleBuffer?: TripleBufferState,
-  inputTripleBuffer?: TripleBufferState,
-  inputStates?: InputState[],
-  physicsWorld?: RAPIER.World,
-  frameRate: number,
-  renderWorkerPort?: MessagePort,
+interface GameWorkerState {
+  renderableTripleBuffer: TripleBufferState,
+  inputTripleBuffer: TripleBufferState,
+  inputStates: InputState[],
+  physicsWorld: RAPIER.World,
+  renderWorkerMessagePort?: MessagePort,
   then: number,
-  rotation: number[],
-  resourceManager?: RemoteResourceManager,
-  gltfResourceId?: number;
-} = {
-  tripleBuffer: undefined,
-  inputTripleBuffer: undefined,
-  inputStates: undefined,
-  physicsWorld: undefined,
-  frameRate: 0,
-  renderWorkerPort: undefined,
-  then: 0,
-  rotation: [0, 0, 0],
-  resourceManager: undefined,
-  gltfResourceId: undefined,
-};
-
-async function onMessage({ data }: MessageEvent) {
-  if (!Array.isArray(data)) {
-    processResourceMessage(state.resourceManager!, data);
-    return;
-  }
-
-  const [type, ...args] = data;
-
-  switch (type) {
-    case "init":
-      await init(args[0], args[1]);
-      break;
-    case "start":
-      start(args[0], args[1], args[2]);
-      break;
-  }
+  resourceManager: RemoteResourceManager,
 }
 
-async function init(inputTripleBuffer: TripleBufferState, renderWorkerPort: MessagePort) {
+async function onInit({
+  inputTripleBuffer,
+  resourceManagerBuffer,
+  renderWorkerMessagePort,
+  renderableTripleBuffer,
+}: InitializeGameWorkerMessage): Promise<GameWorkerState> {
   console.log("GameWorker initialized");
 
   await RAPIER.init();
 
   const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
-  state.physicsWorld = new RAPIER.World(gravity);
+  const physicsWorld = new RAPIER.World(gravity);
     
   // Create the ground
   let groundColliderDesc = RAPIER.ColliderDesc.cuboid(100.0, 0.1, 100.0);
-  state.physicsWorld.createCollider(groundColliderDesc);
+  physicsWorld.createCollider(groundColliderDesc);
 
-  state.inputTripleBuffer = inputTripleBuffer;
-  state.inputStates = inputTripleBuffer.buffers
+  const inputStates = inputTripleBuffer.buffers
     .map(buffer => createCursorBuffer(buffer))
     .map(buffer => createInputState(buffer));
 
-  if (renderWorkerPort) {
-    state.renderWorkerPort = renderWorkerPort;
-    renderWorkerPort.addEventListener("message", onMessage);
-    renderWorkerPort.start();
+  console.log("GameWorker loop started");
+  const resourceManager =
+    createRemoteResourceManager(resourceManagerBuffer, renderWorkerMessagePort || workerScope);
+
+  registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, GeometryRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
+
+  const state = {
+    renderableTripleBuffer,
+    inputTripleBuffer,
+    resourceManager,
+    then: performance.now(),
+    inputStates,
+    physicsWorld,
+    renderWorkerMessagePort
+  };
+
+  createCamera(state, 0);
+
+  const geometryResourceId = createRemoteBoxGeometry(resourceManager);
+
+  for (let i = 1; i < maxEntities; i++) {
+    createCube(state, i, geometryResourceId);
   }
+
+
+  update(state);
+
+  return state;
 }
+
+const onMessage = (state: GameWorkerState) => ({ data }: { data: WorkerMessages }) => {
+  if (typeof data !== "object") {
+    return;
+  }
+
+  const message = data as WorkerMessages;
+};
 
 const rndRange = (min: number, max: number) => { 
   return Math.random() * (max - min) + min;
 }
 
-const createCube = (eid: number, geometryResourceId: number) => {
+const createCube = (state: GameWorkerState, eid: number, geometryResourceId: number) => {
   entities.push(eid);
 
   const position = Transform.position[eid];
@@ -138,16 +165,16 @@ const createCube = (eid: number, geometryResourceId: number) => {
 
   rigidBodies.push(rigidBody);
 
-  createEntity(eid, resourceId);
+  createEntity(state, eid, resourceId);
 }
 
-const createEntity = (eid: number, resourceId: number) => {
-  const port = state.renderWorkerPort || workerScope;
+const createEntity = (state: GameWorkerState, eid: number, resourceId: number) => {
+  const port = state.renderWorkerMessagePort || workerScope;
   port.postMessage(['addEntity', eid, resourceId])
 };
 
 
-const createCamera = (eid: number) => {
+const createCamera = (state: GameWorkerState, eid: number) => {
   entities.push(eid);
 
   const position = Transform.position[eid];
@@ -155,40 +182,15 @@ const createCamera = (eid: number) => {
   position[1] = 5;
   position[2] = 40;
 
-  const port = state.renderWorkerPort || globalThis;
+  const port = state.renderWorkerMessagePort || globalThis;
   port.postMessage(['addCamera', eid])
 }
 
-function start(frameRate: number, tripleBuffer: TripleBufferState, resourceManagerBuffer: SharedArrayBuffer) {
-  console.log("GameWorker loop started");
-  state.frameRate = frameRate;
-  state.tripleBuffer = tripleBuffer;
-  const resourceManager = state.resourceManager =
-    createRemoteResourceManager(resourceManagerBuffer, state.renderWorkerPort || workerScope);
-
-  registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, GeometryRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
-
-  // state.gltfResourceId = loadRemoteGLTF(state.resourceManager, "/OutdoorFestival.glb");
-  
-  createCamera(0);
-
-  const geometryResourceId = createRemoteBoxGeometry(state.resourceManager);
-
-  for (let i = 1; i < maxEntities; i++) {
-    createCube(i, geometryResourceId);
-  }
-
-  update();
+const inputReadSystem = (state: GameWorkerState) => {
+  swapReadBuffer(state.inputTripleBuffer)
 }
 
-const inputReadSystem = () => {
-  swapReadBuffer(state.inputTripleBuffer!)
-}
-
-const cameraMoveSystem = (dt: number) => {
+const cameraMoveSystem = (state: GameWorkerState, dt: number) => {
   const eid = 0;
   const position = Transform.position[eid];
   const readableIndex = getReadBufferIndex(state.inputTripleBuffer!);
@@ -209,11 +211,11 @@ const backward = new RAPIER.Vector3(0,0,speed);
 const right = new RAPIER.Vector3(speed,0,0);
 const left = new RAPIER.Vector3(-speed,0,0);
 const up = new RAPIER.Vector3(0,speed,0);
-const cubeMoveSystem = (dt: number) => {
+const cubeMoveSystem = (state: GameWorkerState, dt: number) => {
   const eid = 1;
   const rigidBody = rigidBodies[eid];
-  const readableIndex = getReadBufferIndex(state.inputTripleBuffer!);
-  const inputState = state.inputStates![readableIndex];
+  const readableIndex = getReadBufferIndex(state.inputTripleBuffer);
+  const inputState = state.inputStates[readableIndex];
   if (getInputButtonHeld(inputState, Input.KeyW))
     rigidBody.applyImpulse(forward, true);
   if (getInputButtonHeld(inputState, Input.KeyS))
@@ -226,21 +228,7 @@ const cubeMoveSystem = (dt: number) => {
     rigidBody.applyImpulse(up, true);
 }
 
-let createdScene = false;
-
-function gltfLoaderSystem() {
-  if (createdScene) {
-    return;
-  }
-
-  const resource = state.resourceManager!.store.get(state.gltfResourceId!);
-
-  if (resource && resource.state === ResourceState.Loaded) {
-    createEntity(0, resource.resourceId);
-  }
-}
-
-const physicsSystem = (dt: number) => {
+const physicsSystem = (state: GameWorkerState, dt: number) => {
 
   for (let i = 1; i < rigidBodies.length; i++) {
     const eid = entities[i];
@@ -264,31 +252,30 @@ const physicsSystem = (dt: number) => {
   state.physicsWorld!.step()
 }
 
-const pipeline = (dt: number) => {
-  gltfLoaderSystem();
-  inputReadSystem();
-  cameraMoveSystem(dt);
-  cubeMoveSystem(dt);
-  physicsSystem(dt);
+const pipeline = (state: GameWorkerState, dt: number) => {
+  inputReadSystem(state);
+  cameraMoveSystem(state, dt);
+  cubeMoveSystem(state, dt);
+  physicsSystem(state, dt);
 }
 
-function update() {
+function update(state: GameWorkerState) {
   const start = performance.now();
   const dt = (start - state.then) / 1000;
   state.then = start;
 
-  pipeline(dt);
+  pipeline(state, dt);
 
-  copyToWriteBuffer(state.tripleBuffer!, renderableBuffer);
-  swapWriteBuffer(state.tripleBuffer!);
+  copyToWriteBuffer(state.renderableTripleBuffer, renderableBuffer);
+  swapWriteBuffer(state.renderableTripleBuffer);
 
   const elapsed = performance.now() - state.then;
-  const remainder = 1000 / state.frameRate - elapsed;
+  const remainder = 1000 / tickRate - elapsed;
 
   if (remainder > 0) {
     // todo: call fixed timestep physics pipeline here
     setTimeout(update, remainder);
   } else {
-    update();
+    update(state);
   }
 }

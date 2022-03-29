@@ -60,11 +60,14 @@ export interface ResourceDefinition {
   [key: string]: any;
 }
 
+export function createResourceManagerBuffer() {
+  return new SharedArrayBuffer(4);
+}
+
 export function createResourceManager(
+  buffer: SharedArrayBuffer,
   workerMessageTarget: WorkerMessageTarget
 ): ResourceManager {
-  const buffer = new SharedArrayBuffer(4);
-
   return {
     buffer,
     view: new Uint32Array(buffer),

@@ -59,7 +59,7 @@ interface RenderWorkerState {
 
 let state: RenderWorkerState;
 
-function onMessage({ data }: MessageEvent) {
+function onMessage({ data }: { data: WorkerMessages}) {
   if (typeof data !== "object") {
     return;
   }
@@ -104,70 +104,59 @@ async function onInit({
   canvasTarget,
   gameWorkerMessageTarget,
   initialCanvasWidth,
-  initialCanvasHeight
+  initialCanvasHeight,
+  resourceManagerBuffer,
+  renderableTripleBuffer,
 }: InitializeRenderWorkerMessage): Promise<RenderWorkerState> {
-  gameWorkerMessageTarget.addEventListener("message", onMessage as EventListener);
-  
-  const size = maxEntities
+  gameWorkerMessageTarget.addEventListener("message", onMessage);
 
-  const tripleBuffer = createTripleBuffer();
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
 
-    const scene = new Scene();
-    const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
+  const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
+  registerResourceLoader(resourceManager, GLTFResourceLoader);
+  registerResourceLoader(resourceManager, GeometryResourceLoader);
+  registerResourceLoader(resourceManager, MaterialResourceLoader);
+  registerResourceLoader(resourceManager, MeshResourceLoader);
 
-    const resourceManager = createResourceManager(gameWorkerMessageTarget);
-    registerResourceLoader(resourceManager, GLTFResourceLoader);
-    registerResourceLoader(resourceManager, GeometryResourceLoader);
-    registerResourceLoader(resourceManager, MaterialResourceLoader);
-    registerResourceLoader(resourceManager, MeshResourceLoader);
-  
-    scene.add(new AmbientLight(0xffffff, 0.5));
-  
-    const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
-  
-    const clock = new Clock();
-  
-    // Can likely scale this dynamically depending on worker frame rate
-    // renderer.setPixelRatio() can be used to scale main thread frame rate
-    const workerFrameRate = tickRate;
+  scene.add(new AmbientLight(0xffffff, 0.5));
 
-    const transformViews = tripleBuffer.views
-      .map(buffer => createCursorBuffer(buffer))
-      .map(buffer => ({
-        worldMatrix: addViewMatrix4(buffer, size),
-        worldMatrixNeedsUpdate: addView(buffer, Uint8Array, size),
-        interpolate: addView(buffer, Uint8Array, size)
-      }) as TransformView);
+  const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
 
-    const state: RenderWorkerState = {
-      needsResize: true,
-      camera,
-      scene,
-      renderer,
-      clock,
-      resourceManager,
-      canvasWidth: initialCanvasWidth,
-      canvasHeight: initialCanvasWidth,
-      addRenderableQueue: [],
-      removeRenderableQueue: [],
-      renderables: [],
-      renderableIndices: new Map<number,number>(),
-      renderableTripleBuffer: tripleBuffer,
-      transformViews,
-    };
+  const clock = new Clock();
 
-    renderer.setAnimationLoop(() => onUpdate(state));
-    
-    gameWorkerMessageTarget.postMessage({
-      type: WorkerMessageType.InitializeGameWorkerRenderState,
-      workerFrameRate,
-      tripleBuffer,
-      resourceManagerBuffer: resourceManager.buffer
-    });
+  const transformViews = renderableTripleBuffer.views
+    .map(buffer => createCursorBuffer(buffer))
+    .map(buffer => ({
+      // note: needs synced with renderableBuffer properties in game worker
+      // todo: abstract the need to sync structure with renderableBuffer properties
+      worldMatrix: addViewMatrix4(buffer, maxEntities),
+      worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+      interpolate: addView(buffer, Uint8Array, maxEntities)
+    }) as TransformView);
 
-    console.log("RenderWorker initialized");
+  const state: RenderWorkerState = {
+    needsResize: true,
+    camera,
+    scene,
+    renderer,
+    clock,
+    resourceManager,
+    canvasWidth: initialCanvasWidth,
+    canvasHeight: initialCanvasWidth,
+    addRenderableQueue: [],
+    removeRenderableQueue: [],
+    renderables: [],
+    renderableIndices: new Map<number,number>(),
+    renderableTripleBuffer,
+    transformViews,
+  };
 
-    return state;
+  renderer.setAnimationLoop(() => onUpdate(state));
+
+  console.log("RenderWorker initialized");
+
+  return state;
 }
 
 const tempMatrix4 = new Matrix4();

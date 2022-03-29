@@ -24,13 +24,17 @@ export interface WorkerMessage {
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
   inputTripleBuffer: TripleBufferState;
-  renderWorkerMessageTarget: RenderWorkerMessageTarget;
+  renderableTripleBuffer: TripleBufferState;
+  renderWorkerMessagePort?: MessagePort;
+  resourceManagerBuffer: SharedArrayBuffer;
 }
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
   gameWorkerMessageTarget: GameWorkerMessageTarget;
   canvasTarget: HTMLCanvasElement | OffscreenCanvas;
+  renderableTripleBuffer: TripleBufferState;
+  resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
 }
@@ -39,13 +43,6 @@ export interface RenderWorkerResizeMessage extends WorkerMessage {
   type: WorkerMessageType.RenderWorkerResize;
   canvasWidth: number;
   canvasHeight: number;
-}
-
-export interface InitializeGameWorkerRenderStateMessage extends WorkerMessage {
-  type: WorkerMessageType.InitializeGameWorkerRenderState;
-  workerFrameRate: number;
-  tripleBuffer: TripleBufferState;
-  resourceManagerBuffer: SharedArrayBuffer;
 }
 
 export interface LoadedResourceMessage<RemoteResource = undefined> extends WorkerMessage {
@@ -96,7 +93,6 @@ export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
   | RenderWorkerResizeMessage
-  | InitializeGameWorkerRenderStateMessage
   | LoadedResourceMessage<any>
   | LoadErrorResourceMessage<any>
   | DisposedResourceMessage
@@ -107,17 +103,18 @@ export type WorkerMessages =
   | RemoveRenderableMessage;
 
 export type WorkerMessageTarget = {
+  addEventListener(name: "message", listener: (event: { data: WorkerMessages }) => void): void;
   postMessage(
     message: WorkerMessages,
     transfer?: (Transferable | OffscreenCanvas)[]
   ): void;
 };
 
-export type RenderWorkerMessageTarget = (
-  | MessagePort
-  | typeof import("./RenderWorker")
-) &
-  WorkerMessageTarget;
+export type RenderWorkerMessageTarget = {
+  postMessage(
+    message: WorkerMessages,
+    transfer?: (Transferable | OffscreenCanvas)[]
+  ): void;
+};
 
-export type GameWorkerMessageTarget = (MessagePort | Worker) &
-  WorkerMessageTarget;
+export type GameWorkerMessageTarget = WorkerMessageTarget;

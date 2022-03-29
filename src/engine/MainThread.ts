@@ -1,6 +1,7 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
-import { TripleBufferState } from "./TripleBuffer";
+import { createResourceManagerBuffer } from "./resources/ResourceManager";
+import { createTripleBuffer } from "./TripleBuffer";
 import {
   GameWorkerMessageTarget,
   RenderWorkerMessageTarget,
@@ -9,7 +10,6 @@ import {
 
 export async function initRenderWorker(
   canvas: HTMLCanvasElement,
-  inputTripleBuffer: TripleBufferState,
   gameWorker: Worker
 ) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
@@ -31,36 +31,10 @@ export async function initRenderWorker(
     console.info(
       "Browser does not support OffscreenCanvas, rendering on main thread."
     );
-    renderWorker = await import("./RenderWorker");
-    canvasTarget = canvas;
-    renderWorkerMessageTarget = renderWorker;
+    renderWorkerMessageTarget = await import("./RenderWorker") as RenderWorkerMessageTarget;
     gameWorkerMessageTarget = gameWorker;
+    canvasTarget = canvas;
   }
-
-  gameWorkerMessageTarget.postMessage(
-    {
-      type: WorkerMessageType.InitializeGameWorker,
-      inputTripleBuffer,
-      renderWorkerMessageTarget,
-    },
-    renderWorkerMessageTarget instanceof MessagePort
-      ? [renderWorkerMessageTarget]
-      : undefined
-  );
-
-  renderWorkerMessageTarget.postMessage(
-    {
-      type: WorkerMessageType.InitializeRenderWorker,
-      gameWorkerMessageTarget,
-      canvasTarget,
-      canvasWidth: canvas.clientWidth,
-      canvasHeight: canvas.clientHeight,
-    },
-    gameWorkerMessageTarget instanceof MessagePort &&
-      canvasTarget instanceof OffscreenCanvas
-      ? [gameWorkerMessageTarget, canvasTarget]
-      : undefined
-  );
 
   function onResize() {
     renderWorkerMessageTarget.postMessage({
@@ -73,6 +47,9 @@ export async function initRenderWorker(
   window.addEventListener("resize", onResize);
 
   return {
+    canvasTarget,
+    renderWorkerMessageTarget,
+    gameWorkerMessageTarget,
     dispose() {
       window.removeEventListener("resize", onResize);
 
@@ -86,10 +63,47 @@ export async function initRenderWorker(
 export async function initMainThread(canvas: HTMLCanvasElement) {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker(
-    canvas,
-    inputManager.tripleBuffer,
-    gameWorker
+  const {
+    canvasTarget,
+    renderWorkerMessageTarget,
+    gameWorkerMessageTarget,
+    dispose: disposeRenderWorker,
+  } = await initRenderWorker(canvas, gameWorker);
+
+  const renderableTripleBuffer = createTripleBuffer();
+
+  const resourceManagerBuffer = createResourceManagerBuffer();
+
+  const renderWorkerMessagePort =
+    renderWorkerMessageTarget instanceof MessagePort
+      ? renderWorkerMessageTarget
+      : undefined;
+
+  gameWorkerMessageTarget.postMessage(
+    {
+      type: WorkerMessageType.InitializeGameWorker,
+      renderableTripleBuffer,
+      inputTripleBuffer: inputManager.tripleBuffer,
+      renderWorkerMessagePort,
+      resourceManagerBuffer,
+    },
+    renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
+  );
+
+  renderWorkerMessageTarget.postMessage(
+    {
+      type: WorkerMessageType.InitializeRenderWorker,
+      renderableTripleBuffer,
+      gameWorkerMessageTarget,
+      canvasTarget,
+      initialCanvasWidth: canvas.clientWidth,
+      initialCanvasHeight: canvas.clientHeight,
+      resourceManagerBuffer,
+    },
+    gameWorkerMessageTarget instanceof MessagePort &&
+      canvasTarget instanceof OffscreenCanvas
+      ? [gameWorkerMessageTarget, canvasTarget]
+      : undefined
   );
 
   let animationFrameId: number;
@@ -107,7 +121,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
       cancelAnimationFrame(animationFrameId);
       inputManager.dispose();
       gameWorker.terminate();
-      renderWorker.dispose();
+      disposeRenderWorker();
     },
   };
 }
