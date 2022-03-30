@@ -26,7 +26,7 @@
   & .Text {
     color: var(--tc-secondary-high);
   }
-  
+
   &:hover,
   &:focus {
     background-color: var(--bg-secondary-hover);

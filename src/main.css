@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
-@import './style/display.css';
-@import './style/flex.css';
-@import './style/text.css';
+@import "./style/display.css";
+@import "./style/flex.css";
+@import "./style/text.css";
 
 @custom-selector :--heading h1, h2, h3, h4, h5, h6;
 
@@ -41,10 +41,10 @@
 
   --tc-secondary-high: hsl(0, 0%, 100%);
   --tc-secondary-normal: hsla(0, 0%, 100%, 80%);
-  
+
   --tc-positive-high: hsl(0, 0%, 100%);
   --tc-positive-normal: hsla(0, 0%, 100%, 80%);
-  
+
   --tc-danger-high: hsl(0, 0%, 100%);
   --tc-danger-normal: hsla(0, 0%, 100%, 80%);
 
@@ -86,14 +86,14 @@
   --fs-b1: 15px;
   --fs-b2: 14px;
   --fs-b3: 12px;
-  
+
   /* line heights */
   --lh-h2: 30px;
   --lh-s1: 24px;
   --lh-b1: 20px;
   --lh-b2: 20px;
   --lh-b3: 15px;
-  
+
   /* letter spacing */
   --ls-h2: 0px;
   --ls-s1: 0px;
@@ -108,18 +108,19 @@
 
   /* other */
   --scrollbar-width: 8px;
-  
-  --usercolor1: #368BD6;
-  --usercolor2: #AC3BA8;
-  --usercolor3: #03B381;
-  --usercolor4: #E64F7A;
-  --usercolor5: #FF812D;
-  --usercolor6: #2DC2C5;
-  --usercolor7: #5C56F5;
-  --usercolor8: #74D12C;
+
+  --usercolor1: #368bd6;
+  --usercolor2: #ac3ba8;
+  --usercolor3: #03b381;
+  --usercolor4: #e64f7a;
+  --usercolor5: #ff812d;
+  --usercolor6: #2dc2c5;
+  --usercolor7: #5c56f5;
+  --usercolor8: #74d12c;
 }
 
-html, #root {
+html,
+#root {
   height: 100%;
   overflow: hidden;
 }
@@ -128,9 +129,8 @@ body {
   margin: 0;
   height: 100%;
   background-color: var(--bg-surface);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-variant-ligatures: no-contextual;
@@ -141,13 +141,14 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -167,7 +168,8 @@ a {
 b {
   font-weight: var(--fw-semi-bold);
 }
-p, label {
+p,
+label {
   margin: 0;
   padding: 0;
 }
@@ -193,20 +195,20 @@ button {
 textarea,
 input,
 input[type],
-input[type=text],
-input[type=username],
-input[type=password],
-input[type=email] {
+input[type="text"],
+input[type="username"],
+input[type="password"],
+input[type="email"] {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
 }
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Old versions of Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome, Edge, Opera and Firefox */
 }

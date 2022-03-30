@@ -1,17 +1,17 @@
-import { RefObject, useEffect } from 'react';
+import { RefObject, useEffect } from "react";
 
-import { initMainThread } from '../../engine/MainThread';
+import { initMainThread } from "../../engine/MainThread";
 
 export function useEngine(canvasRef: RefObject<HTMLCanvasElement>) {
-    useEffect(() => {
-        let dispose: Function | undefined = undefined;
+  useEffect(() => {
+    let dispose: Function | undefined = undefined;
 
-        if (canvasRef.current) {
-            initMainThread(canvasRef.current)
-                .then((result) => dispose = result.dispose)
-                .catch(console.error);
-        }
+    if (canvasRef.current) {
+      initMainThread(canvasRef.current)
+        .then((result) => (dispose = result.dispose))
+        .catch(console.error);
+    }
 
-        return dispose;
-    }, [canvasRef]);
+    return dispose;
+  }, [canvasRef]);
 }

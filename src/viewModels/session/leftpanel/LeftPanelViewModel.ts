@@ -1,14 +1,7 @@
-import {
-    Platform,
-    URLRouter,
-    Navigation,
-    Client,
-    Session,
-    ViewModel,
-} from 'hydrogen-view-sdk';
+import { Platform, URLRouter, Navigation, Client, Session, ViewModel } from "hydrogen-view-sdk";
 
-import { SidebarViewModel } from './SidebarViewModel';
-import { RoomListViewModel } from './RoomListViewModel';
+import { SidebarViewModel } from "./SidebarViewModel";
+import { RoomListViewModel } from "./RoomListViewModel";
 
 type Options = {
   client: typeof Client;
@@ -20,61 +13,69 @@ type Options = {
 };
 
 export class LeftPanelViewModel extends ViewModel {
-    private _client: typeof Client;
-    private _sidebarViewModel: SidebarViewModel;
-    private _roomListViewModel: RoomListViewModel;
-    private _panelState: 'initial' | 'open' | 'close';
+  private _client: typeof Client;
+  private _sidebarViewModel: SidebarViewModel;
+  private _roomListViewModel: RoomListViewModel;
+  private _panelState: "initial" | "open" | "close";
 
-    constructor(options: Options) {
-        super(options);
-        this._client = options.client;
-        this._session = options.session;
+  constructor(options: Options) {
+    super(options);
+    this._client = options.client;
+    this._session = options.session;
 
-        this._sidebarViewModel = new SidebarViewModel(this.childOptions({
-            user: this._session.user,
-        }));
-        this.track(this._sidebarViewModel);
+    this._sidebarViewModel = new SidebarViewModel(
+      this.childOptions({
+        user: this._session.user,
+      })
+    );
+    this.track(this._sidebarViewModel);
 
-        this._roomListViewModel = new RoomListViewModel(this.childOptions({
-            session: this._session,
-            invites: this._client.session.invites,
-            rooms: this._client.session.rooms,
-        }));
-        this.track(this._roomListViewModel);
+    this._roomListViewModel = new RoomListViewModel(
+      this.childOptions({
+        session: this._session,
+        invites: this._client.session.invites,
+        rooms: this._client.session.rooms,
+      })
+    );
+    this.track(this._roomListViewModel);
 
-        this._panelState = 'initial';
-        this.navigation.push('left-panel', 'initial');
-        this._setupNavigation();
-    }
+    this._panelState = "initial";
+    this.navigation.push("left-panel", "initial");
+    this._setupNavigation();
+  }
 
-    private _setupNavigation() {
-        this.track(this.navigation.observe('left-panel').subscribe(() => {
-            const segment = this.navigation.path.get('left-panel');
-            this._handlePanelState(segment.value);
-        }));
+  private _setupNavigation() {
+    this.track(
+      this.navigation.observe("left-panel").subscribe(() => {
+        const segment = this.navigation.path.get("left-panel");
+        this._handlePanelState(segment.value);
+      })
+    );
 
-        this.track(this.navigation.observe('room').subscribe(() => {
-            this._handlePanelState('initial');
-        }));
-    }
+    this.track(
+      this.navigation.observe("room").subscribe(() => {
+        this._handlePanelState("initial");
+      })
+    );
+  }
 
-    private _handlePanelState(state: any) {
-        if (state === 'open') this._panelState = 'open';
-        else if (state === 'close') this._panelState = 'close';
-        else this._panelState = 'initial';
+  private _handlePanelState(state: any) {
+    if (state === "open") this._panelState = "open";
+    else if (state === "close") this._panelState = "close";
+    else this._panelState = "initial";
 
-        this.emitChange('panelState');
-    }
+    this.emitChange("panelState");
+  }
 
-    get sidebarViewModel() {
-        return this._sidebarViewModel;
-    }
+  get sidebarViewModel() {
+    return this._sidebarViewModel;
+  }
 
-    get roomListViewModel() {
-        return this._roomListViewModel;
-    }
+  get roomListViewModel() {
+    return this._roomListViewModel;
+  }
 
-    get panelState() {
-        return this._panelState;
-    }
+  get panelState() {
+    return this._panelState;
+  }
 }

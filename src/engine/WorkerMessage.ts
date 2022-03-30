@@ -1,27 +1,27 @@
-import { OffscreenCanvas } from 'three';
+import { OffscreenCanvas } from "three";
 
-import { ResourceDefinition } from './resources/ResourceManager';
-import { TripleBufferState } from './TripleBuffer';
+import { ResourceDefinition } from "./resources/ResourceManager";
+import { TripleBufferState } from "./TripleBuffer";
 
 export enum WorkerMessageType {
-  InitializeGameWorker = 'initialize-game-worker',
-  GameWorkerInitialized = 'game-worker-initialized',
-  GameWorkerError = 'game-worker-error',
-  InitializeRenderWorker = 'initialize-render-worker',
-  StartGameWorker = 'start-game-worker',
-  RenderWorkerInitialized = 'render-worker-initialized',
-  RenderWorkerError = 'render-worker-error',
-  StartRenderWorker = 'start-render-worker',
-  InitializeGameWorkerRenderState = 'initialize-game-worker-render-state',
-  RenderWorkerResize = 'render-worker-resize',
-  LoadResource = 'load-resource',
-  ResourceLoaded = 'resource-loaded',
-  ResourceLoadError = 'resource-load-error',
-  AddResourceRef = 'add-resource-ref',
-  RemoveResourceRef = 'remove-resource-ref',
-  ResourceDisposed = 'resource-disposed',
-  AddRenderable = 'add-renderable',
-  RemoveRenderable = 'remove-renderable',
+  InitializeGameWorker = "initialize-game-worker",
+  GameWorkerInitialized = "game-worker-initialized",
+  GameWorkerError = "game-worker-error",
+  InitializeRenderWorker = "initialize-render-worker",
+  StartGameWorker = "start-game-worker",
+  RenderWorkerInitialized = "render-worker-initialized",
+  RenderWorkerError = "render-worker-error",
+  StartRenderWorker = "start-render-worker",
+  InitializeGameWorkerRenderState = "initialize-game-worker-render-state",
+  RenderWorkerResize = "render-worker-resize",
+  LoadResource = "load-resource",
+  ResourceLoaded = "resource-loaded",
+  ResourceLoadError = "resource-load-error",
+  AddResourceRef = "add-resource-ref",
+  RemoveResourceRef = "remove-resource-ref",
+  ResourceDisposed = "resource-disposed",
+  AddRenderable = "add-renderable",
+  RemoveRenderable = "remove-renderable",
 }
 
 export interface WorkerMessage {
@@ -143,36 +143,44 @@ export type WorkerMessages =
 
 export type MessagePortLike = MessagePort | LocalMessagePort;
 export class LocalMessageChannel {
-    public port1: LocalMessagePort;
-    public port2: LocalMessagePort;
+  public port1: LocalMessagePort;
+  public port2: LocalMessagePort;
 
-    constructor() {
-        this.port1 = new LocalMessagePort(this, 'port2');
-        this.port2 = new LocalMessagePort(this, 'port1');
-    }
+  constructor() {
+    this.port1 = new LocalMessagePort(this, "port2");
+    this.port2 = new LocalMessagePort(this, "port1");
+  }
 }
 
 export class LocalMessagePort extends EventTarget {
-    private messageChannel: LocalMessageChannel;
-    private target: 'port1' | 'port2';
+  private messageChannel: LocalMessageChannel;
+  private target: "port1" | "port2";
 
-    constructor(messageChannel: LocalMessageChannel, target: 'port1' | 'port2') {
-        super();
-        this.messageChannel = messageChannel;
-        this.target = target;
-    }
+  constructor(messageChannel: LocalMessageChannel, target: "port1" | "port2") {
+    super();
+    this.messageChannel = messageChannel;
+    this.target = target;
+  }
 
-    postMessage(message: any, transfer?: Array<Transferable | OffscreenCanvas>): void {
-        this.messageChannel[this.target].dispatchEvent(new MessageEvent('message', { data: message }));
-    }
+  postMessage(message: any, transfer?: Array<Transferable | OffscreenCanvas>): void {
+    this.messageChannel[this.target].dispatchEvent(new MessageEvent("message", { data: message }));
+  }
 
-    start() {}
+  start() {}
 
-    close() {}
+  close() {}
 }
 
 export interface PostMessageTarget {
   postMessage(message: any, transfer?: Array<Transferable | OffscreenCanvas>): void;
-  addEventListener(type: string, callback: ((message: any) => void) | null, options?: AddEventListenerOptions | boolean): void;
-  removeEventListener(type: string, callback: ((message: any) => void) | null, options?: EventListenerOptions | boolean): void;
+  addEventListener(
+    type: string,
+    callback: ((message: any) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ): void;
+  removeEventListener(
+    type: string,
+    callback: ((message: any) => void) | null,
+    options?: EventListenerOptions | boolean
+  ): void;
 }

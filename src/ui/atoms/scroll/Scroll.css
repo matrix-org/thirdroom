@@ -1,7 +1,7 @@
 .Scroll {
   width: 100%;
   height: 100%;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 .Scroll,
@@ -44,7 +44,7 @@
 .Scroll--visible,
 .Scroll--auto {
   /* this media query help to hold the scrollbar width in safari */
-  @media not all and (min-resolution:.001dpcm) {
+  @media not all and (min-resolution: 0.001dpcm) {
     padding-right: var(--scrollbar-width);
   }
 }

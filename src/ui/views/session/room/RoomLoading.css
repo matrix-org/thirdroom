@@ -7,7 +7,7 @@
   padding: var(--sp-extra-loose);
   position: relative;
   overflow: hidden;
-  
+
   & > div:first-child {
     position: absolute;
     left: 0;

@@ -1,27 +1,59 @@
 .TimelineView {
   --avatar-size: 40px;
-  
+
   & .Timeline {
     flex: 1;
     min-width: 0;
     position: relative;
   }
-  & .avatar.usercolor1 { background-color: var(--usercolor1); }
-  & .avatar.usercolor2 { background-color: var(--usercolor2); }
-  & .avatar.usercolor3 { background-color: var(--usercolor3); }
-  & .avatar.usercolor4 { background-color: var(--usercolor4); }
-  & .avatar.usercolor5 { background-color: var(--usercolor5); }
-  & .avatar.usercolor6 { background-color: var(--usercolor6); }
-  & .avatar.usercolor7 { background-color: var(--usercolor7); }
-  & .avatar.usercolor8 { background-color: var(--usercolor8); }
-  & .Timeline_messageSender.usercolor1 { color: var(--usercolor1); }
-  & .Timeline_messageSender.usercolor2 { color: var(--usercolor2); }
-  & .Timeline_messageSender.usercolor3 { color: var(--usercolor3); }
-  & .Timeline_messageSender.usercolor4 { color: var(--usercolor4); }
-  & .Timeline_messageSender.usercolor5 { color: var(--usercolor5); }
-  & .Timeline_messageSender.usercolor6 { color: var(--usercolor6); }
-  & .Timeline_messageSender.usercolor7 { color: var(--usercolor7); }
-  & .Timeline_messageSender.usercolor8 { color: var(--usercolor8); }
+  & .avatar.usercolor1 {
+    background-color: var(--usercolor1);
+  }
+  & .avatar.usercolor2 {
+    background-color: var(--usercolor2);
+  }
+  & .avatar.usercolor3 {
+    background-color: var(--usercolor3);
+  }
+  & .avatar.usercolor4 {
+    background-color: var(--usercolor4);
+  }
+  & .avatar.usercolor5 {
+    background-color: var(--usercolor5);
+  }
+  & .avatar.usercolor6 {
+    background-color: var(--usercolor6);
+  }
+  & .avatar.usercolor7 {
+    background-color: var(--usercolor7);
+  }
+  & .avatar.usercolor8 {
+    background-color: var(--usercolor8);
+  }
+  & .Timeline_messageSender.usercolor1 {
+    color: var(--usercolor1);
+  }
+  & .Timeline_messageSender.usercolor2 {
+    color: var(--usercolor2);
+  }
+  & .Timeline_messageSender.usercolor3 {
+    color: var(--usercolor3);
+  }
+  & .Timeline_messageSender.usercolor4 {
+    color: var(--usercolor4);
+  }
+  & .Timeline_messageSender.usercolor5 {
+    color: var(--usercolor5);
+  }
+  & .Timeline_messageSender.usercolor6 {
+    color: var(--usercolor6);
+  }
+  & .Timeline_messageSender.usercolor7 {
+    color: var(--usercolor7);
+  }
+  & .Timeline_messageSender.usercolor8 {
+    color: var(--usercolor8);
+  }
 }
 
 .Timeline_scroller {
@@ -55,12 +87,12 @@
 
 .Timeline_message {
   display: grid;
-  grid-template-areas: 
-    'avatar sender'
-    'avatar body'
-    'time body'
-    'time reactions';
-  grid-template-rows: auto auto  auto auto;
+  grid-template-areas:
+    "avatar sender"
+    "avatar body"
+    "time body"
+    "time reactions";
+  grid-template-rows: auto auto auto auto;
   grid-template-columns: var(--avatar-size) 1fr;
   grid-column-gap: var(--sp-extra-tight);
 
@@ -69,7 +101,9 @@
   border-radius: var(--br-normal);
   position: relative;
 
-  & > * { min-width: 0; }
+  & > * {
+    min-width: 0;
+  }
 
   &.continuation {
     padding: var(--sp-ultra-tight) var(--sp-extra-tight);
@@ -88,7 +122,7 @@
   line-height: var(--lh-b2);
   letter-spacing: var(--ls-b2);
   color: var(--tc-surface-high);
-  
+
   min-height: 0;
 }
 .Timeline_messageBody time {
@@ -134,12 +168,11 @@
   }
 }
 
-
 .Timeline_messageAvatar .avatar {
   width: var(--avatar-size);
   height: var(--avatar-size);
   line-height: var(--avatar-size);
-  
+
   place-items: center;
   color: white;
   font-size: var(--fs-s1);
@@ -165,11 +198,11 @@
 }
 .ReplyPreviewView {
   margin-bottom: var(--sp-extra-tight);
-  
+
   & .Timeline_message {
     grid-template-columns: 0 1fr;
     grid-column-gap: 0;
-    margin: 0 ;
+    margin: 0;
     padding: 0;
   }
 }
@@ -180,13 +213,17 @@
     word-break: break-word;
   }
 
-  & h1, & h2, & h3 {
+  & h1,
+  & h2,
+  & h3 {
     margin: var(--sp-extra-tight) 0;
   }
-  & h4, & h5, & h6 {
+  & h4,
+  & h5,
+  & h6 {
     margin: var(--sp-ultra-tight) 0;
   }
-  
+
   & .pill {
     padding: 0 4px;
     display: inline-flex;
@@ -194,7 +231,7 @@
     box-shadow: inset 0 0 0 1px var(--sc-dark-low);
     border-radius: 20px;
     pointer-events: none;
-    
+
     & .avatar {
       color: white;
       display: grid;
@@ -215,7 +252,7 @@
     border-radius: var(--br-small);
     overflow-x: auto;
   }
-  
+
   & .media {
     position: relative;
     overflow: hidden;

@@ -9,7 +9,7 @@
   & .Icon {
     flex-shrink: 0;
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: no-drop;
@@ -24,7 +24,7 @@
   & .Icon {
     background-color: var(--ic-surface-normal);
   }
-  
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--bg-surface-hover);
@@ -46,7 +46,7 @@
   & .Icon {
     background-color: var(--ic-primary-normal);
   }
-  
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--bg-primary-hover);
@@ -68,7 +68,7 @@
   & .Icon {
     background-color: var(--ic-secondary-normal);
   }
-  
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--bg-secondary-hover);
@@ -90,7 +90,7 @@
   & .Icon {
     background-color: var(--ic-positive-normal);
   }
-  
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--bg-positive-hover);
@@ -112,7 +112,7 @@
   & .Icon {
     background-color: var(--ic-danger-normal);
   }
-  
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--bg-danger-hover);

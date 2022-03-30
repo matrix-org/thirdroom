@@ -1,6 +1,6 @@
 .RoomListView {
   width: 500px;
-  
+
   & > header {
     min-height: 110px;
   }
