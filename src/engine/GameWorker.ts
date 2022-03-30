@@ -54,7 +54,6 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
   if (message.type === WorkerMessageType.InitializeGameWorker) {
     try {
       if (message.renderWorkerMessagePort) {
-        console.log("start");
         message.renderWorkerMessagePort.start();
       }
 

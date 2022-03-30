@@ -71,8 +71,6 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     dispose: disposeRenderWorker,
   } = await initRenderWorker(canvas, gameWorker);
 
-  console.log("render worker init");
-
   const renderableTripleBuffer = createTripleBuffer();
 
   const resourceManagerBuffer = createResourceManagerBuffer();
@@ -108,8 +106,6 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
 
     renderWorker.addEventListener("message", onMessage);
   });
-
-  console.log("2");
 
   await new Promise<GameWorkerInitializedMessage>((resolve, reject) => {
     gameWorker.postMessage(

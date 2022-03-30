@@ -58,6 +58,5 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
 };
 
 export const createRenderable = (renderPort: RenderPort, eid: number, resourceId: number) => {
-  console.log("createRenderable");
   renderPort.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
 };
