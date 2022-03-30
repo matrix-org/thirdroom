@@ -1,6 +1,6 @@
 import { createCursorBuffer, addView } from "./allocator/CursorBuffer";
 import { addViewMatrix4 } from "./component/Transform";
-import { createTripleBuffer, swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
+import { swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
 import { maxEntities, tickRate } from './config';
 import {
   AmbientLight,
@@ -46,8 +46,8 @@ function postToMainThread(data: any, transfer?: (Transferable | OffscreenCanvas)
 // inbound MainThread -> RenderThread
 export default {
   postMessage: (data: any) => onMessage(data),
-  addEventListener: localEventTarget!.addEventListener,
-  removeEventListener: localEventTarget!.removeEventListener,
+  addEventListener: (type: string, callback: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean): void => localEventTarget!.addEventListener(type, callback, options),
+  removeEventListener: (type: string, callback: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean): void => localEventTarget!.removeEventListener(type, callback, options),
 };
 
 interface TransformView {
@@ -140,10 +140,16 @@ async function onInit({
   resourceManagerBuffer,
   renderableTripleBuffer,
 }: InitializeRenderWorkerMessage): Promise<RenderWorkerState> {
+
   gameWorkerMessageTarget.addEventListener("message", onMessage);
+
+  if (gameWorkerMessageTarget instanceof MessagePort) {
+    gameWorkerMessageTarget.start();
+  }
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
+  camera.position.z = 5;
 
   const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
   registerResourceLoader(resourceManager, GeometryResourceLoader);
@@ -271,7 +277,7 @@ function onUpdate({
     camera.updateProjectionMatrix();
     renderer.setSize(canvasWidth, canvasHeight, false);
   }
-  
+
   renderer.render(scene, camera);
 }
 

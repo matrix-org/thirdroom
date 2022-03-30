@@ -17,6 +17,9 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
   const position = Transform.position[eid];
   const rotation = Transform.rotation[eid];
 
+  Transform.interpolate[eid] = 1;
+  Transform.worldMatrixNeedsUpdate[eid] = 1;
+
   position[0] = rndRange(-20, 20);
   position[1] = rndRange(5, 50);
   position[2] = rndRange(-20, 20);
@@ -50,5 +53,6 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
 }
 
 export const createRenderable = (renderPort: RenderPort, eid: number, resourceId: number) => {
+  console.log("createRenderable");
   renderPort.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId })
 };

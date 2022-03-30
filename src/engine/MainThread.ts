@@ -34,6 +34,7 @@ export async function initRenderWorker(
       "Browser does not support OffscreenCanvas, rendering on main thread."
     );
     const result = await import("./RenderWorker");
+    renderWorker = result.default as Worker;
     renderWorkerMessageTarget = result.default;
     gameWorkerMessageTarget = gameWorker;
     canvasTarget = canvas;
@@ -50,6 +51,7 @@ export async function initRenderWorker(
   window.addEventListener("resize", onResize);
 
   return {
+    renderWorker,
     canvasTarget,
     renderWorkerMessageTarget,
     gameWorkerMessageTarget,
@@ -67,11 +69,14 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {
+    renderWorker,
     canvasTarget,
     renderWorkerMessageTarget,
     gameWorkerMessageTarget,
     dispose: disposeRenderWorker,
   } = await initRenderWorker(canvas, gameWorker);
+
+  console.log("render worker init")
 
   const renderableTripleBuffer = createTripleBuffer();
 
@@ -84,7 +89,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
 
   const renderWorkerInitMsg = await new Promise<RenderWorkerInitializedMessage>((resolve,reject) => {
 
-    renderWorkerMessageTarget.postMessage(
+    renderWorker.postMessage(
       {
         type: WorkerMessageType.InitializeRenderWorker,
         renderableTripleBuffer,
@@ -107,15 +112,17 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
         reject(data.error);
       }
       
-      renderWorkerMessageTarget.removeEventListener('message', onMessage);
+      renderWorker.removeEventListener('message', onMessage);
     };
 
-    renderWorkerMessageTarget.addEventListener('message', onMessage);
+    renderWorker.addEventListener('message', onMessage);
   });
+
+  console.log("2")
 
   const gameWorkerInitMsg = await new Promise<GameWorkerInitializedMessage>((resolve,reject) => {
 
-    gameWorkerMessageTarget.postMessage(
+    gameWorker.postMessage(
       {
         type: WorkerMessageType.InitializeGameWorker,
         renderableTripleBuffer,
@@ -132,10 +139,18 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
       } else if (data.type === WorkerMessageType.GameWorkerError) {
         reject(data.error);
       }
-      gameWorkerMessageTarget.removeEventListener('message', onMessage);
+      gameWorker.removeEventListener('message', onMessage);
     };
 
-    gameWorkerMessageTarget.addEventListener('message', onMessage);
+    gameWorker.addEventListener('message', onMessage);
+  });
+
+  renderWorker.postMessage({
+    type: WorkerMessageType.StartRenderWorker
+  });
+  
+  gameWorker.postMessage({
+    type: WorkerMessageType.StartGameWorker
   });
 
   let animationFrameId: number;

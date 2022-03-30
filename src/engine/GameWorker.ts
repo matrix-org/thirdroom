@@ -17,6 +17,7 @@ import { inputReadSystem } from "./input/inputReadSystem";
 import { physicsSystem } from "./physics";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
+import { mat4 } from "gl-matrix";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -39,18 +40,22 @@ async function onInitMessage({ data }: { data: WorkerMessages } ) {
 
   if (message.type === WorkerMessageType.InitializeGameWorker) {
     try {
-      const state = await onInit(message);
-      state.renderer.port.addEventListener("message", onMessage(state));
-
-      if (state.renderer.port instanceof MessagePort) {
-        state.renderer.port.start();
+      if (message.renderWorkerMessagePort) {
+        console.log("start")
+        message.renderWorkerMessagePort.start();
       }
+
+      const state = await onInit(message);
 
       postMessage({
         type: WorkerMessageType.GameWorkerInitialized
       } as GameWorkerInitializedMessage);
 
       workerScope.addEventListener("message", onMessage(state));
+
+      if (message.renderWorkerMessagePort) {
+        message.renderWorkerMessagePort.addEventListener("message", onMessage(state));
+      }
     } catch (error) {
       postMessage({
         type: WorkerMessageType.GameWorkerError,
@@ -224,6 +229,15 @@ const cameraMoveSystem = ({ input, time: { delta } }: GameState) => {
     position[0] += delta * 25;
 }
 
+const updateWorldMatrixSystem = () => {
+  for (let i = 0; i < maxEntities; i++) {
+    const position = Transform.position[i];
+    const quaternion = Transform.quaternion[i];
+    const scale = Transform.scale[i];
+    mat4.fromRotationTranslationScale(Transform.worldMatrix[i], quaternion, position, scale);
+  }
+};
+
 const renderableTripleBufferSystem = ({ renderer }: GameState) => {
   copyToWriteBuffer(renderer.tripleBuffer, renderableBuffer);
   swapWriteBuffer(renderer.tripleBuffer);
@@ -241,6 +255,7 @@ const pipeline = (state: GameState) => {
   cameraMoveSystem(state);
   cubeMoveSystem(state);
   physicsSystem(state);
+  updateWorldMatrixSystem();
   renderableTripleBufferSystem(state);
 }
 
@@ -253,7 +268,7 @@ function update(state: GameState) {
 
   if (remainder > 0) {
     // todo: call fixed timestep physics pipeline here
-    setTimeout(update, remainder);
+    setTimeout(() => update(state), remainder);
   } else {
     update(state);
   }
