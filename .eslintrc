@@ -10,5 +10,16 @@
     "react": {
       "version": "detect"
     }
+  },
+  "rules": {
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": ["variable", "function"],
+        "modifiers": ["private"],
+        "format": ["camelCase"],
+        "leadingUnderscore": "allow"
+      }
+    ]
   }
 }
