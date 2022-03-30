@@ -11,8 +11,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "node ./preview-server.js",
-    "lint": "eslint ./src",
-    "lint:fix": "eslint ./src --fix"
+    "lint": "npm run lint:js && npm run lint:css",
+    "lint:js": "eslint ./src",
+    "lint:css": "stylelint ./src/**/*.css"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
@@ -37,6 +38,7 @@
     "chokidar": "^3.5.3",
     "eslint": "^8.12.0",
     "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-matrix-org": "^0.4.0",
@@ -44,7 +46,9 @@
     "eslint-plugin-react-hooks": "^4.4.0",
     "postcss": "^8.4.12",
     "postcss-preset-env": "^7.4.3",
+    "prettier": "^2.6.1",
     "stylelint": "^14.6.1",
+    "stylelint-config-prettier": "^9.0.3",
     "stylelint-config-standard": "^25.0.0",
     "typescript": "^4.4.4",
     "vite": "^2.7.2",
