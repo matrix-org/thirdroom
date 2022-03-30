@@ -148,7 +148,7 @@ async function onInit({
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
-  camera.position.z = 5;
+  camera.position.z = 50;
 
   const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
   registerResourceLoader(resourceManager, GeometryResourceLoader);
@@ -165,15 +165,16 @@ async function onInit({
 
   const clock = new Clock();
 
-  const transformViews = renderableTripleBuffer.views
+  const transformViews = renderableTripleBuffer.buffers
     .map(buffer => createCursorBuffer(buffer))
     .map(buffer => ({
-      // note: needs synced with renderableBuffer properties in game worker
-      // todo: abstract the need to sync structure with renderableBuffer properties
-      worldMatrix: addViewMatrix4(buffer, maxEntities),
-      worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
-      interpolate: addView(buffer, Uint8Array, maxEntities)
-    }) as TransformView);
+        // note: needs synced with renderableBuffer properties in game worker
+        // todo: abstract the need to sync structure with renderableBuffer properties
+        worldMatrix: addViewMatrix4(buffer, maxEntities),
+        worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+        interpolate: addView(buffer, Uint8Array, maxEntities)
+      }) as TransformView
+    );
 
   const state: RenderWorkerState = {
     needsResize: true,
@@ -249,7 +250,7 @@ function onUpdate({
 
   for (let i = 0; i < renderables.length; i++) {
     const { object, eid } = renderables[i];
-
+    
     if (!Transform.worldMatrixNeedsUpdate[eid]) {
       continue;
     }

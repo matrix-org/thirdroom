@@ -15,10 +15,13 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
   addComponent(world, RigidBody, eid);
   
   const position = Transform.position[eid];
+  const scale = Transform.scale[eid];
   const rotation = Transform.rotation[eid];
 
   Transform.interpolate[eid] = 1;
   Transform.worldMatrixNeedsUpdate[eid] = 1;
+
+  scale[0] = scale[1] = scale[2] = 1;
 
   position[0] = rndRange(-20, 20);
   position[1] = rndRange(5, 50);
