@@ -1,5 +1,4 @@
-import { createCursorBuffer, addView } from "./allocator/CursorBuffer";
-import { addViewMatrix4 } from "./component/Transform";
+import { createCursorBuffer, addView, addViewMatrix4 } from "./allocator/CursorBuffer";
 import { swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
 import { maxEntities, tickRate } from './config';
 import {

@@ -17,8 +17,8 @@ export const createCursorBuffer = (
 
 export const roundCursor = <T extends TypedArrayConstructor>(buffer: CursorBuffer, type: T) => {
   const { name } = type
-  if (name === "Float32Array") buffer[$cursor] = roundUpToMultiple4(buffer[$cursor]);
-  if (name === "Float64Array") buffer[$cursor] = roundUpToMultiple8(buffer[$cursor]);
+  if (name.includes('32')) buffer[$cursor] = roundUpToMultiple4(buffer[$cursor]);
+  if (name.includes('64')) buffer[$cursor] = roundUpToMultiple8(buffer[$cursor]);
 }
 
 export const addView = <T extends TypedArrayConstructor>(buffer: CursorBuffer, type: T, size: number): InstanceType<T> => {
@@ -38,3 +38,7 @@ export const addViewAoA = <T extends TypedArrayConstructor>(buffer: CursorBuffer
   }
   return array;
 }
+
+export const addViewVector3 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 3, n)
+export const addViewVector4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 4, n)
+export const addViewMatrix4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 16, n)

@@ -2,7 +2,7 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { World, GameState, RenderPort } from "../GameWorker";
 import { Transform } from "../component/Transform";
-import { RigidBodyComponent } from "../physics";
+import { RigidBody } from "../physics";
 import { createRemoteMaterial, MaterialType } from "../resources/MaterialResourceLoader";
 import { createRemoteMesh } from "../resources/MeshResourceLoader";
 import { WorkerMessageType } from "../WorkerMessage";
@@ -12,7 +12,7 @@ const rndRange = (min: number, max: number) => Math.random() * (max - min) + min
 export const createCube = ({ world, resourceManager, physics, renderer }: GameState, geometryResourceId: number) => {
   const eid = addEntity(world);
 
-  addComponent(world, RigidBodyComponent, eid);
+  addComponent(world, RigidBody, eid);
   
   const position = Transform.position[eid];
   const rotation = Transform.rotation[eid];
@@ -50,6 +50,8 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
   physics.objects[eid] = rigidBody;
 
   createRenderable(renderer.port, eid, resourceId);
+
+  return eid;
 }
 
 export const createRenderable = (renderPort: RenderPort, eid: number, resourceId: number) => {

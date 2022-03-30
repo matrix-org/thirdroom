@@ -1,17 +1,19 @@
 import { defineComponent, defineQuery } from "bitecs";
 import { GameState } from "../GameWorker";
 import { Transform } from "../component/Transform";
+import { maxEntities } from "../config";
 
-export const RigidBodyComponent = defineComponent();
+export const RigidBody = defineComponent();
 
-export const physicsQuery = defineQuery([RigidBodyComponent])
+export const physicsQuery = defineQuery([RigidBody])
 
 export const physicsSystem = ({ world, physics, time }: GameState) => {
+  // const entities = physicsQuery(world);
 
-  const entities = physicsQuery(world);
-
-  for (let i = 1; i < entities.length; i++) {
-    const eid = entities[i];
+  // for (let i = 1; i < entities.length; i++) {
+  //   const eid = entities[i];
+  for (let i = 0; i < maxEntities; i++) {
+    const eid = i;
     const body = physics.objects[eid];
     
     const rigidPos = body.translation();
