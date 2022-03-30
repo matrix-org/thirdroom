@@ -11,7 +11,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "node ./preview-server.js",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "lint:fix": "eslint ./src --fix"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
