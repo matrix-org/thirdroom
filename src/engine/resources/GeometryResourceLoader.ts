@@ -4,16 +4,17 @@ import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceM
 
 const GEOMETRY_RESOURCE = "geometry";
 
-export enum GeometryResourceType {
+export enum GeometryType {
   Box = "box",
 };
 
-export interface IGeometryResourceDefinition extends ResourceDefinition {
+export interface IGeometryDefinition extends ResourceDefinition {
+  type: "geometry";
   geometryType: string;
 }
 
-export interface BoxGeometryResourceDefinition extends IGeometryResourceDefinition {
-  geometryType: GeometryResourceType.Box;
+export interface BoxGeometryDefinition extends IGeometryDefinition {
+  geometryType: GeometryType.Box;
   width?: number;
   height?: number;
   depth?: number;
@@ -22,9 +23,9 @@ export interface BoxGeometryResourceDefinition extends IGeometryResourceDefiniti
   depthSegments?: number;
 }
 
-export type GeometryResourceDefinition = BoxGeometryResourceDefinition;
+export type GeometryDefinition = BoxGeometryDefinition;
 
-export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader<GeometryResourceDefinition, BufferGeometry> {  
+export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader<GeometryDefinition, BufferGeometry> {  
   return {
     type: GEOMETRY_RESOURCE,
     async load(def) {
@@ -32,7 +33,7 @@ export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader
       let geometry: BufferGeometry;
 
       switch (def.geometryType) {
-        case GeometryResourceType.Box:
+        case GeometryType.Box:
           geometry = new BoxBufferGeometry(
             def.width,
             def.height,
@@ -62,25 +63,8 @@ export function GeometryRemoteResourceLoader(manager: RemoteResourceManager): Re
   };
 }
 
-export function createRemoteBoxGeometry(
-  manager: RemoteResourceManager,
-  width?: number,
-  height?: number,
-  depth?: number,
-  widthSegments?: number,
-  heightSegments?: number,
-  depthSegments?: number,
-  name?: string,
+export function createRemoteGeometry(
+  manager: RemoteResourceManager, geometryDef: GeometryDefinition
 ): number {
-  return loadRemoteResource(manager, {
-    type: GEOMETRY_RESOURCE,
-    geometryType: GeometryResourceType.Box,
-    width,
-    height,
-    depth,
-    widthSegments,
-    heightSegments,
-    depthSegments,
-    name,
-  });
+  return loadRemoteResource(manager, geometryDef);
 }

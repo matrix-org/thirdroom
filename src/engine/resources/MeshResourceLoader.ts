@@ -2,12 +2,13 @@ import { Mesh } from "three";
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceLoaderResponse, ResourceManager } from "./ResourceManager";
 
-export interface MeshResourceDefinition extends ResourceDefinition {
+export interface MeshDefinition extends ResourceDefinition {
+  type: "mesh";
   geometryResourceId: number;
   materialResourceId: number;
 }
 
-export function MeshResourceLoader(manager: ResourceManager): ResourceLoader<MeshResourceDefinition, Mesh> {  
+export function MeshResourceLoader(manager: ResourceManager): ResourceLoader<MeshDefinition, Mesh> {  
   return {
     type: "mesh",
     async load({ name, geometryResourceId, materialResourceId }) {
@@ -37,14 +38,7 @@ export function MeshRemoteResourceLoader(manager: RemoteResourceManager): Remote
 
 export function createRemoteMesh(
   manager: RemoteResourceManager,
-  geometryResourceId: number,
-  materialResourceId: number,
-  name?: string,
+  meshDef: MeshDefinition,
 ): number {
-  return loadRemoteResource(manager, {
-    type: "mesh",
-    geometryResourceId,
-    materialResourceId,
-    name,
-  });
+  return loadRemoteResource(manager, meshDef);
 }

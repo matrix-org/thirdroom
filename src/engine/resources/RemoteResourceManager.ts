@@ -1,4 +1,4 @@
-import { WorkerMessages, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
+import { WorkerMessages, WorkerMessageType, PostMessageTarget } from "../WorkerMessage";
 import { ResourceDefinition, ResourceState } from "./ResourceManager";
 
 export type RemoteResourceLoaderFactory<RemoteResource = undefined> = (
@@ -18,7 +18,7 @@ export interface RemoteResourceLoader<RemoteResource = undefined> {
 export interface RemoteResourceManager {
   buffer: SharedArrayBuffer;
   view: Uint32Array;
-  postMessageTarget: WorkerMessageTarget;
+  postMessageTarget: PostMessageTarget;
   store: Map<number, RemoteResourceInfo<any>>;
   resourceLoaders: Map<string, RemoteResourceLoader<any>>
 }
@@ -30,7 +30,7 @@ export interface RemoteResourceInfo<RemoteResource = undefined> {
   remoteResource?: RemoteResource;
 }
 
-export function createRemoteResourceManager(buffer: SharedArrayBuffer, postMessageTarget: WorkerMessageTarget): RemoteResourceManager {
+export function createRemoteResourceManager(buffer: SharedArrayBuffer, postMessageTarget: PostMessageTarget): RemoteResourceManager {
   return {
     buffer,
     view: new Uint32Array(buffer),
@@ -48,9 +48,9 @@ export function registerRemoteResourceLoader(
   manager.resourceLoaders.set(loader.type, loader);
 }
 
-export function loadRemoteResource(
+export function loadRemoteResource<Def extends ResourceDefinition>(
   manager: RemoteResourceManager,
-  resourceDef: ResourceDefinition,
+  resourceDef: Def,
   transferList?: Transferable[]
 ): number {
   const resourceId = Atomics.add(manager.view, 0, 1);

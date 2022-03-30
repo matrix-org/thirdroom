@@ -1,11 +1,11 @@
-import { AddResourceRefMessage, LoadResourceMessage, RemoveResourceRefMessage, WorkerMessageTarget, WorkerMessageType } from "../WorkerMessage";
+import { AddResourceRefMessage, LoadResourceMessage, RemoveResourceRefMessage, PostMessageTarget, WorkerMessageType } from "../WorkerMessage";
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;
   view: Uint32Array;
   store: Map<number, ResourceInfo<any, any>>;
   resourceLoaders: Map<string, ResourceLoader<any, any, any>>;
-  workerMessageTarget: WorkerMessageTarget;
+  workerMessageTarget: PostMessageTarget;
 }
 
 export type ResourceLoaderFactory<
@@ -52,12 +52,9 @@ export enum ResourceState {
   Error = "error",
 }
 
-
-
 export interface ResourceDefinition {
   type: string;
   name?: string;
-  [key: string]: any;
 }
 
 export function createResourceManagerBuffer() {
@@ -66,7 +63,7 @@ export function createResourceManagerBuffer() {
 
 export function createResourceManager(
   buffer: SharedArrayBuffer,
-  workerMessageTarget: WorkerMessageTarget
+  workerMessageTarget: PostMessageTarget
 ): ResourceManager {
   return {
     buffer,

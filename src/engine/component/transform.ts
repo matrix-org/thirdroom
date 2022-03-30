@@ -1,4 +1,6 @@
+import { gameBuffer, renderableBuffer } from '.';
 import { CursorBuffer, addView, addViewAoA } from '../allocator/CursorBuffer'
+import { maxEntities } from '../config';
 
 export interface TransformComponent {
   position: Float32Array[];
@@ -10,6 +12,7 @@ export interface TransformComponent {
   worldMatrix: Float32Array[];
   matrixAutoUpdate: Uint8Array;
   worldMatrixNeedsUpdate: Uint8Array;
+  interpolate: Uint8Array;
 
   parent: Uint32Array;
   firstChild: Uint32Array;
@@ -21,19 +24,22 @@ export const addViewVector3 = (stackBuffer: CursorBuffer, n: number) => addViewA
 export const addViewVector4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 4, n)
 export const addViewMatrix4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 16, n)
 
-export const createTransform = (gameBuffer: CursorBuffer, renderBuffer: CursorBuffer, size: number): TransformComponent => ({
-  position: addViewVector3(renderBuffer, size),
-  scale: addViewVector3(renderBuffer, size),
-  rotation: addViewVector3(renderBuffer, size),
-  quaternion: addViewVector4(renderBuffer, size),
+export const createTransformComponent = (gameBuffer: CursorBuffer, renderableBuffer: CursorBuffer, size: number): TransformComponent => ({
+  position: addViewVector3(gameBuffer, size),
+  scale: addViewVector3(gameBuffer, size),
+  rotation: addViewVector3(gameBuffer, size),
+  quaternion: addViewVector4(gameBuffer, size),
 
-  localMatrix: addViewMatrix4(renderBuffer, size),
-  worldMatrix: addViewMatrix4(renderBuffer, size),
-  matrixAutoUpdate: addView(renderBuffer, Uint8Array, size),
-  worldMatrixNeedsUpdate: addView(renderBuffer, Uint8Array, size),
+  localMatrix: addViewMatrix4(gameBuffer, size),
+  worldMatrix: addViewMatrix4(renderableBuffer, size),
+  matrixAutoUpdate: addView(gameBuffer, Uint8Array, size),
+  worldMatrixNeedsUpdate: addView(renderableBuffer, Uint8Array, size),
+  interpolate: addView(renderableBuffer, Uint8Array, size),
 
   parent: addView(gameBuffer, Uint32Array, size),
   firstChild: addView(gameBuffer, Uint32Array, size),
   prevSibling: addView(gameBuffer, Uint32Array, size),
   nextSibling: addView(gameBuffer, Uint32Array, size),
 });
+
+export const Transform = createTransformComponent(gameBuffer, renderableBuffer, maxEntities);

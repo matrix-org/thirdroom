@@ -1,5 +1,5 @@
 import { createCursorBuffer, addView } from "./allocator/CursorBuffer";
-import { addViewMatrix4 } from "./component/transform";
+import { addViewMatrix4 } from "./component/Transform";
 import { createTripleBuffer, swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
 import { maxEntities, tickRate } from './config';
 import {
@@ -18,16 +18,37 @@ import { GLTFResourceLoader } from "./resources/GLTFResourceLoader";
 import { MeshResourceLoader } from "./resources/MeshResourceLoader";
 import { MaterialResourceLoader } from "./resources/MaterialResourceLoader";
 import { GeometryResourceLoader } from "./resources/GeometryResourceLoader";
-import { AddRenderableMessage, InitializeRenderWorkerMessage, RemoveRenderableMessage, RenderWorkerResizeMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
+import { CameraResourceLoader } from "./resources/CameraResourceLoader";
+import { AddRenderableMessage, InitializeRenderWorkerMessage, RemoveRenderableMessage, RenderWorkerResizeMessage, WorkerMessages, WorkerMessageType, StartRenderWorkerMessage, RenderWorkerErrorMessage, RenderWorkerInitializedMessage } from "./WorkerMessage";
 import { TripleBufferState } from "./TripleBuffer";
 
-if (typeof (window as any) === "undefined") {
+let localEventTarget: EventTarget | undefined;
+
+const isWorker = typeof (window as any) === "undefined";
+
+if (isWorker) {
   self.window = self;
   globalThis.addEventListener("message", onMessage);
+} else {
+  localEventTarget = new EventTarget();
+  localEventTarget.addEventListener("message", onMessage);
 }
 
-// for when renderer is on main thread
-export const postMessage = (data: any) => onMessage({ data } as MessageEvent);
+// outbound RenderThread -> MainThread
+function postToMainThread(data: any, transfer?: (Transferable | OffscreenCanvas)[]) {
+  if (isWorker) {
+    (globalThis as any).postMessage(data, transfer);
+  } else {
+    localEventTarget!.dispatchEvent(new MessageEvent("message", { data }))
+  }
+}
+
+// inbound MainThread -> RenderThread
+export default {
+  postMessage: (data: any) => onMessage(data),
+  addEventListener: localEventTarget!.addEventListener,
+  removeEventListener: localEventTarget!.removeEventListener,
+};
 
 interface TransformView {
   worldMatrix: Float32Array[]
@@ -57,9 +78,9 @@ interface RenderWorkerState {
   transformViews: TransformView[];
 }
 
-let state: RenderWorkerState;
+let _state: RenderWorkerState;
 
-function onMessage({ data }: { data: WorkerMessages}) {
+function onMessage({ data }: any) {
   if (typeof data !== "object") {
     return;
   }
@@ -67,33 +88,44 @@ function onMessage({ data }: { data: WorkerMessages}) {
   const message = data as WorkerMessages;
 
   if (message.type === WorkerMessageType.InitializeRenderWorker) {
-    onInit(message).then((s) => state = s).catch(console.error);
+    onInit(message)
+      .then((s) => {
+        _state = s;
+        postToMainThread({ type: WorkerMessageType.RenderWorkerInitialized } as RenderWorkerInitializedMessage);
+      })
+      .catch((error) => {
+        console.error(error);
+        postToMainThread({ type: WorkerMessageType.RenderWorkerError, error } as RenderWorkerErrorMessage);
+      });
     return;
   }
 
-  if (!state) {
+  if (!_state) {
     console.warn(`Render worker not initialized before processing ${message.type}`);
     return;
   }
 
   switch (message.type) {
+    case WorkerMessageType.StartRenderWorker:
+      onStart(_state, message);
+      break;
     case WorkerMessageType.RenderWorkerResize:
-      onResize(state, message);
+      onResize(_state, message);
       break;
     case WorkerMessageType.AddRenderable: 
-      onAddRenderable(state, message);
+      onAddRenderable(_state, message);
       break;
     case WorkerMessageType.RemoveRenderable:
-      onRemoveRenderable(state, message);
+      onRemoveRenderable(_state, message);
       break;
     case WorkerMessageType.LoadResource:
-      onLoadResource(state.resourceManager, message);
+      onLoadResource(_state.resourceManager, message);
       break;
     case WorkerMessageType.AddResourceRef:
-      onAddResourceRef(state.resourceManager, message);
+      onAddResourceRef(_state.resourceManager, message);
       break;
     case WorkerMessageType.RemoveResourceRef:
-      onRemoveResourceRef(state.resourceManager, message);
+      onRemoveResourceRef(_state.resourceManager, message);
       break;
   }
 }
@@ -114,12 +146,15 @@ async function onInit({
   const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
 
   const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
-  registerResourceLoader(resourceManager, GLTFResourceLoader);
   registerResourceLoader(resourceManager, GeometryResourceLoader);
   registerResourceLoader(resourceManager, MaterialResourceLoader);
   registerResourceLoader(resourceManager, MeshResourceLoader);
+  registerResourceLoader(resourceManager, CameraResourceLoader);
+  registerResourceLoader(resourceManager, GLTFResourceLoader);
 
   scene.add(new AmbientLight(0xffffff, 0.5));
+
+  // TODO: Send scene/camera resource ids to the GameWorker
 
   const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
 
@@ -152,11 +187,13 @@ async function onInit({
     transformViews,
   };
 
-  renderer.setAnimationLoop(() => onUpdate(state));
-
   console.log("RenderWorker initialized");
 
   return state;
+}
+
+function onStart(state: RenderWorkerState, message: StartRenderWorkerMessage) {
+  state.renderer.setAnimationLoop(() => onUpdate(state));
 }
 
 const tempMatrix4 = new Matrix4();

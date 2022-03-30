@@ -4,7 +4,13 @@ import { TripleBufferState } from "./TripleBuffer";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
+  GameWorkerInitialized = "game-worker-initialized",
+  GameWorkerError = "game-worker-error",
   InitializeRenderWorker = "initialize-render-worker",
+  StartGameWorker = "start-game-worker",
+  RenderWorkerInitialized = "render-worker-initialized",
+  RenderWorkerError = "render-worker-error",
+  StartRenderWorker = "start-render-worker",
   InitializeGameWorkerRenderState = "initialize-game-worker-render-state",
   RenderWorkerResize = "render-worker-resize",
   LoadResource = "load-resource",
@@ -29,14 +35,40 @@ export interface InitializeGameWorkerMessage extends WorkerMessage {
   resourceManagerBuffer: SharedArrayBuffer;
 }
 
+export interface GameWorkerInitializedMessage extends WorkerMessage {
+  type: WorkerMessageType.GameWorkerInitialized;
+}
+
+export interface StartGameWorkerMessage extends WorkerMessage {
+  type: WorkerMessageType.StartGameWorker;
+}
+
+export interface GameWorkerErrorMessage extends WorkerMessage {
+  type: WorkerMessageType.GameWorkerError;
+  error: any;
+}
+
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
-  gameWorkerMessageTarget: GameWorkerMessageTarget;
+  gameWorkerMessageTarget: PostMessageTarget;
   canvasTarget: HTMLCanvasElement | OffscreenCanvas;
   renderableTripleBuffer: TripleBufferState;
   resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+}
+
+export interface RenderWorkerInitializedMessage extends WorkerMessage {
+  type: WorkerMessageType.RenderWorkerInitialized;
+}
+
+export interface StartRenderWorkerMessage extends WorkerMessage {
+  type: WorkerMessageType.StartRenderWorker;
+}
+
+export interface RenderWorkerErrorMessage extends WorkerMessage {
+  type: WorkerMessageType.RenderWorkerError;
+  error: any;
 }
 
 export interface RenderWorkerResizeMessage extends WorkerMessage {
@@ -100,21 +132,46 @@ export type WorkerMessages =
   | AddResourceRefMessage
   | RemoveResourceRefMessage
   | AddRenderableMessage
-  | RemoveRenderableMessage;
+  | RemoveRenderableMessage
+  | RenderWorkerInitializedMessage
+  | StartRenderWorkerMessage
+  | RenderWorkerErrorMessage
+  | GameWorkerInitializedMessage
+  | GameWorkerErrorMessage
+  | StartGameWorkerMessage;
 
-export type WorkerMessageTarget = {
-  addEventListener(name: "message", listener: (event: { data: WorkerMessages }) => void): void;
-  postMessage(
-    message: WorkerMessages,
-    transfer?: (Transferable | OffscreenCanvas)[]
-  ): void;
-};
+export type MessagePortLike = MessagePort | LocalMessagePort;
+export class LocalMessageChannel {
+  public port1: LocalMessagePort;
+  public port2: LocalMessagePort;
 
-export type RenderWorkerMessageTarget = {
-  postMessage(
-    message: WorkerMessages,
-    transfer?: (Transferable | OffscreenCanvas)[]
-  ): void;
-};
+  constructor() {
+    this.port1 = new LocalMessagePort(this, "port2");
+    this.port2 = new LocalMessagePort(this, "port1");
+  }
+}
 
-export type GameWorkerMessageTarget = WorkerMessageTarget;
+export class LocalMessagePort extends EventTarget {
+  private messageChannel: LocalMessageChannel;
+  private target: "port1" | "port2";
+
+  constructor(messageChannel: LocalMessageChannel, target: "port1" | "port2") {
+    super();
+    this.messageChannel = messageChannel;
+    this.target = target;
+  }
+
+  postMessage(message: any, transfer?: Array<Transferable | OffscreenCanvas>): void {
+    this.messageChannel[this.target].dispatchEvent(new MessageEvent("message", { data: message }));
+  }
+
+  start() {}
+
+  close() {}
+}
+
+export interface PostMessageTarget {
+  postMessage(message: any, transfer?: Array<Transferable | OffscreenCanvas>): void
+  addEventListener(type: string, callback: ((message: any) => void) | null, options?: AddEventListenerOptions | boolean): void;
+  removeEventListener(type: string, callback: ((message: any) => void) | null, options?: EventListenerOptions | boolean): void;
+}

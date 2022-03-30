@@ -12,7 +12,7 @@ import {
   RemoteResourceLoader,
 } from "./RemoteResourceManager";
 import {
-  asyncLoadResource,
+  loadResource,
   ResourceDefinition,
   ResourceLoader,
   ResourceManager,
@@ -20,7 +20,7 @@ import {
 
 const MATERIAL_RESOURCE = "material";
 
-export enum MaterialResourceType {
+export enum MaterialType {
   Unlit = "unlit",
 }
 
@@ -30,38 +30,31 @@ export enum MaterialAlphaMode {
   BLEND = "BLEND",
 }
 
-export type IMaterialResourceDefinition = ResourceDefinition & {
-  materialType: string;
-} & IMaterialResourceParameters;
-
-export interface IMaterialResourceParameters {
+export interface IMaterialDefinition extends ResourceDefinition {
+  type: "material";
+  materialType: MaterialType;
   baseColorFactor?: number[];
   baseColorMapResourceId?: number;
   doubleSided?: boolean;
   alphaCutoff?: number;
   alphaMode?: MaterialAlphaMode;
 }
-
-export interface UnlitMaterialResourceParameters
-  extends IMaterialResourceParameters {}
-
-export interface UnlitMaterialResourceDefinition
-  extends IMaterialResourceDefinition {
-  materialType: MaterialResourceType.Unlit;
+export interface UnlitMaterialDefinition extends IMaterialDefinition {
+  materialType: MaterialType.Unlit;
 }
 
-export type MaterialResourceDefinition = UnlitMaterialResourceDefinition;
+export type MaterialDefinition = UnlitMaterialDefinition;
 
 export function MaterialResourceLoader(
   manager: ResourceManager
-): ResourceLoader<MaterialResourceDefinition, Material> {
+): ResourceLoader<MaterialDefinition, Material> {
   return {
     type: MATERIAL_RESOURCE,
     async load(def) {
       let material: Material;
 
       switch (def.materialType) {
-        case MaterialResourceType.Unlit:
+        case MaterialType.Unlit:
           const meshBasicMaterialParams: MeshBasicMaterialParameters = {
             color: def.baseColorFactor
               ? new Color().fromArray(def.baseColorFactor)
@@ -85,7 +78,7 @@ export function MaterialResourceLoader(
           }
 
           if (def.baseColorMapResourceId !== undefined) {
-            meshBasicMaterialParams.map = await asyncLoadResource(
+            meshBasicMaterialParams.map = await loadResource(
               manager,
               def.baseColorMapResourceId
             );
@@ -94,7 +87,7 @@ export function MaterialResourceLoader(
           material = new MeshBasicMaterial(meshBasicMaterialParams);
           break;
         default:
-          throw new Error(`Unknown geometry type ${def.geometryType}`);
+          throw new Error(`Unknown material type ${def.materialType}`);
       }
 
       material.name = def.name!;
@@ -115,15 +108,9 @@ export function MaterialRemoteResourceLoader(
   };
 }
 
-export function createRemoteUnlitMaterial(
+export function createRemoteMaterial(
   manager: RemoteResourceManager,
-  parameters: UnlitMaterialResourceParameters,
-  name?: string
+  materialDef: MaterialDefinition,
 ): number {
-  return loadRemoteResource(manager, {
-    type: MATERIAL_RESOURCE,
-    materialType: MaterialResourceType.Unlit,
-    ...parameters,
-    name,
-  });
+  return loadRemoteResource(manager, materialDef);
 }

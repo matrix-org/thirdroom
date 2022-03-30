@@ -3,9 +3,11 @@ import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
 import { createTripleBuffer } from "./TripleBuffer";
 import {
-  GameWorkerMessageTarget,
-  RenderWorkerMessageTarget,
+  GameWorkerInitializedMessage,
+  RenderWorkerInitializedMessage,
+  WorkerMessages,
   WorkerMessageType,
+  PostMessageTarget,
 } from "./WorkerMessage";
 
 export async function initRenderWorker(
@@ -14,10 +16,10 @@ export async function initRenderWorker(
 ) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
 
-  let renderWorker: Worker | typeof import("./RenderWorker");
+  let renderWorker: Worker;
   let canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  let renderWorkerMessageTarget: RenderWorkerMessageTarget;
-  let gameWorkerMessageTarget: GameWorkerMessageTarget;
+  let renderWorkerMessageTarget: PostMessageTarget;
+  let gameWorkerMessageTarget: PostMessageTarget;
 
   if (supportsOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
@@ -31,7 +33,8 @@ export async function initRenderWorker(
     console.info(
       "Browser does not support OffscreenCanvas, rendering on main thread."
     );
-    renderWorkerMessageTarget = await import("./RenderWorker") as RenderWorkerMessageTarget;
+    const result = await import("./RenderWorker");
+    renderWorkerMessageTarget = result.default;
     gameWorkerMessageTarget = gameWorker;
     canvasTarget = canvas;
   }
@@ -79,32 +82,61 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
       ? renderWorkerMessageTarget
       : undefined;
 
-  gameWorkerMessageTarget.postMessage(
-    {
-      type: WorkerMessageType.InitializeGameWorker,
-      renderableTripleBuffer,
-      inputTripleBuffer: inputManager.tripleBuffer,
-      renderWorkerMessagePort,
-      resourceManagerBuffer,
-    },
-    renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
-  );
+  const renderWorkerInitMsg = await new Promise<RenderWorkerInitializedMessage>((resolve,reject) => {
 
-  renderWorkerMessageTarget.postMessage(
-    {
-      type: WorkerMessageType.InitializeRenderWorker,
-      renderableTripleBuffer,
-      gameWorkerMessageTarget,
-      canvasTarget,
-      initialCanvasWidth: canvas.clientWidth,
-      initialCanvasHeight: canvas.clientHeight,
-      resourceManagerBuffer,
-    },
-    gameWorkerMessageTarget instanceof MessagePort &&
-      canvasTarget instanceof OffscreenCanvas
-      ? [gameWorkerMessageTarget, canvasTarget]
-      : undefined
-  );
+    renderWorkerMessageTarget.postMessage(
+      {
+        type: WorkerMessageType.InitializeRenderWorker,
+        renderableTripleBuffer,
+        gameWorkerMessageTarget,
+        canvasTarget,
+        initialCanvasWidth: canvas.clientWidth,
+        initialCanvasHeight: canvas.clientHeight,
+        resourceManagerBuffer,
+      },
+      gameWorkerMessageTarget instanceof MessagePort &&
+        canvasTarget instanceof OffscreenCanvas
+        ? [gameWorkerMessageTarget, canvasTarget]
+        : undefined
+    );
+
+    const onMessage = ({ data }: any): void => {
+      if (data.type === WorkerMessageType.RenderWorkerInitialized) {
+        resolve(data);
+      } else if (data.type === WorkerMessageType.RenderWorkerError) {
+        reject(data.error);
+      }
+      
+      renderWorkerMessageTarget.removeEventListener('message', onMessage);
+    };
+
+    renderWorkerMessageTarget.addEventListener('message', onMessage);
+  });
+
+  const gameWorkerInitMsg = await new Promise<GameWorkerInitializedMessage>((resolve,reject) => {
+
+    gameWorkerMessageTarget.postMessage(
+      {
+        type: WorkerMessageType.InitializeGameWorker,
+        renderableTripleBuffer,
+        inputTripleBuffer: inputManager.tripleBuffer,
+        renderWorkerMessagePort,
+        resourceManagerBuffer,
+      },
+      renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
+    );
+    
+    const onMessage = ({ data }: { data: WorkerMessages }): void => {
+      if (data.type === WorkerMessageType.GameWorkerInitialized) {
+        resolve(data);
+      } else if (data.type === WorkerMessageType.GameWorkerError) {
+        reject(data.error);
+      }
+      gameWorkerMessageTarget.removeEventListener('message', onMessage);
+    };
+
+    gameWorkerMessageTarget.addEventListener('message', onMessage);
+  });
 
   let animationFrameId: number;
 

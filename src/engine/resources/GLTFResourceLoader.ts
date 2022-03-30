@@ -3,11 +3,12 @@ import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceLoaderResponse, ResourceManager } from "./ResourceManager";
 
-interface GLTFResourceDef extends ResourceDefinition {
+interface GLTFDef extends ResourceDefinition {
+  type: "gltf";
   url: string;
 }
 
-export function GLTFResourceLoader(manager: ResourceManager): ResourceLoader<GLTFResourceDef, Object3D> {
+export function GLTFResourceLoader(manager: ResourceManager): ResourceLoader<GLTFDef, Object3D> {
   const gltfLoader = new GLTFLoader();
 
   return {
@@ -33,12 +34,7 @@ export function GLTFRemoteResourceLoader(manager: RemoteResourceManager): Remote
 
 export function loadRemoteGLTF(
   manager: RemoteResourceManager,
-  url: string,
-  name?: string,
+  gltfDef: GLTFDef
 ): number {
-  return loadRemoteResource(manager, {
-    type: "gltf",
-    url,
-    name,
-  });
+  return loadRemoteResource(manager, gltfDef);
 }
