@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "node ./preview-server.js"
+    "preview": "node ./preview-server.js",
+    "lint": "eslint ./src"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
@@ -18,7 +19,6 @@
     "events": "^3.3.0",
     "gl-matrix": "^3.4.3",
     "hydrogen-view-sdk": "0.0.9",
-    "postcss": "^8.4.6",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "three": "^0.138.3"
@@ -30,9 +30,21 @@
     "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@types/three": "^0.138.0",
+    "@typescript-eslint/eslint-plugin": "^5.17.0",
+    "@typescript-eslint/parser": "^5.17.0",
     "@vitejs/plugin-react": "^1.0.7",
     "chokidar": "^3.5.3",
+    "eslint": "^8.12.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-matrix-org": "^0.4.0",
+    "eslint-plugin-react": "^7.29.4",
+    "eslint-plugin-react-hooks": "^4.4.0",
+    "postcss": "^8.4.12",
     "postcss-preset-env": "^7.4.3",
+    "stylelint": "^14.6.1",
+    "stylelint-config-standard": "^25.0.0",
     "typescript": "^4.4.4",
     "vite": "^2.7.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
