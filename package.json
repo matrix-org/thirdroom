@@ -13,7 +13,8 @@
     "preview": "node ./preview-server.js",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint ./src",
-    "lint:css": "stylelint ./src/**/*.css"
+    "lint:css": "stylelint ./src/**/*.css",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
@@ -53,6 +54,7 @@
     "typescript": "^4.4.4",
     "vite": "^2.7.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
-    "ws": "^8.5.0"
+    "ws": "^8.5.0",
+    "husky": "^7.0.0"
   }
 }
