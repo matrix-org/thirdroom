@@ -1,15 +1,16 @@
-import { BoxBufferGeometry, BufferGeometry } from "three";
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
-import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { BoxBufferGeometry, BufferGeometry } from 'three';
 
-const GEOMETRY_RESOURCE = "geometry";
+import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from './RemoteResourceManager';
+import { ResourceDefinition, ResourceLoader, ResourceManager } from './ResourceManager';
+
+const GEOMETRY_RESOURCE = 'geometry';
 
 export enum GeometryType {
-  Box = "box",
-};
+  Box = 'box',
+}
 
 export interface IGeometryDefinition extends ResourceDefinition {
-  type: "geometry";
+  type: 'geometry';
   geometryType: string;
 }
 
@@ -25,46 +26,45 @@ export interface BoxGeometryDefinition extends IGeometryDefinition {
 
 export type GeometryDefinition = BoxGeometryDefinition;
 
-export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader<GeometryDefinition, BufferGeometry> {  
-  return {
-    type: GEOMETRY_RESOURCE,
-    async load(def) {
+export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader<GeometryDefinition, BufferGeometry> {
+    return {
+        type: GEOMETRY_RESOURCE,
+        async load(def) {
+            let geometry: BufferGeometry;
 
-      let geometry: BufferGeometry;
+            switch (def.geometryType) {
+                case GeometryType.Box:
+                    geometry = new BoxBufferGeometry(
+                        def.width,
+                        def.height,
+                        def.depth,
+                        def.widthSegments,
+                        def.heightSegments,
+                        def.depthSegments,
+                    );
+                    break;
+                default:
+                    throw new Error(`Unknown geometry type ${def.geometryType}`);
+            }
 
-      switch (def.geometryType) {
-        case GeometryType.Box:
-          geometry = new BoxBufferGeometry(
-            def.width,
-            def.height,
-            def.depth,
-            def.widthSegments,
-            def.heightSegments,
-            def.depthSegments
-          );
-          break;
-        default:
-          throw new Error(`Unknown geometry type ${def.geometryType}`)
-      }
+            geometry.name = def.name!;
 
-      geometry.name = def.name!;
-
-      return {
-        name: def.name,
-        resource: geometry,
-      };
-    }
-  };
+            return {
+                name: def.name,
+                resource: geometry,
+            };
+        },
+    };
 }
 
 export function GeometryRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
-  return {
-    type: GEOMETRY_RESOURCE,
-  };
+    return {
+        type: GEOMETRY_RESOURCE,
+    };
 }
 
 export function createRemoteGeometry(
-  manager: RemoteResourceManager, geometryDef: GeometryDefinition
+    manager: RemoteResourceManager, geometryDef: GeometryDefinition,
 ): number {
-  return loadRemoteResource(manager, geometryDef);
+    return loadRemoteResource(manager, geometryDef);
 }

@@ -1,4 +1,4 @@
-import { AddResourceRefMessage, LoadResourceMessage, RemoveResourceRefMessage, PostMessageTarget, WorkerMessageType } from "../WorkerMessage";
+import { AddResourceRefMessage, LoadResourceMessage, RemoveResourceRefMessage, PostMessageTarget, WorkerMessageType } from '../WorkerMessage';
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;
@@ -32,7 +32,7 @@ export interface ResourceLoaderResponse<Resource, RemoteResource = undefined> {
   name?: string;
   resource: Resource;
   remoteResource?: RemoteResource;
-  transferList?: (Transferable | OffscreenCanvas )[];
+  transferList?: (Transferable | OffscreenCanvas)[];
 }
 
 export interface ResourceInfo<Resource, RemoteResource = undefined> {
@@ -47,9 +47,9 @@ export interface ResourceInfo<Resource, RemoteResource = undefined> {
 }
 
 export enum ResourceState {
-  Loading = "loading",
-  Loaded = "loaded",
-  Error = "error",
+  Loading = 'loading',
+  Loaded = 'loaded',
+  Error = 'error',
 }
 
 export interface ResourceDefinition {
@@ -58,28 +58,28 @@ export interface ResourceDefinition {
 }
 
 export function createResourceManagerBuffer() {
-  return new SharedArrayBuffer(4);
+    return new SharedArrayBuffer(4);
 }
 
 export function createResourceManager(
-  buffer: SharedArrayBuffer,
-  workerMessageTarget: PostMessageTarget
+    buffer: SharedArrayBuffer,
+    workerMessageTarget: PostMessageTarget,
 ): ResourceManager {
-  return {
-    buffer,
-    view: new Uint32Array(buffer),
-    store: new Map(),
-    resourceLoaders: new Map(),
-    workerMessageTarget,
-  };
+    return {
+        buffer,
+        view: new Uint32Array(buffer),
+        store: new Map(),
+        resourceLoaders: new Map(),
+        workerMessageTarget,
+    };
 }
 
 export function registerResourceLoader(
-  manager: ResourceManager,
-  loaderFactory: ResourceLoaderFactory<any, any, any>
+    manager: ResourceManager,
+    loaderFactory: ResourceLoaderFactory<any, any, any>,
 ): void {
-  const loader = loaderFactory(manager);
-  manager.resourceLoaders.set(loader.type, loader);
+    const loader = loaderFactory(manager);
+    manager.resourceLoaders.set(loader.type, loader);
 }
 
 export async function onLoadResource<
@@ -87,118 +87,118 @@ export async function onLoadResource<
   Resource,
   RemoteResource = undefined
 >(
-  manager: ResourceManager,
-  { resourceDef, resourceId }: LoadResourceMessage<Def>
+    manager: ResourceManager,
+    { resourceDef, resourceId }: LoadResourceMessage<Def>,
 ): Promise<ResourceInfo<Resource, RemoteResource>> {
-  const { type } = resourceDef;
-  const loader: ResourceLoader<Def, Resource, RemoteResource> =
+    const { type } = resourceDef;
+    const loader: ResourceLoader<Def, Resource, RemoteResource> =
     manager.resourceLoaders.get(type)!;
 
-  if (!loader) {
-    throw new Error(`Resource loader ${type} not registered.`);
-  }
-
-  const name = resourceDef.name || `${type}[${resourceId}]`;
-
-  const resourceInfo: ResourceInfo<Resource, RemoteResource> = {
-    resourceId,
-    type,
-    name,
-    refCount: 1,
-    state: ResourceState.Loading,
-    resource: undefined,
-    promise: loader.load({ ...resourceDef, name }),
-  };
-
-  manager.store.set(resourceId, resourceInfo);
-
-  try {
-    const response = await resourceInfo.promise;
-
-    if (!resourceDef.name && response.name) {
-      resourceInfo.name = response.name;
+    if (!loader) {
+        throw new Error(`Resource loader ${type} not registered.`);
     }
 
-    resourceInfo.resource = response.resource;
-    resourceInfo.state = ResourceState.Loaded;
+    const name = resourceDef.name || `${type}[${resourceId}]`;
 
-    manager.workerMessageTarget.postMessage(
-      {
-        type: WorkerMessageType.ResourceLoaded,
+    const resourceInfo: ResourceInfo<Resource, RemoteResource> = {
         resourceId,
-        remoteResource: response.remoteResource,
-      },
-      response.transferList
-    );
-  } catch (error: any) {
-    console.error(error);
-    resourceInfo.state = ResourceState.Error;
-    resourceInfo.error = error;
-    manager.workerMessageTarget.postMessage({
-      type: WorkerMessageType.ResourceLoadError,
-      resourceId,
-      error,
-    });
-  }
+        type,
+        name,
+        refCount: 1,
+        state: ResourceState.Loading,
+        resource: undefined,
+        promise: loader.load({ ...resourceDef, name }),
+    };
 
-  return resourceInfo;
+    manager.store.set(resourceId, resourceInfo);
+
+    try {
+        const response = await resourceInfo.promise;
+
+        if (!resourceDef.name && response.name) {
+            resourceInfo.name = response.name;
+        }
+
+        resourceInfo.resource = response.resource;
+        resourceInfo.state = ResourceState.Loaded;
+
+        manager.workerMessageTarget.postMessage(
+            {
+                type: WorkerMessageType.ResourceLoaded,
+                resourceId,
+                remoteResource: response.remoteResource,
+            },
+            response.transferList,
+        );
+    } catch (error: any) {
+        console.error(error);
+        resourceInfo.state = ResourceState.Error;
+        resourceInfo.error = error;
+        manager.workerMessageTarget.postMessage({
+            type: WorkerMessageType.ResourceLoadError,
+            resourceId,
+            error,
+        });
+    }
+
+    return resourceInfo;
 }
 
 export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddResourceRefMessage) {
-  const resourceInfo = manager.store.get(resourceId);
+    const resourceInfo = manager.store.get(resourceId);
 
-  if (!resourceInfo) {
-    return;
-  }
+    if (!resourceInfo) {
+        return;
+    }
 
-  const loader = manager.resourceLoaders.get(resourceInfo.type)!;
+    const loader = manager.resourceLoaders.get(resourceInfo.type)!;
 
-  if (loader.addRef) {
-    loader.addRef(resourceId);
-  }
+    if (loader.addRef) {
+        loader.addRef(resourceId);
+    }
 
-  resourceInfo.refCount++;
+    resourceInfo.refCount++;
 }
 
 export function onRemoveResourceRef(manager: ResourceManager, { resourceId }: RemoveResourceRefMessage) {
-  const resourceInfo = manager.store.get(resourceId);
+    const resourceInfo = manager.store.get(resourceId);
 
-  if (!resourceInfo) {
-    return;
-  }
-
-  const loader = manager.resourceLoaders.get(resourceInfo.type)!;
-
-  if (resourceInfo.refCount === 1) {
-    if (loader.dispose) {
-      loader.dispose(resourceId);
+    if (!resourceInfo) {
+        return;
     }
 
-    manager.store.delete(resourceId);
+    const loader = manager.resourceLoaders.get(resourceInfo.type)!;
 
-    manager.workerMessageTarget.postMessage({
-      type: WorkerMessageType.ResourceDisposed,
-      resourceId,
-    });
-  } else {
-    if (loader.removeRef) {
-      loader.removeRef(resourceId);
+    if (resourceInfo.refCount === 1) {
+        if (loader.dispose) {
+            loader.dispose(resourceId);
+        }
+
+        manager.store.delete(resourceId);
+
+        manager.workerMessageTarget.postMessage({
+            type: WorkerMessageType.ResourceDisposed,
+            resourceId,
+        });
+    } else {
+        if (loader.removeRef) {
+            loader.removeRef(resourceId);
+        }
+
+        resourceInfo.refCount--;
     }
-
-    resourceInfo.refCount--;
-  }
 }
 
 export async function loadResource<Resource>(
-  manager: ResourceManager,
-  resourceId: number
+    manager: ResourceManager,
+    resourceId: number,
 ): Promise<Resource | undefined> {
-  const resourceInfo = manager.store.get(resourceId);
+    const resourceInfo = manager.store.get(resourceId);
 
-  if (resourceInfo) {
-    const response = await resourceInfo.promise;
-    return response.resource;
-  }
+    if (resourceInfo) {
+        const response = await resourceInfo.promise;
+        return response.resource;
+    }
 
-  return undefined;
+    return undefined;
 }

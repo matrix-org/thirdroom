@@ -1,4 +1,4 @@
-export type TypedArray = 
+export type TypedArray =
   Float32Array
   | Float64Array
   | Uint8Array
@@ -10,7 +10,7 @@ export type TypedArray =
   | BigUint64Array
   | BigInt64Array;
 
-export type TypedArrayConstructor = 
+export type TypedArrayConstructor =
   Float32ArrayConstructor
   | Float64ArrayConstructor
   | Uint8ArrayConstructor

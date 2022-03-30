@@ -1,80 +1,80 @@
 import {
-  Platform,
-  URLRouter,
-  Navigation,
-  Client,
-  Session,
-  ViewModel,
+    Platform,
+    URLRouter,
+    Navigation,
+    Client,
+    Session,
+    ViewModel,
 } from 'hydrogen-view-sdk';
 
 import { SidebarViewModel } from './SidebarViewModel';
 import { RoomListViewModel } from './RoomListViewModel';
 
 type Options = {
-  client: typeof Client
-  session: typeof Session
-  platform: typeof Platform
-  urlCreator: typeof URLRouter
-  navigation: typeof Navigation
-  emitChange?: (params: any) => void
-}
+  client: typeof Client;
+  session: typeof Session;
+  platform: typeof Platform;
+  urlCreator: typeof URLRouter;
+  navigation: typeof Navigation;
+  emitChange?: (params: any) => void;
+};
 
 export class LeftPanelViewModel extends ViewModel {
-  private _client: typeof Client;
-  private _sidebarViewModel: SidebarViewModel;
-  private _roomListViewModel: RoomListViewModel;
-  private _panelState: 'initial' | 'open' | 'close';
-  
-  constructor(options: Options) {
-    super(options);
-    this._client = options.client;
-    this._session = options.session;
+    private _client: typeof Client;
+    private _sidebarViewModel: SidebarViewModel;
+    private _roomListViewModel: RoomListViewModel;
+    private _panelState: 'initial' | 'open' | 'close';
 
-    this._sidebarViewModel = new SidebarViewModel(this.childOptions({
-      user: this._session.user,
-    }));
-    this.track(this._sidebarViewModel);
+    constructor(options: Options) {
+        super(options);
+        this._client = options.client;
+        this._session = options.session;
 
-    this._roomListViewModel = new RoomListViewModel(this.childOptions({
-      session: this._session,
-      invites: this._client.session.invites,
-      rooms: this._client.session.rooms,
-    }));
-    this.track(this._roomListViewModel);
+        this._sidebarViewModel = new SidebarViewModel(this.childOptions({
+            user: this._session.user,
+        }));
+        this.track(this._sidebarViewModel);
 
-    this._panelState = 'initial';
-    this.navigation.push('left-panel', 'initial');
-    this._setupNavigation();
-  }
+        this._roomListViewModel = new RoomListViewModel(this.childOptions({
+            session: this._session,
+            invites: this._client.session.invites,
+            rooms: this._client.session.rooms,
+        }));
+        this.track(this._roomListViewModel);
 
-  private _setupNavigation() {
-    this.track(this.navigation.observe('left-panel').subscribe(() => {
-      const segment = this.navigation.path.get('left-panel');
-      this._handlePanelState(segment.value);
-    }));
+        this._panelState = 'initial';
+        this.navigation.push('left-panel', 'initial');
+        this._setupNavigation();
+    }
 
-    this.track(this.navigation.observe('room').subscribe(() => {
-      this._handlePanelState('initial');
-    }));
-  }
+    private _setupNavigation() {
+        this.track(this.navigation.observe('left-panel').subscribe(() => {
+            const segment = this.navigation.path.get('left-panel');
+            this._handlePanelState(segment.value);
+        }));
 
-  private _handlePanelState(state: any) {
-    if (state === 'open') this._panelState = 'open';
-    else if (state === 'close') this._panelState = 'close';
-    else this._panelState = 'initial';
+        this.track(this.navigation.observe('room').subscribe(() => {
+            this._handlePanelState('initial');
+        }));
+    }
 
-    this.emitChange('panelState');
-  }
+    private _handlePanelState(state: any) {
+        if (state === 'open') this._panelState = 'open';
+        else if (state === 'close') this._panelState = 'close';
+        else this._panelState = 'initial';
 
-  get sidebarViewModel() {
-    return this._sidebarViewModel;
-  }
+        this.emitChange('panelState');
+    }
 
-  get roomListViewModel() {
-    return this._roomListViewModel;
-  }
+    get sidebarViewModel() {
+        return this._sidebarViewModel;
+    }
 
-  get panelState () {
-    return this._panelState;
-  }
+    get roomListViewModel() {
+        return this._roomListViewModel;
+    }
+
+    get panelState() {
+        return this._panelState;
+    }
 }
