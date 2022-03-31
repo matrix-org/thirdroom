@@ -14,16 +14,16 @@
 //   ~CharacterPhysicsGroup
 // );
 
-// function physicsCharacterControllerAction(key: string) {
-//   return "PhysicsCharacterController/" + key;
-// }
+function physicsCharacterControllerAction(key: string) {
+  return "PhysicsCharacterController/" + key;
+}
 
-// export const PhysicsCharacterControllerActions = {
-//   Move: physicsCharacterControllerAction("Move"),
-//   Jump: physicsCharacterControllerAction("Jump"),
-//   Sprint: physicsCharacterControllerAction("Sprint"),
-//   Crouch: physicsCharacterControllerAction("Crouch"),
-// };
+export const PhysicsCharacterControllerActions = {
+  Move: physicsCharacterControllerAction("Move"),
+  Jump: physicsCharacterControllerAction("Jump"),
+  Sprint: physicsCharacterControllerAction("Sprint"),
+  Crouch: physicsCharacterControllerAction("Crouch"),
+};
 
 // interface PhysicsCharacterControllerState {
 //   walkSpeed: number;
@@ -272,4 +272,3 @@
 
 //     return world;
 //   }
-

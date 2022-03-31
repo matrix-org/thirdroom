@@ -13,8 +13,7 @@ import {
 import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
 import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
-import { createInputState, getInputButtonDown, InputState } from "./input/InputManager";
-import { InputArray, InputObjectType } from "./input/InputKeys";
+import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
 import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
 import { createRemoteGeometry, GeometryRemoteResourceLoader, GeometryType } from "./resources/GeometryResourceLoader";
 import {
@@ -30,8 +29,7 @@ import { inputReadSystem } from "./input/inputReadSystem";
 import { physicsSystem, RigidBody } from "./physics";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
-
-// import { init } from "../game";
+import { init } from "../game";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -103,7 +101,7 @@ export interface GameInputState {
   inputStates: InputState[];
   actions: Map<string, ActionState>;
   actionMaps: ActionMap[];
-  raw: InputObjectType;
+  raw: { [path: string]: number };
 }
 
 export type System = (state: GameState) => void;
@@ -118,15 +116,19 @@ export interface GameState {
   systems: System[];
 }
 
-const generateInputGetters = (inputStates: InputState[], inputTripleBuffer: TripleBufferState): InputObjectType =>
-  InputArray.reduce(
-    (a, v, i) =>
-      Object.defineProperty(a, v, {
-        enumerable: true,
-        get: () => getInputButtonDown(inputStates[getReadBufferIndex(inputTripleBuffer)], i),
-      }),
-    {}
-  ) as InputObjectType;
+const generateInputGetters = (
+  inputStates: InputState[],
+  inputTripleBuffer: TripleBufferState
+): { [path: string]: number } =>
+  Object.defineProperties(
+    {},
+    Object.fromEntries(
+      Object.entries(InputStateGetters).map(([path, getter]) => [
+        path,
+        { enumerable: true, get: () => getter(inputStates[getReadBufferIndex(inputTripleBuffer)]) },
+      ])
+    )
+  );
 
 async function onInit({
   inputTripleBuffer,
@@ -199,6 +201,8 @@ async function onInit({
   for (let i = 0; i < maxEntities; i++) {
     createCube(state, geometryResourceId);
   }
+
+  await init(state);
 
   update(state);
   console.log("GameWorker loop started");

@@ -1,20 +1,20 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, addEntity } from "bitecs";
+import { addEntity } from "bitecs";
 
 import { GameState, RenderPort } from "../GameWorker";
 import { Transform } from "../component/transform";
-import { RigidBody } from "../physics";
+import { addRigidBody } from "../physics";
 import { createRemoteMaterial, MaterialType } from "../resources/MaterialResourceLoader";
 import { createRemoteMesh } from "../resources/MeshResourceLoader";
 import { WorkerMessageType } from "../WorkerMessage";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-export const createCube = ({ world, resourceManager, physicsWorld, renderer }: GameState, geometryResourceId: number) => {
+export const createCube = (
+  { world, resourceManager, physicsWorld, renderer }: GameState,
+  geometryResourceId: number
+) => {
   const eid = addEntity(world);
-
-  // todo: addMapComponent
-  addComponent(world, RigidBody, eid);
 
   const position = Transform.position[eid];
   const scale = Transform.scale[eid];
@@ -51,8 +51,7 @@ export const createCube = ({ world, resourceManager, physicsWorld, renderer }: G
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  // physics.objects[eid] = rigidBody;
-
+  addRigidBody(world, eid, rigidBody);
   createRenderable(renderer.port, eid, resourceId);
 
   return eid;

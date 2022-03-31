@@ -1,14 +1,15 @@
 import { addView, createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
 import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer } from "../TripleBuffer";
 import { flagGet, flagSet } from "./Bitmask";
-import { InputArray, Input, InputObjectType } from "./InputKeys";
+import { Keys, codeToKeyCode } from "./KeyCodes";
 
 export type InputState = {
-  buffer: ArrayBuffer;
-  keyView: Uint32Array;
-  floatView: Float32Array;
-  zeroUint32: Uint32Array;
-  zeroFloat32: Float32Array;
+  buffer: CursorBuffer;
+  keyboard: Uint32Array;
+  mouse: {
+    movement: Float32Array;
+    buttons: Uint32Array;
+  };
 };
 
 export function createInputManager(canvas: HTMLCanvasElement) {
@@ -30,80 +31,93 @@ export function createInputManager(canvas: HTMLCanvasElement) {
 }
 
 export const createInputState = (buffer: CursorBuffer = createCursorBuffer()): InputState => {
-  const keyView = addView(buffer, Uint32Array, Math.ceil(InputArray.length / 32));
-  const floatView = addView(buffer, Float32Array, 2);
-
-  const zeroUint32 = new Uint32Array(keyView.length);
-  const zeroFloat32 = new Float32Array(floatView.length);
-
   return {
     buffer,
-    keyView,
-    floatView,
-    zeroUint32,
-    zeroFloat32,
+    keyboard: addView(buffer, Uint32Array, Math.ceil(Keys.length / 32)),
+    mouse: {
+      movement: addView(buffer, Float32Array, 2),
+      buttons: addView(buffer, Uint32Array, 1),
+    },
   };
 };
 
-export const resetInputState = (inputState: InputState) => {
-  inputState.keyView.set(inputState.zeroUint32);
-  inputState.floatView.set(inputState.zeroFloat32);
-};
-
-export const copyInputState = (inputStateA: InputState, inputStateB: InputState) => {
-  inputStateA.keyView.set(inputStateB.keyView);
-  inputStateA.floatView.set(inputStateB.floatView);
-};
-
-export const setInputButtonDown = (inputState: InputState, input: number, value: number) =>
-  flagSet(inputState.keyView, input, value);
-
-export const getInputButtonDown = (inputState: InputState, input: number) => flagGet(inputState.keyView, input);
-
-export const setInputMouseX = (inputState: InputState, value: number) => (inputState.floatView[0] = value);
-export const setInputMouseY = (inputState: InputState, value: number) => (inputState.floatView[1] = value);
-
-export const getInputMouseX = (inputState: InputState) => inputState.floatView[0];
-export const getInputMouseY = (inputState: InputState) => inputState.floatView[1];
-
 export const bindInputEvents = (inputState: InputState, canvas: HTMLElement): (() => void) => {
-  const input: { [key: string]: boolean } = {};
+  function onMouseDown({ buttons }: MouseEvent) {
+    if (document.pointerLockElement === canvas) {
+      inputState.mouse.buttons[0] = buttons;
+    } else {
+      canvas.requestPointerLock();
+    }
+  }
 
-  function onMouseDown() {
-    canvas.requestPointerLock();
+  function onMouseUp({ buttons }: MouseEvent) {
+    if (document.pointerLockElement === canvas) {
+      inputState.mouse.buttons[0] = buttons;
+    }
   }
 
   function onKeyDown({ code }: KeyboardEvent) {
     if (document.pointerLockElement === canvas) {
-      if (input[code]) return;
-      input[code] = true;
-      setInputButtonDown(inputState, Input[code as keyof InputObjectType], 1);
+      flagSet(inputState.keyboard, codeToKeyCode(code), 1);
     }
   }
 
   function onKeyUp({ code }: KeyboardEvent) {
     if (document.pointerLockElement === canvas) {
-      input[code] = false;
-      setInputButtonDown(inputState, Input[code as keyof InputObjectType], 0);
+      flagSet(inputState.keyboard, codeToKeyCode(code), 0);
     }
   }
 
   function onMouseMove({ movementX, movementY }: MouseEvent) {
     if (document.pointerLockElement === canvas) {
-      setInputMouseX(inputState, movementX);
-      setInputMouseY(inputState, movementY);
+      inputState.mouse.movement[0] = movementX;
+      inputState.mouse.movement[1] = movementY;
     }
   }
 
+  function onBlur() {
+    inputState.buffer.clear();
+  }
+
   canvas.addEventListener("mousedown", onMouseDown);
+  canvas.addEventListener("mouseup", onMouseUp);
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("mousemove", onMouseMove);
+  canvas.addEventListener("blur", onBlur);
 
   return () => {
     canvas.removeEventListener("mousedown", onMouseDown);
+    canvas.removeEventListener("mouseup", onMouseUp);
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("mousemove", onMouseMove);
+    canvas.removeEventListener("blur", onBlur);
   };
 };
+
+type InputStateGetter = (inputState: InputState) => number;
+
+const keyIndexToInputState =
+  (index: number): InputStateGetter =>
+  (inputState: InputState) =>
+    flagGet(inputState.keyboard, index);
+
+const mouseMovementIndexToInputState =
+  (index: number): InputStateGetter =>
+  (inputState: InputState) =>
+    inputState.mouse.movement[index];
+
+const mouseButtonIndexToInputState =
+  (index: number): InputStateGetter =>
+  (inputState: InputState) =>
+    flagGet(inputState.mouse.buttons, index);
+
+export const InputStateGetters: { [path: string]: InputStateGetter } = Object.fromEntries([
+  ...Keys.map((key, i) => [`Keyboard/${key}`, keyIndexToInputState(i)]),
+  ["Mouse/movementX", mouseMovementIndexToInputState(0)],
+  ["Mouse/movementY", mouseMovementIndexToInputState(1)],
+  ...Array(6)
+    .fill(0)
+    .map((_, i) => [`Mouse/button${i}`, mouseButtonIndexToInputState(i)]),
+]);

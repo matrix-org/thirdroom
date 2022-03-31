@@ -1,7 +1,6 @@
 import { vec2 } from "gl-matrix";
 
 import { GameState, GameInputState } from "../GameWorker";
-import { InputObjectType } from "./InputKeys";
 
 export enum ActionType {
   Vector2 = "Vector2",
@@ -23,7 +22,7 @@ export interface ActionMap {
 
 export interface ActionDefinition {
   id: string;
-  path: keyof InputObjectType;
+  path: string;
   type: ActionType;
   bindings: ActionBindingTypes[];
 }
@@ -40,52 +39,40 @@ export interface ActionBinding {
 
 export interface AxesBinding extends ActionBinding {
   type: BindingType.Axes;
-  x: keyof InputObjectType;
-  y: keyof InputObjectType;
+  x: string;
+  y: string;
 }
 
 export interface ButtonBinding extends ActionBinding {
   type: BindingType.Button;
-  path: keyof InputObjectType;
+  path: string;
 }
 
 export interface DirectionalButtonsBinding extends ActionBinding {
   type: BindingType.DirectionalButtons;
-  up: keyof InputObjectType;
-  down: keyof InputObjectType;
-  left: keyof InputObjectType;
-  right: keyof InputObjectType;
+  up: string;
+  down: string;
+  left: string;
+  right: string;
 }
 
-export type ActionBindingTypes =
-  | AxesBinding
-  | ButtonBinding
-  | DirectionalButtonsBinding
-  | ActionBinding;
+export type ActionBindingTypes = AxesBinding | ButtonBinding | DirectionalButtonsBinding | ActionBinding;
 
 const ActionTypesToBindings: {
   [key: string]: {
     create: () => any;
     bindings: {
-      [key: string]: (
-        input: GameInputState,
-        path: keyof InputObjectType,
-        bindingDef: ActionBinding,
-      ) => void;
+      [key: string]: (input: GameInputState, path: string, bindingDef: ActionBinding) => void;
     };
   };
 } = {
   [ActionType.Button]: {
     create: () => ({ pressed: false, released: false, held: false }),
     bindings: {
-      [BindingType.Button]: (
-        input: GameInputState,
-        path: keyof InputObjectType,
-        bindingDef: ActionBinding,
-      ) => {
+      [BindingType.Button]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
         const down = input.raw[path];
         const value = input.actions.get(path) as ButtonActionState;
-        
+
         value.pressed = !value.held && !!down;
         value.released = value.held && !down;
         value.held = !!down;
@@ -95,23 +82,14 @@ const ActionTypesToBindings: {
   [ActionType.Vector2]: {
     create: () => vec2.create(),
     bindings: {
-      [BindingType.Axes]: (
-        input: GameInputState,
-        path: keyof InputObjectType,
-        bindingDef: ActionBinding,
-      ) => {
+      [BindingType.Axes]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
         const { x, y } = bindingDef as AxesBinding;
         const value = input.actions.get(path) as vec2;
         value[0] = input.raw[x] || 0;
         value[1] = input.raw[y] || 0;
       },
-      [BindingType.DirectionalButtons]: (
-        input: GameInputState,
-        path: keyof InputObjectType,
-        bindingDef: ActionBinding,
-      ) => {
-        const { up, down, left, right } =
-          bindingDef as DirectionalButtonsBinding;
+      [BindingType.DirectionalButtons]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+        const { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
 
         let x = 0;
         let y = 0;
@@ -145,21 +123,12 @@ export function ActionMappingSystem(state: GameState) {
   for (const actionMap of state.input.actionMaps) {
     for (const action of actionMap.actions) {
       if (!state.input.actions.has(action.path)) {
-        state.input.actions.set(
-          action.path,
-          ActionTypesToBindings[action.type].create()
-        );
+        state.input.actions.set(action.path, ActionTypesToBindings[action.type].create());
       }
 
       for (const binding of action.bindings) {
-        ActionTypesToBindings[action.type].bindings[binding.type](
-          state.input,
-          action.path,
-          binding,
-        );
+        ActionTypesToBindings[action.type].bindings[binding.type](state.input, action.path, binding);
       }
     }
   }
-
-  return state;
 }

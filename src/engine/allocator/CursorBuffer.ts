@@ -2,16 +2,32 @@ import { TypedArrayConstructor } from "./types";
 import { roundUpToMultiple4, roundUpToMultiple8 } from "./util";
 
 const $cursor = Symbol("cursor");
+const $byteView = Symbol("byteView");
 
-export type CursorBuffer = ArrayBuffer & { [$cursor]: number; cursor: number };
+export type CursorBuffer = ArrayBuffer & {
+  [$cursor]: number;
+  cursor: number;
+  [$byteView]: Uint8Array;
+  byteView: Uint8Array;
+  clear(): void;
+};
 
 export const createCursorBuffer = (buffer: ArrayBuffer = new ArrayBuffer(1e7 /*10MB*/)): CursorBuffer => {
   (buffer as CursorBuffer)[$cursor] = 0;
+  (buffer as CursorBuffer)[$byteView] = new Uint8Array(buffer.byteLength);
   Object.defineProperty(buffer, "cursor", {
     get() {
       return this[$cursor];
     },
   });
+  Object.defineProperty(buffer, "byteView", {
+    get() {
+      return this[$byteView];
+    },
+  });
+  (buffer as CursorBuffer).clear = function clear() {
+    this[$byteView].fill(0, 0, this[$cursor]);
+  };
   return buffer as CursorBuffer;
 };
 
