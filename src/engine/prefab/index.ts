@@ -10,9 +10,10 @@ import { WorkerMessageType } from "../WorkerMessage";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-export const createCube = ({ world, resourceManager, physics, renderer }: GameState, geometryResourceId: number) => {
+export const createCube = ({ world, resourceManager, physicsWorld, renderer }: GameState, geometryResourceId: number) => {
   const eid = addEntity(world);
 
+  // todo: addMapComponent
   addComponent(world, RigidBody, eid);
 
   const position = Transform.position[eid];
@@ -45,12 +46,12 @@ export const createCube = ({ world, resourceManager, physics, renderer }: GameSt
   });
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(position[0], position[1], position[2]);
-  const rigidBody = physics.world.createRigidBody(rigidBodyDesc);
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
-  physics.world.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  physics.objects[eid] = rigidBody;
+  // physics.objects[eid] = rigidBody;
 
   createRenderable(renderer.port, eid, resourceId);
 

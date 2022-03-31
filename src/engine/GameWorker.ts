@@ -13,7 +13,7 @@ import {
 import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
 import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
-import { createInputState, getInputButtonPressed, InputState } from "./input/InputManager";
+import { createInputState, getInputButtonDown, InputState } from "./input/InputManager";
 import { InputArray, InputObjectType } from "./input/InputKeys";
 import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
 import { createRemoteGeometry, GeometryRemoteResourceLoader, GeometryType } from "./resources/GeometryResourceLoader";
@@ -25,10 +25,13 @@ import {
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
 import { createCube } from "./prefab";
+import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
-import { physicsSystem } from "./physics";
+import { physicsSystem, RigidBody } from "./physics";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
+
+// import { init } from "../game";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -82,13 +85,8 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
 workerScope.addEventListener("message", onInitMessage);
 
 export interface TimeState {
-  then: number;
-  delta: number;
-}
-
-export interface PhysicsState {
-  world: RAPIER.World;
-  objects: RAPIER.RigidBody[];
+  elapsed: number;
+  dt: number;
 }
 
 export type World = IWorld;
@@ -100,18 +98,24 @@ export interface RenderState {
   port: RenderPort;
 }
 
-export interface GameInputState extends InputObjectType {
+export interface GameInputState {
   tripleBuffer: TripleBufferState;
   inputStates: InputState[];
+  actions: Map<string, ActionState>;
+  actionMaps: ActionMap[];
+  raw: InputObjectType;
 }
+
+export type System = (state: GameState) => void;
 
 export interface GameState {
   world: World;
-  physics: PhysicsState;
+  physicsWorld: RAPIER.World;
   renderer: RenderState;
   time: TimeState;
   resourceManager: RemoteResourceManager;
   input: GameInputState;
+  systems: System[];
 }
 
 const generateInputGetters = (inputStates: InputState[], inputTripleBuffer: TripleBufferState): InputObjectType =>
@@ -119,7 +123,7 @@ const generateInputGetters = (inputStates: InputState[], inputTripleBuffer: Trip
     (a, v, i) =>
       Object.defineProperty(a, v, {
         enumerable: true,
-        get: () => getInputButtonPressed(inputStates[getReadBufferIndex(inputTripleBuffer)], i),
+        get: () => getInputButtonDown(inputStates[getReadBufferIndex(inputTripleBuffer)], i),
       }),
     {}
   ) as InputObjectType;
@@ -155,11 +159,6 @@ async function onInit({
   registerRemoteResourceLoader(resourceManager, CameraRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
 
-  const physics: PhysicsState = {
-    world: physicsWorld,
-    objects: Array(maxEntities),
-  };
-
   const renderer: RenderState = {
     tripleBuffer: renderableTripleBuffer,
     port: renderPort,
@@ -168,12 +167,14 @@ async function onInit({
   const input: GameInputState = {
     tripleBuffer: inputTripleBuffer,
     inputStates,
-    ...generateInputGetters(inputStates, inputTripleBuffer),
+    actions: new Map(),
+    actionMaps: [],
+    raw: generateInputGetters(inputStates, inputTripleBuffer),
   };
 
   const time: TimeState = {
-    then: performance.now(),
-    delta: 0,
+    elapsed: performance.now(),
+    dt: 0,
   };
 
   // TODO: Add scene/camera entities using resource ids from the render thread
@@ -182,9 +183,10 @@ async function onInit({
     world,
     resourceManager,
     renderer,
-    physics,
+    physicsWorld,
     input,
     time,
+    systems: [],
   };
 
   console.log("GameWorker initialized");
@@ -214,40 +216,40 @@ const backward = new RAPIER.Vector3(0, 0, speed);
 const right = new RAPIER.Vector3(speed, 0, 0);
 const left = new RAPIER.Vector3(-speed, 0, 0);
 const up = new RAPIER.Vector3(0, speed, 0);
-const cubeMoveSystem = ({ input, physics }: GameState) => {
+const cubeMoveSystem = ({ input }: GameState) => {
   const eid = 1;
-  const rigidBody = physics.objects[eid];
-  if (input.KeyW) {
+  const rigidBody = RigidBody.store.get(eid)!;
+  if (input.raw.KeyW) {
     rigidBody.applyImpulse(forward, true);
   }
-  if (input.KeyS) {
+  if (input.raw.KeyS) {
     rigidBody.applyImpulse(backward, true);
   }
-  if (input.KeyA) {
+  if (input.raw.KeyA) {
     rigidBody.applyImpulse(left, true);
   }
-  if (input.KeyD) {
+  if (input.raw.KeyD) {
     rigidBody.applyImpulse(right, true);
   }
-  if (input.Space) {
+  if (input.raw.Space) {
     rigidBody.applyImpulse(up, true);
   }
 };
 
-const cameraMoveSystem = ({ input, time: { delta } }: GameState) => {
+const cameraMoveSystem = ({ input, time: { dt } }: GameState) => {
   const eid = 0;
   const position = Transform.position[eid];
-  if (input.ArrowUp) {
-    position[2] -= delta * 25;
+  if (input.raw.ArrowUp) {
+    position[2] -= dt * 25;
   }
-  if (input.ArrowDown) {
-    position[2] += delta * 25;
+  if (input.raw.ArrowDown) {
+    position[2] += dt * 25;
   }
-  if (input.ArrowLeft) {
-    position[0] -= delta * 25;
+  if (input.raw.ArrowLeft) {
+    position[0] -= dt * 25;
   }
-  if (input.ArrowRight) {
-    position[0] += delta * 25;
+  if (input.raw.ArrowRight) {
+    position[0] += dt * 25;
   }
 };
 
@@ -267,8 +269,8 @@ const renderableTripleBufferSystem = ({ renderer }: GameState) => {
 
 const timeSystem = ({ time }: GameState) => {
   const now = performance.now();
-  time.delta = (now - time.then) / 1000;
-  time.then = now;
+  time.dt = (now - time.elapsed) / 1000;
+  time.elapsed = now;
 };
 
 const pipeline = (state: GameState) => {
@@ -276,6 +278,11 @@ const pipeline = (state: GameState) => {
   inputReadSystem(state);
   cameraMoveSystem(state);
   cubeMoveSystem(state);
+
+  for (let i = 0; i < state.systems.length; i++) {
+    state.systems[i](state);
+  }
+
   physicsSystem(state);
   updateWorldMatrixSystem();
   renderableTripleBufferSystem(state);
@@ -284,8 +291,8 @@ const pipeline = (state: GameState) => {
 function update(state: GameState) {
   pipeline(state);
 
-  const elapsed = performance.now() - state.time.then;
-  const remainder = 1000 / tickRate - elapsed;
+  const frameDuration = performance.now() - state.time.elapsed;
+  const remainder = 1000 / tickRate - frameDuration;
 
   if (remainder > 0) {
     // todo: call fixed timestep physics pipeline here
