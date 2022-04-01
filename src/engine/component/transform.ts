@@ -140,89 +140,58 @@ export function removeChild(parent: number, child: number) {
   Transform.prevSibling[child] = NOOP;
 }
 
-const updateWorldMatrix = (eid: number, force = false) => {
-  if (Transform.worldMatrixNeedsUpdate[eid] || force) {
-    if (Transform.parent[eid] === NOOP) {
-      Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
-    } else {
-      const parentEid = Transform.parent[eid];
-      mat4.multiply(Transform.worldMatrix[eid], Transform.worldMatrix[parentEid], Transform.localMatrix[eid]);
-    }
-    Transform.worldMatrixNeedsUpdate[eid] = 0;
-    force = true;
+export const updateWorldMatrix = (eid: number, updateParents: boolean, updateChildren: boolean) => {
+  const parent = Transform.parent[eid];
+
+  if (updateParents === true && parent !== NOOP) {
+    updateWorldMatrix(parent, true, false);
   }
-  return force;
+
+  if (!Transform.static[eid]) updateMatrix(eid);
+
+  if (parent === NOOP) {
+    Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
+  } else {
+    mat4.multiply(Transform.worldMatrix[eid], Transform.worldMatrix[parent], Transform.localMatrix[eid]);
+  }
+
+  // update children
+  if (updateChildren) {
+    let nextChild = Transform.firstChild[eid];
+    while (nextChild) {
+      updateWorldMatrix(nextChild, false, true);
+      nextChild = Transform.nextSibling[nextChild];
+    }
+  }
 };
 
 export const updateMatrixWorld = (eid: number, force = false) => {
   if (!Transform.static[eid]) updateMatrix(eid);
 
-  force = updateWorldMatrix(eid, force);
+  if (Transform.worldMatrixNeedsUpdate[eid] || force) {
+    const parent = Transform.parent[eid];
+    if (parent === NOOP) {
+      Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
+    } else {
+      mat4.multiply(Transform.worldMatrix[eid], Transform.worldMatrix[parent], Transform.localMatrix[eid]);
+    }
+    // Transform.worldMatrixNeedsUpdate[eid] = 0;
+    force = true;
+  }
 
   let nextChild = Transform.firstChild[eid];
   while (nextChild) {
     updateMatrixWorld(nextChild, force);
-
     nextChild = Transform.nextSibling[nextChild];
   }
 };
 
 export const updateMatrix = (eid: number) => {
-  composeMatrix(eid);
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
-};
-
-export const composeMatrix = (eid: number) => {
   const position = Transform.position[eid];
   const quaternion = Transform.quaternion[eid];
   const scale = Transform.scale[eid];
-
-  const te = Transform.localMatrix[eid];
-
-  const x = quaternion[0];
-  const y = quaternion[1];
-  const z = quaternion[2];
-  const w = quaternion[3];
-
-  const x2 = x + x;
-  const y2 = y + y;
-  const z2 = z + z;
-
-  const xx = x * x2;
-  const xy = x * y2;
-  const xz = x * z2;
-
-  const yy = y * y2;
-  const yz = y * z2;
-  const zz = z * z2;
-
-  const wx = w * x2;
-  const wy = w * y2;
-  const wz = w * z2;
-
-  const sx = scale[0];
-  const sy = scale[1];
-  const sz = scale[2];
-
-  te[0] = (1 - (yy + zz)) * sx;
-  te[1] = (xy + wz) * sx;
-  te[2] = (xz - wy) * sx;
-  te[3] = 0;
-
-  te[4] = (xy - wz) * sy;
-  te[5] = (1 - (xx + zz)) * sy;
-  te[6] = (yz + wx) * sy;
-  te[7] = 0;
-
-  te[8] = (xz + wy) * sz;
-  te[9] = (yz - wx) * sz;
-  te[10] = (1 - (xx + yy)) * sz;
-  te[11] = 0;
-
-  te[12] = position[0];
-  te[13] = position[1];
-  te[14] = position[2];
-  te[15] = 1;
+  mat4.fromRotationTranslationScale(Transform.localMatrix[eid], quaternion, position, scale);
+  Transform.worldMatrixNeedsUpdate[eid] = 1;
 };
 
 const { sin, cos } = Math;

@@ -1,9 +1,13 @@
-import { addEntity } from "bitecs";
+import { addComponent, addEntity } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { GameState } from "./engine/GameWorker";
 import { ActionMappingSystem, ActionType, BindingType } from "./engine/input/ActionMappingSystem";
-import { PhysicsCharacterControllerActions } from "./plugins/PhysicsCharacterController";
+import {
+  PhysicsCharacterControllerActions,
+  playerControllerSystem,
+  PlayerRig,
+} from "./plugins/PhysicsCharacterController";
 import {
   addCameraPitchTargetComponent,
   addCameraYawTargetComponent,
@@ -12,18 +16,11 @@ import {
 } from "./plugins/FirstPersonCamera";
 import { addChild, addRenderableComponent, addTransformComponent, Transform } from "./engine/component/transform";
 import { CameraType, createRemoteCamera } from "./engine/resources/CameraResourceLoader";
-import { physicsSystem } from "./engine/physics";
+import { addRigidBody, physicsSystem } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube } from "./engine/prefab";
 
-// import {
-//   addPhysicsCharacterController,
-//   PhysicsCharacterControllerSystem,
-// } from "./plugins/physics-character-controller";
-
 export async function init(state: GameState): Promise<void> {
-  //addPhysicsCharacterController(state);
-
   const { world, resourceManager, physicsWorld, scene } = state;
 
   state.input.actionMaps = [
@@ -93,7 +90,7 @@ export async function init(state: GameState): Promise<void> {
     },
   ];
 
-  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100.0, 0.1, 100.0);
+  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(1000.0, 1, 1000.0);
   physicsWorld.createCollider(groundColliderDesc);
 
   const geometryResourceId = createRemoteGeometry(resourceManager, {
@@ -101,15 +98,29 @@ export async function init(state: GameState): Promise<void> {
     geometryType: GeometryType.Box,
   });
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 2000; i++) {
     const cube = createCube(state, geometryResourceId);
     addChild(scene, cube);
   }
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
-  addCameraYawTargetComponent(world, playerRig);
+  addComponent(world, PlayerRig, playerRig);
   Transform.position[playerRig][2] = 50;
+
+  addCameraYawTargetComponent(world, playerRig);
+
+  const playerRigPosition = Transform.position[playerRig];
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(
+    playerRigPosition[0],
+    playerRigPosition[1],
+    playerRigPosition[2]
+  );
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(world, playerRig, rigidBody);
+
   addChild(scene, playerRig);
 
   const camera = addEntity(world);
@@ -126,9 +137,7 @@ export async function init(state: GameState): Promise<void> {
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.6;
 
-  function debugSystem(state: GameState) {
-    // console.log(state.input.actions.get(FirstPersonCameraActions.Look));
-  }
+  function debugSystem(state: GameState) {}
 
-  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, debugSystem, physicsSystem);
+  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, debugSystem, playerControllerSystem, physicsSystem);
 }

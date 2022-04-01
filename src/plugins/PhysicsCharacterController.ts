@@ -1,18 +1,30 @@
-// import { GameState } from "../GameWorker";
-// import { vec2, vec3, quat } from "gl-matrix";
-// import { defineQuery, defineComponent } from "bitecs";
-// import * as Rapier from "@dimforge/rapier3d-compat";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { defineComponent, defineQuery } from "bitecs";
+import { Object3D, Quaternion, Vector3 } from "three";
 
-// export const PhysicsCharacterControllerGroup = 0x0000_0001;
-// export const CharacterPhysicsGroup = 0b1;
-// export const CharacterInteractionGroup = createInteractionGroup(
-//   CharacterPhysicsGroup,
-//   PhysicsGroups.All
-// );
-// export const CharacterShapecastInteractionGroup = createInteractionGroup(
-//   PhysicsGroups.All,
-//   ~CharacterPhysicsGroup
-// );
+import { Transform } from "../engine/component/transform";
+import { GameState } from "../engine/GameWorker";
+import { ButtonActionState } from "../engine/input/ActionMappingSystem";
+import { RigidBody } from "../engine/physics";
+
+export enum PhysicsGroups {
+  None = 0,
+  All = 0xffff,
+}
+
+export enum PhysicsInteractionGroups {
+  None = 0,
+  Default = 0xffff_ffff,
+}
+
+export function createInteractionGroup(groups: number, mask: number) {
+  return (groups << 16) | mask;
+}
+
+export const PhysicsCharacterControllerGroup = 0x0000_0001;
+export const CharacterPhysicsGroup = 0b1;
+export const CharacterInteractionGroup = createInteractionGroup(CharacterPhysicsGroup, PhysicsGroups.All);
+export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~CharacterPhysicsGroup);
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -25,250 +37,134 @@ export const PhysicsCharacterControllerActions = {
   Crouch: physicsCharacterControllerAction("Crouch"),
 };
 
-// interface PhysicsCharacterControllerState {
-//   walkSpeed: number;
-//   drag: number;
-//   maxWalkSpeed: number;
-//   jumpForce: number;
-//   inAirModifier: number;
-//   inAirDrag: number;
-//   crouchModifier: number;
-//   crouchJumpModifier: number;
-//   minSlideSpeed: number;
-//   slideModifier: number;
-//   slideDrag: number;
-//   slideCooldown: number;
-//   sprintModifier: number;
-//   maxSprintSpeed: number;
-//   moveForce: vec3;
-//   dragForce: vec3;
-//   linearVelocity: vec3;
-//   shapeCastPosition: vec3;
-//   shapeCastRotation: quat;
-//   isSliding: boolean;
-//   slideForce: vec3;
-//   lastSlideTime: number;
-// }
+const obj = new Object3D();
 
-// export function addPhysicsCharacterControllerComponent(
-//   world: World,
-//   eid: number,
-//   props: Partial<PhysicsCharacterControllerProps> = {}
-// ) {
-//   addMapComponent(
-//     world,
-//     PhysicsCharacterControllerComponent,
-//     eid,
-//     Object.assign(
-//       {
-//         walkSpeed: 2000,
-//         drag: 250,
-//         maxWalkSpeed: 20,
-//         jumpForce: 750,
-//         inAirModifier: 0.5,
-//         inAirDrag: 100,
-//         crouchModifier: 0.7,
-//         crouchJumpModifier: 1.5,
-//         minSlideSpeed: 3,
-//         slideModifier: 50,
-//         slideDrag: 150,
-//         slideCooldown: 1,
-//         sprintModifier: 1.8,
-//         maxSprintSpeed: 25,
-//       },
-//       props
-//     )
-//   );
-// }
+const walkSpeed = 50;
+const drag = 10;
+const maxWalkSpeed = 100;
+const jumpForce = 10;
+const inAirModifier = 0.5;
+const inAirDrag = 10;
+const crouchModifier = 0.7;
+const crouchJumpModifier = 1.5;
+const minSlideSpeed = 3;
+const slideModifier = 50;
+const slideDrag = 150;
+const slideCooldown = 1;
+const sprintModifier = 1.8;
+const maxSprintSpeed = 25;
 
-// export function addPhysicsCharacterControllerEntity(
-//   world: World,
-//   parent?: number,
-// ) {
-//   const playerRig = new Object3DEntity(world);
+const moveForce = new Vector3();
+const dragForce = new Vector3();
+const linearVelocity = new Vector3();
+const shapeCastPosition = new Vector3();
+const shapeCastRotation = new Quaternion();
+let isSliding = false;
+const slideForce = new Vector3();
+let lastSlideTime = 0;
 
-//   if (parent !== undefined) {
-//     setParentEntity(playerRig.eid, parent);
-//   }
+const colliderShape = new RAPIER.Capsule(0.5, 0.5);
 
-//   addPhysicsCharacterControllerComponent(world, playerRig.eid);
-//   addRigidBodyComponent(world, playerRig.eid, {
-//     bodyType: RigidBodyType.Dynamic,
-//     shape: PhysicsColliderShape.Capsule,
-//     halfHeight: 0.8,
-//     radius: 0.5,
-//     translation: new Vector3(0, 0.8, 0),
-//     collisionGroups: CharacterInteractionGroup,
-//     solverGroups: CharacterInteractionGroup,
-//     lockRotations: true,
-//   });
-//   return playerRig;
-// }
+const shapeTranslationOffset = new Vector3(0, 0.8, 0);
+const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-// const physicsCharacterControllerQuery = defineQuery([
-//   PhysicsCharacterControllerComponent,
-//   InternalRigidBodyComponent,
-//   Object3DComponent,
-// ]);
+export const PlayerRig = defineComponent();
+export const playerRigQuery = defineQuery([PlayerRig]);
 
-// const physicsCharacterControllerAddedQuery = enterQuery(
-//   physicsCharacterControllerQuery
-// );
+export const playerControllerSystem = (state: GameState) => {
+  const playerRig = playerRigQuery(state.world)[0];
+  const body = RigidBody.store.get(playerRig);
+  if (body) {
+    obj.quaternion.x = Transform.quaternion[playerRig][0];
+    obj.quaternion.y = Transform.quaternion[playerRig][1];
+    obj.quaternion.z = Transform.quaternion[playerRig][2];
+    obj.quaternion.w = Transform.quaternion[playerRig][3];
+    body.setRotation(obj.quaternion, true);
 
-// export function PhysicsCharacterControllerSystem({
-//   world,
-//   physicsWorld,
-//   time: { dt, elapsed },
-// }: GameState) {
-//     const characterController = getCharacterController(world);
+    // Handle Input
+    const moveVec = state.input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+    const jump = state.input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+    const crouch = state.input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+    const sprint = state.input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
-//     const internalPhysicsWorldComponent =
-//       InternalPhysicsWorldComponent.store.get(physicsWorldEid);
+    linearVelocity.copy(body.linvel() as Vector3);
 
-//     if (!internalPhysicsWorldComponent) {
-//       return world;
-//     }
+    shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
+    shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
 
-//     // Handle Input
-//     const moveVec = world.actions.get(
-//       PhysicsCharacterControllerActions.Move
-//     ) as Vector2;
+    // todo: tune interaction groups
+    const shapeCastResult = state.physicsWorld.castShape(
+      shapeCastPosition,
+      shapeCastRotation,
+      state.physicsWorld.gravity,
+      colliderShape,
+      state.time.dt,
+      CharacterShapecastInteractionGroup
+    );
 
-//     const jump = world.actions.get(
-//       PhysicsCharacterControllerActions.Jump
-//     ) as ButtonActionState;
+    const isGrounded = !!shapeCastResult;
+    const isSprinting = isGrounded && sprint.held && !isSliding;
 
-//     const crouch = world.actions.get(
-//       PhysicsCharacterControllerActions.Crouch
-//     ) as ButtonActionState;
+    const speed = linearVelocity.length();
+    const maxSpeed = isSprinting ? maxSprintSpeed : maxWalkSpeed;
 
-//     const sprint = world.actions.get(
-//       PhysicsCharacterControllerActions.Sprint
-//     ) as ButtonActionState;
+    if (speed < maxSpeed) {
+      moveForce
+        .set(moveVec[0], 0, -moveVec[1])
+        .normalize()
+        .applyQuaternion(obj.quaternion)
+        .multiplyScalar(walkSpeed * state.time.dt);
 
-//     entities.forEach((eid) => {
-//       const {
-//         walkSpeed,
-//         drag,
-//         inAirModifier,
-//         inAirDrag,
-//         crouchModifier,
-//         maxWalkSpeed,
-//         jumpForce,
-//         crouchJumpModifier,
-//         slideModifier,
-//         slideDrag,
-//         slideCooldown,
-//         minSlideSpeed,
-//         sprintModifier,
-//         maxSprintSpeed,
-//       } = PhysicsCharacterControllerComponent.store.get(eid)!;
-//       const internalPhysicsCharacterController =
-//         InternalPhysicsCharacterControllerComponent.store.get(eid)!;
-//       const {
-//         moveForce,
-//         dragForce,
-//         linearVelocity,
-//         shapeCastPosition,
-//         shapeCastRotation,
-//         isSliding,
-//         slideForce,
-//         lastSlideTime,
-//       } = internalPhysicsCharacterController;
-//       const obj = Object3DComponent.store.get(eid)!;
-//       const {
-//         translation: shapeTranslationOffset,
-//         rotation: shapeRotationOffset,
-//       } = RigidBodyComponent.store.get(eid)!;
-//       const { body, colliderShape } =
-//         InternalRigidBodyComponent.store.get(eid)!;
+      if (!isGrounded) {
+        moveForce.multiplyScalar(inAirModifier);
+      } else if (isGrounded && crouch.held && !isSliding) {
+        moveForce.multiplyScalar(crouchModifier);
+      } else if (isGrounded && sprint.held && !isSliding) {
+        moveForce.multiplyScalar(sprintModifier);
+      }
+    }
 
-//       body.setRotation(obj.quaternion, true);
+    // TODO: Check to see if velocity matches orientation before sliding
+    if (
+      crouch.pressed &&
+      speed > minSlideSpeed &&
+      isGrounded &&
+      !isSliding &&
+      state.time.dt > lastSlideTime + slideCooldown
+    ) {
+      slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
+      moveForce.add(slideForce);
+      isSliding = true;
+      lastSlideTime = state.time.elapsed;
+    } else if (crouch.released || state.time.dt > lastSlideTime + slideCooldown) {
+      isSliding = false;
+    }
 
-//       linearVelocity.copy(body.linvel() as Vector3);
+    if (speed !== 0) {
+      let dragMultiplier = drag;
 
-//       shapeCastPosition.copy(obj.position).add(shapeTranslationOffset);
-//       shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
+      if (isSliding) {
+        dragMultiplier = slideDrag;
+      } else if (!isGrounded) {
+        dragMultiplier = inAirDrag;
+      }
 
-//       const shapeCastResult = physicsWorld.castShape(
-//         shapeCastPosition,
-//         shapeCastRotation,
-//         physicsWorld.gravity,
-//         colliderShape,
-//         dt,
-//         CharacterShapecastInteractionGroup
-//       );
+      dragForce
+        .copy(linearVelocity)
+        .negate()
+        .multiplyScalar(dragMultiplier * state.time.dt);
 
-//       const isGrounded = !!shapeCastResult;
-//       const isSprinting = isGrounded && sprint.held && !isSliding;
+      dragForce.y = 0;
 
-//       const speed = linearVelocity.length();
-//       const maxSpeed = isSprinting ? maxSprintSpeed : maxWalkSpeed;
+      moveForce.add(dragForce);
+    }
 
-//       if (speed < maxSpeed) {
-//         moveForce
-//           .set(moveVec.x, 0, -moveVec.y)
-//           .normalize()
-//           .applyQuaternion(obj.quaternion)
-//           .multiplyScalar(walkSpeed * dt);
+    if (jump.pressed && isGrounded) {
+      const jumpModifier = crouch.held ? crouchJumpModifier : 1;
+      moveForce.y += jumpForce * jumpModifier;
+    }
 
-//         if (!isGrounded) {
-//           moveForce.multiplyScalar(inAirModifier);
-//         } else if (isGrounded && crouch.held && !isSliding) {
-//           moveForce.multiplyScalar(crouchModifier);
-//         } else if (isGrounded && sprint.held && !isSliding) {
-//           moveForce.multiplyScalar(sprintModifier);
-//         }
-//       }
-
-//       // TODO: Check to see if velocity matches orientation before sliding
-//       if (
-//         crouch.pressed &&
-//         speed > minSlideSpeed &&
-//         isGrounded &&
-//         !isSliding &&
-//         elapsed > lastSlideTime + slideCooldown
-//       ) {
-//         slideForce
-//           .set(0, 0, (speed + 1) * -slideModifier)
-//           .applyQuaternion(obj.quaternion);
-//         moveForce.add(slideForce);
-//         internalPhysicsCharacterController.isSliding = true;
-//         internalPhysicsCharacterController.lastSlideTime = elapsed;
-//       } else if (
-//         crouch.released ||
-//         elapsed > lastSlideTime + slideCooldown
-//       ) {
-//         internalPhysicsCharacterController.isSliding = false;
-//       }
-
-//       if (speed !== 0) {
-//         let dragMultiplier = drag;
-
-//         if (isSliding) {
-//           dragMultiplier = slideDrag;
-//         } else if (!isGrounded) {
-//           dragMultiplier = inAirDrag;
-//         }
-
-//         dragForce
-//           .copy(linearVelocity)
-//           .negate()
-//           .multiplyScalar(dragMultiplier * dt);
-
-//         moveForce.add(dragForce);
-//       }
-
-//       if (jump.pressed && isGrounded) {
-//         const jumpModifier = crouch.held ? crouchJumpModifier : 1;
-//         moveForce.y += jumpForce * jumpModifier;
-//       }
-
-//       moveForce.divideScalar(100)
-
-//       body.applyImpulse(moveForce, true);
-//       body.applyForce(physicsWorld.gravity as Vector3, true)
-//     });
-
-//     return world;
-//   }
+    body.applyImpulse(moveForce, true);
+    body.applyForce(state.physicsWorld.gravity as Vector3, true);
+  }
+};
