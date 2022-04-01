@@ -70,7 +70,7 @@ const ActionTypesToBindings: {
     create: () => ({ pressed: false, released: false, held: false }),
     bindings: {
       [BindingType.Button]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
-        const down = input.raw[path];
+        const down = input.raw[(bindingDef as any).path];
         const value = input.actions.get(path) as ButtonActionState;
 
         value.pressed = !value.held && !!down;

@@ -23,6 +23,9 @@ export function createInputManager(canvas: HTMLCanvasElement) {
     update() {
       copyToWriteBuffer(tripleBuffer, inputState.buffer);
       swapWriteBuffer(tripleBuffer);
+
+      inputState.mouse.movement[0] = 0;
+      inputState.mouse.movement[1] = 0;
     },
     dispose() {
       dispose();
