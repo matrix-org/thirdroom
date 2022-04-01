@@ -10,7 +10,7 @@ import {
   Matrix4,
 } from "three";
 
-import { createCursorBuffer, addView, addViewMatrix4 } from "./allocator/CursorBuffer";
+import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
 import { swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -78,6 +78,9 @@ export default {
 interface TransformView {
   worldMatrix: Float32Array[];
   worldMatrixNeedsUpdate: Uint8Array;
+}
+
+interface RenderableView {
   interpolate: Uint8Array;
 }
 
@@ -101,6 +104,7 @@ interface RenderWorkerState {
   renderableIndices: Map<number, number>;
   renderableTripleBuffer: TripleBufferState;
   transformViews: TransformView[];
+  renderableViews: RenderableView[];
 }
 
 let _state: RenderWorkerState;
@@ -193,18 +197,25 @@ async function onInit({
 
   const clock = new Clock();
 
-  const transformViews = renderableTripleBuffer.buffers
-    .map((buffer) => createCursorBuffer(buffer))
-    .map(
-      (buffer) =>
-        ({
-          // note: needs synced with renderableBuffer properties in game worker
-          // todo: abstract the need to sync structure with renderableBuffer properties
-          worldMatrix: addViewMatrix4(buffer, maxEntities),
-          worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
-          interpolate: addView(buffer, Uint8Array, maxEntities),
-        } as TransformView)
-    );
+  const cursorBuffers = renderableTripleBuffer.buffers.map((b) => createCursorBuffer(b));
+
+  const transformViews = cursorBuffers.map(
+    (buffer) =>
+      ({
+        // note: needs synced with renderableBuffer properties in game worker
+        // todo: abstract the need to sync structure with renderableBuffer properties
+        worldMatrix: addViewMatrix4(buffer, maxEntities),
+        worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+      } as TransformView)
+  );
+
+  const renderableViews = cursorBuffers.map(
+    (buffer) =>
+      ({
+        resourceId: addView(buffer as unknown as CursorBuffer, Uint32Array, maxEntities),
+        interpolate: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+      } as RenderableView)
+  );
 
   const state: RenderWorkerState = {
     needsResize: true,
@@ -221,6 +232,7 @@ async function onInit({
     renderableIndices: new Map<number, number>(),
     renderableTripleBuffer,
     transformViews,
+    renderableViews,
   };
 
   console.log("RenderWorker initialized");
@@ -248,6 +260,7 @@ function onUpdate(state: RenderWorkerState) {
     canvasHeight,
     renderableTripleBuffer,
     transformViews,
+    renderableViews,
     resourceManager,
     addRenderableQueue,
     removeRenderableQueue,
@@ -286,6 +299,7 @@ function onUpdate(state: RenderWorkerState) {
 
   const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
   const Transform = transformViews[bufferIndex];
+  const Renderable = renderableViews[bufferIndex];
 
   for (let i = 0; i < renderables.length; i++) {
     const { object, eid } = renderables[i];
@@ -294,7 +308,7 @@ function onUpdate(state: RenderWorkerState) {
       continue;
     }
 
-    if (Transform.interpolate[eid]) {
+    if (Renderable.interpolate[eid]) {
       tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
       object.position.lerp(tempPosition, lerpAlpha);
       object.quaternion.slerp(tempQuaternion, lerpAlpha);
