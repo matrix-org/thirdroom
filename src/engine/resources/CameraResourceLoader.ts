@@ -1,4 +1,4 @@
-import { PerspectiveCamera, OrthographicCamera, Camera, MathUtils } from "three";
+import { PerspectiveCamera, OrthographicCamera, Camera } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
@@ -41,12 +41,7 @@ export function CameraResourceLoader(manager: ResourceManager): ResourceLoader<C
 
       switch (def.cameraType) {
         case CameraType.Perspective:
-          camera = new PerspectiveCamera(
-            MathUtils.radToDeg(def.yfov),
-            def.aspectRatio || 1,
-            def.znear,
-            def.zfar || 1000
-          );
+          camera = new PerspectiveCamera(def.yfov, def.aspectRatio || 1, def.znear, def.zfar || 1000);
           break;
         case CameraType.Orthographic:
           camera = new OrthographicCamera(-def.xmag, def.xmag, def.ymag, -def.ymag, def.znear, def.zfar);

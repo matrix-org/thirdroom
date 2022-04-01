@@ -1,8 +1,8 @@
-import { defineComponent, defineQuery, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm } from "gl-matrix";
 
-import { Transform } from "../engine/component/transform";
-import { GameState } from "../engine/GameWorker";
+import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
+import { GameState, World } from "../engine/GameWorker";
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",
@@ -17,6 +17,18 @@ export const FirstPersonCameraYawTarget = defineComponent({
   sensitivity: Types.f32,
 });
 
+export function addCameraPitchTargetComponent(world: World, eid: number) {
+  addComponent(world, FirstPersonCameraPitchTarget, eid);
+  FirstPersonCameraPitchTarget.maxAngle[eid] = 89;
+  FirstPersonCameraPitchTarget.minAngle[eid] = -89;
+  FirstPersonCameraPitchTarget.sensitivity[eid] = 1;
+}
+
+export function addCameraYawTargetComponent(world: World, eid: number) {
+  addComponent(world, FirstPersonCameraYawTarget, eid);
+  FirstPersonCameraYawTarget.sensitivity[eid] = 1;
+}
+
 export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
 export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
 
@@ -28,7 +40,7 @@ export function FirstPersonCameraSystem({ input, world }: GameState) {
   if (Math.abs(lookY) > 1) {
     pitchEntities.forEach((eid) => {
       const rotation = Transform.rotation[eid];
-      const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid];
+      const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || 1;
       const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
       const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
       const maxAngleRads = glm.toRadian(maxAngle || 89);
@@ -40,6 +52,8 @@ export function FirstPersonCameraSystem({ input, world }: GameState) {
       } else if (rotation[0] < minAngleRads) {
         rotation[0] = minAngleRads;
       }
+
+      setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
     });
   }
 
@@ -47,8 +61,9 @@ export function FirstPersonCameraSystem({ input, world }: GameState) {
 
   if (Math.abs(lookX) > 1) {
     yawEntities.forEach((eid) => {
-      const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid];
+      const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
       Transform.rotation[eid][1] -= lookX / (1000 / (sensitivity || 1));
+      setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
     });
   }
 

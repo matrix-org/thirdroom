@@ -1,8 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
-import { createWorld, IWorld } from "bitecs";
-import { mat4 } from "gl-matrix";
+import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { Transform } from "./component/transform";
+import { updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -15,7 +14,7 @@ import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
 import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
-import { createRemoteGeometry, GeometryRemoteResourceLoader, GeometryType } from "./resources/GeometryResourceLoader";
+import { GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -23,10 +22,8 @@ import {
   GameWorkerInitializedMessage,
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
-import { createCube } from "./prefab";
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
-import { physicsSystem, RigidBody } from "./physics";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
 import { init } from "../game";
@@ -114,6 +111,7 @@ export interface GameState {
   resourceManager: RemoteResourceManager;
   input: GameInputState;
   systems: System[];
+  scene: number;
 }
 
 const generateInputGetters = (
@@ -140,14 +138,15 @@ async function onInit({
 
   const world = createWorld<World>(maxEntities);
 
+  // noop entity
+  addEntity(world);
+
+  const scene = addEntity(world);
+
   await RAPIER.init();
 
   const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
   const physicsWorld = new RAPIER.World(gravity);
-
-  // Create the ground
-  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100.0, 0.1, 100.0);
-  physicsWorld.createCollider(groundColliderDesc);
 
   const inputStates = inputTripleBuffer.buffers
     .map((buffer) => createCursorBuffer(buffer))
@@ -179,10 +178,9 @@ async function onInit({
     dt: 0,
   };
 
-  // TODO: Add scene/camera entities using resource ids from the render thread
-
   const state: GameState = {
     world,
+    scene,
     resourceManager,
     renderer,
     physicsWorld,
@@ -191,79 +189,15 @@ async function onInit({
     systems: [],
   };
 
-  console.log("GameWorker initialized");
-
-  const geometryResourceId = createRemoteGeometry(resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  });
-
-  for (let i = 0; i < maxEntities; i++) {
-    createCube(state, geometryResourceId);
-  }
-
   await init(state);
 
   update(state);
-  console.log("GameWorker loop started");
-
-  // TODO send message to main thread that initialization is finished
 
   return state;
 }
 
-// TODO start game thread loop when receiving start message
-
-const speed = 0.5;
-const forward = new RAPIER.Vector3(0, 0, -speed);
-const backward = new RAPIER.Vector3(0, 0, speed);
-const right = new RAPIER.Vector3(speed, 0, 0);
-const left = new RAPIER.Vector3(-speed, 0, 0);
-const up = new RAPIER.Vector3(0, speed, 0);
-const cubeMoveSystem = ({ input }: GameState) => {
-  const eid = 1;
-  const rigidBody = RigidBody.store.get(eid)!;
-  if (input.raw.KeyW) {
-    rigidBody.applyImpulse(forward, true);
-  }
-  if (input.raw.KeyS) {
-    rigidBody.applyImpulse(backward, true);
-  }
-  if (input.raw.KeyA) {
-    rigidBody.applyImpulse(left, true);
-  }
-  if (input.raw.KeyD) {
-    rigidBody.applyImpulse(right, true);
-  }
-  if (input.raw.Space) {
-    rigidBody.applyImpulse(up, true);
-  }
-};
-
-const cameraMoveSystem = ({ input, time: { dt } }: GameState) => {
-  const eid = 0;
-  const position = Transform.position[eid];
-  if (input.raw.ArrowUp) {
-    position[2] -= dt * 25;
-  }
-  if (input.raw.ArrowDown) {
-    position[2] += dt * 25;
-  }
-  if (input.raw.ArrowLeft) {
-    position[0] -= dt * 25;
-  }
-  if (input.raw.ArrowRight) {
-    position[0] += dt * 25;
-  }
-};
-
-const updateWorldMatrixSystem = () => {
-  for (let i = 0; i < maxEntities; i++) {
-    const position = Transform.position[i];
-    const quaternion = Transform.quaternion[i];
-    const scale = Transform.scale[i];
-    mat4.fromRotationTranslationScale(Transform.worldMatrix[i], quaternion, position, scale);
-  }
+const updateWorldMatrixSystem = (state: GameState) => {
+  updateMatrixWorld(state.scene, true);
 };
 
 const renderableTripleBufferSystem = ({ renderer }: GameState) => {
@@ -280,15 +214,12 @@ const timeSystem = ({ time }: GameState) => {
 const pipeline = (state: GameState) => {
   timeSystem(state);
   inputReadSystem(state);
-  cameraMoveSystem(state);
-  cubeMoveSystem(state);
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
   }
 
-  physicsSystem(state);
-  updateWorldMatrixSystem();
+  updateWorldMatrixSystem(state);
   renderableTripleBufferSystem(state);
 };
 

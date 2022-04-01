@@ -3,11 +3,10 @@ import { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 
 import { GameState, World } from "../GameWorker";
 import { Transform } from "../component/transform";
-import { maxEntities } from "../config";
 import { defineMapComponent } from "../ecs/MapComponent";
 
 const RigidBodySoA = defineComponent({});
-export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA)
+export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
 
 export const physicsQuery = defineQuery([RigidBody]);
 
@@ -16,12 +15,12 @@ export const physicsSystem = ({ world, physicsWorld, time }: GameState) => {
 
   // for (let i = 1; i < entities.length; i++) {
   //   const eid = entities[i];
-  for (let i = 0; i < maxEntities; i++) {
+  for (let i = 2; i < 1000; i++) {
     const eid = i;
-    
+
     // const body = physics.objects[eid];
     const body = RigidBody.store.get(eid)!;
-    
+
     const rigidPos = body.translation();
     const rigidRot = body.rotation();
     const position = Transform.position[eid];
@@ -38,8 +37,8 @@ export const physicsSystem = ({ world, physicsWorld, time }: GameState) => {
   }
 
   physicsWorld.timestep = time.dt;
-  physicsWorld.step()
-}
+  physicsWorld.step();
+};
 
 export function addRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {
   addComponent(world, RigidBody, eid);
@@ -77,7 +76,4 @@ export const PhysicsCharacterController = defineComponent({
   maxSprintSpeed: Types.f32,
 });
 
-
-export const physicsCharacterControllerSystem = ({ world: World }: GameState) => {
-
-}
+export const physicsCharacterControllerSystem = ({ world: World }: GameState) => {};

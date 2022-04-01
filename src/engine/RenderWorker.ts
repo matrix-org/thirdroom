@@ -237,22 +237,26 @@ const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
-function onUpdate({
-  clock,
-  needsResize,
-  camera,
-  scene,
-  renderer,
-  canvasWidth,
-  canvasHeight,
-  renderableTripleBuffer,
-  transformViews,
-  resourceManager,
-  addRenderableQueue,
-  removeRenderableQueue,
-  renderables,
-  renderableIndices,
-}: RenderWorkerState) {
+function onUpdate(state: RenderWorkerState) {
+  const {
+    clock,
+    needsResize,
+    camera: _camera,
+    scene,
+    renderer,
+    canvasWidth,
+    canvasHeight,
+    renderableTripleBuffer,
+    transformViews,
+    resourceManager,
+    addRenderableQueue,
+    removeRenderableQueue,
+    renderables,
+    renderableIndices,
+  } = state;
+
+  let camera = _camera;
+
   const dt = clock.getDelta();
   const frameRate = 1 / dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
@@ -260,6 +264,11 @@ function onUpdate({
   while (addRenderableQueue.length) {
     const { eid, resourceId } = addRenderableQueue.shift()!;
     const object = resourceManager.store.get(resourceId)!.resource as Object3D;
+
+    if (object.type === "PerspectiveCamera") {
+      camera = state.camera = object as PerspectiveCamera;
+    }
+
     renderableIndices.set(eid, renderables.length);
     renderables.push({ object, eid });
     scene.add(object);

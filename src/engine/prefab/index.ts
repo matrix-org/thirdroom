@@ -1,29 +1,21 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
-import { GameState, RenderPort } from "../GameWorker";
-import { Transform } from "../component/transform";
+import { GameState } from "../GameWorker";
+import { addRenderableComponent, addTransformComponent, Transform } from "../component/transform";
 import { addRigidBody } from "../physics";
 import { createRemoteMaterial, MaterialType } from "../resources/MaterialResourceLoader";
 import { createRemoteMesh } from "../resources/MeshResourceLoader";
-import { WorkerMessageType } from "../WorkerMessage";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-export const createCube = (
-  { world, resourceManager, physicsWorld, renderer }: GameState,
-  geometryResourceId: number
-) => {
+export const createCube = (state: GameState, geometryResourceId: number) => {
+  const { world, resourceManager, physicsWorld } = state;
   const eid = addEntity(world);
+  addTransformComponent(world, eid);
 
   const position = Transform.position[eid];
-  const scale = Transform.scale[eid];
   const rotation = Transform.rotation[eid];
-
-  Transform.interpolate[eid] = 1;
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
-
-  scale[0] = scale[1] = scale[2] = 1;
 
   position[0] = rndRange(-20, 20);
   position[1] = rndRange(5, 50);
@@ -52,11 +44,7 @@ export const createCube = (
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
-  createRenderable(renderer.port, eid, resourceId);
+  addRenderableComponent(state, eid, resourceId);
 
   return eid;
-};
-
-export const createRenderable = (renderPort: RenderPort, eid: number, resourceId: number) => {
-  renderPort.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
 };
