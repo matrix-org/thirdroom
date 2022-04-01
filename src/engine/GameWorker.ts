@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { updateMatrixWorld } from "./component/transform";
+import { addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -142,6 +142,7 @@ async function onInit({
   addEntity(world);
 
   const scene = addEntity(world);
+  addTransformComponent(world, scene);
 
   await RAPIER.init();
 
@@ -197,7 +198,7 @@ async function onInit({
 }
 
 const updateWorldMatrixSystem = (state: GameState) => {
-  updateMatrixWorld(state.scene, true);
+  updateMatrixWorld(state.scene);
 };
 
 const renderableTripleBufferSystem = ({ renderer }: GameState) => {
