@@ -1,4 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
+import { Vector3 } from "three";
 
 import { GameState } from "./engine/GameWorker";
 import { ActionMappingSystem, ActionType, BindingType } from "./engine/input/ActionMappingSystem";
@@ -8,10 +9,12 @@ import {
   playerControllerSystem,
 } from "./plugins/PhysicsCharacterController";
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
-import { addChild } from "./engine/component/transform";
-import { physicsSystem } from "./engine/physics";
+import { addChild, Transform } from "./engine/component/transform";
+import { physicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube } from "./engine/prefab";
+
+const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export async function init(state: GameState): Promise<void> {
   const { resourceManager, physicsWorld, scene } = state;
@@ -93,6 +96,23 @@ export async function init(state: GameState): Promise<void> {
 
   for (let i = 0; i < 2000; i++) {
     const cube = createCube(state, geometryResourceId);
+
+    const position = Transform.position[cube];
+    const rotation = Transform.rotation[cube];
+
+    position[0] = rndRange(-10, 10);
+    position[1] = rndRange(5, 50);
+    position[2] = rndRange(-10, 10);
+
+    rotation[0] = rndRange(0, 5);
+    rotation[1] = rndRange(0, 5);
+    rotation[2] = rndRange(0, 5);
+
+    const body = RigidBody.store.get(cube);
+    if (body) {
+      body.setTranslation(new Vector3().fromArray(position), true);
+    }
+
     addChild(scene, cube);
   }
 
