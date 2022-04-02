@@ -74,7 +74,7 @@ export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
 export const createPlayerRig = (state: GameState) => {
-  const { world, resourceManager, physicsWorld, scene } = state;
+  const { world, resourceManager, physicsWorld } = state;
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
