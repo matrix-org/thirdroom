@@ -111,7 +111,7 @@ export const createPlayerRig = (state: GameState) => {
   return playerRig;
 };
 
-export const playerControllerSystem = (state: GameState) => {
+export const PlayerControllerSystem = (state: GameState) => {
   const playerRig = playerRigQuery(state.world)[0];
   const body = RigidBody.store.get(playerRig);
   if (body) {

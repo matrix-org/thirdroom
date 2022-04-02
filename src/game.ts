@@ -6,11 +6,11 @@ import { ActionMappingSystem, ActionType, BindingType } from "./engine/input/Act
 import {
   createPlayerRig,
   PhysicsCharacterControllerActions,
-  playerControllerSystem,
+  PlayerControllerSystem,
 } from "./plugins/PhysicsCharacterController";
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, Transform } from "./engine/component/transform";
-import { physicsSystem, RigidBody } from "./engine/physics";
+import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube } from "./engine/prefab";
 
@@ -122,5 +122,5 @@ export async function init(state: GameState): Promise<void> {
 
   function debugSystem(state: GameState) {}
 
-  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, debugSystem, playerControllerSystem, physicsSystem);
+  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, debugSystem, PlayerControllerSystem, PhysicsSystem);
 }

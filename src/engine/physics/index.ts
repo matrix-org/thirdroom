@@ -10,7 +10,7 @@ export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA
 
 export const physicsQuery = defineQuery([RigidBody]);
 
-export const physicsSystem = ({ world, physicsWorld, time }: GameState) => {
+export const PhysicsSystem = ({ world, physicsWorld, time }: GameState) => {
   const entities = physicsQuery(world);
 
   for (let i = 0; i < entities.length; i++) {
