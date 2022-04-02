@@ -1,27 +1,20 @@
-import { addComponent, addEntity } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { GameState } from "./engine/GameWorker";
 import { ActionMappingSystem, ActionType, BindingType } from "./engine/input/ActionMappingSystem";
 import {
+  createPlayerRig,
   PhysicsCharacterControllerActions,
   playerControllerSystem,
-  PlayerRig,
 } from "./plugins/PhysicsCharacterController";
-import {
-  addCameraPitchTargetComponent,
-  addCameraYawTargetComponent,
-  FirstPersonCameraActions,
-  FirstPersonCameraSystem,
-} from "./plugins/FirstPersonCamera";
-import { addChild, addRenderableComponent, addTransformComponent, Transform } from "./engine/component/transform";
-import { CameraType, createRemoteCamera } from "./engine/resources/CameraResourceLoader";
-import { addRigidBody, physicsSystem } from "./engine/physics";
+import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
+import { addChild } from "./engine/component/transform";
+import { physicsSystem } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube } from "./engine/prefab";
 
 export async function init(state: GameState): Promise<void> {
-  const { world, resourceManager, physicsWorld, scene } = state;
+  const { resourceManager, physicsWorld, scene } = state;
 
   state.input.actionMaps = [
     {
@@ -103,39 +96,9 @@ export async function init(state: GameState): Promise<void> {
     addChild(scene, cube);
   }
 
-  const playerRig = addEntity(world);
-  addTransformComponent(world, playerRig);
-  addComponent(world, PlayerRig, playerRig);
-  Transform.position[playerRig][2] = 50;
-
-  addCameraYawTargetComponent(world, playerRig);
-
-  const playerRigPosition = Transform.position[playerRig];
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(
-    playerRigPosition[0],
-    playerRigPosition[1],
-    playerRigPosition[2]
-  );
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(world, playerRig, rigidBody);
+  const playerRig = createPlayerRig(state);
 
   addChild(scene, playerRig);
-
-  const camera = addEntity(world);
-  addTransformComponent(world, camera);
-  const cameraResource = createRemoteCamera(resourceManager, {
-    type: "camera",
-    cameraType: CameraType.Perspective,
-    yfov: 75,
-    znear: 0.1,
-  });
-  addRenderableComponent(state, camera, cameraResource);
-  addCameraPitchTargetComponent(world, camera);
-  addChild(playerRig, camera);
-  const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.6;
 
   function debugSystem(state: GameState) {}
 

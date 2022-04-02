@@ -1,11 +1,13 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, defineQuery } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { Transform } from "../engine/component/transform";
+import { addChild, addRenderableComponent, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { RigidBody } from "../engine/physics";
+import { addRigidBody, RigidBody } from "../engine/physics";
+import { CameraType, createRemoteCamera } from "../engine/resources/CameraResourceLoader";
+import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 export enum PhysicsGroups {
   None = 0,
@@ -70,6 +72,44 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
+
+export const createPlayerRig = (state: GameState) => {
+  const { world, resourceManager, physicsWorld, scene } = state;
+
+  const playerRig = addEntity(world);
+  addTransformComponent(world, playerRig);
+  addComponent(world, PlayerRig, playerRig);
+  Transform.position[playerRig][2] = 50;
+
+  addCameraYawTargetComponent(world, playerRig);
+
+  const playerRigPosition = Transform.position[playerRig];
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(
+    playerRigPosition[0],
+    playerRigPosition[1],
+    playerRigPosition[2]
+  );
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(world, playerRig, rigidBody);
+
+  const camera = addEntity(world);
+  addTransformComponent(world, camera);
+  const cameraResource = createRemoteCamera(resourceManager, {
+    type: "camera",
+    cameraType: CameraType.Perspective,
+    yfov: 75,
+    znear: 0.1,
+  });
+  addRenderableComponent(state, camera, cameraResource);
+  addCameraPitchTargetComponent(world, camera);
+  addChild(playerRig, camera);
+  const cameraPosition = Transform.position[camera];
+  cameraPosition[1] = 1.6;
+
+  return playerRig;
+};
 
 export const playerControllerSystem = (state: GameState) => {
   const playerRig = playerRigQuery(state.world)[0];
