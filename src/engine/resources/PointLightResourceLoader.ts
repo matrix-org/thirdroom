@@ -20,8 +20,7 @@ export function PointLightResourceLoader(manager: ResourceManager): ResourceLoad
   return {
     type: POINT_LIGHT_RESOURCE,
     async load(def) {
-      const pointLight: PointLight;
-      pointLight = new PointLight(def.color, def.intensity, def.distance, def.decay);
+      const pointLight: PointLight = new PointLight(def.color, def.intensity, def.distance, def.decay);
       pointLight.castShadow = true;
       pointLight.name = def.name!;
 
