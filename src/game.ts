@@ -12,7 +12,7 @@ import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/Fir
 import { addChild, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
-import { createCube } from "./engine/prefab";
+import { createCube, createPointLight } from "./engine/prefab";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -93,6 +93,14 @@ export async function init(state: GameState): Promise<void> {
     type: "geometry",
     geometryType: GeometryType.Box,
   });
+
+  const light = createPointLight(state);
+
+  // static position hack
+  Transform.position[light][1] = 50;
+  Transform.position[light][2] = 50;
+
+  addChild(scene, light);
 
   for (let i = 0; i < 2000; i++) {
     const cube = createCube(state, geometryResourceId);

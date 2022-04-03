@@ -26,6 +26,7 @@ import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
+import { PointLightRemoteResourceLoader } from "./resources/PointLightResourceLoader";
 import { init } from "../game";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -159,6 +160,7 @@ async function onInit({
   registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, CameraRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, PointLightRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
 
   const renderer: RenderState = {

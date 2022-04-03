@@ -1,4 +1,4 @@
-import { MeshBasicMaterial, Material, Color, MeshBasicMaterialParameters, FrontSide, DoubleSide } from "three";
+import { MeshBasicMaterial, MeshLambertMaterial, Material, Color, MeshBasicMaterialParameters, FrontSide, DoubleSide } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { loadResource, ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
@@ -7,6 +7,7 @@ const MATERIAL_RESOURCE = "material";
 
 export enum MaterialType {
   Unlit = "unlit",
+  Lambert = "lambert",
 }
 
 export enum MaterialAlphaMode {
@@ -24,11 +25,16 @@ export interface IMaterialDefinition extends ResourceDefinition {
   alphaCutoff?: number;
   alphaMode?: MaterialAlphaMode;
 }
+
 export interface UnlitMaterialDefinition extends IMaterialDefinition {
   materialType: MaterialType.Unlit;
 }
 
-export type MaterialDefinition = UnlitMaterialDefinition;
+export interface LambertMaterialDefinition extends IMaterialDefinition {
+  materialType: MaterialType.Lambert;
+}
+
+export type MaterialDefinition = UnlitMaterialDefinition | LambertMaterialDefinition;
 
 export function MaterialResourceLoader(manager: ResourceManager): ResourceLoader<MaterialDefinition, Material> {
   return {
@@ -37,8 +43,9 @@ export function MaterialResourceLoader(manager: ResourceManager): ResourceLoader
       let material: Material;
 
       switch (def.materialType) {
+        case MaterialType.Lambert:
         case MaterialType.Unlit: {
-          const meshBasicMaterialParams: MeshBasicMaterialParameters = {
+          const meshMaterialParams: MeshBasicMaterialParameters = {
             color: def.baseColorFactor ? new Color().fromArray(def.baseColorFactor) : 0xffffff,
             opacity: def.baseColorFactor ? def.baseColorFactor[3] : 1.0,
             side: def.doubleSided === true ? DoubleSide : FrontSide,
@@ -47,21 +54,26 @@ export function MaterialResourceLoader(manager: ResourceManager): ResourceLoader
           const alphaMode = def.alphaMode || MaterialAlphaMode.OPAQUE;
 
           if (alphaMode === MaterialAlphaMode.BLEND) {
-            meshBasicMaterialParams.transparent = true;
-            meshBasicMaterialParams.depthWrite = false;
+            meshMaterialParams.transparent = true;
+            meshMaterialParams.depthWrite = false;
           } else {
-            meshBasicMaterialParams.transparent = false;
+            meshMaterialParams.transparent = false;
 
             if (alphaMode === MaterialAlphaMode.MASK) {
-              meshBasicMaterialParams.alphaTest = def.alphaCutoff !== undefined ? def.alphaCutoff : 0.5;
+              meshMaterialParams.alphaTest = def.alphaCutoff !== undefined ? def.alphaCutoff : 0.5;
             }
           }
 
           if (def.baseColorMapResourceId !== undefined) {
-            meshBasicMaterialParams.map = await loadResource(manager, def.baseColorMapResourceId);
+            meshMaterialParams.map = await loadResource(manager, def.baseColorMapResourceId);
           }
 
-          material = new MeshBasicMaterial(meshBasicMaterialParams);
+          if (def.materialType == MaterialType.Lambert) {
+            material = new MeshLambertMaterial(meshMaterialParams);
+          }
+          else {
+            material = new MeshBasicMaterial(meshMaterialParams);
+          }
           break;
         }
         default:

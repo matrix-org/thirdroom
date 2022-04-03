@@ -6,6 +6,7 @@ import { addRenderableComponent, addTransformComponent } from "../component/tran
 import { addRigidBody } from "../physics";
 import { createRemoteMaterial, MaterialType } from "../resources/MaterialResourceLoader";
 import { createRemoteMesh } from "../resources/MeshResourceLoader";
+import { createRemotePointLight } from "../resources/PointLightResourceLoader";
 
 export const createCube = (state: GameState, geometryResourceId: number) => {
   const { world, resourceManager, physicsWorld } = state;
@@ -14,7 +15,7 @@ export const createCube = (state: GameState, geometryResourceId: number) => {
 
   const materialResourceId = createRemoteMaterial(resourceManager, {
     type: "material",
-    materialType: MaterialType.Unlit,
+    materialType: MaterialType.Lambert,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
   });
 
@@ -33,5 +34,22 @@ export const createCube = (state: GameState, geometryResourceId: number) => {
   addRigidBody(world, eid, rigidBody);
   addRenderableComponent(state, eid, resourceId);
 
+  return eid;
+};
+
+export const createPointLight = (state: GameState) => {
+  const { world, resourceManager } = state;
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+
+  const lightId = createRemotePointLight(resourceManager, {
+    type: "point_light",
+    color: 0xffffff,
+    intensity: 1.0,
+    distance: 0,
+    decay: 1,
+  });
+
+  addRenderableComponent(state, eid, lightId);
   return eid;
 };

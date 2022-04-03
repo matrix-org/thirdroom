@@ -26,6 +26,7 @@ import { MeshResourceLoader } from "./resources/MeshResourceLoader";
 import { MaterialResourceLoader } from "./resources/MaterialResourceLoader";
 import { GeometryResourceLoader } from "./resources/GeometryResourceLoader";
 import { CameraResourceLoader } from "./resources/CameraResourceLoader";
+import { PointLightResourceLoader } from "./resources/PointLightResourceLoader";
 import {
   AddRenderableMessage,
   InitializeRenderWorkerMessage,
@@ -188,8 +189,9 @@ async function onInit({
   registerResourceLoader(resourceManager, MeshResourceLoader);
   registerResourceLoader(resourceManager, CameraResourceLoader);
   registerResourceLoader(resourceManager, GLTFResourceLoader);
+  registerResourceLoader(resourceManager, PointLightResourceLoader);
 
-  scene.add(new AmbientLight(0xffffff, 0.5));
+  scene.add(new AmbientLight(0xffffff, 0.2));
 
   // TODO: Send scene/camera resource ids to the GameWorker
 
