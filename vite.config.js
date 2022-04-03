@@ -12,12 +12,6 @@ export default defineConfig({
       "bitecs",
     ],
   },
-  server: {
-    proxy: {
-      "/_matrix": "https://matrix.org",
-      "/.well-known": "https://matrix.org",
-    },
-  },
   css: {
     postcss: {
       plugins: [
