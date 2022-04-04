@@ -5,7 +5,6 @@ import { SessionViewModel } from "../../../viewModels/session/SessionViewModel";
 import { RoomViewModel } from "../../../viewModels/session/room/RoomViewModel";
 import { LeftPanelView } from "./leftpanel/LeftPanelView";
 import { RoomPreview } from "./room/RoomPreview";
-import { RoomLoading } from "./room/RoomLoading";
 import { RoomView } from "./room/RoomView";
 import { useVMProp } from "../../hooks/useVMProp";
 import { useEngine } from "../../hooks/useEngine";
@@ -48,8 +47,7 @@ function RoomViewWrapper({ vm, roomId }: { vm: RoomViewModel; roomId: string }) 
 
   return (
     <>
-      {vm.roomFlow === "preview" && <RoomPreview vm={vm} roomId={roomId} />}
-      {vm.roomFlow === "load" && <RoomLoading vm={vm} />}
+      {["preview", "load"].includes(vm.roomFlow) && <RoomPreview vm={vm} roomId={roomId} />}
       {vm.roomFlow === "loaded" && <RoomView vm={vm} roomId={roomId} />}
     </>
   );

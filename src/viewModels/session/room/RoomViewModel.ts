@@ -58,8 +58,10 @@ export class RoomViewModel extends ViewModel {
       this.toggleLeftPanel("initial");
       if (this._chatViewModel) this._disposeChatView();
     } else if (flow === "load") {
-      this.toggleLeftPanel("close");
+      this.toggleLeftPanel("initial");
       this.loadChatView().then(() => this.emitChange("chatViewModel"));
+    } else {
+      this.toggleLeftPanel("close");
     }
 
     this._roomFlow = flow;
