@@ -1,17 +1,15 @@
 .SidebarView {
-  background-color: var(--bg-primary);
-  width: 80px;
+  margin: 0 var(--sp-extra-tight);
+  width: 60px;
+  border-radius: var(--br-small);
+  background-color: var(--bg-surface);
 }
 
 .SidebarView__scrollable {
-  padding: var(--sp-normal) 0;
+  padding: var(--sp-extra-tight) 0;
 
   & .IconButton {
-    margin-bottom: var(--sp-normal);
+    margin-bottom: var(--sp-extra-tight);
   }
 }
 
-.SidebarView__sticky {
-  padding: var(--sp-normal) 0;
-  background-color: var(--sc-dark-normal);
-}
