@@ -1,32 +1,26 @@
 .RoomPreview {
   pointer-events: all;
-  background-color: var(--bg-surface);
-  margin: var(--sp-normal) var(--sp-extra-tight);
-  border-radius: var(--br-small);
-
-  & > header {
-    min-height: 110px;
-    padding: 0 var(--sp-extra-loose);
-
-    & > * {
-      margin-left: var(--sp-normal);
-    }
-  }
-
-  & > .Scroll {
-    background-color: var(--sc-dark-low);
-  }
+  padding: var(--sp-loose);
+  padding-bottom: 120px;
+  height: 100%;
 }
 
-.RoomPreview__content {
-  padding: var(--sp-tight);
-  padding-top: 60px;
+.RoomPreview__card {
+  max-width: 515px;
+  width: 100%;
+  padding: var(--sp-normal);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-small);
+}
 
-  & > .Text {
-    margin-top: var(--sp-normal);
-  }
-  & .Button {
-    margin-top: var(--sp-normal);
-    min-width: 160px;
+.RoomPreview__card-content {
+  margin-right: var(--sp-normal);
+}
+
+.RoomPreview__card-memberCount {
+  padding: 0 var(--sp-normal);
+
+  & .Icon {
+    margin-right: var(--sp-ultra-tight);
   }
 }
