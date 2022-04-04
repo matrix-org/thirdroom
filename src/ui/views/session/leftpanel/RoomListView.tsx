@@ -5,6 +5,7 @@ import { RoomListViewModel } from "../../../../viewModels/session/leftpanel/Room
 import { Text } from "../../../atoms/text/Text";
 import { Button } from "../../../atoms/button/Button";
 import { Scroll } from "../../../atoms/scroll/Scroll";
+import { Avatar } from "../../../atoms/avatar/Avatar";
 import { RoomTile } from "./RoomTile";
 import AddBoxIC from "../../../../../res/ic/add-box.svg";
 import ManageSearchIC from "../../../../../res/ic/manage-search.svg";
@@ -21,7 +22,7 @@ export function RoomListView({ vm }: IRoomListView) {
   return (
     <div className="RoomListView flex flex-column">
       <header className="flex items-center">
-        <Text className="truncate" variant="h2" weight="semi-bold">
+        <Text className="truncate" variant="s1" weight="semi-bold">
           Home
         </Text>
       </header>
@@ -42,11 +43,23 @@ export function RoomListView({ vm }: IRoomListView) {
             {allRooms.map((room) => (
               <RoomTile
                 key={room.id}
-                roomColor={vm.getRoomColor(room)}
                 isActive={room.id === activeRoom}
                 onClick={() => vm.navigation.push("room", room.id)}
-                name={room.name || "Empty room"}
-                avatarUrl={vm.getRoomAvatarHttpUrl(room, 32)}
+                avatar={(
+                  <Avatar
+                    name={room.name || "Empty room"}
+                    size="large"
+                    isCircle
+                    className="shrink-0"
+                    bgColor={vm.getRoomColor(room)}
+                    imageSrc={vm.getRoomAvatarHttpUrl(room, 32)}
+                  />
+                )}
+                title={(
+                  <Text className="truncate" variant="b2" weight="semi-bold">
+                    {room.name || "Empty room"}
+                  </Text>
+                )}
               />
             ))}
           </div>

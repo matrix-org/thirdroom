@@ -1,35 +1,20 @@
 .RoomListView {
-  width: 500px;
+  width: 400px;
+  background-color: var(--bg-surface);
+  border-radius: var(--br-small);
 
   & > header {
-    min-height: 110px;
+    min-height: 50px;
+    padding: 0 var(--sp-normal);
   }
-}
-
-.RoomListView > header,
-.RoomListView__content {
-  padding: 0 var(--sp-extra-loose);
-}
-
-.RoomListView__container {
-  background-color: var(--sc-dark-low);
 }
 
 .RoomListView__content {
   min-height: 100%;
 
   & header {
-    height: 60px;
-
-    & .Button {
-      margin-left: var(--sp-normal);
-      padding: 0;
-      background-color: transparent;
-    }
-  }
-
-  & .RoomTile,
-  & .RoomTile--active {
-    margin-bottom: var(--sp-tight);
+    padding: 0 var(--sp-normal);
+    padding-right: var(--sp-extra-tight);
+    height: 40px;
   }
 }

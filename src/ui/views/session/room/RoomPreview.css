@@ -1,6 +1,8 @@
 .RoomPreview {
   pointer-events: all;
   background-color: var(--bg-surface);
+  margin: var(--sp-normal) var(--sp-extra-tight);
+  border-radius: var(--br-small);
 
   & > header {
     min-height: 110px;
@@ -17,9 +19,8 @@
 }
 
 .RoomPreview__content {
-  padding: var(--sp-extra-loose);
+  padding: var(--sp-tight);
   padding-top: 60px;
-  padding-left: 0;
 
   & > .Text {
     margin-top: var(--sp-normal);
