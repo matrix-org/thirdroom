@@ -2,6 +2,7 @@ import { BufferGeometry, Mesh, Material } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { loadResource, ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { GameState } from "../GameWorker";
 
 export const MESH_RESOURCE = "mesh";
 
@@ -34,7 +35,7 @@ export function MeshResourceLoader(manager: ResourceManager): ResourceLoader<Mes
   };
 }
 
-export function MeshRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
+export function MeshRemoteResourceLoader(state: GameState): RemoteResourceLoader {
   return {
     type: MESH_RESOURCE,
   };

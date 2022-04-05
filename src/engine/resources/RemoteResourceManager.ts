@@ -1,8 +1,9 @@
-import { WorkerMessages, WorkerMessageType, PostMessageTarget } from "../WorkerMessage";
+import { GameState } from "../GameWorker";
+import { WorkerMessageType, PostMessageTarget } from "../WorkerMessage";
 import { ResourceDefinition, ResourceState } from "./ResourceManager";
 
 export type RemoteResourceLoaderFactory<RemoteResource = undefined> = (
-  manager: RemoteResourceManager
+  state: GameState
 ) => RemoteResourceLoader<RemoteResource>;
 
 export interface RemoteResourceLoader<RemoteResource = undefined> {
@@ -43,12 +44,9 @@ export function createRemoteResourceManager(
   };
 }
 
-export function registerRemoteResourceLoader(
-  manager: RemoteResourceManager,
-  loaderFactory: RemoteResourceLoaderFactory<any>
-): void {
-  const loader = loaderFactory(manager);
-  manager.resourceLoaders.set(loader.type, loader);
+export function registerRemoteResourceLoader(state: GameState, loaderFactory: RemoteResourceLoaderFactory<any>): void {
+  const loader = loaderFactory(state);
+  state.resourceManager.resourceLoaders.set(loader.type, loader);
 }
 
 export function loadRemoteResource<Def extends ResourceDefinition>(
@@ -91,24 +89,7 @@ export function removeRemoteResourceRef(manager: RemoteResourceManager, resource
   });
 }
 
-export function processResourceMessage(manager: RemoteResourceManager, message: WorkerMessages) {
-  switch (message.type) {
-    case WorkerMessageType.ResourceLoaded: {
-      remoteResourceLoaded(manager, message.resourceId, message.remoteResource);
-      break;
-    }
-    case WorkerMessageType.ResourceLoadError: {
-      remoteResourceLoadError(manager, message.resourceId, message.error);
-      break;
-    }
-    case WorkerMessageType.ResourceDisposed: {
-      remoteResourceDisposed(manager, message.resourceId);
-      break;
-    }
-  }
-}
-
-function remoteResourceLoaded(manager: RemoteResourceManager, resourceId: number, remoteResource: any) {
+export function remoteResourceLoaded(manager: RemoteResourceManager, resourceId: number, remoteResource: any) {
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {
@@ -125,7 +106,7 @@ function remoteResourceLoaded(manager: RemoteResourceManager, resourceId: number
   }
 }
 
-function remoteResourceLoadError(manager: RemoteResourceManager, resourceId: number, error: any) {
+export function remoteResourceLoadError(manager: RemoteResourceManager, resourceId: number, error: any) {
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {
@@ -141,7 +122,7 @@ function remoteResourceLoadError(manager: RemoteResourceManager, resourceId: num
   }
 }
 
-function remoteResourceDisposed(manager: RemoteResourceManager, resourceId: number) {
+export function remoteResourceDisposed(manager: RemoteResourceManager, resourceId: number) {
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {

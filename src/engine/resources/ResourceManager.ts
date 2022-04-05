@@ -195,3 +195,23 @@ export async function loadResource<Resource>(
 
   return undefined;
 }
+
+export function addResource<Resource>(manager: ResourceManager, type: string, resource: Resource, name?: string) {
+  const resourceId = Atomics.add(manager.view, 0, 1);
+
+  const _name = name || `${type}[${resourceId}]`;
+
+  const resourceInfo: ResourceInfo<Resource, any> = {
+    resourceId,
+    type,
+    name: _name,
+    refCount: 1,
+    state: ResourceState.Loaded,
+    resource,
+    promise: Promise.resolve({ name: _name, resource }),
+  };
+
+  manager.store.set(resourceId, resourceInfo);
+
+  return resourceId;
+}

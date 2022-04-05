@@ -13,6 +13,7 @@ import {
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { loadResource, ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { GameState } from "../GameWorker";
 
 const MATERIAL_RESOURCE = "material";
 
@@ -162,7 +163,7 @@ export function MaterialResourceLoader(manager: ResourceManager): ResourceLoader
   };
 }
 
-export function MaterialRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
+export function MaterialRemoteResourceLoader(state: GameState): RemoteResourceLoader {
   return {
     type: MATERIAL_RESOURCE,
   };

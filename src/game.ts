@@ -14,6 +14,7 @@ import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
 import { loadRemoteTexture, TextureType } from "./engine/resources/TextureResourceLoader";
+import { loadRemoteGLTF } from "./engine/resources/GLTFResourceLoader";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -129,6 +130,11 @@ export async function init(state: GameState): Promise<void> {
 
     addChild(scene, cube);
   }
+
+  loadRemoteGLTF(resourceManager, {
+    type: "gltf",
+    url: "/gltf/OutdoorFestival/OutdoorFestival.glb",
+  });
 
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);

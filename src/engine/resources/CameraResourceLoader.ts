@@ -2,6 +2,7 @@ import { PerspectiveCamera, OrthographicCamera, Camera } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { GameState } from "../GameWorker";
 
 const CAMERA_RESOURCE = "camera";
 
@@ -60,7 +61,7 @@ export function CameraResourceLoader(manager: ResourceManager): ResourceLoader<C
   };
 }
 
-export function CameraRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
+export function CameraRemoteResourceLoader(state: GameState): RemoteResourceLoader {
   return {
     type: CAMERA_RESOURCE,
   };

@@ -2,6 +2,7 @@ import { BoxBufferGeometry, BufferGeometry } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { GameState } from "../GameWorker";
 
 const GEOMETRY_RESOURCE = "geometry";
 
@@ -57,7 +58,7 @@ export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader
   };
 }
 
-export function GeometryRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
+export function GeometryRemoteResourceLoader(state: GameState): RemoteResourceLoader {
   return {
     type: GEOMETRY_RESOURCE,
   };
