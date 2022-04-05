@@ -14,6 +14,7 @@ import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
 import { loadRemoteTexture, TextureType } from "./engine/resources/TextureResourceLoader";
+import { loadGLTFFromUrl } from "./engine/resources/GLTFLoader";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -134,4 +135,9 @@ export async function init(state: GameState): Promise<void> {
   addChild(scene, playerRig);
 
   state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, PlayerControllerSystem, PhysicsSystem);
+
+  await loadGLTFFromUrl("/gltf/box.gltf");
+  await loadGLTFFromUrl("/gltf/box-embedded.gltf");
+  await loadGLTFFromUrl("/gltf/box.glb");
+  await loadGLTFFromUrl("/gltf/cube.gltf");
 }
