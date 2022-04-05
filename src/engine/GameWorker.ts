@@ -239,7 +239,7 @@ function update(state: GameState) {
   pipeline(state);
 
   const frameDuration = performance.now() - state.time.elapsed;
-  const remainder = 1000 / tickRate - frameDuration;
+  const remainder = tickRate - frameDuration;
 
   if (remainder > 0) {
     // todo: call fixed timestep physics pipeline here
