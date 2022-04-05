@@ -2,11 +2,11 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { addChild, addRenderableComponent, addTransformComponent, Transform } from "../engine/component/transform";
+import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
 import { addRigidBody, RigidBody } from "../engine/physics";
-import { CameraType, createRemoteCamera } from "../engine/resources/CameraResourceLoader";
+import { createCamera } from "../engine/prefab";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 export enum PhysicsGroups {
@@ -73,8 +73,8 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createPlayerRig = (state: GameState) => {
-  const { world, resourceManager, physicsWorld } = state;
+export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
+  const { world, physicsWorld } = state;
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
@@ -94,15 +94,7 @@ export const createPlayerRig = (state: GameState) => {
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(world, playerRig, rigidBody);
 
-  const camera = addEntity(world);
-  addTransformComponent(world, camera);
-  const cameraResource = createRemoteCamera(resourceManager, {
-    type: "camera",
-    cameraType: CameraType.Perspective,
-    yfov: 75,
-    znear: 0.1,
-  });
-  addRenderableComponent(state, camera, cameraResource);
+  const camera = createCamera(state, setActiveCamera);
   addCameraPitchTargetComponent(world, camera);
   addChild(playerRig, camera);
   const cameraPosition = Transform.position[camera];

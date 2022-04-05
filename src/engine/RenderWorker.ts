@@ -8,6 +8,9 @@ import {
   Clock,
   Vector3,
   Matrix4,
+  Camera,
+  ACESFilmicToneMapping,
+  sRGBEncoding,
 } from "three";
 
 import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
@@ -36,8 +39,14 @@ import {
   StartRenderWorkerMessage,
   RenderWorkerErrorMessage,
   RenderWorkerInitializedMessage,
+  RenderableMessages,
+  SetActiveCameraMessage,
+  SetActiveSceneMessage,
 } from "./WorkerMessage";
 import { TripleBufferState } from "./TripleBuffer";
+import { SceneResourceLoader } from "./resources/SceneResourceLoader";
+import { TextureResourceLoader } from "./resources/TextureResourceLoader";
+import { LightResourceLoader } from "./resources/LightResourceLoader";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -94,12 +103,11 @@ interface RenderWorkerState {
   canvasWidth: number;
   canvasHeight: number;
   scene: Object3D;
-  camera: PerspectiveCamera;
+  camera: Camera;
   renderer: WebGLRenderer;
   clock: Clock;
   resourceManager: ResourceManager;
-  addRenderableQueue: AddRenderableMessage[];
-  removeRenderableQueue: RemoveRenderableMessage[];
+  renderableMessageQueue: RenderableMessages[];
   renderables: Renderable[];
   renderableIndices: Map<number, number>;
   renderableTripleBuffer: TripleBufferState;
@@ -142,10 +150,10 @@ function onMessage({ data }: any) {
       onResize(_state, message);
       break;
     case WorkerMessageType.AddRenderable:
-      onAddRenderable(_state, message);
-      break;
     case WorkerMessageType.RemoveRenderable:
-      onRemoveRenderable(_state, message);
+    case WorkerMessageType.SetActiveCamera:
+    case WorkerMessageType.SetActiveScene:
+      onRenderableMessage(_state, message);
       break;
     case WorkerMessageType.LoadResource:
       onLoadResource(_state.resourceManager, message);
@@ -183,10 +191,13 @@ async function onInit({
   camera.position.z = 50;
 
   const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
+  registerResourceLoader(resourceManager, SceneResourceLoader);
   registerResourceLoader(resourceManager, GeometryResourceLoader);
+  registerResourceLoader(resourceManager, TextureResourceLoader);
   registerResourceLoader(resourceManager, MaterialResourceLoader);
   registerResourceLoader(resourceManager, MeshResourceLoader);
   registerResourceLoader(resourceManager, CameraResourceLoader);
+  registerResourceLoader(resourceManager, LightResourceLoader);
   registerResourceLoader(resourceManager, GLTFResourceLoader);
 
   scene.add(new AmbientLight(0xffffff, 0.5));
@@ -194,6 +205,9 @@ async function onInit({
   // TODO: Send scene/camera resource ids to the GameWorker
 
   const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  renderer.outputEncoding = sRGBEncoding;
 
   const clock = new Clock();
 
@@ -226,8 +240,7 @@ async function onInit({
     resourceManager,
     canvasWidth: initialCanvasWidth,
     canvasHeight: initialCanvasWidth,
-    addRenderableQueue: [],
-    removeRenderableQueue: [],
+    renderableMessageQueue: [],
     renderables: [],
     renderableIndices: new Map<number, number>(),
     renderableTripleBuffer,
@@ -253,47 +266,20 @@ function onUpdate(state: RenderWorkerState) {
   const {
     clock,
     needsResize,
-    camera: _camera,
-    scene,
     renderer,
     canvasWidth,
     canvasHeight,
     renderableTripleBuffer,
     transformViews,
     renderableViews,
-    resourceManager,
-    addRenderableQueue,
-    removeRenderableQueue,
     renderables,
-    renderableIndices,
   } = state;
 
-  let camera = _camera;
+  processRenderableMessages(state);
 
   const dt = clock.getDelta();
   const frameRate = 1 / dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
-
-  while (addRenderableQueue.length) {
-    const { eid, resourceId } = addRenderableQueue.shift()!;
-    const object = resourceManager.store.get(resourceId)!.resource as Object3D;
-
-    if (object.type === "PerspectiveCamera") {
-      camera = state.camera = object as PerspectiveCamera;
-    }
-
-    renderableIndices.set(eid, renderables.length);
-    renderables.push({ object, eid });
-    scene.add(object);
-  }
-
-  while (removeRenderableQueue.length) {
-    const { eid } = removeRenderableQueue.shift()!;
-    const index = renderableIndices.get(eid)!;
-    const removed = renderables.splice(index, 1);
-    renderableIndices.delete(eid);
-    scene.remove(removed[0].object);
-  }
 
   swapReadBuffer(renderableTripleBuffer);
 
@@ -321,13 +307,14 @@ function onUpdate(state: RenderWorkerState) {
     }
   }
 
-  if (needsResize) {
-    camera.aspect = canvasWidth / canvasHeight;
-    camera.updateProjectionMatrix();
+  if (needsResize && state.camera.type === "PerspectiveCamera") {
+    const perspectiveCamera = state.camera as PerspectiveCamera;
+    perspectiveCamera.aspect = canvasWidth / canvasHeight;
+    perspectiveCamera.updateProjectionMatrix();
     renderer.setSize(canvasWidth, canvasHeight, false);
   }
 
-  renderer.render(scene, camera);
+  renderer.render(state.scene, state.camera);
 }
 
 function onResize(state: RenderWorkerState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
@@ -336,10 +323,65 @@ function onResize(state: RenderWorkerState, { canvasWidth, canvasHeight }: Rende
   state.canvasHeight = canvasHeight;
 }
 
-function onAddRenderable({ addRenderableQueue }: RenderWorkerState, message: AddRenderableMessage) {
-  addRenderableQueue.push(message);
+function onRenderableMessage({ renderableMessageQueue }: RenderWorkerState, message: RenderableMessages) {
+  renderableMessageQueue.push(message);
 }
 
-function onRemoveRenderable({ removeRenderableQueue }: RenderWorkerState, message: RemoveRenderableMessage) {
-  removeRenderableQueue.push(message);
+function processRenderableMessages(state: RenderWorkerState) {
+  const { renderableMessageQueue, renderableIndices, renderables, scene, resourceManager } = state;
+
+  while (renderableMessageQueue.length) {
+    const message = renderableMessageQueue.shift() as RenderableMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.AddRenderable: {
+        const { resourceId, eid } = message as AddRenderableMessage;
+        const resourceInfo = resourceManager.store.get(resourceId);
+
+        if (resourceInfo) {
+          const object = resourceInfo.resource as Object3D;
+          renderableIndices.set(eid, renderables.length);
+          renderables.push({ object, eid });
+
+          if (object.type !== "Scene") {
+            state.scene.add(object);
+          }
+        }
+
+        break;
+      }
+      case WorkerMessageType.RemoveRenderable: {
+        const { eid } = message as RemoveRenderableMessage;
+        const index = renderableIndices.get(eid);
+
+        if (index !== undefined) {
+          const removed = renderables.splice(index, 1);
+          renderableIndices.delete(eid);
+          scene.remove(removed[0].object);
+        }
+
+        break;
+      }
+      case WorkerMessageType.SetActiveCamera: {
+        const { eid } = message as SetActiveCameraMessage;
+        const index = renderableIndices.get(eid);
+
+        if (index !== undefined && renderables[index]) {
+          state.camera = renderables[index].object as Camera;
+        }
+
+        break;
+      }
+      case WorkerMessageType.SetActiveScene: {
+        const { eid } = message as SetActiveSceneMessage;
+        const index = renderableIndices.get(eid);
+
+        if (index !== undefined && renderables[index]) {
+          state.scene = renderables[index].object as Scene;
+        }
+
+        break;
+      }
+    }
+  }
 }

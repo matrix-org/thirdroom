@@ -27,6 +27,9 @@ import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
 import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
 import { init } from "../game";
+import { TextureRemoteResourceLoader } from "./resources/TextureResourceLoader";
+import { SceneRemoteResourceLoader } from "./resources/SceneResourceLoader";
+import { LightRemoteResourceLoader } from "./resources/LightResourceLoader";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -112,6 +115,7 @@ export interface GameState {
   input: GameInputState;
   systems: System[];
   scene: number;
+  camera: number;
 }
 
 const generateInputGetters = (
@@ -144,6 +148,9 @@ async function onInit({
   const scene = addEntity(world);
   addTransformComponent(world, scene);
 
+  const camera = addEntity(world);
+  addTransformComponent(world, camera);
+
   await RAPIER.init();
 
   const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
@@ -155,10 +162,13 @@ async function onInit({
 
   const resourceManager = createRemoteResourceManager(resourceManagerBuffer, renderPort);
 
+  registerRemoteResourceLoader(resourceManager, SceneRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, GeometryRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, TextureRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, CameraRemoteResourceLoader);
+  registerRemoteResourceLoader(resourceManager, LightRemoteResourceLoader);
   registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
 
   const renderer: RenderState = {
@@ -182,6 +192,7 @@ async function onInit({
   const state: GameState = {
     world,
     scene,
+    camera,
     resourceManager,
     renderer,
     physicsWorld,

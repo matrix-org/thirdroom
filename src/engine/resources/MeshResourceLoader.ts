@@ -1,29 +1,33 @@
-import { Mesh } from "three";
+import { BufferGeometry, Mesh, Material } from "three";
 
 import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
-import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+import { loadResource, ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
+
+export const MESH_RESOURCE = "mesh";
 
 export interface MeshDefinition extends ResourceDefinition {
-  type: "mesh";
+  type: typeof MESH_RESOURCE;
   geometryResourceId: number;
   materialResourceId: number;
 }
 
 export function MeshResourceLoader(manager: ResourceManager): ResourceLoader<MeshDefinition, Mesh> {
   return {
-    type: "mesh",
-    async load({ name, geometryResourceId, materialResourceId }) {
-      const geometryResourceInfo = manager.store.get(geometryResourceId)!;
-      const materialResourceInfo = manager.store.get(materialResourceId)!;
+    type: MESH_RESOURCE,
+    async load(def) {
+      const [geometry, material] = await Promise.all([
+        loadResource<BufferGeometry>(manager, def.geometryResourceId),
+        loadResource<Material>(manager, def.materialResourceId),
+      ]);
 
-      await Promise.all([geometryResourceInfo.promise, materialResourceInfo.promise]);
+      const mesh = new Mesh(geometry, material);
 
-      const mesh = new Mesh(geometryResourceInfo.resource, materialResourceInfo.resource);
-
-      mesh.name = name!;
+      if (def.name) {
+        mesh.name = def.name;
+      }
 
       return {
-        name,
+        name: def.name,
         resource: mesh,
       };
     },
@@ -32,7 +36,7 @@ export function MeshResourceLoader(manager: ResourceManager): ResourceLoader<Mes
 
 export function MeshRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
   return {
-    type: "mesh",
+    type: MESH_RESOURCE,
   };
 }
 

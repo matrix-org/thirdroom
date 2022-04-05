@@ -12,12 +12,13 @@ import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/Fir
 import { addChild, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
-import { createCube } from "./engine/prefab";
+import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
+import { loadRemoteTexture, TextureType } from "./engine/resources/TextureResourceLoader";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export async function init(state: GameState): Promise<void> {
-  const { resourceManager, physicsWorld, scene } = state;
+  const { resourceManager, physicsWorld } = state;
 
   state.input.actionMaps = [
     {
@@ -86,6 +87,19 @@ export async function init(state: GameState): Promise<void> {
     },
   ];
 
+  const environmentTextureResourceId = loadRemoteTexture(resourceManager, {
+    type: "texture",
+    textureType: TextureType.RGBE,
+    url: "/cubemap/venice_sunset_1k.hdr",
+  });
+
+  const scene = createScene(state, {
+    environmentTextureResourceId,
+  });
+
+  const light = createDirectionalLight(state);
+  addChild(scene, light);
+
   const groundColliderDesc = RAPIER.ColliderDesc.cuboid(1000.0, 1, 1000.0);
   physicsWorld.createCollider(groundColliderDesc);
 
@@ -117,10 +131,7 @@ export async function init(state: GameState): Promise<void> {
   }
 
   const playerRig = createPlayerRig(state);
-
   addChild(scene, playerRig);
 
-  function debugSystem(state: GameState) {}
-
-  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, debugSystem, PlayerControllerSystem, PhysicsSystem);
+  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, PlayerControllerSystem, PhysicsSystem);
 }

@@ -22,6 +22,8 @@ export enum WorkerMessageType {
   ResourceDisposed = "resource-disposed",
   AddRenderable = "add-renderable",
   RemoveRenderable = "remove-renderable",
+  SetActiveCamera = "set-active-camera",
+  SetActiveScene = "set-active-scene",
 }
 
 export interface WorkerMessage {
@@ -122,6 +124,16 @@ export interface RemoveRenderableMessage extends WorkerMessage {
   eid: number;
 }
 
+export interface SetActiveCameraMessage extends WorkerMessage {
+  type: WorkerMessageType.SetActiveCamera;
+  eid: number;
+}
+
+export interface SetActiveSceneMessage extends WorkerMessage {
+  type: WorkerMessageType.SetActiveScene;
+  eid: number;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -139,7 +151,15 @@ export type WorkerMessages =
   | RenderWorkerErrorMessage
   | GameWorkerInitializedMessage
   | GameWorkerErrorMessage
-  | StartGameWorkerMessage;
+  | StartGameWorkerMessage
+  | SetActiveCameraMessage
+  | SetActiveSceneMessage;
+
+export type RenderableMessages =
+  | AddRenderableMessage
+  | RemoveRenderableMessage
+  | SetActiveCameraMessage
+  | SetActiveSceneMessage;
 
 export type MessagePortLike = MessagePort | LocalMessagePort;
 export class LocalMessageChannel {
