@@ -1,8 +1,6 @@
 import { BoxBufferGeometry, BufferGeometry } from "three";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
-import { GameState } from "../GameWorker";
 
 const GEOMETRY_RESOURCE = "geometry";
 
@@ -48,7 +46,9 @@ export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader
           throw new Error(`Unknown geometry type ${def.geometryType}`);
       }
 
-      geometry.name = def.name!;
+      if (def.name) {
+        geometry.name = def.name;
+      }
 
       return {
         name: def.name,
@@ -56,14 +56,4 @@ export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader
       };
     },
   };
-}
-
-export function GeometryRemoteResourceLoader(state: GameState): RemoteResourceLoader {
-  return {
-    type: GEOMETRY_RESOURCE,
-  };
-}
-
-export function createRemoteGeometry(manager: RemoteResourceManager, geometryDef: GeometryDefinition): number {
-  return loadRemoteResource(manager, geometryDef);
 }

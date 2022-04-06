@@ -1,8 +1,6 @@
 import { Color, Scene, Texture, EquirectangularReflectionMapping } from "three";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager, loadResource } from "./ResourceManager";
-import { GameState } from "../GameWorker";
 
 export const SCENE_RESOURCE = "scene";
 
@@ -55,14 +53,4 @@ export function SceneResourceLoader(manager: ResourceManager): ResourceLoader<Sc
       };
     },
   };
-}
-
-export function SceneRemoteResourceLoader(state: GameState): RemoteResourceLoader {
-  return {
-    type: SCENE_RESOURCE,
-  };
-}
-
-export function createRemoteScene(manager: RemoteResourceManager, sceneDef: SceneDefinition): number {
-  return loadRemoteResource(manager, sceneDef);
 }

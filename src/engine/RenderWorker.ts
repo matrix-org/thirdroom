@@ -24,7 +24,7 @@ import {
   registerResourceLoader,
   ResourceManager,
 } from "./resources/ResourceManager";
-import { GLTFResourceLoader } from "./resources/GLTFResourceLoader";
+import { GLTFResourceLoader } from "./gltf/GLTFResourceLoader";
 import { MeshResourceLoader } from "./resources/MeshResourceLoader";
 import { MaterialResourceLoader } from "./resources/MaterialResourceLoader";
 import { GeometryResourceLoader } from "./resources/GeometryResourceLoader";

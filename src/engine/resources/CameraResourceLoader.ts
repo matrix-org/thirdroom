@@ -1,8 +1,6 @@
 import { PerspectiveCamera, OrthographicCamera, Camera } from "three";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
-import { GameState } from "../GameWorker";
 
 const CAMERA_RESOURCE = "camera";
 
@@ -51,7 +49,9 @@ export function CameraResourceLoader(manager: ResourceManager): ResourceLoader<C
           throw new Error(`Unknown camera type ${(def as unknown as any).cameraType}`);
       }
 
-      camera.name = def.name!;
+      if (def.name) {
+        camera.name = def.name;
+      }
 
       return {
         name: def.name,
@@ -59,14 +59,4 @@ export function CameraResourceLoader(manager: ResourceManager): ResourceLoader<C
       };
     },
   };
-}
-
-export function CameraRemoteResourceLoader(state: GameState): RemoteResourceLoader {
-  return {
-    type: CAMERA_RESOURCE,
-  };
-}
-
-export function createRemoteCamera(manager: RemoteResourceManager, cameraDef: CameraDefinition): number {
-  return loadRemoteResource(manager, cameraDef);
 }

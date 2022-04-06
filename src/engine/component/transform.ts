@@ -1,11 +1,10 @@
-import { addComponent, IComponent } from "bitecs";
+import { addComponent, addEntity, IComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { gameBuffer, renderableBuffer } from ".";
 import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config";
-import { GameState, World } from "../GameWorker";
-import { WorkerMessageType } from "../WorkerMessage";
+import { World } from "../GameWorker";
 
 export interface Transform extends IComponent {
   position: Float32Array[];
@@ -50,21 +49,10 @@ export function addTransformComponent(world: World, eid: number) {
   Transform.worldMatrixNeedsUpdate[eid] = 1;
 }
 
-export interface Renderable extends IComponent {
-  resourceId: Uint32Array;
-  interpolate: Uint8Array;
-}
-
-export const Renderable: Renderable = {
-  resourceId: addView(renderableBuffer, Uint32Array, maxEntities),
-  interpolate: addView(renderableBuffer, Uint8Array, maxEntities),
-};
-
-export function addRenderableComponent({ world, renderer: { port } }: GameState, eid: number, resourceId: number) {
-  addComponent(world, Renderable, eid);
-  Renderable.interpolate[eid] = 1;
-  Renderable.resourceId[eid] = resourceId;
-  port.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
+export function createTransformEntity(world: World) {
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+  return eid;
 }
 
 export function getLastChild(eid: number): number {

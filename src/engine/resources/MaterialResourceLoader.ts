@@ -11,9 +11,7 @@ import {
   Vector2,
 } from "three";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { loadResource, ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
-import { GameState } from "../GameWorker";
 
 const MATERIAL_RESOURCE = "material";
 
@@ -161,14 +159,4 @@ export function MaterialResourceLoader(manager: ResourceManager): ResourceLoader
       };
     },
   };
-}
-
-export function MaterialRemoteResourceLoader(state: GameState): RemoteResourceLoader {
-  return {
-    type: MATERIAL_RESOURCE,
-  };
-}
-
-export function createRemoteMaterial(manager: RemoteResourceManager, materialDef: MaterialDefinition): number {
-  return loadRemoteResource(manager, materialDef);
 }

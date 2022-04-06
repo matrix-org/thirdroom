@@ -5,19 +5,14 @@ import { addTransformComponent, updateMatrixWorld } from "./component/transform"
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
-  registerRemoteResourceLoader,
   RemoteResourceManager,
   createRemoteResourceManager,
   remoteResourceDisposed,
   remoteResourceLoaded,
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
-import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
-import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
-import { GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -28,11 +23,7 @@ import {
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
-import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
 import { init } from "../game";
-import { TextureRemoteResourceLoader } from "./resources/TextureResourceLoader";
-import { SceneRemoteResourceLoader } from "./resources/SceneResourceLoader";
-import { LightRemoteResourceLoader } from "./resources/LightResourceLoader";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -207,15 +198,6 @@ async function onInit({
     time,
     systems: [],
   };
-
-  registerRemoteResourceLoader(state, SceneRemoteResourceLoader);
-  registerRemoteResourceLoader(state, GeometryRemoteResourceLoader);
-  registerRemoteResourceLoader(state, TextureRemoteResourceLoader);
-  registerRemoteResourceLoader(state, MaterialRemoteResourceLoader);
-  registerRemoteResourceLoader(state, MeshRemoteResourceLoader);
-  registerRemoteResourceLoader(state, CameraRemoteResourceLoader);
-  registerRemoteResourceLoader(state, LightRemoteResourceLoader);
-  registerRemoteResourceLoader(state, GLTFRemoteResourceLoader);
 
   await init(state);
 
