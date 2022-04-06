@@ -7,6 +7,7 @@ interface IScroll {
   visibility?: "visible" | "invisible" | "auto";
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
   children: React.ReactNode;
+  forwardRef: React.RefObject<HTMLDivElement>;
 }
 
 export function Scroll({
@@ -15,12 +16,13 @@ export function Scroll({
   visibility = "auto",
   onScroll = undefined,
   children,
+  forwardRef,
 }: IScroll) {
   const classes = [`Scroll Scroll--${direction} Scroll--${visibility}`];
   if (className) classes.push(className);
 
   return (
-    <div className={classes.join(" ")} onScroll={onScroll}>
+    <div ref={forwardRef} className={classes.join(" ")} onScroll={onScroll}>
       {children}
     </div>
   );

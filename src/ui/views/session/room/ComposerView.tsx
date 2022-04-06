@@ -2,6 +2,9 @@ import "./ComposerView.css";
 
 import { ComposerViewModel } from "hydrogen-view-sdk";
 
+import { Icon } from "../../../atoms/icon/Icon";
+import MessageIC from "../../../../../res/ic/message.svg";
+
 interface IComposerView {
   vm: typeof ComposerViewModel;
 }
@@ -20,8 +23,15 @@ export function ComposerView({ vm }: IComposerView) {
 
   return (
     <div className="ComposerView flex items-center">
+      <Icon color="white" src={MessageIC} size="small" />
       <form className="grow" onSubmit={handleSubmit}>
-        <input name="message" type="text" placeholder="Send message" />
+        <input
+          className="Text Text-b2 Text-regular"
+          name="message"
+          type="text"
+          placeholder="Press Enter to chat"
+          autoComplete="off"
+        />
       </form>
     </div>
   );

@@ -25,7 +25,7 @@ export function RoomFloatingView({ vm, roomId }: IRoomView) {
       <Button size="small" iconSrc={GridIC} onClick={() => vm.toggleLeftPanel()}>
         Open Overlay [Esc]
       </Button>
-      <div className={`RoomView__chat${chatVisibility ? " RoomView__chat--visible" : ""}`}>
+      <div className={`RoomView__chat${chatVisibility === false ? " RoomView__chat--invisible" : ""}`}>
         <ChatView roomId={roomId} vm={vm.chatViewModel} />
       </div>
       <div className="RoomView__controls flex">

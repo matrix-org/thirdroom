@@ -19,17 +19,15 @@
 }
 
 .RoomView__chat {
-  --chat-width: 400px;
+  --chat-width: 385px;
 
   width: var(--chat-width);
-  height: calc(100% - 140px);
-  top: var(--sp-normal);
-  right: var(--sp-normal);
-  transition: transform 200ms cubic-bezier(0.07, 0.79, 0.53, 0.91);
-  transform: translateX(calc(var(--chat-width) + var(--sp-extra-loose)));
+  height: calc(100% - 100px);
+  bottom: var(--sp-normal);
+  left: var(--sp-normal);
 }
-.RoomView__chat--visible {
-  transform: translateX(0);
+.RoomView__chat--invisible {
+  display: none;
 }
 
 .RoomView__controls {

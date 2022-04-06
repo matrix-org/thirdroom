@@ -1,0 +1,13 @@
+.TextTile {
+  padding: 10px;
+  background-color: #00000040;
+  border-radius: 8px;
+  display: inline-block;
+
+  & > .Text {
+    white-space: pre-wrap;
+  }
+}
+.TextTile__sender {
+  margin-right: var(--sp-extra-tight);
+}
