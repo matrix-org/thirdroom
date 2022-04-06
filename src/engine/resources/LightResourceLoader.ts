@@ -1,6 +1,5 @@
 import { DirectionalLight, Light, PointLight, Color, SpotLight } from "three";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
 
 export const LIGHT_RESOURCE = "light";
@@ -83,14 +82,4 @@ export function LightResourceLoader(manager: ResourceManager): ResourceLoader<Li
       };
     },
   };
-}
-
-export function LightRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
-  return {
-    type: LIGHT_RESOURCE,
-  };
-}
-
-export function createRemoteLight(manager: RemoteResourceManager, lightDef: LightDefinition): number {
-  return loadRemoteResource(manager, lightDef);
 }

@@ -5,16 +5,14 @@ import { addTransformComponent, updateMatrixWorld } from "./component/transform"
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
-  registerRemoteResourceLoader,
   RemoteResourceManager,
   createRemoteResourceManager,
+  remoteResourceDisposed,
+  remoteResourceLoaded,
+  remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
-import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
-import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
-import { GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -25,24 +23,33 @@ import {
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
-import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
 import { init } from "../game";
-import { TextureRemoteResourceLoader } from "./resources/TextureResourceLoader";
-import { SceneRemoteResourceLoader } from "./resources/SceneResourceLoader";
-import { LightRemoteResourceLoader } from "./resources/LightResourceLoader";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const onMessage =
-  (state: World) =>
+  (state: GameState) =>
   ({ data }: any) => {
     if (typeof data !== "object") {
       return;
     }
 
-    // const message = data as WorkerMessages;
+    const message = data as WorkerMessages;
 
-    // todo: messages
+    switch (message.type) {
+      case WorkerMessageType.ResourceLoaded: {
+        remoteResourceLoaded(state.resourceManager, message.resourceId, message.remoteResource);
+        break;
+      }
+      case WorkerMessageType.ResourceLoadError: {
+        remoteResourceLoadError(state.resourceManager, message.resourceId, message.error);
+        break;
+      }
+      case WorkerMessageType.ResourceDisposed: {
+        remoteResourceDisposed(state.resourceManager, message.resourceId);
+        break;
+      }
+    }
   };
 
 async function onInitMessage({ data }: { data: WorkerMessages }) {
@@ -161,15 +168,6 @@ async function onInit({
     .map((buffer) => createInputState(buffer));
 
   const resourceManager = createRemoteResourceManager(resourceManagerBuffer, renderPort);
-
-  registerRemoteResourceLoader(resourceManager, SceneRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, GeometryRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, TextureRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, CameraRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, LightRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
 
   const renderer: RenderState = {
     tripleBuffer: renderableTripleBuffer,

@@ -11,9 +11,12 @@ import {
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
-import { createRemoteGeometry, GeometryType } from "./engine/resources/GeometryResourceLoader";
+import { GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
-import { loadRemoteTexture, TextureType } from "./engine/resources/TextureResourceLoader";
+import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
+import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
+import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
+import { RenderableVisibilitySystem } from "./engine/component/renderable";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -87,23 +90,16 @@ export async function init(state: GameState): Promise<void> {
     },
   ];
 
-  const environmentTextureResourceId = loadRemoteTexture(resourceManager, {
-    type: "texture",
-    textureType: TextureType.RGBE,
-    url: "/cubemap/venice_sunset_1k.hdr",
-  });
-
   const scene = createScene(state, {
-    environmentTextureResourceId,
+    environmentMapUrl: "/cubemap/venice_sunset_1k.hdr",
   });
 
-  const light = createDirectionalLight(state);
-  addChild(scene, light);
+  createDirectionalLight(state, scene);
 
   const groundColliderDesc = RAPIER.ColliderDesc.cuboid(1000.0, 1, 1000.0);
   physicsWorld.createCollider(groundColliderDesc);
 
-  const geometryResourceId = createRemoteGeometry(resourceManager, {
+  const geometryResourceId = loadRemoteResource(resourceManager, {
     type: "geometry",
     geometryType: GeometryType.Box,
   });
@@ -130,8 +126,19 @@ export async function init(state: GameState): Promise<void> {
     addChild(scene, cube);
   }
 
+  const gltfEid = createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb");
+
+  setTimeout(() => addChild(scene, gltfEid), 3000);
+
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
 
-  state.systems.push(ActionMappingSystem, FirstPersonCameraSystem, PlayerControllerSystem, PhysicsSystem);
+  state.systems.push(
+    GLTFLoaderSystem,
+    ActionMappingSystem,
+    FirstPersonCameraSystem,
+    PlayerControllerSystem,
+    PhysicsSystem,
+    RenderableVisibilitySystem
+  );
 }

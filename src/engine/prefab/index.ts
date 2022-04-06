@@ -2,21 +2,53 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
 import { GameState } from "../GameWorker";
-import { addRenderableComponent, addTransformComponent } from "../component/transform";
+import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
+import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
 import { addRigidBody } from "../physics";
-import { createRemoteMaterial, MaterialType } from "../resources/MaterialResourceLoader";
-import { createRemoteMesh } from "../resources/MeshResourceLoader";
-import { createRemoteScene, SceneDefinition, SCENE_RESOURCE } from "../resources/SceneResourceLoader";
-import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
-import { CameraType, createRemoteCamera } from "../resources/CameraResourceLoader";
-import { createRemoteLight, LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
+import { MaterialType } from "../resources/MaterialResourceLoader";
+import { SceneDefinition, SCENE_RESOURCE } from "../resources/SceneResourceLoader";
+import { CameraType } from "../resources/CameraResourceLoader";
+import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
+import { loadRemoteResource } from "../resources/RemoteResourceManager";
+import { TextureType } from "../resources/TextureResourceLoader";
+
+interface SceneProps {
+  setActive?: boolean;
+  environmentMapUrl?: string;
+}
+
+export function createScene(state: GameState, props: SceneProps = {}): number {
+  const eid = createTransformEntity(state.world);
+
+  const sceneDef: SceneDefinition = {
+    type: SCENE_RESOURCE,
+  };
+
+  if (props.environmentMapUrl) {
+    sceneDef.environmentTextureResourceId = loadRemoteResource(state.resourceManager, {
+      type: "texture",
+      textureType: TextureType.RGBE,
+      url: props.environmentMapUrl,
+    });
+  }
+
+  const sceneResourceId = loadRemoteResource(state.resourceManager, sceneDef);
+
+  addRenderableComponent(state, eid, sceneResourceId);
+
+  if (props.setActive === undefined || props.setActive) {
+    setActiveScene(state, eid);
+  }
+
+  return eid;
+}
 
 export const createCube = (state: GameState, geometryResourceId: number) => {
   const { world, resourceManager, physicsWorld } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  const materialResourceId = createRemoteMaterial(resourceManager, {
+  const materialResourceId = loadRemoteResource(resourceManager, {
     type: "material",
     materialType: MaterialType.Physical,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
@@ -24,7 +56,7 @@ export const createCube = (state: GameState, geometryResourceId: number) => {
     metallicFactor: 0.8,
   });
 
-  const resourceId = createRemoteMesh(resourceManager, {
+  const resourceId = loadRemoteResource(resourceManager, {
     type: "mesh",
     geometryResourceId,
     materialResourceId,
@@ -42,39 +74,10 @@ export const createCube = (state: GameState, geometryResourceId: number) => {
   return eid;
 };
 
-export function setActiveScene(state: GameState, eid: number) {
-  state.renderer.port.postMessage({
-    type: WorkerMessageType.SetActiveScene,
-    eid,
-  } as SetActiveSceneMessage);
-  state.scene = eid;
-}
-
-export function createScene(state: GameState, sceneDef: Omit<SceneDefinition, "type">, setActive = true): number {
-  const eid = addEntity(state.world);
-  addTransformComponent(state.world, eid);
-  const sceneResourceId = createRemoteScene(state.resourceManager, { type: SCENE_RESOURCE, ...sceneDef });
-  addRenderableComponent(state, eid, sceneResourceId);
-
-  if (setActive) {
-    setActiveScene(state, eid);
-  }
-
-  return eid;
-}
-
-export function setActiveCamera(state: GameState, eid: number) {
-  state.renderer.port.postMessage({
-    type: WorkerMessageType.SetActiveCamera,
-    eid,
-  } as SetActiveCameraMessage);
-  state.camera = eid;
-}
-
 export function createCamera(state: GameState, setActive = true): number {
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const cameraResource = createRemoteCamera(state.resourceManager, {
+  const cameraResource = loadRemoteResource(state.resourceManager, {
     type: "camera",
     cameraType: CameraType.Perspective,
     yfov: 75,
@@ -89,14 +92,19 @@ export function createCamera(state: GameState, setActive = true): number {
   return eid;
 }
 
-export function createDirectionalLight(state: GameState) {
+export function createDirectionalLight(state: GameState, parentEid?: number) {
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const lightResourceId = createRemoteLight(state.resourceManager, {
+  const lightResourceId = loadRemoteResource(state.resourceManager, {
     type: LIGHT_RESOURCE,
     lightType: LightType.Directional,
     intensity: 0.5,
   });
   addRenderableComponent(state, eid, lightResourceId);
+
+  if (parentEid !== undefined) {
+    addChild(parentEid, eid);
+  }
+
   return eid;
 }
