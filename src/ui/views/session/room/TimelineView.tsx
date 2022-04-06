@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { TimelineViewModel } from "hydrogen-view-sdk";
 
 import { Text } from "../../../atoms/text/Text";
@@ -15,14 +15,24 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
   window.tvm = vm;
   window.tiles = vm.tiles;
   const { tiles } = vm;
+  const [update, forceUpdate] = useState({});
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = () => {
+    const tScroll = timelineScrollRef.current;
+    if (tScroll !== null) {
+      const { clientHeight, scrollHeight } = tScroll;
+      tScroll.scrollTop = scrollHeight - clientHeight;
+      console.log(tScroll.scrollTop, clientHeight, scrollHeight);
+    }
+  };
+
   useEffect(() => {
-    const onReset = () => {};
-    const onAdd = () => {};
-    const onUpdate = () => {};
-    const onRemove = () => {};
-    const onMove = () => {};
+    const onReset = () => forceUpdate({});
+    const onAdd = () => forceUpdate({});
+    const onUpdate = () => forceUpdate({});
+    const onRemove = () => forceUpdate({});
+    const onMove = () => forceUpdate({});
 
     return tiles.subscribe({
       onReset,
@@ -33,14 +43,12 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
     });
   }, [roomId, tiles]);
 
-  // useLayoutEffect(() => {
-  //   const tScroll = timelineScrollRef.current;
-  //   if (tScroll !== null) {
-  //     const { clientHeight, scrollHeight } = tScroll;
-  //     tScroll.scrollTop = scrollHeight - clientHeight;
-  //     console.log(tScroll.scrollTop, clientHeight, scrollHeight);
-  //   }
-  // }, []);
+  useLayoutEffect(() => scrollToBottom(), [update]);
+
+  const handleOnScroll = () => {
+    // TODO: handle scroll back.
+    // vm.setVisibleTileRange(x, y)
+  };
 
   const renderTimeline = () => {
     const reactTiles = [];
@@ -54,7 +62,7 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
 
   return (
     <div className="TimelineView grow">
-      <Scroll forwardRef={timelineScrollRef} visibility="invisible">
+      <Scroll onScroll={handleOnScroll} forwardRef={timelineScrollRef} visibility="invisible">
         <div className="TimelineView__content flex flex-column justify-end items-start">
           {tiles.hasSubscriptions && renderTimeline()}
           {tiles.hasSubscriptions === false && <Text>loading...</Text>}
