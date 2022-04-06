@@ -1,19 +1,22 @@
-import { addComponent, IComponent } from "bitecs";
+import { addComponent, hasComponent, IComponent } from "bitecs";
 
 import { renderableBuffer } from ".";
 import { addView } from "../allocator/CursorBuffer";
 import { maxEntities } from "../config";
-import { GameState } from "../GameWorker";
+import { GameState, World } from "../GameWorker";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
+import { traverse } from "./transform";
 
 export interface Renderable extends IComponent {
   resourceId: Uint32Array;
   interpolate: Uint8Array;
+  visible: Uint8Array;
 }
 
 export const Renderable: Renderable = {
   resourceId: addView(renderableBuffer, Uint32Array, maxEntities),
   interpolate: addView(renderableBuffer, Uint8Array, maxEntities),
+  visible: addView(renderableBuffer, Uint8Array, maxEntities),
 };
 
 export function addRenderableComponent({ world, renderer: { port } }: GameState, eid: number, resourceId: number) {
@@ -37,4 +40,18 @@ export function setActiveCamera(state: GameState, eid: number) {
     eid,
   } as SetActiveCameraMessage);
   state.camera = eid;
+}
+
+export function resetVisible(world: World, rootEid: number) {
+  Renderable.visible.fill(0);
+
+  traverse(rootEid, (eid) => {
+    if (hasComponent(world, Renderable, eid)) {
+      Renderable.visible[eid] = 1;
+    }
+  });
+}
+
+export function RenderableVisibilitySystem({ world, scene }: GameState) {
+  resetVisible(world, scene);
 }

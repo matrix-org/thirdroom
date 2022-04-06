@@ -242,3 +242,28 @@ export const setQuaternionFromEuler = (quaternion: Float32Array, rotation: Float
       break;
   }
 };
+
+export function traverse(rootEid: number, callback: (eid: number) => void) {
+  let eid = rootEid;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    callback(eid);
+
+    const firstChild = Transform.firstChild[eid];
+
+    if (firstChild) {
+      eid = firstChild;
+    } else {
+      while (!Transform.nextSibling[eid]) {
+        if (eid === rootEid) {
+          return;
+        }
+
+        eid = Transform.parent[eid];
+      }
+
+      eid = Transform.nextSibling[eid];
+    }
+  }
+}

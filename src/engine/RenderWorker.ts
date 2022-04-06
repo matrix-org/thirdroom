@@ -90,7 +90,9 @@ interface TransformView {
 }
 
 interface RenderableView {
+  resourceId: Uint32Array;
   interpolate: Uint8Array;
+  visible: Uint8Array;
 }
 
 interface Renderable {
@@ -228,6 +230,7 @@ async function onInit({
       ({
         resourceId: addView(buffer as unknown as CursorBuffer, Uint32Array, maxEntities),
         interpolate: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+        visible: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
       } as RenderableView)
   );
 
@@ -289,6 +292,8 @@ function onUpdate(state: RenderWorkerState) {
 
   for (let i = 0; i < renderables.length; i++) {
     const { object, eid } = renderables[i];
+
+    object.visible = !!Renderable.visible[eid];
 
     if (!Transform.worldMatrixNeedsUpdate[eid]) {
       continue;

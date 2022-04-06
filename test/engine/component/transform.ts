@@ -1,6 +1,13 @@
-import { strictEqual } from "assert";
+import { deepStrictEqual, strictEqual } from "assert";
 
-import { Transform, getLastChild, getChildAt, addChild, removeChild } from "../../../src/engine/component/transform";
+import {
+  Transform,
+  getLastChild,
+  getChildAt,
+  addChild,
+  removeChild,
+  traverse,
+} from "../../../src/engine/component/transform";
 import { NOOP } from "../../../src/engine/config";
 
 describe("Transform Unit Tests", function () {
@@ -141,6 +148,46 @@ describe("Transform Unit Tests", function () {
       describe("#updateWorldMatrix()", function () {});
       describe("#composeMatrix()", function () {});
       describe("#updateMatrix()", function () {});
+    });
+
+    describe("traverse", () => {
+      beforeEach(function () {
+        Transform.firstChild.fill(0);
+        Transform.prevSibling.fill(0);
+        Transform.nextSibling.fill(0);
+      });
+
+      it("should traverse in depth first order", () => {
+        /**
+         *       root(1)
+         *         / \
+         *      A(2) B(3)
+         *      /     / \
+         *    E(6)  C(4) D(5)
+         *    /
+         *   F(7)
+         */
+
+        const root = 1;
+        const childA = 2;
+        const childB = 3;
+        const childC = 4;
+        const childD = 5;
+        const childE = 6;
+        const childF = 7;
+        addChild(root, childA);
+        addChild(root, childB);
+        addChild(childB, childC);
+        addChild(childB, childD);
+        addChild(childA, childE);
+        addChild(childE, childF);
+
+        const result: number[] = [];
+
+        traverse(1, (eid) => result.push(eid));
+
+        deepStrictEqual(result, [1, 2, 6, 7, 3, 4, 5]);
+      });
     });
   });
 });

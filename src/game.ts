@@ -16,6 +16,7 @@ import { createCube, createDirectionalLight, createScene } from "./engine/prefab
 import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
+import { RenderableVisibilitySystem } from "./engine/component/renderable";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -125,7 +126,9 @@ export async function init(state: GameState): Promise<void> {
     addChild(scene, cube);
   }
 
-  createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb", scene);
+  const gltfEid = createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb");
+
+  setTimeout(() => addChild(scene, gltfEid), 3000);
 
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
@@ -135,6 +138,7 @@ export async function init(state: GameState): Promise<void> {
     ActionMappingSystem,
     FirstPersonCameraSystem,
     PlayerControllerSystem,
-    PhysicsSystem
+    PhysicsSystem,
+    RenderableVisibilitySystem
   );
 }
