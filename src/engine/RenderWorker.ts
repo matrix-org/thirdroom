@@ -23,6 +23,7 @@ import {
   onRemoveResourceRef,
   registerResourceLoader,
   ResourceManager,
+  ResourceState,
 } from "./resources/ResourceManager";
 import { GLTFResourceLoader } from "./gltf/GLTFResourceLoader";
 import { MeshResourceLoader } from "./resources/MeshResourceLoader";
@@ -57,7 +58,6 @@ if (isWorker) {
   globalThis.addEventListener("message", onMessage);
 } else {
   localEventTarget = new EventTarget();
-  localEventTarget.addEventListener("message", onMessage);
 }
 
 // outbound RenderThread -> MainThread
@@ -71,7 +71,7 @@ function postToMainThread(data: any, transfer?: (Transferable | OffscreenCanvas)
 
 // inbound MainThread -> RenderThread
 export default {
-  postMessage: (data: any) => onMessage(data),
+  postMessage: (data: any) => onMessage({ data }),
   addEventListener: (
     type: string,
     callback: EventListenerOrEventListenerObject | null,
@@ -96,8 +96,9 @@ interface RenderableView {
 }
 
 interface Renderable {
-  object: Object3D;
+  object?: Object3D;
   eid: number;
+  resourceId: number;
 }
 
 interface RenderWorkerState {
@@ -293,6 +294,10 @@ function onUpdate(state: RenderWorkerState) {
   for (let i = 0; i < renderables.length; i++) {
     const { object, eid } = renderables[i];
 
+    if (!object) {
+      continue;
+    }
+
     object.visible = !!Renderable.visible[eid];
 
     if (!Transform.worldMatrixNeedsUpdate[eid]) {
@@ -333,60 +338,135 @@ function onRenderableMessage({ renderableMessageQueue }: RenderWorkerState, mess
 }
 
 function processRenderableMessages(state: RenderWorkerState) {
-  const { renderableMessageQueue, renderableIndices, renderables, scene, resourceManager } = state;
+  const { renderableMessageQueue } = state;
 
   while (renderableMessageQueue.length) {
     const message = renderableMessageQueue.shift() as RenderableMessages;
 
     switch (message.type) {
-      case WorkerMessageType.AddRenderable: {
-        const { resourceId, eid } = message as AddRenderableMessage;
-        const resourceInfo = resourceManager.store.get(resourceId);
-
-        if (resourceInfo) {
-          const object = resourceInfo.resource as Object3D;
-          renderableIndices.set(eid, renderables.length);
-          renderables.push({ object, eid });
-
-          if (object.type !== "Scene") {
-            state.scene.add(object);
-          }
-        }
-
+      case WorkerMessageType.AddRenderable:
+        onAddRenderable(state, message);
         break;
-      }
-      case WorkerMessageType.RemoveRenderable: {
-        const { eid } = message as RemoveRenderableMessage;
-        const index = renderableIndices.get(eid);
-
-        if (index !== undefined) {
-          const removed = renderables.splice(index, 1);
-          renderableIndices.delete(eid);
-          scene.remove(removed[0].object);
-        }
-
+      case WorkerMessageType.RemoveRenderable:
+        onRemoveRenderable(state, message);
         break;
-      }
-      case WorkerMessageType.SetActiveCamera: {
-        const { eid } = message as SetActiveCameraMessage;
-        const index = renderableIndices.get(eid);
-
-        if (index !== undefined && renderables[index]) {
-          state.camera = renderables[index].object as Camera;
-        }
-
+      case WorkerMessageType.SetActiveCamera:
+        onSetActiveCamera(state, message);
         break;
-      }
-      case WorkerMessageType.SetActiveScene: {
-        const { eid } = message as SetActiveSceneMessage;
-        const index = renderableIndices.get(eid);
-
-        if (index !== undefined && renderables[index]) {
-          state.scene = renderables[index].object as Scene;
-        }
-
+      case WorkerMessageType.SetActiveScene:
+        onSetActiveScene(state, message);
         break;
-      }
     }
+  }
+}
+
+function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage) {
+  const { resourceId, eid } = message;
+  const { renderableMessageQueue, renderableIndices, renderables, scene, resourceManager } = state;
+  let renderableIndex = renderableIndices.get(eid);
+  const resourceInfo = resourceManager.store.get(resourceId);
+
+  if (!resourceInfo) {
+    console.warn(`AddRenderable Error: Unknown resourceId ${resourceId} for eid ${eid}`);
+    return;
+  }
+
+  if (resourceInfo.state === ResourceState.Loaded) {
+    const object = resourceInfo.resource as Object3D;
+
+    if (renderableIndex !== undefined) {
+      // Replace an existing renderable on an entity if it changed
+      const removed = renderables.splice(renderableIndex, 1, { object, eid, resourceId });
+
+      if (removed.length > 0 && removed[0].object) {
+        // Remove the renderable object3D only if it exists
+        scene.remove(removed[0].object);
+      }
+    } else {
+      renderableIndex = renderables.length;
+      renderableIndices.set(eid, renderables.length);
+      renderables.push({ object, eid, resourceId });
+    }
+
+    state.scene.add(object);
+
+    return;
+  }
+
+  if (resourceInfo.state === ResourceState.Loading) {
+    if (renderableIndex !== undefined) {
+      // Update the renderable with the new resource id and remove the old object
+      const removed = renderables.splice(renderableIndex, 1, { object: undefined, eid, resourceId });
+
+      if (removed.length > 0 && removed[0].object) {
+        // Remove the previous renderable object from the scene if it exists
+        scene.remove(removed[0].object);
+      }
+    } else {
+      renderableIndex = renderables.length;
+      renderableIndices.set(eid, renderables.length);
+      renderables.push({ object: undefined, eid, resourceId });
+    }
+
+    // Resources that are still loading should be re-queued when they finish loading.
+    resourceInfo.promise.finally(() => {
+      const index = renderableIndices.get(eid);
+
+      if (index === undefined || renderables[index].resourceId !== message.resourceId) {
+        // The resource was changed since it finished loading so avoid queueing it again
+        return;
+      }
+
+      renderableMessageQueue.push(message);
+    });
+
+    return;
+  }
+
+  console.warn(
+    `AddRenderable Error: resourceId ${resourceId} for eid ${eid} could not be loaded: ${resourceInfo.error}`
+  );
+}
+
+function onRemoveRenderable(
+  { renderableIndices, renderables, scene }: RenderWorkerState,
+  { eid }: RemoveRenderableMessage
+) {
+  const index = renderableIndices.get(eid);
+
+  if (index !== undefined) {
+    const removed = renderables.splice(index, 1);
+    renderableIndices.delete(eid);
+
+    if (removed.length > 0 && removed[0].object) {
+      scene.remove(removed[0].object);
+    }
+  }
+}
+
+function onSetActiveScene(state: RenderWorkerState, { eid, resourceId }: SetActiveSceneMessage) {
+  const { resourceManager, scene } = state;
+  const resourceInfo = resourceManager.store.get(resourceId);
+
+  if (!resourceInfo || !resourceInfo.resource) {
+    console.error(`SetActiveScene Error: Couldn't find resource ${resourceId} for scene ${eid}`);
+    return;
+  }
+
+  const newScene = resourceInfo.resource as Scene;
+
+  for (const child of scene.children) {
+    newScene.add(child);
+  }
+
+  state.scene = newScene;
+}
+
+function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMessage) {
+  const { renderableIndices, renderables } = state;
+  const index = renderableIndices.get(eid);
+
+  if (index !== undefined && renderables[index]) {
+    state.camera = renderables[index].object as Camera;
   }
 }

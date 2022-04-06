@@ -97,11 +97,11 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     const onMessage = ({ data }: any): void => {
       if (data.type === WorkerMessageType.RenderWorkerInitialized) {
         resolve(data);
+        renderWorker.removeEventListener("message", onMessage);
       } else if (data.type === WorkerMessageType.RenderWorkerError) {
         reject(data.error);
+        renderWorker.removeEventListener("message", onMessage);
       }
-
-      renderWorker.removeEventListener("message", onMessage);
     };
 
     renderWorker.addEventListener("message", onMessage);
@@ -122,10 +122,11 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     const onMessage = ({ data }: { data: WorkerMessages }): void => {
       if (data.type === WorkerMessageType.GameWorkerInitialized) {
         resolve(data);
+        gameWorker.removeEventListener("message", onMessage);
       } else if (data.type === WorkerMessageType.GameWorkerError) {
         reject(data.error);
+        gameWorker.removeEventListener("message", onMessage);
       }
-      gameWorker.removeEventListener("message", onMessage);
     };
 
     gameWorker.addEventListener("message", onMessage);

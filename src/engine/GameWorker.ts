@@ -37,18 +37,18 @@ const onMessage =
     const message = data as WorkerMessages;
 
     switch (message.type) {
-      case WorkerMessageType.ResourceLoaded: {
+      case WorkerMessageType.StartGameWorker:
+        onStart(state);
+        break;
+      case WorkerMessageType.ResourceLoaded:
         remoteResourceLoaded(state.resourceManager, message.resourceId, message.remoteResource);
         break;
-      }
-      case WorkerMessageType.ResourceLoadError: {
+      case WorkerMessageType.ResourceLoadError:
         remoteResourceLoadError(state.resourceManager, message.resourceId, message.error);
         break;
-      }
-      case WorkerMessageType.ResourceDisposed: {
+      case WorkerMessageType.ResourceDisposed:
         remoteResourceDisposed(state.resourceManager, message.resourceId);
         break;
-      }
     }
   };
 
@@ -201,9 +201,11 @@ async function onInit({
 
   await init(state);
 
-  update(state);
-
   return state;
+}
+
+function onStart(state: GameState) {
+  update(state);
 }
 
 const updateWorldMatrixSystem = (state: GameState) => {

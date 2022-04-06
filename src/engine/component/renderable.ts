@@ -26,10 +26,11 @@ export function addRenderableComponent({ world, renderer: { port } }: GameState,
   port.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
 }
 
-export function setActiveScene(state: GameState, eid: number) {
+export function setActiveScene(state: GameState, eid: number, resourceId: number) {
   state.renderer.port.postMessage({
     type: WorkerMessageType.SetActiveScene,
     eid,
+    resourceId,
   } as SetActiveSceneMessage);
   state.scene = eid;
 }

@@ -132,6 +132,7 @@ export interface SetActiveCameraMessage extends WorkerMessage {
 export interface SetActiveSceneMessage extends WorkerMessage {
   type: WorkerMessageType.SetActiveScene;
   eid: number;
+  resourceId: number;
 }
 
 export type WorkerMessages =

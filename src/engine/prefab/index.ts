@@ -34,10 +34,8 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
 
   const sceneResourceId = loadRemoteResource(state.resourceManager, sceneDef);
 
-  addRenderableComponent(state, eid, sceneResourceId);
-
   if (props.setActive === undefined || props.setActive) {
-    setActiveScene(state, eid);
+    setActiveScene(state, eid, sceneResourceId);
   }
 
   return eid;
