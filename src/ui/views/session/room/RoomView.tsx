@@ -17,7 +17,6 @@ interface IRoomView {
 }
 
 export function RoomFloatingView({ vm, roomId }: IRoomView) {
-  // TODO: move this state to RoomViewModel
   const [chatVisibility, setChatVisibility] = React.useState(false);
 
   return (
@@ -26,7 +25,7 @@ export function RoomFloatingView({ vm, roomId }: IRoomView) {
         Open Overlay [Esc]
       </Button>
       <div className={`RoomView__chat${chatVisibility === false ? " RoomView__chat--invisible" : ""}`}>
-        <ChatView roomId={roomId} vm={vm.chatViewModel} />
+        {chatVisibility && <ChatView roomId={roomId} vm={vm.chatViewModel} />}
       </div>
       <div className="RoomView__controls flex">
         <IconButton shadedSurface={true} label="Mic" size="small" iconSrc={MicIC} onClick={() => alert("mic")} />

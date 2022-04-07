@@ -20,7 +20,8 @@
 .RoomView__chat {
   --chat-width: 385px;
 
-  width: var(--chat-width);
+  max-width: var(--chat-width);
+  width: 100%;
   height: calc(100% - 100px);
   bottom: var(--sp-normal);
   left: var(--sp-normal);
