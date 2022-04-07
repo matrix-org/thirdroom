@@ -267,3 +267,14 @@ export function traverse(rootEid: number, callback: (eid: number) => void) {
     }
   }
 }
+
+export function* getChildren(parentEid: number): Generator<number, number> {
+  let eid = Transform.firstChild[parentEid];
+
+  while (eid) {
+    yield eid;
+    eid = Transform.nextSibling[eid];
+  }
+
+  return 0;
+}

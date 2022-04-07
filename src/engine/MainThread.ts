@@ -140,6 +140,21 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     type: WorkerMessageType.StartGameWorker,
   });
 
+  const onRenderWorkerMessage = ({ data }: MessageEvent) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.SaveGLTF:
+        downloadFile(message.buffer, "scene.glb");
+    }
+  };
+
+  renderWorker.addEventListener("message", onRenderWorkerMessage);
+
   let animationFrameId: number;
 
   function update() {
@@ -158,4 +173,15 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
       disposeRenderWorker();
     },
   };
+}
+
+function downloadFile(buffer: ArrayBuffer, fileName: string) {
+  const blob = new Blob([buffer], { type: "application/octet-stream" });
+  const el = document.createElement("a");
+  el.style.display = "none";
+  document.body.appendChild(el);
+  el.href = URL.createObjectURL(blob);
+  el.download = fileName;
+  el.click();
+  document.body.removeChild(el);
 }
