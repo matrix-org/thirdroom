@@ -142,7 +142,7 @@ export const deserializeTransformChanged = (v: CursorView, eid: number) => {
 /* Snapshot */
 
 export function markSnapshotMessage(input: [GameState, CursorView]) {
-  const [_, v] = input;
+  const v = input[1];
   writeUint8(v, NetworkMessage.Snapshot);
   return input;
 }
@@ -150,7 +150,7 @@ export function markSnapshotMessage(input: [GameState, CursorView]) {
 /* Full */
 
 export function markFullMessage(input: [GameState, CursorView]) {
-  const [_, v] = input;
+  const v = input[1];
   writeUint8(v, NetworkMessage.Full);
   return input;
 }
@@ -158,7 +158,7 @@ export function markFullMessage(input: [GameState, CursorView]) {
 /* Create */
 
 export function markCreateMessage(input: [GameState, CursorView]) {
-  const [_, v] = input;
+  const v = input[1];
   writeUint8(v, NetworkMessage.Create);
   return input;
 }
@@ -211,7 +211,7 @@ export function deserializeCreates(input: [GameState, CursorView]) {
 /* Update */
 
 function markUpdateMessage(input: [GameState, CursorView]) {
-  const [_, v] = input;
+  const v = input[1];
   writeUint8(v, NetworkMessage.Update);
   return input;
 }
@@ -290,7 +290,7 @@ export function deserializeUpdatesChanged(input: [GameState, CursorView]) {
 /* Delete */
 
 function markDeleteMessage(input: [GameState, CursorView]) {
-  const [_, v] = input;
+  const v = input[1];
   writeUint8(v, NetworkMessage.Delete);
   return input;
 }
