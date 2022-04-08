@@ -3,7 +3,7 @@ import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
-import { maxEntities, tickRate } from "./config";
+import { maxEntities, NOOP, tickRate } from "./config";
 import {
   RemoteResourceManager,
   createRemoteResourceManager,
@@ -94,18 +94,26 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
 
 workerScope.addEventListener("message", onInitMessage);
 
+export type World = IWorld;
+
 export interface TimeState {
   elapsed: number;
   dt: number;
 }
-
-export type World = IWorld;
 
 export type RenderPort = MessagePort | (typeof globalThis & Worker);
 
 export interface RenderState {
   tripleBuffer: TripleBufferState;
   port: RenderPort;
+}
+
+export interface NetworkState {
+  messages: ArrayBuffer[];
+  idMap: Map<number, number>;
+  clientId: number;
+  localIdCount: number;
+  removedLocalIds: number[];
 }
 
 export interface GameInputState {
@@ -129,6 +137,7 @@ export interface GameState {
   scene: number;
   camera: number;
   statsBuffer: StatsBuffer;
+  network: NetworkState;
 }
 
 const generateInputGetters = (
@@ -196,6 +205,15 @@ async function onInit({
     dt: 0,
   };
 
+  const network: NetworkState = {
+    messages: [],
+    idMap: new Map<number, number>(),
+    // todo: use mxid as clientId
+    clientId: NOOP,
+    localIdCount: 0,
+    removedLocalIds: [],
+  };
+
   const state: GameState = {
     world,
     scene,
@@ -205,6 +223,7 @@ async function onInit({
     physicsWorld,
     input,
     time,
+    network,
     systems: [],
     statsBuffer,
   };
