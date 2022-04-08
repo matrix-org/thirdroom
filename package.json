@@ -22,7 +22,6 @@
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
     "bitecs": "^0.3.38",
-    "events": "^3.3.0",
     "gl-matrix": "^3.4.3",
     "hydrogen-view-sdk": "0.0.9",
     "react": "^17.0.2",
@@ -31,7 +30,6 @@
   },
   "devDependencies": {
     "@types/babel__core": "^7.1.19",
-    "@types/events": "^3.0.0",
     "@types/gl-matrix": "^3.2.0",
     "@types/node": "^17.0.23",
     "@types/offscreencanvas": "^2019.6.4",
