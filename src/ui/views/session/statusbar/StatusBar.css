@@ -1,0 +1,32 @@
+.StatusBar {
+  max-height: 48px;
+  height: 100%;
+  background: linear-gradient(to bottom, #00000022, #00000000);
+  pointer-events: all;
+
+  & > div {
+    padding: 0 var(--sp-extra-tight);
+  }
+
+  & .Text {
+    color: white;
+  }
+}
+
+.OpenOverlay {
+  padding: var(--sp-ultra-tight);
+  padding-right: var(--sp-extra-tight);
+  border-radius: var(--br-normal);
+  cursor: pointer;
+
+  & > .Text span {
+    font-size: 8px;
+    border: 1px solid white;
+    border-radius: var(--br-small);
+    padding: 2px var(--sp-ultra-tight);
+    margin-right: var(--sp-extra-tight);
+  }
+  &:hover {
+    background-color: var(--sc-dark-low);
+  }
+}

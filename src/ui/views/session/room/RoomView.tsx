@@ -2,10 +2,8 @@ import React from "react";
 
 import "./RoomView.css";
 import { RoomViewModel } from "../../../../viewModels/session/room/RoomViewModel";
-import { Button } from "../../../atoms/button/Button";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { ChatView } from "./ChatView";
-import GridIC from "../../../../../res/ic/grid.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MessageIC from "../../../../../res/ic/message.svg";
 import SettingIC from "../../../../../res/ic/setting.svg";
@@ -22,9 +20,6 @@ export function RoomFloatingView({ vm, roomId }: IRoomView) {
 
   return (
     <>
-      <Button size="small" iconSrc={GridIC} onClick={() => vm.toggleLeftPanel()}>
-        Open Overlay [Esc]
-      </Button>
       <div className={`RoomView__chat${chatVisibility ? " RoomView__chat--visible" : ""}`}>
         <ChatView roomId={roomId} vm={vm.chatViewModel} />
       </div>

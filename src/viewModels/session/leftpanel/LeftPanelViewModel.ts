@@ -59,9 +59,8 @@ export class LeftPanelViewModel extends ViewModel {
     );
   }
 
-  private _handlePanelState(state: any) {
-    if (state === "open") this._panelState = "open";
-    else if (state === "close") this._panelState = "close";
+  private _handlePanelState(state?: "initial" | "open" | "close") {
+    if (typeof state === "string") this._panelState = state;
     else this._panelState = "initial";
 
     this.emitChange("panelState");

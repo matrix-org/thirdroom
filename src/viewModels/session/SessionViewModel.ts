@@ -3,6 +3,7 @@ import { Platform, URLRouter, Navigation, Client, Session, ViewModel } from "hyd
 import { LeftPanelViewModel } from "./leftpanel/LeftPanelViewModel";
 import { RoomViewModel } from "./room/RoomViewModel";
 import { InviteViewModel } from "./room/InviteViewModel";
+import { StatusBarViewModel } from "./statusbar/StatusBarViewModel";
 
 type Options = {
   client: typeof Client;
@@ -16,6 +17,7 @@ type Options = {
 export class SessionViewModel extends ViewModel {
   private _client: typeof Client;
   private _session: typeof Session;
+  private _statusBarViewModel: StatusBarViewModel;
   private _leftPanelViewModel: LeftPanelViewModel;
   private _roomViewModel: RoomViewModel | null;
   private _inviteViewModel: InviteViewModel | null;
@@ -28,6 +30,14 @@ export class SessionViewModel extends ViewModel {
     this._roomViewModel = null;
     this._inviteViewModel = null;
     this._activeRoomId = null;
+
+    this._statusBarViewModel = new StatusBarViewModel(
+      this.childOptions({
+        client: this._client,
+        session: this._session,
+      })
+    );
+    this.track(this._statusBarViewModel);
 
     this._leftPanelViewModel = new LeftPanelViewModel(
       this.childOptions({
@@ -89,6 +99,10 @@ export class SessionViewModel extends ViewModel {
 
   get isActiveRoomInvite() {
     return this._session.invites.get(this._activeRoomId) !== undefined;
+  }
+
+  get statusBarViewModel() {
+    return this._statusBarViewModel;
   }
 
   get leftPanelViewModel() {
