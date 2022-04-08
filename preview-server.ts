@@ -1,17 +1,20 @@
 import chokidar from "chokidar";
-import { build, preview } from "vite";
-import config from "./vite.config.js";
-import { WebSocketServer } from "ws";
+import { build, InlineConfig, preview, UserConfig } from "vite";
+import { WebSocket, WebSocketServer } from "ws";
 
-const devServerConfig = {
-  ...config,
+import config from "./vite.config";
+
+const userConfig = config as UserConfig;
+
+const devServerConfig: InlineConfig = {
+  ...userConfig,
   mode: "preview",
   build: {
     minify: false,
     sourcemap: true,
   },
   preview: {
-    ...config.preview,
+    ...userConfig.preview,
     open: true,
     port: 3000,
   },
@@ -26,7 +29,7 @@ previewServer.httpServer.prependListener("request", (_req, res) => {
   res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 });
 
-let sockets = [];
+let sockets: WebSocket[] = [];
 
 const wss = new WebSocketServer({ server: previewServer.httpServer });
 
@@ -43,9 +46,9 @@ previewServer.printUrls();
 
 console.log("\n");
 
-const debounce = (callback, wait) => {
-  let timeout;
-  return (...args) => {
+const debounce = (callback: (...args: any[]) => void, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: any[]) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       clearTimeout(timeout);

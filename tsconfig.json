@@ -14,7 +14,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["vitest/importMeta"]
   },
-  "include": ["./src", "deps.d.ts", "./test"]
+  "include": ["./src", "deps.d.ts", "./test", "./preview-server.ts", "./vite.config.ts"]
 }

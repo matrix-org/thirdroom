@@ -1,4 +1,4 @@
-import { deepStrictEqual, strictEqual } from "assert";
+import { describe, test, expect, beforeEach } from "vitest";
 
 import {
   Transform,
@@ -14,40 +14,40 @@ describe("Transform Unit Tests", function () {
   describe("scene graph hierarchy", function () {
     describe("parenting", function () {
       describe("#getLastChild()", function () {
-        it("should get last child of NOOP with no children", function () {
+        test("should get last child of NOOP with no children", function () {
           const parent = 1;
-          strictEqual(getLastChild(parent), NOOP);
+          expect(getLastChild(parent)).toStrictEqual(NOOP);
         });
-        it("should get last child of 1 children", function () {
+        test("should get last child of 1 children", function () {
           const parent = 1;
           const child = 2;
           Transform.firstChild[parent] = child;
-          strictEqual(getLastChild(parent), child);
+          expect(getLastChild(parent)).toStrictEqual(child);
         });
-        it("should get last child of 2 children", function () {
+        test("should get last child of 2 children", function () {
           const parent = 1;
           const childA = 2;
           const childB = 3;
           Transform.firstChild[parent] = childA;
           Transform.nextSibling[childA] = childB;
-          strictEqual(getLastChild(parent), childB);
+          expect(getLastChild(parent)).toStrictEqual(childB);
         });
       });
 
       describe("#getChildAt()", function () {
-        it("should get child at index 0", function () {
+        test("should get child at index 0", function () {
           const parent = 1;
           const child = 2;
           Transform.firstChild[parent] = child;
-          strictEqual(getChildAt(parent, 0), 2);
+          expect(getChildAt(parent, 0)).toStrictEqual(2);
         });
-        it("should get child at index 1", function () {
+        test("should get child at index 1", function () {
           const parent = 1;
           const childA = 2;
           const childB = 3;
           Transform.firstChild[parent] = childA;
           Transform.nextSibling[childA] = childB;
-          strictEqual(getChildAt(parent, 1), 3);
+          expect(getChildAt(parent, 1)).toStrictEqual(3);
         });
       });
 
@@ -57,13 +57,13 @@ describe("Transform Unit Tests", function () {
           Transform.prevSibling.fill(0);
           Transform.nextSibling.fill(0);
         });
-        it("should add one child", function () {
+        test("should add one child", function () {
           const parent = 1;
           const child = 2;
           addChild(parent, child);
-          strictEqual(Transform.firstChild[parent], child);
+          expect(Transform.firstChild[parent]).toStrictEqual(child);
         });
-        it("should add multiple children", function () {
+        test("should add multiple children", function () {
           const parent = 1;
           const childA = 2;
           const childB = 3;
@@ -72,33 +72,33 @@ describe("Transform Unit Tests", function () {
           addChild(parent, childB);
           addChild(parent, childC);
 
-          strictEqual(Transform.firstChild[parent], childA);
+          expect(Transform.firstChild[parent]).toStrictEqual(childA);
 
-          strictEqual(Transform.prevSibling[childA], NOOP);
-          strictEqual(Transform.nextSibling[childA], childB);
+          expect(Transform.prevSibling[childA]).toStrictEqual(NOOP);
+          expect(Transform.nextSibling[childA]).toStrictEqual(childB);
 
-          strictEqual(Transform.prevSibling[childB], childA);
-          strictEqual(Transform.nextSibling[childB], childC);
+          expect(Transform.prevSibling[childB]).toStrictEqual(childA);
+          expect(Transform.nextSibling[childB]).toStrictEqual(childC);
 
-          strictEqual(Transform.prevSibling[childC], childB);
-          strictEqual(Transform.nextSibling[childC], NOOP);
+          expect(Transform.prevSibling[childC]).toStrictEqual(childB);
+          expect(Transform.nextSibling[childC]).toStrictEqual(NOOP);
         });
       });
 
       describe("#removeChild", function () {
-        it("should remove one child", function () {
+        test("should remove one child", function () {
           const parent = 1;
           const child = 2;
 
           addChild(parent, child);
 
-          strictEqual(Transform.firstChild[parent], child);
+          expect(Transform.firstChild[parent]).toStrictEqual(child);
 
           removeChild(parent, child);
 
-          strictEqual(Transform.firstChild[parent], NOOP);
+          expect(Transform.firstChild[parent]).toStrictEqual(NOOP);
         });
-        it("should remove multiple children", function () {
+        test("should remove multiple children", function () {
           const parent = 1;
           const childA = 2;
           const childB = 3;
@@ -107,43 +107,43 @@ describe("Transform Unit Tests", function () {
           addChild(parent, childB);
           addChild(parent, childC);
 
-          strictEqual(Transform.firstChild[parent], childA);
+          expect(Transform.firstChild[parent]).toStrictEqual(childA);
 
-          strictEqual(Transform.prevSibling[childA], NOOP);
-          strictEqual(Transform.nextSibling[childA], childB);
+          expect(Transform.prevSibling[childA]).toStrictEqual(NOOP);
+          expect(Transform.nextSibling[childA]).toStrictEqual(childB);
 
-          strictEqual(Transform.prevSibling[childB], childA);
-          strictEqual(Transform.nextSibling[childB], childC);
+          expect(Transform.prevSibling[childB]).toStrictEqual(childA);
+          expect(Transform.nextSibling[childB]).toStrictEqual(childC);
 
-          strictEqual(Transform.prevSibling[childC], childB);
-          strictEqual(Transform.nextSibling[childC], NOOP);
+          expect(Transform.prevSibling[childC]).toStrictEqual(childB);
+          expect(Transform.nextSibling[childC]).toStrictEqual(NOOP);
 
           removeChild(parent, childB);
 
-          strictEqual(Transform.nextSibling[childB], NOOP);
-          strictEqual(Transform.prevSibling[childB], NOOP);
+          expect(Transform.nextSibling[childB]).toStrictEqual(NOOP);
+          expect(Transform.prevSibling[childB]).toStrictEqual(NOOP);
 
-          strictEqual(Transform.firstChild[parent], childA);
+          expect(Transform.firstChild[parent]).toStrictEqual(childA);
 
-          strictEqual(Transform.prevSibling[childA], NOOP);
-          strictEqual(Transform.nextSibling[childA], childC);
-          strictEqual(Transform.prevSibling[childC], childA);
-          strictEqual(Transform.nextSibling[childC], NOOP);
+          expect(Transform.prevSibling[childA]).toStrictEqual(NOOP);
+          expect(Transform.nextSibling[childA]).toStrictEqual(childC);
+          expect(Transform.prevSibling[childC]).toStrictEqual(childA);
+          expect(Transform.nextSibling[childC]).toStrictEqual(NOOP);
 
           removeChild(parent, childA);
 
-          strictEqual(Transform.nextSibling[childA], NOOP);
-          strictEqual(Transform.prevSibling[childA], NOOP);
+          expect(Transform.nextSibling[childA]).toStrictEqual(NOOP);
+          expect(Transform.prevSibling[childA]).toStrictEqual(NOOP);
 
-          strictEqual(Transform.firstChild[parent], childC);
+          expect(Transform.firstChild[parent]).toStrictEqual(childC);
 
-          strictEqual(Transform.prevSibling[childC], NOOP);
-          strictEqual(Transform.nextSibling[childC], NOOP);
+          expect(Transform.prevSibling[childC]).toStrictEqual(NOOP);
+          expect(Transform.nextSibling[childC]).toStrictEqual(NOOP);
         });
       });
     });
 
-    describe("matrix calculations", function () {
+    describe.skip("matrix calculations", function () {
       describe("#updateMatrixWorld()", function () {});
       describe("#updateWorldMatrix()", function () {});
       describe("#composeMatrix()", function () {});
@@ -157,7 +157,7 @@ describe("Transform Unit Tests", function () {
         Transform.nextSibling.fill(0);
       });
 
-      it("should traverse in depth first order", () => {
+      test("should traverse in depth first order", () => {
         /**
          *       root(1)
          *         / \
@@ -186,7 +186,7 @@ describe("Transform Unit Tests", function () {
 
         traverse(1, (eid) => result.push(eid));
 
-        deepStrictEqual(result, [1, 2, 6, 7, 3, 4, 5]);
+        expect(result).toStrictEqual([1, 2, 6, 7, 3, 4, 5]);
       });
     });
   });
