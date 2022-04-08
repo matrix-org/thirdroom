@@ -39,6 +39,7 @@ export interface InitializeGameWorkerMessage extends WorkerMessage {
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
   resourceManagerBuffer: SharedArrayBuffer;
+  statsSharedArrayBuffer: SharedArrayBuffer;
 }
 
 export interface GameWorkerInitializedMessage extends WorkerMessage {
@@ -62,6 +63,7 @@ export interface InitializeRenderWorkerMessage extends WorkerMessage {
   resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+  statsSharedArrayBuffer: SharedArrayBuffer;
 }
 
 export interface RenderWorkerInitializedMessage extends WorkerMessage {

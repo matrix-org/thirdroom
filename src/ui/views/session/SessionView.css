@@ -12,3 +12,14 @@
   height: 100vh;
   background-color: black;
 }
+
+.Stats {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 200px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  overflow: hidden;
+}

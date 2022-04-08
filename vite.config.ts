@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
@@ -7,10 +7,7 @@ import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
 export default defineConfig({
   plugins: [react(), crossOriginIsolation()],
   resolve: {
-    dedupe: [
-      "three",
-      "bitecs",
-    ],
+    dedupe: ["three", "bitecs"],
   },
   css: {
     postcss: {
@@ -19,8 +16,18 @@ export default defineConfig({
           stage: 1,
           browsers: "last 2 versions",
           autoprefixer: true,
-        }) as any // postcss-preset-env type definitions are out of date
-      ]
-    }
-  }
-})
+        }) as any, // postcss-preset-env type definitions are out of date
+      ],
+    },
+  },
+  define: {
+    "import.meta.vitest": "undefined",
+  },
+  test: {
+    includeSource: ["src/**/*.{ts,tsx}"],
+    coverage: {
+      all: true,
+      include: ["src/**/*.{ts,tsx}"],
+    },
+  },
+});

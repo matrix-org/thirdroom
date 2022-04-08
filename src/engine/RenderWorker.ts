@@ -51,6 +51,7 @@ import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
 import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
+import { createStatsBuffer, StatsBuffer, writeRenderWorkerStats } from "./stats";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -120,6 +121,7 @@ export interface RenderWorkerState {
   transformViews: TransformView[];
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;
+  statsBuffer: StatsBuffer;
 }
 
 let _state: RenderWorkerState;
@@ -186,12 +188,15 @@ async function onInit({
   initialCanvasHeight,
   resourceManagerBuffer,
   renderableTripleBuffer,
+  statsSharedArrayBuffer,
 }: InitializeRenderWorkerMessage): Promise<RenderWorkerState> {
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 
   if (gameWorkerMessageTarget instanceof MessagePort) {
     gameWorkerMessageTarget.start();
   }
+
+  const statsBuffer = createStatsBuffer(statsSharedArrayBuffer);
 
   const scene = new Scene();
 
@@ -218,6 +223,7 @@ async function onInit({
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.outputEncoding = sRGBEncoding;
+  renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
   const clock = new Clock();
 
@@ -250,7 +256,7 @@ async function onInit({
     clock,
     resourceManager,
     canvasWidth: initialCanvasWidth,
-    canvasHeight: initialCanvasWidth,
+    canvasHeight: initialCanvasHeight,
     renderableMessageQueue: [],
     renderables: [],
     renderableIndices: new Map<number, number>(),
@@ -258,6 +264,7 @@ async function onInit({
     transformViews,
     renderableViews,
     gameWorkerMessageTarget,
+    statsBuffer,
   };
 
   console.log("RenderWorker initialized");
@@ -274,6 +281,9 @@ const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
+let staleFrameCounter = 0;
+let staleTripleBufferCounter = 0;
+
 function onUpdate(state: RenderWorkerState) {
   const {
     clock,
@@ -285,7 +295,10 @@ function onUpdate(state: RenderWorkerState) {
     transformViews,
     renderableViews,
     renderables,
+    statsBuffer,
   } = state;
+
+  const start = performance.now();
 
   processRenderableMessages(state);
 
@@ -293,7 +306,7 @@ function onUpdate(state: RenderWorkerState) {
   const frameRate = 1 / dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
 
-  swapReadBuffer(renderableTripleBuffer);
+  const bufferSwapped = swapReadBuffer(renderableTripleBuffer);
 
   const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
   const Transform = transformViews[bufferIndex];
@@ -330,9 +343,26 @@ function onUpdate(state: RenderWorkerState) {
     perspectiveCamera.aspect = canvasWidth / canvasHeight;
     perspectiveCamera.updateProjectionMatrix();
     renderer.setSize(canvasWidth, canvasHeight, false);
+    state.needsResize = false;
   }
 
   renderer.render(state.scene, state.camera);
+
+  const end = performance.now();
+
+  const frameDuration = (end - start) / 1000;
+
+  if (bufferSwapped) {
+    if (staleTripleBufferCounter > 1) {
+      staleFrameCounter++;
+    }
+
+    staleTripleBufferCounter = 0;
+  } else {
+    staleTripleBufferCounter++;
+  }
+
+  writeRenderWorkerStats(statsBuffer, dt, frameDuration, renderer, staleFrameCounter);
 }
 
 function onResize(state: RenderWorkerState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
@@ -484,6 +514,6 @@ async function onExportGLTF(state: RenderWorkerState, message: ExportGLTFMessage
 
   postToMainThread({
     type: WorkerMessageType.SaveGLTF,
-    buffer
-  })
+    buffer,
+  });
 }

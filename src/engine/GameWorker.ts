@@ -24,6 +24,7 @@ import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
 import { init } from "../game";
+import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -123,6 +124,7 @@ export interface GameState {
   systems: System[];
   scene: number;
   camera: number;
+  statsBuffer: StatsBuffer;
 }
 
 const generateInputGetters = (
@@ -144,8 +146,11 @@ async function onInit({
   resourceManagerBuffer,
   renderWorkerMessagePort,
   renderableTripleBuffer,
+  statsSharedArrayBuffer,
 }: InitializeGameWorkerMessage): Promise<GameState> {
   const renderPort = renderWorkerMessagePort || workerScope;
+
+  const statsBuffer = createStatsBuffer(statsSharedArrayBuffer);
 
   const world = createWorld<World>(maxEntities);
 
@@ -197,6 +202,7 @@ async function onInit({
     input,
     time,
     systems: [],
+    statsBuffer,
   };
 
   await init(state);
@@ -235,10 +241,19 @@ const pipeline = (state: GameState) => {
   renderableTripleBufferSystem(state);
 };
 
+// timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
+// ex. Our game loop should be called every 16.666ms, it took 3ms this frame.
+// We could schedule the timeout for 13.666ms, but it would likely be scheduled about  3ms later.
+// So subtract 3-4ms from that timeout to make sure it always swaps the buffers in under 16.666ms.
+const timeoutOffset = 4;
+
 function update(state: GameState) {
   pipeline(state);
 
   const frameDuration = performance.now() - state.time.elapsed;
-  const remainder = Math.max(1000 / tickRate - frameDuration, 0);
+  const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
+
+  writeGameWorkerStats(state, frameDuration);
+
   setTimeout(() => update(state), remainder);
 }
