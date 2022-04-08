@@ -44,13 +44,17 @@ const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1
 export const getClientIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
-export const createNetworkId = (state: GameState) => {
-  const { network } = state;
-  const localId = state.network.removedLocalIds.shift() || network.localIdCount++;
+export const createNetworkId = ({ network }: GameState) => {
+  const localId = network.removedLocalIds.shift() || network.localIdCount++;
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
   // logical right shift by 0 to treat as an unsigned integer
   const nid = ((localId << 16) | network.clientId) >>> 0;
   return nid;
+};
+
+export const deleteNetworkId = ({ network }: GameState, nid: number) => {
+  const localId = getLocalIdFromNetworkId(nid);
+  network.removedLocalIds.push(localId);
 };
 
 /* Components */
