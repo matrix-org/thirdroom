@@ -104,7 +104,7 @@ export async function init(state: GameState): Promise<void> {
     geometryType: GeometryType.Box,
   });
 
-  for (let i = 0; i < 2000; i++) {
+  for (let i = 0; i < 100; i++) {
     const cube = createCube(state, geometryResourceId);
 
     const position = Transform.position[cube];
@@ -127,8 +127,7 @@ export async function init(state: GameState): Promise<void> {
   }
 
   const gltfEid = createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb");
-
-  setTimeout(() => addChild(scene, gltfEid), 3000);
+  addChild(scene, gltfEid);
 
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
