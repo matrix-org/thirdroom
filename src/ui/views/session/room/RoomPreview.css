@@ -1,7 +1,6 @@
 .RoomPreview {
   pointer-events: all;
-  padding: var(--sp-loose);
-  padding-bottom: 120px;
+  padding: var(--sp-normal);
   height: 100%;
 }
 

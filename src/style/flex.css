@@ -77,3 +77,7 @@
 .shrink-0 {
   flex-shrink: 0;
 }
+
+.basis-0 {
+  flex-basis: 0;
+}
