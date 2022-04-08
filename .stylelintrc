@@ -14,6 +14,14 @@
     "selector-list-comma-newline-after": null,
     "at-rule-no-unknown": null,
     "no-descending-specificity": null,
-    "no-empty-first-line": true
+    "no-empty-first-line": true,
+    "selector-class-pattern": null,
+    "custom-property-empty-line-before": null,
+    "declaration-block-no-redundant-longhand-properties": [
+      true,
+      {
+        "ignoreShorthands": ["grid-template"]
+      }
+    ]
   }
 }
