@@ -64,6 +64,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 export interface MainThread {
   dispose(): void;
   getStats(): StatsObject;
+  exportScene(): void;
 }
 
 export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThread> {
@@ -165,12 +166,6 @@ export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThr
 
   renderWorker.addEventListener("message", onRenderWorkerMessage);
 
-  (window as unknown as any).exportScene = () => {
-    gameWorker.postMessage({
-      type: WorkerMessageType.ExportScene,
-    });
-  };
-
   let animationFrameId: number;
 
   function update() {
@@ -184,6 +179,11 @@ export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThr
   return {
     getStats() {
       return getStats(statsBuffer);
+    },
+    exportScene() {
+      gameWorker.postMessage({
+        type: WorkerMessageType.ExportScene,
+      });
     },
     dispose() {
       cancelAnimationFrame(animationFrameId);
