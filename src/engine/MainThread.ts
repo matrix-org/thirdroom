@@ -36,7 +36,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   }
 
   function onResize() {
-    renderWorkerMessageTarget.postMessage({
+    renderWorker.postMessage({
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: canvas.clientWidth,
       canvasHeight: canvas.clientHeight,

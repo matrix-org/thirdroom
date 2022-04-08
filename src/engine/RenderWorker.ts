@@ -211,6 +211,7 @@ async function onInit({
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.outputEncoding = sRGBEncoding;
+  renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
   const clock = new Clock();
 
@@ -243,7 +244,7 @@ async function onInit({
     clock,
     resourceManager,
     canvasWidth: initialCanvasWidth,
-    canvasHeight: initialCanvasWidth,
+    canvasHeight: initialCanvasHeight,
     renderableMessageQueue: [],
     renderables: [],
     renderableIndices: new Map<number, number>(),
@@ -322,6 +323,7 @@ function onUpdate(state: RenderWorkerState) {
     perspectiveCamera.aspect = canvasWidth / canvasHeight;
     perspectiveCamera.updateProjectionMatrix();
     renderer.setSize(canvasWidth, canvasHeight, false);
+    state.needsResize = false;
   }
 
   renderer.render(state.scene, state.camera);
