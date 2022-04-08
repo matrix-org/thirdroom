@@ -165,6 +165,12 @@ export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThr
 
   renderWorker.addEventListener("message", onRenderWorkerMessage);
 
+  (window as unknown as any).exportScene = () => {
+    gameWorker.postMessage({
+      type: WorkerMessageType.ExportScene,
+    });
+  };
+
   let animationFrameId: number;
 
   function update() {

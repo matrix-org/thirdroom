@@ -25,6 +25,7 @@ export enum WorkerMessageType {
   RemoveRenderable = "remove-renderable",
   SetActiveCamera = "set-active-camera",
   SetActiveScene = "set-active-scene",
+  ExportScene = "export-scene",
   ExportGLTF = "export-gltf",
   SaveGLTF = "save-gltf",
 }
@@ -140,6 +141,10 @@ export interface SetActiveSceneMessage extends WorkerMessage {
   resourceId: number;
 }
 
+export interface ExportSceneMessage extends WorkerMessage {
+  type: WorkerMessageType.ExportScene;
+}
+
 export interface ExportGLTFMessage extends WorkerMessage {
   type: WorkerMessageType.ExportGLTF;
   scene: GLTFEntityDescription;
@@ -170,6 +175,7 @@ export type WorkerMessages =
   | StartGameWorkerMessage
   | SetActiveCameraMessage
   | SetActiveSceneMessage
+  | ExportSceneMessage
   | ExportGLTFMessage
   | SaveGLTFMessage;
 

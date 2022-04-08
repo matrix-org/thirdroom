@@ -17,7 +17,6 @@ import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
-import { exportGLTF } from "./engine/gltf/exportGLTF";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -128,8 +127,6 @@ export async function init(state: GameState): Promise<void> {
   }
 
   createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb", scene);
-
-  setTimeout(() => exportGLTF(state, gltfEid), 5000);
 
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
