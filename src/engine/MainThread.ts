@@ -1,6 +1,7 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
+import { createStatsBuffer, getStats, StatsObject } from "./stats";
 import { createTripleBuffer } from "./TripleBuffer";
 import {
   GameWorkerInitializedMessage,
@@ -60,7 +61,12 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export async function initMainThread(canvas: HTMLCanvasElement) {
+export interface MainThread {
+  dispose(): void;
+  getStats(): StatsObject;
+}
+
+export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThread> {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {
@@ -78,6 +84,8 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
   const renderWorkerMessagePort =
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
+  const statsBuffer = createStatsBuffer();
+
   await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
     renderWorker.postMessage(
       {
@@ -88,6 +96,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
         initialCanvasWidth: canvas.clientWidth,
         initialCanvasHeight: canvas.clientHeight,
         resourceManagerBuffer,
+        statsSharedArrayBuffer: statsBuffer.buffer,
       },
       gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
         ? [gameWorkerMessageTarget, canvasTarget]
@@ -115,6 +124,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
         inputTripleBuffer: inputManager.tripleBuffer,
         renderWorkerMessagePort,
         resourceManagerBuffer,
+        statsSharedArrayBuffer: statsBuffer.buffer,
       },
       renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
     );
@@ -151,6 +161,9 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
   update();
 
   return {
+    getStats() {
+      return getStats(statsBuffer);
+    },
     dispose() {
       cancelAnimationFrame(animationFrameId);
       inputManager.dispose();

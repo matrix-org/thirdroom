@@ -126,8 +126,7 @@ export async function init(state: GameState): Promise<void> {
     addChild(scene, cube);
   }
 
-  const gltfEid = createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb");
-  addChild(scene, gltfEid);
+  createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb", scene);
 
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
