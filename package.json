@@ -30,6 +30,7 @@
     "three": "^0.138.3"
   },
   "devDependencies": {
+    "@types/babel__core": "^7.1.19",
     "@types/events": "^3.0.0",
     "@types/gl-matrix": "^3.2.0",
     "@types/node": "^17.0.23",
