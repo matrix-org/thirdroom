@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./Avatar.css";
 
 import { Text } from "../text/Text";
@@ -13,6 +13,8 @@ interface IAvatar {
 }
 
 export function Avatar({ className, name, bgColor, isCircle = false, imageSrc = undefined, size = "normal" }: IAvatar) {
+  const [isFallback, setIsFallback] = useState(false);
+
   let textSize: "h2" | "s1" | "b1" | "b3" = "s1";
   if (size === "large") textSize = "h2";
   if (size === "small") textSize = "b1";
@@ -25,12 +27,12 @@ export function Avatar({ className, name, bgColor, isCircle = false, imageSrc = 
   if (className) classes.push(className);
 
   const style: React.CSSProperties = {};
-  if (!imageSrc) style.backgroundColor = bgColor;
+  if (isFallback || !imageSrc) style.backgroundColor = bgColor;
 
   return (
     <div className={classes.join(" ")} aria-label={name} style={style}>
-      {imageSrc ? (
-        <img draggable="false" src={imageSrc} alt="" />
+      {!isFallback && imageSrc ? (
+        <img draggable="false" src={imageSrc} alt="" onError={() => setIsFallback(true)} />
       ) : (
         <Text variant={textSize} weight="medium" type="span">
           {[...name][0]}
