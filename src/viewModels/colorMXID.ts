@@ -15,5 +15,5 @@ export function hashCode(str: string) {
 
 export function colorMXID(userId: string) {
   const colorNumber = hashCode(userId) % 8;
-  return `var(--usercolor${colorNumber})`;
+  return `var(--usercolor${colorNumber + 1})`;
 }
