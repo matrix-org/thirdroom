@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useLayoutEffect, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { TimelineViewModel } from "hydrogen-view-sdk";
 
 import { Text } from "../../../atoms/text/Text";
@@ -18,10 +18,12 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
   const [update, forceUpdate] = useState({});
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
+  const stickToBottom = () => {
     const tScroll = timelineScrollRef.current;
     if (tScroll !== null) {
-      const { clientHeight, scrollHeight } = tScroll;
+      const { clientHeight, scrollHeight, scrollTop } = tScroll;
+      const scrollBottom = scrollHeight - (scrollTop - clientHeight);
+      if (scrollBottom > 16) return;
       tScroll.scrollTop = scrollHeight - clientHeight;
     }
   };
@@ -30,8 +32,12 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
     (scrollElement: HTMLElement) => {
       const loadMore = scrollElement.scrollTop < 100;
       if (loadMore && vm._topLoadingPromise === null) {
-        vm.setVisibleTileRange(tiles.getFirst(), tiles._findTileAtIdx(tiles.length - 1));
+        const startTile = tiles.getFirst();
+        const endTile = tiles._getTileAtIdx(1);
+
+        vm.setVisibleTileRange(startTile, endTile);
         console.log("loading more..");
+        console.log(startTile, endTile);
       }
     },
     [vm, tiles]
@@ -54,8 +60,8 @@ export function TimelineView({ roomId, vm }: ITimelineView) {
     });
   }, [roomId, tiles]);
 
-  useLayoutEffect(() => {
-    scrollToBottom();
+  useEffect(() => {
+    stickToBottom();
   }, [update]);
 
   useEffect(() => {
