@@ -1,17 +1,23 @@
-import { RefObject, useEffect } from "react";
+import { RefObject, useCallback, useEffect, useRef } from "react";
 
-import { initMainThread } from "../../engine/MainThread";
+import { initMainThread, MainThread } from "../../engine/MainThread";
 
 export function useEngine(canvasRef: RefObject<HTMLCanvasElement>) {
-  useEffect(() => {
-    let dispose: Function | undefined = undefined;
+  const mainThreadRef = useRef<MainThread>();
 
+  useEffect(() => {
     if (canvasRef.current) {
       initMainThread(canvasRef.current)
-        .then((result) => (dispose = result.dispose))
+        .then((result) => (mainThreadRef.current = result))
         .catch(console.error);
     }
 
-    return dispose;
+    return mainThreadRef.current?.dispose();
   }, [canvasRef]);
+
+  const getStats = useCallback(() => {
+    return mainThreadRef.current?.getStats();
+  }, []);
+
+  return { getStats };
 }
