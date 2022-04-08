@@ -3608,6 +3608,10 @@ three@^0.138.3:
   resolved "https://registry.yarnpkg.com/three/-/three-0.138.3.tgz#7be5153d79dcbf9e9baad82e7faf8c29edda4ed0"
   integrity sha512-4t1cKC8gimNyJChJbaklg8W/qj3PpsLJUIFm5LIuAy/hVxxNm1ru2FGTSfbTSsuHmC/7ipsyuGKqrSAKLNtkzg==
 
+three@mrdoob/three.js#4f94d21351c74b90720a6e1540b2b7e528a26a33:
+  version "0.139.1"
+  resolved "https://codeload.github.com/mrdoob/three.js/tar.gz/4f94d21351c74b90720a6e1540b2b7e528a26a33"
+
 tinypool@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/tinypool/-/tinypool-0.1.2.tgz#5b1d5f5bb403afac8c67000047951ce76342fda7"
