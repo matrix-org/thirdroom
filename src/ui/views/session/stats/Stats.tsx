@@ -51,19 +51,17 @@ export function Stats({ getStats }: StatsProps) {
     };
   }, [getStats, showStats]);
 
-  return (
-    showStats && (
-      <div className="Stats">
-        {statsRef.current &&
-          Object.entries(statsRef.current).map(([name, value]) => {
-            return (
-              <div key={name}>
-                <b>{name}:</b>
-                {" " + value}
-              </div>
-            );
-          })}
-      </div>
-    )
-  );
+  return showStats ? (
+    <div className="Stats">
+      {statsRef.current &&
+        Object.entries(statsRef.current).map(([name, value]) => {
+          return (
+            <div key={name}>
+              <b>{name}:</b>
+              {" " + value}
+            </div>
+          );
+        })}
+    </div>
+  ) : null;
 }
