@@ -2,6 +2,7 @@ import { OffscreenCanvas } from "three";
 
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
+import { GLTFEntityDescription } from "./gltf";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -24,6 +25,9 @@ export enum WorkerMessageType {
   RemoveRenderable = "remove-renderable",
   SetActiveCamera = "set-active-camera",
   SetActiveScene = "set-active-scene",
+  ExportScene = "export-scene",
+  ExportGLTF = "export-gltf",
+  SaveGLTF = "save-gltf",
 }
 
 export interface WorkerMessage {
@@ -137,6 +141,20 @@ export interface SetActiveSceneMessage extends WorkerMessage {
   resourceId: number;
 }
 
+export interface ExportSceneMessage extends WorkerMessage {
+  type: WorkerMessageType.ExportScene;
+}
+
+export interface ExportGLTFMessage extends WorkerMessage {
+  type: WorkerMessageType.ExportGLTF;
+  scene: GLTFEntityDescription;
+}
+
+export interface SaveGLTFMessage extends WorkerMessage {
+  type: WorkerMessageType.SaveGLTF;
+  buffer: ArrayBuffer;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -156,7 +174,10 @@ export type WorkerMessages =
   | GameWorkerErrorMessage
   | StartGameWorkerMessage
   | SetActiveCameraMessage
-  | SetActiveSceneMessage;
+  | SetActiveSceneMessage
+  | ExportSceneMessage
+  | ExportGLTFMessage
+  | SaveGLTFMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

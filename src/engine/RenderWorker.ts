@@ -43,11 +43,14 @@ import {
   RenderableMessages,
   SetActiveCameraMessage,
   SetActiveSceneMessage,
+  PostMessageTarget,
+  ExportGLTFMessage,
 } from "./WorkerMessage";
 import { TripleBufferState } from "./TripleBuffer";
 import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
+import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
 import { createStatsBuffer, StatsBuffer, writeRenderWorkerStats } from "./stats";
 
 let localEventTarget: EventTarget | undefined;
@@ -102,7 +105,7 @@ interface Renderable {
   resourceId: number;
 }
 
-interface RenderWorkerState {
+export interface RenderWorkerState {
   needsResize: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -117,6 +120,7 @@ interface RenderWorkerState {
   renderableTripleBuffer: TripleBufferState;
   transformViews: TransformView[];
   renderableViews: RenderableView[];
+  gameWorkerMessageTarget: PostMessageTarget;
   statsBuffer: StatsBuffer;
 }
 
@@ -168,6 +172,9 @@ function onMessage({ data }: any) {
       break;
     case WorkerMessageType.RemoveResourceRef:
       onRemoveResourceRef(_state.resourceManager, message);
+      break;
+    case WorkerMessageType.ExportGLTF:
+      onExportGLTF(_state, message);
       break;
   }
 }
@@ -256,6 +263,7 @@ async function onInit({
     renderableTripleBuffer,
     transformViews,
     renderableViews,
+    gameWorkerMessageTarget,
     statsBuffer,
   };
 
@@ -499,4 +507,13 @@ function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMes
   if (index !== undefined && renderables[index]) {
     state.camera = renderables[index].object as Camera;
   }
+}
+
+async function onExportGLTF(state: RenderWorkerState, message: ExportGLTFMessage) {
+  const buffer = await exportSceneAsGLTF(state, message);
+
+  postToMainThread({
+    type: WorkerMessageType.SaveGLTF,
+    buffer,
+  });
 }

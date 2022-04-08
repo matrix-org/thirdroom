@@ -25,6 +25,7 @@ import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
 import { init } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
+import { exportGLTF } from "./gltf/exportGLTF";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -49,6 +50,9 @@ const onMessage =
         break;
       case WorkerMessageType.ResourceDisposed:
         remoteResourceDisposed(state.resourceManager, message.resourceId);
+        break;
+      case WorkerMessageType.ExportScene:
+        exportGLTF(state, state.scene);
         break;
     }
   };
