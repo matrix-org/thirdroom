@@ -73,8 +73,8 @@ export const bindInputEvents = (inputState: InputState, canvas: HTMLElement): ((
 
   function onMouseMove({ movementX, movementY }: MouseEvent) {
     if (document.pointerLockElement === canvas) {
-      inputState.mouse.movement[0] = movementX;
-      inputState.mouse.movement[1] = movementY;
+      inputState.mouse.movement[0] += movementX;
+      inputState.mouse.movement[1] += movementY;
     }
   }
 
