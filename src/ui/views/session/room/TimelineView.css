@@ -75,6 +75,7 @@
   border-radius: 50%;
   animation: legacy-spinner 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   border-color: white transparent transparent transparent;
+
   width: var(--size);
   height: var(--size);
 }

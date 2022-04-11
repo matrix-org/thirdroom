@@ -2,6 +2,7 @@ import { OffscreenCanvas } from "three";
 
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
+import { GLTFEntityDescription } from "./gltf";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -24,6 +25,9 @@ export enum WorkerMessageType {
   RemoveRenderable = "remove-renderable",
   SetActiveCamera = "set-active-camera",
   SetActiveScene = "set-active-scene",
+  ExportScene = "export-scene",
+  ExportGLTF = "export-gltf",
+  SaveGLTF = "save-gltf",
 }
 
 export interface WorkerMessage {
@@ -36,6 +40,7 @@ export interface InitializeGameWorkerMessage extends WorkerMessage {
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
   resourceManagerBuffer: SharedArrayBuffer;
+  statsSharedArrayBuffer: SharedArrayBuffer;
 }
 
 export interface GameWorkerInitializedMessage extends WorkerMessage {
@@ -59,6 +64,7 @@ export interface InitializeRenderWorkerMessage extends WorkerMessage {
   resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+  statsSharedArrayBuffer: SharedArrayBuffer;
 }
 
 export interface RenderWorkerInitializedMessage extends WorkerMessage {
@@ -132,6 +138,21 @@ export interface SetActiveCameraMessage extends WorkerMessage {
 export interface SetActiveSceneMessage extends WorkerMessage {
   type: WorkerMessageType.SetActiveScene;
   eid: number;
+  resourceId: number;
+}
+
+export interface ExportSceneMessage extends WorkerMessage {
+  type: WorkerMessageType.ExportScene;
+}
+
+export interface ExportGLTFMessage extends WorkerMessage {
+  type: WorkerMessageType.ExportGLTF;
+  scene: GLTFEntityDescription;
+}
+
+export interface SaveGLTFMessage extends WorkerMessage {
+  type: WorkerMessageType.SaveGLTF;
+  buffer: ArrayBuffer;
 }
 
 export type WorkerMessages =
@@ -153,7 +174,10 @@ export type WorkerMessages =
   | GameWorkerErrorMessage
   | StartGameWorkerMessage
   | SetActiveCameraMessage
-  | SetActiveSceneMessage;
+  | SetActiveSceneMessage
+  | ExportSceneMessage
+  | ExportGLTFMessage
+  | SaveGLTFMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

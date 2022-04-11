@@ -6,3 +6,4 @@ lerna-debug.log
 *.local
 *.tsbuildinfo
 .yarn-error.log
+coverage

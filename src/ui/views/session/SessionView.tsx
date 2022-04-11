@@ -4,10 +4,12 @@ import "./SessionView.css";
 import { SessionViewModel } from "../../../viewModels/session/SessionViewModel";
 import { RoomViewModel } from "../../../viewModels/session/room/RoomViewModel";
 import { LeftPanelView } from "./leftpanel/LeftPanelView";
+import { StatusBar } from "./statusbar/StatusBar";
 import { RoomPreview } from "./room/RoomPreview";
 import { RoomView } from "./room/RoomView";
 import { useVMProp } from "../../hooks/useVMProp";
 import { useEngine } from "../../hooks/useEngine";
+import { Stats } from "./stats/Stats";
 
 interface ISessionView {
   vm: SessionViewModel;
@@ -15,14 +17,18 @@ interface ISessionView {
 
 export function SessionView({ vm }: ISessionView) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEngine(canvasRef);
+  const { getStats } = useEngine(canvasRef);
 
   return (
     <>
+      <Stats getStats={getStats} />
       <canvas className="SessionView__viewport" ref={canvasRef} />
-      <div className="SessionView flex">
-        <LeftPanelView vm={vm.leftPanelViewModel} />
-        <MiddleView vm={vm} />
+      <div className="SessionView flex flex-column">
+        <StatusBar vm={vm.statusBarViewModel} />
+        <div className="SessionView__content flex grow">
+          <LeftPanelView vm={vm.leftPanelViewModel} />
+          <MiddleView vm={vm} />
+        </div>
       </div>
     </>
   );

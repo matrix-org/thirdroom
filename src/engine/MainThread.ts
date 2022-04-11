@@ -1,6 +1,7 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
+import { createStatsBuffer, getStats, StatsObject } from "./stats";
 import { createTripleBuffer } from "./TripleBuffer";
 import {
   GameWorkerInitializedMessage,
@@ -36,7 +37,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   }
 
   function onResize() {
-    renderWorkerMessageTarget.postMessage({
+    renderWorker.postMessage({
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: canvas.clientWidth,
       canvasHeight: canvas.clientHeight,
@@ -60,7 +61,13 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export async function initMainThread(canvas: HTMLCanvasElement) {
+export interface MainThread {
+  dispose(): void;
+  getStats(): StatsObject;
+  exportScene(): void;
+}
+
+export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThread> {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {
@@ -78,6 +85,8 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
   const renderWorkerMessagePort =
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
+  const statsBuffer = createStatsBuffer();
+
   await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
     renderWorker.postMessage(
       {
@@ -88,6 +97,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
         initialCanvasWidth: canvas.clientWidth,
         initialCanvasHeight: canvas.clientHeight,
         resourceManagerBuffer,
+        statsSharedArrayBuffer: statsBuffer.buffer,
       },
       gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
         ? [gameWorkerMessageTarget, canvasTarget]
@@ -97,11 +107,11 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     const onMessage = ({ data }: any): void => {
       if (data.type === WorkerMessageType.RenderWorkerInitialized) {
         resolve(data);
+        renderWorker.removeEventListener("message", onMessage);
       } else if (data.type === WorkerMessageType.RenderWorkerError) {
         reject(data.error);
+        renderWorker.removeEventListener("message", onMessage);
       }
-
-      renderWorker.removeEventListener("message", onMessage);
     };
 
     renderWorker.addEventListener("message", onMessage);
@@ -115,6 +125,7 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
         inputTripleBuffer: inputManager.tripleBuffer,
         renderWorkerMessagePort,
         resourceManagerBuffer,
+        statsSharedArrayBuffer: statsBuffer.buffer,
       },
       renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
     );
@@ -122,10 +133,11 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     const onMessage = ({ data }: { data: WorkerMessages }): void => {
       if (data.type === WorkerMessageType.GameWorkerInitialized) {
         resolve(data);
+        gameWorker.removeEventListener("message", onMessage);
       } else if (data.type === WorkerMessageType.GameWorkerError) {
         reject(data.error);
+        gameWorker.removeEventListener("message", onMessage);
       }
-      gameWorker.removeEventListener("message", onMessage);
     };
 
     gameWorker.addEventListener("message", onMessage);
@@ -139,6 +151,21 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
     type: WorkerMessageType.StartGameWorker,
   });
 
+  const onRenderWorkerMessage = ({ data }: MessageEvent) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.SaveGLTF:
+        downloadFile(message.buffer, "scene.glb");
+    }
+  };
+
+  renderWorker.addEventListener("message", onRenderWorkerMessage);
+
   let animationFrameId: number;
 
   function update() {
@@ -150,6 +177,14 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
   update();
 
   return {
+    getStats() {
+      return getStats(statsBuffer);
+    },
+    exportScene() {
+      gameWorker.postMessage({
+        type: WorkerMessageType.ExportScene,
+      });
+    },
     dispose() {
       cancelAnimationFrame(animationFrameId);
       inputManager.dispose();
@@ -157,4 +192,15 @@ export async function initMainThread(canvas: HTMLCanvasElement) {
       disposeRenderWorker();
     },
   };
+}
+
+function downloadFile(buffer: ArrayBuffer, fileName: string) {
+  const blob = new Blob([buffer], { type: "application/octet-stream" });
+  const el = document.createElement("a");
+  el.style.display = "none";
+  document.body.appendChild(el);
+  el.href = URL.createObjectURL(blob);
+  el.download = fileName;
+  el.click();
+  document.body.removeChild(el);
 }

@@ -3,18 +3,16 @@ import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
-import { maxEntities, tickRate } from "./config";
+import { maxEntities, NOOP, tickRate } from "./config";
 import {
-  registerRemoteResourceLoader,
   RemoteResourceManager,
   createRemoteResourceManager,
+  remoteResourceDisposed,
+  remoteResourceLoaded,
+  remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { GLTFRemoteResourceLoader } from "./resources/GLTFResourceLoader";
-import { MeshRemoteResourceLoader } from "./resources/MeshResourceLoader";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
 import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
-import { MaterialRemoteResourceLoader } from "./resources/MaterialResourceLoader";
-import { GeometryRemoteResourceLoader } from "./resources/GeometryResourceLoader";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -25,24 +23,38 @@ import {
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
-import { CameraRemoteResourceLoader } from "./resources/CameraResourceLoader";
 import { init } from "../game";
-import { TextureRemoteResourceLoader } from "./resources/TextureResourceLoader";
-import { SceneRemoteResourceLoader } from "./resources/SceneResourceLoader";
-import { LightRemoteResourceLoader } from "./resources/LightResourceLoader";
+import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
+import { exportGLTF } from "./gltf/exportGLTF";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const onMessage =
-  (state: World) =>
+  (state: GameState) =>
   ({ data }: any) => {
     if (typeof data !== "object") {
       return;
     }
 
-    // const message = data as WorkerMessages;
+    const message = data as WorkerMessages;
 
-    // todo: messages
+    switch (message.type) {
+      case WorkerMessageType.StartGameWorker:
+        onStart(state);
+        break;
+      case WorkerMessageType.ResourceLoaded:
+        remoteResourceLoaded(state.resourceManager, message.resourceId, message.remoteResource);
+        break;
+      case WorkerMessageType.ResourceLoadError:
+        remoteResourceLoadError(state.resourceManager, message.resourceId, message.error);
+        break;
+      case WorkerMessageType.ResourceDisposed:
+        remoteResourceDisposed(state.resourceManager, message.resourceId);
+        break;
+      case WorkerMessageType.ExportScene:
+        exportGLTF(state, state.scene);
+        break;
+    }
   };
 
 async function onInitMessage({ data }: { data: WorkerMessages }) {
@@ -82,18 +94,26 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
 
 workerScope.addEventListener("message", onInitMessage);
 
+export type World = IWorld;
+
 export interface TimeState {
   elapsed: number;
   dt: number;
 }
-
-export type World = IWorld;
 
 export type RenderPort = MessagePort | (typeof globalThis & Worker);
 
 export interface RenderState {
   tripleBuffer: TripleBufferState;
   port: RenderPort;
+}
+
+export interface NetworkState {
+  messages: ArrayBuffer[];
+  idMap: Map<number, number>;
+  clientId: number;
+  localIdCount: number;
+  removedLocalIds: number[];
 }
 
 export interface GameInputState {
@@ -116,6 +136,8 @@ export interface GameState {
   systems: System[];
   scene: number;
   camera: number;
+  statsBuffer: StatsBuffer;
+  network: NetworkState;
 }
 
 const generateInputGetters = (
@@ -137,8 +159,11 @@ async function onInit({
   resourceManagerBuffer,
   renderWorkerMessagePort,
   renderableTripleBuffer,
+  statsSharedArrayBuffer,
 }: InitializeGameWorkerMessage): Promise<GameState> {
   const renderPort = renderWorkerMessagePort || workerScope;
+
+  const statsBuffer = createStatsBuffer(statsSharedArrayBuffer);
 
   const world = createWorld<World>(maxEntities);
 
@@ -162,15 +187,6 @@ async function onInit({
 
   const resourceManager = createRemoteResourceManager(resourceManagerBuffer, renderPort);
 
-  registerRemoteResourceLoader(resourceManager, SceneRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, GeometryRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, TextureRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MaterialRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, MeshRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, CameraRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, LightRemoteResourceLoader);
-  registerRemoteResourceLoader(resourceManager, GLTFRemoteResourceLoader);
-
   const renderer: RenderState = {
     tripleBuffer: renderableTripleBuffer,
     port: renderPort,
@@ -189,6 +205,15 @@ async function onInit({
     dt: 0,
   };
 
+  const network: NetworkState = {
+    messages: [],
+    idMap: new Map<number, number>(),
+    // todo: use mxid as clientId
+    clientId: NOOP,
+    localIdCount: 0,
+    removedLocalIds: [],
+  };
+
   const state: GameState = {
     world,
     scene,
@@ -198,14 +223,18 @@ async function onInit({
     physicsWorld,
     input,
     time,
+    network,
     systems: [],
+    statsBuffer,
   };
 
   await init(state);
 
-  update(state);
-
   return state;
+}
+
+function onStart(state: GameState) {
+  update(state);
 }
 
 const updateWorldMatrixSystem = (state: GameState) => {
@@ -235,10 +264,19 @@ const pipeline = (state: GameState) => {
   renderableTripleBufferSystem(state);
 };
 
+// timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
+// ex. Our game loop should be called every 16.666ms, it took 3ms this frame.
+// We could schedule the timeout for 13.666ms, but it would likely be scheduled about  3ms later.
+// So subtract 3-4ms from that timeout to make sure it always swaps the buffers in under 16.666ms.
+const timeoutOffset = 4;
+
 function update(state: GameState) {
   pipeline(state);
 
   const frameDuration = performance.now() - state.time.elapsed;
-  const remainder = Math.max(1000 / tickRate - frameDuration, 0);
+  const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
+
+  writeGameWorkerStats(state, frameDuration);
+
   setTimeout(() => update(state), remainder);
 }

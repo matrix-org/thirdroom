@@ -12,7 +12,7 @@
 .RoomTile {
   &:hover,
   &:focus {
-    background-color: var(--bg-surface-hover);   
+    background-color: var(--bg-surface-hover);
   }
   &:active {
     background-color: var(--bg-surface-active);

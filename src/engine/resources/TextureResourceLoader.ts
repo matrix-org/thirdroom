@@ -1,7 +1,6 @@
 import { Texture } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-import { RemoteResourceManager, loadRemoteResource, RemoteResourceLoader } from "./RemoteResourceManager";
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
 
 export const TEXTURE_RESOURCE = "texture";
@@ -44,14 +43,4 @@ export function TextureResourceLoader(manager: ResourceManager): ResourceLoader<
       };
     },
   };
-}
-
-export function TextureRemoteResourceLoader(manager: RemoteResourceManager): RemoteResourceLoader {
-  return {
-    type: TEXTURE_RESOURCE,
-  };
-}
-
-export function loadRemoteTexture(manager: RemoteResourceManager, textureDef: TextureDef): number {
-  return loadRemoteResource(manager, textureDef);
 }
