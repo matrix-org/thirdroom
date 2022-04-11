@@ -22,7 +22,7 @@
 
   max-width: var(--chat-width);
   width: 100%;
-  height: calc(100% - 100px);
+  height: calc(100% - var(--sp-normal));
   bottom: var(--sp-normal);
   left: var(--sp-normal);
 }
