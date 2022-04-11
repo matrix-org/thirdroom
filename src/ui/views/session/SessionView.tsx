@@ -37,7 +37,7 @@ export function SessionView({ vm }: ISessionView) {
 function MiddleView({ vm }: { vm: SessionViewModel }) {
   const activeRoomId = useVMProp(vm, "activeRoomId");
 
-  if (!activeRoomId) return <p>select room from left panel</p>;
+  if (!activeRoomId) return null;
   if (vm.isActiveRoomInvite) return <p>invite</p>;
   return <RoomViewWrapper vm={vm.roomViewModel!} roomId={activeRoomId} />;
 }
