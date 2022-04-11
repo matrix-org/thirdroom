@@ -1082,6 +1082,11 @@ core-js-pure@^3.20.2:
   resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.21.1.tgz#8c4d1e78839f5f46208de7230cebfb72bc3bdb51"
   integrity sha512-12VZfFIu+wyVbBebyHmRTuEE/tZrB4tJToWcwAMcsp3h4+sHR+fMJWbKpYiCRWlhFBq+KNyO8rIV9rTkeVmznQ==
 
+core-js@^3.6.5:
+  version "3.21.1"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.21.1.tgz#f2e0ddc1fc43da6f904706e8e955bc19d06a0d94"
+  integrity sha512-FRq5b/VMrWlrmCzwRrpDYNxyHP9BcAZC+xHJaqTgIE5091ZV1NTmyh0sGOg5XqpnHvR0svdy0sv1gWA1zmhxig==
+
 cosmiconfig@^7.0.1:
   version "7.0.1"
   resolved "https://registry.yarnpkg.com/cosmiconfig/-/cosmiconfig-7.0.1.tgz#714d756522cace867867ccb4474c5d01bbae5d6d"
@@ -2076,15 +2081,16 @@ husky@^7.0.0:
   resolved "https://registry.yarnpkg.com/husky/-/husky-7.0.4.tgz#242048245dc49c8fb1bf0cc7cfb98dd722531535"
   integrity sha512-vbaCKN2QLtP/vD4yvs6iz6hBEo6wkSzs8HpRah1Z6aGmF2KW5PdYuAd7uX5a+OyBZHBhd+TFLqgjUgytQr4RvQ==
 
-hydrogen-view-sdk@0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.9.tgz#3c5b144ffff661507519db2f609615e057ac27ca"
-  integrity sha512-yILq0kB+5ERgJ7XRCEKgddS3Wtn7Vu8NjTVGzLWf1SCgx6hrQenJSCE4xEflilEKWcwNn6Pk/tZmi4SDrBykhw==
+hydrogen-view-sdk@^0.0.10:
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.10.tgz#be0c729db67e1d1511b7fa32aa101fd889ec9cdc"
+  integrity sha512-7Ni7ui0mQzKbz6noGDyS1ceIKjU5sjoyX6+2a5dk0nXwttrQYXJbrgblCWC3nIljQPbW+09o+t9BFE0OuBHDPw==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.3.tgz"
     another-json "^0.2.0"
     base64-arraybuffer "^0.2.0"
     dompurify "^2.3.0"
+    off-color "^2.0.0"
 
 ignore@^5.1.8, ignore@^5.2.0:
   version "5.2.0"
@@ -2683,6 +2689,13 @@ object.values@^1.1.5:
     call-bind "^1.0.2"
     define-properties "^1.1.3"
     es-abstract "^1.19.1"
+
+off-color@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/off-color/-/off-color-2.0.0.tgz#ecf3bda52e9a78dde535db86361e048741a56631"
+  integrity sha512-JJ9ObbY2CzgT7F8PpdpHGNjQa7QbU8f4DkY3cCxYUq9NezYUMmL/oSofCc5MMaiUnNNBEFCc4w1unMA+R8syvw==
+  dependencies:
+    core-js "^3.6.5"
 
 once@^1.3.0:
   version "1.4.0"
@@ -3602,11 +3615,6 @@ text-table@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
-
-three@^0.138.3:
-  version "0.138.3"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.138.3.tgz#7be5153d79dcbf9e9baad82e7faf8c29edda4ed0"
-  integrity sha512-4t1cKC8gimNyJChJbaklg8W/qj3PpsLJUIFm5LIuAy/hVxxNm1ru2FGTSfbTSsuHmC/7ipsyuGKqrSAKLNtkzg==
 
 three@mrdoob/three.js#4f94d21351c74b90720a6e1540b2b7e528a26a33:
   version "0.139.1"

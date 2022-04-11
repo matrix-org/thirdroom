@@ -15,13 +15,12 @@ interface IRoomView {
 }
 
 export function RoomFloatingView({ vm, roomId }: IRoomView) {
-  // TODO: move this state to RoomViewModel
   const [chatVisibility, setChatVisibility] = React.useState(false);
 
   return (
     <>
-      <div className={`RoomView__chat${chatVisibility ? " RoomView__chat--visible" : ""}`}>
-        <ChatView roomId={roomId} vm={vm.chatViewModel} />
+      <div className={`RoomView__chat${chatVisibility === false ? " RoomView__chat--invisible" : ""}`}>
+        {chatVisibility && <ChatView roomId={roomId} vm={vm.chatViewModel} />}
       </div>
       <div className="RoomView__controls flex">
         <IconButton shadedSurface={true} label="Mic" size="small" iconSrc={MicIC} onClick={() => alert("mic")} />

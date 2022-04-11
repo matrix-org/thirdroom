@@ -2,6 +2,8 @@ import React from "react";
 import "./TimelineView.css";
 import { TimelineViewModel, TimelineView as TimelineViewConstructor } from "hydrogen-view-sdk";
 
+import { viewClassForTile } from "./tiles";
+
 interface ITimelineView {
   roomId: string;
   vm: typeof TimelineViewModel;
@@ -9,11 +11,11 @@ interface ITimelineView {
 
 export function TimelineView({ roomId, vm }: ITimelineView) {
   React.useEffect(() => {
-    const tv = new TimelineViewConstructor(vm);
+    const tv = new TimelineViewConstructor(vm, viewClassForTile);
     const tvDOM = tv.mount();
 
     const tvScroll = tvDOM.querySelector(".Timeline_scroller");
-    tvScroll.classList.add("Scroll", "Scroll--vertical", "Scroll--auto");
+    tvScroll.classList.add("Scroll", "Scroll--vertical", "Scroll--invisible");
 
     const tvContainer = document.getElementById("TimelineView");
     tvContainer?.append(tvDOM);

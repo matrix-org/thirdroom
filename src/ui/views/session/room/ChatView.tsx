@@ -17,11 +17,6 @@ export function ChatView({ vm, roomId }: IChatView) {
 
   return (
     <div className="ChatView flex flex-column" id="ChatView">
-      <header className="flex items-center">
-        <Text variant="s1" weight="semi-bold">
-          {vm.name}
-        </Text>
-      </header>
       {vm.timelineViewModel ? (
         <TimelineView roomId={roomId} vm={vm.timelineViewModel} />
       ) : (

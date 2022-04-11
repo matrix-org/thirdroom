@@ -1,25 +1,27 @@
 .ComposerView {
-  min-height: 42.5px;
-  padding: 0 var(--sp-normal);
+  padding: var(--sp-extra-tight);
+  border-radius: var(--br-small);
+  background-color: #00000040;
+
+  & .Icon {
+    margin-right: var(--sp-extra-tight);
+  }
 
   & input {
-    position: relative;
-    top: -20px;
-
-    height: 45px;
     min-width: 0;
     width: 100%;
-    padding: 0 var(--sp-normal);
     border: none;
-    border-radius: 45px;
-    background-color: var(--bg-surface-low);
-
-    font-size: var(--fs-b1);
-    line-height: var(--lh-b1);
-    letter-spacing: var(--ls-b1);
+    background-color: transparent;
 
     &:focus {
-      outline: 2px solid var(--bg-primary);
+      outline: none;
     }
+    &::placeholder {
+      color: rgba(255 255 255 80%);
+    }
+  }
+
+  &:focus-within {
+    background-color: #00000080;
   }
 }
