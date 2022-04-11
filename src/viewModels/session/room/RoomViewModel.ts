@@ -1,6 +1,7 @@
 import { Platform, URLRouter, Navigation, Room, RoomViewModel as ChatViewModel, ViewModel } from "hydrogen-view-sdk";
 
 import { colorMXID } from "../../colorMXID";
+import { tileClassForEntry } from "./tiles";
 
 type RoomFlowType = "preview" | "load" | "loaded";
 
@@ -40,6 +41,7 @@ export class RoomViewModel extends ViewModel {
     this._chatViewModel = new ChatViewModel(
       this.childOptions({
         room: this.room,
+        tileClassForEntry,
       })
     );
     this.track(this._chatViewModel);
