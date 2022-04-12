@@ -1,19 +1,49 @@
 .IconButton {
-  border-radius: var(--br-normal);
   line-height: 0;
+  cursor: pointer;
 }
 
-/* Button size */
-.IconButton--normal {
-  padding: var(--sp-tight);
+.IconButton--surface .Icon {
+  background-color: var(--ic-surface-normal);
+  opacity: 0.8;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active,
+  &:focus {
+    opacity: 1;
+  }
 }
-.IconButton--small {
-  padding: var(--sp-extra-tight);
-  border-radius: var(--br-small);
+.IconButton--primary .Icon {
+  background-color: var(--ic-primary-normal);
+  opacity: 0.8;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active,
+  &:focus {
+    opacity: 1;
+  }
 }
-.IconButton--circle {
-  border-radius: 50%;
+.IconButton--positive .Icon {
+  background-color: var(--ic-positive-normal);
+  opacity: 0.8;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active,
+  &:focus {
+    opacity: 1;
+  }
 }
-.IconButton--shaded {
-  background-color: var(--sc-dark-low);
+.IconButton--danger .Icon {
+  background-color: var(--ic-danger-normal);
+  opacity: 0.8;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active,
+  &:focus {
+    opacity: 1;
+  }
 }

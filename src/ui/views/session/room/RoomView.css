@@ -34,14 +34,19 @@
   bottom: var(--sp-normal);
   right: var(--sp-normal);
 
-  padding: var(--sp-extra-tight);
-  background-color: var(--bg-surface);
-  border-radius: var(--br-normal);
+  & div {
+    margin: var(--sp-ultra-tight);
+  }
 
-  & > .IconButton {
-    margin-right: var(--sp-extra-tight);
-    &:last-child {
-      margin-right: 0;
-    }
+  & .Text {
+    color: white;
+  }
+
+  & .IconButton {
+    padding: var(--sp-extra-tight);
+  }
+
+  & .IconButton--surface .Icon {
+    background-color: white;
   }
 }

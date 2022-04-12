@@ -14,8 +14,8 @@ export function SidebarView({ vm }: ISidebarView) {
   return (
     <div className="SidebarView flex flex-column">
       <div className="SidebarView__scrollable grow flex flex-column items-center">
-        <IconButton size="small" label="Home" shadedSurface iconSrc={HomeIC} onClick={() => false} />
-        <IconButton size="small" label="Grid" shadedSurface iconSrc={GridIC} onClick={() => false} />
+        <IconButton label="Home" iconSrc={HomeIC} onClick={() => false} />
+        <IconButton label="Grid" iconSrc={GridIC} onClick={() => false} />
       </div>
     </div>
   );

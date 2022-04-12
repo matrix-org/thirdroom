@@ -66,8 +66,8 @@
   --ic-surface-normal: hsl(0deg 0% 12%);
   --ic-primary-normal: #ffffff;
   --ic-secondary-normal: #ffffff;
-  --ic-positive-normal: #ffffff;
-  --ic-danger-normal: #ffffff;
+  --ic-positive-normal: hsl(119deg 83% 60%);
+  --ic-danger-normal: hsl(0deg 83% 60%);
 
   /* avatar sizes */
   --av-extra-large: 70px;

@@ -4,9 +4,10 @@ import "./RoomView.css";
 import { RoomViewModel } from "../../../../viewModels/session/room/RoomViewModel";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { ChatView } from "./ChatView";
+import { Text } from "../../../atoms/text/Text";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MessageIC from "../../../../../res/ic/message.svg";
-import SettingIC from "../../../../../res/ic/setting.svg";
+import HeadphoneIC from "../../../../../res/ic/headphone.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 
 interface IRoomView {
@@ -23,29 +24,27 @@ export function RoomFloatingView({ vm, roomId }: IRoomView) {
         {chatVisibility && <ChatView roomId={roomId} vm={vm.chatViewModel} />}
       </div>
       <div className="RoomView__controls flex">
-        <IconButton shadedSurface={true} label="Mic" size="small" iconSrc={MicIC} onClick={() => alert("mic")} />
-        <IconButton
-          variant={chatVisibility ? "secondary" : "surface"}
-          shadedSurface={chatVisibility ? false : true}
-          label="Message"
-          size="small"
-          iconSrc={MessageIC}
-          onClick={() => setChatVisibility(!chatVisibility)}
-        />
-        <IconButton
-          shadedSurface={true}
-          label="Settings"
-          size="small"
-          iconSrc={SettingIC}
-          onClick={() => alert("Settings")}
-        />
-        <IconButton
-          variant="danger"
-          label="Logout"
-          size="small"
-          iconSrc={LogoutIC}
-          onClick={() => vm.setRoomFlow("preview")}
-        />
+        <div className="flex flex-column items-center">
+          <IconButton
+            variant="surface"
+            label="Message"
+            iconSrc={MessageIC}
+            onClick={() => setChatVisibility(!chatVisibility)}
+          />
+          <Text variant="b3">Enter</Text>
+        </div>
+        <div className="flex flex-column items-center">
+          <IconButton label="Mic" iconSrc={MicIC} onClick={() => alert("mic")} />
+          <Text variant="b3">M</Text>
+        </div>
+        <div className="flex flex-column items-center">
+          <IconButton label="Settings" iconSrc={HeadphoneIC} onClick={() => alert("Settings")} />
+          <Text variant="b3">N</Text>
+        </div>
+        <div className="flex flex-column items-center">
+          <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={() => vm.setRoomFlow("preview")} />
+          <Text variant="b3">Alt + L</Text>
+        </div>
       </div>
     </>
   );
