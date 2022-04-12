@@ -71,10 +71,12 @@
   --ic-danger-normal: #ffffff;
 
   /* avatar sizes */
+  --av-extra-large: 70px;
   --av-large: 50px;
-  --av-normal: 35px;
+  --av-normal: 40px;
   --av-small: 30px;
   --av-extra-small: 25px;
+  --av-ultra-small: 20px;
 
   /* border radius */
   --br-normal: 12px;

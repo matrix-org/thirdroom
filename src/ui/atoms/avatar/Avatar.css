@@ -2,6 +2,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
   border-radius: var(--br-normal);
   background-color: var(--sc-dark-low);
   overflow: hidden;
@@ -18,6 +19,10 @@
   }
 }
 
+.Avatar--extra-large {
+  width: var(--av-large);
+  height: var(--av-large);
+}
 .Avatar--large {
   width: var(--av-large);
   height: var(--av-large);
@@ -33,6 +38,11 @@
 .Avatar--extra-small {
   width: var(--av-extra-small);
   height: var(--av-extra-small);
+  border-radius: var(--br-small);
+}
+.Avatar--ultra-small {
+  width: var(--av-ultra-small);
+  height: var(--av-ultra-small);
   border-radius: var(--br-small);
 }
 

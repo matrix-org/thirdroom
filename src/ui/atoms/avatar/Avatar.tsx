@@ -9,22 +9,22 @@ interface IAvatar {
   bgColor: string;
   isCircle?: boolean;
   imageSrc?: string | undefined | null;
-  size?: "large" | "normal" | "small" | "extra-small";
+  size?: "extra-large" | "large" | "normal" | "small" | "extra-small" | "ultra-large";
 }
 
 export function Avatar({ className, name, bgColor, isCircle = false, imageSrc = undefined, size = "normal" }: IAvatar) {
   const [isFallback, setIsFallback] = useState(false);
 
-  let textSize: "h2" | "s1" | "b1" | "b3" = "s1";
-  if (size === "large") textSize = "h2";
-  if (size === "small") textSize = "b1";
-  if (size === "extra-small") textSize = "b3";
+  let textSize: "h2" | "s1" | "b1" | "b3" = "h2";
+  if (size === "extra-large") textSize = "h2";
+  else if (size === "large") textSize = "s1";
+  else if (size === "normal" || size == "small") textSize = "b1";
+  else textSize = "b3";
 
-  const classes = ["Avatar"];
-  classes.push(`Avatar--${size}`);
+  const classes = ["Avatar", `Avatar--${size}`];
   if (isCircle) classes.push("Avatar--circle");
-  classes.push("noselect");
   if (className) classes.push(className);
+  classes.push("noselect");
 
   const style: React.CSSProperties = {};
   if (isFallback || !imageSrc) style.backgroundColor = bgColor;
