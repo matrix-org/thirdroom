@@ -20,8 +20,8 @@
 }
 
 .Avatar--extra-large {
-  width: var(--av-large);
-  height: var(--av-large);
+  width: var(--av-extra-large);
+  height: var(--av-extra-large);
 }
 .Avatar--large {
   width: var(--av-large);
@@ -34,6 +34,7 @@
 .Avatar--small {
   width: var(--av-small);
   height: var(--av-small);
+  border-radius: var(--br-small);
 }
 .Avatar--extra-small {
   width: var(--av-extra-small);

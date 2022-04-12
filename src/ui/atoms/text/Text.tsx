@@ -6,7 +6,7 @@ interface IText {
   className?: string;
   style?: React.CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
-  weight?: "regular" | "medium" | "semi-bold" | "bold";
+  weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "div";
   children: React.ReactNode;
 }
