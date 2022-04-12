@@ -26,27 +26,27 @@
   --bg-danger-active: hsl(0deg 83% 47%);
 
   /* shades colors */
-  --sc-light-normal: hsla(0deg 0% 100% 20%);
-  --sc-light-low: hsla(0deg 0% 100% 10%);
-  --sc-dark-normal: hsla(0deg 0% 0% 20%);
-  --sc-dark-low: hsla(0deg 0% 0% 10%);
-  --sc-dark-extra-low: hsla(0deg 0% 0% 5%);
+  --sc-light-normal: hsl(0deg 0% 100% / 20%);
+  --sc-light-low: hsl(0deg 0% 100% / 10%);
+  --sc-dark-normal: hsl(0deg 0% 0% / 20%);
+  --sc-dark-low: hsl(0deg 0% 0% / 10%);
+  --sc-dark-extra-low: hsl(0deg 0% 0% / 5%);
 
   /* text colors */
   --tc-surface-high: hsl(0deg 0% 12%);
-  --tc-surface-normal: hsla(0deg 0% 12% 80%);
+  --tc-surface-normal: hsl(0deg 0% 12% / 80%);
 
   --tc-primary-high: hsl(0deg 0% 100%);
-  --tc-primary-normal: hsla(0deg 0% 100% 80%);
+  --tc-primary-normal: hsl(0deg 0% 100% / 80%);
 
   --tc-secondary-high: hsl(0deg 0% 100%);
-  --tc-secondary-normal: hsla(0deg 0% 100% 80%);
+  --tc-secondary-normal: hsl(0deg 0% 100% / 80%);
 
   --tc-positive-high: hsl(0deg 0% 100%);
-  --tc-positive-normal: hsla(0deg 0% 100% 80%);
+  --tc-positive-normal: hsl(0deg 0% 100% / 80%);
 
   --tc-danger-high: hsl(0deg 0% 100%);
-  --tc-danger-normal: hsla(0deg 0% 100% 80%);
+  --tc-danger-normal: hsl(0deg 0% 100% / 80%);
 
   --tc-link: hsl(213deg 76% 56%);
 
@@ -148,7 +148,7 @@ code {
 *::before,
 *::after {
   box-sizing: border-box;
-  -webkit-tap-highlight-color: rgba(0 0 0 0%);
+  -webkit-tap-highlight-color: rgb(0 0 0 / 0%);
   -webkit-tap-highlight-color: transparent;
 }
 
