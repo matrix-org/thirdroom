@@ -1,29 +1,19 @@
 import React from "react";
+import classNames from "classnames";
 import "./Text.css";
 
 interface IText {
-  className?: string | undefined;
-  style?: React.CSSProperties | undefined;
+  className?: string;
+  style?: React.CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
   weight?: "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "div";
   children: React.ReactNode;
 }
 
-export function Text({
-  className = undefined,
-  style = undefined,
-  variant = "b1",
-  weight = "regular",
-  type = undefined,
-  children,
-}: IText) {
-  const classes = [];
-  if (className) classes.push(className);
+export function Text({ className, style, variant = "b1", weight = "regular", type, children }: IText) {
+  const textClass = classNames(`Text Text-${variant} Text--${weight}`, className);
 
-  classes.push(`Text Text-${variant} Text--${weight}`);
-
-  const textClass = classes.join(" ");
   if (type === "span")
     return (
       <span className={textClass} style={style}>

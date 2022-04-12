@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import "./RawButton.css";
 
 interface IRawButton {
@@ -9,20 +10,16 @@ interface IRawButton {
   disabled?: boolean;
 }
 export function RawButton({
-  className = undefined,
+  className,
   variant = "surface",
   type = "button",
   onClick,
   children,
   disabled = false,
 }: IRawButton) {
+  const btnClass = classNames(`RawButton-${variant}`, className);
   return (
-    <button
-      className={`${className ? `${className} ` : ""}RawButton-${variant}`}
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-    >
+    <button className={btnClass} type={type} onClick={onClick} disabled={disabled}>
       {children}
     </button>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import classNames from "classnames";
 
 import { Icon } from "../icon/Icon";
 import { RawButton } from "./RawButton";
@@ -18,7 +19,7 @@ interface IIconButton {
 }
 
 export function IconButton({
-  className = undefined,
+  className,
   variant = "surface",
   size = "normal",
   isCircle = false,
@@ -29,15 +30,18 @@ export function IconButton({
   onClick,
   disabled = false,
 }: IIconButton) {
-  const classes: string[] = [];
-  if (className) classes.push(className);
-  classes.push(`IconButton IconButton--${size}`);
-  if (isCircle) classes.push("IconButton--circle");
-  if (shadedSurface && variant === "surface") classes.push("IconButton--shaded");
+  const btnClass = classNames(
+    `IconButton IconButton--${size}`,
+    {
+      "IconButton--shaded": shadedSurface && variant === "surface",
+      "Icon-Button--circle": isCircle,
+    },
+    className
+  );
 
   return (
     <RawButton
-      className={classes.join(" ")}
+      className={btnClass}
       variant={variant}
       type={type}
       onClick={onClick}

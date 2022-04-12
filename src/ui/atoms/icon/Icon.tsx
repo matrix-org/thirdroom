@@ -1,14 +1,16 @@
 import React, { CSSProperties } from "react";
+import classNames from "classnames";
 import "./Icon.css";
 
 interface IIcon {
-  color?: string | undefined;
+  className?: string;
+  color?: string;
   size?: "normal" | "small";
   src: string;
   isImage?: boolean;
 }
 
-export function Icon({ color = undefined, size = "normal", src, isImage = false }: IIcon) {
+export function Icon({ className, color, size = "normal", src, isImage = false }: IIcon) {
   const style: CSSProperties = {};
   if (typeof color === "string") style.backgroundColor = color;
   if (isImage) {
@@ -19,5 +21,5 @@ export function Icon({ color = undefined, size = "normal", src, isImage = false 
     style.maskImage = `url(${src})`;
   }
 
-  return <span className={`Icon Icon--${size}`} style={style} />;
+  return <span className={classNames(`Icon Icon--${size}`, className)} style={style} />;
 }

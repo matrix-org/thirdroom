@@ -1,4 +1,5 @@
 import React from "react";
+import classNames from "classnames";
 import "./Scroll.css";
 
 interface IScroll {
@@ -14,15 +15,14 @@ export function Scroll({
   className,
   direction = "vertical",
   visibility = "auto",
-  onScroll = undefined,
+  onScroll,
   children,
-  forwardRef = undefined,
+  forwardRef,
 }: IScroll) {
-  const classes = [`Scroll Scroll--${direction} Scroll--${visibility}`];
-  if (className) classes.push(className);
+  const scrollClass = classNames(`Scroll Scroll--${direction} Scroll--${visibility}`, className);
 
   return (
-    <div ref={forwardRef} className={classes.join(" ")} onScroll={onScroll}>
+    <div ref={forwardRef} className={scrollClass} onScroll={onScroll}>
       {children}
     </div>
   );
