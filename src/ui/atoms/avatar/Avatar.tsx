@@ -10,7 +10,7 @@ interface IAvatar {
   bgColor: string;
   isCircle?: boolean;
   imageSrc?: string | null;
-  size?: "extra-large" | "large" | "normal" | "small" | "extra-small" | "ultra-large";
+  size?: "extra-large" | "large" | "normal" | "small" | "extra-small" | "ultra-small";
 }
 
 export function Avatar({ className, name, bgColor, isCircle = false, imageSrc, size = "normal" }: IAvatar) {
