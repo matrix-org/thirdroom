@@ -3,7 +3,7 @@ import "./Icon.css";
 
 interface IIcon {
   color?: string | undefined;
-  size?: "normal" | "small" | "extra-small";
+  size?: "normal" | "small";
   src: string;
   isImage?: boolean;
 }

@@ -15,7 +15,3 @@
   width: var(--ic-small);
   height: var(--ic-small);
 }
-.Icon--extra-small {
-  width: var(--ic-extra-small);
-  height: var(--ic-extra-small);
-}
