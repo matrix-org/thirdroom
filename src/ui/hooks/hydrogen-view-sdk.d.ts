@@ -472,6 +472,74 @@ declare module "hydrogen-view-sdk" {
     get sender(): string;
   }
 
+  export class GapTile extends SimpleTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    fill(): boolean;
+    notifyVisible(): void;
+    get isAtTop(): boolean;
+    updatePreviousSibling(prev: any): void;
+    updateNextSibling(): void;
+    updateEntry(entry: any, params: any): any;
+    get shape(): "gap";
+    get isLoading(): boolean;
+    get error(): string | null;
+  }
+
+  export class RoomMemberTile extends SimpleTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get shape(): "announcement";
+    get announcement(): string;
+  }
+
+  export class BaseMessageTile extends SimpleTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    notifyVisible(): void;
+    get permalink(): string;
+    get senderProfileLink(): string;
+    get displayName(): string;
+    get sender(): string;
+    get memberPanelLink(): string;
+    get avatarColorNumber(): number;
+    get avatarUrl(): string | null;
+    get avatarLetter(): string;
+    get avatarTitle(): string;
+    get date(): string | null;
+    get time(): string | null;
+    get isOwn(): boolean;
+    get isContinuation(): boolean;
+    get isUnverified(): boolean;
+    get isReply(): boolean;
+    updatePreviousSibling(prev: any): void;
+    updateEntry(entry: any, param: any): any;
+    startReply(): void;
+    reply(msgtype: string, body: string, log: any): any;
+    redact(reason: string, log: any): any;
+    get canRedact(): boolean;
+    get reactions(): null | any;
+    get canReact(): boolean;
+    react(key: string, log: any): any;
+    redactReaction(key: string, log: any): any;
+    toggleReaction(key: string, log: any): any;
+    get replyTile(): null | any;
+  }
+
+  class BaseTextTile extends BaseMessageTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get shape(): "message" | "message-status";
+    get body(): null | string;
+  }
+
+  class TextTile extends BaseTextTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    _getPlainBody(): string;
+  }
+
+  class EncryptedEventTile extends BaseTextTile {
+    constructor(entry: any, params: SimpleTileOptions);
+    updateEntry(entry: any, param: any): any;
+    get shape(): "message-status";
+  }
+
   export interface TilesCollectionOptions extends SimpleTileOptions {
     tileClassForEntry(entry: any): { new (entry: any, tileOptions: SimpleTileOptions): SimpleTile };
   }
@@ -563,13 +631,13 @@ declare module "hydrogen-view-sdk" {
     onClick(event: UIEvent): void;
   }
 
-  export type TileViewConstructor = new (
-    tile: SimpleTile,
-    viewClassForTile: ViewClassForEntryFn,
+  export type TileViewConstructor<T extends SimpleTile = SimpleTile> = new (
+    tile: T,
+    viewClassForTile?: ViewClassForEntryFn,
     renderFlags?: { reply?: boolean; interactive?: boolean }
   ) => TileView;
 
-  export type ViewClassForEntryFn = (tile: SimpleTile) => TileViewConstructor;
+  export type ViewClassForEntryFn<T extends SimpleTile = SimpleTile> = (tile: T) => TileViewConstructor<T>;
 
   export abstract class TemplateView<T extends IObservableValue> extends BaseUpdateView<T> {
     abstract render(t: Builder<T>, value: T): ViewNode;
@@ -616,4 +684,10 @@ declare module "hydrogen-view-sdk" {
   }
 
   export function viewClassForTile(vm: SimpleTile): TileViewConstructor;
+
+  export class GapView extends TemplateView<GapTile> implements TileView {
+    constructor(vm: GapTile);
+    render(t: Builder<GapTile>, value: GapTile): ViewNode;
+    onClick(): void;
+  }
 }
