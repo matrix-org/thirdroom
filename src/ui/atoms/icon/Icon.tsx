@@ -5,12 +5,12 @@ import "./Icon.css";
 interface IIcon {
   className?: string;
   color?: string;
-  size?: "normal" | "small";
+  size?: "md" | "sm";
   src: string;
   isImage?: boolean;
 }
 
-export function Icon({ className, color, size = "normal", src, isImage = false }: IIcon) {
+export function Icon({ className, color, size = "md", src, isImage = false }: IIcon) {
   const style: CSSProperties = {};
   if (typeof color === "string") style.backgroundColor = color;
   if (isImage) {

@@ -8,22 +8,27 @@
 
 :root {
   /* background colors */
-  --bg-surface: hsl(0deg 0% 100%);
-  --bg-surface-low: hsl(0deg 0% 92%);
-  --bg-surface-hover: hsl(0deg 0% 87%);
-  --bg-surface-active: hsl(0deg 0% 82%);
-  --bg-primary: hsl(266deg 100% 50%);
-  --bg-primary-hover: hsl(266deg 100% 40%);
-  --bg-primary-active: hsl(266deg 100% 35%);
-  --bg-secondary: hsl(0deg 0% 12%);
-  --bg-secondary-hover: hsl(0deg 0% 22%);
-  --bg-secondary-active: hsl(0deg 0% 27%);
-  --bg-positive: hsl(119deg 83% 60%);
-  --bg-positive-hover: hsl(119deg 83% 50%);
-  --bg-positive-active: hsl(119deg 83% 45%);
-  --bg-danger: hsl(0deg 83% 60%);
-  --bg-danger-hover: hsl(0deg 83% 53%);
-  --bg-danger-active: hsl(0deg 83% 47%);
+  --bg-surface: #ffffff;
+  --bg-surface-low: #f0f1f2;
+  --bg-surface-border: #dbdfe2;
+
+  --bg-primary: hsl(209deg 93% 53%);
+  --bg-primary-hover: hsl(209deg 93% 45%);
+  --bg-primary-active: hsl(209deg 93% 40%);
+  --bg-primary-soft-hover: hsl(209deg 93% 53% / 6%);
+  --bg-primary-soft-active: hsl(209deg 93% 53% / 16%);
+
+  --bg-secondary: hsl(163deg 87% 40%);
+  --bg-secondary-hover: hsl(163deg 87% 35%);
+  --bg-secondary-active: hsl(163deg 87% 30%);
+  --bg-secondary-soft-hover: hsl(163deg 87% 35% / 6%);
+  --bg-secondary-soft-active: hsl(163deg 87% 30% / 16%);
+
+  --bg-danger: hsl(2deg 100% 67%);
+  --bg-danger-hover: hsl(2deg 100% 62%);
+  --bg-danger-active: hsl(2deg 100% 55%);
+  --bg-danger-soft-hover: hsl(2deg 100% 62% / 6%);
+  --bg-danger-soft-active: hsl(2deg 100% 55% / 16%);
 
   /* shades colors */
   --sc-light-normal: hsl(0deg 0% 100% / 20%);
@@ -33,51 +38,48 @@
   --sc-dark-extra-low: hsl(0deg 0% 0% / 5%);
 
   /* text colors */
-  --tc-surface-high: hsl(0deg 0% 12%);
-  --tc-surface-normal: hsl(0deg 0% 12% / 80%);
+  --tc-surface: #0b1014;
+  --tc-surface-low: #717577;
 
-  --tc-primary-high: hsl(0deg 0% 100%);
-  --tc-primary-normal: hsl(0deg 0% 100% / 80%);
+  --tc-world: #ffffff;
 
-  --tc-secondary-high: hsl(0deg 0% 100%);
-  --tc-secondary-normal: hsl(0deg 0% 100% / 80%);
-
-  --tc-positive-high: hsl(0deg 0% 100%);
-  --tc-positive-normal: hsl(0deg 0% 100% / 80%);
-
-  --tc-danger-high: hsl(0deg 0% 100%);
-  --tc-danger-normal: hsl(0deg 0% 100% / 80%);
+  --tc-on-primary: #ffffff;
+  --tc-on-secondary: #ffffff;
+  --tc-on-danger: #ffffff;
 
   --tc-link: hsl(213deg 76% 56%);
 
+  /* icon color */
+  --ic-surface: hsl(0deg 0% 12%);
+  --ic-world: #ffffff;
+  --ic-primary: var(--bg-primary);
+  --ic-secondary: var(--bg-secondary);
+  --ic-danger: var(--bg-danger);
+
   /* spacing */
-  --sp-extra-loose: 40px;
-  --sp-loose: 30px;
-  --sp-normal: 20px;
-  --sp-tight: 15px;
-  --sp-extra-tight: 10px;
-  --sp-ultra-tight: 5px;
+  --sp-xl: 40px;
+  --sp-lg: 30px;
+  --sp-md: 20px;
+  --sp-sm: 15px;
+  --sp-xs: 10px;
+  --sp-xxs: 5px;
 
   /* icon sizes */
-  --ic-normal: 20px;
-  --ic-small: 15px;
-
-  /* icon color */
-  --ic-surface-normal: hsl(0deg 0% 12%);
-  --ic-primary-normal: #ffffff;
-  --ic-secondary-normal: #ffffff;
-  --ic-positive-normal: hsl(119deg 83% 60%);
-  --ic-danger-normal: hsl(0deg 83% 60%);
+  --ic-md: 20px;
+  --ic-sm: 15px;
 
   /* avatar sizes */
-  --av-extra-large: 70px;
-  --av-large: 50px;
-  --av-normal: 40px;
-  --av-small: 30px;
-  --av-extra-small: 25px;
-  --av-ultra-small: 20px;
+  --av-xl: 70px;
+  --av-lg: 50px;
+  --av-md: 40px;
+  --av-sm: 30px;
+  --av-xs: 25px;
+  --av-xxs: 20px;
 
   /* border radius */
+  /*
+  TODO: [8, 10, 12, 16]
+  */
   --br-normal: 12px;
   --br-small: 8px;
 
@@ -108,6 +110,12 @@
   --fw-medium: 500;
   --fw-regular: 400;
   --fw-light: 300;
+
+  /* box shadow */
+  --bs-surface-border: inset 0 0 0 1px var(--bg-surface-border);
+  --bs-primary-border: inset 0 0 0 1px var(--bg-primary);
+  --bs-secondary-border: inset 0 0 0 1px var(--bg-secondary);
+  --bs-danger-border: inset 0 0 0 1px var(--bg-danger);
 
   /* other */
   --scrollbar-width: 8px;

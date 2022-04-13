@@ -10,16 +10,16 @@ interface IAvatar {
   bgColor: string;
   isCircle?: boolean;
   imageSrc?: string | null;
-  size?: "extra-large" | "large" | "normal" | "small" | "extra-small" | "ultra-small";
+  size?: "xl" | "lg" | "md" | "sm" | "xs" | "xxs";
 }
 
-export function Avatar({ className, name, bgColor, isCircle = false, imageSrc, size = "normal" }: IAvatar) {
+export function Avatar({ className, name, bgColor, isCircle = false, imageSrc, size = "md" }: IAvatar) {
   const [isFallback, setIsFallback] = useState(false);
 
   let textSize: "h2" | "s1" | "b1" | "b3" = "h2";
-  if (size === "extra-large") textSize = "h2";
-  else if (size === "large") textSize = "s1";
-  else if (size === "normal" || size == "small") textSize = "b1";
+  if (size === "xl") textSize = "h2";
+  else if (size === "lg") textSize = "s1";
+  else if (size === "md" || size == "sm") textSize = "b1";
   else textSize = "b3";
 
   const avatarClass = classNames("Avatar", `Avatar--${size}`, { "Avatar--circle": isCircle }, className, "noselect");

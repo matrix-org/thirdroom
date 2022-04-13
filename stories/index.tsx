@@ -1,6 +1,5 @@
-import React from "react";
 import ReactDOM from "react-dom";
-import "../src/main.css";
+import "../src/ui/App.css";
 
 import { AtomsStories } from "./atoms";
 

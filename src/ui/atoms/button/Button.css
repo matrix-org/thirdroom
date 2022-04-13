@@ -2,29 +2,167 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
   border-radius: var(--br-normal);
+  cursor: pointer;
+  transition: background-color 100ms ease-in-out;
+
+  & .Icon {
+    flex-shrink: 0;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: no-drop;
+  }
 
   & .Text {
     font-weight: var(--fw-semi-bold);
   }
-}
 
-/* Button size */
-.Button--normal {
-  padding: var(--sp-tight);
-}
-.Button--small {
-  padding: var(--sp-extra-tight);
-}
-.Button--extra-small {
-  padding: var(--sp-ultra-tight);
-  border-radius: var(--br-small);
-}
-
-.Button--normal,
-.Button--small,
-.Button--extra-small {
   & .Text:not(:only-child) {
-    padding: 0 var(--sp-ultra-tight);
+    padding: 0 var(--sp-xs);
   }
+}
+
+.Button--primary {
+  background-color: var(--bg-primary);
+  & .Text {
+    color: var(--tc-on-primary);
+  }
+  & .Icon {
+    background-color: var(--tc-on-primary);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-primary-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-primary-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-active);
+  }
+}
+
+.Button--secondary {
+  background-color: var(--bg-secondary);
+  & .Text {
+    color: var(--tc-on-secondary);
+  }
+  & .Icon {
+    background-color: var(--tc-on-secondary);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-secondary-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-secondary-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-active);
+  }
+}
+
+.Button--danger {
+  background-color: var(--bg-danger);
+  & .Text {
+    color: var(--tc-on-danger);
+  }
+  & .Icon {
+    background-color: var(--tc-on-danger);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-danger-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-danger-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-active);
+  }
+}
+
+.Button--primary-outline {
+  box-shadow: var(--bs-primary-border);
+  & .Text {
+    color: var(--bg-primary);
+  }
+  & .Icon {
+    background-color: var(--bg-primary);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-primary-soft-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-primary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-soft-active);
+  }
+}
+
+.Button--secondary-outline {
+  box-shadow: var(--bs-secondary-border);
+  & .Text {
+    color: var(--bg-secondary);
+  }
+  & .Icon {
+    background-color: var(--bg-secondary);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-secondary-soft-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-secondary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-soft-active);
+  }
+}
+
+.Button--danger-outline {
+  box-shadow: var(--bs-danger-border);
+  & .Text {
+    color: var(--bg-danger);
+  }
+  & .Icon {
+    background-color: var(--bg-danger);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-danger-soft-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-danger-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-soft-active);
+  }
+}
+
+.Button--md {
+  padding: 14px var(--sp-md);
+}
+.Button--lg {
+  padding: var(--sp-md) var(--sp-lg);
+}
+.Button--xl {
+  padding: var(--sp-lg) var(--sp-xl);
 }

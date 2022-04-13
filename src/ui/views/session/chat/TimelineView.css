@@ -1,6 +1,6 @@
 .Timeline_scroller > ul {
   list-style: none;
-  padding: var(--sp-extra-tight) 0;
+  padding: var(--sp-xs) 0;
   margin: 0;
   min-height: 100%;
 
@@ -10,22 +10,22 @@
   align-items: flex-start;
 
   & > li {
-    margin-top: var(--sp-extra-tight);
+    margin-top: var(--sp-xs);
   }
 }
 
 /* ----spinner----- */
 
 .GapView {
-  padding: var(--sp-extra-tight) var(--sp-normal);
+  padding: var(--sp-xs) var(--sp-md);
   background-color: #00000040;
   border-radius: 8px;
-  color: white;
+  color: var(--tc-world);
 
   display: flex;
   align-items: center;
   & > *:first-child {
-    margin-right: var(--sp-extra-tight);
+    margin-right: var(--sp-xs);
   }
 }
 
@@ -54,7 +54,7 @@
   animation-timing-function: linear;
   stroke-dasharray: 0 0 85 85;
   fill: none;
-  stroke: white;
+  stroke: var(--ic-world);
   stroke-width: 12;
   stroke-linecap: butt;
 }
@@ -69,10 +69,10 @@
   display: block;
   position: absolute;
   padding: 2px;
-  border: 2px solid white;
+  border: 2px solid var(--ic-world);
   border-radius: 50%;
   animation: legacy-spinner 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  border-color: white transparent transparent;
+  border-color: var(--ic-world) transparent transparent;
   width: var(--size);
   height: var(--size);
 }

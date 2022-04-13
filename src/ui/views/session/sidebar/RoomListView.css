@@ -5,16 +5,10 @@
 
   & > header {
     min-height: 50px;
-    padding: 0 var(--sp-normal);
+    padding: 0 var(--sp-md);
   }
 }
 
 .RoomListView__content {
   min-height: 100%;
-
-  & header {
-    padding: 0 var(--sp-normal);
-    padding-right: var(--sp-extra-tight);
-    height: 40px;
-  }
 }

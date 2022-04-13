@@ -1,10 +1,10 @@
 .ComposerView {
-  padding: var(--sp-extra-tight);
+  padding: var(--sp-xs);
   border-radius: var(--br-small);
   background-color: #00000040;
 
   & .Icon {
-    margin-right: var(--sp-extra-tight);
+    margin-right: var(--sp-xs);
   }
 
   & input {

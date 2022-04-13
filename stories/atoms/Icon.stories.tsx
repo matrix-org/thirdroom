@@ -6,8 +6,8 @@ export function IconStories() {
     <div className="flex">
       <Icon color="red" src={HomeIC} />
       <Icon color="blue" src={HomeIC} />
-      <Icon size="small" src={HomeIC} />
-      <Icon color="green" size="small" src={HomeIC} />
+      <Icon size="sm" src={HomeIC} />
+      <Icon color="green" size="sm" src={HomeIC} />
     </div>
   );
 }

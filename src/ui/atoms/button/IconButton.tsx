@@ -6,8 +6,8 @@ import { Icon } from "../icon/Icon";
 import "./IconButton.css";
 interface IIconButton {
   className?: string;
-  variant?: "surface" | "primary" | "positive" | "danger";
-  size?: "normal" | "small";
+  variant?: "surface" | "world" | "primary" | "secondary" | "danger";
+  size?: "md" | "sm";
   isCircle?: boolean;
   shadedSurface?: boolean;
   iconSrc: string;
@@ -20,7 +20,7 @@ interface IIconButton {
 export function IconButton({
   className,
   variant = "surface",
-  size = "normal",
+  size = "md",
   iconSrc,
   label,
   type = "button",

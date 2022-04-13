@@ -18,8 +18,8 @@
 }
 
 .WorldView > .Button {
-  left: var(--sp-normal);
-  top: var(--sp-normal);
+  left: var(--sp-md);
+  top: var(--sp-md);
 }
 
 .WorldView__chat {
@@ -27,31 +27,27 @@
 
   max-width: var(--chat-width);
   width: 100%;
-  height: calc(100% - var(--sp-normal));
-  bottom: var(--sp-normal);
-  left: var(--sp-normal);
+  height: calc(100% - var(--sp-md));
+  bottom: var(--sp-md);
+  left: var(--sp-md);
 }
 .WorldView__chat--invisible {
   display: none;
 }
 
 .WorldView__controls {
-  bottom: var(--sp-normal);
-  right: var(--sp-normal);
+  bottom: var(--sp-md);
+  right: var(--sp-md);
 
   & div {
-    margin: var(--sp-ultra-tight);
+    margin: var(--sp-xxs);
   }
 
   & .Text {
-    color: white;
+    color: var(--tc-world);
   }
 
   & .IconButton {
-    padding: var(--sp-extra-tight);
-  }
-
-  & .IconButton--surface .Icon {
-    background-color: white;
+    padding: var(--sp-xs);
   }
 }
