@@ -61,13 +61,13 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export interface MainThread {
+export interface Engine {
   dispose(): void;
   getStats(): StatsObject;
   exportScene(): void;
 }
 
-export async function initMainThread(canvas: HTMLCanvasElement): Promise<MainThread> {
+export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {

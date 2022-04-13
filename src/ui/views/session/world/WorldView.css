@@ -1,0 +1,52 @@
+.WorldView {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.WorldView > * {
+  pointer-events: all;
+}
+
+.WorldView > .Button,
+.WorldView__chat,
+.WorldView__controls {
+  position: absolute;
+}
+
+.WorldView > .Button {
+  left: var(--sp-normal);
+  top: var(--sp-normal);
+}
+
+.WorldView__chat {
+  --chat-width: 385px;
+
+  max-width: var(--chat-width);
+  width: 100%;
+  height: calc(100% - var(--sp-normal));
+  bottom: var(--sp-normal);
+  left: var(--sp-normal);
+}
+.WorldView__chat--invisible {
+  display: none;
+}
+
+.WorldView__controls {
+  bottom: var(--sp-normal);
+  right: var(--sp-normal);
+
+  padding: var(--sp-extra-tight);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-normal);
+
+  & > .IconButton {
+    margin-right: var(--sp-extra-tight);
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}

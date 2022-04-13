@@ -1,35 +1,45 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { LoginViewModel } from "../../../viewModels/login/LoginViewModel";
+import { useHydrogen } from "../../hooks/useHydrogen";
 
-interface ILoginView {
-  vm: LoginViewModel;
-}
+export function LoginView() {
+  const { platform, client } = useHydrogen();
+  const [authenticating, setAuthenticating] = useState(false);
+  const navigate = useNavigate();
 
-export function LoginView({ vm }: ILoginView) {
-  const [isAuth, setIsAuth] = useState(false);
-
-  const handleLogin = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    const target = ev.target as typeof ev.target & {
-      homeserver: { value: string };
-      username: { value: string };
-      password: { value: string };
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget.elements as typeof event.currentTarget.elements & {
+      homeserver: HTMLInputElement;
+      username: HTMLInputElement;
+      password: HTMLInputElement;
     };
-    const { homeserver, username, password } = target;
-    setIsAuth(true);
-    await vm.login(homeserver.value, username.value, password.value);
-    setIsAuth(false);
+
+    setAuthenticating(true);
+
+    try {
+      const loginOptions = await client.queryLogin(form.homeserver.value).result;
+
+      // TODO: Handle other login types
+
+      await client.startWithLogin(loginOptions.password(form.username.value, form.password.value));
+
+      navigate("/");
+    } catch (error) {
+      console.error(error);
+      setAuthenticating(false);
+    }
   };
 
-  if (isAuth) {
+  if (authenticating) {
     return <p>Login in progress...</p>;
   }
 
   return (
     <form style={{ height: "100%" }} className="flex flex-column justify-center items-center" onSubmit={handleLogin}>
       <label htmlFor="homeserver">Homeserver</label>
-      <input defaultValue={vm.defaultHomeserver} name="homeserver" placeholder="homeserver" required />
+      <input defaultValue={platform.config.defaultHomeServer} name="homeserver" placeholder="homeserver" required />
       <br />
       <label htmlFor="username">Username</label>
       <input name="username" placeholder="username" required />
