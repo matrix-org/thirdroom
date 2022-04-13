@@ -1,60 +1,96 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Outlet, useMatch, useNavigate } from "react-router-dom";
+import { Room } from "hydrogen-view-sdk";
 
 import "./SessionView.css";
-import { SessionViewModel } from "../../../viewModels/session/SessionViewModel";
-import { RoomViewModel } from "../../../viewModels/session/room/RoomViewModel";
-import { LeftPanelView } from "./leftpanel/LeftPanelView";
+import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
+import { Overlay } from "./overlay/Overlay";
+import { usePointerLockState } from "../../hooks/usePointerLockState";
 import { StatusBar } from "./statusbar/StatusBar";
-import { RoomPreview } from "./room/RoomPreview";
-import { RoomView } from "./room/RoomView";
-import { useVMProp } from "../../hooks/useVMProp";
-import { useEngine } from "../../hooks/useEngine";
-import { Stats } from "./stats/Stats";
+import { useWorldId } from "../../hooks/useWorldId";
+import { useRoomById } from "../../hooks/useRoomById";
 
-interface ISessionView {
-  vm: SessionViewModel;
+export interface SessionViewContext {
+  overlayOpen: boolean;
 }
 
-export function SessionView({ vm }: ISessionView) {
+export function SessionView() {
+  const composerInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { getStats } = useEngine(canvasRef);
+  const engine = useInitEngine(canvasRef);
+  const isPointerLocked = usePointerLockState(canvasRef.current);
+  const [forceOverlayClosed, setForceOverlayClosed] = useState(false);
+  const isOverlayOpen = !isPointerLocked && !forceOverlayClosed;
+  const homeMatch = useMatch({ path: "/", end: true });
+  const isHome = homeMatch !== null;
 
-  return (
-    <>
-      <Stats getStats={getStats} />
-      <canvas className="SessionView__viewport" ref={canvasRef} />
-      <div className="SessionView flex flex-column">
-        <StatusBar vm={vm.statusBarViewModel} />
-        <div className="SessionView__content flex grow">
-          <LeftPanelView vm={vm.leftPanelViewModel} />
-          <MiddleView vm={vm} />
-        </div>
-      </div>
-    </>
+  const worldId = useWorldId();
+  const world = useRoomById(worldId);
+
+  const navigate = useNavigate();
+
+  const onLoadWorld = useCallback(
+    async (room: Room) => {
+      console.log("onLoadWorld", room);
+      navigate(`/world/${room.id}`);
+      return;
+    },
+    [navigate]
   );
-}
 
-function MiddleView({ vm }: { vm: SessionViewModel }) {
-  const activeRoomId = useVMProp(vm, "activeRoomId");
-
-  if (!activeRoomId) return null;
-  if (vm.isActiveRoomInvite) return <p>invite</p>;
-  return <RoomViewWrapper vm={vm.roomViewModel!} roomId={activeRoomId} />;
-}
-
-function RoomViewWrapper({ vm, roomId }: { vm: RoomViewModel; roomId: string }) {
-  useVMProp(vm, "roomFlow");
-
-  const prevRoomFlowRef = useRef<string>();
+  const onEnterWorld = useCallback(async () => {
+    canvasRef.current!.requestPointerLock();
+  }, []);
 
   useEffect(() => {
-    prevRoomFlowRef.current = vm.roomFlow;
-  }, [vm.roomFlow]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter" && isPointerLocked) {
+        setForceOverlayClosed(true);
+        document.exitPointerLock();
+        composerInputRef.current?.focus();
+      }
+
+      if (event.key === "Escape" && !isPointerLocked && forceOverlayClosed) {
+        setForceOverlayClosed(false);
+        canvasRef.current?.requestPointerLock();
+      }
+    };
+
+    const canvas = canvasRef.current!;
+
+    const onCanvasClick = (event: MouseEvent) => {
+      if (!isPointerLocked) {
+        setForceOverlayClosed(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    canvas.addEventListener("click", onCanvasClick);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      canvas.removeEventListener("click", onCanvasClick);
+    };
+  }, [isPointerLocked, forceOverlayClosed]);
 
   return (
-    <>
-      {["preview", "load"].includes(vm.roomFlow) && <RoomPreview vm={vm} roomId={roomId} />}
-      {vm.roomFlow === "loaded" && <RoomView vm={vm} roomId={roomId} />}
-    </>
+    <div className="SessionView">
+      <canvas className="SessionView__viewport" ref={canvasRef} />
+      {engine ? (
+        <EngineContextProvider value={engine}>
+          <Outlet context={{ composerInputRef }} />
+          <Overlay
+            isOpen={isOverlayOpen}
+            isHome={isHome}
+            initialWorldId={worldId}
+            onLoadWorld={onLoadWorld}
+            onEnterWorld={onEnterWorld}
+          />
+          <StatusBar showOverlayTip={!isHome} overlayOpen={isOverlayOpen} title={isHome ? "Home" : world?.name} />
+        </EngineContextProvider>
+      ) : (
+        <div>Initializing engine...</div>
+      )}
+    </div>
   );
 }

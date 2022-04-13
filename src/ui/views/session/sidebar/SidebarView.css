@@ -1,0 +1,19 @@
+.SidebarView {
+  height: inherit;
+  pointer-events: all;
+  padding: var(--sp-normal) 0;
+}
+
+.SidebarView--open,
+.SidebarView--close {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 99;
+  transition: transform 200ms cubic-bezier(0.07, 0.79, 0.53, 0.91);
+}
+
+.SidebarView--close {
+  transform: translateX(calc(-100% - 8px));
+}

@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { StatsObject } from "../../../../engine/stats";
+import { useEngine } from "../../../hooks/useEngine";
 import "./Stats.css";
 
-interface StatsProps {
-  getStats: () => StatsObject | undefined;
-}
-
-export function Stats({ getStats }: StatsProps) {
+export function Stats() {
+  const { getStats } = useEngine();
   const [showStats, setShowStats] = useState<boolean>(false);
   const [, setFrame] = useState<number>(0);
   const statsRef = useRef<StatsObject>();
