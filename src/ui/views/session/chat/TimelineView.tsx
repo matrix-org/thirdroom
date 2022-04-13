@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { TimelineView as HydrogenTimelineView, TimelineViewModel, viewClassForTile } from "hydrogen-view-sdk";
+import { TimelineView as HydrogenTimelineView, TimelineViewModel } from "hydrogen-view-sdk";
 
 import "./TimelineView.css";
+import { viewClassForTile } from "./tiles";
 
 interface ITimelineView {
   timelineViewModel: TimelineViewModel;

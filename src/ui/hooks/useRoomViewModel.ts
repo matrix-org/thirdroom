@@ -5,13 +5,53 @@ import {
   ViewModel,
   TimelineViewModel,
   ViewModelOptions,
-  tileClassForEntry,
   TileOptions,
+  TimelineEntry,
+  TileConstructor,
   Session,
+  GapTile,
+  TextTile,
+  RoomMemberTile,
+  EncryptedEventTile,
 } from "hydrogen-view-sdk";
 import { useEffect, useState } from "react";
 
 import { useHydrogen } from "./useHydrogen";
+
+export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
+  if (entry.isGap) {
+    return GapTile;
+  } else if (entry.eventType) {
+    switch (entry.eventType) {
+      case "m.room.message": {
+        if (entry.isRedacted) {
+          return undefined;
+        }
+        const content = entry.content;
+        const msgtype = content && content.msgtype;
+        switch (msgtype) {
+          case "m.text":
+          case "m.notice":
+          case "m.emote":
+            return TextTile;
+          default:
+            // unknown msgtype not rendered
+            return undefined;
+        }
+      }
+      case "m.room.member":
+        return RoomMemberTile;
+      case "m.room.encrypted":
+        if (entry.isRedacted) {
+          return undefined;
+        }
+        return EncryptedEventTile;
+      default:
+        // unknown type not rendered
+        return undefined;
+    }
+  }
+}
 
 interface TRRoomViewModelOptions extends ViewModelOptions {
   room: Room;
