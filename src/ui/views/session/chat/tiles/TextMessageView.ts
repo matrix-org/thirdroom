@@ -1,8 +1,8 @@
-import { TemplateView, TextTile, Builder } from "hydrogen-view-sdk";
+import { TemplateView, TextTile, Builder, TileView } from "hydrogen-view-sdk";
 
 import "./TextMessageView.css";
 
-export class TextMessageView extends TemplateView<TextTile> {
+export class TextMessageView extends TemplateView<TextTile> implements TileView {
   constructor(vm: TextTile) {
     super(vm);
   }
@@ -12,7 +12,7 @@ export class TextMessageView extends TemplateView<TextTile> {
       { className: "TextMessageView" },
       t.div({ className: "Text Text-b2 Text--regular" }, [
         t.span({ className: "TextMessageView__sender Text--semi-bold" }, vm.displayName),
-        () => vm._getPlainBody?.() || "*** EMPTY MESSAGE ***",
+        vm._getPlainBody?.() || "*** EMPTY MESSAGE ***",
       ])
     );
   }

@@ -631,13 +631,13 @@ declare module "hydrogen-view-sdk" {
     onClick(event: UIEvent): void;
   }
 
-  export type TileViewConstructor = new (
-    tile: typeof SimpleTile,
+  export type TileViewConstructor<T extends SimpleTile = SimpleTile> = new (
+    tile: T,
     viewClassForTile?: ViewClassForEntryFn,
     renderFlags?: { reply?: boolean; interactive?: boolean }
   ) => TileView;
 
-  export type ViewClassForEntryFn = (tile: SimpleTile) => TileViewConstructor;
+  export type ViewClassForEntryFn<T extends SimpleTile = SimpleTile> = (tile: T) => TileViewConstructor<T>;
 
   export abstract class TemplateView<T extends IObservableValue> extends BaseUpdateView<T> {
     abstract render(t: Builder<T>, value: T): ViewNode;
@@ -685,7 +685,7 @@ declare module "hydrogen-view-sdk" {
 
   export function viewClassForTile(vm: SimpleTile): TileViewConstructor;
 
-  export class GapView extends TemplateView<GapTile> {
+  export class GapView extends TemplateView<GapTile> implements TileView {
     constructor(vm: GapTile);
     render(t: Builder<GapTile>, value: GapTile): ViewNode;
     onClick(): void;
