@@ -1,9 +1,26 @@
-import { RefObject, useCallback, useEffect, useRef } from "react";
+import { RefObject, useState, useEffect, createContext, useContext } from "react";
 
-import { initMainThread, MainThread } from "../../engine/MainThread";
+import { initEngine, Engine } from "../../engine/MainThread";
 
-export function useEngine(canvasRef: RefObject<HTMLCanvasElement>) {
-  const mainThreadRef = useRef<MainThread>();
+export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
+  const [engine, setEngine] = useState<Engine>();
+
+  useEffect(() => {
+    let _engine: Engine | undefined;
+
+    if (canvasRef.current) {
+      initEngine(canvasRef.current)
+        .then((engine) => {
+          _engine = engine;
+          setEngine(engine);
+        })
+        .catch(console.error);
+    }
+
+    return () => {
+      _engine?.dispose();
+    };
+  }, [canvasRef]);
 
   useEffect(() => {
     const global = window as unknown as any;
@@ -12,36 +29,34 @@ export function useEngine(canvasRef: RefObject<HTMLCanvasElement>) {
       global.thirdroom = {};
     }
 
-    global.thirdroom.exportScene = () => {};
-
-    if (canvasRef.current) {
-      initMainThread(canvasRef.current)
-        .then((result) => {
-          global.thirdroom.exportScene = () => {
-            result.exportScene();
-          };
-
-          mainThreadRef.current = result;
-        })
-        .catch(console.error);
+    if (engine) {
+      global.thirdroom.exportScene = () => {
+        engine.exportScene();
+      };
+    } else {
+      global.thirdroom.exportScene = () => {};
     }
 
     return () => {
       if (global.thirdroom) {
         global.thirdroom.exportScene = () => {};
       }
-
-      mainThreadRef.current?.dispose();
     };
-  }, [canvasRef]);
+  }, [engine]);
 
-  const getStats = useCallback(() => {
-    return mainThreadRef.current?.getStats();
-  }, []);
+  return engine;
+}
 
-  const exportScene = useCallback(() => {
-    return mainThreadRef.current?.exportScene();
-  }, []);
+const EngineContext = createContext<Engine | undefined>(undefined);
 
-  return { getStats, exportScene };
+export const EngineContextProvider = EngineContext.Provider;
+
+export function useEngine() {
+  const engine = useContext(EngineContext);
+
+  if (!engine) {
+    throw new Error("Engine hasn't been initialized yet");
+  }
+
+  return engine;
 }

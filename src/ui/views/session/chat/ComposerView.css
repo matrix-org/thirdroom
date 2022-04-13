@@ -1,0 +1,27 @@
+.ComposerView {
+  padding: var(--sp-extra-tight);
+  border-radius: var(--br-small);
+  background-color: #00000040;
+
+  & .Icon {
+    margin-right: var(--sp-extra-tight);
+  }
+
+  & input {
+    min-width: 0;
+    width: 100%;
+    border: none;
+    background-color: transparent;
+
+    &:focus {
+      outline: none;
+    }
+    &::placeholder {
+      color: rgba(255 255 255 / 80%);
+    }
+  }
+
+  &:focus-within {
+    background-color: #00000080;
+  }
+}

@@ -1,0 +1,14 @@
+.SpacesView {
+  margin: 0 var(--sp-extra-tight);
+  width: 60px;
+  border-radius: var(--br-small);
+  background-color: var(--bg-surface);
+}
+
+.SpacesView__scrollable {
+  padding: var(--sp-extra-tight) 0;
+
+  & .IconButton {
+    margin-bottom: var(--sp-extra-tight);
+  }
+}
