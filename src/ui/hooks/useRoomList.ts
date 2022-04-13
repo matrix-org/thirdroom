@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useObservableList } from "./useObservableList";
 
 function roomListComparator(a: Room, b: Room) {
-  return a.lastMessageTimestamp - b.lastMessageTimestamp;
+  return b.lastMessageTimestamp - a.lastMessageTimestamp;
 }
 
 export function useRoomList(session: Session): Room[] {
