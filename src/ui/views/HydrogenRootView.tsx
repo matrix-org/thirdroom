@@ -165,6 +165,8 @@ export function HydrogenRootView() {
           return isCatchupSync || s === LoadStatus.LoginFailed || s === LoadStatus.Error || s === LoadStatus.Ready;
         });
 
+        await (client.session as any).callHandler.loadCalls("m.room");
+
         const loadStatus = client.loadStatus.get();
 
         if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {

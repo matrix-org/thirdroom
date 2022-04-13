@@ -203,9 +203,32 @@ declare module "hydrogen-view-sdk" {
     mxcUrlThumbnail(url: string, width: number, height: number, method: "crop" | "scale"): string | null;
   }
 
+  export enum RoomType {
+    DirectMessage,
+    Private,
+    Public,
+  }
+
+  type RoomBeingCreated = any;
+
+  export enum RoomStatus {
+    None = 1 << 0,
+    BeingCreated = 1 << 1,
+    Invited = 1 << 2,
+    Joined = 1 << 3,
+    Replaced = 1 << 4,
+    Archived = 1 << 5,
+  }
+
   export class Session {
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
+    createRoom(options: any): RoomBeingCreated;
+  }
+
+  export class LocalMedia {
+    withTracks(tracks: any): this;
+    withDataChannel(options: any): this;
   }
 
   enum SyncStatus {

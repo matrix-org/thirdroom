@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, useMatch, useNavigate } from "react-router-dom";
-import { Room } from "hydrogen-view-sdk";
+import { Room, LocalMedia } from "hydrogen-view-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
@@ -9,12 +9,14 @@ import { usePointerLockState } from "../../hooks/usePointerLockState";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useWorldId } from "../../hooks/useWorldId";
 import { useRoomById } from "../../hooks/useRoomById";
+import { useHydrogen } from "../../hooks/useHydrogen";
 
 export interface SessionViewContext {
   overlayOpen: boolean;
 }
 
 export function SessionView() {
+  const { platform, session } = useHydrogen();
   const composerInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
@@ -31,7 +33,6 @@ export function SessionView() {
 
   const onLoadWorld = useCallback(
     async (room: Room) => {
-      console.log("onLoadWorld", room);
       navigate(`/world/${room.id}`);
       return;
     },
@@ -39,8 +40,14 @@ export function SessionView() {
   );
 
   const onEnterWorld = useCallback(async () => {
+    const calls = Array.from((session as any).callHandler.calls.values());
+    console.log(calls);
+    const call = calls.find((c: any) => c.roomId === worldId) as any;
+    const mediaTracks = await (platform as any).mediaDevices.getMediaTracks(true, false);
+    const localMedia = new LocalMedia().withTracks(mediaTracks).withDataChannel({});
+    await call.join(localMedia);
     canvasRef.current!.requestPointerLock();
-  }, []);
+  }, [platform, session, worldId]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

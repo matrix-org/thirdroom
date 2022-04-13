@@ -1,3 +1,4 @@
+import { MouseEventHandler } from "react";
 import { Room } from "hydrogen-view-sdk";
 
 import "./RoomListView.css";
@@ -7,14 +8,16 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { RoomTile } from "./RoomTile";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
+import { Button } from "../../../atoms/button/Button";
 
 interface RoomListViewProps {
   rooms: Room[];
   selectedRoomId?: string;
   onSelectRoom: (roomId: string) => void;
+  onCreateWorld: MouseEventHandler;
 }
 
-export function RoomListView({ rooms, selectedRoomId, onSelectRoom }: RoomListViewProps) {
+export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorld }: RoomListViewProps) {
   const { platform } = useHydrogen();
 
   return (
@@ -23,6 +26,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom }: RoomListVi
         <Text className="truncate" variant="s1" weight="semi-bold">
           Home
         </Text>
+        <Button onClick={onCreateWorld}>Create World</Button>
       </header>
       <div className="RoomListView__container grow">
         <Scroll>
