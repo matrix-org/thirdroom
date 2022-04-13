@@ -1,16 +1,13 @@
 import React from "react";
+import classNames from "classnames";
 
 import { Text } from "../text/Text";
-import { Icon } from "../icon/Icon";
-import { RawButton } from "./RawButton";
 
 import "./Button.css";
 interface IButton {
   className?: string;
-  variant?: "surface" | "primary" | "secondary" | "positive" | "danger";
-  size?: "normal" | "small" | "extra-small";
-  iconSrc?: string;
-  iconPlacement?: "start" | "end";
+  variant?: "primary" | "secondary" | "danger" | "primary-outline" | "secondary-outline" | "danger-outline";
+  size?: "md" | "lg" | "xl";
   type?: "button" | "submit" | "reset";
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
   children: React.ReactNode;
@@ -18,26 +15,35 @@ interface IButton {
 }
 
 export function Button({
-  className = undefined,
-  variant = "surface",
-  size = "normal",
-  iconSrc = undefined,
-  iconPlacement = "start",
+  className,
+  variant = "primary",
+  size = "md",
   type = "button",
   onClick,
   children,
   disabled = false,
 }: IButton) {
-  const icon = iconSrc ? <Icon size={size} src={iconSrc} /> : null;
-  const classes: string[] = [];
-  if (className) classes.push(className);
-  classes.push(`Button Button--${size}`);
+  const btnClass = classNames(`Button Button--${variant} Button--${size}`, className);
+
+  let renderChild;
+
+  if (typeof children === "string") {
+    renderChild = <Text variant="b2">{children}</Text>;
+  } else if (Array.isArray(children)) {
+    renderChild = children.map((child, index) => {
+      if (typeof child === "string")
+        return (
+          <Text key={index} variant="b2">
+            {child}
+          </Text>
+        );
+      else return child;
+    });
+  } else renderChild = children;
 
   return (
-    <RawButton className={classes.join(" ")} variant={variant} type={type} onClick={onClick} disabled={disabled}>
-      {iconPlacement === "start" && icon}
-      {typeof children === "string" ? <Text variant={size === "extra-small" ? "b3" : "b2"}>{children}</Text> : children}
-      {iconPlacement === "end" && icon}
-    </RawButton>
+    <button className={btnClass} type={type} onClick={onClick} disabled={disabled}>
+      {renderChild}
+    </button>
   );
 }

@@ -5,6 +5,6 @@
   width: 200px;
   padding: 8px;
   background-color: rgba(0 0 0 / 50%);
-  color: white;
+  color: var(--tc-world);
   overflow: hidden;
 }

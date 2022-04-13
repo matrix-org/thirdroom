@@ -29,6 +29,9 @@
   line-height: var(--lh-b3);
 }
 
+.Text--light {
+  font-weight: var(--fw-light);
+}
 .Text--regular {
   font-weight: var(--fw-regular);
 }
@@ -37,4 +40,7 @@
 }
 .Text--semi-bold {
   font-weight: var(--fw-semi-bold);
+}
+.Text--bold {
+  font-weight: var(--fw-bold);
 }

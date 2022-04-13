@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import classNames from "classnames";
 import "./Avatar.css";
 
 import { Text } from "../text/Text";
@@ -8,29 +9,26 @@ interface IAvatar {
   name: string;
   bgColor: string;
   isCircle?: boolean;
-  imageSrc?: string | undefined | null;
-  size?: "large" | "normal" | "small" | "extra-small";
+  imageSrc?: string | null;
+  size?: "xl" | "lg" | "md" | "sm" | "xs" | "xxs";
 }
 
-export function Avatar({ className, name, bgColor, isCircle = false, imageSrc = undefined, size = "normal" }: IAvatar) {
+export function Avatar({ className, name, bgColor, isCircle = false, imageSrc, size = "md" }: IAvatar) {
   const [isFallback, setIsFallback] = useState(false);
 
-  let textSize: "h2" | "s1" | "b1" | "b3" = "s1";
-  if (size === "large") textSize = "h2";
-  if (size === "small") textSize = "b1";
-  if (size === "extra-small") textSize = "b3";
+  let textSize: "h2" | "s1" | "b1" | "b3" = "h2";
+  if (size === "xl") textSize = "h2";
+  else if (size === "lg") textSize = "s1";
+  else if (size === "md" || size == "sm") textSize = "b1";
+  else textSize = "b3";
 
-  const classes = ["Avatar"];
-  classes.push(`Avatar--${size}`);
-  if (isCircle) classes.push("Avatar--circle");
-  classes.push("noselect");
-  if (className) classes.push(className);
+  const avatarClass = classNames("Avatar", `Avatar--${size}`, { "Avatar--circle": isCircle }, className, "noselect");
 
   const style: React.CSSProperties = {};
   if (isFallback || !imageSrc) style.backgroundColor = bgColor;
 
   return (
-    <div className={classes.join(" ")} aria-label={name} style={style}>
+    <div className={avatarClass} aria-label={name} style={style}>
       {!isFallback && imageSrc ? (
         <img draggable="false" src={imageSrc} alt="" onError={() => setIsFallback(true)} />
       ) : (

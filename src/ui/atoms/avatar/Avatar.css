@@ -2,6 +2,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
   border-radius: var(--br-normal);
   background-color: var(--sc-dark-low);
   overflow: hidden;
@@ -18,21 +19,31 @@
   }
 }
 
-.Avatar--large {
-  width: var(--av-large);
-  height: var(--av-large);
+.Avatar--xl {
+  width: var(--av-xl);
+  height: var(--av-xl);
 }
-.Avatar--normal {
-  width: var(--av-normal);
-  height: var(--av-normal);
+.Avatar--lg {
+  width: var(--av-lg);
+  height: var(--av-lg);
 }
-.Avatar--small {
-  width: var(--av-small);
-  height: var(--av-small);
+.Avatar--md {
+  width: var(--av-md);
+  height: var(--av-md);
 }
-.Avatar--extra-small {
-  width: var(--av-extra-small);
-  height: var(--av-extra-small);
+.Avatar--sm {
+  width: var(--av-sm);
+  height: var(--av-sm);
+  border-radius: var(--br-small);
+}
+.Avatar--xs {
+  width: var(--av-xs);
+  height: var(--av-xs);
+  border-radius: var(--br-small);
+}
+.Avatar--xxs {
+  width: var(--av-xxs);
+  height: var(--av-xxs);
   border-radius: var(--br-small);
 }
 

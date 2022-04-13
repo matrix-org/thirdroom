@@ -1,7 +1,7 @@
 .SidebarView {
   height: inherit;
   pointer-events: all;
-  padding: var(--sp-normal) 0;
+  padding: var(--sp-md) 0;
 }
 
 .SidebarView--open,

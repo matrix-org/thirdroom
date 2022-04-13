@@ -1,13 +1,13 @@
 import React from "react";
+import classNames from "classnames";
 
 import { Icon } from "../icon/Icon";
-import { RawButton } from "./RawButton";
 
 import "./IconButton.css";
 interface IIconButton {
   className?: string;
-  variant?: "surface" | "primary" | "secondary" | "positive" | "danger";
-  size?: "normal" | "small";
+  variant?: "surface" | "world" | "primary" | "secondary" | "danger";
+  size?: "md" | "sm";
   isCircle?: boolean;
   shadedSurface?: boolean;
   iconSrc: string;
@@ -18,33 +18,20 @@ interface IIconButton {
 }
 
 export function IconButton({
-  className = undefined,
+  className,
   variant = "surface",
-  size = "normal",
-  isCircle = false,
-  shadedSurface = false,
+  size = "md",
   iconSrc,
   label,
   type = "button",
   onClick,
   disabled = false,
 }: IIconButton) {
-  const classes: string[] = [];
-  if (className) classes.push(className);
-  classes.push(`IconButton IconButton--${size}`);
-  if (isCircle) classes.push("IconButton--circle");
-  if (shadedSurface && variant === "surface") classes.push("IconButton--shaded");
+  const btnClass = classNames(`IconButton IconButton--${variant}`, className);
 
   return (
-    <RawButton
-      className={classes.join(" ")}
-      variant={variant}
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-    >
+    <button className={btnClass} type={type} onClick={onClick} disabled={disabled} aria-label={label}>
       <Icon size={size} src={iconSrc} />
-    </RawButton>
+    </button>
   );
 }

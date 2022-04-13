@@ -1,12 +1,12 @@
 .RoomTile,
 .RoomTile--active {
   width: 100%;
-  padding: var(--sp-extra-tight) var(--sp-normal);
+  padding: var(--sp-xs) var(--sp-md);
   cursor: pointer;
 }
 
 .RoomTile__content {
-  padding: var(--sp-extra-tight) var(--sp-tight);
+  padding: var(--sp-xs) var(--sp-sm);
 }
 
 .RoomTile {

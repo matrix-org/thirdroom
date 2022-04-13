@@ -24,7 +24,7 @@ export function ComposerView({ composerViewModel, inputRef }: IComposerView) {
 
   return (
     <div className="ComposerView flex items-center">
-      <Icon color="white" src={MessageIC} size="small" />
+      <Icon color="white" src={MessageIC} size="sm" />
       <form className="grow" onSubmit={handleSubmit}>
         <input
           className="Text Text-b2 Text-regular"

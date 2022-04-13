@@ -2,20 +2,16 @@
   display: inline-block;
   mask-repeat: no-repeat;
   mask-size: cover;
-  background-color: var(--ic-surface-normal);
+  background-color: var(--ic-surface);
 
   background-size: cover;
   background-repeat: no-repeat;
 }
-.Icon--normal {
-  width: var(--ic-normal);
-  height: var(--ic-normal);
+.Icon--md {
+  width: var(--ic-md);
+  height: var(--ic-md);
 }
-.Icon--small {
-  width: var(--ic-small);
-  height: var(--ic-small);
-}
-.Icon--extra-small {
-  width: var(--ic-extra-small);
-  height: var(--ic-extra-small);
+.Icon--sm {
+  width: var(--ic-sm);
+  height: var(--ic-sm);
 }

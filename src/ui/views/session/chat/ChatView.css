@@ -3,6 +3,6 @@
   overflow: hidden;
 
   & .Text {
-    color: white;
+    color: var(--tc-world);
   }
 }

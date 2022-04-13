@@ -2,12 +2,9 @@ import { Room } from "hydrogen-view-sdk";
 
 import "./RoomListView.css";
 import { Text } from "../../../atoms/text/Text";
-import { Button } from "../../../atoms/button/Button";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { RoomTile } from "./RoomTile";
-import AddBoxIC from "../../../../../res/ic/add-box.svg";
-import ManageSearchIC from "../../../../../res/ic/manage-search.svg";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 
@@ -30,17 +27,6 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom }: RoomListVi
       <div className="RoomListView__container grow">
         <Scroll>
           <div className="RoomListView__content">
-            <header className="flex items-center">
-              <Text className="grow" variant="b2" weight="semi-bold">
-                Rooms
-              </Text>
-              <Button iconSrc={AddBoxIC} size="extra-small" onClick={() => alert("create room")}>
-                Create
-              </Button>
-              <Button iconSrc={ManageSearchIC} size="extra-small" onClick={() => alert("Discover")}>
-                Discover
-              </Button>
-            </header>
             {rooms.map((room) => (
               <RoomTile
                 key={room.id}
@@ -49,7 +35,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom }: RoomListVi
                 avatar={
                   <Avatar
                     name={room.name || "Empty room"}
-                    size="large"
+                    size="lg"
                     isCircle
                     className="shrink-0"
                     bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
