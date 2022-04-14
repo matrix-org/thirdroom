@@ -123,6 +123,20 @@ declare module "hydrogen-view-sdk" {
     abstract get length(): number;
   }
 
+  export class ObservableArray<T> extends BaseObservableList<T> {
+    constructor(initialValues?: T[]);
+    append(item: T): void;
+    remove(idx: number): void;
+    insertMany(idx: number, items: T[]): void;
+    insert(idx: number, item: T): void;
+    move(fromIdx: number, toIdx: number): void;
+    update(idx: number, item: T, params?: any): void;
+    get array(): Readonly<T[]>;
+    at(idx: number): T | undefined;
+    get length(): number;
+    [Symbol.iterator](): IterableIterator<T>;
+  }
+
   export type ListComparator<T> = (a: T, b: T) => number;
 
   export class SortedMapList<T> extends BaseObservableList<T> {

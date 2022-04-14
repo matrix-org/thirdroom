@@ -1,31 +1,36 @@
-import { BaseObservableMap } from "hydrogen-view-sdk";
-import { useEffect, useState } from "react";
+import { BaseObservableMap, IMapObserver } from "hydrogen-view-sdk";
+import { useEffect, useMemo, useReducer } from "react";
 
-export function useObservableMap<K, V>(observable: BaseObservableMap<K, V>): Map<K, V> {
-  const [state, setState] = useState<Map<K, V>>(() => new Map(observable));
+export function useObservableMap<K, V>(observable?: BaseObservableMap<K, V>): Map<K, V> {
+  const [updateCount, forceUpdate] = useReducer<(x: number) => number>((x) => x + 1, 0);
 
   useEffect(() => {
-    const mapObserver = {
-      onReset() {
-        setState(new Map(observable));
-      },
-      onAdd() {
-        setState(new Map(observable));
-      },
-      onUpdate() {
-        setState(new Map(observable));
-      },
-      onRemove() {
-        setState(new Map(observable));
-      },
-    };
+    if (observable) {
+      const mapObserver: IMapObserver<K, V> = {
+        onReset() {
+          forceUpdate();
+        },
+        onAdd() {
+          forceUpdate();
+        },
+        onUpdate() {
+          forceUpdate();
+        },
+        onRemove() {
+          forceUpdate();
+        },
+      };
 
-    observable.subscribe(mapObserver);
+      observable.subscribe(mapObserver);
 
-    return () => {
-      observable.unsubscribe(mapObserver);
-    };
+      return () => {
+        observable.unsubscribe(mapObserver);
+      };
+    }
   }, [observable]);
 
-  return state;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => new Map(observable), [observable, updateCount]);
+
+  return value;
 }
