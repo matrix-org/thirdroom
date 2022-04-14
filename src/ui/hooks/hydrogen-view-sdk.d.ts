@@ -238,6 +238,7 @@ declare module "hydrogen-view-sdk" {
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     createRoom(options: any): RoomBeingCreated;
+    observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
   }
 
   export class LocalMedia {
@@ -727,4 +728,6 @@ declare module "hydrogen-view-sdk" {
     render(t: Builder<GapTile>, value: GapTile): ViewNode;
     onClick(): void;
   }
+
+  export type GroupCall = any;
 }
