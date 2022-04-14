@@ -2,7 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { Vector3 } from "three";
 
 import { GameState } from "./engine/GameWorker";
-import { ActionMappingSystem, ActionType, BindingType } from "./engine/input/ActionMappingSystem";
+import { ActionMappingSystem, ActionType, BindingType, ButtonActionState } from "./engine/input/ActionMappingSystem";
 import {
   createPlayerRig,
   PhysicsCharacterControllerActions,
@@ -17,6 +17,8 @@ import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
+import { addComponent } from "bitecs";
+import { createNetworkId, Owned, Networked } from "./engine/network";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -86,6 +88,17 @@ export async function init(state: GameState): Promise<void> {
             },
           ],
         },
+        {
+          id: "spawnCube",
+          path: "SpawnCube",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyF",
+            },
+          ],
+        },
       ],
     },
   ];
@@ -104,7 +117,7 @@ export async function init(state: GameState): Promise<void> {
     geometryType: GeometryType.Box,
   });
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 0; i++) {
     const cube = createCube(state, geometryResourceId);
 
     const position = Transform.position[cube];
@@ -118,11 +131,6 @@ export async function init(state: GameState): Promise<void> {
     rotation[1] = rndRange(0, 5);
     rotation[2] = rndRange(0, 5);
 
-    const body = RigidBody.store.get(cube);
-    if (body) {
-      body.setTranslation(new Vector3().fromArray(position), true);
-    }
-
     addChild(scene, cube);
   }
 
@@ -131,12 +139,26 @@ export async function init(state: GameState): Promise<void> {
   const playerRig = createPlayerRig(state);
   addChild(scene, playerRig);
 
+  const cubeSpawnSystem = (state: GameState) => {
+    const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
+    if (spawnCube.pressed) {
+      const cube = createCube(state, geometryResourceId);
+      addComponent(state.world, Networked, cube);
+      addComponent(state.world, Owned, cube);
+
+      Transform.position[cube].set(Transform.position[playerRig]);
+
+      addChild(scene, cube);
+    }
+  };
+
   state.systems.push(
     GLTFLoaderSystem,
     ActionMappingSystem,
     FirstPersonCameraSystem,
     PlayerControllerSystem,
     PhysicsSystem,
-    RenderableVisibilitySystem
+    RenderableVisibilitySystem,
+    cubeSpawnSystem
   );
 }

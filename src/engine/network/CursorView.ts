@@ -53,10 +53,8 @@ export const resize = (ta: TypedArray, byteLength: number) => {
   return newTa;
 };
 
-let ui8 = new Uint8Array(100000);
 export const writeArrayBuffer = (v: CursorView, buffer: ArrayBuffer) => {
-  if (ui8.byteLength < buffer.byteLength) ui8 = resize(ui8, buffer.byteLength);
-  ui8.set(new Uint8Array(buffer), v.cursor);
+  new Uint8Array(v.buffer).set(new Uint8Array(buffer), v.cursor);
   v.cursor += buffer.byteLength;
   return v;
 };

@@ -26,6 +26,8 @@ import { renderableBuffer } from "./component";
 import { init } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
+import { CursorView } from "./network/CursorView";
+import { IncomingNetworkSystem, OutgoingNetworkSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -53,6 +55,10 @@ const onMessage =
         break;
       case WorkerMessageType.ExportScene:
         exportGLTF(state, state.scene);
+        break;
+      case WorkerMessageType.ReliableNetworkMessage:
+      case WorkerMessageType.UnreliableNetworkMessage:
+        state.network.messages.push(message.packet);
         break;
     }
   };
@@ -111,9 +117,11 @@ export interface RenderState {
 export interface NetworkState {
   messages: ArrayBuffer[];
   idMap: Map<number, number>;
-  clientId: number;
+  peerId: number;
   localIdCount: number;
   removedLocalIds: number[];
+  peers: number[];
+  messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
 }
 
 export interface GameInputState {
@@ -133,7 +141,9 @@ export interface GameState {
   time: TimeState;
   resourceManager: RemoteResourceManager;
   input: GameInputState;
+  preSystems: System[];
   systems: System[];
+  postSystems: System[];
   scene: number;
   camera: number;
   statsBuffer: StatsBuffer;
@@ -208,10 +218,12 @@ async function onInit({
   const network: NetworkState = {
     messages: [],
     idMap: new Map<number, number>(),
-    // todo: use mxid as clientId
-    clientId: NOOP,
+    // todo: use mxid as peerId
+    peerId: NOOP,
     localIdCount: 0,
     removedLocalIds: [],
+    peers: [],
+    messageHandlers: {},
   };
 
   const state: GameState = {
@@ -225,8 +237,20 @@ async function onInit({
     time,
     network,
     systems: [],
+    preSystems: [],
+    postSystems: [],
     statsBuffer,
   };
+
+  state.preSystems.push(
+    // eslint-disable-next-line new-cap
+    IncomingNetworkSystem(state)
+  );
+
+  state.postSystems.push(
+    // eslint-disable-next-line new-cap
+    OutgoingNetworkSystem(state)
+  );
 
   await init(state);
 
@@ -256,8 +280,16 @@ const pipeline = (state: GameState) => {
   timeSystem(state);
   inputReadSystem(state);
 
+  for (let i = 0; i < state.preSystems.length; i++) {
+    state.preSystems[i](state);
+  }
+
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
+  }
+
+  for (let i = 0; i < state.postSystems.length; i++) {
+    state.postSystems[i](state);
   }
 
   updateWorldMatrixSystem(state);

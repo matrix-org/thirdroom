@@ -28,6 +28,8 @@ export enum WorkerMessageType {
   ExportScene = "export-scene",
   ExportGLTF = "export-gltf",
   SaveGLTF = "save-gltf",
+  ReliableNetworkMessage = "reliable-network-message",
+  UnreliableNetworkMessage = "unreliable-network-message",
 }
 
 export interface WorkerMessage {
@@ -155,6 +157,18 @@ export interface SaveGLTFMessage extends WorkerMessage {
   buffer: ArrayBuffer;
 }
 
+export interface ReliableNetworkMessage extends WorkerMessage {
+  type: WorkerMessageType.ReliableNetworkMessage;
+  peerId: number;
+  packet: ArrayBuffer;
+}
+
+export interface UnreliableNetworkMessage extends WorkerMessage {
+  type: WorkerMessageType.UnreliableNetworkMessage;
+  peerId: number;
+  packet: ArrayBuffer;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -177,7 +191,9 @@ export type WorkerMessages =
   | SetActiveSceneMessage
   | ExportSceneMessage
   | ExportGLTFMessage
-  | SaveGLTFMessage;
+  | SaveGLTFMessage
+  | ReliableNetworkMessage
+  | UnreliableNetworkMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

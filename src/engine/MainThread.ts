@@ -87,6 +87,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   const statsBuffer = createStatsBuffer();
 
+  /* Wait for workers to be ready */
+
   await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
     renderWorker.postMessage(
       {
@@ -143,6 +145,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     gameWorker.addEventListener("message", onMessage);
   });
 
+  /* Start Workers */
+
   renderWorker.postMessage({
     type: WorkerMessageType.StartRenderWorker,
   });
@@ -150,6 +154,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   gameWorker.postMessage({
     type: WorkerMessageType.StartGameWorker,
   });
+
+  /* Render Worker Messages */
 
   const onRenderWorkerMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
@@ -161,10 +167,66 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     switch (message.type) {
       case WorkerMessageType.SaveGLTF:
         downloadFile(message.buffer, "scene.glb");
+        break;
     }
   };
 
   renderWorker.addEventListener("message", onRenderWorkerMessage);
+
+  /* Game Worker Messages */
+
+  const useTestNet = true;
+
+  const ws = new WebSocket("ws://localhost:8080");
+  ws.binaryType = "arraybuffer";
+
+  ws.addEventListener("open", (data) => {
+    console.log("connected to websocket server");
+  });
+  ws.addEventListener("close", (data) => {});
+  ws.addEventListener("message", ({ data }) => {
+    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
+  });
+
+  const reliableChannels: RTCDataChannel[] = [];
+  const unreliableChannels: RTCDataChannel[] = [];
+
+  const broadcastReliable = (peerId: number, packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws.send(packet);
+    } else {
+      reliableChannels[peerId].send(packet);
+    }
+  };
+
+  const broadcastUnreliable = (peerId: number, packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws.send(packet);
+    } else {
+      unreliableChannels[peerId].send(packet);
+    }
+  };
+
+  const onGameWorkerMessage = ({ data }: MessageEvent) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.ReliableNetworkMessage:
+        broadcastReliable(message.peerId, message.packet);
+        break;
+      case WorkerMessageType.UnreliableNetworkMessage:
+        broadcastUnreliable(message.peerId, message.packet);
+        break;
+    }
+  };
+
+  gameWorker.addEventListener("message", onGameWorkerMessage);
+
+  /* Update loop for input manager */
 
   let animationFrameId: number;
 
