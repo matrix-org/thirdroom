@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { Vector3 } from "three";
+import { addComponent } from "bitecs";
 
 import { GameState } from "./engine/GameWorker";
 import { ActionMappingSystem, ActionType, BindingType, ButtonActionState } from "./engine/input/ActionMappingSystem";
@@ -10,15 +10,14 @@ import {
 } from "./plugins/PhysicsCharacterController";
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, Transform } from "./engine/component/transform";
-import { PhysicsSystem, RigidBody } from "./engine/physics";
+import { PhysicsSystem } from "./engine/physics";
 import { GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
 import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
-import { addComponent } from "bitecs";
-import { createNetworkId, Owned, Networked } from "./engine/network";
+import { Owned, Networked } from "./engine/network";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
