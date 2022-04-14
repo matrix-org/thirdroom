@@ -1,5 +1,4 @@
 import { Room, Session } from "hydrogen-view-sdk";
-import { useMemo } from "react";
 
 import { useObservableList } from "./useObservableList";
 
@@ -8,8 +7,5 @@ function roomListComparator(a: Room, b: Room) {
 }
 
 export function useRoomList(session: Session): Room[] {
-  const rooms = session.rooms;
-  const sortedRoomList = useMemo(() => rooms.sortValues(roomListComparator), [rooms]);
-  const roomList = useObservableList<Room>(sortedRoomList);
-  return roomList;
+  return useObservableList<Room>(() => session.rooms.sortValues(roomListComparator), [session.rooms]);
 }

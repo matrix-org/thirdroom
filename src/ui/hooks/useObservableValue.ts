@@ -1,20 +1,36 @@
 import { BaseObservableValue } from "hydrogen-view-sdk";
-import { useEffect, useReducer } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 
-export function useObservableValue<T>(observable: BaseObservableValue<T>): T {
+export type ObservableValueReturningFunction<T> = (...args: any[]) => BaseObservableValue<T>;
+
+export type UseObservableValueArg<T> = BaseObservableValue<T> | ObservableValueReturningFunction<T>;
+
+export function useObservableValue<T>(observable: ObservableValueReturningFunction<T>, deps: any[]): T;
+export function useObservableValue<T>(observable: BaseObservableValue<T>): T;
+export function useObservableValue<T>(observable: UseObservableValueArg<T>, deps?: any[]): T {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
+
+  const observableValue = useMemo(() => {
+    if (typeof observable === "function") {
+      return observable();
+    } else {
+      return observable;
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [observable || deps]);
 
   useEffect(() => {
     const valueObserver = () => {
       forceUpdate();
     };
 
-    observable.subscribe(valueObserver);
+    observableValue.subscribe(valueObserver);
 
     return () => {
-      observable.unsubscribe(valueObserver);
+      observableValue.unsubscribe(valueObserver);
     };
-  }, [observable]);
+  }, [observableValue]);
 
-  return observable.get();
+  return observableValue.get();
 }

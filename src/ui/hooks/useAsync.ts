@@ -1,4 +1,4 @@
-import { Reducer, useEffect, useReducer } from "react";
+import { Reducer, useEffect, useReducer, useMemo } from "react";
 
 export type UseAsyncState<T> =
   | {
@@ -71,22 +71,27 @@ function asyncReducer<T>(state: UseAsyncState<T>, action: UseAsyncAction<T>): Us
   }
 }
 
-export type AsyncFunction<T> = (...args: any[]) => Promise<T>;
+export type PromiseReturningFunction<T> = (...args: any[]) => Promise<T>;
 
-export type UseAsyncPromise<T> = Promise<T> | AsyncFunction<T>;
+export type UseAsyncArg<T> = Promise<T> | PromiseReturningFunction<T>;
 
-export function useAsync<T>(promise: UseAsyncPromise<T>, deps?: any[]): UseAsyncState<T> {
+export function useAsync<T>(promise: PromiseReturningFunction<T>, deps: any[]): UseAsyncState<T>;
+export function useAsync<T>(promise: Promise<T>): UseAsyncState<T>;
+export function useAsync<T>(promise: UseAsyncArg<T>, deps?: any[]): UseAsyncState<T> {
   const [state, dispatch] = useReducer<Reducer<UseAsyncState<T>, UseAsyncAction<T>>>(asyncReducer, initialState);
+
+  const promiseValue = useMemo(() => {
+    if (typeof promise === "function") {
+      return promise();
+    } else {
+      return promise;
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promise || deps]);
 
   useEffect(() => {
     let canceled = false;
-    let promiseValue: Promise<T>;
-
-    if (typeof promise === "function") {
-      promiseValue = promise();
-    } else {
-      promiseValue = promise;
-    }
 
     dispatch({ type: UseAsyncActionType.Load });
 
@@ -105,9 +110,7 @@ export function useAsync<T>(promise: UseAsyncPromise<T>, deps?: any[]): UseAsync
     return () => {
       canceled = true;
     };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps || [promise]);
+  }, [promiseValue]);
 
   return state;
 }
