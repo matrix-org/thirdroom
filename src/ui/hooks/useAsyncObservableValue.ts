@@ -1,57 +1,24 @@
-import { useEffect, useRef, useState } from "react";
-import { BaseObservableValue } from "hydrogen-view-sdk";
+import { useMemo } from "react";
+import { BaseObservableValue, ObservableValue } from "hydrogen-view-sdk";
 
 import { useObservableValue } from "./useObservableValue";
+import { useAsync, UseAsyncPromise } from "./useAsync";
 
-interface UseAsyncObservableValueState<T> {
+interface UseAsyncObservableReturn<T> {
   loading: boolean;
   error?: any;
-  observable?: BaseObservableValue<T>;
+  value?: T | undefined;
 }
 
-interface AsyncObservableValue<T> {
-  loading: boolean;
-  error?: any;
-  value?: T;
-}
-
-export function useAsyncObservableValue<T>(promise?: Promise<BaseObservableValue<T>>): AsyncObservableValue<T> {
-  const initialRenderRef = useRef<boolean>(true); // Prevent double render for initial value
-  const curPromiseRef = useRef<Promise<BaseObservableValue<T>> | undefined>(promise);
-
-  const [{ loading, error, observable }, setState] = useState<UseAsyncObservableValueState<T>>({
-    loading: promise ? true : false,
-  });
-
-  useEffect(() => {
-    curPromiseRef.current = promise;
-
-    if (initialRenderRef.current) {
-      initialRenderRef.current = false;
-    } else {
-      setState({ loading: promise ? true : false });
-    }
-
-    if (promise) {
-      promise
-        .then((observable) => {
-          if (curPromiseRef.current === promise) {
-            setState({ loading: false, observable });
-          }
-        })
-        .catch((error) => {
-          if (curPromiseRef.current === promise) {
-            setState({ loading: false, error });
-          }
-        });
-    }
-  }, [promise]);
-
+export function useAsyncObservableValue<T>(
+  promise: UseAsyncPromise<BaseObservableValue<T>>,
+  deps?: any[]
+): UseAsyncObservableReturn<T> {
+  const { loading, error, value: maybeObservable } = useAsync(promise, deps);
+  const observable = useMemo(
+    () => (maybeObservable ? maybeObservable : new ObservableValue(undefined)),
+    [maybeObservable]
+  );
   const value = useObservableValue(observable);
-
-  return {
-    loading,
-    error,
-    value,
-  };
+  return { loading, error, value };
 }

@@ -5,14 +5,6 @@ import { ObservableValue } from "hydrogen-view-sdk";
 import { useAsyncObservableValue } from "../../../src/ui/hooks/useAsyncObservableValue";
 
 describe("useAsyncObservableValue", () => {
-  test("it should immediately return undefined when passed an undefined value", () => {
-    const { result } = renderHook(() => useAsyncObservableValue(undefined));
-
-    expect(result.current.value).toBe(undefined);
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe(undefined);
-  });
-
   test("it should emit a loading state and then return the initial value once resolved", async () => {
     const observable = new ObservableValue(1);
     const observablePromise = Promise.resolve(observable);
@@ -80,7 +72,7 @@ describe("useAsyncObservableValue", () => {
     expect(result.current.value).toBe(undefined);
     expect(result.current.loading).toBe(true);
     expect(result.current.error).toBe(undefined);
-    expect(result.all.length).toBe(3);
+    expect(result.all.length).toBe(2);
 
     resolvePromise1();
     resolvePromise2();
@@ -90,7 +82,7 @@ describe("useAsyncObservableValue", () => {
     expect(result.current.value).toBe(2);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(undefined);
-    expect(result.all.length).toBe(4);
+    expect(result.all.length).toBe(3);
     expect(observable1.hasSubscriptions).toBe(false);
     expect(observable2.hasSubscriptions).toBe(true);
   });

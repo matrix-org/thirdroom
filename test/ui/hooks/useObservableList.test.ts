@@ -5,13 +5,6 @@ import { ObservableArray } from "hydrogen-view-sdk";
 import { useObservableList } from "../../../src/ui/hooks/useObservableList";
 
 describe("useObservableList", () => {
-  test("it should return an empty array when passed an undefined value", () => {
-    const { result } = renderHook(() => useObservableList(undefined));
-
-    expect(result.current).toStrictEqual([]);
-    expect(result.all.length).toBe(1);
-  });
-
   test("it should return a new array when changed", () => {
     const observable = new ObservableArray([1]);
 
@@ -101,46 +94,6 @@ describe("useObservableList", () => {
     expect(result.current).toStrictEqual([2]);
     expect(observable1.hasSubscriptions).toBe(false);
     expect(observable2.hasSubscriptions).toBe(true);
-    expect(result.all.length).toBe(2);
-  });
-
-  test("it should handle an undefined to observable transition", () => {
-    const observable = new ObservableArray([1]);
-
-    const { result, rerender } = renderHook<{ observable: ObservableArray<number> | undefined }, number[] | undefined>(
-      ({ observable }) => useObservableList(observable),
-      {
-        initialProps: { observable: undefined },
-      }
-    );
-
-    expect(result.current).toStrictEqual([]);
-    expect(observable.hasSubscriptions).toBe(false);
-
-    rerender({ observable });
-
-    expect(result.current).toStrictEqual([1]);
-    expect(observable.hasSubscriptions).toBe(true);
-    expect(result.all.length).toBe(2);
-  });
-
-  test("it should handle an observable to undefined transition", () => {
-    const observable = new ObservableArray([1]);
-
-    const { result, rerender } = renderHook<{ observable: ObservableArray<number> | undefined }, number[] | undefined>(
-      ({ observable }) => useObservableList(observable),
-      {
-        initialProps: { observable },
-      }
-    );
-
-    expect(result.current).toStrictEqual([1]);
-    expect(observable.hasSubscriptions).toBe(true);
-
-    rerender({ observable: undefined });
-
-    expect(result.current).toStrictEqual([]);
-    expect(observable.hasSubscriptions).toBe(false);
     expect(result.all.length).toBe(2);
   });
 });

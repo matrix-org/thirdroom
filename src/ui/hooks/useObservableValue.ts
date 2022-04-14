@@ -1,7 +1,7 @@
 import { BaseObservableValue } from "hydrogen-view-sdk";
 import { useEffect, useReducer } from "react";
 
-export function useObservableValue<T>(observable?: BaseObservableValue<T>): T | undefined {
+export function useObservableValue<T>(observable: BaseObservableValue<T>): T {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
   useEffect(() => {
@@ -9,16 +9,12 @@ export function useObservableValue<T>(observable?: BaseObservableValue<T>): T | 
       forceUpdate();
     };
 
-    if (observable) {
-      observable.subscribe(valueObserver);
-    }
+    observable.subscribe(valueObserver);
 
     return () => {
-      if (observable) {
-        observable.unsubscribe(valueObserver);
-      }
+      observable.unsubscribe(valueObserver);
     };
   }, [observable]);
 
-  return observable ? observable.get() : undefined;
+  return observable.get();
 }

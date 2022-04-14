@@ -5,13 +5,6 @@ import { ObservableMap } from "hydrogen-view-sdk";
 import { useObservableMap } from "../../../src/ui/hooks/useObservableMap";
 
 describe("useObservableMap", () => {
-  test("it should return an empty map when passed an undefined value", () => {
-    const { result } = renderHook(() => useObservableMap(undefined));
-
-    expect(result.current).toStrictEqual(new Map());
-    expect(result.all.length).toBe(1);
-  });
-
   test("it should return a new map when changed", () => {
     const observable = new ObservableMap<string, number>([["a", 1]]);
 
@@ -157,68 +150,6 @@ describe("useObservableMap", () => {
     );
     expect(observable1.hasSubscriptions).toBe(false);
     expect(observable2.hasSubscriptions).toBe(true);
-
-    expect(result.all.length).toBe(2);
-  });
-
-  test("it should handle an undefined to observable transition", () => {
-    const observable = new ObservableMap<string, number>([
-      ["a", 1],
-      ["b", 2],
-      ["c", 3],
-    ]);
-
-    const { result, rerender } = renderHook<
-      { observable: ObservableMap<string, number> | undefined },
-      Map<string, number> | undefined
-    >(({ observable }) => useObservableMap(observable), {
-      initialProps: { observable: undefined },
-    });
-
-    expect(result.current).toStrictEqual(new Map());
-    expect(observable.hasSubscriptions).toBe(false);
-
-    rerender({ observable });
-
-    expect(result.current).toStrictEqual(
-      new Map([
-        ["a", 1],
-        ["b", 2],
-        ["c", 3],
-      ])
-    );
-    expect(observable.hasSubscriptions).toBe(true);
-
-    expect(result.all.length).toBe(2);
-  });
-
-  test("it should handle an observable to undefined transition", () => {
-    const observable = new ObservableMap<string, number>([
-      ["a", 1],
-      ["b", 2],
-      ["c", 3],
-    ]);
-
-    const { result, rerender } = renderHook<
-      { observable: ObservableMap<string, number> | undefined },
-      Map<string, number> | undefined
-    >(({ observable }) => useObservableMap(observable), {
-      initialProps: { observable },
-    });
-
-    expect(result.current).toStrictEqual(
-      new Map([
-        ["a", 1],
-        ["b", 2],
-        ["c", 3],
-      ])
-    );
-    expect(observable.hasSubscriptions).toBe(true);
-
-    rerender({ observable: undefined });
-
-    expect(result.current).toStrictEqual(new Map());
-    expect(observable.hasSubscriptions).toBe(false);
 
     expect(result.all.length).toBe(2);
   });
