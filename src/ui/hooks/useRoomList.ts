@@ -7,5 +7,5 @@ function roomListComparator(a: Room, b: Room) {
 }
 
 export function useRoomList(session: Session): Room[] {
-  return useObservableList<Room>(() => session.rooms.sortValues(roomListComparator), [session.rooms]);
+  return useObservableList(() => session.rooms.sortValues(roomListComparator), [session.rooms]);
 }

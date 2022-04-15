@@ -8,7 +8,7 @@ describe("useObservableValue", () => {
   test("it should return the first observed value", () => {
     const observable = new ObservableValue(1);
 
-    const { result } = renderHook(() => useObservableValue(observable));
+    const { result } = renderHook(() => useObservableValue(() => observable, [observable]));
 
     expect(result.current).toBe(1);
     expect(observable.hasSubscriptions).toBe(true);
@@ -17,7 +17,7 @@ describe("useObservableValue", () => {
   test("it should not rerender unless the value has changed", () => {
     const observable = new ObservableValue(1);
 
-    const { result } = renderHook(() => useObservableValue(observable));
+    const { result } = renderHook(() => useObservableValue(() => observable, [observable]));
 
     expect(result.all.length).toBe(1);
   });
@@ -25,7 +25,7 @@ describe("useObservableValue", () => {
   test("it should change when the observed value changes", () => {
     const observable = new ObservableValue(1);
 
-    const { result } = renderHook(() => useObservableValue(observable));
+    const { result } = renderHook(() => useObservableValue(() => observable, [observable]));
 
     expect(result.current).toBe(1);
 
@@ -38,7 +38,7 @@ describe("useObservableValue", () => {
     const observable1 = new ObservableValue(1);
     const observable2 = new ObservableValue(2);
 
-    const { result, rerender } = renderHook(({ observable }) => useObservableValue(observable), {
+    const { result, rerender } = renderHook(({ observable }) => useObservableValue(() => observable, [observable]), {
       initialProps: { observable: observable1 },
     });
 

@@ -8,7 +8,7 @@ describe("useObservableList", () => {
   test("it should return a new array when changed", () => {
     const observable = new ObservableArray([1]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     observable.update(0, 2);
 
@@ -19,7 +19,7 @@ describe("useObservableList", () => {
   test("it should return the first observed value", () => {
     const observable = new ObservableArray([1]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     expect(result.current).toStrictEqual([1]);
     expect(observable.hasSubscriptions).toBe(true);
@@ -29,7 +29,7 @@ describe("useObservableList", () => {
   test("it should change when the an item is appended", () => {
     const observable = new ObservableArray([1, 2, 3]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     expect(result.current).toStrictEqual([1, 2, 3]);
 
@@ -42,7 +42,7 @@ describe("useObservableList", () => {
   test("it should change when the an item is updated", () => {
     const observable = new ObservableArray([1, 2, 3]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     expect(result.current).toStrictEqual([1, 2, 3]);
 
@@ -55,7 +55,7 @@ describe("useObservableList", () => {
   test("it should change when the an item is removed", () => {
     const observable = new ObservableArray([1, 2, 3]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     expect(result.current).toStrictEqual([1, 2, 3]);
 
@@ -68,7 +68,7 @@ describe("useObservableList", () => {
   test("it should change when the an item is moved", () => {
     const observable = new ObservableArray([1, 2, 3]);
 
-    const { result } = renderHook(() => useObservableList(observable));
+    const { result } = renderHook(() => useObservableList(() => observable, [observable]));
 
     expect(result.current).toStrictEqual([1, 2, 3]);
 
@@ -82,7 +82,7 @@ describe("useObservableList", () => {
     const observable1 = new ObservableArray([1]);
     const observable2 = new ObservableArray([2]);
 
-    const { result, rerender } = renderHook(({ observable }) => useObservableList(observable), {
+    const { result, rerender } = renderHook(({ observable }) => useObservableList(() => observable, [observable]), {
       initialProps: { observable: observable1 },
     });
 

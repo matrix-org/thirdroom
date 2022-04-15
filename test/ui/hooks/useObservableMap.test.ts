@@ -8,7 +8,7 @@ describe("useObservableMap", () => {
   test("it should return a new map when changed", () => {
     const observable = new ObservableMap<string, number>([["a", 1]]);
 
-    const { result } = renderHook(() => useObservableMap(observable));
+    const { result } = renderHook(() => useObservableMap(() => observable, [observable]));
 
     observable.update("a", 2);
 
@@ -19,7 +19,7 @@ describe("useObservableMap", () => {
   test("it should return the first observed value", () => {
     const observable = new ObservableMap<string, number>([["a", 1]]);
 
-    const { result } = renderHook(() => useObservableMap(observable));
+    const { result } = renderHook(() => useObservableMap(() => observable, [observable]));
 
     expect(result.current).toStrictEqual(new Map([["a", 1]]));
     expect(observable.hasSubscriptions).toBe(true);
@@ -33,7 +33,7 @@ describe("useObservableMap", () => {
       ["c", 3],
     ]);
 
-    const { result } = renderHook(() => useObservableMap(observable));
+    const { result } = renderHook(() => useObservableMap(() => observable, [observable]));
 
     expect(result.current).toStrictEqual(
       new Map([
@@ -64,7 +64,7 @@ describe("useObservableMap", () => {
       ["c", 3],
     ]);
 
-    const { result } = renderHook(() => useObservableMap(observable));
+    const { result } = renderHook(() => useObservableMap(() => observable, [observable]));
 
     expect(result.current).toStrictEqual(
       new Map([
@@ -94,7 +94,7 @@ describe("useObservableMap", () => {
       ["c", 3],
     ]);
 
-    const { result } = renderHook(() => useObservableMap(observable));
+    const { result } = renderHook(() => useObservableMap(() => observable, [observable]));
 
     expect(result.current).toStrictEqual(
       new Map([
@@ -126,7 +126,7 @@ describe("useObservableMap", () => {
       ["f", 6],
     ]);
 
-    const { result, rerender } = renderHook(({ observable }) => useObservableMap(observable), {
+    const { result, rerender } = renderHook(({ observable }) => useObservableMap(() => observable, [observable]), {
       initialProps: { observable: observable1 },
     });
 

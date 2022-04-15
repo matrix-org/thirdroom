@@ -9,7 +9,9 @@ describe("useAsyncObservableValue", () => {
     const observable = new ObservableValue(1);
     const observablePromise = Promise.resolve(observable);
 
-    const { result, waitForNextUpdate } = renderHook(() => useAsyncObservableValue(observablePromise));
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useAsyncObservableValue(() => observablePromise, [observablePromise])
+    );
 
     expect(result.current.value).toBe(undefined);
     expect(result.current.loading).toBe(true);
@@ -28,7 +30,9 @@ describe("useAsyncObservableValue", () => {
     const error = new Error("rejected");
     const observablePromise = Promise.reject(error);
 
-    const { result, waitForNextUpdate } = renderHook(() => useAsyncObservableValue(observablePromise));
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useAsyncObservableValue(() => observablePromise, [observablePromise])
+    );
 
     expect(result.current.value).toBe(undefined);
     expect(result.current.loading).toBe(true);
@@ -56,7 +60,7 @@ describe("useAsyncObservableValue", () => {
     });
 
     const { result, rerender, waitForNextUpdate } = renderHook(
-      ({ observablePromise }) => useAsyncObservableValue(observablePromise),
+      ({ observablePromise }) => useAsyncObservableValue(() => observablePromise, [observablePromise]),
       {
         initialProps: { observablePromise: observablePromise1 },
       }

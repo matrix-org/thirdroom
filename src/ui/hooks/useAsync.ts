@@ -1,10 +1,12 @@
-import { Reducer, useEffect, useReducer, useMemo } from "react";
+import { useRef, useReducer, useCallback } from "react";
+
+import { useIsMounted } from "./useIsMounted";
 
 export type UseAsyncState<T> =
   | {
       loading: boolean;
-      error?: Error;
-      value?: T;
+      error?: Error | undefined;
+      value?: T | undefined;
     }
   | {
       loading: true;
@@ -22,95 +24,50 @@ export type UseAsyncState<T> =
       value: T;
     };
 
-enum UseAsyncActionType {
-  Load,
-  Resolved,
-  Rejected,
-}
+export function useAsync<T>(promiseFactory: () => Promise<T>, deps: unknown[]): UseAsyncState<T> {
+  const isMounted = useIsMounted();
+  const [, forceUpdate] = useReducer<(x: number) => number>((x) => x + 1, 0);
+  const memoizedCallbackFnRef = useRef<() => Promise<T>>();
+  const stateRef = useRef<UseAsyncState<T>>({
+    loading: true,
+    value: undefined,
+    error: undefined,
+  });
 
-type UseAsyncAction<T> =
-  | {
-      type: string;
-    }
-  | {
-      type: UseAsyncActionType.Load;
-    }
-  | {
-      type: UseAsyncActionType.Resolved;
-      value: T;
-    }
-  | {
-      type: UseAsyncActionType.Rejected;
-      error: Error;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const memoizedPromiseFactory = useCallback(promiseFactory, deps);
+
+  if (memoizedPromiseFactory !== memoizedCallbackFnRef.current) {
+    memoizedCallbackFnRef.current = memoizedPromiseFactory;
+
+    stateRef.current = {
+      loading: true,
+      error: undefined,
+      value: undefined,
     };
 
-const initialState = {
-  loading: true,
-  error: undefined,
-  value: undefined,
-};
-
-function asyncReducer<T>(state: UseAsyncState<T>, action: UseAsyncAction<T>): UseAsyncState<T> {
-  switch (action.type) {
-    case UseAsyncActionType.Load:
-      return initialState;
-    case UseAsyncActionType.Resolved:
-      return {
-        loading: false,
-        error: undefined,
-        value: action.value,
-      };
-    case UseAsyncActionType.Rejected:
-      return {
-        loading: false,
-        error: action.error,
-        value: undefined,
-      };
-    default:
-      return state;
-  }
-}
-
-export type PromiseReturningFunction<T> = (...args: any[]) => Promise<T>;
-
-export type UseAsyncArg<T> = Promise<T> | PromiseReturningFunction<T>;
-
-export function useAsync<T>(promise: PromiseReturningFunction<T>, deps: any[]): UseAsyncState<T>;
-export function useAsync<T>(promise: Promise<T>): UseAsyncState<T>;
-export function useAsync<T>(promise: UseAsyncArg<T>, deps?: any[]): UseAsyncState<T> {
-  const [state, dispatch] = useReducer<Reducer<UseAsyncState<T>, UseAsyncAction<T>>>(asyncReducer, initialState);
-
-  const promiseValue = useMemo(() => {
-    if (typeof promise === "function") {
-      return promise();
-    } else {
-      return promise;
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [promise || deps]);
-
-  useEffect(() => {
-    let canceled = false;
-
-    dispatch({ type: UseAsyncActionType.Load });
-
-    promiseValue
+    memoizedPromiseFactory()
       .then((value) => {
-        if (!canceled) {
-          dispatch({ type: UseAsyncActionType.Resolved, value });
+        if (memoizedCallbackFnRef.current === memoizedPromiseFactory && isMounted()) {
+          stateRef.current = {
+            loading: false,
+            error: undefined,
+            value,
+          };
+          forceUpdate();
         }
       })
       .catch((error) => {
-        if (!canceled) {
-          dispatch({ type: UseAsyncActionType.Rejected, error });
+        if (memoizedCallbackFnRef.current === memoizedPromiseFactory && isMounted()) {
+          stateRef.current = {
+            loading: false,
+            error,
+            value: undefined,
+          };
+          forceUpdate();
         }
       });
+  }
 
-    return () => {
-      canceled = true;
-    };
-  }, [promiseValue]);
-
-  return state;
+  return stateRef.current;
 }

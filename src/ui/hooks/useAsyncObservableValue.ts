@@ -1,8 +1,7 @@
-import { useMemo } from "react";
 import { BaseObservableValue, ObservableValue } from "hydrogen-view-sdk";
 
 import { useObservableValue } from "./useObservableValue";
-import { useAsync, UseAsyncPromise } from "./useAsync";
+import { useAsync } from "./useAsync";
 
 interface UseAsyncObservableReturn<T> {
   loading: boolean;
@@ -11,14 +10,12 @@ interface UseAsyncObservableReturn<T> {
 }
 
 export function useAsyncObservableValue<T>(
-  promise: UseAsyncPromise<BaseObservableValue<T>>,
-  deps?: any[]
+  promiseFactory: () => Promise<BaseObservableValue<T>>,
+  deps: unknown[]
 ): UseAsyncObservableReturn<T> {
-  const { loading, error, value: maybeObservable } = useAsync(promise, deps);
-  const observable = useMemo(
-    () => (maybeObservable ? maybeObservable : new ObservableValue(undefined)),
-    [maybeObservable]
-  );
-  const value = useObservableValue(observable);
+  const { loading, error, value: observable } = useAsync(promiseFactory, deps);
+
+  const value = useObservableValue(() => observable || new ObservableValue(undefined), [observable]);
+
   return { loading, error, value };
 }
