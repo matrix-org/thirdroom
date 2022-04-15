@@ -1,16 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Navigate, Outlet, useMatch } from "react-router-dom";
-import {
-  Platform,
-  Segment,
-  Navigation,
-  Client,
-  ISessionInfo,
-  Session,
-  LoadStatus,
-  URLRouter,
-  ILogger,
-} from "hydrogen-view-sdk";
+import { Platform, Segment, Navigation, Client, Session, LoadStatus, URLRouter, ILogger } from "hydrogen-view-sdk";
 import downloadSandboxPath from "hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "hydrogen-view-sdk/main.js?url";
 import olmWasmPath from "@matrix-org/olm/olm.wasm?url";
@@ -19,6 +9,8 @@ import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 
 import { Text } from "../atoms/text/Text";
 import { HydrogenContextProvider } from "../hooks/useHydrogen";
+import { useIsMounted } from "../hooks/useIsMounted";
+import { useAsync } from "../hooks/useAsync";
 
 const defaultHomeServer = "matrix.org";
 
@@ -36,12 +28,6 @@ enum SyncStatus {
   CatchupSync = "CatchupSync",
   Syncing = "Syncing",
   Stopped = "Stopped",
-}
-
-interface HyrdogenRootViewState {
-  loading: boolean;
-  availableSessions: ISessionInfo[];
-  session?: Session;
 }
 
 interface HydrogenRef {
@@ -92,7 +78,17 @@ class MockRouter {
 }
 
 export function HydrogenRootView() {
+  const isMounted = useIsMounted();
   const hydrogenRef = useRef<HydrogenRef>();
+  const [{ session, initializing }, setState] = useState<{
+    session?: Session;
+    initializing: boolean;
+  }>({
+    initializing: true,
+    session: undefined,
+  });
+
+  const setSession = useCallback((session: Session) => setState((prev) => ({ ...prev, session })), []);
 
   useEffect(() => {
     // Container element used by Hydrogen for downloads etc.
@@ -134,66 +130,65 @@ export function HydrogenRootView() {
       logger: platform.logger,
     };
 
-    return () => {
-      if (hydrogenRef.current) {
-        hydrogenRef.current.client.dispose();
-        document.body.removeChild(containerEl);
-      }
-    };
-  }, []);
-
-  const [{ loading, availableSessions, session }, setState] = useState<HyrdogenRootViewState>({
-    loading: true,
-    availableSessions: [],
-    session: undefined,
-  });
-
-  useEffect(() => {
-    async function loadSessions() {
-      const { platform, client } = hydrogenRef.current!;
-
+    const loadInitialSession = async () => {
       const availableSessions = await platform.sessionInfoStorage.getAll();
 
-      if (availableSessions.length > 0) {
-        const sessionId = availableSessions[0].id;
-
-        await client.startWithExistingSession(sessionId);
-
-        await client.loadStatus.waitFor((s) => {
-          const isCatchupSync = s === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
-
-          return isCatchupSync || s === LoadStatus.LoginFailed || s === LoadStatus.Error || s === LoadStatus.Ready;
-        });
-
-        await (client.session as any).callHandler.loadCalls("m.room");
-
-        const loadStatus = client.loadStatus.get();
-
-        if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
-          await client.startLogout(sessionId);
-        }
+      if (availableSessions.length === 0) {
+        return;
       }
 
-      setState({ loading: false, availableSessions, session: client.session });
+      const sessionId = availableSessions[0].id;
+
+      await client.startWithExistingSession(sessionId);
+    };
+
+    loadInitialSession().finally(() => {
+      if (isMounted()) {
+        setState({ session: client.session, initializing: false });
+      }
+    });
+
+    return () => {
+      client.dispose();
+      document.body.removeChild(containerEl);
+    };
+  }, [isMounted]);
+
+  const { loading, error } = useAsync(async () => {
+    if (!hydrogenRef.current || !session) {
+      return undefined;
     }
 
-    loadSessions().catch((error) => {
-      console.error("error loading sessions");
-    });
-  }, []);
+    const client = hydrogenRef.current.client;
 
-  const context = useMemo(
-    () => ({
-      ...hydrogenRef.current!,
-      availableSessions,
-      session,
-    }),
-    [availableSessions, session]
-  );
+    await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
+      const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
+
+      return (
+        isCatchupSync ||
+        loadStatus === LoadStatus.LoginFailed ||
+        loadStatus === LoadStatus.Error ||
+        loadStatus === LoadStatus.Ready
+      );
+    });
+
+    const loadStatus = client.loadStatus.get();
+
+    if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
+      try {
+        await client.startLogout(client.sessionId);
+      } catch (error) {
+        console.error(error);
+        setState((prev) => ({ ...prev, session: undefined }));
+      }
+    }
+
+    await (session as any).callHandler.loadCalls("m.room");
+  }, [session]);
 
   const loginPathMatch = useMatch({ path: "/login" });
 
-  if (loading) {
+  if (initializing || loading || !hydrogenRef.current) {
     return (
       <div className="flex justify-center items-center" style={{ height: "100%" }}>
         <Text variant="b1" weight="semi-bold">
@@ -203,12 +198,24 @@ export function HydrogenRootView() {
     );
   }
 
-  if (availableSessions.length === 0 && !loginPathMatch) {
+  if (error) {
+    return (
+      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+        <Text variant="b1" weight="semi-bold">
+          {error.message}
+        </Text>
+      </div>
+    );
+  }
+
+  if (!session && !loginPathMatch) {
     return <Navigate to="/login" />;
+  } else if (session && loginPathMatch) {
+    return <Navigate to="/" />;
   }
 
   return (
-    <HydrogenContextProvider value={context}>
+    <HydrogenContextProvider value={{ session, setSession, ...hydrogenRef.current }}>
       <Outlet />
     </HydrogenContextProvider>
   );

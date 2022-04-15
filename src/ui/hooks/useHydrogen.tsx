@@ -1,14 +1,14 @@
-import { Platform, Navigation, Client, ISessionInfo, Session, ILogger, URLRouter } from "hydrogen-view-sdk";
+import { Platform, Navigation, Client, Session, ILogger, URLRouter } from "hydrogen-view-sdk";
 import { createContext, useContext } from "react";
 
 interface HydrogenContext {
   client: Client;
   navigation: Navigation;
   platform: Platform;
-  availableSessions: ISessionInfo[];
   session?: Session;
   logger: ILogger;
   urlRouter: URLRouter;
+  setSession: (session: Session) => void;
 }
 
 interface AuthenticatedHydrogenContext extends HydrogenContext {
