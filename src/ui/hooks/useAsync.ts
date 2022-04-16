@@ -1,6 +1,4 @@
-import { useRef, useReducer, useCallback } from "react";
-
-import { useIsMounted } from "./useIsMounted";
+import { useEffect, useState } from "react";
 
 export type UseAsyncState<T> =
   | {
@@ -24,50 +22,46 @@ export type UseAsyncState<T> =
       value: T;
     };
 
+const initialState = {
+  loading: true,
+  error: undefined,
+  value: undefined,
+};
+
 export function useAsync<T>(promiseFactory: () => Promise<T>, deps: unknown[]): UseAsyncState<T> {
-  const isMounted = useIsMounted();
-  const [, forceUpdate] = useReducer<(x: number) => number>((x) => x + 1, 0);
-  const memoizedCallbackFnRef = useRef<() => Promise<T>>();
-  const stateRef = useRef<UseAsyncState<T>>({
-    loading: true,
-    value: undefined,
-    error: undefined,
-  });
+  const [state, setState] = useState<UseAsyncState<T>>(initialState);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const memoizedPromiseFactory = useCallback(promiseFactory, deps);
+  useEffect(() => {
+    setState(initialState);
 
-  if (memoizedPromiseFactory !== memoizedCallbackFnRef.current) {
-    memoizedCallbackFnRef.current = memoizedPromiseFactory;
+    let cancelled = false;
 
-    stateRef.current = {
-      loading: true,
-      error: undefined,
-      value: undefined,
-    };
-
-    memoizedPromiseFactory()
+    promiseFactory()
       .then((value) => {
-        if (memoizedCallbackFnRef.current === memoizedPromiseFactory && isMounted()) {
-          stateRef.current = {
+        if (!cancelled) {
+          setState({
             loading: false,
             error: undefined,
             value,
-          };
-          forceUpdate();
+          });
         }
       })
       .catch((error) => {
-        if (memoizedCallbackFnRef.current === memoizedPromiseFactory && isMounted()) {
-          stateRef.current = {
+        if (!cancelled) {
+          setState({
             loading: false,
             error,
             value: undefined,
-          };
-          forceUpdate();
+          });
         }
       });
-  }
 
-  return stateRef.current;
+    return () => {
+      cancelled = true;
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return state;
 }

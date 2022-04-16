@@ -42,11 +42,13 @@ describe("useObservableValue", () => {
       initialProps: { observable: observable1 },
     });
 
+    expect(result.all.length).toBe(1);
     expect(result.current).toBe(1);
     expect(observable1.hasSubscriptions).toBe(true);
 
     rerender({ observable: observable2 });
 
+    expect(result.all.length).toBe(2);
     expect(result.current).toBe(2);
     expect(observable1.hasSubscriptions).toBe(false);
     expect(observable2.hasSubscriptions).toBe(true);
