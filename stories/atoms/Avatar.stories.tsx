@@ -2,6 +2,7 @@ import { Avatar } from "../../src/ui/atoms/avatar/Avatar";
 import { AvatarPile } from "../../src/ui/atoms/avatar/AvatarPile";
 import { AvatarBadgeWrapper } from "../../src/ui/atoms/avatar/AvatarBadgeWrapper";
 import { AvatarOutline } from "../../src/ui/atoms/avatar/AvatarOutline";
+import { StatusBadge } from "../../src/ui/atoms/badge/StatusBadge";
 
 export function AvatarStories() {
   const imgSrc = "https://cdn.britannica.com/92/80592-050-86EF29F3/Mouflon-ram.jpg";
@@ -67,6 +68,15 @@ export function AvatarStories() {
       </div>
       <div>
         <AvatarBadgeWrapper badge={<Avatar size="xxs" name="Sam" imageSrc={imgSrc} bgColor="green" />}>
+          <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="blue" />
+        </AvatarBadgeWrapper>
+        <AvatarBadgeWrapper badge={<StatusBadge status="offline" />}>
+          <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="blue" />
+        </AvatarBadgeWrapper>
+        <AvatarBadgeWrapper badge={<StatusBadge status="online" />}>
+          <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="blue" />
+        </AvatarBadgeWrapper>
+        <AvatarBadgeWrapper badge={<StatusBadge status="dnd" />}>
           <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="blue" />
         </AvatarBadgeWrapper>
       </div>
