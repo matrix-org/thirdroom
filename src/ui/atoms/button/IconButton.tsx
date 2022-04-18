@@ -8,8 +8,6 @@ interface IIconButton {
   className?: string;
   variant?: "surface" | "world" | "primary" | "secondary" | "danger";
   size?: "md" | "sm";
-  isCircle?: boolean;
-  shadedSurface?: boolean;
   iconSrc: string;
   label: string;
   type?: "button" | "submit" | "reset";
