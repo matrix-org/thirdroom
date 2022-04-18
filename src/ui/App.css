@@ -10,7 +10,9 @@
   /* background colors */
   --bg-surface: #ffffff;
   --bg-surface-low: #f0f1f2;
-  --bg-surface-border: #dbdfe2;
+  --bg-surface-border: hsl(206deg 11% 87%);
+  --bg-surface-hover: #00000010;
+  --bg-surface-active: #00000016;
 
   --bg-primary: hsl(209deg 93% 53%);
   --bg-primary-hover: hsl(209deg 93% 45%);

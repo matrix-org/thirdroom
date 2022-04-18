@@ -1,0 +1,7 @@
+.RoomTilePlaying {
+  line-height: 0;
+
+  & > div:first-child {
+    margin-right: var(--sp-xxs);
+  }
+}
