@@ -1,5 +1,7 @@
 import { Avatar } from "../../src/ui/atoms/avatar/Avatar";
 import { AvatarPile } from "../../src/ui/atoms/avatar/AvatarPile";
+import { AvatarBadgeWrapper } from "../../src/ui/atoms/avatar/AvatarBadgeWrapper";
+import { AvatarOutline } from "../../src/ui/atoms/avatar/AvatarOutline";
 
 export function AvatarStories() {
   const imgSrc = "https://cdn.britannica.com/92/80592-050-86EF29F3/Mouflon-ram.jpg";
@@ -62,6 +64,31 @@ export function AvatarStories() {
           <Avatar isCircle size="xxs" name="Lucky" imageSrc={imgSrc} bgColor="red" />
           <Avatar isCircle size="xxs" name="Man" imageSrc={imgSrc} bgColor="green" />
         </AvatarPile>
+      </div>
+      <div>
+        <AvatarBadgeWrapper badge={<Avatar size="xxs" name="Sam" imageSrc={imgSrc} bgColor="green" />}>
+          <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="blue" />
+        </AvatarBadgeWrapper>
+      </div>
+      <div>
+        <AvatarOutline>
+          <Avatar isCircle size="xl" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
+        <AvatarOutline>
+          <Avatar isCircle size="lg" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
+        <AvatarOutline>
+          <Avatar isCircle size="md" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
+        <AvatarOutline>
+          <Avatar isCircle size="sm" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
+        <AvatarOutline>
+          <Avatar isCircle size="xs" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
+        <AvatarOutline>
+          <Avatar isCircle size="xxs" name="Sam" imageSrc={imgSrc} bgColor="green" />
+        </AvatarOutline>
       </div>
     </div>
   );
