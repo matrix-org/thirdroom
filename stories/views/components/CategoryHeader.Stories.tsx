@@ -6,7 +6,7 @@ import MoreHorizontalIC from "../../../res/ic/more-horizontal.svg";
 
 export function CategoryHeaderStories() {
   return (
-    <div style={{ backgroundColor: "white" }}>
+    <div style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <CategoryHeader iconSrc={StarIC} title="Favorite Worlds" />
 
       <CategoryHeader
