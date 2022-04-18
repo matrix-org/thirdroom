@@ -77,11 +77,10 @@
   --av-xxs: 20px;
 
   /* border radius */
-  /*
-  TODO: [8, 10, 12, 16]
-  */
-  --br-normal: 12px;
-  --br-small: 8px;
+  --br-lg: 16px;
+  --br-md: 12px;
+  --br-sm: 10px;
+  --br-xs: 8px;
 
   /* font sizes */
   --fs-h2: 24px;

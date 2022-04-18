@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
 
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
   cursor: pointer;
   transition: background-color 100ms ease-in-out;
 
