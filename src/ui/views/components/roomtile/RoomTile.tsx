@@ -6,7 +6,7 @@ interface IRoomTile {
   content: React.ReactNode;
   options?: React.ReactNode;
   isActive?: boolean;
-  onClick: () => void;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function RoomTile({ avatar, content, options, isActive = false, onClick }: IRoomTile) {
