@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useHydrogen } from "../../hooks/useHydrogen";
 
 export function LoginView() {
-  const { platform, client } = useHydrogen();
+  const { platform, client, setSession } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -25,7 +23,11 @@ export function LoginView() {
 
       await client.startWithLogin(loginOptions.password(form.username.value, form.password.value));
 
-      navigate("/");
+      if (client.session) {
+        setSession(client.session);
+      } else {
+        setAuthenticating(false);
+      }
     } catch (error) {
       console.error(error);
       setAuthenticating(false);

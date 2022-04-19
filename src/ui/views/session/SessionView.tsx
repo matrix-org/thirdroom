@@ -1,99 +1,136 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Outlet, useMatch, useNavigate } from "react-router-dom";
-import { Room, LocalMedia } from "hydrogen-view-sdk";
+import { RefObject, useCallback, useMemo, useRef, useState } from "react";
+import { Outlet, useLocation, useMatch } from "react-router-dom";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
 import { Overlay } from "./overlay/Overlay";
 import { usePointerLockState } from "../../hooks/usePointerLockState";
 import { StatusBar } from "./statusbar/StatusBar";
-import { useWorldId } from "../../hooks/useWorldId";
-import { useRoomById } from "../../hooks/useRoomById";
+import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
+import { useCalls } from "../../hooks/useCalls";
+import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 
-export interface SessionViewContext {
+export interface SessionOutletContext {
+  activeWorld?: Room;
+  activeCall?: GroupCall;
+  canvasRef: RefObject<HTMLCanvasElement>;
   overlayOpen: boolean;
+  onOpenOverlay: () => void;
+  onCloseOverlay: () => void;
+  chatOpen: boolean;
+  onOpenChat: () => void;
+  onCloseChat: () => void;
 }
 
 export function SessionView() {
-  const { platform, session } = useHydrogen();
-  const composerInputRef = useRef<HTMLInputElement>(null);
+  const { client, session } = useHydrogen(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
-  const isPointerLocked = usePointerLockState(canvasRef.current);
-  const [forceOverlayClosed, setForceOverlayClosed] = useState(false);
-  const isOverlayOpen = !isPointerLocked && !forceOverlayClosed;
+
+  const location = useLocation();
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
+  const worldMatch = useMatch({ path: "world/:worldId" });
+  const activeWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
 
-  const worldId = useWorldId();
-  const world = useRoomById(worldId);
+  const activeWorld = useRoom(session, activeWorldId);
+  const calls = useCalls(session);
+  const activeCall = useMemo(() => {
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === activeWorldId ? call : []));
+    return roomCalls.length ? roomCalls[0] : undefined;
+  }, [calls, activeWorldId]);
 
-  const navigate = useNavigate();
+  const [enteredWorld, setEnteredWorld] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const isPointerLocked = usePointerLockState(canvasRef.current);
+  const overlayOpen = !isPointerLocked && !chatOpen;
+  const onLeftWorld = useCallback(() => {
+    setEnteredWorld(false);
+    document.exitPointerLock();
 
-  const onLoadWorld = useCallback(
-    async (room: Room) => {
-      navigate(`/world/${room.id}`);
-      return;
-    },
-    [navigate]
+    if (activeCall) {
+      activeCall.leave();
+    }
+
+    if (engine) {
+      engine.setNetworkInterface(undefined);
+    }
+  }, [engine, activeCall]);
+  const onEnteredWorld = useCallback(() => {
+    setEnteredWorld(true);
+    canvasRef.current?.requestPointerLock();
+
+    if (engine && activeCall) {
+      engine.setNetworkInterface(createMatrixNetworkInterface(client, activeCall));
+    }
+  }, [client, engine, activeCall]);
+  const onOpenOverlay = useCallback(() => {
+    document.exitPointerLock();
+  }, []);
+  const onCloseOverlay = useCallback(() => {
+    canvasRef.current?.requestPointerLock();
+  }, []);
+  const onOpenChat = useCallback(() => {
+    document.exitPointerLock();
+    setChatOpen(true);
+  }, []);
+  const onCloseChat = useCallback(() => {
+    canvasRef.current?.requestPointerLock();
+    setChatOpen(false);
+  }, []);
+
+  const outletContext = useMemo<SessionOutletContext>(
+    () => ({
+      activeWorld,
+      activeCall,
+      canvasRef,
+      enteredWorld,
+      onEnteredWorld,
+      onLeftWorld,
+      overlayOpen,
+      onOpenOverlay,
+      onCloseOverlay,
+      chatOpen,
+      onOpenChat,
+      onCloseChat,
+    }),
+    [
+      activeWorld,
+      activeCall,
+      enteredWorld,
+      onEnteredWorld,
+      onLeftWorld,
+      overlayOpen,
+      onOpenOverlay,
+      onCloseOverlay,
+      chatOpen,
+      onOpenChat,
+      onCloseChat,
+    ]
   );
-
-  const onEnterWorld = useCallback(async () => {
-    const calls = Array.from((session as any).callHandler.calls.values());
-    console.log(calls);
-    const call = calls.find((c: any) => c.roomId === worldId) as any;
-    const mediaTracks = await (platform as any).mediaDevices.getMediaTracks(true, false);
-    const localMedia = new LocalMedia().withTracks(mediaTracks).withDataChannel({});
-    await call.join(localMedia);
-    canvasRef.current!.requestPointerLock();
-  }, [platform, session, worldId]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && isPointerLocked) {
-        setForceOverlayClosed(true);
-        document.exitPointerLock();
-        composerInputRef.current?.focus();
-      }
-
-      if (event.key === "Escape" && !isPointerLocked && forceOverlayClosed) {
-        setForceOverlayClosed(false);
-        canvasRef.current?.requestPointerLock();
-      }
-    };
-
-    const canvas = canvasRef.current!;
-
-    const onCanvasClick = (event: MouseEvent) => {
-      if (!isPointerLocked) {
-        setForceOverlayClosed(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    canvas.addEventListener("click", onCanvasClick);
-
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      canvas.removeEventListener("click", onCanvasClick);
-    };
-  }, [isPointerLocked, forceOverlayClosed]);
 
   return (
     <div className="SessionView">
       <canvas className="SessionView__viewport" ref={canvasRef} />
       {engine ? (
         <EngineContextProvider value={engine}>
-          <Outlet context={{ composerInputRef }} />
+          <Outlet context={outletContext} />
           <Overlay
-            isOpen={isOverlayOpen}
+            isOpen={overlayOpen}
+            onClose={onCloseOverlay}
             isHome={isHome}
-            initialWorldId={worldId}
-            onLoadWorld={onLoadWorld}
-            onEnterWorld={onEnterWorld}
+            activeWorldId={activeWorldId}
+            enteredWorld={enteredWorld}
+            onEnteredWorld={onEnteredWorld}
+            onLeftWorld={onLeftWorld}
           />
-          <StatusBar showOverlayTip={!isHome} overlayOpen={isOverlayOpen} title={isHome ? "Home" : world?.name} />
+          <StatusBar
+            showOverlayTip={!isHome && enteredWorld}
+            isOverlayOpen={overlayOpen}
+            title={isHome ? "Home" : activeWorld?.name}
+          />
         </EngineContextProvider>
       ) : (
         <div>Initializing engine...</div>
