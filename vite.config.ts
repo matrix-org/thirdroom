@@ -3,24 +3,10 @@ import react from "@vitejs/plugin-react";
 import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
 import pluginRewriteAll from "vite-plugin-rewrite-all";
-import { Plugin } from "vite";
-
-function hmrFullReloadPlugin(): Plugin {
-  return {
-    name: "vite-plugin-full-reload",
-    apply: "serve",
-    handleHotUpdate({ server }) {
-      server.ws.send({
-        type: "full-reload",
-      });
-      return [];
-    },
-  };
-}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [pluginRewriteAll(), react(), crossOriginIsolation(), hmrFullReloadPlugin()],
+  plugins: [pluginRewriteAll(), react(), crossOriginIsolation()],
   resolve: {
     dedupe: ["three", "bitecs"],
   },

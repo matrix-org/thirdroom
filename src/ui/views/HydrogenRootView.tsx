@@ -1,7 +1,17 @@
 // @refresh reset
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Outlet, useMatch } from "react-router-dom";
-import { Platform, Segment, Navigation, Client, Session, LoadStatus, URLRouter, CallIntent } from "hydrogen-view-sdk";
+import {
+  Platform,
+  Segment,
+  Navigation,
+  Client,
+  Session,
+  LoadStatus,
+  URLRouter,
+  CallIntent,
+  ILogger,
+} from "hydrogen-view-sdk";
 import downloadSandboxPath from "hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "hydrogen-view-sdk/main.js?url";
 import olmWasmPath from "@matrix-org/olm/olm.wasm?url";
@@ -11,7 +21,6 @@ import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
-import { useStableMemo } from "../hooks/useStableMemo";
 
 const defaultHomeServer = "matrix.org";
 
@@ -69,49 +78,68 @@ class MockRouter {
   normalizeUrl() {}
 }
 
+interface HydrogenInstance {
+  client: Client;
+  platform: Platform;
+  navigation: Navigation;
+  containerEl: HTMLElement;
+  urlRouter: URLRouter;
+  logger: ILogger;
+}
+
+let hydrogenInstance: HydrogenInstance;
+
+function initHydrogen() {
+  if (hydrogenInstance) {
+    return hydrogenInstance;
+  }
+
+  // Container element used by Hydrogen for downloads etc.
+  const containerEl = document.createElement("div");
+  containerEl.id = "hydrogen-root";
+  document.body.append(containerEl);
+
+  const assetPaths = {
+    downloadSandbox: downloadSandboxPath,
+    worker: workerPath,
+    olm: {
+      wasm: olmWasmPath,
+      legacyBundle: olmLegacyJsPath,
+      wasmBundle: olmJsPath,
+    },
+  };
+
+  const config = {
+    defaultHomeServer,
+  };
+
+  const options = {
+    development: import.meta.env.DEV,
+  };
+
+  const platform = new Platform(containerEl, assetPaths, config, options);
+
+  const navigation = new Navigation(allowsChild);
+  platform.setNavigation(navigation);
+
+  const client = new Client(platform);
+
+  hydrogenInstance = {
+    client,
+    platform,
+    navigation,
+    containerEl,
+    urlRouter: new MockRouter() as unknown as URLRouter,
+    logger: platform.logger,
+  };
+
+  return hydrogenInstance;
+}
+
 export function HydrogenRootView() {
   const [session, setSession] = useState<Session>();
 
-  const { client, containerEl, platform, navigation, urlRouter, logger } = useStableMemo(() => {
-    // Container element used by Hydrogen for downloads etc.
-    const containerEl = document.createElement("div");
-    containerEl.id = "hydrogen-root";
-    document.body.append(containerEl);
-
-    const assetPaths = {
-      downloadSandbox: downloadSandboxPath,
-      worker: workerPath,
-      olm: {
-        wasm: olmWasmPath,
-        legacyBundle: olmLegacyJsPath,
-        wasmBundle: olmJsPath,
-      },
-    };
-
-    const config = {
-      defaultHomeServer,
-    };
-
-    const options = {
-      development: import.meta.env.DEV,
-    };
-
-    const platform = new Platform(containerEl, assetPaths, config, options);
-
-    const navigation = new Navigation(allowsChild);
-    platform.setNavigation(navigation);
-
-    const client = new Client(platform);
-
-    return {
-      client,
-      platform,
-      navigation,
-      containerEl,
-      urlRouter: new MockRouter() as unknown as URLRouter,
-      logger: platform.logger,
-    };
-  }, []);
+  const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
   useEffect(() => {
     return () => {

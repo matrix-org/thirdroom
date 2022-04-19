@@ -1,8 +1,7 @@
 import { BaseObservable } from "hydrogen-view-sdk";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useMemo } from "react";
 
 import { useIsMounted } from "./useIsMounted";
-import { useStableMemo } from "./useStableMemo";
 
 export function useObservable<O extends BaseObservable<H>, H, T>(
   observableFactory: () => O,
@@ -14,7 +13,7 @@ export function useObservable<O extends BaseObservable<H>, H, T>(
   const [, forceUpdate] = useReducer((v) => v + 1, 0);
   const valueRef = useRef<T>();
 
-  const subscriptionHandle = useStableMemo(() => {
+  const subscriptionHandle = useMemo(() => {
     const update = (value: T) => {
       if (isMounted()) {
         valueRef.current = value;
