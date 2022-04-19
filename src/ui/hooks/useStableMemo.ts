@@ -18,7 +18,7 @@ function didDependenciesChange(a?: readonly unknown[], b?: readonly unknown[]) {
   return false;
 }
 
-export default function useStableMemo<T>(factory: () => T, deps?: readonly unknown[]): T {
+export function useStableMemo<T>(factory: () => T, deps?: readonly unknown[]): T {
   const stateRef = useRef<{
     prevDeps?: readonly unknown[];
     value: T;

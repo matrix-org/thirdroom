@@ -201,6 +201,8 @@ declare module "hydrogen-view-sdk" {
     devicePixelRatio: number;
     logger: ILogger;
 
+    mediaDevices: MediaDevices;
+
     config: {
       defaultHomeServer: string;
       [key: string]: any;
@@ -235,15 +237,29 @@ declare module "hydrogen-view-sdk" {
   }
 
   export class Session {
+    userId: string;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
+    callHandler: CallHandler;
     createRoom(options: any): RoomBeingCreated;
+    joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
   }
 
   export class LocalMedia {
-    withTracks(tracks: any): this;
-    withDataChannel(options: any): this;
+    readonly userMedia?: Stream | undefined;
+    readonly screenShare?: Stream | undefined;
+    readonly dataChannelOptions?: RTCDataChannelInit | undefined;
+    constructor(
+      userMedia?: Stream | undefined,
+      screenShare?: Stream | undefined,
+      dataChannelOptions?: RTCDataChannelInit | undefined
+    );
+    withUserMedia(stream: Stream): LocalMedia;
+    withScreenShare(stream: Stream): LocalMedia;
+    withDataChannel(options: RTCDataChannelInit): LocalMedia;
+    clone(): LocalMedia;
+    dispose(): void;
   }
 
   enum SyncStatus {
@@ -275,7 +291,7 @@ declare module "hydrogen-view-sdk" {
 
   export class Timeline {}
 
-  export class Member {}
+  export class RoomMember {}
 
   export class MemberList {}
 
@@ -323,7 +339,7 @@ declare module "hydrogen-view-sdk" {
     constructor(roomOptions: RoomOptions);
     notifyRoomKey(roomKey: RoomKey, eventIds: string[], log?: any): Promise<void>;
     load(summary: any, txn: any, log: any): Promise<void>;
-    observeMember(userId: string): Promise<RetainedObservableValue<Member> | null>;
+    observeMember(userId: string): Promise<RetainedObservableValue<RoomMember> | null>;
     loadMemberList(log?: any): Promise<MemberList>;
     fillGap(fragmentEntry: any, amount: number, log?: any): Promise<void>;
     get name(): string | null;
@@ -419,8 +435,6 @@ declare module "hydrogen-view-sdk" {
     createInterval(callback: () => void, ms: number): Interval;
     now(): number;
   }
-
-  export type ILogger = any;
 
   export class URLRouter {
     constructor(options: any);
@@ -567,12 +581,12 @@ declare module "hydrogen-view-sdk" {
     get body(): null | string;
   }
 
-  class TextTile extends BaseTextTile {
+  export class TextTile extends BaseTextTile {
     constructor(entry: any, options: SimpleTileOptions);
     _getPlainBody(): string;
   }
 
-  class EncryptedEventTile extends BaseTextTile {
+  export class EncryptedEventTile extends BaseTextTile {
     constructor(entry: any, params: SimpleTileOptions);
     updateEntry(entry: any, param: any): any;
     get shape(): "message-status";
@@ -729,5 +743,1357 @@ declare module "hydrogen-view-sdk" {
     onClick(): void;
   }
 
-  export type GroupCall = any;
+  export enum LogLevel {
+    All = 1,
+    Debug = 2,
+    Detail = 3,
+    Info = 4,
+    Warn = 5,
+    Error = 6,
+    Fatal = 7,
+    Off = 8,
+  }
+  export class LogFilter {
+    private _min?;
+    private _parentFilter?;
+    constructor(parentFilter?: LogFilter);
+    filter(item: ILogItem, children: ISerializedItem[] | null): boolean;
+    minLevel(logLevel: LogLevel): LogFilter;
+  }
+
+  export interface ISerializedItem {
+    s: number;
+    d?: number;
+    v: LogItemValues;
+    l: LogLevel;
+    e?: {
+      stack?: string;
+      name: string;
+      message: string;
+    };
+    f?: boolean;
+    c?: Array<ISerializedItem>;
+  }
+  export interface ILogItem {
+    logLevel: LogLevel;
+    error?: Error;
+    readonly logger: ILogger;
+    readonly level: typeof LogLevel;
+    readonly end?: number;
+    readonly start?: number;
+    readonly values: LogItemValues;
+    wrap<T>(
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<T>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): T;
+    log(labelOrValues: LabelOrValues, logLevel?: LogLevel): ILogItem;
+    set(key: string | object, value: unknown): ILogItem;
+    runDetached(
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<unknown>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): ILogItem;
+    wrapDetached(
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<unknown>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): void;
+    refDetached(logItem: ILogItem, logLevel?: LogLevel): void;
+    ensureRefId(): void;
+    catch(err: Error): Error;
+    serialize(filter: LogFilter, parentStartTime: number | undefined, forced: boolean): ISerializedItem | undefined;
+    finish(): void;
+    forceFinish(): void;
+    child(labelOrValues: LabelOrValues, logLevel?: LogLevel, filterCreator?: FilterCreator): ILogItem;
+  }
+  export interface ILogger {
+    log(labelOrValues: LabelOrValues, logLevel?: LogLevel): void;
+    child(labelOrValues: LabelOrValues, logLevel?: LogLevel, filterCreator?: FilterCreator): ILogItem;
+    wrapOrRun<T>(
+      item: ILogItem | undefined,
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<T>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): T;
+    runDetached<T>(
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<T>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): ILogItem;
+    run<T>(
+      labelOrValues: LabelOrValues,
+      callback: LogCallback<T>,
+      logLevel?: LogLevel,
+      filterCreator?: FilterCreator
+    ): T;
+    export(): Promise<ILogExport | undefined>;
+    get level(): typeof LogLevel;
+  }
+
+  type BlobHandle = any;
+
+  export interface ILogExport {
+    get count(): number;
+    removeFromStore(): Promise<void>;
+    asBlob(): BlobHandle;
+  }
+  export type LogItemValues = {
+    l?: string;
+    t?: string;
+    id?: unknown;
+    status?: string | number;
+    refId?: number;
+    ref?: number;
+    [key: string]: any;
+  };
+  export type LabelOrValues = string | LogItemValues;
+  export type FilterCreator = (filter: LogFilter, item: ILogItem) => LogFilter;
+  export type LogCallback<T> = (item: ILogItem) => T;
+
+  export type EncodedBody = {
+    mimeType: string;
+    body: BlobHandle | string;
+  };
+  export function encodeQueryParams(queryParams?: object): string;
+  export function encodeBody(body: BlobHandle | object): EncodedBody;
+
+  export class RequestResult {
+    constructor(promise: Promise<{ status: number; body: any }>, controller: AbortController);
+    abort(): void;
+    response(): Promise<{ status: number; body: any }>;
+  }
+
+  export interface IRequestOptions {
+    uploadProgress?: (loadedBytes: number) => void;
+    timeout?: number;
+    body?: EncodedBody;
+    headers?: Map<string, string | number>;
+    cache?: boolean;
+    method?: string;
+    format?: string;
+  }
+  export type RequestFunction = (url: string, options: IRequestOptions) => RequestResult;
+  export interface IBlobHandle {
+    nativeBlob: any;
+    url: string;
+    size: number;
+    mimeType: string;
+    readAsBuffer(): BufferSource;
+    dispose(): any;
+  }
+  export type File = {
+    readonly name: string;
+    readonly blob: IBlobHandle;
+  };
+  export interface Timeout {
+    elapsed(): Promise<void>;
+    abort(): void;
+    dispose(): void;
+  }
+  export type TimeoutCreator = (timeout: number) => Timeout;
+
+  export interface MediaDevices {
+    enumerate(): Promise<MediaDeviceInfo[]>;
+    getMediaTracks(audio: true | MediaDeviceInfo, video: boolean | MediaDeviceInfo): Promise<Stream>;
+    getScreenShareTrack(): Promise<Stream | undefined>;
+  }
+  export interface Stream {
+    readonly audioTrack: AudioTrack | undefined;
+    readonly videoTrack: Track | undefined;
+    readonly id: string;
+    clone(): Stream;
+  }
+  export enum TrackKind {
+    Video = "video",
+    Audio = "audio",
+  }
+  export interface Track {
+    readonly kind: TrackKind;
+    readonly label: string;
+    readonly id: string;
+    readonly settings: MediaTrackSettings;
+    stop(): void;
+  }
+  export interface AudioTrack extends Track {
+    get isSpeaking(): boolean;
+  }
+
+  export interface WebRTC {
+    createPeerConnection(
+      handler: PeerConnectionHandler,
+      forceTURN: boolean,
+      turnServers: RTCIceServer[],
+      iceCandidatePoolSize: number
+    ): PeerConnection;
+  }
+  export interface StreamSender {
+    get stream(): Stream;
+    get audioSender(): TrackSender | undefined;
+    get videoSender(): TrackSender | undefined;
+  }
+  export interface StreamReceiver {
+    get stream(): Stream;
+    get audioReceiver(): TrackReceiver | undefined;
+    get videoReceiver(): TrackReceiver | undefined;
+  }
+  export interface TrackReceiver {
+    get track(): Track;
+    get enabled(): boolean;
+    enable(enabled: boolean): any;
+  }
+  export interface TrackSender extends TrackReceiver {
+    /** replaces the track if possible without renegotiation. Can throw. */
+    replaceTrack(track: Track | undefined): Promise<void>;
+    /** make any needed adjustments to the sender or transceiver settings
+     * depending on the purpose, after adding the track to the connection */
+    prepareForPurpose(purpose: SDPStreamMetadataPurpose): void;
+  }
+  export interface PeerConnectionHandler {
+    onIceConnectionStateChange(state: RTCIceConnectionState): any;
+    onLocalIceCandidate(candidate: RTCIceCandidate): any;
+    onIceGatheringStateChange(state: RTCIceGatheringState): any;
+    onRemoteStreamRemoved(stream: Stream): any;
+    onRemoteTracksAdded(receiver: TrackReceiver): any;
+    onRemoteDataChannel(dataChannel: any | undefined): any;
+    onNegotiationNeeded(): any;
+  }
+  export interface PeerConnection {
+    get iceGatheringState(): RTCIceGatheringState;
+    get signalingState(): RTCSignalingState;
+    get localDescription(): RTCSessionDescription | undefined;
+    get localStreams(): ReadonlyMap<string, StreamSender>;
+    get remoteStreams(): ReadonlyMap<string, StreamReceiver>;
+    createOffer(): Promise<RTCSessionDescriptionInit>;
+    createAnswer(): Promise<RTCSessionDescriptionInit>;
+    setLocalDescription(description?: RTCSessionDescriptionInit): Promise<void>;
+    setRemoteDescription(description: RTCSessionDescriptionInit): Promise<void>;
+    addIceCandidate(candidate: RTCIceCandidate): Promise<void>;
+    addTrack(track: Track): TrackSender | undefined;
+    removeTrack(track: TrackSender): void;
+    createDataChannel(options: RTCDataChannelInit): any;
+    dispose(): void;
+    close(): void;
+  }
+
+  export type PeerCallOptions = {
+    webRTC: WebRTC;
+    forceTURN: boolean;
+    turnServers: RTCIceServer[];
+    createTimeout: TimeoutCreator;
+    emitUpdate: (peerCall: PeerCall, params: any) => void;
+    sendSignallingMessage: (message: SignallingMessage<MCallBase>, log: ILogItem) => Promise<void>;
+  };
+  export class RemoteMedia {
+    userMedia?: Stream | undefined;
+    screenShare?: Stream | undefined;
+    constructor(userMedia?: Stream | undefined, screenShare?: Stream | undefined);
+  }
+  /**
+   * Does WebRTC signalling for a single PeerConnection, and deals with WebRTC wrappers from platform
+   * */
+  /** Implements a call between two peers with the signalling state keeping, while still delegating the signalling message sending. Used by GroupCall.*/
+  export class PeerCall implements IDisposable {
+    private callId;
+    private readonly options;
+    private readonly logItem;
+    private readonly peerConnection;
+    private _state;
+    private direction;
+    private localMedia?;
+    private seq;
+    private candidateSendQueue;
+    private remoteCandidateBuffer?;
+    private remoteSDPStreamMetadata?;
+    private responsePromiseChain?;
+    private opponentPartyId?;
+    private hangupParty;
+    private disposables;
+    private statePromiseMap;
+    private makingOffer;
+    private ignoreOffer;
+    private sentEndOfCandidates;
+    private iceDisconnectedTimeout?;
+    private _dataChannel?;
+    private _hangupReason?;
+    private _remoteMedia;
+    constructor(callId: string, options: PeerCallOptions, logItem: ILogItem);
+    get dataChannel(): any | undefined;
+    get state(): CallState;
+    get hangupReason(): CallErrorCode | undefined;
+    get remoteMedia(): Readonly<RemoteMedia>;
+    call(localMedia: LocalMedia): Promise<void>;
+    answer(localMedia: LocalMedia): Promise<void>;
+    setMedia(localMedia: LocalMedia, logItem?: ILogItem): Promise<void>;
+    /** group calls would handle reject at the group call level, not at the peer call level */
+    reject(): Promise<void>;
+    hangup(errorCode: CallErrorCode): Promise<void>;
+    private _hangup;
+    handleIncomingSignallingMessage<B extends MCallBase>(
+      message: SignallingMessage<B>,
+      partyId: PartyId
+    ): Promise<void>;
+    private sendHangupWithCallId;
+    private handleNegotiation;
+    private handleInviteGlare;
+    private handleHangupReceived;
+    private handleFirstInvite;
+    private handleInvite;
+    private handleAnswer;
+    private handleIceGatheringState;
+    private handleLocalIceCandidate;
+    private handleRemoteIceCandidates;
+    private sendAnswer;
+    private queueCandidate;
+    private sendCandidateQueue;
+    private updateRemoteSDPStreamMetadata;
+    private addBufferedIceCandidates;
+    private addIceCandidates;
+    private onIceConnectionStateChange;
+    private setState;
+    private waitForState;
+    private terminate;
+    private getSDPMetadata;
+    private updateRemoteMedia;
+    private delay;
+    private sendSignallingMessage;
+    dispose(): void;
+    close(reason: CallErrorCode | undefined, log: ILogItem): void;
+  }
+  type PartyId = string | null;
+  export enum CallParty {
+    Local = "local",
+    Remote = "remote",
+  }
+  export enum CallState {
+    Fledgling = "fledgling",
+    CreateOffer = "create_offer",
+    InviteSent = "invite_sent",
+    CreateAnswer = "create_answer",
+    Connecting = "connecting",
+    Connected = "connected",
+    Ringing = "ringing",
+    Ended = "ended",
+  }
+  export enum CallDirection {
+    Inbound = "inbound",
+    Outbound = "outbound",
+  }
+
+  export class CallError extends Error {
+    code: string;
+    constructor(code: CallErrorCode, msg: string, err: Error);
+  }
+
+  export enum EventType {
+    GroupCall = "org.matrix.msc3401.call",
+    GroupCallMember = "org.matrix.msc3401.call.member",
+    Invite = "m.call.invite",
+    Candidates = "m.call.candidates",
+    Answer = "m.call.answer",
+    Hangup = "m.call.hangup",
+    Reject = "m.call.reject",
+    SelectAnswer = "m.call.select_answer",
+    Negotiate = "m.call.negotiate",
+    SDPStreamMetadataChanged = "m.call.sdp_stream_metadata_changed",
+    SDPStreamMetadataChangedPrefix = "org.matrix.call.sdp_stream_metadata_changed",
+    Replaces = "m.call.replaces",
+    AssertedIdentity = "m.call.asserted_identity",
+    AssertedIdentityPrefix = "org.matrix.call.asserted_identity",
+  }
+  export const SDPStreamMetadataKey = "org.matrix.msc3077.sdp_stream_metadata";
+  export interface CallDeviceMembership {
+    device_id: string;
+    session_id: string;
+  }
+  export interface CallMembership {
+    ["m.call_id"]: string;
+    ["m.devices"]: CallDeviceMembership[];
+  }
+  export interface CallMemberContent {
+    ["m.calls"]: CallMembership[];
+  }
+  export interface SessionDescription {
+    sdp?: string;
+    type: RTCSdpType;
+  }
+  export enum SDPStreamMetadataPurpose {
+    Usermedia = "m.usermedia",
+    Screenshare = "m.screenshare",
+  }
+  export interface SDPStreamMetadataObject {
+    purpose: SDPStreamMetadataPurpose;
+    audio_muted: boolean;
+    video_muted: boolean;
+  }
+  export interface SDPStreamMetadata {
+    [key: string]: SDPStreamMetadataObject;
+  }
+  export interface CallCapabilities {
+    "m.call.transferee": boolean;
+    "m.call.dtmf": boolean;
+  }
+  export interface CallReplacesTarget {
+    id: string;
+    display_name: string;
+    avatar_url: string;
+  }
+  export type MCallBase = {
+    call_id: string;
+    version: string | number;
+    seq: number;
+  };
+  export type MGroupCallBase = MCallBase & {
+    conf_id: string;
+    device_id: string;
+    sender_session_id: string;
+    dest_session_id: string;
+    party_id: string;
+  };
+  export type MCallAnswer<Base extends MCallBase> = Base & {
+    answer: SessionDescription;
+    capabilities?: CallCapabilities;
+    [SDPStreamMetadataKey]: SDPStreamMetadata;
+  };
+  export type MCallSelectAnswer<Base extends MCallBase> = Base & {
+    selected_party_id: string;
+  };
+  export type MCallInvite<Base extends MCallBase> = Base & {
+    offer: SessionDescription;
+    lifetime: number;
+    [SDPStreamMetadataKey]: SDPStreamMetadata;
+  };
+  export type MCallSDPStreamMetadataChanged<Base extends MCallBase> = Base & {
+    [SDPStreamMetadataKey]: SDPStreamMetadata;
+  };
+  export type MCallReplacesEvent<Base extends MCallBase> = Base & {
+    replacement_id: string;
+    target_user: CallReplacesTarget;
+    create_call: string;
+    await_call: string;
+    target_room: string;
+  };
+  export type MCAllAssertedIdentity<Base extends MCallBase> = Base & {
+    asserted_identity: {
+      id: string;
+      display_name: string;
+      avatar_url: string;
+    };
+  };
+  export type MCallCandidates<Base extends MCallBase> = Base & {
+    candidates: RTCIceCandidate[];
+  };
+  export type MCallHangupReject<Base extends MCallBase> = Base & {
+    reason?: CallErrorCode;
+  };
+  export enum CallErrorCode {
+    /** The user chose to end the call */
+    UserHangup = "user_hangup",
+    /** An error code when the local client failed to create an offer. */
+    LocalOfferFailed = "local_offer_failed",
+    /**
+     * An error code when there is no local mic/camera to use. This may be because
+     * the hardware isn't plugged in, or the user has explicitly denied access.
+     */
+    NoUserMedia = "no_user_media",
+    /**
+     * Error code used when a call event failed to send
+     * because unknown devices were present in the room
+     */
+    UnknownDevices = "unknown_devices",
+    /**
+     * Error code used when we fail to send the invite
+     * for some reason other than there being unknown devices
+     */
+    SendInvite = "send_invite",
+    /**
+     * An answer could not be created
+     */
+    CreateAnswer = "create_answer",
+    /**
+     * Error code used when we fail to send the answer
+     * for some reason other than there being unknown devices
+     */
+    SendAnswer = "send_answer",
+    /**
+     * The session description from the other side could not be set
+     */
+    SetRemoteDescription = "set_remote_description",
+    /**
+     * The session description from this side could not be set
+     */
+    SetLocalDescription = "set_local_description",
+    /**
+     * A different device answered the call
+     */
+    AnsweredElsewhere = "answered_elsewhere",
+    /**
+     * No media connection could be established to the other party
+     */
+    IceFailed = "ice_failed",
+    /**
+     * The invite timed out whilst waiting for an answer
+     */
+    InviteTimeout = "invite_timeout",
+    /**
+     * The call was replaced by another call
+     */
+    Replaced = "replaced",
+    /**
+     * Signalling for the call could not be sent (other than the initial invite)
+     */
+    SignallingFailed = "signalling_timeout",
+    /**
+     * The remote party is busy
+     */
+    UserBusy = "user_busy",
+    /**
+     * We transferred the call off to somewhere else
+     */
+    Transfered = "transferred",
+    /**
+     * A call from the same user was found with a new session id
+     */
+    NewSession = "new_session",
+  }
+  export type SignallingMessage<Base extends MCallBase> =
+    | {
+        type: EventType.Invite;
+        content: MCallInvite<Base>;
+      }
+    | {
+        type: EventType.Answer;
+        content: MCallAnswer<Base>;
+      }
+    | {
+        type: EventType.SDPStreamMetadataChanged | EventType.SDPStreamMetadataChangedPrefix;
+        content: MCallSDPStreamMetadataChanged<Base>;
+      }
+    | {
+        type: EventType.Candidates;
+        content: MCallCandidates<Base>;
+      }
+    | {
+        type: EventType.Hangup | EventType.Reject;
+        content: MCallHangupReject<Base>;
+      };
+  export enum CallIntent {
+    Ring = "m.ring",
+    Prompt = "m.prompt",
+    Room = "m.room",
+  }
+
+  export type MemberOptions = Omit<PeerCallOptions, "emitUpdate" | "sendSignallingMessage"> & {
+    confId: string;
+    ownUserId: string;
+    ownDeviceId: string;
+    sessionId: string;
+    hsApi: HomeServerApi;
+    encryptDeviceMessage: (
+      userId: string,
+      message: SignallingMessage<MGroupCallBase>,
+      log: ILogItem
+    ) => Promise<EncryptedMessage>;
+    emitUpdate: (participant: Member, params?: any) => void;
+  };
+  export class Member {
+    readonly member: RoomMember;
+    private callDeviceMembership;
+    private readonly options;
+    private readonly logItem;
+    private peerCall?;
+    private localMedia?;
+    private retryCount;
+    constructor(
+      member: RoomMember,
+      callDeviceMembership: CallDeviceMembership,
+      options: MemberOptions,
+      logItem: ILogItem
+    );
+    get remoteMedia(): RemoteMedia | undefined;
+    get isConnected(): boolean;
+    get userId(): string;
+    get deviceId(): string;
+    get dataChannel(): any | undefined;
+    /** @internal */
+    connect(localMedia: LocalMedia): void;
+    /** @internal */
+    disconnect(hangup: boolean): void;
+    /** @internal */
+    updateCallInfo(callDeviceMembership: CallDeviceMembership): void;
+    /** @internal */
+    emitUpdate: (peerCall: PeerCall, params: any) => void;
+    /** @internal */
+    sendSignallingMessage: (message: SignallingMessage<MCallBase>, log: ILogItem) => Promise<void>;
+    /** @internal */
+    handleDeviceMessage(message: SignallingMessage<MGroupCallBase>, deviceId: string, syncLog: ILogItem): void;
+    private _createPeerCall;
+  }
+
+  export enum GroupCallState {
+    Fledgling = "fledgling",
+    Creating = "creating",
+    Created = "created",
+    Joining = "joining",
+    Joined = "joined",
+  }
+  export type GroupCallOptions = Omit<MemberOptions, "emitUpdate" | "confId" | "encryptDeviceMessage"> & {
+    emitUpdate: (call: GroupCall, params?: any) => void;
+    encryptDeviceMessage: (
+      roomId: string,
+      userId: string,
+      message: SignallingMessage<MGroupCallBase>,
+      log: ILogItem
+    ) => Promise<EncryptedMessage>;
+    storage: Storage;
+  };
+  export class GroupCall extends EventEmitter<{
+    change: never;
+  }> {
+    readonly id: string;
+    private callContent;
+    readonly roomId: string;
+    private readonly options;
+    private readonly logItem;
+    private readonly _members;
+    private _localMedia?;
+    private _memberOptions;
+    private _state;
+    constructor(
+      id: string,
+      newCall: boolean,
+      callContent: Record<string, any>,
+      roomId: string,
+      options: GroupCallOptions,
+      logItem: ILogItem
+    );
+    get localMedia(): LocalMedia | undefined;
+    get members(): BaseObservableMap<string, Member>;
+    get isTerminated(): boolean;
+    get isRinging(): boolean;
+    get name(): string;
+    get intent(): CallIntent;
+    join(localMedia: LocalMedia): Promise<void>;
+    get hasJoined(): boolean;
+    leave(): Promise<void>;
+    terminate(): Promise<void>;
+    /** @internal */
+    create(localMedia: LocalMedia): Promise<void>;
+    /** @internal */
+    updateCallEvent(callContent: Record<string, any>, syncLog: ILogItem): void;
+    /** @internal */
+    updateMembership(userId: string, callMembership: CallMembership, syncLog: ILogItem): void;
+    /** @internal */
+    removeMembership(userId: string, syncLog: ILogItem): void;
+    private getDeviceIdsForUserId;
+    private isMember;
+    private removeOwnDevice;
+    /** @internal */
+    private removeMemberDevice;
+    /** @internal */
+    handleDeviceMessage(
+      message: SignallingMessage<MGroupCallBase>,
+      userId: string,
+      deviceId: string,
+      syncLog: ILogItem
+    ): void;
+    /** @internal */
+    dispose(): void;
+    private _createJoinPayload;
+    private _leaveCallMemberContent;
+    protected emitChange(): void;
+  }
+
+  export type CallHandlerOptions = Omit<GroupCallOptions, "emitUpdate" | "createTimeout"> & {
+    logger: ILogger;
+    clock: Clock;
+  };
+
+  type MemberChange = any;
+  type StateEvent = any;
+
+  export class CallHandler {
+    private readonly options;
+    private readonly _calls;
+    private memberToCallIds;
+    private groupCallOptions;
+    private sessionId;
+    constructor(options: CallHandlerOptions);
+    loadCalls(intent?: CallIntent): Promise<void>;
+    loadCallsForRoom(intent: CallIntent, roomId: string): Promise<void>;
+    private _getLoadTxn;
+    private _loadCallEntries;
+    createCall(roomId: string, callType: string, name: string, intent?: CallIntent): Promise<GroupCall>;
+    get calls(): BaseObservableMap<string, GroupCall>;
+    /** @internal */
+    handleRoomState(room: Room, events: StateEvent[], txn: Transaction, log: ILogItem): void;
+    /** @internal */
+    updateRoomMembers(room: Room, memberChanges: Map<string, MemberChange>): void;
+    /** @internal */
+    handlesDeviceMessageEventType(eventType: string): boolean;
+    /** @internal */
+    handleDeviceMessage(
+      message: SignallingMessage<MGroupCallBase>,
+      userId: string,
+      deviceId: string,
+      log: ILogItem
+    ): void;
+    private handleCallEvent;
+    private handleCallMemberEvent;
+  }
+
+  export interface MediaDevices {
+    // filter out audiooutput
+    enumerate(): Promise<MediaDeviceInfo[]>;
+    // to assign to a video element, we downcast to WrappedTrack and use the stream property.
+    getMediaTracks(audio: true | MediaDeviceInfo, video: boolean | MediaDeviceInfo): Promise<Stream>;
+    getScreenShareTrack(): Promise<Stream | undefined>;
+  }
+
+  type HomeServerApiOptions = {
+    homeserver: string;
+    accessToken: string;
+    request: RequestFunction;
+    reconnector: Reconnector;
+  };
+  type BaseRequestOptions = {
+    log?: ILogItem;
+    allowedStatusCodes?: number[];
+    uploadProgress?: (loadedBytes: number) => void;
+    timeout?: number;
+    prefix?: string;
+  };
+  export class HomeServerApi {
+    private readonly _homeserver;
+    private readonly _accessToken;
+    private readonly _requestFn;
+    private readonly _reconnector;
+    constructor({ homeserver, accessToken, request, reconnector }: HomeServerApiOptions);
+    private _url;
+    private _baseRequest;
+    private _unauthedRequest;
+    private _authedRequest;
+    private _post;
+    private _put;
+    private _get;
+    sync(since: string, filter: string, timeout: number, options?: BaseRequestOptions): IHomeServerRequest;
+    context(roomId: string, eventId: string, limit: number, filter: string): IHomeServerRequest;
+    messages(roomId: string, params: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    members(roomId: string, params: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    send(
+      roomId: string,
+      eventType: string,
+      txnId: string,
+      content: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    redact(
+      roomId: string,
+      eventId: string,
+      txnId: string,
+      content: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    receipt(roomId: string, receiptType: string, eventId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    state(roomId: string, eventType: string, stateKey: string, options?: BaseRequestOptions): IHomeServerRequest;
+    sendState(
+      roomId: string,
+      eventType: string,
+      stateKey: string,
+      content: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    getLoginFlows(): IHomeServerRequest;
+    register(
+      username: string | null,
+      password: string,
+      initialDeviceDisplayName: string,
+      auth?: Record<string, any>,
+      inhibitLogin?: boolean,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    passwordLogin(
+      username: string,
+      password: string,
+      initialDeviceDisplayName: string,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    tokenLogin(
+      loginToken: string,
+      txnId: string,
+      initialDeviceDisplayName: string,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    createFilter(userId: string, filter: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    versions(options?: BaseRequestOptions): IHomeServerRequest;
+    uploadKeys(
+      dehydratedDeviceId: string,
+      payload: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    queryKeys(queryRequest: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    claimKeys(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    sendToDevice(
+      type: string,
+      payload: Record<string, any>,
+      txnId: string,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    roomKeysVersion(version?: string, options?: BaseRequestOptions): IHomeServerRequest;
+    roomKeyForRoomAndSession(
+      version: string,
+      roomId: string,
+      sessionId: string,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    uploadRoomKeysToBackup(
+      version: string,
+      payload: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+    uploadAttachment(blob: Blob, filename: string, options?: BaseRequestOptions): IHomeServerRequest;
+    setPusher(pusher: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    getPushers(options?: BaseRequestOptions): IHomeServerRequest;
+    join(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    joinIdOrAlias(roomIdOrAlias: string, options?: BaseRequestOptions): IHomeServerRequest;
+    leave(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    forget(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    logout(options?: BaseRequestOptions): IHomeServerRequest;
+    getDehydratedDevice(options?: BaseRequestOptions): IHomeServerRequest;
+    createDehydratedDevice(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    claimDehydratedDevice(deviceId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    profile(userId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    createRoom(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
+    setAccountData(
+      ownUserId: string,
+      type: string,
+      content: Record<string, any>,
+      options?: BaseRequestOptions
+    ): IHomeServerRequest;
+  }
+
+  export interface IHomeServerRequest {
+    abort(): void;
+    response(): Promise<any>;
+    responseCode(): Promise<number>;
+  }
+  type HomeServerRequestOptions = {
+    log?: ILogItem;
+    allowedStatusCodes?: number[];
+  };
+  export class HomeServerRequest implements IHomeServerRequest {
+    private readonly _log?;
+    private _sourceRequest?;
+    private readonly _promise;
+    constructor(method: string, url: string, sourceRequest: RequestResult, options?: HomeServerRequestOptions);
+    abort(): void;
+    response(): Promise<any>;
+    responseCode(): Promise<number>;
+  }
+
+  enum ConnectionStatus {
+    "Waiting" = 0,
+    "Reconnecting" = 1,
+    "Online" = 2,
+  }
+  type Ctor = {
+    retryDelay: ExponentialRetryDelay;
+    createMeasure: () => TimeMeasure;
+    onlineStatus: any;
+  };
+
+  export type Attachment = {
+    body: string;
+    info: AttachmentInfo;
+    msgtype: string;
+    url?: string;
+    file?: EncryptedFile;
+    filename?: string;
+  };
+  export type EncryptedFile = {
+    key: JsonWebKey;
+    iv: string;
+    hashes: {
+      sha256: string;
+    };
+    url: string;
+    v: string;
+    mimetype?: string;
+  };
+  type AttachmentInfo = {
+    h?: number;
+    w?: number;
+    mimetype: string;
+    size: number;
+    duration?: number;
+    thumbnail_url?: string;
+    thumbnail_file?: EncryptedFile;
+    thumbnail_info?: ThumbnailInfo;
+  };
+  type ThumbnailInfo = {
+    h: number;
+    w: number;
+    mimetype: string;
+    size: number;
+  };
+  export type VersionResponse = {
+    versions: string[];
+    unstable_features?: Record<string, boolean>;
+  };
+
+  export class Reconnector {
+    private readonly _retryDelay;
+    private readonly _createTimeMeasure;
+    private readonly _onlineStatus;
+    private readonly _state;
+    private _isReconnecting;
+    private _versionsResponse?;
+    private _stateSince;
+    constructor({ retryDelay, createMeasure, onlineStatus }: Ctor);
+    get lastVersionsResponse(): VersionResponse | undefined;
+    get connectionStatus(): ObservableValue<ConnectionStatus>;
+    get retryIn(): number;
+    onRequestFailed(hsApi: HomeServerApi): Promise<void>;
+    tryNow(): void;
+    private _setState;
+    private _reconnectLoop;
+  }
+  export class ExponentialRetryDelay {
+    private readonly _start;
+    private _current;
+    private readonly _createTimeout;
+    private readonly _max;
+    private _timeout?;
+    constructor(createTimeout: (ms: number) => Timeout);
+    waitForRetry(): Promise<void>;
+    abort(): void;
+    reset(): void;
+    get nextValue(): number;
+  }
+  export type IDBKey = IDBValidKey | IDBKeyRange;
+  export class Transaction {
+    private _txn;
+    private _allowedStoreNames;
+    private _stores;
+    private _storage;
+    private _writeErrors;
+    constructor(txn: IDBTransaction, allowedStoreNames: StoreNames[], storage: Storage);
+    get idbFactory(): IDBFactory;
+    get IDBKeyRange(): typeof IDBKeyRange;
+    get databaseName(): string;
+    get logger(): ILogger;
+    _idbStore(name: StoreNames): Store<any>;
+    _store<T>(name: StoreNames, mapStore: (idbStore: Store<any>) => T): T;
+    get session(): SessionStore;
+    get roomSummary(): RoomSummaryStore;
+    get archivedRoomSummary(): RoomSummaryStore;
+    get invites(): InviteStore;
+    get timelineFragments(): any;
+    get timelineEvents(): any;
+    get timelineRelations(): any;
+    get roomState(): any;
+    get roomMembers(): RoomMemberStore;
+    get pendingEvents(): any;
+    get userIdentities(): any;
+    get deviceIdentities(): any;
+    get olmSessions(): any;
+    get inboundGroupSessions(): any;
+    get outboundGroupSessions(): any;
+    get groupSessionDecryptions(): any;
+    get operations(): any;
+    get accountData(): any;
+    get calls(): CallStore;
+    complete(log?: ILogItem): Promise<void>;
+    getCause(error: Error): Error;
+    abort(log?: ILogItem): void;
+    addWriteError(
+      error: StorageError,
+      refItem: ILogItem | undefined,
+      operationName: string,
+      keys: IDBKey[] | undefined
+    ): void;
+    private _logWriteErrors;
+  }
+
+  export enum StoreNames {
+    session = "session",
+    roomState = "roomState",
+    roomSummary = "roomSummary",
+    archivedRoomSummary = "archivedRoomSummary",
+    invites = "invites",
+    roomMembers = "roomMembers",
+    timelineEvents = "timelineEvents",
+    timelineRelations = "timelineRelations",
+    timelineFragments = "timelineFragments",
+    pendingEvents = "pendingEvents",
+    userIdentities = "userIdentities",
+    deviceIdentities = "deviceIdentities",
+    olmSessions = "olmSessions",
+    inboundGroupSessions = "inboundGroupSessions",
+    outboundGroupSessions = "outboundGroupSessions",
+    groupSessionDecryptions = "groupSessionDecryptions",
+    operations = "operations",
+    accountData = "accountData",
+    calls = "calls",
+  }
+  export const STORE_NAMES: Readonly<StoreNames[]>;
+  export class StorageError extends Error {
+    errcode?: string;
+    cause?: Error;
+    constructor(message: string, cause?: Error);
+    get name(): string;
+  }
+  export const KeyLimits: {
+    readonly minStorageKey: number;
+    readonly middleStorageKey: number;
+    readonly maxStorageKey: number;
+  };
+  export interface CallEntry {
+    intent: string;
+    roomId: string;
+    callId: string;
+    timestamp: number;
+  }
+  type CallStorageEntry = {
+    key: string;
+    timestamp: number;
+  };
+  export class CallStore {
+    private _callStore;
+    constructor(idbStore: Store<CallStorageEntry>);
+    getByIntent(intent: string): Promise<CallEntry[]>;
+    getByIntentAndRoom(intent: string, roomId: string): Promise<CallEntry[]>;
+    add(entry: CallEntry): void;
+    remove(intent: string, roomId: string, callId: string): void;
+  }
+
+  export class QueryTargetWrapper<T> {
+    private _qt;
+    constructor(qt: IDBIndex | IDBObjectStore);
+    get keyPath(): string | string[];
+    get _qtStore(): IDBObjectStore;
+    supports(methodName: string): boolean;
+    openKeyCursor(range?: IDBQuery, direction?: IDBCursorDirection | undefined): IDBRequest<IDBCursor | null>;
+    openCursor(range?: IDBQuery, direction?: IDBCursorDirection | undefined): IDBRequest<IDBCursorWithValue | null>;
+    put(item: T, key?: IDBValidKey | undefined): IDBRequest<IDBValidKey>;
+    add(item: T, key?: IDBValidKey | undefined): IDBRequest<IDBValidKey>;
+    get(key: IDBValidKey | IDBKeyRange): IDBRequest<T | undefined>;
+    getKey(key: IDBValidKey | IDBKeyRange): IDBRequest<IDBValidKey | undefined>;
+    delete(key: IDBValidKey | IDBKeyRange): IDBRequest<undefined>;
+    count(keyRange?: IDBKeyRange): IDBRequest<number>;
+    index(name: string): IDBIndex;
+    get indexNames(): string[];
+  }
+  export class Store<T> extends QueryTarget<T> {
+    constructor(idbStore: IDBObjectStore, transaction: ITransaction);
+    get _idbStore(): QueryTargetWrapper<T>;
+    index(indexName: string): QueryTarget<T>;
+    put(value: T, log?: ILogItem): void;
+    add(value: T, log?: ILogItem): void;
+    tryAdd(value: T, log: ILogItem): Promise<boolean>;
+    delete(keyOrKeyRange: IDBValidKey | IDBKeyRange, log?: ILogItem): void;
+    private _prepareErrorLog;
+    private _getKeys;
+    private _readKeyPath;
+  }
+  export interface ITransaction {
+    idbFactory: IDBFactory;
+    IDBKeyRange: typeof IDBKeyRange;
+    databaseName: string;
+    addWriteError(
+      error: StorageError,
+      refItem: ILogItem | undefined,
+      operationName: string,
+      keys: IDBKey[] | undefined
+    ): any;
+  }
+  type Reducer<A, B> = (acc: B, val: A) => B;
+  export type IDBQuery = IDBValidKey | IDBKeyRange | undefined | null;
+  interface QueryTargetInterface<T> {
+    openCursor(range?: IDBQuery, direction?: IDBCursorDirection | undefined): IDBRequest<IDBCursorWithValue | null>;
+    openKeyCursor(range?: IDBQuery, direction?: IDBCursorDirection | undefined): IDBRequest<IDBCursor | null>;
+    supports(method: string): boolean;
+    keyPath: string | string[];
+    count(keyRange?: IDBKeyRange): IDBRequest<number>;
+    get(key: IDBValidKey | IDBKeyRange): IDBRequest<T | undefined>;
+    getKey(key: IDBValidKey | IDBKeyRange): IDBRequest<IDBValidKey | undefined>;
+  }
+  export class QueryTarget<T> {
+    protected _target: QueryTargetInterface<T>;
+    protected _transaction: ITransaction;
+    constructor(target: QueryTargetInterface<T>, transaction: ITransaction);
+    get idbFactory(): IDBFactory;
+    get IDBKeyRange(): typeof IDBKeyRange;
+    get databaseName(): string;
+    _openCursor(range?: IDBQuery, direction?: IDBCursorDirection): IDBRequest<IDBCursorWithValue | null>;
+    supports(methodName: string): boolean;
+    count(keyRange?: IDBKeyRange): Promise<number>;
+    get(key: IDBValidKey | IDBKeyRange): Promise<T | undefined>;
+    getKey(key: IDBValidKey | IDBKeyRange): Promise<IDBValidKey | undefined>;
+    reduce<B>(range: IDBQuery, reducer: Reducer<T, B>, initialValue: B): Promise<boolean>;
+    reduceReverse<B>(range: IDBQuery, reducer: Reducer<T, B>, initialValue: B): Promise<boolean>;
+    selectLimit(range: IDBQuery, amount: number): Promise<T[]>;
+    selectLimitReverse(range: IDBQuery, amount: number): Promise<T[]>;
+    selectWhile(range: IDBQuery, predicate: (v: T) => boolean): Promise<T[]>;
+    selectWhileReverse(range: IDBQuery, predicate: (v: T) => boolean): Promise<T[]>;
+    selectAll(range?: IDBQuery, direction?: IDBCursorDirection): Promise<T[]>;
+    selectFirst(range: IDBQuery): Promise<T | undefined>;
+    selectLast(range: IDBQuery): Promise<T | undefined>;
+    find(range: IDBQuery, predicate: (v: T) => boolean): Promise<T | undefined>;
+    findReverse(range: IDBQuery, predicate: (v: T) => boolean): Promise<T | undefined>;
+    findMaxKey(range: IDBQuery): Promise<IDBValidKey | undefined>;
+    iterateValues(
+      range: IDBQuery,
+      callback: (val: T, key: IDBValidKey, cur: IDBCursorWithValue) => boolean
+    ): Promise<void>;
+    iterateKeys(range: IDBQuery, callback: (key: IDBValidKey, cur: IDBCursor) => boolean): Promise<void>;
+    /**
+     * Checks if a given set of keys exist.
+     * If the callback returns true, the search is halted and callback won't be called again.
+     */
+    findExistingKeys(
+      keys: IDBValidKey[],
+      backwards: boolean,
+      callback: (key: IDBValidKey, pk: IDBValidKey) => boolean
+    ): Promise<void>;
+    _reduce<B>(
+      range: IDBQuery,
+      reducer: (reduced: B, value: T) => B,
+      initialValue: B,
+      direction: IDBCursorDirection
+    ): Promise<boolean>;
+    _selectLimit(range: IDBQuery, amount: number, direction: IDBCursorDirection): Promise<T[]>;
+    _selectUntil(range: IDBQuery, predicate: (vs: T[], v: T) => boolean, direction: IDBCursorDirection): Promise<T[]>;
+    _selectWhile(range: IDBQuery, predicate: (v: T) => boolean, direction: IDBCursorDirection): Promise<T[]>;
+    iterateWhile(range: IDBQuery, predicate: (v: T) => boolean): Promise<void>;
+    _find(range: IDBQuery, predicate: (v: T) => boolean, direction: IDBCursorDirection): Promise<T | undefined>;
+  }
+  export interface SessionEntry {
+    key: string;
+    value: any;
+  }
+  export class SessionStore {
+    private _sessionStore;
+    private _localStorage;
+    constructor(sessionStore: Store<SessionEntry>, localStorage: IDOMStorage);
+    private get _localStorageKeyPrefix();
+    get(key: string): Promise<any>;
+    _writeKeyToLocalStorage(key: string, value: any): void;
+    writeE2EEIdentityToLocalStorage(): void;
+    tryRestoreE2EEIdentityFromLocalStorage(log: ILogItem): Promise<boolean>;
+    set(key: string, value: any): void;
+    add(key: string, value: any): void;
+    remove(key: string): void;
+  }
+  export interface IDOMStorage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+    key(n: number): string | null;
+    readonly length: number;
+  }
+
+  type SummaryData = any;
+
+  export class RoomSummaryStore {
+    private _summaryStore;
+    constructor(summaryStore: Store<SummaryData>);
+    getAll(): Promise<SummaryData[]>;
+    set(summary: SummaryData): void;
+    get(roomId: string): Promise<SummaryData | null>;
+    has(roomId: string): Promise<boolean>;
+    remove(roomId: string): void;
+  }
+
+  import type * as OlmNamespace from "@matrix-org/olm";
+  type Olm = typeof OlmNamespace;
+  type ClaimedOTKResponse = {
+    [userId: string]: {
+      [deviceId: string]: {
+        [algorithmAndOtk: string]: {
+          key: string;
+          signatures: {
+            [userId: string]: {
+              [algorithmAndDevice: string]: string;
+            };
+          };
+        };
+      };
+    };
+  };
+
+  type Account = any;
+
+  export class Encryption {
+    private readonly account;
+    private readonly pickleKey;
+    private readonly olm;
+    private readonly storage;
+    private readonly now;
+    private readonly ownUserId;
+    private readonly olmUtil;
+    private readonly senderKeyLock;
+    constructor(
+      account: Account,
+      pickleKey: string,
+      olm: Olm,
+      storage: Storage,
+      now: () => number,
+      ownUserId: string,
+      olmUtil: Olm.Utility,
+      senderKeyLock: any
+    );
+    encrypt(
+      type: string,
+      content: Record<string, any>,
+      devices: DeviceIdentity[],
+      hsApi: HomeServerApi,
+      log: ILogItem
+    ): Promise<EncryptedMessage[]>;
+    _encryptForMaxDevices(
+      type: string,
+      content: Record<string, any>,
+      devices: DeviceIdentity[],
+      hsApi: HomeServerApi,
+      log: ILogItem
+    ): Promise<EncryptedMessage[]>;
+    _findExistingSessions(devices: DeviceIdentity[]): Promise<{
+      devicesWithoutSession: DeviceIdentity[];
+      existingEncryptionTargets: EncryptionTarget[];
+    }>;
+    _encryptForDevice(type: string, content: Record<string, any>, target: EncryptionTarget): OlmEncryptedMessageContent;
+    _buildPlainTextMessageForDevice(type: string, content: Record<string, any>, device: DeviceIdentity): OlmPayload;
+    _createNewSessions(
+      devicesWithoutSession: DeviceIdentity[],
+      hsApi: HomeServerApi,
+      timestamp: number,
+      log: ILogItem
+    ): Promise<EncryptionTarget[]>;
+    _claimOneTimeKeys(
+      hsApi: HomeServerApi,
+      deviceIdentities: DeviceIdentity[],
+      log: ILogItem
+    ): Promise<EncryptionTarget[]>;
+    _verifyAndCreateOTKTargets(
+      userKeyMap: ClaimedOTKResponse,
+      devicesByUser: Map<string, Map<string, DeviceIdentity>>,
+      log: ILogItem
+    ): EncryptionTarget[];
+    _loadSessions(encryptionTargets: EncryptionTarget[]): Promise<void>;
+    _storeSessions(encryptionTargets: EncryptionTarget[], timestamp: number): Promise<void>;
+  }
+  class EncryptionTarget {
+    readonly device: DeviceIdentity;
+    readonly oneTimeKey: string | null;
+    readonly sessionId: string | null;
+    session: Olm.Session | null;
+    constructor(device: DeviceIdentity, oneTimeKey: string | null, sessionId: string | null);
+    static fromOTK(device: DeviceIdentity, oneTimeKey: string): EncryptionTarget;
+    static fromSessionId(device: DeviceIdentity, sessionId: string): EncryptionTarget;
+    dispose(): void;
+  }
+  export class EncryptedMessage {
+    readonly content: OlmEncryptedMessageContent;
+    readonly device: DeviceIdentity;
+    constructor(content: OlmEncryptedMessageContent, device: DeviceIdentity);
+  }
+
+  export interface DeviceIdentity {
+    userId: string;
+    deviceId: string;
+    ed25519Key: string;
+    curve25519Key: string;
+    algorithms: string[];
+    displayName: string;
+    key: string;
+  }
+  export class DeviceIdentityStore {
+    private _store;
+    constructor(store: Store<DeviceIdentity>);
+    getAllForUserId(userId: string): Promise<DeviceIdentity[]>;
+    getAllDeviceIds(userId: string): Promise<string[]>;
+    get(userId: string, deviceId: string): Promise<DeviceIdentity | undefined>;
+    set(deviceIdentity: DeviceIdentity): void;
+    getByCurve25519Key(curve25519Key: string): Promise<DeviceIdentity | undefined>;
+    remove(userId: string, deviceId: string): void;
+    removeAllForUser(userId: string): void;
+  }
+
+  export const enum OlmPayloadType {
+    PreKey = 0,
+    Normal = 1,
+  }
+  export type OlmMessage = {
+    type?: OlmPayloadType;
+    body?: string;
+  };
+  export type OlmEncryptedMessageContent = {
+    algorithm?: "m.olm.v1.curve25519-aes-sha2";
+    sender_key?: string;
+    ciphertext?: {
+      [deviceCurve25519Key: string]: OlmMessage;
+    };
+  };
+  export type OlmEncryptedEvent = {
+    type?: "m.room.encrypted";
+    content?: OlmEncryptedMessageContent;
+    sender?: string;
+  };
+  export type OlmPayload = {
+    type?: string;
+    content?: Record<string, any>;
+    sender?: string;
+    recipient?: string;
+    recipient_keys?: {
+      ed25519?: string;
+    };
+    keys?: {
+      ed25519?: string;
+    };
+  };
+
+  export interface InviteData {
+    roomId: string;
+    isEncrypted: boolean;
+    isDirectMessage: boolean;
+    name?: string;
+    avatarUrl?: string;
+    avatarColorId: number;
+    canonicalAlias?: string;
+    timestamp: number;
+    joinRule: string;
+    inviter?: MemberData;
+  }
+  export class InviteStore {
+    private _inviteStore;
+    constructor(inviteStore: Store<InviteData>);
+    getAll(): Promise<InviteData[]>;
+    set(invite: InviteData): void;
+    remove(roomId: string): void;
+  }
+
+  export interface MemberData {
+    roomId: string;
+    userId: string;
+    avatarUrl: string;
+    displayName: string;
+    membership: "join" | "leave" | "invite" | "ban";
+  }
+  type MemberStorageEntry = MemberData & {
+    key: string;
+  };
+  export class RoomMemberStore {
+    private _roomMembersStore;
+    constructor(roomMembersStore: Store<MemberStorageEntry>);
+    get(roomId: string, userId: string): Promise<MemberStorageEntry | undefined>;
+    set(member: MemberData): void;
+    getAll(roomId: string): Promise<MemberData[]>;
+    getAllUserIds(roomId: string): Promise<string[]>;
+    removeAllForRoom(roomId: string): void;
+  }
 }
