@@ -1,4 +1,3 @@
-import { Ref } from "react";
 import { Room } from "hydrogen-view-sdk";
 
 import "./ChatView.css";
@@ -8,12 +7,16 @@ import { useRoomViewModel } from "../../../hooks/useRoomViewModel";
 import { Text } from "../../../atoms/text/Text";
 
 interface IChatView {
+  open: boolean;
   room: Room;
-  composerInputRef: Ref<HTMLInputElement>;
 }
 
-export function ChatView({ room, composerInputRef }: IChatView) {
+export function ChatView({ room, open }: IChatView) {
   const { loading, roomViewModel, error } = useRoomViewModel(room);
+
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="ChatView flex flex-column" id="ChatView">
@@ -21,16 +24,14 @@ export function ChatView({ room, composerInputRef }: IChatView) {
         <div className="grow flex justify-center items-center">
           <Text>{error.message}</Text>
         </div>
-      ) : loading ? (
+      ) : loading || !roomViewModel ? (
         <div className="grow flex justify-center items-center">
           <Text>loading...</Text>
         </div>
       ) : (
-        <TimelineView timelineViewModel={roomViewModel!.timelineViewModel!} />
+        <TimelineView timelineViewModel={roomViewModel.timelineViewModel!} />
       )}
-      {roomViewModel && !(room as any).isArchived && (
-        <ComposerView inputRef={composerInputRef} composerViewModel={roomViewModel.composerViewModel} />
-      )}
+      {roomViewModel && <ComposerView composerViewModel={roomViewModel.composerViewModel} />}
     </div>
   );
 }

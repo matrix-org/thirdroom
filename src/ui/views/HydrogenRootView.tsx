@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+// @refresh reset
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, Outlet, useMatch } from "react-router-dom";
-import { Platform, Segment, Navigation, Client, Session, LoadStatus, URLRouter } from "hydrogen-view-sdk";
+import { Platform, Segment, Navigation, Client, Session, LoadStatus, URLRouter, CallIntent } from "hydrogen-view-sdk";
 import downloadSandboxPath from "hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "hydrogen-view-sdk/main.js?url";
 import olmWasmPath from "@matrix-org/olm/olm.wasm?url";
@@ -10,7 +11,7 @@ import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
-import useStableMemo from "../hooks/useStableMemo";
+import { useStableMemo } from "../hooks/useStableMemo";
 
 const defaultHomeServer = "matrix.org";
 
@@ -115,7 +116,7 @@ export function HydrogenRootView() {
   useEffect(() => {
     return () => {
       client.dispose();
-      document.body.removeChild(containerEl);
+      containerEl.remove();
     };
   }, [client, containerEl]);
 
@@ -133,7 +134,9 @@ export function HydrogenRootView() {
     const sessionId = availableSessions[0].id;
 
     await client.startWithExistingSession(sessionId);
-  }, []);
+
+    return client.session;
+  }, [platform, client]);
 
   const currentSession = session || initialSession;
 
@@ -164,7 +167,7 @@ export function HydrogenRootView() {
       }
     }
 
-    await (currentSession as any).callHandler.loadCalls("m.room");
+    await currentSession.callHandler.loadCalls("m.room" as CallIntent);
   }, [client, currentSession]);
 
   const context = useMemo<HydrogenContext>(
@@ -175,10 +178,10 @@ export function HydrogenRootView() {
       containerEl,
       urlRouter,
       logger,
-      session,
+      session: currentSession,
       setSession,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, session, setSession]
+    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, setSession]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
@@ -206,9 +209,9 @@ export function HydrogenRootView() {
     );
   }
 
-  if (!session && !loginPathMatch) {
+  if (!currentSession && !loginPathMatch) {
     return <Navigate to="/login" />;
-  } else if (session && loginPathMatch) {
+  } else if (currentSession && loginPathMatch) {
     return <Navigate to="/" />;
   }
 

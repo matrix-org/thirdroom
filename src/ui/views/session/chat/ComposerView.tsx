@@ -1,4 +1,3 @@
-import { Ref } from "react";
 import { ComposerViewModel } from "hydrogen-view-sdk";
 
 import "./ComposerView.css";
@@ -7,10 +6,9 @@ import MessageIC from "../../../../../res/ic/message.svg";
 
 interface IComposerView {
   composerViewModel: ComposerViewModel;
-  inputRef: Ref<HTMLInputElement>;
 }
 
-export function ComposerView({ composerViewModel, inputRef }: IComposerView) {
+export function ComposerView({ composerViewModel }: IComposerView) {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     const target = ev.target as typeof ev.target & {
@@ -32,7 +30,6 @@ export function ComposerView({ composerViewModel, inputRef }: IComposerView) {
           type="text"
           placeholder="Press Enter to chat"
           autoComplete="off"
-          ref={inputRef}
         />
       </form>
     </div>
