@@ -7,6 +7,7 @@ import { LoginView } from "./views/login/LoginView";
 import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
 import { HomeView } from "./views/session/home/HomeView";
+import { Storybook } from "./storybook/Storybook";
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
           <Route path="/" element={<HomeView />} />
         </Route>
       </Route>
+      <Route path="/storybook" element={<Storybook />} />
     </Routes>
   );
 }

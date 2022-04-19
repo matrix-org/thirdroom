@@ -1,10 +1,12 @@
-import { CategoryHeader } from "../../../src/ui/views/components/category/CategoryHeader";
-import { IconButton } from "../../../src/ui/atoms/button/IconButton";
-import StarIC from "../../../res/ic/star.svg";
-import AddIC from "../../../res/ic/add.svg";
-import MoreHorizontalIC from "../../../res/ic/more-horizontal.svg";
+import { CategoryHeader } from "./CategoryHeader";
+import { IconButton } from "../../../atoms/button/IconButton";
+import StarIC from "../../../../../res/ic/star.svg";
+import AddIC from "../../../../../res/ic/add.svg";
+import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 
-export function CategoryHeaderStories() {
+export const title = "CategoryHeader";
+
+export default function CategoryHeaderStories() {
   return (
     <div style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <CategoryHeader iconSrc={StarIC} title="Favorite Worlds" />

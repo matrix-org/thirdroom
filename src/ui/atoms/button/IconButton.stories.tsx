@@ -1,7 +1,9 @@
-import { IconButton } from "../../src/ui/atoms/button/IconButton";
-import HomeIC from "../../res/ic/home.svg";
+import { IconButton } from "./IconButton";
+import HomeIC from "../../../../res/ic/home.svg";
 
-export function IconButtonStories() {
+export const title = "IconButton";
+
+export default function IconButtonStories() {
   return (
     <div className="flex">
       <div>
