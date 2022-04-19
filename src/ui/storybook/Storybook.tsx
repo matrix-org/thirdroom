@@ -1,21 +1,12 @@
-import { useAsync } from "../hooks/useAsync";
 import "./Storybook.css";
 
-const stories = import.meta.glob("../**/*.stories.tsx");
+const stories = import.meta.globEager("../**/*.stories.tsx");
 
 export default function Storybook() {
-  const { loading, error, value } = useAsync(async () => {
-    const results = await Promise.all(Object.values(stories).map((fn) => fn()));
-    return results.map((result) => ({ Component: result.default, title: result.title || result.default.name }));
-  }, []);
-
-  if (error) {
-    return <div>{error.message}</div>;
-  }
-
-  if (loading || !value) {
-    return <div>Loading...</div>;
-  }
+  const value = Object.values(stories).map((result) => ({
+    Component: result.default,
+    title: result.title || result.default.name,
+  }));
 
   return (
     <div className="Storybook">
