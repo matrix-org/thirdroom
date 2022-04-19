@@ -1,20 +1,12 @@
-import { BaseObservableValue } from "hydrogen-view-sdk";
-import { useEffect, useState } from "react";
+import { BaseObservableValue } from "@thirdroom/hydrogen-view-sdk";
 
-export function useObservableValue<T>(observable: BaseObservableValue<T>): T {
-  const [state, setState] = useState<T>(() => observable.get());
+import { useObservable } from "./useObservable";
 
-  useEffect(() => {
-    const valueObserver = (value: T) => {
-      setState(value);
-    };
-
-    observable.subscribe(valueObserver);
-
-    return () => {
-      observable.unsubscribe(valueObserver);
-    };
-  }, [observable]);
-
-  return state;
+export function useObservableValue<T>(observableFactory: () => BaseObservableValue<T>, deps: unknown[]): T {
+  return useObservable(
+    observableFactory,
+    (update) => update,
+    (observable) => observable.get(),
+    deps
+  );
 }

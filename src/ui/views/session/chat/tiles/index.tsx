@@ -1,4 +1,4 @@
-import { SimpleTile, GapView, TileViewConstructor } from "hydrogen-view-sdk";
+import { SimpleTile, GapView, TileViewConstructor } from "@thirdroom/hydrogen-view-sdk";
 
 import { TextMessageView } from "./TextMessageView";
 import { AnnouncementView } from "./AnnouncementView";

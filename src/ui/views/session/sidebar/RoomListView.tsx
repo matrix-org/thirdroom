@@ -1,5 +1,5 @@
 import { MouseEventHandler } from "react";
-import { Room } from "hydrogen-view-sdk";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./RoomListView.css";
 import { Text } from "../../../atoms/text/Text";
@@ -40,7 +40,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
                   <Avatar
                     name={room.name || "Empty room"}
                     size="lg"
-                    isCircle
+                    shape="circle"
                     className="shrink-0"
                     bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
                     imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 32, platform, room.mediaRepository)}

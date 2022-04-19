@@ -20,12 +20,12 @@
 .OpenOverlay {
   padding: var(--sp-xxs);
   padding-right: var(--sp-xs);
-  border-radius: var(--br-normal);
+  border-radius: var(--br-md);
 
   & > .Text span {
     font-size: 8px;
     border: 1px solid white;
-    border-radius: var(--br-small);
+    border-radius: var(--br-xs);
     padding: 2px var(--sp-xxs);
     margin-right: var(--sp-xs);
   }

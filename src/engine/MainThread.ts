@@ -1,5 +1,6 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
+import { NetworkInterface } from "./network/NetworkInterface";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
 import { createStatsBuffer, getStats, StatsObject } from "./stats";
 import { createTripleBuffer } from "./TripleBuffer";
@@ -68,6 +69,7 @@ export interface Engine {
   getStats(): StatsObject;
   exportScene(): void;
   dispose(): void;
+  setNetworkInterface(networkInterface?: NetworkInterface): void;
 }
 
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
@@ -243,6 +245,21 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   update();
 
+  let localPeerId: string | undefined;
+  let disposeNetworkInterface: () => void | undefined;
+
+  function onPeerJoined(peerId: string, mediaStream: MediaStream, dataChannel: RTCDataChannel) {
+    console.log("onPeerJoined", peerId, mediaStream, dataChannel);
+  }
+
+  function onPeerAudioStreamChanged(peerId: string, mediaStream: MediaStream) {
+    console.log("onPeerAudioStreamChanged", peerId, mediaStream);
+  }
+
+  function onPeerLeft(peerId: string) {
+    console.log("onPeerLeft", peerId);
+  }
+
   return {
     addPeer(peerId: string, dataChannel: RTCDataChannel) {
       if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
@@ -271,6 +288,17 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       inputManager.dispose();
       gameWorker.terminate();
       disposeRenderWorker();
+    },
+    setNetworkInterface(networkInterface: NetworkInterface) {
+      if (disposeNetworkInterface) {
+        disposeNetworkInterface();
+      }
+
+      localPeerId = networkInterface.localPeerId;
+
+      disposeNetworkInterface = networkInterface.createHandler(onPeerJoined, onPeerAudioStreamChanged, onPeerLeft);
+
+      console.log(`network interface set with localPeerId: ${localPeerId}`);
     },
   };
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Platform, MediaRepository } from "hydrogen-view-sdk";
+import { Platform, MediaRepository } from "@thirdroom/hydrogen-view-sdk";
 
 export function avatarInitials(name: string): string {
   let firstChar = name.charAt(0);

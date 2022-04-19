@@ -1,7 +1,9 @@
-import { Icon } from "../../src/ui/atoms/icon/Icon";
-import HomeIC from "../../res/ic/home.svg";
+import { Icon } from "./Icon";
+import HomeIC from "../../../../res/ic/home.svg";
 
-export function IconStories() {
+export const title = "Icon";
+
+export default function IconStories() {
   return (
     <div className="flex">
       <Icon color="red" src={HomeIC} />

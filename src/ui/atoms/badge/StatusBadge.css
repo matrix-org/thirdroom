@@ -1,0 +1,16 @@
+.StatusBadge {
+  width: 10px;
+  height: 10px;
+  display: inline-flex;
+  border-radius: 50%;
+}
+
+.StatusBadge--offline {
+  background-color: var(--bg-surface-border);
+}
+.StatusBadge--online {
+  background-color: var(--bg-secondary);
+}
+.StatusBadge--dnd {
+  background-color: var(--bg-danger);
+}

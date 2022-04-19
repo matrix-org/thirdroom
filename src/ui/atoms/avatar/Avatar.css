@@ -1,15 +1,11 @@
 .Avatar {
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
 
-  border-radius: var(--br-normal);
+  border-radius: var(--br-md);
   background-color: var(--sc-dark-low);
   overflow: hidden;
-
-  & .Text {
-    color: white;
-  }
 
   & img {
     width: 100%;
@@ -22,10 +18,12 @@
 .Avatar--xl {
   width: var(--av-xl);
   height: var(--av-xl);
+  border-radius: var(--br-lg);
 }
 .Avatar--lg {
   width: var(--av-lg);
   height: var(--av-lg);
+  border-radius: var(--br-lg);
 }
 .Avatar--md {
   width: var(--av-md);
@@ -34,17 +32,17 @@
 .Avatar--sm {
   width: var(--av-sm);
   height: var(--av-sm);
-  border-radius: var(--br-small);
+  border-radius: var(--br-sm);
 }
 .Avatar--xs {
   width: var(--av-xs);
   height: var(--av-xs);
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
 }
 .Avatar--xxs {
   width: var(--av-xxs);
   height: var(--av-xxs);
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
 }
 
 .Avatar--circle {

@@ -10,7 +10,9 @@
   /* background colors */
   --bg-surface: #ffffff;
   --bg-surface-low: #f0f1f2;
-  --bg-surface-border: #dbdfe2;
+  --bg-surface-border: hsl(206deg 11% 87%);
+  --bg-surface-hover: #00000010;
+  --bg-surface-active: #00000016;
 
   --bg-primary: hsl(209deg 93% 53%);
   --bg-primary-hover: hsl(209deg 93% 45%);
@@ -77,11 +79,10 @@
   --av-xxs: 20px;
 
   /* border radius */
-  /*
-  TODO: [8, 10, 12, 16]
-  */
-  --br-normal: 12px;
-  --br-small: 8px;
+  --br-lg: 16px;
+  --br-md: 12px;
+  --br-sm: 10px;
+  --br-xs: 8px;
 
   /* font sizes */
   --fs-h2: 24px;

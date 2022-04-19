@@ -25,6 +25,9 @@ export default defineConfig({
     "import.meta.vitest": "undefined",
   },
   test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./test/setup.ts",
     includeSource: ["src/**/*.{ts,tsx}"],
     coverage: {
       all: true,
