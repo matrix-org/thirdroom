@@ -4,6 +4,7 @@ import { BadgeStories } from "./Badge.stories";
 import { IconStories } from "./Icon.stories";
 import { IconButtonStories } from "./IconButton.stories";
 import { ButtonStories } from "./Button.stories";
+import { ScrollStories } from "./Scroll.stories";
 
 export function AtomsStories() {
   return (
@@ -14,6 +15,7 @@ export function AtomsStories() {
       <IconStories />
       <IconButtonStories />
       <ButtonStories />
+      <ScrollStories />
     </>
   );
 }

@@ -1,60 +1,26 @@
-.Scroll {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
 .Scroll,
-.Scroll--visible {
-  scrollbar-width: thin;
-  scrollbar-color: var(--sc-dark-low) transparent;
-
-  &::-webkit-scrollbar {
-    width: var(--scrollbar-width);
-    height: var(--scrollbar-width);
-  }
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--sc-dark-low);
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: var(--sc-dark-normal);
-  }
+.Scroll__viewport {
+  height: 100%;
+  width: 100%;
 }
 
-.Scroll--invisible {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+.Scroll__track {
+  --radix-scroll-area-thumb-width: 100%;
+  --radix-scroll-area-thumb-height: 100%;
+  padding: 2px;
+  margin: 2px;
+  border-radius: 10px;
+  background-color: var(--bg-surface-scroll-track);
 }
 
-.Scroll--auto:not(:hover) {
-  scrollbar-color: transparent transparent;
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-  }
+.Scroll__track[data-orientation="vertical"] {
+  width: 10px;
+}
+.Scroll__track[data-orientation="horizontal"] {
+  height: 10px;
 }
 
-.Scroll--visible,
-.Scroll--auto {
-  /* this media query help to hold the scrollbar width in safari */
-  @media not all and (min-resolution: 0.001dpcm) {
-    padding-right: var(--scrollbar-width);
-  }
-}
-
-.Scroll--horizontal {
-  overflow-x: scroll;
-}
-.Scroll--vertical {
-  overflow-y: scroll;
-}
-.Scroll--both {
-  overflow: scroll;
+.Scroll__thumb {
+  background-color: var(--bg-surface-scroll-thumb);
+  border-radius: 10px;
 }
