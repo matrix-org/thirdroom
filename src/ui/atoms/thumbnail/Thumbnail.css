@@ -4,7 +4,7 @@
   align-items: center;
 
   background-color: var(--sc-dark-low);
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
   overflow: hidden;
 
   & img {

@@ -1,7 +1,7 @@
 .SpacesView {
   margin: 0 var(--sp-xs);
   width: 60px;
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
   background-color: var(--bg-surface);
 }
 

@@ -1,0 +1,10 @@
+.AvatarBadgeWrapper {
+  display: inline-flex;
+  position: relative;
+  line-height: 0;
+}
+.AvatarBadgeWrapper__item {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}

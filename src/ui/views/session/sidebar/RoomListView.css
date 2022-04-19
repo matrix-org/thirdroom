@@ -1,7 +1,7 @@
 .RoomListView {
   width: 400px;
   background-color: var(--bg-surface);
-  border-radius: var(--br-small);
+  border-radius: var(--br-xs);
 
   & > header {
     min-height: 50px;

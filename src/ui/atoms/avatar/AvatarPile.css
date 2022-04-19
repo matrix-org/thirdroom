@@ -1,0 +1,36 @@
+.AvatarPile {
+  display: flex;
+  align-items: center;
+
+  & .Avatar:first-child {
+    margin-left: 0;
+  }
+
+  & .Avatar--xl {
+    border: 4px solid var(--bg-surface);
+    margin-left: calc(-1 * var(--av-xl) / 4);
+  }
+
+  & .Avatar--lg {
+    border: 3px solid var(--bg-surface);
+    margin-left: calc(-1 * var(--av-lg) / 4);
+  }
+
+  & .Avatar--md,
+  & .Avatar--sm {
+    border: 2px solid var(--bg-surface);
+    margin-left: calc(-1 * var(--av-md) / 4);
+  }
+  & .Avatar--sm {
+    margin-left: calc(-1 * var(--av-sm) / 4);
+  }
+
+  & .Avatar--xs,
+  & .Avatar--xxs {
+    border: 1px solid var(--bg-surface);
+    margin-left: calc(-1 * var(--av-xxs) / 4);
+  }
+  & .Avatar--xs {
+    margin-left: calc(-1 * var(--av-xs) / 4);
+  }
+}

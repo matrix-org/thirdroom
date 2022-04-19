@@ -1,0 +1,51 @@
+.RoomTile,
+.RoomTile--active {
+  width: 100%;
+
+  & > button {
+    padding: var(--sp-xs) var(--sp-md);
+    cursor: pointer;
+  }
+}
+
+.RoomTile__content {
+  padding: 0 var(--sp-sm);
+  & .Text-b3 {
+    color: var(--tc-surface-low);
+  }
+  & > *:last-child {
+    margin-top: 2px;
+  }
+}
+
+.RoomTile__options {
+  display: none;
+  padding-right: var(--sp-md);
+
+  & > *:not(:last-child) {
+    margin-right: var(--sp-sm);
+  }
+}
+
+.RoomTile {
+  &:hover,
+  &:focus-within {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.RoomTile--active {
+  background-color: var(--bg-surface-low);
+}
+
+.RoomTile:hover,
+.RoomTile:focus-within,
+.RoomTile:active,
+.RoomTile--active {
+  & .RoomTile__options {
+    display: block;
+  }
+}
