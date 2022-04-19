@@ -3,7 +3,7 @@ import "./Storybook.css";
 
 const stories = import.meta.glob("../**/*.stories.tsx");
 
-export function Storybook() {
+export default function Storybook() {
   const { loading, error, value } = useAsync(async () => {
     const results = await Promise.all(Object.values(stories).map((fn) => fn()));
     return results.map((result) => ({ Component: result.default, title: result.title || result.default.name }));
