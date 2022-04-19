@@ -3,7 +3,7 @@ import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
-import { maxEntities, NOOP, tickRate } from "./config";
+import { maxEntities, tickRate } from "./config";
 import {
   RemoteResourceManager,
   createRemoteResourceManager,
@@ -122,9 +122,11 @@ export interface NetworkState {
   messages: ArrayBuffer[];
   idMap: Map<number, number>;
   peerId: string;
+  peers: string[];
+  // todo: populate / cleanup / synchronize peerId map - same for all peers
+  peerIdMap: Map<string, number>;
   localIdCount: number;
   removedLocalIds: number[];
-  peers: string[];
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
 }
 
@@ -222,8 +224,7 @@ async function onInit({
   const network: NetworkState = {
     messages: [],
     idMap: new Map<number, number>(),
-    // todo: use mxid as peerId
-    peerId: NOOP,
+    peerId: "",
     localIdCount: 0,
     removedLocalIds: [],
     peers: [],

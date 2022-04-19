@@ -57,7 +57,7 @@ export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 
 
 export const createNetworkId = ({ network }: GameState) => {
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  const peerIdIndex = network.peers.indexOf(network.peerId);
+  const peerIdIndex = network.peerIdMap.get(network.peerId);
 
   if (peerIdIndex === undefined) return;
 
