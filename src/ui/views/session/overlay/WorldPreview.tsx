@@ -89,7 +89,7 @@ export function WorldPreview({ session, room, roomId, onLoadWorld, onEnterWorld 
     // TODO: Check that room is a World and not just a normal matrix room.
     if (room && roomStatus !== undefined && (roomStatus & RoomStatus.Replaced) !== 0) {
       const roomBeingCreated = room as RoomBeingCreated;
-      navigate(roomBeingCreated.roomId);
+      navigate(`/world/${roomBeingCreated.roomId}`);
     }
   }, [navigate, roomStatus, room]);
 
