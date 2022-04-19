@@ -6,7 +6,7 @@
 }
 
 .StatusBadge--offline {
-  background-color: var(--bg-surface-border);
+  background-color: var(--bg-surface-hover);
 }
 .StatusBadge--online {
   background-color: var(--bg-secondary);
