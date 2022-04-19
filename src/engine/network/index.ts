@@ -18,6 +18,8 @@ import {
   readUint32,
   readUint8,
   rewindCursorView,
+  scrollCursorView,
+  skipFloat32,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
@@ -43,6 +45,7 @@ export enum NetworkMessage {
   UpdateSnapshot,
   FullChanged,
   FullSnapshot,
+  Prefab,
 }
 
 /* Utils */
@@ -54,10 +57,13 @@ export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 
 
 export const createNetworkId = ({ network }: GameState) => {
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
+  const peerIdIndex = network.peers.indexOf(network.peerId);
+
+  if (peerIdIndex === undefined) return;
+
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
   // logical right shift by 0 to treat as an unsigned integer
-  const nid = ((localId << 16) | network.peerId) >>> 0;
-  return nid;
+  return ((localId << 16) | peerIdIndex) >>> 0;
 };
 
 export const deleteNetworkId = ({ network }: GameState, nid: number) => {
@@ -86,12 +92,13 @@ export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
 // eslint-disable-next-line new-cap
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 
-// todo: add defineQueue to bitECS to avoid duplicate query
+// todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
 export const networkIdQuery = defineQuery([Networked, Owned]);
 export const createNetworkIdQuery = enterQuery(networkIdQuery);
 export const deleteNetworkIdQuery = exitQuery(networkIdQuery);
 
 /* Transform serialization */
+
 export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
   const position = Transform.position[eid];
   writeFloat32(v, position[0]);
@@ -107,17 +114,21 @@ export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
   return v;
 };
 
-export const deserializeTransformSnapshot = (v: CursorView, eid: number) => {
-  const position = Transform.position[eid];
-  position[0] = readFloat32(v);
-  position[1] = readFloat32(v);
-  position[2] = readFloat32(v);
+export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefined) => {
+  if (eid !== undefined) {
+    const position = Transform.position[eid];
+    position[0] = readFloat32(v);
+    position[1] = readFloat32(v);
+    position[2] = readFloat32(v);
 
-  const quaternion = Transform.quaternion[eid];
-  quaternion[0] = readFloat32(v);
-  quaternion[1] = readFloat32(v);
-  quaternion[2] = readFloat32(v);
-  quaternion[3] = readFloat32(v);
+    const quaternion = Transform.quaternion[eid];
+    quaternion[0] = readFloat32(v);
+    quaternion[1] = readFloat32(v);
+    quaternion[2] = readFloat32(v);
+    quaternion[3] = readFloat32(v);
+  } else {
+    scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 7);
+  }
 
   return v;
 };
@@ -171,8 +182,8 @@ export const serializeTransformChanged = defineChangedSerializer(
 
 const checkBitflag = (mask: number, flag: number) => (mask & flag) === flag;
 
-export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number) => void)[]) => {
-  return (v: CursorView, eid: number) => {
+export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
+  return (v: CursorView, eid: number | undefined) => {
     const changeMask = readUint8(v);
     let b = 0;
     for (let i = 0; i < fns.length; i++) {
@@ -183,13 +194,13 @@ export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number) 
 };
 
 export const deserializeTransformChanged = defineChangedDeserializer(
-  (v, eid) => (Transform.position[eid][0] = readFloat32(v)),
-  (v, eid) => (Transform.position[eid][1] = readFloat32(v)),
-  (v, eid) => (Transform.position[eid][2] = readFloat32(v)),
-  (v, eid) => (Transform.quaternion[eid][0] = readFloat32(v)),
-  (v, eid) => (Transform.quaternion[eid][1] = readFloat32(v)),
-  (v, eid) => (Transform.quaternion[eid][2] = readFloat32(v)),
-  (v, eid) => (Transform.quaternion[eid][3] = readFloat32(v))
+  (v, eid) => (eid ? (Transform.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v))
 );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
@@ -214,6 +225,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 export function serializeCreatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const entities = ownedNetworkedQuery(state.world);
+  // todo: optimize length written with maxEntities config
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
@@ -284,9 +296,8 @@ export function serializeUpdatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const writeNid = spaceUint32(v);
+    writeUint32(v, nid);
     serializeTransformSnapshot(v, eid);
-    writeNid(nid);
     count += 1;
   }
   writeCount(count);
@@ -322,9 +333,9 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
     const nid = readUint32(v);
     const eid = state.network.idMap.get(nid);
     if (!eid) {
-      console.warn(`could not deserialize update for non-existent entity ${eid}`);
-      continue;
-      // createIncomingNetworkedEntity(state, nid);
+      console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
+      // continue;
+      // createRemoteNetworkedEntity(state, nid);
     }
     deserializeTransformSnapshot(v, eid);
   }
@@ -338,9 +349,9 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
     const nid = readUint32(v);
     const eid = state.network.idMap.get(nid);
     if (!eid) {
-      console.warn(`could not deserialize update for non-existent entity ${eid}`);
-      continue;
-      // createIncomingNetworkedEntity(state, nid);
+      console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
+      // continue;
+      // createRemoteNetworkedEntity(state, nid);
     }
     deserializeTransformChanged(v, eid);
   }
@@ -364,7 +375,6 @@ export function deserializeDeletes(input: NetPipeData) {
   const [state, v] = input;
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
-    // debugger;
     const nid = readUint32(v);
     const eid = state.network.idMap.get(nid);
     if (!eid) {
@@ -483,7 +493,7 @@ const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId) => {
   postMessage({
     type: WorkerMessageType.ReliableNetworkMessage,
-    peerId: 0,
+    peerId: state.network.peerId,
     packet,
   });
   // });
@@ -499,15 +509,10 @@ const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
 //   });
 // };
 
-export function OutgoingNetworkSystem(state: GameState) {
+export function createOutgoingNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
   const input: NetPipeData = [state, cursorView];
-  return function (state: GameState) {
-    // todo: send snapshot for newly seen clients
-    // const newClients = getNewClients(state);
-    // const snapshotMsg = createSnapshotMessage(input);
-    // broadcastReliable(state, msg);
-
+  return function OutgoingNetworkSystem(state: GameState) {
     const entered = createNetworkIdQuery(state.world);
     for (let i = 0; i < entered.length; i++) {
       const eid = entered[i];
@@ -524,6 +529,11 @@ export function OutgoingNetworkSystem(state: GameState) {
     // reliably send full messages for now
     const msg = createFullChangedMessage(input);
     if (msg.byteLength) broadcastReliable(state, msg);
+
+    // todo: send snapshot for newly seen clients
+    // const newClients = getNewClients(state);
+    // const snapshotMsg = createSnapshotMessage(input);
+    // broadcastReliable(state, msg);
 
     // todo: reliably send creates
     // const createMsg = createCreateMessage(input);
@@ -564,7 +574,7 @@ const registerNetworkMessage = (state: GameState, type: number, cb: (input: NetP
   state.network.messageHandlers[type] = cb;
 };
 
-export function IncomingNetworkSystem(state: GameState) {
+export function createIncomingNetworkSystem(state: GameState) {
   registerNetworkMessage(state, NetworkMessage.Create, deserializeCreates);
   registerNetworkMessage(state, NetworkMessage.UpdateChanged, deserializeUpdatesChanged);
   registerNetworkMessage(state, NetworkMessage.UpdateSnapshot, deserializeUpdatesSnapshot);
@@ -572,7 +582,7 @@ export function IncomingNetworkSystem(state: GameState) {
   registerNetworkMessage(state, NetworkMessage.FullSnapshot, deserializeSnapshot);
   registerNetworkMessage(state, NetworkMessage.FullChanged, deserializeFullUpdate);
 
-  return function (state: GameState) {
+  return function IncomingNetworkSystem(state: GameState) {
     processNetworkMessages(state);
   };
 }

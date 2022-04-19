@@ -27,7 +27,7 @@ import { init } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
-import { IncomingNetworkSystem, OutgoingNetworkSystem } from "./network";
+import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -55,6 +55,10 @@ const onMessage =
         break;
       case WorkerMessageType.ExportScene:
         exportGLTF(state, state.scene);
+        break;
+      case WorkerMessageType.SetPeerId:
+        state.network.peerId = message.peerId;
+        state.network.peers.push(message.peerId);
         break;
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
@@ -117,10 +121,10 @@ export interface RenderState {
 export interface NetworkState {
   messages: ArrayBuffer[];
   idMap: Map<number, number>;
-  peerId: number;
+  peerId: string;
   localIdCount: number;
   removedLocalIds: number[];
-  peers: number[];
+  peers: string[];
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
 }
 
@@ -242,15 +246,9 @@ async function onInit({
     statsBuffer,
   };
 
-  state.preSystems.push(
-    // eslint-disable-next-line new-cap
-    IncomingNetworkSystem(state)
-  );
+  state.preSystems.push(createIncomingNetworkSystem(state));
 
-  state.postSystems.push(
-    // eslint-disable-next-line new-cap
-    OutgoingNetworkSystem(state)
-  );
+  state.postSystems.push(createOutgoingNetworkSystem(state));
 
   await init(state);
 

@@ -36,7 +36,7 @@ export const PhysicsSystem = ({ world, physicsWorld, time }: GameState) => {
     const body = RigidBody.store.get(eid);
 
     if (body) {
-      // lock networked objects that aren't owned
+      // networked objects that aren't owned are locked so persist component data onto rigidbody
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         const position = Transform.position[eid];
         const quaternion = Transform.quaternion[eid];

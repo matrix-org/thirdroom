@@ -320,3 +320,10 @@ export const readInt8 = (v: CursorView) => {
   v.cursor += Int8Array.BYTES_PER_ELEMENT;
   return val;
 };
+
+/* skip */
+
+export const skipFloat32 = (v: CursorView) => {
+  v.cursor += Float32Array.BYTES_PER_ELEMENT;
+  return v;
+};

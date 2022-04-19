@@ -62,9 +62,12 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 }
 
 export interface Engine {
-  dispose(): void;
+  setPeerId(peerId: string): void;
+  addPeer(peerId: string, dataChannel: RTCDataChannel): void;
+  removePeer(peerId: string, dataChannel: RTCDataChannel): void;
   getStats(): StatsObject;
   exportScene(): void;
+  dispose(): void;
 }
 
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
@@ -188,22 +191,24 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
   });
 
-  const reliableChannels: RTCDataChannel[] = [];
-  const unreliableChannels: RTCDataChannel[] = [];
+  const reliableChannels: Map<string, RTCDataChannel> = new Map();
+  const unreliableChannels: Map<string, RTCDataChannel> = new Map();
 
-  const broadcastReliable = (peerId: number, packet: ArrayBuffer) => {
+  const broadcastReliable = (peerId: string, packet: ArrayBuffer) => {
     if (useTestNet) {
       ws.send(packet);
     } else {
-      reliableChannels[peerId].send(packet);
+      const peer = reliableChannels.get(peerId);
+      if (peer) peer.send(packet);
     }
   };
 
-  const broadcastUnreliable = (peerId: number, packet: ArrayBuffer) => {
+  const broadcastUnreliable = (peerId: string, packet: ArrayBuffer) => {
     if (useTestNet) {
       ws.send(packet);
     } else {
-      unreliableChannels[peerId].send(packet);
+      const peer = unreliableChannels.get(peerId);
+      if (peer) peer.send(packet);
     }
   };
 
@@ -239,6 +244,20 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   update();
 
   return {
+    addPeer(peerId: string, dataChannel: RTCDataChannel) {
+      if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
+      else unreliableChannels.set(peerId, dataChannel);
+    },
+    removePeer(peerId: string) {
+      reliableChannels.delete(peerId);
+      unreliableChannels.delete(peerId);
+    },
+    setPeerId(peerId: string) {
+      gameWorker.postMessage({
+        type: WorkerMessageType.SetPeerId,
+        peerId,
+      });
+    },
     getStats() {
       return getStats(statsBuffer);
     },
