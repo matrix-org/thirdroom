@@ -1,34 +1,18 @@
-import { BaseObservableList } from "hydrogen-view-sdk";
-import { useEffect, useState } from "react";
+import { BaseObservableList } from "@thirdroom/hydrogen-view-sdk";
 
-export function useObservableList<T>(observable: BaseObservableList<T>): T[] {
-  const [state, setState] = useState<T[]>([]);
+import { useObservable } from "./useObservable";
 
-  useEffect(() => {
-    const listObserver = {
-      onReset() {
-        setState(Array.from(observable));
-      },
-      onAdd() {
-        setState(Array.from(observable));
-      },
-      onUpdate() {
-        setState(Array.from(observable));
-      },
-      onRemove() {
-        setState(Array.from(observable));
-      },
-      onMove() {},
-    };
-
-    observable.subscribe(listObserver);
-
-    setState(Array.from(observable));
-
-    return () => {
-      observable.unsubscribe(listObserver);
-    };
-  }, [observable]);
-
-  return state;
+export function useObservableList<T>(observableFactory: () => BaseObservableList<T>, deps: unknown[]): T[] {
+  return useObservable(
+    observableFactory,
+    (update, observable) => ({
+      onReset: () => update(Array.from(observable)),
+      onAdd: () => update(Array.from(observable)),
+      onUpdate: () => update(Array.from(observable)),
+      onMove: () => update(Array.from(observable)),
+      onRemove: () => update(Array.from(observable)),
+    }),
+    (observable) => Array.from(observable),
+    deps
+  );
 }

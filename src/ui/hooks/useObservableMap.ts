@@ -1,31 +1,17 @@
-import { BaseObservableMap } from "hydrogen-view-sdk";
-import { useEffect, useState } from "react";
+import { BaseObservableMap } from "@thirdroom/hydrogen-view-sdk";
 
-export function useObservableMap<K, V>(observable: BaseObservableMap<K, V>): Map<K, V> {
-  const [state, setState] = useState<Map<K, V>>(() => new Map(observable));
+import { useObservable } from "./useObservable";
 
-  useEffect(() => {
-    const mapObserver = {
-      onReset() {
-        setState(new Map(observable));
-      },
-      onAdd() {
-        setState(new Map(observable));
-      },
-      onUpdate() {
-        setState(new Map(observable));
-      },
-      onRemove() {
-        setState(new Map(observable));
-      },
-    };
-
-    observable.subscribe(mapObserver);
-
-    return () => {
-      observable.unsubscribe(mapObserver);
-    };
-  }, [observable]);
-
-  return state;
+export function useObservableMap<K, V>(observableFactory: () => BaseObservableMap<K, V>, deps: unknown[]): Map<K, V> {
+  return useObservable(
+    observableFactory,
+    (update, observable) => ({
+      onReset: () => update(new Map(observable)),
+      onAdd: () => update(new Map(observable)),
+      onUpdate: () => update(new Map(observable)),
+      onRemove: () => update(new Map(observable)),
+    }),
+    (observable) => new Map(observable),
+    deps
+  );
 }
