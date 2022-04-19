@@ -1,4 +1,4 @@
-import { BaseObservableList } from "hydrogen-view-sdk";
+import { BaseObservableList } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservable } from "./useObservable";
 

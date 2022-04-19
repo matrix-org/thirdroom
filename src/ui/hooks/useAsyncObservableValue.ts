@@ -1,4 +1,4 @@
-import { BaseObservableValue, ObservableValue } from "hydrogen-view-sdk";
+import { BaseObservableValue, ObservableValue } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableValue } from "./useObservableValue";
 import { useAsync } from "./useAsync";

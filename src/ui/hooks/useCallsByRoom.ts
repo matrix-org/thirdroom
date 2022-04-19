@@ -1,4 +1,4 @@
-import { GroupCall, Session } from "hydrogen-view-sdk";
+import { GroupCall, Session } from "@thirdroom/hydrogen-view-sdk";
 import { useMemo } from "react";
 
 import { useCalls } from "./useCalls";

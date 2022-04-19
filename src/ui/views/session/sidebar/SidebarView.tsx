@@ -1,5 +1,5 @@
 import { MouseEventHandler } from "react";
-import { Room } from "hydrogen-view-sdk";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./SidebarView.css";
 import { SpacesView } from "./SpacesView";

@@ -1,4 +1,4 @@
-import { ComposerViewModel } from "hydrogen-view-sdk";
+import { ComposerViewModel } from "@thirdroom/hydrogen-view-sdk";
 
 import "./ComposerView.css";
 import { Icon } from "../../../atoms/icon/Icon";

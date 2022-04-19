@@ -464,6 +464,17 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
+"@thirdroom/hydrogen-view-sdk@0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.1.tgz#0f4acc999628a4cf265af0a80b5b1cb7631e221a"
+  integrity sha512-C+ei1XAS6w90KbT0gbppZzTMe4mX05xYW+pAkaqrLogM5mJVYaVi2GCP1KHVoRAEkyVkdJJ/aNcEfxk7PLfzPg==
+  dependencies:
+    "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.3.tgz"
+    another-json "^0.2.0"
+    base64-arraybuffer "^0.2.0"
+    dompurify "^2.3.0"
+    off-color "^2.0.0"
+
 "@tootallnate/once@2":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-2.0.0.tgz#f544a148d3ab35801c1f633a7441fd87c2e484bf"
@@ -2339,17 +2350,6 @@ husky@^7.0.0:
   version "7.0.4"
   resolved "https://registry.yarnpkg.com/husky/-/husky-7.0.4.tgz#242048245dc49c8fb1bf0cc7cfb98dd722531535"
   integrity sha512-vbaCKN2QLtP/vD4yvs6iz6hBEo6wkSzs8HpRah1Z6aGmF2KW5PdYuAd7uX5a+OyBZHBhd+TFLqgjUgytQr4RvQ==
-
-hydrogen-view-sdk@^0.0.10:
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.10.tgz#be0c729db67e1d1511b7fa32aa101fd889ec9cdc"
-  integrity sha512-7Ni7ui0mQzKbz6noGDyS1ceIKjU5sjoyX6+2a5dk0nXwttrQYXJbrgblCWC3nIljQPbW+09o+t9BFE0OuBHDPw==
-  dependencies:
-    "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.3.tgz"
-    another-json "^0.2.0"
-    base64-arraybuffer "^0.2.0"
-    dompurify "^2.3.0"
-    off-color "^2.0.0"
 
 iconv-lite@0.6.3:
   version "0.6.3"

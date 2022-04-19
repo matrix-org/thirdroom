@@ -1,4 +1,4 @@
-import { Client, GroupCall } from "hydrogen-view-sdk";
+import { Client, GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
 import { NetworkInterface } from "./NetworkInterface";
 

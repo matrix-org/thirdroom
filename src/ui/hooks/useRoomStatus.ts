@@ -1,4 +1,4 @@
-import { ObservableValue, Session } from "hydrogen-view-sdk";
+import { ObservableValue, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { useAsyncObservableValue } from "./useAsyncObservableValue";
 

@@ -11,7 +11,7 @@ import {
   URLRouter,
   CallIntent,
   ILogger,
-} from "hydrogen-view-sdk";
+} from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "hydrogen-view-sdk/main.js?url";
 import olmWasmPath from "@matrix-org/olm/olm.wasm?url";

@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { renderHook } from "@testing-library/react-hooks";
-import { ObservableValue } from "hydrogen-view-sdk";
+import { ObservableValue } from "@thirdroom/hydrogen-view-sdk";
 
 import { useAsyncObservableValue } from "../../../src/ui/hooks/useAsyncObservableValue";
 

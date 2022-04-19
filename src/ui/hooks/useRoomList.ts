@@ -1,4 +1,4 @@
-import { Room, Session } from "hydrogen-view-sdk";
+import { Room, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableList } from "./useObservableList";
 

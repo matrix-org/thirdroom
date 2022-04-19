@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { renderHook } from "@testing-library/react-hooks";
-import { ObservableArray } from "hydrogen-view-sdk";
+import { ObservableArray } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableList } from "../../../src/ui/hooks/useObservableList";
 

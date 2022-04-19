@@ -1,4 +1,4 @@
-import { BaseObservable } from "hydrogen-view-sdk";
+import { BaseObservable } from "@thirdroom/hydrogen-view-sdk";
 import { useEffect, useReducer, useRef, useMemo } from "react";
 
 import { useIsMounted } from "./useIsMounted";

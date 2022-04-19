@@ -1,4 +1,4 @@
-import { Session } from "hydrogen-view-sdk";
+import { Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableMap } from "./useObservableMap";
 

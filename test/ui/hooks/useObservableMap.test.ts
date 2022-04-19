@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { renderHook } from "@testing-library/react-hooks";
-import { ObservableMap } from "hydrogen-view-sdk";
+import { ObservableMap } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableMap } from "../../../src/ui/hooks/useObservableMap";
 

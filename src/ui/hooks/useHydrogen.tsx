@@ -1,4 +1,4 @@
-import { Platform, Navigation, Client, Session, ILogger, URLRouter } from "hydrogen-view-sdk";
+import { Platform, Navigation, Client, Session, ILogger, URLRouter } from "@thirdroom/hydrogen-view-sdk";
 import { createContext, useContext } from "react";
 
 export interface HydrogenContext {

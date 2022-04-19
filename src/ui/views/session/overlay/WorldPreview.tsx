@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, MouseEvent } from "react";
-import { Room, RoomBeingCreated, RoomStatus, Session } from "hydrogen-view-sdk";
+import { Room, RoomBeingCreated, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./WorldPreview.css";

@@ -13,7 +13,7 @@ import {
   TextTile,
   RoomMemberTile,
   EncryptedEventTile,
-} from "hydrogen-view-sdk";
+} from "@thirdroom/hydrogen-view-sdk";
 import { useEffect } from "react";
 
 import { useAsync } from "./useAsync";

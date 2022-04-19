@@ -1,6 +1,6 @@
 import { RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useMatch } from "react-router-dom";
-import { GroupCall, Room } from "hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";

@@ -1,4 +1,4 @@
-import { Room } from "hydrogen-view-sdk";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./ChatView.css";
 import { TimelineView } from "./TimelineView";

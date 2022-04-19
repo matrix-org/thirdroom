@@ -1,4 +1,4 @@
-declare module "hydrogen-view-sdk" {
+declare module "@thirdroom/hydrogen-view-sdk" {
   export type SubscriptionHandle = () => undefined;
 
   export abstract class BaseObservable<T> {

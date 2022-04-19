@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import classNames from "classnames";
-import { Room, RoomType, LocalMedia, CallIntent } from "hydrogen-view-sdk";
+import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./Overlay.css";
