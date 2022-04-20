@@ -1,0 +1,18 @@
+.NowPlaying {
+  padding: var(--sp-md);
+  border-top: 1px solid var(--bg-surface-border);
+
+  line-height: 0;
+}
+
+.NowPlaying__main {
+  gap: var(--sp-xs);
+}
+
+.NowPlaying__controls {
+  margin-top: var(--sp-sm);
+
+  & > div {
+    gap: var(--sp-md);
+  }
+}
