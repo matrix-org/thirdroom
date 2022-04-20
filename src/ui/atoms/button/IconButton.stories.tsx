@@ -15,8 +15,8 @@ export default function IconButtonStories() {
         <IconButton label="Home" variant="danger" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
       </div>
       <div>
-        <IconButton size="sm" label="Home" variant="surface-low" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
         <IconButton size="sm" label="Home" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
+        <IconButton size="sm" label="Home" variant="surface-low" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
         <IconButton size="sm" label="Home" variant="world" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
         <IconButton size="sm" label="Home" variant="primary" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
         <IconButton size="sm" label="Home" variant="secondary" iconSrc={HomeIC} onClick={(a) => alert("clicked")} />
