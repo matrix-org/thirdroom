@@ -1,6 +1,7 @@
 .IconButton {
   line-height: 0;
   cursor: pointer;
+  transition: transform 100ms ease-in-out;
 
   &:hover,
   &:focus {
