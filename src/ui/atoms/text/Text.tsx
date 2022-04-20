@@ -3,6 +3,7 @@ import classNames from "classnames";
 import "./Text.css";
 
 interface IText {
+  id?: string;
   className?: string;
   style?: React.CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
@@ -12,10 +13,11 @@ interface IText {
   children: React.ReactNode;
 }
 
-export function Text({ className, style, variant = "b1", weight = "regular", type, htmlFor, children }: IText) {
+export function Text({ id, className, style, variant = "b1", weight = "regular", type, htmlFor, children }: IText) {
   const textClass = classNames(`Text Text-${variant} Text--${weight}`, className);
 
   const props = {
+    id,
     className: textClass,
     style,
     htmlFor,
