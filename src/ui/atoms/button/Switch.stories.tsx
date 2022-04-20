@@ -7,6 +7,7 @@ export default function SwitchStories() {
     <div className="flex">
       <Switch onCheckedChange={(v) => console.log(v)} />
       <Switch defaultChecked={true} onCheckedChange={(v) => console.log(v)} />
+      <Switch defaultChecked={true} disabled />
     </div>
   );
 }

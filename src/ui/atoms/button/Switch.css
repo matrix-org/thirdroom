@@ -13,6 +13,11 @@
   &[data-state="checked"] {
     background-color: var(--bg-primary);
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
 }
 .Switch__thumb {
   display: inline-flex;
