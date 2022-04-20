@@ -133,6 +133,14 @@ function initHydrogen() {
     logger: platform.logger,
   };
 
+  const global = window as unknown as any;
+
+  if (!global.thirdroom) {
+    global.thirdroom = {};
+  }
+
+  global.thirdroom.hydrogen = hydrogenInstance;
+
   return hydrogenInstance;
 }
 

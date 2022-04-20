@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
-    "@thirdroom/hydrogen-view-sdk": "0.0.1",
+    "@thirdroom/hydrogen-view-sdk": "0.0.2",
     "bitecs": "^0.3.38",
     "classnames": "^2.3.1",
     "gl-matrix": "^3.4.3",
