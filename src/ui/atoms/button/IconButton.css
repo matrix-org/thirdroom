@@ -14,6 +14,9 @@
 .IconButton--surface .Icon {
   background-color: var(--ic-surface);
 }
+.IconButton--surface-low .Icon {
+  background-color: var(--ic-surface-low);
+}
 .IconButton--world .Icon {
   background-color: var(--ic-world);
 }

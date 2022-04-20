@@ -6,7 +6,7 @@ import { Icon } from "../icon/Icon";
 import "./IconButton.css";
 interface IIconButton {
   className?: string;
-  variant?: "surface" | "world" | "primary" | "secondary" | "danger";
+  variant?: "surface" | "surface-low" | "world" | "primary" | "secondary" | "danger";
   size?: "md" | "sm";
   iconSrc: string;
   label: string;

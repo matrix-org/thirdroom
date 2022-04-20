@@ -58,6 +58,7 @@
 
   /* icon color */
   --ic-surface: hsl(0deg 0% 12%);
+  --ic-surface-low: #717577;
   --ic-world: #ffffff;
   --ic-primary: var(--bg-primary);
   --ic-on-primary: #ffffff;
@@ -77,6 +78,7 @@
   /* icon sizes */
   --ic-md: 20px;
   --ic-sm: 15px;
+  --ic-xs: 10px;
 
   /* avatar sizes */
   --av-xl: 70px;

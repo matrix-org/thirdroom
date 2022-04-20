@@ -5,7 +5,7 @@ import "./Icon.css";
 interface IIcon {
   className?: string;
   color?: string;
-  size?: "md" | "sm";
+  size?: "md" | "sm" | "xs";
   src: string;
   isImage?: boolean;
 }
