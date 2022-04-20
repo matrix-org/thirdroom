@@ -15,8 +15,8 @@ export default function CategoryHeaderStories() {
         title="All Messages"
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={AddIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton size="sm" label="Notifications" iconSrc={AddIC} onClick={(a) => console.log("clicked")} />
           </>
         }
       />
@@ -24,11 +24,11 @@ export default function CategoryHeaderStories() {
       <CategoryHeader
         iconSrc={StarIC}
         title="Favorite Rooms"
-        onClick={() => alert("hello")}
+        onClick={() => console.log("hello")}
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={AddIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton size="sm" label="Notifications" iconSrc={AddIC} onClick={(a) => console.log("clicked")} />
           </>
         }
       />
