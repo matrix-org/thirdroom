@@ -13,9 +13,10 @@ import {
   TextTile,
   RoomMemberTile,
   EncryptedEventTile,
-} from "hydrogen-view-sdk";
-import { useEffect, useState } from "react";
+} from "@thirdroom/hydrogen-view-sdk";
+import { useEffect } from "react";
 
+import { useAsync } from "./useAsync";
 import { useHydrogen } from "./useHydrogen";
 
 export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
@@ -136,22 +137,16 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   startReply(entry: any) {}
 }
 
-interface UseRoomViewModelState {
-  loading: boolean;
-  error?: any;
-  roomViewModel?: TRRoomViewModel;
-}
+export function useRoomViewModel(room: Room) {
+  const { platform, logger, session, urlRouter, navigation } = useHydrogen(true);
 
-export function useRoomViewModel(room: Room): UseRoomViewModelState {
-  const { platform, logger, session, urlRouter, navigation } = useHydrogen();
-
-  const [state, setState] = useState<UseRoomViewModelState>({
-    loading: true,
-  });
-
-  useEffect(() => {
+  const {
+    loading,
+    error,
+    value: roomViewModel,
+  } = useAsync(async () => {
     const roomViewModel = new TRRoomViewModel({
-      session: session!,
+      session,
       room,
       platform,
       logger,
@@ -159,20 +154,19 @@ export function useRoomViewModel(room: Room): UseRoomViewModelState {
       navigation,
     });
 
-    roomViewModel
-      .load()
-      .then(() => {
-        setState({ loading: false, roomViewModel });
-      })
-      .catch((error) => {
-        console.error(error);
-        setState({ loading: false, error });
-      });
+    await roomViewModel.load();
 
-    return () => {
-      roomViewModel.dispose();
-    };
+    return roomViewModel;
   }, [room, session, platform, logger, urlRouter, navigation]);
 
-  return state;
+  useEffect(
+    () => () => {
+      if (roomViewModel) {
+        roomViewModel.dispose();
+      }
+    },
+    [roomViewModel]
+  );
+
+  return { loading, error, roomViewModel };
 }

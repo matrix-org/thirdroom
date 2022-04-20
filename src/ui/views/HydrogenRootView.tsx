@@ -1,24 +1,26 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+// @refresh reset
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, Outlet, useMatch } from "react-router-dom";
 import {
   Platform,
   Segment,
   Navigation,
   Client,
-  ISessionInfo,
   Session,
   LoadStatus,
   URLRouter,
+  CallIntent,
   ILogger,
-} from "hydrogen-view-sdk";
-import downloadSandboxPath from "hydrogen-view-sdk/download-sandbox.html?url";
-import workerPath from "hydrogen-view-sdk/main.js?url";
+} from "@thirdroom/hydrogen-view-sdk";
+import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
+import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
 import olmWasmPath from "@matrix-org/olm/olm.wasm?url";
 import olmJsPath from "@matrix-org/olm/olm.js?url";
 import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 
 import { Text } from "../atoms/text/Text";
-import { HydrogenContextProvider } from "../hooks/useHydrogen";
+import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
+import { useAsync } from "../hooks/useAsync";
 
 const defaultHomeServer = "matrix.org";
 
@@ -36,21 +38,6 @@ enum SyncStatus {
   CatchupSync = "CatchupSync",
   Syncing = "Syncing",
   Stopped = "Stopped",
-}
-
-interface HyrdogenRootViewState {
-  loading: boolean;
-  availableSessions: ISessionInfo[];
-  session?: Session;
-}
-
-interface HydrogenRef {
-  client: Client;
-  platform: Platform;
-  navigation: Navigation;
-  containerEl: HTMLElement;
-  urlRouter: URLRouter;
-  logger: ILogger;
 }
 
 class MockRouter {
@@ -91,107 +78,152 @@ class MockRouter {
   normalizeUrl() {}
 }
 
+interface HydrogenInstance {
+  client: Client;
+  platform: Platform;
+  navigation: Navigation;
+  containerEl: HTMLElement;
+  urlRouter: URLRouter;
+  logger: ILogger;
+}
+
+let hydrogenInstance: HydrogenInstance;
+
+function initHydrogen() {
+  if (hydrogenInstance) {
+    return hydrogenInstance;
+  }
+
+  // Container element used by Hydrogen for downloads etc.
+  const containerEl = document.createElement("div");
+  containerEl.id = "hydrogen-root";
+  document.body.append(containerEl);
+
+  const assetPaths = {
+    downloadSandbox: downloadSandboxPath,
+    worker: workerPath,
+    olm: {
+      wasm: olmWasmPath,
+      legacyBundle: olmLegacyJsPath,
+      wasmBundle: olmJsPath,
+    },
+  };
+
+  const config = {
+    defaultHomeServer,
+  };
+
+  const options = {
+    development: import.meta.env.DEV,
+  };
+
+  const platform = new Platform(containerEl, assetPaths, config, options);
+
+  const navigation = new Navigation(allowsChild);
+  platform.setNavigation(navigation);
+
+  const client = new Client(platform);
+
+  hydrogenInstance = {
+    client,
+    platform,
+    navigation,
+    containerEl,
+    urlRouter: new MockRouter() as unknown as URLRouter,
+    logger: platform.logger,
+  };
+
+  const global = window as unknown as any;
+
+  if (!global.thirdroom) {
+    global.thirdroom = {};
+  }
+
+  global.thirdroom.hydrogen = hydrogenInstance;
+
+  return hydrogenInstance;
+}
+
 export function HydrogenRootView() {
-  const hydrogenRef = useRef<HydrogenRef>();
+  const [session, setSession] = useState<Session>();
+
+  const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
   useEffect(() => {
-    // Container element used by Hydrogen for downloads etc.
-    const containerEl = document.createElement("div");
-    containerEl.id = "hydrogen-root";
-    document.body.append(containerEl);
-
-    const assetPaths = {
-      downloadSandbox: downloadSandboxPath,
-      worker: workerPath,
-      olm: {
-        wasm: olmWasmPath,
-        legacyBundle: olmLegacyJsPath,
-        wasmBundle: olmJsPath,
-      },
+    return () => {
+      client.dispose();
+      containerEl.remove();
     };
+  }, [client, containerEl]);
 
-    const config = {
-      defaultHomeServer,
-    };
+  const {
+    loading: loadingInitialSession,
+    error: initialSessionLoadError,
+    value: initialSession,
+  } = useAsync(async () => {
+    const availableSessions = await platform.sessionInfoStorage.getAll();
 
-    const options = {
-      development: import.meta.env.DEV,
-    };
+    if (availableSessions.length === 0) {
+      return;
+    }
 
-    const platform = new Platform(containerEl, assetPaths, config, options);
+    const sessionId = availableSessions[0].id;
 
-    const navigation = new Navigation(allowsChild);
-    platform.setNavigation(navigation);
+    await client.startWithExistingSession(sessionId);
 
-    const client = new Client(platform);
+    return client.session;
+  }, [platform, client]);
 
-    hydrogenRef.current = {
+  const currentSession = session || initialSession;
+
+  const { loading: loadingClient, error: clientLoadError } = useAsync(async () => {
+    if (!currentSession) {
+      return;
+    }
+
+    await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
+      const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
+
+      return (
+        isCatchupSync ||
+        loadStatus === LoadStatus.LoginFailed ||
+        loadStatus === LoadStatus.Error ||
+        loadStatus === LoadStatus.Ready
+      );
+    });
+
+    const loadStatus = client.loadStatus.get();
+
+    if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
+      try {
+        await client.startLogout(client.sessionId);
+      } catch (error) {
+        console.error(error);
+        setSession(undefined);
+      }
+    }
+
+    await currentSession.callHandler.loadCalls("m.room" as CallIntent);
+  }, [client, currentSession]);
+
+  const context = useMemo<HydrogenContext>(
+    () => ({
       client,
       platform,
       navigation,
       containerEl,
-      urlRouter: new MockRouter() as unknown as URLRouter,
-      logger: platform.logger,
-    };
-
-    return () => {
-      if (hydrogenRef.current) {
-        hydrogenRef.current.client.dispose();
-        document.body.removeChild(containerEl);
-      }
-    };
-  }, []);
-
-  const [{ loading, availableSessions, session }, setState] = useState<HyrdogenRootViewState>({
-    loading: true,
-    availableSessions: [],
-    session: undefined,
-  });
-
-  useEffect(() => {
-    async function loadSessions() {
-      const { platform, client } = hydrogenRef.current!;
-
-      const availableSessions = await platform.sessionInfoStorage.getAll();
-
-      if (availableSessions.length > 0) {
-        const sessionId = availableSessions[0].id;
-
-        await client.startWithExistingSession(sessionId);
-
-        await client.loadStatus.waitFor((s) => {
-          const isCatchupSync = s === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
-
-          return isCatchupSync || s === LoadStatus.LoginFailed || s === LoadStatus.Error || s === LoadStatus.Ready;
-        });
-
-        await (client.session as any).callHandler.loadCalls("m.room");
-
-        const loadStatus = client.loadStatus.get();
-
-        if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
-          await client.startLogout(sessionId);
-        }
-      }
-
-      setState({ loading: false, availableSessions, session: client.session });
-    }
-
-    loadSessions().catch((error) => {
-      console.error("error loading sessions");
-    });
-  }, []);
-
-  const context = useMemo(
-    () => ({
-      ...hydrogenRef.current!,
-      availableSessions,
-      session,
+      urlRouter,
+      logger,
+      session: currentSession,
+      setSession,
     }),
-    [availableSessions, session]
+    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, setSession]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
+
+  const loading = loadingInitialSession || loadingClient;
+  const error = initialSessionLoadError || clientLoadError;
 
   if (loading) {
     return (
@@ -203,8 +235,20 @@ export function HydrogenRootView() {
     );
   }
 
-  if (availableSessions.length === 0 && !loginPathMatch) {
+  if (error) {
+    return (
+      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+        <Text variant="b1" weight="semi-bold">
+          {error.message}
+        </Text>
+      </div>
+    );
+  }
+
+  if (!currentSession && !loginPathMatch) {
     return <Navigate to="/login" />;
+  } else if (currentSession && loginPathMatch) {
+    return <Navigate to="/" />;
   }
 
   return (

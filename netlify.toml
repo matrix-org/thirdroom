@@ -12,3 +12,12 @@ for = "/*"
   [headers.values]
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Embedder-Policy = "require-corp"
+
+[context.production.environment]
+  VITE_NETLIFY_DEPLOY_CONTEXT = "production"
+
+[context.deploy-preview.environment]
+  VITE_NETLIFY_DEPLOY_CONTEXT = "deploy-preview"
+
+[context.branch-deploy.environment]
+  VITE_NETLIFY_DEPLOY_CONTEXT = "branch-deploy"

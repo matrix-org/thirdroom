@@ -1,7 +1,9 @@
-import { Scroll } from "../../src/ui/atoms/scroll/Scroll";
-import { Text } from "../../src/ui/atoms/text/Text";
+import { Scroll } from "./Scroll";
+import { Text } from "../text/Text";
 
-export function ScrollStories() {
+export const title = "Scroll";
+
+export default function ScrollStories() {
   return (
     <div className="flex" style={{ border: "1px solid red" }}>
       <div style={{ height: "300px", width: "300px", background: "white" }}>

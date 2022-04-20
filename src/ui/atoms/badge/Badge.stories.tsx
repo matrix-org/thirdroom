@@ -1,6 +1,8 @@
-import { StatusBadge } from "../../src/ui/atoms/badge/StatusBadge";
+import { StatusBadge } from "./StatusBadge";
 
-export function BadgeStories() {
+export const title = "StatusBadge";
+
+export default function BadgeStories() {
   return (
     <div className="flex">
       <StatusBadge status="offline" />

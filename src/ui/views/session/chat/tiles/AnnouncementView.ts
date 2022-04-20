@@ -1,4 +1,4 @@
-import { TemplateView, RoomMemberTile, Builder } from "hydrogen-view-sdk";
+import { TemplateView, RoomMemberTile, Builder } from "@thirdroom/hydrogen-view-sdk";
 import "./AnnouncementView.css";
 
 export class AnnouncementView extends TemplateView<RoomMemberTile> {

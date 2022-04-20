@@ -1,11 +1,12 @@
 import { MouseEventHandler } from "react";
-import { Room } from "hydrogen-view-sdk";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./RoomListView.css";
 import { Text } from "../../../atoms/text/Text";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { RoomTile } from "./RoomTile";
+import { RoomTile } from "../../components/roomtile/RoomTile";
+import { RoomTileTitle } from "../../components/roomtile/RoomTileTitle";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Button } from "../../../atoms/button/Button";
@@ -29,7 +30,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
         <Button onClick={onCreateWorld}>Create World</Button>
       </header>
       <div className="RoomListView__container grow">
-        <Scroll>
+        <Scroll type="hover">
           <div className="RoomListView__content">
             {rooms.map((room) => (
               <RoomTile
@@ -46,11 +47,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
                     imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 32, platform, room.mediaRepository)}
                   />
                 }
-                title={
-                  <Text className="truncate" variant="b2" weight="semi-bold">
-                    {room.name || "Empty room"}
-                  </Text>
-                }
+                content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
               />
             ))}
           </div>

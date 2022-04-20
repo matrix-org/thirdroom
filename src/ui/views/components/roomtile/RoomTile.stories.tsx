@@ -1,17 +1,19 @@
-import { RoomTile } from "../../../src/ui/views/components/roomtile/RoomTile";
-import { RoomTilePlaying } from "../../../src/ui/views/components/roomtile/RoomTilePlaying";
-import { RoomTileTitle } from "../../../src/ui/views/components/roomtile/RoomTileTitle";
-import { RoomTileDesc } from "../../../src/ui/views/components/roomtile/RoomTileDesc";
-import { Avatar } from "../../../src/ui/atoms/avatar/Avatar";
-import { AvatarPile } from "../../../src/ui/atoms/avatar/AvatarPile";
-import { AvatarBadgeWrapper } from "../../../src/ui/atoms/avatar/AvatarBadgeWrapper";
-import { AvatarOutline } from "../../../src/ui/atoms/avatar/AvatarOutline";
-import { StatusBadge } from "../../../src/ui/atoms/badge/StatusBadge";
-import { IconButton } from "../../../src/ui/atoms/button/IconButton";
-import NotificationIC from "../../../res/ic/notification.svg";
-import MoreHorizontalIC from "../../../res/ic/more-horizontal.svg";
+import { RoomTile } from "./RoomTile";
+import { RoomTilePlaying } from "./RoomTilePlaying";
+import { RoomTileTitle } from "./RoomTileTitle";
+import { RoomTileDesc } from "./RoomTileDesc";
+import { Avatar } from "../../../../ui/atoms/avatar/Avatar";
+import { AvatarPile } from "../../../atoms/avatar/AvatarPile";
+import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
+import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
+import { StatusBadge } from "../../../atoms/badge/StatusBadge";
+import { IconButton } from "../../../atoms/button/IconButton";
+import NotificationIC from "../../../../../res/ic/notification.svg";
+import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 
-export function RoomTileStories() {
+export const title = "RoomTile";
+
+export default function RoomTileStories() {
   return (
     <div style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <RoomTile

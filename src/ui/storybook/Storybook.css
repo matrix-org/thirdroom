@@ -1,0 +1,13 @@
+.Storybook {
+  height: 100%;
+  background-color: #ccc;
+  overflow: auto;
+}
+
+.Storybook__story {
+  padding: 20px;
+}
+
+.Storybook__story-title {
+  padding-bottom: 20px;
+}

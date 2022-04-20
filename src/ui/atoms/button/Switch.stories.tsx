@@ -1,6 +1,8 @@
-import { Switch } from "../../src/ui/atoms/button/Switch";
+import { Switch } from "./Switch";
 
-export function SwitchStories() {
+export const title = "Switch";
+
+export default function SwitchStories() {
   return (
     <div className="flex">
       <Switch onCheckedChange={(v) => console.log(v)} />

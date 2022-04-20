@@ -1,9 +1,11 @@
 import { RefObject, useState, useEffect, createContext, useContext } from "react";
 
 import { initEngine, Engine } from "../../engine/MainThread";
+import { useIsMounted } from "./useIsMounted";
 
 export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
   const [engine, setEngine] = useState<Engine>();
+  const isMounted = useIsMounted();
 
   useEffect(() => {
     let _engine: Engine | undefined;
@@ -11,8 +13,12 @@ export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
     if (canvasRef.current) {
       initEngine(canvasRef.current)
         .then((engine) => {
-          _engine = engine;
-          setEngine(engine);
+          if (isMounted()) {
+            _engine = engine;
+            setEngine(engine);
+          } else {
+            engine.dispose();
+          }
         })
         .catch(console.error);
     }
@@ -20,7 +26,7 @@ export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
     return () => {
       _engine?.dispose();
     };
-  }, [canvasRef]);
+  }, [isMounted, canvasRef]);
 
   useEffect(() => {
     const global = window as unknown as any;

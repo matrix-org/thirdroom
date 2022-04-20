@@ -1,6 +1,8 @@
-import { Text } from "../../src/ui/atoms/text/Text";
+import { Text } from "./Text";
 
-export function TextStories() {
+export const title = "Text";
+
+export default function TextStories() {
   return (
     <div className="flex flex-wrap">
       <div>

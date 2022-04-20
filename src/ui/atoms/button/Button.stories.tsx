@@ -1,8 +1,10 @@
-import { Button } from "../../src/ui/atoms/button/Button";
-import { Icon } from "../../src/ui/atoms/icon/Icon";
-import HomeIC from "../../res/ic/home.svg";
+import { Button } from "./Button";
+import { Icon } from "../icon/Icon";
+import HomeIC from "../../../../res/ic/home.svg";
 
-export function ButtonStories() {
+export const title = "Button";
+
+export default function ButtonStories() {
   return (
     <div className="flex flex-wrap">
       <div>

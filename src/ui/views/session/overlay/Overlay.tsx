@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import classNames from "classnames";
-import { ObservableValue, Room, RoomStatus, RoomType, LocalMedia } from "hydrogen-view-sdk";
+import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./Overlay.css";
@@ -8,25 +8,39 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomList } from "../../../hooks/useRoomList";
 import { SidebarView } from "../sidebar/SidebarView";
 import { WorldPreview } from "./WorldPreview";
+import { useRoom } from "../../../hooks/useRoom";
+import { useCalls } from "../../../hooks/useCalls";
+import { useKeyDown } from "../../../hooks/useKeyDown";
 
 interface OverlayProps {
-  initialWorldId?: string;
+  activeWorldId?: string;
   isOpen: boolean;
   isHome: boolean;
-  onLoadWorld: (room: Room) => Promise<void>;
-  onEnterWorld: () => Promise<void>;
+  enteredWorld: boolean;
+  onEnteredWorld: () => void;
+  onLeftWorld: () => void;
+  onClose: () => void;
 }
 
-export function Overlay({ initialWorldId, isOpen, isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
-  const { session, platform } = useHydrogen();
-  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(initialWorldId);
-  const rooms = useRoomList(session!);
-  const selectedRoom = selectedRoomId && session!.rooms.get(selectedRoomId);
+export function Overlay({
+  activeWorldId,
+  isOpen,
+  isHome,
+  onClose,
+  enteredWorld,
+  onEnteredWorld,
+  onLeftWorld,
+}: OverlayProps) {
+  const { session, platform } = useHydrogen(true);
+  const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
+  const rooms = useRoomList(session);
+  const selectedRoom = useRoom(session, selectedRoomId);
+  const calls = useCalls(session);
 
   const navigate = useNavigate();
 
   const onCreateWorld = useCallback(async () => {
-    const roomBeingCreated = session!.createRoom({
+    const roomBeingCreated = session.createRoom({
       type: RoomType.Public,
       name: "Test World",
       topic: undefined,
@@ -34,26 +48,84 @@ export function Overlay({ initialWorldId, isOpen, isHome, onLoadWorld, onEnterWo
       isFederationDisabled: false,
       alias: undefined,
       avatar: undefined,
+      powerLevelContentOverride: {
+        invite: 100,
+        kick: 100,
+        ban: 100,
+        redact: 50,
+        state_default: 0,
+        events_default: 0,
+        users_default: 0,
+        events: {
+          "m.room.power_levels": 100,
+          "m.room.history_visibility": 100,
+          "m.room.tombstone": 100,
+          "m.room.encryption": 100,
+          "m.room.name": 50,
+          "m.room.message": 0,
+          "m.room.encrypted": 50,
+          "m.sticker": 50,
+          "org.matrix.msc3401.call.member": 0,
+        },
+        users: {
+          [session.userId]: 100,
+        },
+      },
     });
 
-    const statusObservable = (await (session as any).observeRoomStatus(roomBeingCreated.id)) as ObservableValue<any>;
+    navigate(`/world/${roomBeingCreated.id}`);
+  }, [session, navigate]);
 
-    await statusObservable.waitFor((status) => (status & RoomStatus.Replaced) !== 0).promise;
+  const onLoadWorld = useCallback(
+    async (room: Room) => {
+      if (enteredWorld) {
+        onLeftWorld();
+      }
 
-    const mediaTracks = await (platform as any).mediaDevices.getMediaTracks(true, false);
-    const localMedia = new LocalMedia().withTracks(mediaTracks).withDataChannel({});
+      navigate(`/world/${room.id}`);
+      return;
+    },
+    [navigate, enteredWorld, onLeftWorld]
+  );
 
-    await (session as any).callHandler.createCall(roomBeingCreated.roomId, localMedia, "Test World", "m.room");
+  const onEnterWorld = useCallback(
+    async (room: Room) => {
+      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === room.id ? call : []));
 
-    navigate(`/world/${roomBeingCreated.roomId}`);
-  }, [session, navigate, platform]);
+      let call = roomCalls.length && roomCalls[0];
+
+      if (!call) {
+        call = await session.callHandler.createCall(room.id, "m.voice", "Test World", CallIntent.Room);
+      }
+
+      const stream = await platform.mediaDevices.getMediaTracks(true, false);
+      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
+      await call.join(localMedia);
+
+      onEnteredWorld();
+    },
+    [platform, session, calls, onEnteredWorld]
+  );
+
+  useKeyDown(
+    (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    setSelectedRoomId(activeWorldId);
+  }, [activeWorldId]);
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className={classNames("Overlay", { "Overlay--home": isHome })}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld })}>
       <SidebarView
         open
         rooms={rooms}
@@ -61,7 +133,15 @@ export function Overlay({ initialWorldId, isOpen, isHome, onLoadWorld, onEnterWo
         onSelectRoom={setSelectedRoomId}
         onCreateWorld={onCreateWorld}
       />
-      {selectedRoom && <WorldPreview room={selectedRoom} onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
+      {((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld)) && (
+        <WorldPreview
+          session={session}
+          roomId={selectedRoomId}
+          room={selectedRoom}
+          onLoadWorld={onLoadWorld}
+          onEnterWorld={onEnterWorld}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { TemplateView, TextTile, Builder, TileView } from "hydrogen-view-sdk";
+import { TemplateView, TextTile, Builder, TileView } from "@thirdroom/hydrogen-view-sdk";
 
 import "./TextMessageView.css";
 
