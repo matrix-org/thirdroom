@@ -12,8 +12,8 @@
   }
 
   &:disabled {
-    opacity: 0.5;
-    cursor: no-drop;
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   & .Text {

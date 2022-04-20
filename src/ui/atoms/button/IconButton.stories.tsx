@@ -13,6 +13,7 @@ export default function IconButtonStories() {
         <IconButton label="Home" variant="primary" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
         <IconButton label="Home" variant="secondary" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
         <IconButton label="Home" variant="danger" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
+        <IconButton disabled label="Home" variant="danger" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
       </div>
       <div>
         <IconButton size="sm" label="Home" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
