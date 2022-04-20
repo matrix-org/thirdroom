@@ -180,6 +180,10 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   /* Game Worker Messages */
 
+  const onPeerMessage = ({ data }: { data: ArrayBuffer }) => {
+    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
+  };
+
   const useTestNet = true;
 
   const ws = new WebSocket("ws://localhost:8080");
@@ -189,14 +193,12 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     console.log("connected to websocket server");
   });
   ws.addEventListener("close", (data) => {});
-  ws.addEventListener("message", ({ data }) => {
-    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
-  });
+  ws.addEventListener("message", onPeerMessage);
 
   const reliableChannels: Map<string, RTCDataChannel> = new Map();
   const unreliableChannels: Map<string, RTCDataChannel> = new Map();
 
-  const broadcastReliable = (peerId: string, packet: ArrayBuffer) => {
+  const sendReliable = (peerId: string, packet: ArrayBuffer) => {
     if (useTestNet) {
       ws.send(packet);
     } else {
@@ -205,12 +207,32 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     }
   };
 
-  const broadcastUnreliable = (peerId: string, packet: ArrayBuffer) => {
+  const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
     if (useTestNet) {
       ws.send(packet);
     } else {
       const peer = unreliableChannels.get(peerId);
       if (peer) peer.send(packet);
+    }
+  };
+
+  const broadcastReliable = (packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws.send(packet);
+    } else {
+      reliableChannels.forEach((peer) => {
+        peer.send(packet);
+      });
+    }
+  };
+
+  const broadcastUnreliable = (packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws.send(packet);
+    } else {
+      unreliableChannels.forEach((peer) => {
+        peer.send(packet);
+      });
     }
   };
 
@@ -223,10 +245,16 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
     switch (message.type) {
       case WorkerMessageType.ReliableNetworkMessage:
-        broadcastReliable(message.peerId, message.packet);
+        sendReliable(message.peerId, message.packet);
         break;
       case WorkerMessageType.UnreliableNetworkMessage:
-        broadcastUnreliable(message.peerId, message.packet);
+        sendUnreliable(message.peerId, message.packet);
+        break;
+      case WorkerMessageType.ReliableNetworkBroadcast:
+        broadcastReliable(message.packet);
+        break;
+      case WorkerMessageType.UnreliableNetworkBroadcast:
+        broadcastUnreliable(message.packet);
         break;
     }
   };
@@ -264,10 +292,27 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     addPeer(peerId: string, dataChannel: RTCDataChannel) {
       if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
       else unreliableChannels.set(peerId, dataChannel);
+
+      dataChannel.addEventListener("message", onPeerMessage);
+
+      gameWorker.postMessage({
+        type: WorkerMessageType.AddPeerId,
+        peerId,
+      });
     },
     removePeer(peerId: string) {
+      const reliableChannel = reliableChannels.get(peerId);
+      const unreliableChannel = reliableChannels.get(peerId);
+      reliableChannel?.removeEventListener("message", onPeerMessage);
+      unreliableChannel?.removeEventListener("message", onPeerMessage);
+
       reliableChannels.delete(peerId);
       unreliableChannels.delete(peerId);
+
+      gameWorker.postMessage({
+        type: WorkerMessageType.RemovePeerId,
+        peerId,
+      });
     },
     setPeerId(peerId: string) {
       gameWorker.postMessage({

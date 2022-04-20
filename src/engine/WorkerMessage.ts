@@ -29,8 +29,12 @@ export enum WorkerMessageType {
   ExportGLTF = "export-gltf",
   SaveGLTF = "save-gltf",
   ReliableNetworkMessage = "reliable-network-message",
+  ReliableNetworkBroadcast = "reliable-network-broadcast",
   UnreliableNetworkMessage = "unreliable-network-message",
+  UnreliableNetworkBroadcast = "unreliable-network-broadcast",
   SetPeerId = "set-peer-id",
+  AddPeerId = "add-peer-id",
+  RemovePeerId = "remove-peer-id",
 }
 
 export interface WorkerMessage {
@@ -170,8 +174,28 @@ export interface UnreliableNetworkMessage extends WorkerMessage {
   packet: ArrayBuffer;
 }
 
+export interface ReliableNetworkBroadcast extends WorkerMessage {
+  type: WorkerMessageType.ReliableNetworkBroadcast;
+  packet: ArrayBuffer;
+}
+
+export interface UnreliableNetworkBroadcast extends WorkerMessage {
+  type: WorkerMessageType.UnreliableNetworkBroadcast;
+  packet: ArrayBuffer;
+}
+
 export interface SetPeerIdMessage extends WorkerMessage {
   type: WorkerMessageType.SetPeerId;
+  peerId: string;
+}
+
+export interface AddPeerIdMessage extends WorkerMessage {
+  type: WorkerMessageType.AddPeerId;
+  peerId: string;
+}
+
+export interface RemovePeerIdMessage extends WorkerMessage {
+  type: WorkerMessageType.RemovePeerId;
   peerId: string;
 }
 
@@ -200,7 +224,11 @@ export type WorkerMessages =
   | SaveGLTFMessage
   | ReliableNetworkMessage
   | UnreliableNetworkMessage
-  | SetPeerIdMessage;
+  | ReliableNetworkBroadcast
+  | UnreliableNetworkBroadcast
+  | SetPeerIdMessage
+  | AddPeerIdMessage
+  | RemovePeerIdMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

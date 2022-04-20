@@ -27,9 +27,37 @@ import { init } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
-import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
+import {
+  broadcastReliable,
+  createIncomingNetworkSystem,
+  createOutgoingNetworkSystem,
+  createPeerIdIndexMessage,
+} from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
+
+const addPeerId = (state: GameState, peerId: string) => {
+  state.network.peers.push(peerId);
+  state.network.peerIdMap.set(peerId, state.network.removedPeerIdIndices.shift() || state.network.peerIdCount++);
+  if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+};
+
+const removePeerId = (state: GameState, peerId: string) => {
+  // todo: may want to delay the removal after a certain period of time
+  // so users can quit/rejoin and still retain ownership over their objects
+  const i = state.network.peers.indexOf(peerId);
+  if (i > -1) {
+    state.network.removedPeerIdIndices.push(i);
+    state.network.peers.splice(i, 1);
+    state.network.peerIdMap.delete(peerId);
+  } else {
+    console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
+  }
+};
+
+const setPeerId = (state: GameState, peerId: string) => {
+  state.network.peerId = peerId;
+};
 
 const onMessage =
   (state: GameState) =>
@@ -57,9 +85,15 @@ const onMessage =
         exportGLTF(state, state.scene);
         break;
       case WorkerMessageType.SetPeerId:
-        state.network.peerId = message.peerId;
-        state.network.peers.push(message.peerId);
+        setPeerId(state, message.peerId);
         break;
+      case WorkerMessageType.AddPeerId:
+        addPeerId(state, message.peerId);
+        break;
+      case WorkerMessageType.RemovePeerId: {
+        removePeerId(state, message.peerId);
+        break;
+      }
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
         state.network.messages.push(message.packet);
@@ -119,10 +153,13 @@ export interface RenderState {
 }
 
 export interface NetworkState {
+  hosting: boolean;
   messages: ArrayBuffer[];
-  idMap: Map<number, number>;
+  entityIdMap: Map<number, number>;
   peerId: string;
   peers: string[];
+  peerIdCount: number;
+  removedPeerIdIndices: number[];
   // todo: populate / cleanup / synchronize peerId map - same for all peers
   peerIdMap: Map<string, number>;
   localIdCount: number;
@@ -222,12 +259,16 @@ async function onInit({
   };
 
   const network: NetworkState = {
+    hosting: false,
     messages: [],
-    idMap: new Map<number, number>(),
+    entityIdMap: new Map<number, number>(),
     peerId: "",
+    peers: [],
+    peerIdMap: new Map(),
+    peerIdCount: 0,
+    removedPeerIdIndices: [],
     localIdCount: 0,
     removedLocalIds: [],
-    peers: [],
     messageHandlers: {},
   };
 
