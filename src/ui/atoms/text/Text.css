@@ -1,7 +1,6 @@
 .Text {
   margin: 0;
   padding: 0;
-  color: var(--tc-surface-high);
 }
 .Text-h2 {
   font-size: var(--fs-h2);
