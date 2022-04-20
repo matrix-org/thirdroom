@@ -251,6 +251,7 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
+    console.log(`serializing creation for eid ${eid} nid ${nid}`);
     writeUint32(v, nid);
     // todo: serialize creation template
   }
@@ -399,7 +400,7 @@ export function deserializeDeletes(input: NetPipeData) {
 /* PeerId */
 
 // host sends peerIdIndex to new peers
-const { encode } = new TextEncoder();
+const textEncoder = new TextEncoder();
 export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   const [state, v] = input;
   const peerIdIndex = state.network.peerIdMap.get(peerId);
@@ -409,7 +410,7 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
     return input;
   }
 
-  const encodedPeerId = encode(peerId);
+  const encodedPeerId = textEncoder.encode(peerId);
   writeUint8(v, encodedPeerId.byteLength);
   writeArrayBuffer(v, encodedPeerId);
   writeUint8(v, peerIdIndex);
@@ -418,12 +419,12 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
 }
 
 // peer decodes the peerIdIndex
-const { decode } = new TextDecoder();
+const textDecoder = new TextDecoder();
 export function deserializePeerIdIndex(input: NetPipeData) {
   const [state, v] = input;
   const peerIdByteLength = readUint8(v);
   const encodedPeerId = new Uint8Array(v.buffer, v.cursor, peerIdByteLength);
-  const peerId = decode(encodedPeerId);
+  const peerId = textDecoder.decode(encodedPeerId);
   const peerIdIndex = readUint8(v);
   state.network.peerIdMap.set(peerId, peerIdIndex);
   return input;
@@ -570,6 +571,8 @@ export function createOutgoingNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
   const input: NetPipeData = [state, cursorView];
   return function OutgoingNetworkSystem(state: GameState) {
+    // only engage networking after our peerIdIndex has been assigned or received from host
+    // if (state.network.peerIdMap.has(state.network.peerId)) {
     const entered = createNetworkIdQuery(state.world);
     for (let i = 0; i < entered.length; i++) {
       const eid = entered[i];
@@ -583,14 +586,20 @@ export function createOutgoingNetworkSystem(state: GameState) {
       Networked.networkId[eid] = NOOP;
     }
 
+    // send snapshot for newly seen clients
+    const snapshotMsg = createFullSnapshotMessage(input);
+    while (state.network.newPeers.length) {
+      const peerId = state.network.newPeers.shift();
+      if (peerId) {
+        sendReliable(peerId, snapshotMsg);
+        sendReliable(peerId, createPeerIdIndexMessage(state, peerId));
+      }
+    }
+
     // reliably send full messages for now
     const msg = createFullChangedMessage(input);
-    if (msg.byteLength) broadcastReliable(state, msg);
-
-    // todo: send snapshot for newly seen clients
-    // const newClients = getNewClients(state);
-    // const snapshotMsg = createSnapshotMessage(input);
-    // broadcastReliable(state, msg);
+    if (msg.byteLength) broadcastReliable(msg);
+    // }
 
     // todo: reliably send creates
     // const createMsg = createCreateMessage(input);

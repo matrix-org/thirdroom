@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -23,7 +23,7 @@ import {
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
-import { init } from "../game";
+import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
@@ -37,17 +37,15 @@ import {
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const addPeerId = (state: GameState, peerId: string) => {
+  state.network.newPeers.push(peerId);
   state.network.peers.push(peerId);
-  state.network.peerIdMap.set(peerId, state.network.removedPeerIdIndices.shift() || state.network.peerIdCount++);
+  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
   if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
-  // todo: may want to delay the removal after a certain period of time
-  // so users can quit/rejoin and still retain ownership over their objects
   const i = state.network.peers.indexOf(peerId);
   if (i > -1) {
-    state.network.removedPeerIdIndices.push(i);
     state.network.peers.splice(i, 1);
     state.network.peerIdMap.delete(peerId);
   } else {
@@ -57,6 +55,7 @@ const removePeerId = (state: GameState, peerId: string) => {
 
 const setPeerId = (state: GameState, peerId: string) => {
   state.network.peerId = peerId;
+  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
 };
 
 const onMessage =
@@ -97,6 +96,12 @@ const onMessage =
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
         state.network.messages.push(message.packet);
+        break;
+      case WorkerMessageType.StateChanged:
+        onStateChange(state, message.state);
+        break;
+      case WorkerMessageType.MakeHost:
+        state.network.hosting = true;
         break;
     }
   };
@@ -158,9 +163,8 @@ export interface NetworkState {
   entityIdMap: Map<number, number>;
   peerId: string;
   peers: string[];
+  newPeers: string[];
   peerIdCount: number;
-  removedPeerIdIndices: number[];
-  // todo: populate / cleanup / synchronize peerId map - same for all peers
   peerIdMap: Map<string, number>;
   localIdCount: number;
   removedLocalIds: number[];
@@ -228,6 +232,7 @@ async function onInit({
 
   const camera = addEntity(world);
   addTransformComponent(world, camera);
+  addChild(scene, camera);
 
   await RAPIER.init();
 
@@ -264,9 +269,9 @@ async function onInit({
     entityIdMap: new Map<number, number>(),
     peerId: "",
     peers: [],
+    newPeers: [],
     peerIdMap: new Map(),
     peerIdCount: 0,
-    removedPeerIdIndices: [],
     localIdCount: 0,
     removedLocalIds: [],
     messageHandlers: {},

@@ -1,6 +1,6 @@
 import { RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useMatch } from "react-router-dom";
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, ObservableValue, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
@@ -11,6 +11,7 @@ import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
+import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 
 export interface SessionOutletContext {
   activeWorld?: Room;
@@ -28,6 +29,7 @@ export function SessionView() {
   const { client, session } = useHydrogen(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
+  const networkInterfaceRef = useRef<() => void>();
 
   const location = useLocation();
   const homeMatch = useMatch({ path: "/", end: true });
@@ -36,6 +38,10 @@ export function SessionView() {
   const activeWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
 
   const activeWorld = useRoom(session, activeWorldId);
+  const { value: powerLevels } = useAsyncObservableValue(
+    () => (activeWorld ? activeWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
+    [activeWorld]
+  );
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
     const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === activeWorldId ? call : []));
@@ -54,18 +60,17 @@ export function SessionView() {
       activeCall.leave();
     }
 
-    if (engine) {
-      engine.setNetworkInterface(undefined);
+    if (networkInterfaceRef.current) {
+      networkInterfaceRef.current();
     }
-  }, [engine, activeCall]);
+  }, [activeCall]);
   const onEnteredWorld = useCallback(() => {
     setEnteredWorld(true);
     canvasRef.current?.requestPointerLock();
-
-    if (engine && activeCall) {
-      engine.setNetworkInterface(createMatrixNetworkInterface(client, activeCall));
+    if (engine && activeCall && powerLevels) {
+      networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, activeCall);
     }
-  }, [client, engine, activeCall]);
+  }, [client, engine, activeCall, powerLevels]);
   const onOpenOverlay = useCallback(() => {
     document.exitPointerLock();
   }, []);

@@ -35,6 +35,8 @@ export enum WorkerMessageType {
   SetPeerId = "set-peer-id",
   AddPeerId = "add-peer-id",
   RemovePeerId = "remove-peer-id",
+  StateChanged = "state-changed",
+  MakeHost = "make-host",
 }
 
 export interface WorkerMessage {
@@ -199,6 +201,15 @@ export interface RemovePeerIdMessage extends WorkerMessage {
   peerId: string;
 }
 
+export interface StateChangedMessage extends WorkerMessage {
+  type: WorkerMessageType.StateChanged;
+  state: any;
+}
+
+export interface MakeHostMessage extends WorkerMessage {
+  type: WorkerMessageType.MakeHost;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -228,7 +239,9 @@ export type WorkerMessages =
   | UnreliableNetworkBroadcast
   | SetPeerIdMessage
   | AddPeerIdMessage
-  | RemovePeerIdMessage;
+  | RemovePeerIdMessage
+  | StateChangedMessage
+  | MakeHostMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage
