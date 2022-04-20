@@ -1,0 +1,30 @@
+.Input {
+  width: 100%;
+  padding: var(--sp-xs);
+  min-width: 0;
+  background-color: var(--bg-surface-low);
+  color: var(--tc-surface);
+  border: none;
+  border-radius: var(--br-sm);
+
+  font-size: var(--fs-b2);
+  letter-spacing: var(--ls-b2);
+  line-height: var(--lh-b2);
+
+  &::placeholder {
+    color: var(--tc-surface-low);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.Input--success {
+  background-color: var(--bg-secondary-soft-hover);
+  box-shadow: var(--bs-secondary-border);
+}
+.Input--error {
+  background-color: var(--bg-danger-soft-hover);
+  box-shadow: var(--bs-danger-border);
+}

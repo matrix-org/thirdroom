@@ -165,6 +165,9 @@ code {
   -webkit-tap-highlight-color: rgba(0 0 0 / 0%);
   -webkit-tap-highlight-color: transparent;
 }
+*:focus {
+  outline: var(--tc-surface) solid 2px;
+}
 
 :--heading {
   margin: 0;
@@ -214,9 +217,10 @@ textarea,
 input,
 input[type],
 input[type="text"],
-input[type="username"],
 input[type="password"],
-input[type="email"] {
+input[type="email"],
+input[type="number"],
+input[type="search"] {
   appearance: none;
 }
 .noselect {
