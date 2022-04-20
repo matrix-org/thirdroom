@@ -5,5 +5,5 @@ interface IStatusBadge {
 }
 
 export function StatusBadge({ status }: IStatusBadge) {
-  return <div className={`StatusBadge StatusBadge--${status}`} />;
+  return <span className={`StatusBadge StatusBadge--${status}`} />;
 }

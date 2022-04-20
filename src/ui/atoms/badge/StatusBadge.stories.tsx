@@ -2,7 +2,7 @@ import { StatusBadge } from "./StatusBadge";
 
 export const title = "StatusBadge";
 
-export default function BadgeStories() {
+export default function StatusBadgeStories() {
   return (
     <div className="flex">
       <StatusBadge status="offline" />
