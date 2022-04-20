@@ -213,11 +213,13 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         disposeNetworkInterface();
       }
 
-      localPeerId = networkInterface.localPeerId;
+      if (networkInterface) {
+        localPeerId = networkInterface.localPeerId;
 
-      disposeNetworkInterface = networkInterface.createHandler(onPeerJoined, onPeerAudioStreamChanged, onPeerLeft);
+        disposeNetworkInterface = networkInterface.createHandler(onPeerJoined, onPeerAudioStreamChanged, onPeerLeft);
 
-      console.log(`network interface set with localPeerId: ${localPeerId}`);
+        console.log(`network interface set with localPeerId: ${localPeerId}`);
+      }
     },
   };
 }
