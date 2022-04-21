@@ -12,12 +12,8 @@
   }
 
   &:disabled {
-    opacity: 0.5;
-    cursor: no-drop;
-  }
-
-  & .Text {
-    font-weight: var(--fw-semi-bold);
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   & .Text:not(:only-child) {
@@ -25,14 +21,8 @@
   }
 }
 
-.Button--primary {
+.Button--primary.Button--solid {
   background-color: var(--bg-primary);
-  & .Text {
-    color: var(--tc-on-primary);
-  }
-  & .Icon {
-    background-color: var(--tc-on-primary);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -47,14 +37,8 @@
   }
 }
 
-.Button--secondary {
+.Button--secondary.Button--solid {
   background-color: var(--bg-secondary);
-  & .Text {
-    color: var(--tc-on-secondary);
-  }
-  & .Icon {
-    background-color: var(--tc-on-secondary);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -69,14 +53,8 @@
   }
 }
 
-.Button--danger {
+.Button--danger.Button--solid {
   background-color: var(--bg-danger);
-  & .Text {
-    color: var(--tc-on-danger);
-  }
-  & .Icon {
-    background-color: var(--tc-on-danger);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -91,14 +69,8 @@
   }
 }
 
-.Button--primary-outline {
+.Button--primary.Button--outline {
   box-shadow: var(--bs-primary-border);
-  & .Text {
-    color: var(--bg-primary);
-  }
-  & .Icon {
-    background-color: var(--bg-primary);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -113,14 +85,8 @@
   }
 }
 
-.Button--secondary-outline {
+.Button--secondary.Button--outline {
   box-shadow: var(--bs-secondary-border);
-  & .Text {
-    color: var(--bg-secondary);
-  }
-  & .Icon {
-    background-color: var(--bg-secondary);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -135,14 +101,8 @@
   }
 }
 
-.Button--danger-outline {
+.Button--danger.Button--outline {
   box-shadow: var(--bs-danger-border);
-  & .Text {
-    color: var(--bg-danger);
-  }
-  & .Icon {
-    background-color: var(--bg-danger);
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -158,11 +118,14 @@
 }
 
 .Button--md {
-  padding: 14px var(--sp-md);
+  height: 48px;
+  padding: 0 var(--sp-md);
 }
 .Button--lg {
-  padding: var(--sp-md) var(--sp-lg);
+  height: 60px;
+  padding: 0 var(--sp-lg);
 }
 .Button--xl {
-  padding: var(--sp-lg) var(--sp-xl);
+  height: 80px;
+  padding: 0 var(--sp-xl);
 }

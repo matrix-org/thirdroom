@@ -1,6 +1,7 @@
 .IconButton {
   line-height: 0;
   cursor: pointer;
+  transition: transform 100ms ease-in-out;
 
   &:hover,
   &:focus {
@@ -9,20 +10,8 @@
   &:active {
     transform: scale(1);
   }
-}
-
-.IconButton--surface .Icon {
-  background-color: var(--ic-surface);
-}
-.IconButton--world .Icon {
-  background-color: var(--ic-world);
-}
-.IconButton--primary .Icon {
-  background-color: var(--ic-primary);
-}
-.IconButton--secondary .Icon {
-  background-color: var(--ic-secondary);
-}
-.IconButton--danger .Icon {
-  background-color: var(--ic-danger);
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 }

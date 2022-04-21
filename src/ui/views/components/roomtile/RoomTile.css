@@ -10,9 +10,6 @@
 
 .RoomTile__content {
   padding: 0 var(--sp-sm);
-  & .Text-b3 {
-    color: var(--tc-surface-low);
-  }
   & > *:last-child {
     margin-top: 2px;
   }

@@ -42,67 +42,67 @@ export default function ButtonStories() {
       </div>
 
       <div>
-        <Button size="xl" variant="primary-outline" onClick={() => false}>
+        <Button size="xl" variant="primary" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
-        <Button size="xl" variant="secondary-outline" onClick={() => false}>
+        <Button size="xl" variant="secondary" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
-        <Button size="xl" variant="danger-outline" onClick={() => false}>
-          Hello, World
-        </Button>
-      </div>
-
-      <div>
-        <Button size="lg" variant="primary-outline" onClick={() => false}>
-          Hello, World
-        </Button>
-        <Button size="lg" variant="secondary-outline" onClick={() => false}>
-          Hello, World
-        </Button>
-        <Button size="lg" variant="danger-outline" onClick={() => false}>
+        <Button size="xl" variant="danger" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
       </div>
 
       <div>
-        <Button variant="primary-outline" onClick={() => false}>
+        <Button size="lg" variant="primary" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
-        <Button variant="secondary-outline" onClick={() => false}>
+        <Button size="lg" variant="secondary" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
-        <Button variant="danger-outline" onClick={() => false}>
+        <Button size="lg" variant="danger" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button variant="primary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button variant="secondary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button variant="danger" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
       </div>
 
       <div>
         <Button onClick={() => false}>
-          <Icon src={HomeIC} />
+          <Icon color="on-primary" src={HomeIC} />
           Hello, World
         </Button>
         <Button variant="secondary" onClick={() => false}>
-          <Icon src={HomeIC} />
+          <Icon color="on-secondary" src={HomeIC} />
           Hello, World
         </Button>
         <Button variant="danger" onClick={() => false}>
           Hello, World
-          <Icon src={HomeIC} />
+          <Icon color="on-danger" src={HomeIC} />
         </Button>
       </div>
 
       <div>
-        <Button variant="primary-outline" onClick={() => false}>
+        <Button variant="primary" fill="outline" onClick={() => false}>
           Hello, World
-          <Icon src={HomeIC} />
+          <Icon color="primary" src={HomeIC} />
         </Button>
-        <Button variant="secondary-outline" onClick={() => false}>
+        <Button variant="secondary" fill="outline" onClick={() => false}>
           Hello, World
-          <Icon src={HomeIC} />
+          <Icon color="secondary" src={HomeIC} />
         </Button>
-        <Button variant="danger-outline" onClick={() => false}>
-          <Icon src={HomeIC} />
+        <Button variant="danger" fill="outline" onClick={() => false}>
+          <Icon color="danger" src={HomeIC} />
           Hello, World
         </Button>
       </div>

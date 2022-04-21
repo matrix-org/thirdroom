@@ -1,0 +1,28 @@
+.Tooltip {
+  padding: var(--sp-xs) var(--sp-sm);
+  background-color: var(--bg-tooltip);
+  border-radius: var(--br-xs);
+
+  &[data-state="delayed-open"] {
+    animation-name: tooltip-anime;
+    animation-duration: 100ms;
+    animation-iteration-count: 1;
+  }
+}
+
+@keyframes tooltip-anime {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.Tooltip__trigger {
+  line-height: 0;
+}
+
+.Tooltip__arrow {
+  fill: var(--bg-tooltip);
+}

@@ -36,8 +36,13 @@ export default function RoomTileStories() {
         }
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={NotificationIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton
+              size="sm"
+              label="Notifications"
+              iconSrc={NotificationIC}
+              onClick={(a) => console.log("clicked")}
+            />
           </>
         }
       />
@@ -57,8 +62,13 @@ export default function RoomTileStories() {
         }
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={NotificationIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton
+              size="sm"
+              label="Notifications"
+              iconSrc={NotificationIC}
+              onClick={(a) => console.log("clicked")}
+            />
           </>
         }
       />
@@ -79,8 +89,13 @@ export default function RoomTileStories() {
         }
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={NotificationIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton
+              size="sm"
+              label="Notifications"
+              iconSrc={NotificationIC}
+              onClick={(a) => console.log("clicked")}
+            />
           </>
         }
       />
@@ -102,8 +117,13 @@ export default function RoomTileStories() {
         }
         options={
           <>
-            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => alert("clicked")} />
-            <IconButton size="sm" label="Notifications" iconSrc={NotificationIC} onClick={(a) => alert("clicked")} />
+            <IconButton size="sm" label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />
+            <IconButton
+              size="sm"
+              label="Notifications"
+              iconSrc={NotificationIC}
+              onClick={(a) => console.log("clicked")}
+            />
           </>
         }
       />

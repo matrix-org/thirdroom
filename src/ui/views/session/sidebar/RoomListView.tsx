@@ -2,13 +2,21 @@ import { MouseEventHandler } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./RoomListView.css";
-import { Text } from "../../../atoms/text/Text";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { RoomTile } from "./RoomTile";
+import { RoomTile } from "../../components/roomtile/RoomTile";
+import { RoomTileTitle } from "../../components/roomtile/RoomTileTitle";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { Button } from "../../../atoms/button/Button";
+import { IconButton } from "../../../atoms/button/IconButton";
+import { RoomListTab } from "../../components/roomlisttab/RoomListTab";
+import { CategoryHeader } from "../../components/category/CategoryHeader";
+import AddIC from "../../../../../res/ic/add.svg";
+import HomeIC from "../../../../../res/ic/home.svg";
+import LanguageIC from "../../../../../res/ic/language.svg";
+import ChatIC from "../../../../../res/ic/chat.svg";
+import PeoplesIC from "../../../../../res/ic/peoples.svg";
+import SettingIC from "../../../../../res/ic/setting.svg";
 
 interface RoomListViewProps {
   rooms: Room[];
@@ -22,15 +30,21 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
 
   return (
     <div className="RoomListView flex flex-column">
-      <header className="flex items-center">
-        <Text className="truncate" variant="s1" weight="semi-bold">
-          Home
-        </Text>
-        <Button onClick={onCreateWorld}>Create World</Button>
+      {/* TODO: create RoomListHeaderView */}
+      <header className="flex items-center justify-around">
+        <RoomListTab name="Home" iconSrc={HomeIC} isActive={true} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Public" iconSrc={LanguageIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Direct Messages" iconSrc={ChatIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Friends" iconSrc={PeoplesIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Settings" iconSrc={SettingIC} onClick={() => console.log("clicked")} />
       </header>
       <div className="RoomListView__container grow">
-        <Scroll>
+        <Scroll type="hover">
           <div className="RoomListView__content">
+            <CategoryHeader
+              title="Worlds"
+              options={<IconButton size="sm" label="Create World" iconSrc={AddIC} onClick={onCreateWorld} />}
+            />
             {rooms.map((room) => (
               <RoomTile
                 key={room.id}
@@ -46,11 +60,7 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
                     imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 32, platform, room.mediaRepository)}
                   />
                 }
-                title={
-                  <Text className="truncate" variant="b2" weight="semi-bold">
-                    {room.name || "Empty room"}
-                  </Text>
-                }
+                content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
               />
             ))}
           </div>

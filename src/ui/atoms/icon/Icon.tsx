@@ -4,15 +4,26 @@ import "./Icon.css";
 
 interface IIcon {
   className?: string;
-  color?: string;
-  size?: "md" | "sm";
+  color?:
+    | "surface"
+    | "surface-low"
+    | "world"
+    | "primary"
+    | "on-primary"
+    | "secondary"
+    | "on-secondary"
+    | "danger"
+    | "on-danger"
+    | "tooltip"
+    | "link";
+  size?: "md" | "sm" | "xs";
   src: string;
   isImage?: boolean;
 }
 
-export function Icon({ className, color, size = "md", src, isImage = false }: IIcon) {
+export function Icon({ className, color = "surface", size = "md", src, isImage = false }: IIcon) {
   const style: CSSProperties = {};
-  if (typeof color === "string") style.backgroundColor = color;
+
   if (isImage) {
     style.backgroundColor = "transparent";
     style.backgroundImage = `url(${src})`;
@@ -21,5 +32,5 @@ export function Icon({ className, color, size = "md", src, isImage = false }: II
     style.maskImage = `url(${src})`;
   }
 
-  return <span className={classNames(`Icon Icon--${size}`, className)} style={style} />;
+  return <span className={classNames(`Icon Icon--${color} Icon--${size}`, className)} style={style} />;
 }

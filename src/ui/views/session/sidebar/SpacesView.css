@@ -8,7 +8,7 @@
 .SpacesView__scrollable {
   padding: var(--sp-xs) 0;
 
-  & .IconButton {
+  & .SidebarTab {
     margin-bottom: var(--sp-xs);
   }
 }

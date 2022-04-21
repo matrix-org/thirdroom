@@ -12,7 +12,7 @@ interface ICategoryHeader {
 export function CategoryHeader({ iconSrc, title, options, onClick }: ICategoryHeader) {
   const catContent = (
     <>
-      {iconSrc && <Icon className="shrink-0" src={iconSrc} size="sm" color="var(--tc-surface)" />}
+      {iconSrc && <Icon className="shrink-0" src={iconSrc} size="sm" color="surface" />}
       <Text className="truncate" variant="b3" weight="bold">
         {title}
       </Text>

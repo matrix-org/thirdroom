@@ -2,45 +2,55 @@ import React from "react";
 import classNames from "classnames";
 import "./Text.css";
 
+export type textColor =
+  | "surface"
+  | "surface-low"
+  | "world"
+  | "primary"
+  | "on-primary"
+  | "secondary"
+  | "on-secondary"
+  | "danger"
+  | "on-danger"
+  | "tooltip"
+  | "link";
+
 interface IText {
+  id?: string;
   className?: string;
   style?: React.CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
+  color?: textColor;
   weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
-  type?: undefined | "span" | "div";
+  type?: undefined | "span" | "label" | "div";
+  htmlFor?: string;
   children: React.ReactNode;
 }
 
-export function Text({ className, style, variant = "b1", weight = "regular", type, children }: IText) {
-  const textClass = classNames(`Text Text-${variant} Text--${weight}`, className);
+export function Text({
+  id,
+  className,
+  style,
+  variant = "b1",
+  color = "surface",
+  weight = "regular",
+  type,
+  htmlFor,
+  children,
+}: IText) {
+  const textClass = classNames(`Text Text-${variant} Text--${color} Text--${weight}`, className);
 
-  if (type === "span")
-    return (
-      <span className={textClass} style={style}>
-        {children}
-      </span>
-    );
-  if (type === "div")
-    return (
-      <div className={textClass} style={style}>
-        {children}
-      </div>
-    );
-  if (variant === "h2")
-    return (
-      <h2 className={textClass} style={style}>
-        {children}
-      </h2>
-    );
-  if (variant === "s1")
-    return (
-      <h4 className={textClass} style={style}>
-        {children}
-      </h4>
-    );
-  return (
-    <p className={textClass} style={style}>
-      {children}
-    </p>
-  );
+  const props = {
+    id,
+    className: textClass,
+    style,
+    htmlFor,
+  };
+
+  if (type === "span") return <span {...props}>{children}</span>;
+  if (type === "label") return <label {...props}>{children}</label>;
+  if (type === "div") return <div {...props}>{children}</div>;
+  if (variant === "h2") return <h2 {...props}>{children}</h2>;
+  if (variant === "s1") return <h4 {...props}>{children}</h4>;
+  return <p {...props}>{children}</p>;
 }

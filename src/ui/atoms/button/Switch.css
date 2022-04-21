@@ -1,0 +1,33 @@
+.Switch {
+  --switch-thumb-width: 20px;
+  padding: 5px;
+  width: 50px;
+  line-height: 0;
+  border-radius: var(--switch-thumb-width);
+  cursor: pointer;
+  transition: background-color 150ms ease-in-out;
+
+  &[data-state="unchecked"] {
+    background-color: var(--bg-surface-border);
+  }
+  &[data-state="checked"] {
+    background-color: var(--bg-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+.Switch__thumb {
+  display: inline-flex;
+  width: var(--switch-thumb-width);
+  height: var(--switch-thumb-width);
+  background-color: var(--bg-surface);
+  border-radius: 50%;
+  transition: transform 150ms ease-in-out;
+
+  &[data-state="checked"] {
+    transform: translateX(100%);
+  }
+}

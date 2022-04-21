@@ -6,7 +6,7 @@ import { Icon } from "../icon/Icon";
 import "./IconButton.css";
 interface IIconButton {
   className?: string;
-  variant?: "surface" | "world" | "primary" | "secondary" | "danger";
+  variant?: "surface" | "surface-low" | "world" | "primary" | "secondary" | "danger";
   size?: "md" | "sm";
   iconSrc: string;
   label: string;
@@ -29,7 +29,7 @@ export function IconButton({
 
   return (
     <button className={btnClass} type={type} onClick={onClick} disabled={disabled} aria-label={label}>
-      <Icon size={size} src={iconSrc} />
+      <Icon color={variant} size={size} src={iconSrc} />
     </button>
   );
 }

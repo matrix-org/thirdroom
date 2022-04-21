@@ -1,11 +1,13 @@
 import React from "react";
+import * as ScrollArea from "@radix-ui/react-scroll-area";
 import classNames from "classnames";
+
 import "./Scroll.css";
 
 interface IScroll {
   className?: string;
-  direction?: "horizontal" | "vertical" | "both";
-  visibility?: "visible" | "invisible" | "auto";
+  orientation?: "horizontal" | "vertical" | "both";
+  type?: "hover" | "scroll" | "always" | "auto";
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
   children: React.ReactNode;
   forwardRef?: React.RefObject<HTMLDivElement>;
@@ -13,17 +15,30 @@ interface IScroll {
 
 export function Scroll({
   className,
-  direction = "vertical",
-  visibility = "auto",
+  orientation = "vertical",
+  type = "auto",
   onScroll,
   children,
   forwardRef,
 }: IScroll) {
-  const scrollClass = classNames(`Scroll Scroll--${direction} Scroll--${visibility}`, className);
+  const scrollClass = classNames("Scroll", className);
 
   return (
-    <div ref={forwardRef} className={scrollClass} onScroll={onScroll}>
-      {children}
-    </div>
+    <ScrollArea.Root className={scrollClass} type={type}>
+      <ScrollArea.Viewport className="Scroll__viewport" ref={forwardRef} onScroll={onScroll}>
+        {children}
+      </ScrollArea.Viewport>
+      {(orientation === "horizontal" || orientation === "both") && (
+        <ScrollArea.ScrollAreaScrollbar className="Scroll__track" orientation="horizontal">
+          <ScrollArea.Thumb className="Scroll__thumb" />
+        </ScrollArea.ScrollAreaScrollbar>
+      )}
+      {(orientation === "vertical" || orientation === "both") && (
+        <ScrollArea.ScrollAreaScrollbar className="Scroll__track" orientation="vertical">
+          <ScrollArea.Thumb className="Scroll__thumb" />
+        </ScrollArea.ScrollAreaScrollbar>
+      )}
+      <ScrollArea.Corner />
+    </ScrollArea.Root>
   );
 }

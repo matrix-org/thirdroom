@@ -6,7 +6,7 @@ interface IRoomTileDesc {
 
 export function RoomTileDesc({ children }: IRoomTileDesc) {
   return (
-    <Text className="truncate" variant="b3">
+    <Text className="truncate" color="surface-low" variant="b3">
       {children}
     </Text>
   );
