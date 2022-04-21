@@ -4,11 +4,24 @@
   border-radius: var(--br-xs);
 
   & > header {
-    min-height: 50px;
-    padding: 0 var(--sp-md);
+    padding: var(--sp-xs) var(--sp-md);
+    gap: var(--sp-sm);
+
+    & > * {
+      flex: 1 1 0;
+    }
   }
 }
 
 .RoomListView__content {
   min-height: 100%;
+  position: relative;
+
+  & .CategoryHeader {
+    background-color: var(--bg-surface);
+
+    position: sticky;
+    top: 0;
+    z-index: 99;
+  }
 }
