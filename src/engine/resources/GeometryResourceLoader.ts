@@ -1,4 +1,4 @@
-import { BoxBufferGeometry, BufferGeometry } from "three";
+import { BoxBufferGeometry, BufferAttribute, BufferGeometry } from "three";
 
 import { ResourceDefinition, ResourceLoader, ResourceManager } from "./ResourceManager";
 
@@ -6,6 +6,7 @@ const GEOMETRY_RESOURCE = "geometry";
 
 export enum GeometryType {
   Box = "box",
+  Buffer = "buffer",
 }
 
 export interface IGeometryDefinition extends ResourceDefinition {
@@ -23,7 +24,13 @@ export interface BoxGeometryDefinition extends IGeometryDefinition {
   depthSegments?: number;
 }
 
-export type GeometryDefinition = BoxGeometryDefinition;
+export interface BufferGeometryDefinition extends IGeometryDefinition {
+  geometryType: GeometryType.Buffer;
+  index: Int32Array;
+  position: Float32Array;
+}
+
+export type GeometryDefinition = BoxGeometryDefinition | BufferGeometryDefinition;
 
 export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader<GeometryDefinition, BufferGeometry> {
   return {
@@ -42,8 +49,13 @@ export function GeometryResourceLoader(manager: ResourceManager): ResourceLoader
             def.depthSegments
           );
           break;
+        case GeometryType.Buffer:
+          geometry = new BufferGeometry();
+          geometry.setIndex(new BufferAttribute(def.index, 1));
+          geometry.setAttribute("position", new BufferAttribute(def.position, 3));
+          break;
         default:
-          throw new Error(`Unknown geometry type ${def.geometryType}`);
+          throw new Error(`Unknown geometry type ${(def as unknown as any).geometryType}`);
       }
 
       if (def.name) {

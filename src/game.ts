@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent } from "bitecs";
+import { addComponent, defineQuery } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import { GameState } from "./engine/GameWorker";
@@ -10,27 +10,21 @@ import {
   PlayerControllerSystem,
 } from "./plugins/PhysicsCharacterController";
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
-import {
-  addChild,
-  addTransformComponent,
-  lookAt,
-  setQuaternionFromEuler,
-  Transform,
-} from "./engine/component/transform";
+import { addChild, setEulerFromQuaternion, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
 import { GeometryType } from "./engine/resources/GeometryResourceLoader";
-import { createCube, createDirectionalLight, createScene } from "./engine/prefab";
+import { createCube, createScene } from "./engine/prefab";
 import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
-import { addRenderableComponent, RenderableVisibilitySystem, setActiveCamera } from "./engine/component/renderable";
+import { RenderableVisibilitySystem } from "./engine/component/renderable";
 import { Owned, Networked } from "./engine/network";
-import { CameraType } from "./engine/resources/CameraResourceLoader";
+import { SpawnPoint } from "./engine/component/SpawnPoint";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export async function init(state: GameState): Promise<void> {
-  const { resourceManager, physicsWorld, camera, world } = state;
+  const { resourceManager, physicsWorld } = state;
 
   state.input.actionMaps = [
     {
@@ -114,8 +108,6 @@ export async function init(state: GameState): Promise<void> {
     environmentMapUrl: "/cubemap/venice_sunset_1k.hdr",
   });
 
-  createDirectionalLight(state, scene);
-
   const groundColliderDesc = RAPIER.ColliderDesc.cuboid(1000.0, 1, 1000.0);
   physicsWorld.createCollider(groundColliderDesc);
 
@@ -123,21 +115,6 @@ export async function init(state: GameState): Promise<void> {
     type: "geometry",
     geometryType: GeometryType.Box,
   });
-
-  const cameraResource = loadRemoteResource(resourceManager, {
-    type: "camera",
-    cameraType: CameraType.Perspective,
-    yfov: 75,
-    znear: 0.1,
-  });
-  addRenderableComponent(state, camera, cameraResource);
-  addTransformComponent(world, camera);
-  setActiveCamera(state, camera);
-
-  vec3.set(Transform.position[camera], 10, 20, 10);
-  Transform.rotation[camera][1] = Math.PI / 4;
-  setQuaternionFromEuler(Transform.rotation[camera], Transform.rotation[camera]);
-  lookAt(camera, [0, 0, 0]);
 
   for (let i = 0; i < 0; i++) {
     const cube = createCube(state, geometryResourceId);
@@ -153,10 +130,15 @@ export async function init(state: GameState): Promise<void> {
     rotation[1] = rndRange(0, 5);
     rotation[2] = rndRange(0, 5);
 
+    const body = RigidBody.store.get(cube);
+    if (body) {
+      body.setTranslation(new RAPIER.Vector3(position[0], position[1], position[2]), true);
+    }
+
     addChild(scene, cube);
   }
 
-  createGLTFEntity(state, "/gltf/OutdoorFestival/OutdoorFestival.glb", scene);
+  createGLTFEntity(state, "/gltf/modern_city_block_fixed/modern_city_block.gltf", scene);
 
   const cubeSpawnSystem = (state: GameState) => {
     const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
@@ -202,13 +184,20 @@ const waitUntil = (fn: Function) =>
 
 let playerRig: number;
 
+const spawnPointQuery = defineQuery([SpawnPoint]);
+
 export async function onStateChange(state: GameState, { joined }: { joined: boolean }) {
-  const { scene } = state;
+  const { scene, world } = state;
 
   await waitUntil(() => state.network.peerIdMap.has(state.network.peerId));
 
   if (joined && !playerRig) {
+    const spawnPoints = spawnPointQuery(world);
+
     playerRig = createPlayerRig(state);
+    vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
+    vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
+    setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
     addChild(scene, playerRig);
   } else if (!joined && playerRig) {
     //removeChild(scene, playerRig);

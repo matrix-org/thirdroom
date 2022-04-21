@@ -48,6 +48,18 @@ export function LightResourceLoader(manager: ResourceManager): ResourceLoader<Li
       switch (def.lightType) {
         case LightType.Directional: {
           light = new DirectionalLight(color, intensity);
+
+          const directionalLight = light as DirectionalLight;
+          directionalLight.intensity = 0.8;
+          directionalLight.shadow.camera.top = 100;
+          directionalLight.shadow.camera.bottom = -100;
+          directionalLight.shadow.camera.left = -100;
+          directionalLight.shadow.camera.right = 100;
+          directionalLight.shadow.camera.near = 10;
+          directionalLight.shadow.camera.far = 600;
+          directionalLight.shadow.bias = 0.0001;
+          directionalLight.shadow.normalBias = 0.2;
+          directionalLight.shadow.mapSize.set(2048, 2048);
           break;
         }
         case LightType.Point:
@@ -64,6 +76,7 @@ export function LightResourceLoader(manager: ResourceManager): ResourceLoader<Li
       }
 
       light.position.set(0, 0, 0);
+      light.castShadow = true;
 
       if (def.lightType === LightType.Directional || def.lightType === LightType.Spot) {
         const targetLight = light as DirectionalLight | SpotLight;

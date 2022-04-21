@@ -1,0 +1,11 @@
+Model Information:
+* title:	Modern City Block
+* source:	https://sketchfab.com/3d-models/modern-city-block-c80dba249d9547cbb48d00828d23cfa7
+* author:	akselmot (https://sketchfab.com/akselmot)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Modern City Block" (https://sketchfab.com/3d-models/modern-city-block-c80dba249d9547cbb48d00828d23cfa7) by akselmot (https://sketchfab.com/akselmot) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

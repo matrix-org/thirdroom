@@ -1,5 +1,4 @@
 import {
-  AmbientLight,
   WebGLRenderer,
   Scene,
   Object3D,
@@ -11,6 +10,7 @@ import {
   Camera,
   ACESFilmicToneMapping,
   sRGBEncoding,
+  PCFSoftShadowMap,
 } from "three";
 
 import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
@@ -214,14 +214,12 @@ async function onInit({
   registerResourceLoader(resourceManager, LightResourceLoader);
   registerResourceLoader(resourceManager, GLTFResourceLoader);
 
-  scene.add(new AmbientLight(0xffffff, 0.5));
-
-  // TODO: Send scene/camera resource ids to the GameWorker
-
   const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.outputEncoding = sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
   const clock = new Clock();
@@ -482,21 +480,30 @@ function onRemoveRenderable(
 }
 
 function onSetActiveScene(state: RenderWorkerState, { eid, resourceId }: SetActiveSceneMessage) {
-  const { resourceManager, scene } = state;
+  const { resourceManager } = state;
   const resourceInfo = resourceManager.store.get(resourceId);
 
-  if (!resourceInfo || !resourceInfo.resource) {
+  if (!resourceInfo) {
     console.error(`SetActiveScene Error: Couldn't find resource ${resourceId} for scene ${eid}`);
     return;
   }
 
-  const newScene = resourceInfo.resource as Scene;
+  const setScene = (newScene: Scene) => {
+    for (const child of state.scene.children) {
+      newScene.add(child);
+    }
 
-  for (const child of scene.children) {
-    newScene.add(child);
+    state.scene = newScene;
+  };
+
+  if (resourceInfo.resource) {
+    const newScene = resourceInfo.resource as Scene;
+    setScene(newScene);
+  } else {
+    resourceInfo.promise.then(({ resource }) => {
+      setScene(resource as Scene);
+    });
   }
-
-  state.scene = newScene;
 }
 
 function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMessage) {
@@ -504,7 +511,16 @@ function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMes
   const index = renderableIndices.get(eid);
 
   if (index !== undefined && renderables[index]) {
-    state.camera = renderables[index].object as Camera;
+    const camera = renderables[index].object as Camera;
+
+    const perspectiveCamera = camera as PerspectiveCamera;
+
+    if (perspectiveCamera.isPerspectiveCamera) {
+      perspectiveCamera.aspect = state.canvasWidth / state.canvasHeight;
+      perspectiveCamera.updateProjectionMatrix();
+    }
+
+    state.camera = camera;
   }
 }
 

@@ -1,4 +1,5 @@
-import { addEntity, defineQuery, removeComponent } from "bitecs";
+import { addComponent, addEntity, defineQuery, removeComponent } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
 
 import { ResourceState } from "../resources/ResourceManager";
 import {
@@ -9,10 +10,12 @@ import {
   updateMatrix,
 } from "../component/transform";
 import { GameState } from "../GameWorker";
-import { addRenderableComponent } from "../component/renderable";
+import { addRenderableComponent, setActiveCamera } from "../component/renderable";
 import { GLTFEntityDescription, RemoteGLTF } from ".";
 import { GLTFLoader } from "./GLTFLoader";
-import { RemoteResourceInfo } from "../resources/RemoteResourceManager";
+import { loadRemoteResource, RemoteResourceInfo } from "../resources/RemoteResourceManager";
+import { SpawnPoint } from "../component/SpawnPoint";
+import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 
 function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?: number) {
   const { world } = state;
@@ -35,6 +38,29 @@ function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?
       case "renderable":
         addRenderableComponent(state, eid, component.resourceId);
         break;
+      case "trimesh": {
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+        const rigidBody = state.physicsWorld.createRigidBody(rigidBodyDesc);
+
+        const colliderDesc = RAPIER.ColliderDesc.trimesh(component.vertices, component.indices);
+        state.physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        break;
+      }
+      case "spawn-point":
+        addComponent(world, SpawnPoint, eid);
+        break;
+      case "camera":
+        setActiveCamera(state, eid);
+        break;
+      case "directional-light": {
+        const lightResourceId = loadRemoteResource(state.resourceManager, {
+          type: LIGHT_RESOURCE,
+          lightType: LightType.Directional,
+          intensity: 0.5,
+        });
+        addRenderableComponent(state, eid, lightResourceId);
+        break;
+      }
     }
   }
 

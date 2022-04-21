@@ -80,10 +80,10 @@ export function registerResourceLoader(
   manager.resourceLoaders.set(loader.type, loader);
 }
 
-export async function onLoadResource<Def extends ResourceDefinition, Resource, RemoteResource = undefined>(
+export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteResource = undefined>(
   manager: ResourceManager,
   { resourceDef, resourceId }: LoadResourceMessage<Def>
-): Promise<ResourceInfo<Resource, RemoteResource>> {
+): void {
   const { type } = resourceDef;
   const loader: ResourceLoader<Def, Resource, RemoteResource> = manager.resourceLoaders.get(type)!;
 
@@ -105,36 +105,34 @@ export async function onLoadResource<Def extends ResourceDefinition, Resource, R
 
   manager.store.set(resourceId, resourceInfo);
 
-  try {
-    const response = await resourceInfo.promise;
+  resourceInfo.promise
+    .then((response) => {
+      if (!resourceDef.name && response.name) {
+        resourceInfo.name = response.name;
+      }
 
-    if (!resourceDef.name && response.name) {
-      resourceInfo.name = response.name;
-    }
+      resourceInfo.resource = response.resource;
+      resourceInfo.state = ResourceState.Loaded;
 
-    resourceInfo.resource = response.resource;
-    resourceInfo.state = ResourceState.Loaded;
-
-    manager.workerMessageTarget.postMessage(
-      {
-        type: WorkerMessageType.ResourceLoaded,
+      manager.workerMessageTarget.postMessage(
+        {
+          type: WorkerMessageType.ResourceLoaded,
+          resourceId,
+          remoteResource: response.remoteResource,
+        },
+        response.transferList
+      );
+    })
+    .catch((error) => {
+      console.error(error);
+      resourceInfo.state = ResourceState.Error;
+      resourceInfo.error = error;
+      manager.workerMessageTarget.postMessage({
+        type: WorkerMessageType.ResourceLoadError,
         resourceId,
-        remoteResource: response.remoteResource,
-      },
-      response.transferList
-    );
-  } catch (error: any) {
-    console.error(error);
-    resourceInfo.state = ResourceState.Error;
-    resourceInfo.error = error;
-    manager.workerMessageTarget.postMessage({
-      type: WorkerMessageType.ResourceLoadError,
-      resourceId,
-      error,
+        error,
+      });
     });
-  }
-
-  return resourceInfo;
 }
 
 export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddResourceRefMessage) {

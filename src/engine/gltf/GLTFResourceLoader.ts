@@ -1,4 +1,4 @@
-import { Object3D } from "three";
+import { Camera, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { GLTFComponentDescription, GLTFEntityDescription, RemoteGLTF } from ".";
@@ -32,7 +32,11 @@ const object3DTypeToResourceType: { [type: string]: string } = {
   SpotLight: "light",
 };
 
-function serializeGLTF(object: Object3D, manager: ResourceManager): GLTFEntityDescription {
+function serializeGLTF(
+  object: Object3D,
+  manager: ResourceManager,
+  transferList: Transferable[]
+): GLTFEntityDescription {
   const components: GLTFComponentDescription[] = [];
 
   components.push({
@@ -52,9 +56,46 @@ function serializeGLTF(object: Object3D, manager: ResourceManager): GLTFEntityDe
     });
   }
 
+  if (object.userData["spawn-point"]) {
+    components.push({
+      type: "spawn-point",
+    });
+  }
+
+  if (object.userData["directional-light"]) {
+    components.push({
+      type: "directional-light",
+    });
+  }
+
+  if (object.type === "Mesh") {
+    object.castShadow = true;
+    object.receiveShadow = true;
+
+    const mesh = object as Mesh;
+
+    const indices = mesh.geometry.getIndex()!.clone().array as Uint32Array;
+    const vertices = mesh.geometry.getAttribute("position").clone().applyMatrix4(mesh.matrixWorld)
+      .array as Float32Array;
+
+    components.push({
+      type: "trimesh",
+      vertices,
+      indices,
+    });
+
+    transferList.push(vertices.buffer, indices.buffer);
+  }
+
+  if ((object as Camera).isCamera) {
+    components.push({
+      type: "camera",
+    });
+  }
+
   return {
     components,
-    children: object.children.map((child) => serializeGLTF(child, manager)),
+    children: object.children.map((child) => serializeGLTF(child, manager, transferList)),
   };
 }
 
@@ -66,12 +107,19 @@ export function GLTFResourceLoader(manager: ResourceManager): ResourceLoader<GLT
     async load({ name, url }) {
       const { scene } = await gltfLoader.loadAsync(url);
 
+      scene.updateMatrixWorld(true);
+
+      const transferList: Transferable[] = [];
+
+      const serializedScene = serializeGLTF(scene, manager, transferList);
+
       return {
         name,
         resource: scene,
         remoteResource: {
-          scene: serializeGLTF(scene, manager),
+          scene: serializedScene,
         },
+        transferList,
       };
     },
   };

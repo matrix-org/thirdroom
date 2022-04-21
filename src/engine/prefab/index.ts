@@ -25,11 +25,14 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
   };
 
   if (props.environmentMapUrl) {
-    sceneDef.environmentTextureResourceId = loadRemoteResource(state.resourceManager, {
+    const environmentMap = loadRemoteResource(state.resourceManager, {
       type: "texture",
       textureType: TextureType.RGBE,
       url: props.environmentMapUrl,
     });
+
+    sceneDef.environmentTextureResourceId = environmentMap;
+    sceneDef.backgroundTextureResourceId = environmentMap;
   }
 
   const sceneResourceId = loadRemoteResource(state.resourceManager, sceneDef);
