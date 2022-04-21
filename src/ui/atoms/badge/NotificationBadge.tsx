@@ -22,7 +22,7 @@ export function NotificationBadge({ className, variant = "primary", content }: I
   return (
     <span className={notifClass}>
       {hasContent && (
-        <Text variant="b3" type="span" weight="semi-bold">
+        <Text variant="b3" color={`on-${variant}`} type="span" weight="semi-bold">
           {content}
         </Text>
       )}

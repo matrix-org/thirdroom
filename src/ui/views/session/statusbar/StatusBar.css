@@ -11,10 +11,6 @@
   & > div {
     padding: 0 var(--sp-xs);
   }
-
-  & .Text {
-    color: var(--tc-world);
-  }
 }
 
 .OpenOverlay {

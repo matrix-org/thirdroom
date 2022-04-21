@@ -20,13 +20,10 @@
 
 .NotificationBadge--primary {
   background-color: var(--bg-primary);
-  color: var(--tc-on-primary);
 }
 .NotificationBadge--secondary {
   background-color: var(--bg-secondary);
-  color: var(--tc-on-secondary);
 }
 .NotificationBadge--danger {
   background-color: var(--bg-danger);
-  color: var(--tc-on-danger);
 }

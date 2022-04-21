@@ -8,12 +8,12 @@ interface INowPlayingStatus {
 }
 
 export function NowPlayingStatus({ status, children }: INowPlayingStatus) {
-  const color = status === "connected" ? "var(--bg-secondary)" : "var(--bg-danger)";
+  const color = status === "connected" ? "secondary" : "danger";
 
   return (
     <div className="NowPlayingStatus flex items-baseline" style={{ gap: "var(--sp-xxs)" }}>
       <Icon color={color} size="xs" src={NetworkIC} />
-      <Text style={{ color }} className="truncate" variant="b3" weight="bold">
+      <Text color={color} className="truncate" variant="b3" weight="bold">
         {children}
       </Text>
     </div>

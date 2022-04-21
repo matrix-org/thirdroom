@@ -1,7 +1,6 @@
 .Tooltip {
   padding: var(--sp-xs) var(--sp-sm);
   background-color: var(--bg-tooltip);
-  color: var(--tc-tooltip);
   border-radius: var(--br-xs);
 
   &[data-state="delayed-open"] {

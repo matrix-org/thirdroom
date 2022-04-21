@@ -29,7 +29,7 @@ export function IconButton({
 
   return (
     <button className={btnClass} type={type} onClick={onClick} disabled={disabled} aria-label={label}>
-      <Icon size={size} src={iconSrc} />
+      <Icon color={variant} size={size} src={iconSrc} />
     </button>
   );
 }

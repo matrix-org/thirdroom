@@ -2,19 +2,43 @@ import React from "react";
 import classNames from "classnames";
 import "./Text.css";
 
+export type textColor =
+  | "surface"
+  | "surface-low"
+  | "world"
+  | "primary"
+  | "on-primary"
+  | "secondary"
+  | "on-secondary"
+  | "danger"
+  | "on-danger"
+  | "tooltip"
+  | "link";
+
 interface IText {
   id?: string;
   className?: string;
   style?: React.CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
+  color?: textColor;
   weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "label" | "div";
   htmlFor?: string;
   children: React.ReactNode;
 }
 
-export function Text({ id, className, style, variant = "b1", weight = "regular", type, htmlFor, children }: IText) {
-  const textClass = classNames(`Text Text-${variant} Text--${weight}`, className);
+export function Text({
+  id,
+  className,
+  style,
+  variant = "b1",
+  color = "surface",
+  weight = "regular",
+  type,
+  htmlFor,
+  children,
+}: IText) {
+  const textClass = classNames(`Text Text-${variant} Text--${color} Text--${weight}`, className);
 
   const props = {
     id,

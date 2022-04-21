@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
 
-  background-color: var(--sc-dark-low);
+  background-color: var(--bg-surface-low);
   border-radius: var(--br-xs);
   overflow: hidden;
 

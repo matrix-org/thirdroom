@@ -51,7 +51,7 @@ export function Tooltip({
           portalled={portalled}
         >
           {typeof content === "string" ? (
-            <Text variant="b2" weight="medium">
+            <Text variant="b2" color="tooltip" weight="medium">
               {content}
             </Text>
           ) : (

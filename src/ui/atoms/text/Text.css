@@ -28,6 +28,40 @@
   line-height: var(--lh-b3);
 }
 
+.Text--surface {
+  color: var(--tc-surface);
+}
+.Text--surface-low {
+  color: var(--tc-surface-low);
+}
+.Text--world {
+  color: var(--tc-world);
+}
+.Text--primary {
+  color: var(--tc-primary);
+}
+.Text--on-primary {
+  color: var(--tc-on-primary);
+}
+.Text--secondary {
+  color: var(--tc-secondary);
+}
+.Text--on-secondary {
+  color: var(--tc-on-secondary);
+}
+.Text--danger {
+  color: var(--tc-danger);
+}
+.Text--on-danger {
+  color: var(--tc-on-danger);
+}
+.Text--tooltip {
+  color: var(--tc-tooltip);
+}
+.Text--link {
+  color: var(--tc-link);
+}
+
 .Text--light {
   font-weight: var(--fw-light);
 }

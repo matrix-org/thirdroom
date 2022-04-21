@@ -36,23 +36,16 @@
 
   --bg-tooltip: black;
 
-  /* shades colors */
-  --sc-light-normal: hsl(0deg 0% 100% / 20%);
-  --sc-light-low: hsl(0deg 0% 100% / 10%);
-  --sc-dark-normal: hsl(0deg 0% 0% / 20%);
-  --sc-dark-low: hsl(0deg 0% 0% / 10%);
-  --sc-dark-extra-low: hsl(0deg 0% 0% / 5%);
-
   /* text colors */
   --tc-surface: #0b1014;
   --tc-surface-low: #717577;
-
   --tc-world: #ffffff;
-
+  --tc-primary: var(--bg-primary);
   --tc-on-primary: #ffffff;
+  --tc-secondary: var(--bg-secondary);
   --tc-on-secondary: #ffffff;
+  --tc-danger: var(--bg-danger);
   --tc-on-danger: #ffffff;
-
   --tc-tooltip: white;
   --tc-link: hsl(213deg 76% 56%);
 
@@ -66,6 +59,8 @@
   --ic-on-secondary: #ffffff;
   --ic-danger: var(--bg-danger);
   --ic-on-danger: #ffffff;
+  --ic-tooltip: #ffffff;
+  --ic-link: hsl(213deg 76% 56%);
 
   /* spacing */
   --sp-xl: 40px;
@@ -129,8 +124,6 @@
   --bs-danger-border: inset 0 0 0 1px var(--bg-danger);
 
   /* other */
-  --scrollbar-width: 8px;
-
   --usercolor1: #368bd6;
   --usercolor2: #ac3ba8;
   --usercolor3: #03b381;

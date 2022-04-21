@@ -2,7 +2,6 @@
   display: inline-block;
   mask-repeat: no-repeat;
   mask-size: cover;
-  background-color: var(--ic-surface);
 
   background-size: cover;
   background-repeat: no-repeat;
@@ -18,4 +17,38 @@
 .Icon--xs {
   width: var(--ic-xs);
   height: var(--ic-xs);
+}
+
+.Icon--surface {
+  background-color: var(--tc-surface);
+}
+.Icon--surface-low {
+  background-color: var(--tc-surface-low);
+}
+.Icon--world {
+  background-color: var(--tc-world);
+}
+.Icon--primary {
+  background-color: var(--tc-primary);
+}
+.Icon--on-primary {
+  background-color: var(--tc-on-primary);
+}
+.Icon--secondary {
+  background-color: var(--tc-secondary);
+}
+.Icon--on-secondary {
+  background-color: var(--tc-on-secondary);
+}
+.Icon--danger {
+  background-color: var(--tc-danger);
+}
+.Icon--on-danger {
+  background-color: var(--tc-on-danger);
+}
+.Icon--tooltip {
+  background-color: var(--tc-tooltip);
+}
+.Icon--link {
+  background-color: var(--tc-link);
 }
