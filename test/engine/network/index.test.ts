@@ -41,7 +41,7 @@ describe("Network Tests", () => {
     });
     it("should #createNetworkId", () => {
       const state = {
-        network: { peerId: 0x00ff, localIdCount: 0x000f, removedLocalIds: [] },
+        network: { peerId: "abc", peerIdMap: new Map([["abc", 0x00ff]]), localIdCount: 0x000f, removedLocalIds: [] },
       } as unknown as GameState;
       const nid = createNetworkId(state);
       strictEqual(nid, 0x000f_00ff);
@@ -175,7 +175,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeTransformChanged() with all values", () => {
       const writer = createCursorView();
-      const eid = 0;
+      const eid = 1;
 
       const position = Transform.position[eid];
       const quaternion = Transform.quaternion[eid];
@@ -202,7 +202,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeTransformChanged() with some values", () => {
       const writer = createCursorView();
-      const eid = 0;
+      const eid = 1;
 
       const position = Transform.position[eid];
       const quaternion = Transform.quaternion[eid];
@@ -272,7 +272,7 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesSnapshot()", () => {
-      const state = { world: createWorld(), network: { idMap: new Map() } } as unknown as GameState;
+      const state = { world: createWorld(), network: { entityIdMap: new Map() } } as unknown as GameState;
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -287,7 +287,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.idMap.set(eid, eid);
+        state.network.entityIdMap.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -361,7 +361,7 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesChanged()", () => {
-      const state = { world: createWorld(), network: { idMap: new Map() } } as unknown as GameState;
+      const state = { world: createWorld(), network: { entityIdMap: new Map() } } as unknown as GameState;
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -376,7 +376,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.idMap.set(eid, eid);
+        state.network.entityIdMap.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -436,7 +436,7 @@ describe("Network Tests", () => {
     it("should #deserializeCreates()", () => {
       const state = {
         world: createWorld(),
-        network: { idMap: new Map() },
+        network: { entityIdMap: new Map() },
         resourceManager: mockRemoteResourceManager(),
         physicsWorld: mockPhysicsWorld(),
         renderer: mockRenderer(),
@@ -473,7 +473,7 @@ describe("Network Tests", () => {
         ok(incomingEid !== outgoingEid);
 
         strictEqual(Networked.networkId[incomingEid], outgoingEid);
-        strictEqual(state.network.idMap.get(outgoingEid), incomingEid);
+        strictEqual(state.network.entityIdMap.get(outgoingEid), incomingEid);
       }
     });
   });
@@ -512,7 +512,7 @@ describe("Network Tests", () => {
     it("should #deserializeDeletes()", () => {
       const state = {
         world: createWorld(),
-        network: { idMap: new Map() },
+        network: { entityIdMap: new Map() },
         resourceManager: mockRemoteResourceManager(),
         physicsWorld: mockPhysicsWorld(),
         renderer: mockRenderer(),
