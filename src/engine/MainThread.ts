@@ -228,7 +228,9 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       ws?.send(packet);
     } else {
       reliableChannels.forEach((peer) => {
-        peer.send(packet);
+        if (peer.readyState === "open") {
+          peer.send(packet);
+        }
       });
     }
   };
@@ -238,7 +240,9 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       ws?.send(packet);
     } else {
       unreliableChannels.forEach((peer) => {
-        peer.send(packet);
+        if (peer.readyState === "open") {
+          peer.send(packet);
+        }
       });
     }
   };
@@ -328,6 +332,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         });
       };
 
+      dataChannel.binaryType = "arraybuffer";
       dataChannel.addEventListener("open", onOpen);
     },
     removePeer(peerId: string) {
