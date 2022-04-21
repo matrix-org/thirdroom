@@ -1,0 +1,83 @@
+.SidebarTab {
+  width: var(--av-md);
+  height: var(--av-md);
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: var(--br-md);
+  background-color: var(--bg-surface-low);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.SidebarTab--active {
+  box-shadow: inset 0 0 0 2px var(--bg-primary);
+}
+
+.SidebarTab--surface,
+.SidebarTab--surface-low {
+  background-color: var(--bg-surface);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-surface-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+.SidebarTab--surface-low {
+  background-color: var(--bg-surface-low);
+}
+
+.SidebarTab--primary {
+  background-color: var(--bg-primary);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-primary-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-primary-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-active);
+  }
+}
+.SidebarTab--secondary {
+  background-color: var(--bg-secondary);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-secondary-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-secondary-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-active);
+  }
+}
+.SidebarTab--danger {
+  background-color: var(--bg-danger);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--bg-danger-hover);
+    }
+  }
+  &:focus {
+    background-color: var(--bg-danger-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-active);
+  }
+}

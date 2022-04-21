@@ -1,14 +1,20 @@
+import { SidebarTab } from "../../components/sidebartab/SidebarTab";
+import PlanetIC from "../../../../../res/ic/planet.svg";
+import ExploreIC from "../../../../../res/ic/explore.svg";
 import "./SpacesView.css";
-import { IconButton } from "../../../atoms/button/IconButton";
-import HomeIC from "../../../../../res/ic/home.svg";
-import GridIC from "../../../../../res/ic/grid.svg";
 
 export function SpacesView() {
   return (
     <div className="SpacesView flex flex-column">
       <div className="SpacesView__scrollable grow flex flex-column items-center">
-        <IconButton label="Home" iconSrc={HomeIC} onClick={() => false} />
-        <IconButton label="Grid" iconSrc={GridIC} onClick={() => false} />
+        <SidebarTab
+          onClick={() => console.log("clicked")}
+          isActive={true}
+          name="Home"
+          iconSrc={PlanetIC}
+          variant="surface-low"
+        />
+        <SidebarTab onClick={() => console.log("clicked")} name="Explore" iconSrc={ExploreIC} variant="danger" />
       </div>
     </div>
   );
