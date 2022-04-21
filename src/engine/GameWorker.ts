@@ -1,9 +1,9 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
-import { maxEntities, NOOP, tickRate } from "./config";
+import { maxEntities, tickRate } from "./config";
 import {
   RemoteResourceManager,
   createRemoteResourceManager,
@@ -23,11 +23,40 @@ import {
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component";
-import { init } from "../game";
+import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
+import { CursorView } from "./network/CursorView";
+import {
+  broadcastReliable,
+  createIncomingNetworkSystem,
+  createOutgoingNetworkSystem,
+  createPeerIdIndexMessage,
+} from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
+
+const addPeerId = (state: GameState, peerId: string) => {
+  state.network.newPeers.push(peerId);
+  state.network.peers.push(peerId);
+  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+};
+
+const removePeerId = (state: GameState, peerId: string) => {
+  const i = state.network.peers.indexOf(peerId);
+  if (i > -1) {
+    state.network.peers.splice(i, 1);
+    state.network.peerIdMap.delete(peerId);
+  } else {
+    console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
+  }
+};
+
+const setPeerId = (state: GameState, peerId: string) => {
+  state.network.peerId = peerId;
+  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+};
 
 const onMessage =
   (state: GameState) =>
@@ -53,6 +82,26 @@ const onMessage =
         break;
       case WorkerMessageType.ExportScene:
         exportGLTF(state, state.scene);
+        break;
+      case WorkerMessageType.SetPeerId:
+        setPeerId(state, message.peerId);
+        break;
+      case WorkerMessageType.AddPeerId:
+        addPeerId(state, message.peerId);
+        break;
+      case WorkerMessageType.RemovePeerId: {
+        removePeerId(state, message.peerId);
+        break;
+      }
+      case WorkerMessageType.ReliableNetworkMessage:
+      case WorkerMessageType.UnreliableNetworkMessage:
+        state.network.messages.push(message.packet);
+        break;
+      case WorkerMessageType.StateChanged:
+        onStateChange(state, message.state);
+        break;
+      case WorkerMessageType.MakeHost:
+        state.network.hosting = true;
         break;
     }
   };
@@ -109,11 +158,17 @@ export interface RenderState {
 }
 
 export interface NetworkState {
+  hosting: boolean;
   messages: ArrayBuffer[];
-  idMap: Map<number, number>;
-  clientId: number;
+  entityIdMap: Map<number, number>;
+  peerId: string;
+  peers: string[];
+  newPeers: string[];
+  peerIdCount: number;
+  peerIdMap: Map<string, number>;
   localIdCount: number;
   removedLocalIds: number[];
+  messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
 }
 
 export interface GameInputState {
@@ -133,7 +188,9 @@ export interface GameState {
   time: TimeState;
   resourceManager: RemoteResourceManager;
   input: GameInputState;
+  preSystems: System[];
   systems: System[];
+  postSystems: System[];
   scene: number;
   camera: number;
   statsBuffer: StatsBuffer;
@@ -175,6 +232,7 @@ async function onInit({
 
   const camera = addEntity(world);
   addTransformComponent(world, camera);
+  addChild(scene, camera);
 
   await RAPIER.init();
 
@@ -206,12 +264,17 @@ async function onInit({
   };
 
   const network: NetworkState = {
+    hosting: false,
     messages: [],
-    idMap: new Map<number, number>(),
-    // todo: use mxid as clientId
-    clientId: NOOP,
+    entityIdMap: new Map<number, number>(),
+    peerId: "",
+    peers: [],
+    newPeers: [],
+    peerIdMap: new Map(),
+    peerIdCount: 0,
     localIdCount: 0,
     removedLocalIds: [],
+    messageHandlers: {},
   };
 
   const state: GameState = {
@@ -225,8 +288,14 @@ async function onInit({
     time,
     network,
     systems: [],
+    preSystems: [],
+    postSystems: [],
     statsBuffer,
   };
+
+  state.preSystems.push(createIncomingNetworkSystem(state));
+
+  state.postSystems.push(createOutgoingNetworkSystem(state));
 
   await init(state);
 
@@ -256,8 +325,16 @@ const pipeline = (state: GameState) => {
   timeSystem(state);
   inputReadSystem(state);
 
+  for (let i = 0; i < state.preSystems.length; i++) {
+    state.preSystems[i](state);
+  }
+
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
+  }
+
+  for (let i = 0; i < state.postSystems.length; i++) {
+    state.postSystems[i](state);
   }
 
   updateWorldMatrixSystem(state);

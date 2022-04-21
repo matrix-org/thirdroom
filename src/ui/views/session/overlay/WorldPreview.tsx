@@ -87,7 +87,12 @@ export function WorldPreview({ session, room, roomId, onLoadWorld, onEnterWorld 
 
   useEffect(() => {
     // TODO: Check that room is a World and not just a normal matrix room.
-    if (room && roomStatus !== undefined && (roomStatus & RoomStatus.Replaced) !== 0) {
+    if (
+      room &&
+      roomStatus !== undefined &&
+      (roomStatus & RoomStatus.Replaced) !== 0 &&
+      roomStatus & RoomStatus.BeingCreated
+    ) {
       const roomBeingCreated = room as RoomBeingCreated;
       navigate(`/world/${roomBeingCreated.roomId}`);
     }

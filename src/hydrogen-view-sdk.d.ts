@@ -1431,6 +1431,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get isConnected(): boolean;
     get userId(): string;
     get deviceId(): string;
+    get deviceIndex(): number;
+    get eventTimestamp(): number;
     get dataChannel(): any | undefined;
     /** @internal */
     connect(localMedia: LocalMedia): void;
@@ -1490,6 +1492,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get isRinging(): boolean;
     get name(): string;
     get intent(): CallIntent;
+    get deviceIndex(): number | undefined;
+    get eventTimestamp(): number | undefined;
     join(localMedia: LocalMedia): Promise<void>;
     get hasJoined(): boolean;
     leave(): Promise<void>;

@@ -1,6 +1,5 @@
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
-import { NetworkInterface } from "./network/NetworkInterface";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
 import { createStatsBuffer, getStats, StatsObject } from "./stats";
 import { createTripleBuffer } from "./TripleBuffer";
@@ -63,10 +62,16 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 }
 
 export interface Engine {
-  dispose(): void;
+  makeHost(): void;
+  setState(state: any): void;
+  setPeerId(peerId: string): void;
+  hasPeer(peerId: string): boolean;
+  addPeer(peerId: string, dataChannel: RTCDataChannel): void;
+  removePeer(peerId: string): void;
+  disconnect(): void;
   getStats(): StatsObject;
   exportScene(): void;
-  setNetworkInterface(networkInterface?: NetworkInterface): void;
+  dispose(): void;
 }
 
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
@@ -88,6 +93,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
   const statsBuffer = createStatsBuffer();
+
+  /* Wait for workers to be ready */
 
   await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
     renderWorker.postMessage(
@@ -145,6 +152,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     gameWorker.addEventListener("message", onMessage);
   });
 
+  /* Start Workers */
+
   renderWorker.postMessage({
     type: WorkerMessageType.StartRenderWorker,
   });
@@ -152,6 +161,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   gameWorker.postMessage({
     type: WorkerMessageType.StartGameWorker,
   });
+
+  /* Render Worker Messages */
 
   const onRenderWorkerMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
@@ -163,10 +174,101 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     switch (message.type) {
       case WorkerMessageType.SaveGLTF:
         downloadFile(message.buffer, "scene.glb");
+        break;
     }
   };
 
   renderWorker.addEventListener("message", onRenderWorkerMessage);
+
+  /* Game Worker Messages */
+
+  const onPeerMessage = ({ data }: { data: ArrayBuffer }) => {
+    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
+  };
+
+  let useTestNet = false;
+  let ws: WebSocket | undefined;
+
+  if (import.meta.env.VITE_USE_TESTNET) {
+    useTestNet = true;
+
+    ws = new WebSocket("ws://localhost:8080");
+    ws.binaryType = "arraybuffer";
+
+    ws.addEventListener("open", (data) => {
+      console.log("connected to websocket server");
+    });
+    ws.addEventListener("close", (data) => {});
+    ws.addEventListener("message", onPeerMessage);
+  }
+
+  const reliableChannels: Map<string, RTCDataChannel> = new Map();
+  const unreliableChannels: Map<string, RTCDataChannel> = new Map();
+
+  const sendReliable = (peerId: string, packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws?.send(packet);
+    } else {
+      const peer = reliableChannels.get(peerId);
+      if (peer) peer.send(packet);
+    }
+  };
+
+  const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws?.send(packet);
+    } else {
+      const peer = unreliableChannels.get(peerId);
+      if (peer) peer.send(packet);
+    }
+  };
+
+  const broadcastReliable = (packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws?.send(packet);
+    } else {
+      reliableChannels.forEach((peer) => {
+        peer.send(packet);
+      });
+    }
+  };
+
+  const broadcastUnreliable = (packet: ArrayBuffer) => {
+    if (useTestNet) {
+      ws?.send(packet);
+    } else {
+      unreliableChannels.forEach((peer) => {
+        peer.send(packet);
+      });
+    }
+  };
+
+  const onGameWorkerMessage = ({ data }: MessageEvent) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.ReliableNetworkMessage:
+        sendReliable(message.peerId, message.packet);
+        break;
+      case WorkerMessageType.UnreliableNetworkMessage:
+        sendUnreliable(message.peerId, message.packet);
+        break;
+      case WorkerMessageType.ReliableNetworkBroadcast:
+        broadcastReliable(message.packet);
+        break;
+      case WorkerMessageType.UnreliableNetworkBroadcast:
+        broadcastUnreliable(message.packet);
+        break;
+    }
+  };
+
+  gameWorker.addEventListener("message", onGameWorkerMessage);
+
+  /* Update loop for input manager */
 
   let animationFrameId: number;
 
@@ -178,22 +280,70 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   update();
 
-  let localPeerId: string | undefined;
-  let disposeNetworkInterface: () => void | undefined;
-
-  function onPeerJoined(peerId: string, mediaStream: MediaStream, dataChannel: RTCDataChannel) {
-    console.log("onPeerJoined", peerId, mediaStream, dataChannel);
-  }
-
-  function onPeerAudioStreamChanged(peerId: string, mediaStream: MediaStream) {
-    console.log("onPeerAudioStreamChanged", peerId, mediaStream);
-  }
-
   function onPeerLeft(peerId: string) {
-    console.log("onPeerLeft", peerId);
+    const reliableChannel = reliableChannels.get(peerId);
+    const unreliableChannel = reliableChannels.get(peerId);
+    reliableChannel?.removeEventListener("message", onPeerMessage);
+    unreliableChannel?.removeEventListener("message", onPeerMessage);
+
+    reliableChannels.delete(peerId);
+    unreliableChannels.delete(peerId);
+
+    gameWorker.postMessage({
+      type: WorkerMessageType.RemovePeerId,
+      peerId,
+    });
   }
 
   return {
+    makeHost() {
+      gameWorker.postMessage({
+        type: WorkerMessageType.MakeHost,
+      });
+    },
+    setState(state: any) {
+      gameWorker.postMessage({
+        type: WorkerMessageType.StateChanged,
+        state,
+      });
+    },
+    hasPeer(peerId: string): boolean {
+      return reliableChannels.has(peerId);
+    },
+    addPeer(peerId: string, dataChannel: RTCDataChannel) {
+      if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
+      else unreliableChannels.set(peerId, dataChannel);
+
+      const onOpen = () => {
+        const onClose = () => {
+          onPeerLeft(peerId);
+        };
+
+        dataChannel.addEventListener("message", onPeerMessage);
+        dataChannel.addEventListener("close", onClose);
+
+        gameWorker.postMessage({
+          type: WorkerMessageType.AddPeerId,
+          peerId,
+        });
+      };
+
+      dataChannel.addEventListener("open", onOpen);
+    },
+    removePeer(peerId: string) {
+      onPeerLeft(peerId);
+    },
+    disconnect() {
+      for (const [peerId] of reliableChannels) {
+        onPeerLeft(peerId);
+      }
+    },
+    setPeerId(peerId: string) {
+      gameWorker.postMessage({
+        type: WorkerMessageType.SetPeerId,
+        peerId,
+      });
+    },
     getStats() {
       return getStats(statsBuffer);
     },
@@ -207,17 +357,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       inputManager.dispose();
       gameWorker.terminate();
       disposeRenderWorker();
-    },
-    setNetworkInterface(networkInterface: NetworkInterface) {
-      if (disposeNetworkInterface) {
-        disposeNetworkInterface();
-      }
-
-      localPeerId = networkInterface.localPeerId;
-
-      disposeNetworkInterface = networkInterface.createHandler(onPeerJoined, onPeerAudioStreamChanged, onPeerLeft);
-
-      console.log(`network interface set with localPeerId: ${localPeerId}`);
     },
   };
 }
