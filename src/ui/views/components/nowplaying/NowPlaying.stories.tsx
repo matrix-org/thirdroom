@@ -8,7 +8,7 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import HeadphoneIC from "../../../../../res/ic/headphone.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
-import InfoIC from "../../../../../res/ic/Info.svg";
+import InfoIC from "../../../../../res/ic/info.svg";
 
 export const title = "NowPlaying";
 
