@@ -186,7 +186,7 @@ const { sin, cos } = Math;
 
 const EulerOrder = ["XYZ", "YZX", "ZXY", "XZY", "YXZ", "ZYX"];
 
-export const setQuaternionFromEuler = (quaternion: Float32Array, rotation: Float32Array) => {
+export const setQuaternionFromEuler = (quaternion: quat, rotation: vec3) => {
   const [x, y, z, o] = rotation;
   const order = EulerOrder[o] || "XYZ";
 
@@ -242,6 +242,139 @@ export const setQuaternionFromEuler = (quaternion: Float32Array, rotation: Float
       break;
   }
 };
+
+export function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function setEulerFromTransformMatrix(rotation: vec3, matrix: mat4) {
+  const order = EulerOrder[rotation[3]] || "XYZ";
+
+  // assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
+
+  const te = matrix;
+
+  const m11 = te[0];
+  const m12 = te[4];
+  const m13 = te[8];
+  const m21 = te[1];
+  const m22 = te[5];
+  const m23 = te[9];
+  const m31 = te[2];
+  const m32 = te[6];
+  const m33 = te[10];
+
+  switch (order) {
+    case "XYZ":
+      rotation[1] = Math.asin(clamp(m13, -1, 1));
+
+      if (Math.abs(m13) < 0.9999999) {
+        rotation[0] = Math.atan2(-m23, m33);
+        rotation[2] = Math.atan2(-m12, m11);
+      } else {
+        rotation[0] = Math.atan2(m32, m22);
+        rotation[2] = 0;
+      }
+
+      break;
+
+    case "YXZ":
+      rotation[0] = Math.asin(-clamp(m23, -1, 1));
+
+      if (Math.abs(m23) < 0.9999999) {
+        rotation[1] = Math.atan2(m13, m33);
+        rotation[2] = Math.atan2(m21, m22);
+      } else {
+        rotation[1] = Math.atan2(-m31, m11);
+        rotation[2] = 0;
+      }
+
+      break;
+
+    case "ZXY":
+      rotation[0] = Math.asin(clamp(m32, -1, 1));
+
+      if (Math.abs(m32) < 0.9999999) {
+        rotation[1] = Math.atan2(-m31, m33);
+        rotation[2] = Math.atan2(-m12, m22);
+      } else {
+        rotation[1] = 0;
+        rotation[2] = Math.atan2(m21, m11);
+      }
+
+      break;
+
+    case "ZYX":
+      rotation[1] = Math.asin(-clamp(m31, -1, 1));
+
+      if (Math.abs(m31) < 0.9999999) {
+        rotation[0] = Math.atan2(m32, m33);
+        rotation[2] = Math.atan2(m21, m11);
+      } else {
+        rotation[0] = 0;
+        rotation[2] = Math.atan2(-m12, m22);
+      }
+
+      break;
+
+    case "YZX":
+      rotation[2] = Math.asin(clamp(m21, -1, 1));
+
+      if (Math.abs(m21) < 0.9999999) {
+        rotation[0] = Math.atan2(-m23, m22);
+        rotation[1] = Math.atan2(-m31, m11);
+      } else {
+        rotation[0] = 0;
+        rotation[1] = Math.atan2(m13, m33);
+      }
+
+      break;
+
+    case "XZY":
+      rotation[2] = Math.asin(-clamp(m12, -1, 1));
+
+      if (Math.abs(m12) < 0.9999999) {
+        rotation[0] = Math.atan2(m32, m22);
+        rotation[1] = Math.atan2(m13, m11);
+      } else {
+        rotation[0] = Math.atan2(-m23, m33);
+        rotation[1] = 0;
+      }
+
+      break;
+  }
+}
+
+const tempMat4 = mat4.create();
+const tempVec3 = vec3.create();
+const tempQuat = quat.create();
+const defaultUp = vec3.set(vec3.create(), 0, 1, 0);
+
+export function setEulerFromQuaternion(rotation: Float32Array, quaternion: Float32Array) {
+  mat4.fromQuat(tempMat4, quaternion);
+  setEulerFromTransformMatrix(rotation, tempMat4);
+}
+
+export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
+  updateWorldMatrix(eid, true, false);
+
+  mat4.getTranslation(tempVec3, Transform.worldMatrix[eid]);
+
+  mat4.lookAt(tempMat4, tempVec3, targetVec, upVec);
+
+  const parent = Transform.parent[eid];
+
+  mat4.getRotation(Transform.quaternion[eid], tempMat4);
+
+  if (parent !== NOOP) {
+    mat4.getRotation(tempQuat, Transform.worldMatrix[parent]);
+    quat.invert(tempQuat, tempQuat);
+    quat.mul(Transform.quaternion[eid], tempQuat, Transform.quaternion[eid]);
+    setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
+  } else {
+    setEulerFromTransformMatrix(Transform.rotation[eid], tempMat4);
+  }
+}
 
 export function traverse(rootEid: number, callback: (eid: number) => void) {
   let eid = rootEid;

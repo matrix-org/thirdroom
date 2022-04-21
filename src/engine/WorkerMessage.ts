@@ -28,6 +28,15 @@ export enum WorkerMessageType {
   ExportScene = "export-scene",
   ExportGLTF = "export-gltf",
   SaveGLTF = "save-gltf",
+  ReliableNetworkMessage = "reliable-network-message",
+  ReliableNetworkBroadcast = "reliable-network-broadcast",
+  UnreliableNetworkMessage = "unreliable-network-message",
+  UnreliableNetworkBroadcast = "unreliable-network-broadcast",
+  SetPeerId = "set-peer-id",
+  AddPeerId = "add-peer-id",
+  RemovePeerId = "remove-peer-id",
+  StateChanged = "state-changed",
+  MakeHost = "make-host",
 }
 
 export interface WorkerMessage {
@@ -155,6 +164,52 @@ export interface SaveGLTFMessage extends WorkerMessage {
   buffer: ArrayBuffer;
 }
 
+export interface ReliableNetworkMessage extends WorkerMessage {
+  type: WorkerMessageType.ReliableNetworkMessage;
+  peerId: string;
+  packet: ArrayBuffer;
+}
+
+export interface UnreliableNetworkMessage extends WorkerMessage {
+  type: WorkerMessageType.UnreliableNetworkMessage;
+  peerId: string;
+  packet: ArrayBuffer;
+}
+
+export interface ReliableNetworkBroadcast extends WorkerMessage {
+  type: WorkerMessageType.ReliableNetworkBroadcast;
+  packet: ArrayBuffer;
+}
+
+export interface UnreliableNetworkBroadcast extends WorkerMessage {
+  type: WorkerMessageType.UnreliableNetworkBroadcast;
+  packet: ArrayBuffer;
+}
+
+export interface SetPeerIdMessage extends WorkerMessage {
+  type: WorkerMessageType.SetPeerId;
+  peerId: string;
+}
+
+export interface AddPeerIdMessage extends WorkerMessage {
+  type: WorkerMessageType.AddPeerId;
+  peerId: string;
+}
+
+export interface RemovePeerIdMessage extends WorkerMessage {
+  type: WorkerMessageType.RemovePeerId;
+  peerId: string;
+}
+
+export interface StateChangedMessage extends WorkerMessage {
+  type: WorkerMessageType.StateChanged;
+  state: any;
+}
+
+export interface MakeHostMessage extends WorkerMessage {
+  type: WorkerMessageType.MakeHost;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -177,7 +232,16 @@ export type WorkerMessages =
   | SetActiveSceneMessage
   | ExportSceneMessage
   | ExportGLTFMessage
-  | SaveGLTFMessage;
+  | SaveGLTFMessage
+  | ReliableNetworkMessage
+  | UnreliableNetworkMessage
+  | ReliableNetworkBroadcast
+  | UnreliableNetworkBroadcast
+  | SetPeerIdMessage
+  | AddPeerIdMessage
+  | RemovePeerIdMessage
+  | StateChangedMessage
+  | MakeHostMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

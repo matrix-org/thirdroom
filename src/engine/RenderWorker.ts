@@ -203,7 +203,6 @@ async function onInit({
   // TODO: initialize playerRig from GameWorker
   const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
   camera.position.y = 1.6;
-  camera.position.z = 50;
 
   const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
   registerResourceLoader(resourceManager, SceneResourceLoader);

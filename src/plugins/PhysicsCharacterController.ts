@@ -2,11 +2,16 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
+import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
+import { Networked, Owned } from "../engine/network";
 import { addRigidBody, RigidBody } from "../engine/physics";
 import { createCamera } from "../engine/prefab";
+import { GeometryType } from "../engine/resources/GeometryResourceLoader";
+import { MaterialType } from "../engine/resources/MaterialResourceLoader";
+import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 export enum PhysicsGroups {
@@ -73,11 +78,50 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
+export const createRawCube = (
+  state: GameState,
+  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
+    type: "geometry",
+    geometryType: GeometryType.Box,
+  })
+) => {
+  const { world, resourceManager } = state;
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+
+  const materialResourceId = loadRemoteResource(resourceManager, {
+    type: "material",
+    materialType: MaterialType.Physical,
+    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+    roughnessFactor: 0.8,
+    metallicFactor: 0.8,
+  });
+
+  const resourceId = loadRemoteResource(resourceManager, {
+    type: "mesh",
+    geometryResourceId,
+    materialResourceId,
+  });
+
+  addRenderableComponent(state, eid, resourceId);
+
+  return eid;
+};
+
 export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const { world, physicsWorld } = state;
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
+
+  const lowerCube = createRawCube(state);
+  const upperCube = createRawCube(state);
+
+  Transform.position[upperCube].set([0, 1.5, 0]);
+
+  addChild(playerRig, lowerCube);
+  addChild(playerRig, upperCube);
+
   addComponent(world, PlayerRig, playerRig);
   Transform.position[playerRig][2] = 50;
 
@@ -99,6 +143,9 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addChild(playerRig, camera);
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.6;
+
+  addComponent(world, Networked, playerRig);
+  addComponent(world, Owned, playerRig);
 
   return playerRig;
 };
