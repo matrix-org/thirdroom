@@ -3,10 +3,8 @@ import { Room, RoomBeingCreated, RoomStatus, Session } from "@thirdroom/hydrogen
 import { useNavigate } from "react-router-dom";
 
 import "./WorldPreview.css";
-import { Text } from "../../../atoms/text/Text";
-import { Icon } from "../../../atoms/icon/Icon";
 import { Button } from "../../../atoms/button/Button";
-import PeoplesIC from "../../../../../res/ic/peoples.svg";
+import { WorldPreviewCard, IWorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 
@@ -102,131 +100,65 @@ export function WorldPreview({ session, room, roomId, onLoadWorld, onEnterWorld 
     return null;
   }
 
+  const renderCard = (props: IWorldPreviewCard) => (
+    <div className="WorldPreview grow flex flex-column justify-end items-center">
+      <WorldPreviewCard {...props} />
+    </div>
+  );
+
   if (roomStatus === undefined) {
-    return (
-      <div className="RoomPreview grow flex flex-column justify-end items-center">
-        <div className="RoomPreview__card flex items-center">
-          {roomStatusLoading && (
-            <div className="grow">
-              <Text className="truncate" variant="s1" weight="semi-bold">
-                Loading Room...
-              </Text>
-            </div>
-          )}
-          {roomStatusError && (
-            <div className="grow">
-              <Text className="truncate" variant="s1" weight="semi-bold">
-                {`Error loading world: ${roomStatusError}`}
-              </Text>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    if (roomStatusLoading) return renderCard({ title: "Loading Room..." });
+    if (roomStatusError)
+      return renderCard({ title: "Loading Failed", desc: `Error loading world: ${roomStatusError}` });
+    return renderCard({ title: "Loading Failed", desc: "Unknown error occurs" });
   }
 
   if (joiningRoom) {
-    return (
-      <div className="RoomPreview grow flex flex-column justify-end items-center">
-        <div className="RoomPreview__card flex items-center">
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              {room?.name || "Unnamed Room"}
-            </Text>
-          </div>
-          <div className="shrink-0">
-            <Button variant="primary" disabled onClick={() => {}}>
-              Joining World...
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return renderCard({
+      title: room?.name || "Unnamed Room",
+      options: (
+        <Button variant="primary" disabled onClick={() => {}}>
+          Joining World...
+        </Button>
+      ),
+    });
   }
 
   if (joinRoomError) {
-    return (
-      <div className="RoomPreview grow flex flex-column justify-end items-center">
-        <div className="RoomPreview__card flex items-center">
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              {room?.name || "Unnamed Room"}
-            </Text>
-          </div>
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              {`Error joining world: ${joinRoomError.message}`}
-            </Text>
-          </div>
-        </div>
-      </div>
-    );
+    return renderCard({
+      title: room?.name || "Unnamed Room",
+      desc: `Error joining world: ${joinRoomError.message}`,
+    });
   }
 
   if (roomStatus & RoomStatus.Replaced) {
     return null;
   }
 
-  return (
-    <div className="RoomPreview grow flex flex-column justify-end items-center">
-      <div className="RoomPreview__card flex items-center">
-        {(roomStatus & RoomStatus.BeingCreated) !== 0 && (
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              Creating Room...
-            </Text>
-          </div>
-        )}
-        {(roomStatus & RoomStatus.Invited) !== 0 && (
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              Invited To Room
-            </Text>
-          </div>
-        )}
-        {(roomStatus & RoomStatus.Archived) !== 0 && (
-          <div className="grow">
-            <Text className="truncate" variant="s1" weight="semi-bold">
-              Room Archived
-            </Text>
-          </div>
-        )}
-        {(roomStatus & RoomStatus.Joined) !== 0 && (
-          <>
-            <div className="grow">
-              <Text className="truncate" variant="s1" weight="semi-bold">
-                {room?.name || "Unnamed Room"}
-              </Text>
-            </div>
-            <div className="RoomPreview__card-memberCount flex items-center">
-              <Icon src={PeoplesIC} />
-              {room?.joinedMemberCount || 0}
-            </div>
-            <div className="shrink-0">
-              <Button
-                variant={worldLoadState === WorldLoadState.Loaded ? "primary" : "secondary"}
-                onClick={onClickRoomLoadButton}
-              >
-                {WorldLoadButtonText[worldLoadState]}
-              </Button>
-            </div>
-          </>
-        )}
-        {roomStatus === RoomStatus.None && (
-          <>
-            <div className="grow">
-              <Text className="truncate" variant="s1" weight="semi-bold">
-                {room?.name || "Unnamed Room"}
-              </Text>
-            </div>
-            <div className="shrink-0">
-              <Button variant="primary" onClick={() => onJoinWorld(roomId)}>
-                Join World
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  let title;
+  let memberCount;
+  let options;
+  if (roomStatus & RoomStatus.BeingCreated) title = "Creating Room...";
+  else if (roomStatus & RoomStatus.Invited) title = "Invited To Room";
+  else if (roomStatus & RoomStatus.Archived) title = "Room Archived";
+  else if (roomStatus & RoomStatus.Joined) {
+    title = room?.name || "Unnamed Room";
+    memberCount == room?.joinedMemberCount || 0;
+    options = (
+      <Button
+        variant={worldLoadState === WorldLoadState.Loaded ? "primary" : "secondary"}
+        onClick={onClickRoomLoadButton}
+      >
+        {WorldLoadButtonText[worldLoadState]}
+      </Button>
+    );
+  } else if (roomStatus === RoomStatus.None) {
+    title = room?.name || "Unnamed Room";
+    options = (
+      <Button variant="primary" onClick={() => onJoinWorld(roomId)}>
+        Join World
+      </Button>
+    );
+  } else title = "Unknown error occurs";
+  return renderCard({ title, memberCount, options });
 }
