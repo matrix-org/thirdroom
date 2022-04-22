@@ -1,14 +1,14 @@
 import { ComposerViewModel } from "@thirdroom/hydrogen-view-sdk";
 
-import "./ComposerView.css";
+import "./WorldChatComposer.css";
 import { Icon } from "../../../atoms/icon/Icon";
 import MessageIC from "../../../../../res/ic/message.svg";
 
-interface IComposerView {
+interface IWorldChatComposer {
   composerViewModel: ComposerViewModel;
 }
 
-export function ComposerView({ composerViewModel }: IComposerView) {
+export function WorldChatComposer({ composerViewModel }: IWorldChatComposer) {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     const target = ev.target as typeof ev.target & {
@@ -21,7 +21,7 @@ export function ComposerView({ composerViewModel }: IComposerView) {
   };
 
   return (
-    <div className="ComposerView flex items-center">
+    <div className="WorldChatComposer flex items-center">
       <Icon color="world" src={MessageIC} size="sm" />
       <form className="grow" onSubmit={handleSubmit}>
         <input

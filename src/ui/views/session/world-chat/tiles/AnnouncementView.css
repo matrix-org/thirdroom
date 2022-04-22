@@ -1,14 +1,11 @@
-.TextMessageView {
+.WorldChat__AnnouncementView {
   padding: var(--sp-xxs) var(--sp-xs);
   background-color: #00000040;
   border-radius: 8px;
   display: inline-block;
 
   & > .Text {
-    white-space: pre-wrap;
     word-break: break-word;
+    font-style: italic;
   }
-}
-.TextMessageView__sender {
-  margin-right: var(--sp-xs);
 }
