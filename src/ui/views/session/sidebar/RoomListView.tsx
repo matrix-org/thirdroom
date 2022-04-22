@@ -33,8 +33,8 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
       {/* TODO: create RoomListHeaderView */}
       <header className="flex items-center justify-around">
         <RoomListTab name="Home" iconSrc={HomeIC} isActive={true} onClick={() => console.log("clicked")} />
-        <RoomListTab name="Public" iconSrc={LanguageIC} onClick={() => console.log("clicked")} />
-        <RoomListTab name="Direct Messages" iconSrc={ChatIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Worlds" iconSrc={LanguageIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Chats" iconSrc={ChatIC} onClick={() => console.log("clicked")} />
         <RoomListTab name="Friends" iconSrc={PeoplesIC} onClick={() => console.log("clicked")} />
         <RoomListTab name="Settings" iconSrc={SettingIC} onClick={() => console.log("clicked")} />
       </header>

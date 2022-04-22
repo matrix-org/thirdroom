@@ -1,12 +1,6 @@
 .RoomPreview {
   pointer-events: all;
-  padding: var(--sp-md);
   height: 100%;
-  position: absolute;
-  left: 480px;
-  top: 0;
-  bottom: 0;
-  right: 0;
 }
 
 .RoomPreview__card {
