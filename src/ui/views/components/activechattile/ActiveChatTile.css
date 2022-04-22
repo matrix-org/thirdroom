@@ -1,0 +1,41 @@
+.ActiveChatTile {
+  background-color: var(--bg-surface);
+  line-height: 0;
+
+  position: relative;
+}
+
+.ActiveChatTile__title {
+  padding: 0 var(--sp-xs);
+}
+
+.ActiveChatTile__options {
+  position: absolute;
+  right: var(--sp-sm);
+}
+
+.ActiveChatTile > button {
+  padding: var(--sp-xs) var(--sp-sm);
+  padding-right: calc(var(--ic-sm) + var(--sp-sm));
+  cursor: pointer;
+  border-radius: inherit;
+
+  &:hover,
+  &:focus-within {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+.ActiveChatTile--active > button {
+  background-color: var(--bg-primary);
+
+  &:hover,
+  &:focus-within {
+    background-color: var(--bg-primary-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-active);
+  }
+}
