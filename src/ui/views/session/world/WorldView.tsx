@@ -12,7 +12,7 @@ export function WorldView() {
 
   useKeyDown(
     (e) => {
-      if (e.key === "Enter" && !chatOpen /*&& e.target === canvasRef.current*/) {
+      if (e.key === "Enter" && !chatOpen && e.target === canvasRef.current) {
         onOpenChat();
       } else if (e.key === "Escape" && chatOpen) {
         onCloseChat();
