@@ -32,10 +32,13 @@ import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./netw
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const addPeerId = (state: GameState, peerId: string) => {
+  if (state.network.peers.includes(peerId) || state.network.peerId === peerId) return;
+
+  console.log("game worker - addPeerId", peerId);
   state.network.peers.push(peerId);
+  state.network.newPeers.push(peerId);
   if (state.network.hosting) {
     state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
-    state.network.newPeers.push(peerId);
   }
   // if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
 };
@@ -86,10 +89,9 @@ const onMessage =
       case WorkerMessageType.AddPeerId:
         addPeerId(state, message.peerId);
         break;
-      case WorkerMessageType.RemovePeerId: {
+      case WorkerMessageType.RemovePeerId:
         removePeerId(state, message.peerId);
         break;
-      }
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
         state.network.messages.push(message.packet);

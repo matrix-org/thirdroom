@@ -299,7 +299,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
       const setHostFn = (data: { data: any }) => {
         if (data.data === "setHost") {
-          console.log("ws - made host");
+          console.log("ws - setHost");
           gameWorker.postMessage({
             type: WorkerMessageType.SetHost,
             value: true,
@@ -312,7 +312,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       const setPeerIdFn = (data: { data: any }) => {
         const d: any = JSON.parse(data.data);
         if (d.setPeerId) {
-          console.log("ws - peerId", d.setPeerId);
+          console.log("ws - setPeerId", d.setPeerId);
           gameWorker.postMessage({
             type: WorkerMessageType.SetPeerId,
             peerId: d.setPeerId,
@@ -330,15 +330,17 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       ws.addEventListener("message", setPeerIdFn);
 
       const addPeerId = (data: { data: any }) => {
-        const d: any = JSON.parse(data.data);
-        if (d.addPeerId) {
-          console.log("ws - peerId", d.addPeerId);
-          gameWorker.postMessage({
-            type: WorkerMessageType.AddPeerId,
-            peerId: d.addPeerId,
-          });
-          ws?.removeEventListener("message", addPeerId);
-        }
+        try {
+          const d: any = JSON.parse(data.data);
+          if (d.addPeerId) {
+            console.log("ws - addPeerId", d.addPeerId);
+            gameWorker.postMessage({
+              type: WorkerMessageType.AddPeerId,
+              peerId: d.addPeerId,
+            });
+            // ws?.removeEventListener("message", addPeerId);
+          }
+        } catch {}
       };
       ws.addEventListener("message", addPeerId);
     },

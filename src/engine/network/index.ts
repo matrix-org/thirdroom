@@ -28,7 +28,6 @@ import {
   writeArrayBuffer,
   writeFloat32,
   writePropIfChanged,
-  writeUint16,
   writeUint32,
   writeUint8,
 } from "./CursorView";
@@ -40,6 +39,7 @@ import { RigidBody } from "../physics";
 import { NOOP } from "../config";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
+import { playerQuery } from "../component/Player";
 
 /* Types */
 
@@ -237,6 +237,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 export function serializeCreatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const entities = ownedNetworkedQuery(state.world);
+  // console.log("serializeCreatesSnapshot ownedNetworkedQuery", entities);
   // todo: optimize length written with maxEntities config
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
@@ -297,6 +298,8 @@ export function deserializeCreates(input: NetPipeData) {
     const nid = readUint32(v);
     // const rid = readUint32(v);
     const rid = undefined;
+    const existingEntity = state.network.entityIdMap.get(nid);
+    if (existingEntity) continue;
     const eid = createRemoteNetworkedEntity(state, nid, rid);
     console.log("deserializing creation - nid", nid, "eid", eid, "rid", rid);
   }
@@ -608,29 +611,37 @@ export function createOutgoingNetworkSystem(state: GameState) {
     // only send updates after our peerIdIndex has been assigned and we have connected peers
     const haveConnectedPeers = state.network.peers.length > 0;
     const receivedPeerIdIndex = state.network.peerIdMap.has(state.network.peerId);
-    if (haveConnectedPeers && receivedPeerIdIndex) {
-      // send snapshot update if we are hosting and have new peers
-      const { hosting } = state.network;
+    const spawnedPlayerRig = playerQuery(state.world)[0];
+    // const spawnedPlayerRig = true;
+
+    if (haveConnectedPeers && receivedPeerIdIndex && spawnedPlayerRig) {
+      // const entities = ownedNetworkedQuery(state.world);
+      // console.log("ownedNetworkedQuery", entities);
+
+      // send snapshot update if we have new peers
       const haveNewPeers = state.network.newPeers.length > 0;
-      if (hosting && haveNewPeers) {
+      if (haveNewPeers) {
+        console.log("haveNewPeers");
         const snapshotMsg = createFullSnapshotMessage(input);
         while (state.network.newPeers.length) {
           const peerId = state.network.newPeers.shift();
           if (peerId) {
             // sendReliable(peerId, createPeerIdIndexMessage(state, peerId));
-            broadcastReliable(createPeerIdIndexMessage(state, peerId));
+            if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
             // sendReliable(peerId, snapshotMsg);
+            console.log("snapshotMsg", snapshotMsg);
             if (snapshotMsg.byteLength) {
-              // console.log("sending snapshot update");
-              // broadcastReliable(snapshotMsg);
+              console.log("sending snapshot update");
+              broadcastReliable(snapshotMsg);
             }
           }
         }
-      } else {
-        // reliably send full messages for now
-        const msg = createFullChangedMessage(input);
-        if (msg.byteLength) broadcastReliable(msg);
       }
+      // else {
+      // }
+      // reliably send full messages for now
+      const msg = createFullChangedMessage(input);
+      if (msg.byteLength) broadcastReliable(msg);
     }
 
     // todo: reliably send creates

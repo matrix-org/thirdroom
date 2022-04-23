@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
+import { Player } from "../engine/component/Player";
 
 import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
@@ -113,6 +114,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
+  addComponent(world, Player, playerRig);
 
   const lowerCube = createRawCube(state);
   const upperCube = createRawCube(state);

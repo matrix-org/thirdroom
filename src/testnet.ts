@@ -49,24 +49,35 @@ wss.on("connection", (ws) => {
   if (connections > 1) {
     // inform host of new peerId
     peerHost?.send(JSON.stringify({ addPeerId: peerId }));
-    // inform existing peers of new peerId
-    for (const peerIdA in peers) {
-      const peer = peers[peerIdA];
-      // no need to send peerId to itself
-      if (peer === ws) continue;
-      ws.send(JSON.stringify({ addPeerId: peerIdA }));
+    console.log("informed host of ", peerId);
 
-      const informed = informedPeerIds.get(peerId);
+    // inform existing peers of new peerId
+    const informed = informedPeerIds.get(peerId);
+    for (const peerIdA in peers) {
+      const alreadyInformed = informedPeerIds.get(peerId)?.has(peerIdA);
+      if (alreadyInformed) continue;
+
+      // no need to send peerId to itself
+      if (peerId === peerIdA) continue;
+
+      ws.send(JSON.stringify({ addPeerId: peerIdA }));
+      peers[peerIdA].send(JSON.stringify({ addPeerId: peerId }));
       informed.add(peerIdA);
+
+      console.log("informed", peerId, "and", peerIdA, "of one another");
     }
   }
 
-  ws.on("close", (ws) => {
+  ws.on("close", () => {
     console.log("closed connection", peerId);
     connections--;
     if (connections === 0) peerHost = undefined;
     delete peers[peerId];
     informedPeerIds.delete(peerId);
+    if (ws === peerHost) {
+      console.log("host changed to", peerId);
+      peerHost = peers[Object.keys(peers)[0]];
+    }
   });
 
   ws.on("message", (data, isBinary) => {
