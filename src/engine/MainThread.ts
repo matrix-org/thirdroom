@@ -62,7 +62,8 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 }
 
 export interface Engine {
-  makeHost(): void;
+  startTestNet(): void;
+  setHost(value: boolean): void;
   setState(state: any): void;
   setPeerId(peerId: string): void;
   hasPeer(peerId: string): boolean;
@@ -186,28 +187,14 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
   };
 
-  let useTestNet = false;
   let ws: WebSocket | undefined;
-
-  if (import.meta.env.VITE_USE_TESTNET) {
-    useTestNet = true;
-
-    ws = new WebSocket("ws://localhost:8080");
-    ws.binaryType = "arraybuffer";
-
-    ws.addEventListener("open", (data) => {
-      console.log("connected to websocket server");
-    });
-    ws.addEventListener("close", (data) => {});
-    ws.addEventListener("message", onPeerMessage);
-  }
 
   const reliableChannels: Map<string, RTCDataChannel> = new Map();
   const unreliableChannels: Map<string, RTCDataChannel> = new Map();
 
   const sendReliable = (peerId: string, packet: ArrayBuffer) => {
-    if (useTestNet) {
-      ws?.send(packet);
+    if (ws) {
+      ws.send(packet);
     } else {
       const peer = reliableChannels.get(peerId);
       if (peer) peer.send(packet);
@@ -215,8 +202,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   };
 
   const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
-    if (useTestNet) {
-      ws?.send(packet);
+    if (ws) {
+      ws.send(packet);
     } else {
       const peer = unreliableChannels.get(peerId);
       if (peer) peer.send(packet);
@@ -224,8 +211,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   };
 
   const broadcastReliable = (packet: ArrayBuffer) => {
-    if (useTestNet) {
-      ws?.send(packet);
+    if (ws) {
+      ws.send(packet);
     } else {
       reliableChannels.forEach((peer) => {
         if (peer.readyState === "open") {
@@ -300,9 +287,65 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   }
 
   return {
-    makeHost() {
+    startTestNet() {
+      ws = new WebSocket("ws://localhost:8080");
+      ws.binaryType = "arraybuffer";
+
+      ws.addEventListener("open", (data) => {
+        console.log("connected to websocket server");
+      });
+
+      ws.addEventListener("close", (data) => {});
+
+      const setHostFn = (data: { data: any }) => {
+        if (data.data === "setHost") {
+          console.log("ws - made host");
+          gameWorker.postMessage({
+            type: WorkerMessageType.SetHost,
+            value: true,
+          });
+          ws?.removeEventListener("message", setHostFn);
+        }
+      };
+      ws.addEventListener("message", setHostFn);
+
+      const setPeerIdFn = (data: { data: any }) => {
+        const d: any = JSON.parse(data.data);
+        if (d.setPeerId) {
+          console.log("ws - peerId", d.setPeerId);
+          gameWorker.postMessage({
+            type: WorkerMessageType.SetPeerId,
+            peerId: d.setPeerId,
+          });
+          gameWorker.postMessage({
+            type: WorkerMessageType.StateChanged,
+            state: { joined: true },
+          });
+
+          ws?.addEventListener("message", onPeerMessage);
+
+          ws?.removeEventListener("message", setPeerIdFn);
+        }
+      };
+      ws.addEventListener("message", setPeerIdFn);
+
+      const addPeerId = (data: { data: any }) => {
+        const d: any = JSON.parse(data.data);
+        if (d.addPeerId) {
+          console.log("ws - peerId", d.addPeerId);
+          gameWorker.postMessage({
+            type: WorkerMessageType.AddPeerId,
+            peerId: d.addPeerId,
+          });
+          ws?.removeEventListener("message", addPeerId);
+        }
+      };
+      ws.addEventListener("message", addPeerId);
+    },
+    setHost(value: boolean) {
       gameWorker.postMessage({
-        type: WorkerMessageType.MakeHost,
+        type: WorkerMessageType.SetHost,
+        value,
       });
     },
     setState(state: any) {

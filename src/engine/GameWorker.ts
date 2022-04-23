@@ -27,20 +27,17 @@ import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
-import {
-  broadcastReliable,
-  createIncomingNetworkSystem,
-  createOutgoingNetworkSystem,
-  createPeerIdIndexMessage,
-} from "./network";
+import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const addPeerId = (state: GameState, peerId: string) => {
-  state.network.newPeers.push(peerId);
   state.network.peers.push(peerId);
-  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
-  if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+  if (state.network.hosting) {
+    state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+    state.network.newPeers.push(peerId);
+  }
+  // if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
@@ -55,7 +52,7 @@ const removePeerId = (state: GameState, peerId: string) => {
 
 const setPeerId = (state: GameState, peerId: string) => {
   state.network.peerId = peerId;
-  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
 };
 
 const onMessage =
@@ -100,8 +97,8 @@ const onMessage =
       case WorkerMessageType.StateChanged:
         onStateChange(state, message.state);
         break;
-      case WorkerMessageType.MakeHost:
-        state.network.hosting = true;
+      case WorkerMessageType.SetHost:
+        state.network.hosting = message.value;
         break;
     }
   };

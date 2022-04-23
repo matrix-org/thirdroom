@@ -30,14 +30,14 @@ export function createMatrixNetworkInterface(
 
   // TODO: should peer ids be keyed like the call ids? (userId, deviceId, sessionId)?
   // Or maybe just (userId, deviceId)?
-  engine.setPeerId(client.session.userId);
+  // engine.setPeerId(client.session.userId);
 
   let unsubscibeMembersObservable: SubscriptionHandle | undefined;
 
   const userId = client.session.userId;
 
   getInitialHost(userId)
-    .then((initialHostId) => joinWorld(initialHostId === userId))
+    .then((initialHostId) => joinWorld(userId, initialHostId === userId))
     .catch(console.error);
 
   function getInitialHost(userId: string): Promise<string> {
@@ -134,22 +134,20 @@ export function createMatrixNetworkInterface(
     });
   }
 
-  function joinWorld(isHost: boolean) {
-    if (isHost) {
-      engine.makeHost();
-    }
-
+  function joinWorld(userId: string, isHost: boolean) {
+    engine.setHost(isHost);
+    engine.setPeerId(userId);
     engine.setState({ joined: true });
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
-      onAdd(_key, member) {
+      async onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
-          updateHost();
+          updateHost(userId);
           engine.addPeer(member.userId, member.dataChannel);
         }
       },
       onRemove(_key, member) {
-        updateHost();
+        updateHost(userId);
         engine.removePeer(member.userId);
       },
       onReset() {
@@ -157,7 +155,7 @@ export function createMatrixNetworkInterface(
       },
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !engine.hasPeer(member.userId)) {
-          updateHost();
+          updateHost(userId);
           engine.addPeer(member.userId, member.dataChannel);
         } else if (engine.hasPeer(member.userId)) {
           engine.removePeer(member.userId);
@@ -172,7 +170,7 @@ export function createMatrixNetworkInterface(
     }
   }
 
-  function updateHost() {
+  function updateHost(userId: string) {
     // Of the connected members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
 
@@ -181,8 +179,12 @@ export function createMatrixNetworkInterface(
       .filter((member) => member.isConnected && member.dataChannel);
 
     if (sortedConnectedMembers.length === 0 || !isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-      engine.makeHost();
+      engine.setHost(true);
+    } else {
+      engine.setHost(false);
     }
+
+    engine.setPeerId(userId);
   }
 
   return () => {
