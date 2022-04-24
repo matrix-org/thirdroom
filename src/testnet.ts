@@ -47,10 +47,6 @@ wss.on("connection", (ws) => {
   ws.send(JSON.stringify({ setPeerId: peerId }));
 
   if (connections > 1) {
-    // inform host of new peerId
-    peerHost?.send(JSON.stringify({ addPeerId: peerId }));
-    console.log("informed host of ", peerId);
-
     // inform existing peers of new peerId
     const informed = informedPeerIds.get(peerId);
     for (const peerIdA in peers) {
