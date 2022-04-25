@@ -223,7 +223,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   };
 
   const broadcastUnreliable = (packet: ArrayBuffer) => {
-    if (useTestNet) {
+    if (ws) {
       ws?.send(packet);
     } else {
       unreliableChannels.forEach((peer) => {
