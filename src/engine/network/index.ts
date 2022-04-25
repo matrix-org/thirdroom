@@ -35,10 +35,7 @@ import { addChild, Transform } from "../component/transform";
 import { GameState } from "../GameWorker";
 import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
-import { RigidBody } from "../physics";
 import { NOOP } from "../config";
-import { GeometryType } from "../resources/GeometryResourceLoader";
-import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { Player } from "../component/Player";
 
 /* Types */
@@ -266,23 +263,25 @@ export function serializeCreates(input: NetPipeData) {
   return input;
 }
 
-export function createRemoteNetworkedEntity(
-  state: GameState,
-  nid: number,
-  rid: number = loadRemoteResource(state.resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  })
-) {
-  // const prefab = getPrefab(rid) || createCube(state, rid);
-  const eid = createCube(state, rid);
+// const createPrefabEntity = (state: GameState, prefab: string) => {
+//   const create = state.prefabMap.get(prefab)?.create;
+//   if (create) {
+//     return create(state);
+//   } else {
+//     console.error("could not create prefab", prefab, ", template not found");
+//   }
+// };
+
+export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab?: string) {
+  // const eid = createPrefabEntity(state, prefab) || createLoadingEntity(state, rid);
+  const eid = createCube(state);
 
   // remote entity not owned by default so lock the rigidbody
-  const body = RigidBody.store.get(eid);
-  if (body) {
-    body.lockTranslations(true, true);
-    body.lockRotations(true, true);
-  }
+  // const body = RigidBody.store.get(eid);
+  // if (body) {
+  //   body.lockTranslations(true, true);
+  //   body.lockRotations(true, true);
+  // }
 
   addComponent(state.world, Networked, eid);
   Networked.networkId[eid] = nid;
@@ -302,7 +301,7 @@ export function deserializeCreates(input: NetPipeData) {
     const rid = undefined;
     const existingEntity = state.network.entityIdMap.get(nid);
     if (existingEntity) continue;
-    const eid = createRemoteNetworkedEntity(state, nid, rid);
+    const eid = createRemoteNetworkedEntity(state, nid);
     console.log("deserializing creation - nid", nid, "eid", eid, "rid", rid);
   }
   return input;

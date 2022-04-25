@@ -12,9 +12,7 @@ import {
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, setEulerFromQuaternion, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
-import { GeometryType } from "./engine/resources/GeometryResourceLoader";
 import { createCube, createScene } from "./engine/prefab";
-import { loadRemoteResource } from "./engine/resources/RemoteResourceManager";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
@@ -24,8 +22,6 @@ import { SpawnPoint } from "./engine/component/SpawnPoint";
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export async function init(state: GameState): Promise<void> {
-  const { resourceManager } = state;
-
   state.input.actionMaps = [
     {
       id: "movement",
@@ -108,16 +104,8 @@ export async function init(state: GameState): Promise<void> {
     environmentMapUrl: "/cubemap/venice_sunset_1k.hdr",
   });
 
-  // const groundColliderDesc = RAPIER.ColliderDesc.cuboid(1000.0, 1, 1000.0);
-  // physicsWorld.createCollider(groundColliderDesc);
-
-  const geometryResourceId = loadRemoteResource(resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  });
-
   for (let i = 0; i < 0; i++) {
-    const cube = createCube(state, geometryResourceId);
+    const cube = createCube(state);
 
     const position = Transform.position[cube];
     const rotation = Transform.rotation[cube];
@@ -143,7 +131,7 @@ export async function init(state: GameState): Promise<void> {
   const cubeSpawnSystem = (state: GameState) => {
     const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
     if (spawnCube.pressed) {
-      const cube = createCube(state, geometryResourceId);
+      const cube = createCube(state);
 
       addComponent(state.world, Networked, cube);
       addComponent(state.world, Owned, cube);

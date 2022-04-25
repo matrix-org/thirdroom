@@ -142,12 +142,12 @@ export function createMatrixNetworkInterface(
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
-          updateHost(userId);
+          updateHost();
           engine.addPeer(member.userId, member.dataChannel);
         }
       },
       onRemove(_key, member) {
-        updateHost(userId);
+        updateHost();
         engine.removePeer(member.userId);
       },
       onReset() {
@@ -155,7 +155,7 @@ export function createMatrixNetworkInterface(
       },
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !engine.hasPeer(member.userId)) {
-          updateHost(userId);
+          updateHost();
           engine.addPeer(member.userId, member.dataChannel);
         } else if (engine.hasPeer(member.userId)) {
           engine.removePeer(member.userId);
@@ -170,7 +170,7 @@ export function createMatrixNetworkInterface(
     }
   }
 
-  function updateHost(userId: string) {
+  function updateHost() {
     // Of the connected members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
 

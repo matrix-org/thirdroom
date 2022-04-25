@@ -11,6 +11,7 @@ import { CameraType } from "../resources/CameraResourceLoader";
 import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
+import { GeometryType } from "../resources/GeometryResourceLoader";
 
 interface SceneProps {
   setActive?: boolean;
@@ -44,18 +45,23 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
   return eid;
 }
 
-export const createCube = (state: GameState, geometryResourceId: number) => {
-  const { world, resourceManager, physicsWorld } = state;
-  const eid = addEntity(world);
-  addTransformComponent(world, eid);
-
-  const materialResourceId = loadRemoteResource(resourceManager, {
+export const createCube = (
+  state: GameState,
+  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
+    type: "geometry",
+    geometryType: GeometryType.Box,
+  }),
+  materialResourceId = loadRemoteResource(state.resourceManager, {
     type: "material",
     materialType: MaterialType.Physical,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
     roughnessFactor: 0.8,
     metallicFactor: 0.8,
-  });
+  })
+) => {
+  const { world, resourceManager, physicsWorld } = state;
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
 
   const resourceId = loadRemoteResource(resourceManager, {
     type: "mesh",
