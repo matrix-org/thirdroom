@@ -203,8 +203,7 @@ export function Overlay({
   };
 
   const renderWorldPreview = () => {
-    if (!selectedRoomId) return null;
-    if (selectedRoomId === activeWorldId) return null;
+    if (!((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld))) return null;
 
     return (
       <WorldPreview
