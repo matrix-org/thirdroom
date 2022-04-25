@@ -143,23 +143,21 @@ export async function init(state: GameState): Promise<void> {
   const cubeSpawnSystem = (state: GameState) => {
     const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
     if (spawnCube.pressed) {
-      for (let i = 0; i < 100; i++) {
-        const cube = createCube(state, geometryResourceId);
+      const cube = createCube(state, geometryResourceId);
 
-        addComponent(state.world, Networked, cube);
-        addComponent(state.world, Owned, cube);
+      addComponent(state.world, Networked, cube);
+      addComponent(state.world, Owned, cube);
 
-        mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[state.camera]);
+      mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[state.camera]);
 
-        const worldQuat = quat.create();
-        mat4.getRotation(worldQuat, Transform.worldMatrix[state.camera]);
-        const direction = vec3.set(vec3.create(), 0, 0, -1);
-        vec3.transformQuat(direction, direction, worldQuat);
-        vec3.scale(direction, direction, 10);
-        RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
+      const worldQuat = quat.create();
+      mat4.getRotation(worldQuat, Transform.worldMatrix[state.camera]);
+      const direction = vec3.set(vec3.create(), 0, 0, -1);
+      vec3.transformQuat(direction, direction, worldQuat);
+      vec3.scale(direction, direction, 10);
+      RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
-        addChild(scene, cube);
-      }
+      addChild(scene, cube);
     }
   };
 
