@@ -27,8 +27,8 @@
 
   max-width: var(--chat-width);
   width: 100%;
-  height: calc(100% - var(--sp-md));
   bottom: var(--sp-md);
+  top: 50px;
   left: var(--sp-md);
 }
 .WorldView__chat--invisible {

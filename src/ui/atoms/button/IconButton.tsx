@@ -6,7 +6,18 @@ import { Icon } from "../icon/Icon";
 import "./IconButton.css";
 interface IIconButton {
   className?: string;
-  variant?: "surface" | "surface-low" | "world" | "primary" | "secondary" | "danger";
+  variant?:
+    | "surface"
+    | "surface-low"
+    | "world"
+    | "primary"
+    | "secondary"
+    | "danger"
+    | "on-primary"
+    | "on-secondary"
+    | "on-danger"
+    | "tooltip"
+    | "link";
   size?: "md" | "sm";
   iconSrc: string;
   label: string;

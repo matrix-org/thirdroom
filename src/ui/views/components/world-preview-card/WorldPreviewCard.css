@@ -1,0 +1,21 @@
+.WorldPreviewCard {
+  max-width: 515px;
+  width: 100%;
+  padding: var(--sp-md);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-xs);
+
+  gap: var(--sp-md);
+}
+
+.WorldPreviewCard__content {
+  & > *:not(:last-child) {
+    margin-bottom: var(--sp-xs);
+  }
+}
+
+.WorldPreviewCard__memberCount {
+  & .Icon {
+    margin-right: var(--sp-xxs);
+  }
+}

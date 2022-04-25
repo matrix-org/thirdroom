@@ -2,7 +2,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   max-height: 48px;
   height: 100%;
   background: linear-gradient(to bottom, #00000022, #00000000);

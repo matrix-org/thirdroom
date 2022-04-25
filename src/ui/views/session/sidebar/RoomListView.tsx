@@ -4,12 +4,12 @@ import { Room } from "@thirdroom/hydrogen-view-sdk";
 import "./RoomListView.css";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { RoomTile } from "../../components/roomtile/RoomTile";
-import { RoomTileTitle } from "../../components/roomtile/RoomTileTitle";
+import { RoomTile } from "../../components/room-tile/RoomTile";
+import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { IconButton } from "../../../atoms/button/IconButton";
-import { RoomListTab } from "../../components/roomlisttab/RoomListTab";
+import { RoomListTab } from "../../components/room-list-tab/RoomListTab";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import AddIC from "../../../../../res/ic/add.svg";
 import HomeIC from "../../../../../res/ic/home.svg";
@@ -33,8 +33,8 @@ export function RoomListView({ rooms, selectedRoomId, onSelectRoom, onCreateWorl
       {/* TODO: create RoomListHeaderView */}
       <header className="flex items-center justify-around">
         <RoomListTab name="Home" iconSrc={HomeIC} isActive={true} onClick={() => console.log("clicked")} />
-        <RoomListTab name="Public" iconSrc={LanguageIC} onClick={() => console.log("clicked")} />
-        <RoomListTab name="Direct Messages" iconSrc={ChatIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Worlds" iconSrc={LanguageIC} onClick={() => console.log("clicked")} />
+        <RoomListTab name="Chats" iconSrc={ChatIC} onClick={() => console.log("clicked")} />
         <RoomListTab name="Friends" iconSrc={PeoplesIC} onClick={() => console.log("clicked")} />
         <RoomListTab name="Settings" iconSrc={SettingIC} onClick={() => console.log("clicked")} />
       </header>

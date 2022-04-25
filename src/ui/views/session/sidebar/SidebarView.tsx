@@ -1,5 +1,6 @@
 import { MouseEventHandler } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
+import classNames from "classnames";
 
 import "./SidebarView.css";
 import { SpacesView } from "./SpacesView";
@@ -14,8 +15,10 @@ interface SidebarViewProps {
 }
 
 export function SidebarView({ open, rooms, selectedRoomId, onSelectRoom, onCreateWorld }: SidebarViewProps) {
+  const sidebarClass = classNames("SidebarView", { ["SidebarView--close"]: !open }, "flex");
+
   return (
-    <div className={`SidebarView SidebarView--${open ? "open" : "closed"} flex`}>
+    <div className={sidebarClass}>
       <SpacesView />
       <RoomListView
         rooms={rooms}

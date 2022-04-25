@@ -1,17 +1,17 @@
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
-import "./ChatView.css";
-import { TimelineView } from "./TimelineView";
-import { ComposerView } from "./ComposerView";
+import "./WorldChat.css";
+import { WorldChatTimeline } from "./WorldChatTimeline";
+import { WorldChatComposer } from "./WorldChatComposer";
 import { useRoomViewModel } from "../../../hooks/useRoomViewModel";
 import { Text } from "../../../atoms/text/Text";
 
-interface IChatView {
+interface IWorldChat {
   open: boolean;
   room: Room;
 }
 
-export function ChatView({ room, open }: IChatView) {
+export function WorldChat({ room, open }: IWorldChat) {
   const { loading, roomViewModel, error } = useRoomViewModel(room);
 
   if (!open) {
@@ -19,7 +19,7 @@ export function ChatView({ room, open }: IChatView) {
   }
 
   return (
-    <div className="ChatView flex flex-column" id="ChatView">
+    <div className="WorldChat flex flex-column" id="WorldChat">
       {error ? (
         <div className="grow flex justify-center items-center">
           <Text>{error.message}</Text>
@@ -29,9 +29,9 @@ export function ChatView({ room, open }: IChatView) {
           <Text>loading...</Text>
         </div>
       ) : (
-        <TimelineView timelineViewModel={roomViewModel.timelineViewModel!} />
+        <WorldChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
       )}
-      {roomViewModel && <ComposerView composerViewModel={roomViewModel.composerViewModel} />}
+      {roomViewModel && <WorldChatComposer composerViewModel={roomViewModel.composerViewModel} />}
     </div>
   );
 }
