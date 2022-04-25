@@ -140,7 +140,7 @@ export function createMatrixNetworkInterface(
     engine.setState({ joined: true });
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
-      async onAdd(_key, member) {
+      onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
           updateHost(userId);
           engine.addPeer(member.userId, member.dataChannel);
@@ -183,8 +183,6 @@ export function createMatrixNetworkInterface(
     } else {
       engine.setHost(false);
     }
-
-    engine.setPeerId(userId);
   }
 
   return () => {
