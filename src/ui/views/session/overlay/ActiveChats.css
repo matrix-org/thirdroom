@@ -1,0 +1,13 @@
+.ActiveChats {
+  height: 100%;
+  gap: var(--sp-xs);
+}
+
+.ActiveChats__tiles {
+  gap: var(--sp-xs);
+
+  & .ActiveChatTile {
+    border-radius: var(--br-xs);
+    max-width: 200px;
+  }
+}

@@ -1,0 +1,7 @@
+.ChatView {
+  width: 500px;
+  height: 600px;
+  background-color: var(--bg-surface);
+  border-radius: var(--sp-xs);
+  overflow: hidden;
+}
