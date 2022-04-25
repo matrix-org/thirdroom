@@ -7,6 +7,10 @@ import "./Overlay.css";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomList } from "../../../hooks/useRoomList";
 import { SidebarView } from "../sidebar/SidebarView";
+import { SpacesView } from "../sidebar/SpacesView";
+import { RoomListView } from "../sidebar/RoomListView";
+import { RoomListHeader, RoomListTabs } from "../sidebar/RoomListHeader";
+import { RoomListContent } from "../sidebar/RoomListContent";
 import { WorldPreview } from "./WorldPreview";
 import { useRoom } from "../../../hooks/useRoom";
 import { useCalls } from "../../../hooks/useCalls";
@@ -32,6 +36,7 @@ export function Overlay({
   onLeftWorld,
 }: OverlayProps) {
   const { session, platform } = useHydrogen(true);
+  const [selectedRoomListTab, setSelectedRoomListTab] = useState(RoomListTabs.Home);
   const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
   const rooms = useRoomList(session);
   const selectedRoom = useRoom(session, selectedRoomId);
@@ -107,6 +112,10 @@ export function Overlay({
     [platform, session, calls, onEnteredWorld]
   );
 
+  const handleRoomListTabSelect = (selectedTab: RoomListTabs) => {
+    setSelectedRoomListTab(selectedTab);
+  };
+
   useKeyDown(
     (e) => {
       if (e.key === "Escape") {
@@ -128,10 +137,21 @@ export function Overlay({
     <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex")}>
       <SidebarView
         open
-        rooms={rooms}
-        selectedRoomId={selectedRoomId}
-        onSelectRoom={setSelectedRoomId}
-        onCreateWorld={onCreateWorld}
+        spaces={<SpacesView />}
+        roomList={
+          <RoomListView
+            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={handleRoomListTabSelect} />}
+            content={
+              <RoomListContent
+                selectedTab={selectedRoomListTab}
+                rooms={rooms}
+                selectedRoomId={selectedRoomId}
+                onSelectRoom={setSelectedRoomId}
+                onCreateWorld={onCreateWorld}
+              />
+            }
+          />
+        }
       />
       <div className="Overlay__content grow">
         {((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld)) && (
