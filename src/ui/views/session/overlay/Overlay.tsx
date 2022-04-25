@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import produce from "immer";
 import classNames from "classnames";
 import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
@@ -138,9 +139,11 @@ export function Overlay({
   const handleSelectRoom = (roomId: string) => {
     if (selectedRoomListTab === RoomListTabs.Chats) {
       if (!activeChats.has(roomId)) {
-        const copyActiveChats = new Set([...activeChats]);
-        copyActiveChats.add(roomId);
-        setActiveChats(copyActiveChats);
+        setActiveChats(
+          produce(activeChats, (draft) => {
+            draft.add(roomId);
+          })
+        );
       }
       setSelectedChatId(roomId);
       return;
@@ -155,9 +158,11 @@ export function Overlay({
     if (selectedChatId === roomId) {
       setSelectedChatId(undefined);
     }
-    const copyActiveChats = new Set([...activeChats]);
-    copyActiveChats.delete(roomId);
-    setActiveChats(copyActiveChats);
+    setActiveChats(
+      produce(activeChats, (draft) => {
+        draft.delete(roomId);
+      })
+    );
   };
 
   useEffect(() => {

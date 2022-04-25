@@ -29,6 +29,7 @@
     "bitecs": "^0.3.38",
     "classnames": "^2.3.1",
     "gl-matrix": "^3.4.3",
+    "immer": "^9.0.12",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "6",
