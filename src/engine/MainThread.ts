@@ -310,22 +310,24 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       ws.addEventListener("message", setHostFn);
 
       const setPeerIdFn = (data: { data: any }) => {
-        const d: any = JSON.parse(data.data);
-        if (d.setPeerId) {
-          console.log("ws - setPeerId", d.setPeerId);
-          gameWorker.postMessage({
-            type: WorkerMessageType.SetPeerId,
-            peerId: d.setPeerId,
-          });
-          gameWorker.postMessage({
-            type: WorkerMessageType.StateChanged,
-            state: { joined: true },
-          });
+        try {
+          const d: any = JSON.parse(data.data);
+          if (d.setPeerId) {
+            console.log("ws - setPeerId", d.setPeerId);
+            gameWorker.postMessage({
+              type: WorkerMessageType.SetPeerId,
+              peerId: d.setPeerId,
+            });
+            gameWorker.postMessage({
+              type: WorkerMessageType.StateChanged,
+              state: { joined: true },
+            });
 
-          ws?.addEventListener("message", onPeerMessage);
+            ws?.addEventListener("message", onPeerMessage);
 
-          ws?.removeEventListener("message", setPeerIdFn);
-        }
+            ws?.removeEventListener("message", setPeerIdFn);
+          }
+        } catch {}
       };
       ws.addEventListener("message", setPeerIdFn);
 
@@ -338,7 +340,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
               type: WorkerMessageType.AddPeerId,
               peerId: d.addPeerId,
             });
-            // ws?.removeEventListener("message", addPeerId);
           }
         } catch {}
       };

@@ -114,7 +114,6 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
-  addComponent(world, Player, playerRig);
 
   const lowerCube = createRawCube(state);
   const upperCube = createRawCube(state);
@@ -129,12 +128,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   addCameraYawTargetComponent(world, playerRig);
 
-  const playerRigPosition = Transform.position[playerRig];
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(
-    playerRigPosition[0],
-    playerRigPosition[1],
-    playerRigPosition[2]
-  );
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
@@ -146,6 +140,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.6;
 
+  addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
   addComponent(world, Owned, playerRig);
 

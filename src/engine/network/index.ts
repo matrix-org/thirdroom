@@ -39,7 +39,7 @@ import { RigidBody } from "../physics";
 import { NOOP } from "../config";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
-import { playerQuery } from "../component/Player";
+import { Player } from "../component/Player";
 
 /* Types */
 
@@ -107,6 +107,8 @@ export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 export const networkIdQuery = defineQuery([Networked, Owned]);
 export const createNetworkIdQuery = enterQuery(networkIdQuery);
 export const deleteNetworkIdQuery = exitQuery(networkIdQuery);
+
+export const ownedPlayerQuery = defineQuery([Player, Owned]);
 
 /* Transform serialization */
 
@@ -409,18 +411,6 @@ export function deserializeDeletes(input: NetPipeData) {
 
 /* PeerId */
 
-// export const setPeerIdIndex = (input: NetPipeData) => {
-//   const [state, v] = input;
-//   const { peerId } = state.network;
-//   const peerIdIndex = state.network.peerIdMap.get(peerId);
-//   if (peerIdIndex === undefined) {
-//     // console.error(`unable to set peerIdIndex on message - peerIdIndex not set for ${peerId}`);
-//     throw new Error(`unable to set peerIdIndex on message - peerIdIndex not set for ${peerId}`);
-//   }
-//   writeUint16(v, peerIdIndex);
-//   return input;
-// };
-
 // host sends peerIdIndex to new peers
 const textEncoder = new TextEncoder();
 export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
@@ -465,23 +455,6 @@ export function createPeerIdIndexMessage(state: GameState, peerId: string) {
 }
 
 /* Message Factories */
-
-// const sliceMessage = (input: NetPipeData) => {
-//   const [, v] = input;
-//   // if only message type was written, rewind
-//   if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT) {
-//     moveCursorView(v, 0);
-//   }
-//   return sliceCursorView(v);
-// };
-
-// const markMessageType = (type: NetworkMessage) => (input: NetPipeData) => {
-//   const [state, v] = input;
-//   const v2 = createCursorView(new ArrayBuffer(v.byteLength + 1));
-//   writeUint8(v2, type);
-//   writeArrayBuffer(v2, v.buffer);
-//   return [state, v2];
-// };
 
 const setMessageType = (type: NetworkMessage) => (input: NetPipeData) => {
   const [, v] = input;
@@ -573,6 +546,13 @@ export const broadcastReliable = (packet: ArrayBuffer) => {
   });
 };
 
+export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
+  postMessage({
+    type: WorkerMessageType.UnreliableNetworkBroadcast,
+    packet,
+  });
+};
+
 export const sendReliable = (peerId: string, packet: ArrayBuffer) => {
   postMessage({
     type: WorkerMessageType.ReliableNetworkMessage,
@@ -581,15 +561,13 @@ export const sendReliable = (peerId: string, packet: ArrayBuffer) => {
   });
 };
 
-// const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
-//   state.network.peers.forEach((peer) => {
-//     postMessage({
-//       type: WorkerMessageType.UnreliableNetworkMessage,
-//       peerId,
-//       packet,
-//     });
-//   });
-// };
+export const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
+  postMessage({
+    type: WorkerMessageType.UnreliableNetworkMessage,
+    peerId,
+    packet,
+  });
+};
 
 export function createOutgoingNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
@@ -599,7 +577,7 @@ export function createOutgoingNetworkSystem(state: GameState) {
     for (let i = 0; i < entered.length; i++) {
       const eid = entered[i];
       Networked.networkId[eid] = createNetworkId(state) || 0;
-      console.log("new net id -", "nid", Networked.networkId[eid], " eid", eid);
+      console.log("networkId", Networked.networkId[eid], "assigned to eid", eid);
     }
     const exited = deleteNetworkIdQuery(state.world);
     for (let i = 0; i < exited.length; i++) {
@@ -608,37 +586,31 @@ export function createOutgoingNetworkSystem(state: GameState) {
       Networked.networkId[eid] = NOOP;
     }
 
-    // only send updates after our peerIdIndex has been assigned and we have connected peers
+    // only send updates when:
+    // - peerIdIndex has been assigned
+    // - we have connected peers
+    // - player rig has spawned
     const haveConnectedPeers = state.network.peers.length > 0;
     const receivedPeerIdIndex = state.network.peerIdMap.has(state.network.peerId);
-    const spawnedPlayerRig = playerQuery(state.world)[0];
-    // const spawnedPlayerRig = true;
+    const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
 
     if (haveConnectedPeers && receivedPeerIdIndex && spawnedPlayerRig) {
-      // const entities = ownedNetworkedQuery(state.world);
-      // console.log("ownedNetworkedQuery", entities);
-
-      // send snapshot update if we have new peers
+      // send snapshot update to all new peers
       const haveNewPeers = state.network.newPeers.length > 0;
       if (haveNewPeers) {
-        console.log("haveNewPeers");
         const snapshotMsg = createFullSnapshotMessage(input);
         while (state.network.newPeers.length) {
           const peerId = state.network.newPeers.shift();
           if (peerId) {
-            // sendReliable(peerId, createPeerIdIndexMessage(state, peerId));
+            // broadcast peerIdIndex message if hosting
             if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
-            // sendReliable(peerId, snapshotMsg);
-            console.log("snapshotMsg", snapshotMsg);
             if (snapshotMsg.byteLength) {
-              console.log("sending snapshot update");
+              // todo: sendReliable
               broadcastReliable(snapshotMsg);
             }
           }
         }
       }
-      // else {
-      // }
       // reliably send full messages for now
       const msg = createFullChangedMessage(input);
       if (msg.byteLength) broadcastReliable(msg);

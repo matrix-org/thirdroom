@@ -34,13 +34,9 @@ const workerScope = globalThis as typeof globalThis & Worker;
 const addPeerId = (state: GameState, peerId: string) => {
   if (state.network.peers.includes(peerId) || state.network.peerId === peerId) return;
 
-  console.log("game worker - addPeerId", peerId);
   state.network.peers.push(peerId);
   state.network.newPeers.push(peerId);
-  if (state.network.hosting) {
-    state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
-  }
-  // if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
