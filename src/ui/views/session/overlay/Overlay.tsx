@@ -187,6 +187,7 @@ export function Overlay({
           const roomName = room.name || "Empty room";
           return (
             <ActiveChatTile
+              key={rId}
               isActive={rId === selectedChatId}
               roomId={rId}
               avatar={
