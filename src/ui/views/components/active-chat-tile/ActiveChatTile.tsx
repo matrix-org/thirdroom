@@ -2,7 +2,7 @@ import classNames from "classnames";
 
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
-import CrossIC from "../../../../../res/ic/cross.svg";
+import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 
 import "./ActiveChatTile.css";
 
@@ -35,7 +35,7 @@ export function ActiveChatTile({ roomId, avatar, title, isActive, onClick, onClo
         <IconButton
           variant={isActive ? "on-primary" : "surface-low"}
           size="sm"
-          iconSrc={CrossIC}
+          iconSrc={CrossCircleIC}
           label="Close"
           onClick={() => onClose(roomId)}
         />

@@ -23,6 +23,5 @@
 }
 
 .RoomListTab--active {
-  background-color: var(--bg-surface-low);
   box-shadow: var(--bs-surface-border);
 }

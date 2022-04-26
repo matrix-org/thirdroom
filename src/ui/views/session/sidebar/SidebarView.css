@@ -10,3 +10,6 @@
 .SidebarView--close {
   transform: translateX(calc(-100% - 8px));
 }
+.SidebarView__bar {
+  padding: 0 var(--sp-xs);
+}

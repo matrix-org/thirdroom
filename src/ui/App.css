@@ -11,8 +11,8 @@
   --bg-surface: #ffffff;
   --bg-surface-low: #f0f1f2;
   --bg-surface-border: hsl(206deg 11% 87%);
-  --bg-surface-hover: #00000010;
-  --bg-surface-active: #00000016;
+  --bg-surface-hover: #f0f0f0;
+  --bg-surface-active: #ebebeb;
   --bg-surface-scroll-track: transparent;
   --bg-surface-scroll-thumb: #0000001e;
 

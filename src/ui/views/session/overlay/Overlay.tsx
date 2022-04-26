@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
+import produce from "immer";
 import classNames from "classnames";
 import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./Overlay.css";
+import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomList } from "../../../hooks/useRoomList";
+import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
+import { SpacesView } from "../sidebar/SpacesView";
+import { RoomListView } from "../sidebar/RoomListView";
+import { RoomListHeader, RoomListTabs } from "../sidebar/RoomListHeader";
+import { RoomListContent } from "../sidebar/RoomListContent";
+import { ActiveChats } from "./ActiveChats";
+import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile";
+import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
 import { useRoom } from "../../../hooks/useRoom";
 import { useCalls } from "../../../hooks/useCalls";
@@ -32,6 +42,12 @@ export function Overlay({
   onLeftWorld,
 }: OverlayProps) {
   const { session, platform } = useHydrogen(true);
+  const [selectedRoomListTab, setSelectedRoomListTab] = useState(RoomListTabs.Home);
+
+  const [activeChats, setActiveChats] = useState<Set<string>>(new Set());
+  const [selectedChatId, setSelectedChatId] = useState<undefined | string>(undefined);
+  const selectedChat = useRoom(session, selectedChatId);
+
   const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
   const rooms = useRoomList(session);
   const selectedRoom = useRoom(session, selectedRoomId);
@@ -107,6 +123,10 @@ export function Overlay({
     [platform, session, calls, onEnteredWorld]
   );
 
+  const handleRoomListTabSelect = (selectedTab: RoomListTabs) => {
+    setSelectedRoomListTab(selectedTab);
+  };
+
   useKeyDown(
     (e) => {
       if (e.key === "Escape") {
@@ -116,33 +136,117 @@ export function Overlay({
     [onClose]
   );
 
+  const handleSelectRoom = (roomId: string | undefined) => {
+    setSelectedChatId(undefined);
+    setSelectedRoomId(roomId);
+  };
+
+  const handleSelectChat = (roomId: string) => {
+    if (!activeChats.has(roomId)) {
+      setActiveChats(
+        produce(activeChats, (draft) => {
+          draft.add(roomId);
+        })
+      );
+    }
+    if (selectedChatId === roomId) setSelectedChatId(undefined);
+    else setSelectedChatId(roomId);
+  };
+
+  const handleMinimizeChat = (roomId: string) => {
+    setSelectedChatId(undefined);
+  };
+  const handleCloseChat = (roomId: string) => {
+    if (selectedChatId === roomId) {
+      setSelectedChatId(undefined);
+    }
+    setActiveChats(
+      produce(activeChats, (draft) => {
+        draft.delete(roomId);
+      })
+    );
+  };
+
   useEffect(() => {
-    setSelectedRoomId(activeWorldId);
+    handleSelectRoom(activeWorldId);
   }, [activeWorldId]);
 
   if (!isOpen) {
     return null;
   }
 
+  const renderActiveChats = () => {
+    if (activeChats.size === 0) return null;
+    return (
+      <ActiveChats
+        chat={
+          selectedChat && <ChatView room={selectedChat} onMinimize={handleMinimizeChat} onClose={handleCloseChat} />
+        }
+        tiles={[...activeChats].map((rId) => {
+          const room = session.rooms.get(rId);
+          if (!room) return null;
+
+          const roomName = room.name || "Empty room";
+          return (
+            <ActiveChatTile
+              key={rId}
+              isActive={rId === selectedChatId}
+              roomId={rId}
+              avatar={
+                <Avatar
+                  size="sm"
+                  imageSrc={room.avatarUrl}
+                  name={roomName}
+                  bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+                />
+              }
+              title={roomName}
+              onClick={handleSelectChat}
+              onClose={handleCloseChat}
+            />
+          );
+        })}
+      />
+    );
+  };
+
+  const renderWorldPreview = () => {
+    if (!((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld))) return null;
+
+    return (
+      <WorldPreview
+        session={session}
+        roomId={selectedRoomId}
+        room={selectedRoom}
+        onLoadWorld={onLoadWorld}
+        onEnterWorld={onEnterWorld}
+      />
+    );
+  };
+
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex")}>
       <SidebarView
         open
-        rooms={rooms}
-        selectedRoomId={selectedRoomId}
-        onSelectRoom={setSelectedRoomId}
-        onCreateWorld={onCreateWorld}
+        spaces={<SpacesView />}
+        roomList={
+          <RoomListView
+            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={handleRoomListTabSelect} />}
+            content={
+              <RoomListContent
+                selectedTab={selectedRoomListTab}
+                rooms={rooms}
+                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}
+                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectRoom}
+                onCreateWorld={onCreateWorld}
+              />
+            }
+          />
+        }
       />
       <div className="Overlay__content grow">
-        {((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld)) && (
-          <WorldPreview
-            session={session}
-            roomId={selectedRoomId}
-            room={selectedRoom}
-            onLoadWorld={onLoadWorld}
-            onEnterWorld={onEnterWorld}
-          />
-        )}
+        {renderWorldPreview()}
+        {activeChats.size > 0 && renderActiveChats()}
       </div>
     </div>
   );
