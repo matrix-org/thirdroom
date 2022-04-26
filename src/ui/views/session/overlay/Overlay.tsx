@@ -145,7 +145,8 @@ export function Overlay({
           })
         );
       }
-      setSelectedChatId(roomId);
+      if (selectedChatId === roomId) setSelectedChatId(undefined);
+      else setSelectedChatId(roomId);
       return;
     }
     setSelectedRoomId(roomId);
