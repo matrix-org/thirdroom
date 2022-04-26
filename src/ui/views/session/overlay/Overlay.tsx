@@ -235,7 +235,7 @@ export function Overlay({
               <RoomListContent
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
-                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? undefined : selectedRoomId}
+                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}
                 onSelectRoom={handleSelectRoom}
                 onCreateWorld={onCreateWorld}
               />

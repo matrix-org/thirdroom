@@ -15,7 +15,7 @@ export function RoomTile({ avatar, content, options, isActive = false, onClick }
   return (
     <div className={roomTileClass}>
       <button onClick={onClick} className="grow flex items-center">
-        <div className="RoomTile__avatar shrink-0">{avatar}</div>
+        <div className="RoomTile__avatar shrink-0 flex">{avatar}</div>
         <div className="RoomTile__content grow">{content}</div>
       </button>
       {options && <div className="RoomTile__options shrink-0">{options}</div>}
