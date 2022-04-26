@@ -19,7 +19,9 @@ import { useEffect } from "react";
 import { useAsync } from "./useAsync";
 import { useHydrogen } from "./useHydrogen";
 
-export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
+type tileClassForEntryType = (entry: TimelineEntry) => TileConstructor | undefined;
+
+export function worldChatTileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
   if (entry.isGap) {
     return GapTile;
   } else if (entry.eventType) {
@@ -57,6 +59,7 @@ export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undef
 interface TRRoomViewModelOptions extends ViewModelOptions {
   room: Room;
   session: Session;
+  tileClassForEntry: tileClassForEntryType;
 }
 
 export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
@@ -64,13 +67,15 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   private _session: Session;
   private _timelineVM: TimelineViewModel | null;
   private _composerVM: ComposerViewModel;
+  private _tileClassForEntry: tileClassForEntryType;
   private _tileOptions?: TileOptions;
 
   constructor(options: TRRoomViewModelOptions) {
     super(options);
-    const { room, session } = options;
+    const { room, session, tileClassForEntry } = options;
     this._session = session;
     this._room = room;
+    this._tileClassForEntry = tileClassForEntry;
     this._timelineVM = null;
     this._composerVM = new ComposerViewModel(this);
   }
@@ -81,7 +86,7 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
       session: this._session,
       roomVM: this,
       timeline,
-      tileClassForEntry,
+      tileClassForEntry: this._tileClassForEntry,
     });
     this._timelineVM = this.track(
       new TimelineViewModel(
@@ -99,7 +104,7 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
 
   _createTile(entry: any) {
     if (this._tileOptions) {
-      const Tile = tileClassForEntry(entry);
+      const Tile = this._tileClassForEntry(entry);
       if (Tile) {
         return new Tile(entry, this._tileOptions);
       }
@@ -137,7 +142,7 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   startReply(entry: any) {}
 }
 
-export function useRoomViewModel(room: Room) {
+export function useRoomViewModel(room: Room, tileClassForEntry: tileClassForEntryType) {
   const { platform, logger, session, urlRouter, navigation } = useHydrogen(true);
 
   const {
@@ -148,6 +153,7 @@ export function useRoomViewModel(room: Room) {
     const roomViewModel = new TRRoomViewModel({
       session,
       room,
+      tileClassForEntry,
       platform,
       logger,
       urlCreator: urlRouter,
