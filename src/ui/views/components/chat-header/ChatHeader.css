@@ -1,0 +1,13 @@
+.ChatHeader {
+  min-height: 64px;
+  padding: 0 var(--sp-md);
+  border-bottom: 1px solid var(--bg-surface-border);
+}
+
+.ChatHeader__title {
+  padding: 0 var(--sp-xs);
+}
+
+.ChatHeader__options {
+  gap: var(--sp-md);
+}

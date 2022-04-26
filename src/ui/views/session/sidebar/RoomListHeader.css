@@ -1,0 +1,8 @@
+.RoomListHeader {
+  padding: var(--sp-xs) var(--sp-md);
+  gap: var(--sp-sm);
+
+  & > * {
+    flex: 1 1 0;
+  }
+}

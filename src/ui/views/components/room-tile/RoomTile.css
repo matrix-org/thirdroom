@@ -34,10 +34,6 @@
   }
 }
 
-.RoomTile--active {
-  background-color: var(--bg-surface-low);
-}
-
 .RoomTile:hover,
 .RoomTile:focus-within,
 .RoomTile:active,

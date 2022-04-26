@@ -23,7 +23,7 @@ export function Avatar({
   imageSrc,
   size = "md",
 }: IAvatar) {
-  const [isFallback, setIsFallback] = useState(false);
+  const [isFallback, setIsFallback] = useState(true);
 
   let textSize: "h2" | "s1" | "b1" | "b3" = "h2";
   if (size === "xl") textSize = "h2";
@@ -45,7 +45,7 @@ export function Avatar({
   return (
     <div className={avatarClass} aria-label={name} style={style}>
       {!isFallback && imageSrc ? (
-        <img draggable="false" src={imageSrc} alt="" onError={() => setIsFallback(true)} />
+        <img draggable="false" src={imageSrc} alt="" onLoad={() => setIsFallback(false)} />
       ) : (
         <Text style={{ color: fgColor }} variant={textSize} weight="medium" type="span">
           {[...name][0]}
