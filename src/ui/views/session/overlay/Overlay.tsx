@@ -137,19 +137,20 @@ export function Overlay({
   );
 
   const handleSelectRoom = (roomId: string) => {
-    if (selectedRoomListTab === RoomListTabs.Chats) {
-      if (!activeChats.has(roomId)) {
-        setActiveChats(
-          produce(activeChats, (draft) => {
-            draft.add(roomId);
-          })
-        );
-      }
-      if (selectedChatId === roomId) setSelectedChatId(undefined);
-      else setSelectedChatId(roomId);
-      return;
-    }
+    setSelectedChatId(undefined);
     setSelectedRoomId(roomId);
+  };
+
+  const handleSelectChat = (roomId: string) => {
+    if (!activeChats.has(roomId)) {
+      setActiveChats(
+        produce(activeChats, (draft) => {
+          draft.add(roomId);
+        })
+      );
+    }
+    if (selectedChatId === roomId) setSelectedChatId(undefined);
+    else setSelectedChatId(roomId);
   };
 
   const handleMinimizeChat = (roomId: string) => {
@@ -200,7 +201,7 @@ export function Overlay({
                 />
               }
               title={roomName}
-              onClick={handleSelectRoom}
+              onClick={handleSelectChat}
               onClose={handleCloseChat}
             />
           );
@@ -236,7 +237,7 @@ export function Overlay({
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
                 selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}
-                onSelectRoom={handleSelectRoom}
+                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectRoom}
                 onCreateWorld={onCreateWorld}
               />
             }
@@ -244,7 +245,8 @@ export function Overlay({
         }
       />
       <div className="Overlay__content grow">
-        {selectedRoomListTab === RoomListTabs.Chats ? renderActiveChats() : renderWorldPreview()}
+        {renderWorldPreview()}
+        {activeChats.size > 0 && renderActiveChats()}
       </div>
     </div>
   );
