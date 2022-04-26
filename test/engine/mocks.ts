@@ -1,8 +1,11 @@
 import RAPIER from "@dimforge/rapier3d-compat";
+import { createWorld } from "bitecs";
 
 import { RemoteResourceInfo, RemoteResourceManager } from "../../src/engine/resources/RemoteResourceManager";
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
 import { createTripleBuffer } from "../../src/engine/TripleBuffer";
+import { registerDefaultPrefabs } from "../../src/engine/prefab";
+import { GameState } from "../../src/engine/GameWorker";
 
 export const mockPostMessageTarget = () =>
   ({
@@ -36,7 +39,27 @@ export const mockPhysicsWorld = () => ({
   createCollider: (desc: RAPIER.ColliderDesc, parentHandle?: number | undefined) => {},
 });
 
-export const mockRenderer = () => ({
+export const mockRenderState = () => ({
   tripleBuffer: createTripleBuffer(),
   port: mockPostMessageTarget(),
 });
+
+export const mockNetworkState = () => ({
+  entityIdMap: new Map(),
+});
+
+export const mockGameState = () => {
+  const gameState = {
+    world: createWorld(),
+    prefabTemplateMap: new Map(),
+    entityPrefabMap: new Map(),
+    network: mockNetworkState(),
+    resourceManager: mockRemoteResourceManager(),
+    physicsWorld: mockPhysicsWorld(),
+    renderer: mockRenderState(),
+  } as unknown as GameState;
+
+  registerDefaultPrefabs(gameState);
+
+  return gameState;
+};

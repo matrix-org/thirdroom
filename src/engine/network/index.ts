@@ -422,7 +422,8 @@ export function serializeDeletes(input: NetPipeData) {
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    writeUint32(v, eid);
+    const nid = Networked.networkId[eid];
+    writeUint32(v, nid);
   }
   return input;
 }
