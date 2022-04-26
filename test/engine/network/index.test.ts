@@ -6,7 +6,6 @@ import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameWorker";
 import {
   createNetworkId,
-  deletedOwnedNetworkedQuery,
   deserializeCreates,
   deserializeDeletes,
   deserializeTransformChanged,
@@ -33,7 +32,7 @@ import {
   readUint32,
   readUint8,
 } from "../../../src/engine/network/CursorView";
-import { mockGameState, mockPhysicsWorld, mockRemoteResourceManager, mockRenderState } from "../mocks";
+import { mockGameState } from "../mocks";
 
 describe("Network Tests", () => {
   describe("networkId", () => {
