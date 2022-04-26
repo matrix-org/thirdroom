@@ -136,7 +136,7 @@ export function Overlay({
     [onClose]
   );
 
-  const handleSelectRoom = (roomId: string) => {
+  const handleSelectRoom = (roomId: string | undefined) => {
     setSelectedChatId(undefined);
     setSelectedRoomId(roomId);
   };
@@ -168,8 +168,9 @@ export function Overlay({
   };
 
   useEffect(() => {
-    setSelectedRoomId(activeWorldId);
-  }, [activeWorldId, activeChats]);
+    console.log(activeWorldId);
+    handleSelectRoom(activeWorldId);
+  }, [activeWorldId]);
 
   if (!isOpen) {
     return null;
