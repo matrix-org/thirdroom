@@ -168,7 +168,6 @@ export function Overlay({
   };
 
   useEffect(() => {
-    console.log(activeWorldId);
     handleSelectRoom(activeWorldId);
   }, [activeWorldId]);
 
