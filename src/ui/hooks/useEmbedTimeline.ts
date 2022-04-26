@@ -13,9 +13,13 @@ export function useEmbedTimeline(
 ) {
   useEffect(() => {
     const timelineView = new HydrogenTimelineView(timelineViewModel, viewClassForTile);
-
-    const tvDOM = timelineView.mount() as Element;
-    host.current!.append(tvDOM);
+    if (host.current) {
+      const tvDOM = timelineView.mount() as Element;
+      while (host.current.lastChild) {
+        host.current.removeChild(host.current.lastChild);
+      }
+      host.current.append(tvDOM);
+    }
 
     return () => {
       timelineView.unmount();
