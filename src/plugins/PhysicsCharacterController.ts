@@ -7,7 +7,7 @@ import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { Networked, Owned } from "../engine/network";
+import { Networked, NetworkTransform, Owned } from "../engine/network";
 import { addRigidBody, RigidBody } from "../engine/physics";
 import { createCamera } from "../engine/prefab";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
@@ -142,6 +142,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
+  addComponent(world, NetworkTransform, playerRig);
   addComponent(world, Owned, playerRig);
 
   return playerRig;

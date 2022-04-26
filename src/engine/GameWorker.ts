@@ -28,6 +28,8 @@ import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
+import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
+// import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -182,6 +184,8 @@ export interface GameState {
   renderer: RenderState;
   time: TimeState;
   resourceManager: RemoteResourceManager;
+  prefabTemplateMap: Map<string, PrefabTemplate>;
+  entityPrefabMap: Map<number, string>;
   input: GameInputState;
   preSystems: System[];
   systems: System[];
@@ -277,6 +281,8 @@ async function onInit({
     scene,
     camera,
     resourceManager,
+    prefabTemplateMap: new Map(),
+    entityPrefabMap: new Map(),
     renderer,
     physicsWorld,
     input,
@@ -288,9 +294,12 @@ async function onInit({
     statsBuffer,
   };
 
+  registerDefaultPrefabs(state);
+
   state.preSystems.push(createIncomingNetworkSystem(state));
 
   state.postSystems.push(createOutgoingNetworkSystem(state));
+  // state.postSystems.push(NetworkTransformSystem, createOutgoingNetworkSystem(state));
 
   await init(state);
 

@@ -18,6 +18,18 @@ interface SceneProps {
   environmentMapUrl?: string;
 }
 
+export interface PrefabTemplate {
+  name: string;
+  create: Function;
+  delete?: Function;
+  serialize?: Function;
+  deserialize?: Function;
+}
+
+export function registerPrefab(state: GameState, template: PrefabTemplate) {
+  state.prefabTemplateMap.set(template.name, template);
+}
+
 export function createScene(state: GameState, props: SceneProps = {}): number {
   const eid = createTransformEntity(state.world);
 
@@ -114,4 +126,11 @@ export function createDirectionalLight(state: GameState, parentEid?: number) {
   }
 
   return eid;
+}
+
+export function registerDefaultPrefabs(state: GameState) {
+  registerPrefab(state, {
+    name: "cube",
+    create: createCube,
+  });
 }

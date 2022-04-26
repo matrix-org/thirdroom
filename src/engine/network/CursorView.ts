@@ -159,6 +159,14 @@ export const writeInt8 = (v: CursorView, value: number) => {
   return v;
 };
 
+const textEncoder = new TextEncoder();
+export function writeString(v: CursorView, str: string) {
+  const encodedString = textEncoder.encode(str);
+  writeUint8(v, encodedString.byteLength);
+  writeArrayBuffer(v, encodedString);
+  return v;
+}
+
 /* Spacers */
 
 export const spaceFloat64 = (v: CursorView) => {
@@ -320,6 +328,14 @@ export const readInt8 = (v: CursorView) => {
   v.cursor += Int8Array.BYTES_PER_ELEMENT;
   return val;
 };
+
+const textDecoder = new TextDecoder();
+export function readString(v: CursorView) {
+  const byteLength = readUint8(v);
+  const encodedString = new Uint8Array(v.buffer, v.cursor, byteLength);
+  v.cursor += byteLength;
+  return textDecoder.decode(encodedString);
+}
 
 /* skip */
 

@@ -1,20 +1,23 @@
 import {
   addComponent,
-  defineComponent,
   defineQuery,
   enterQuery,
   exitQuery,
   Not,
   pipe,
   removeEntity,
+  defineComponent,
   Types,
 } from "bitecs";
+import { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
+import { Quaternion, Vector3 } from "three";
 
 import {
   createCursorView,
   CursorView,
   moveCursorView,
   readFloat32,
+  readString,
   readUint16,
   readUint32,
   readUint8,
@@ -28,6 +31,7 @@ import {
   writeArrayBuffer,
   writeFloat32,
   writePropIfChanged,
+  writeString,
   writeUint32,
   writeUint8,
 } from "./CursorView";
@@ -37,6 +41,7 @@ import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
 import { NOOP } from "../config";
 import { Player } from "../component/Player";
+import { RigidBody } from "../physics";
 
 /* Types */
 
@@ -79,6 +84,9 @@ export const deleteNetworkId = ({ network }: GameState, nid: number) => {
   network.removedLocalIds.push(localId);
 };
 
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
 /* Components */
 
 export const Networked = defineComponent({
@@ -87,6 +95,11 @@ export const Networked = defineComponent({
 });
 
 export const Owned = defineComponent();
+
+export const NetworkTransform = defineComponent({
+  position: [Types.f32, 3],
+  quaternion: [Types.f32, 4],
+});
 
 /* Queries */
 
@@ -126,11 +139,13 @@ export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
 
 export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefined) => {
   if (eid !== undefined) {
+    // const position = NetworkTransform.position[eid];
     const position = Transform.position[eid];
     position[0] = readFloat32(v);
     position[1] = readFloat32(v);
     position[2] = readFloat32(v);
 
+    // const quaternion = NetworkTransform.quaternion[eid];
     const quaternion = Transform.quaternion[eid];
     quaternion[0] = readFloat32(v);
     quaternion[1] = readFloat32(v);
@@ -204,6 +219,16 @@ export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number |
   };
 };
 
+// export const deserializeTransformChanged = defineChangedDeserializer(
+//   (v, eid) => (eid ? (NetworkTransform.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
+//   (v, eid) => (eid ? (NetworkTransform.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v))
+// );
+
 export const deserializeTransformChanged = defineChangedDeserializer(
   (v, eid) => (eid ? (Transform.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Transform.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
@@ -236,13 +261,18 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 export function serializeCreatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const entities = ownedNetworkedQuery(state.world);
-  // console.log("serializeCreatesSnapshot ownedNetworkedQuery", entities);
   // todo: optimize length written with maxEntities config
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    writeUint32(v, nid);
+    const prefabName = state.entityPrefabMap.get(eid) || "cube";
+    if (prefabName) {
+      writeUint32(v, nid);
+      writeString(v, prefabName);
+    } else {
+      console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
+    }
   }
   return input;
 }
@@ -254,27 +284,32 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const rid = undefined;
-    console.log(`serializing creation - nid`, nid, `eid`, eid, `rid`, rid);
-    writeUint32(v, nid);
-    // writeUint32(v, rid);
-    // todo: serialize creation template
+    const prefabName = state.entityPrefabMap.get(eid) || "cube";
+    if (prefabName) {
+      writeUint32(v, nid);
+      writeString(v, prefabName);
+    } else {
+      console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
+    }
   }
   return input;
 }
 
-// const createPrefabEntity = (state: GameState, prefab: string) => {
-//   const create = state.prefabMap.get(prefab)?.create;
-//   if (create) {
-//     return create(state);
-//   } else {
-//     console.error("could not create prefab", prefab, ", template not found");
-//   }
-// };
+// TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
+// add component+system for loading and swapping the prefab
+const createLoadingEntity = createCube;
 
-export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab?: string) {
-  // const eid = createPrefabEntity(state, prefab) || createLoadingEntity(state, rid);
-  const eid = createCube(state);
+const createPrefabEntity = (state: GameState, prefab: string) => {
+  const create = state.prefabTemplateMap.get(prefab)?.create;
+  if (create) {
+    return create(state);
+  } else {
+    return createLoadingEntity(state);
+  }
+};
+
+export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab: string) {
+  const eid = createPrefabEntity(state, prefab);
 
   // remote entity not owned by default so lock the rigidbody
   // const body = RigidBody.store.get(eid);
@@ -284,6 +319,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   // }
 
   addComponent(state.world, Networked, eid);
+  // addComponent(state.world, NetworkTransform, eid);
   Networked.networkId[eid] = nid;
   state.network.entityIdMap.set(nid, eid);
 
@@ -297,12 +333,11 @@ export function deserializeCreates(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    // const rid = readUint32(v);
-    const rid = undefined;
+    const prefabName = readString(v);
     const existingEntity = state.network.entityIdMap.get(nid);
     if (existingEntity) continue;
-    const eid = createRemoteNetworkedEntity(state, nid);
-    console.log("deserializing creation - nid", nid, "eid", eid, "rid", rid);
+    const eid = createRemoteNetworkedEntity(state, nid, prefabName);
+    console.log("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
   }
   return input;
 }
@@ -411,7 +446,6 @@ export function deserializeDeletes(input: NetPipeData) {
 /* PeerId */
 
 // host sends peerIdIndex to new peers
-const textEncoder = new TextEncoder();
 export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   const [state, v] = input;
   const peerIdIndex = state.network.peerIdMap.get(peerId);
@@ -431,7 +465,6 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
 }
 
 // peer decodes the peerIdIndex
-const textDecoder = new TextDecoder();
 export function deserializePeerIdIndex(input: NetPipeData) {
   const [state, v] = input;
   const peerIdByteLength = readUint8(v);
@@ -586,8 +619,8 @@ export function createOutgoingNetworkSystem(state: GameState) {
     }
 
     // only send updates when:
-    // - peerIdIndex has been assigned
     // - we have connected peers
+    // - peerIdIndex has been assigned
     // - player rig has spawned
     const haveConnectedPeers = state.network.peers.length > 0;
     const receivedPeerIdIndex = state.network.peerIdMap.has(state.network.peerId);
@@ -604,15 +637,15 @@ export function createOutgoingNetworkSystem(state: GameState) {
             // broadcast peerIdIndex message if hosting
             if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
             if (snapshotMsg.byteLength) {
-              // todo: sendReliable
-              broadcastReliable(snapshotMsg);
+              sendReliable(peerId, snapshotMsg);
             }
           }
         }
+      } else {
+        // reliably send full messages for now
+        const msg = createFullChangedMessage(input);
+        if (msg.byteLength) broadcastReliable(msg);
       }
-      // reliably send full messages for now
-      const msg = createFullChangedMessage(input);
-      if (msg.byteLength) broadcastReliable(msg);
     }
 
     // todo: reliably send creates
@@ -666,4 +699,30 @@ export function createIncomingNetworkSystem(state: GameState) {
   return function IncomingNetworkSystem(state: GameState) {
     processNetworkMessages(state);
   };
+}
+
+// eslint-disable-next-line new-cap
+export const remoteRigidBodyQuery = defineQuery([RigidBody, Networked, NetworkTransform, Not(Owned)]);
+
+const applyNetworkTransformToRigidBodyAndTransform = (body: RapierRigidBody, eid: number) => {
+  const netPosition = NetworkTransform.position[eid];
+  const netQuaternion = NetworkTransform.quaternion[eid];
+
+  Transform.position[eid].set(netPosition);
+  Transform.quaternion[eid].set(netQuaternion);
+
+  body.setTranslation(new Vector3().fromArray(netPosition), true);
+  body.setRotation(new Quaternion().fromArray(netQuaternion), true);
+};
+
+export function NetworkTransformSystem({ world }: GameState) {
+  // apply network transform to the rigidbody for remote networked entities
+  const remoteRigidBodyEntities = remoteRigidBodyQuery(world);
+  for (let i = 0; i < remoteRigidBodyEntities.length; i++) {
+    const eid = remoteRigidBodyEntities[i];
+    const body = RigidBody.store.get(eid);
+    if (body) {
+      applyNetworkTransformToRigidBodyAndTransform(body, eid);
+    }
+  }
 }

@@ -16,7 +16,11 @@ import { createCube, createScene } from "./engine/prefab";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
-import { Owned, Networked } from "./engine/network";
+import {
+  Owned,
+  Networked,
+  // NetworkTransform
+} from "./engine/network";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -134,6 +138,7 @@ export async function init(state: GameState): Promise<void> {
       const cube = createCube(state);
 
       addComponent(state.world, Networked, cube);
+      // addComponent(state.world, NetworkTransform, cube);
       addComponent(state.world, Owned, cube);
 
       mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[state.camera]);
