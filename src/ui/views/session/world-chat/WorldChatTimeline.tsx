@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import { TimelineView as HydrogenTimelineView, TimelineViewModel } from "@thirdroom/hydrogen-view-sdk";
+import { useRef } from "react";
+import { TimelineViewModel } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldChatTimeline.css";
+import { useEmbedTimeline } from "../../../hooks/useEmbedTimeline";
 import { viewClassForTile } from "./tiles";
 
 interface IWorldChatTimeline {
@@ -10,17 +11,7 @@ interface IWorldChatTimeline {
 
 export function WorldChatTimeline({ timelineViewModel }: IWorldChatTimeline) {
   const timelineViewContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const timelineView = new HydrogenTimelineView(timelineViewModel, viewClassForTile);
-
-    const tvDOM = timelineView.mount() as Element;
-    timelineViewContainerRef.current!.append(tvDOM);
-
-    return () => {
-      timelineView.unmount();
-    };
-  }, [timelineViewModel]);
+  useEmbedTimeline(timelineViewContainerRef, timelineViewModel, viewClassForTile);
 
   return <div className="WorldChatTimeline grow flex hydrogen" ref={timelineViewContainerRef} />;
 }
