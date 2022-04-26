@@ -125,7 +125,7 @@ export function Overlay({
   }
 
   return (
-    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld })}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex")}>
       <SidebarView
         open
         rooms={rooms}
@@ -133,15 +133,17 @@ export function Overlay({
         onSelectRoom={setSelectedRoomId}
         onCreateWorld={onCreateWorld}
       />
-      {((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld)) && (
-        <WorldPreview
-          session={session}
-          roomId={selectedRoomId}
-          room={selectedRoom}
-          onLoadWorld={onLoadWorld}
-          onEnterWorld={onEnterWorld}
-        />
-      )}
+      <div className="Overlay__content grow">
+        {((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld)) && (
+          <WorldPreview
+            session={session}
+            roomId={selectedRoomId}
+            room={selectedRoom}
+            onLoadWorld={onLoadWorld}
+            onEnterWorld={onEnterWorld}
+          />
+        )}
+      </div>
     </div>
   );
 }

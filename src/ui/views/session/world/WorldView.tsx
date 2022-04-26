@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
-import { ChatView } from "../chat/ChatView";
+import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import "./WorldView.css";
 import { useKeyDown } from "../../../hooks/useKeyDown";
@@ -12,7 +12,7 @@ export function WorldView() {
 
   useKeyDown(
     (e) => {
-      if (e.key === "Enter" && !chatOpen && e.target === canvasRef.current) {
+      if (e.key === "Enter" && !chatOpen) {
         onOpenChat();
       } else if (e.key === "Escape" && chatOpen) {
         onCloseChat();
@@ -47,7 +47,7 @@ export function WorldView() {
     <div className="WorldView">
       <Stats />
       <div className="WorldView__chat">
-        <ChatView open={chatOpen} room={activeWorld} />
+        <WorldChat open={chatOpen} room={activeWorld} />
       </div>
     </div>
   );

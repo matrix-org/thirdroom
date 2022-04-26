@@ -7,7 +7,10 @@ export class AnnouncementView extends TemplateView<RoomMemberTile> {
   }
 
   render(t: Builder<RoomMemberTile>, vm: RoomMemberTile): Element {
-    return t.li({ className: "AnnouncementView" }, t.div({ className: "Text Text-b2 Text--regular" }, vm.announcement));
+    return t.li(
+      { className: "WorldChat__AnnouncementView" },
+      t.div({ className: "Text Text-b2 Text--regular" }, vm.announcement)
+    );
   }
 
   onClick() {}

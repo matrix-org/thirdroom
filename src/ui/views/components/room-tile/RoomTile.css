@@ -10,7 +10,7 @@
 
 .RoomTile__content {
   padding: 0 var(--sp-sm);
-  & > *:last-child {
+  & > *:not(:first-child) {
     margin-top: 2px;
   }
 }

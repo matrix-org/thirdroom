@@ -2,7 +2,7 @@ import { RoomTile } from "./RoomTile";
 import { RoomTilePlaying } from "./RoomTilePlaying";
 import { RoomTileTitle } from "./RoomTileTitle";
 import { RoomTileDesc } from "./RoomTileDesc";
-import { Avatar } from "../../../../ui/atoms/avatar/Avatar";
+import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarPile } from "../../../atoms/avatar/AvatarPile";
 import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
 import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";

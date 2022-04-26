@@ -1,4 +1,4 @@
-import { SidebarTab } from "../../components/sidebartab/SidebarTab";
+import { SidebarTab } from "../../components/sidebar-tab/SidebarTab";
 import PlanetIC from "../../../../../res/ic/planet.svg";
 import ExploreIC from "../../../../../res/ic/explore.svg";
 import "./SpacesView.css";
