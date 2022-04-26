@@ -8,6 +8,7 @@
 }
 
 .ActiveChats__chat {
+  max-width: 100%;
   position: absolute;
   bottom: 60px;
   right: 0;
