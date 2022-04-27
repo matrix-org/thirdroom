@@ -664,7 +664,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get sender(): string;
     get memberPanelLink(): string;
     get avatarColorNumber(): number;
-    get avatarUrl(): string | null;
+    avatarUrl(size: number): string | null;
     get avatarLetter(): string;
     get avatarTitle(): string;
     get date(): string | null;

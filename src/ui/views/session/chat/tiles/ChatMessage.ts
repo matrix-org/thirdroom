@@ -1,20 +1,19 @@
-import { TemplateView, TextTile, Builder, TileView } from "@thirdroom/hydrogen-view-sdk";
+import { TextTile, Builder } from "@thirdroom/hydrogen-view-sdk";
+
+import { ChatBaseMessage } from "./ChatBaseMessage";
 
 import "./ChatMessage.css";
 
-export class ChatMessage extends TemplateView<TextTile> implements TileView {
+export class ChatMessage extends ChatBaseMessage {
   constructor(vm: TextTile) {
     super(vm);
   }
 
-  render(t: Builder<TextTile>, vm: TextTile): Element {
-    return t.li({ className: "ChatMessage flex" }, [
-      t.div({ className: "ChatMessage__avatar shrink-0" }, ""),
-      t.div({ className: "ChatMessage__content grow" }, [
-        t.p({ className: "ChatMessage__sender Text Text-b2 Text--surface Text--bold truncate" }, vm.displayName),
-        t.p({ className: "Text Text-b2 Text--surface Text--regular" }, vm._getPlainBody?.() || "*** EMPTY MESSAGE ***"),
-      ]),
-    ]);
+  renderBody(t: Builder<TextTile>, vm: TextTile): Element {
+    return t.div(
+      { className: "ChatMessage__body flex" },
+      t.p({ className: "Text Text-b2 Text--surface Text--regular" }, vm._getPlainBody?.() || "*** EMPTY MESSAGE ***")
+    );
   }
   onClick() {}
 }
