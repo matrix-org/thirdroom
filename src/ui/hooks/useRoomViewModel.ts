@@ -149,8 +149,19 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
     }
   }
 
-  async _sendMessage(message: any, replyingTo: any) {
-    return false;
+  async _sendMessage(message: string): Promise<boolean> {
+    if (!message) return false;
+    try {
+      let msgtype = "m.text";
+      if (message.startsWith("/me ")) {
+        message = message.slice(4).trim();
+        msgtype = "m.emote";
+      }
+      await this._room.sendEvent("m.room.message", { msgtype, body: message });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async _pickAndSendFile() {}

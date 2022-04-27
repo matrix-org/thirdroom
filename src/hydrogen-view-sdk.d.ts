@@ -435,6 +435,15 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     set isBetter(value: boolean | undefined);
   }
 
+  export class AttachmentUpload {
+    constructor({ filename, blob, platform }: { filename: string; blob: Blob; platform: Platform });
+    get size(): number;
+    get sentBytes(): number;
+    abort(): void;
+    get localPreview(): Blob;
+    dispose(): void;
+  }
+
   export interface RoomOptions {
     roomId: string;
     storage: any;
@@ -475,7 +484,21 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     dispose(): void;
   }
 
-  export class Room extends BaseRoom {}
+  export class Room extends BaseRoom {
+    constructor(roomOptions: RoomOptions);
+    sendEvent(eventType: string, content: any, attachments?: any, log?: any): Promise<void>;
+    sendRedaction(eventIdOrTxnId: string, reason: string, log?: any): Promise<void>;
+    ensureMessageKeyIsShared(log?: any): Promise<any>;
+    get avatarColorId(): string;
+    get isUnread(): boolean;
+    get notificationCount(): number;
+    get highlightCount(): number;
+    get isTrackingMembers(): boolean;
+    clearUnread(log?: any): Promise<void>;
+    leave(log?: any): Promise<void>;
+    createAttachment(blob: Blob, filename: string): AttachmentUpload;
+    dispose(): void;
+  }
 
   export class Client {
     sessionId: string;
@@ -771,7 +794,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     clearReplyingTo(): void;
     get replyViewModel(): SimpleTile;
     get isEncrypted(): boolean;
-    sendMessage(message: any): Promise<boolean>;
+    sendMessage(message: string): Promise<boolean>;
     sendPicture(): void;
     sendFile(): void;
     sendVideo(): void;

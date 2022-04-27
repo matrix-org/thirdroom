@@ -6,6 +6,7 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { ChatHeader } from "../../components/chat-header/ChatHeader";
 import { ChatTimeline } from "./ChatTimeline";
+import { ChatComposer } from "./ChatComposer";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import MinusIC from "../../../../../res/ic/minus.svg";
 
@@ -47,11 +48,15 @@ export function ChatView({ room, onMinimize, onClose }: ChatViewProps) {
       {error && renderMsg(error.message)}
       {!error && (loading || !roomViewModel) && renderMsg("Loading...")}
       {!error && roomViewModel?.timelineViewModel && (
-        <div className="grow">
-          <ChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
-        </div>
+        <>
+          <div className="grow">
+            <ChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
+          </div>
+          <div className="shrink-0">
+            <ChatComposer composerViewModel={roomViewModel.composerViewModel!} />
+          </div>
+        </>
       )}
-      <div className="shrink-0" />
     </div>
   );
 }
