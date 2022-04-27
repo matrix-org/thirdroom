@@ -320,7 +320,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       [key: string]: any;
     };
 
-    constructor(container: HTMLElement, assetPaths: any, config: any, options?: any, cryptoExtras?: any);
+    constructor(options: { container: HTMLElement; assetPaths: any; config: any; options?: any; cryptoExtras?: any });
 
     setNavigation(navigation: Navigation): void;
 
