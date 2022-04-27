@@ -12,7 +12,7 @@ export abstract class ChatBaseMessage extends TemplateView<BaseMessageTile> impl
       this.renderAvatar(t, vm),
       t.div({ className: "ChatBaseMessage__content grow" }, [
         t.p({ className: "ChatBaseMessage__sender Text Text-b2 Text--surface Text--bold truncate" }, vm.displayName),
-        t.p({ className: "ChatBaseMessage__body" }, this.renderBody?.(t, vm) || ""),
+        t.div({ className: "ChatBaseMessage__body" }, this.renderBody?.(t, vm) || ""),
       ]),
     ]);
   }

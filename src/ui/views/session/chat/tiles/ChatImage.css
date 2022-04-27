@@ -1,0 +1,10 @@
+.ChatImage__body {
+  overflow: hidden;
+
+  & img {
+    max-width: 100%;
+    background-color: var(--bg-surface-low);
+    border-radius: var(--br-xs);
+    border: none;
+  }
+}

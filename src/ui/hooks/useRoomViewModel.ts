@@ -11,6 +11,7 @@ import {
   Session,
   GapTile,
   TextTile,
+  ImageTile,
   RoomMemberTile,
   EncryptedEventTile,
 } from "@thirdroom/hydrogen-view-sdk";
@@ -37,6 +38,8 @@ export function chatTileClassForEntry(entry: TimelineEntry): TileConstructor | u
           case "m.notice":
           case "m.emote":
             return TextTile;
+          case "m.image":
+            return ImageTile;
           default:
             // unknown msgtype not rendered
             return undefined;

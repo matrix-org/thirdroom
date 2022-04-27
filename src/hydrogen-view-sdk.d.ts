@@ -704,6 +704,27 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get shape(): "message-status";
   }
 
+  export class BaseMediaTile extends BaseMessageTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get isUploading(): boolean;
+    get uploadPercentage(): number | any;
+    get sendStatus(): string;
+    get thumbnailUrl(): string;
+    notifyVisible(): void;
+    get width(): number;
+    get height(): number;
+    get mimeType(): string | undefined;
+    get label(): any;
+    get error(): string | null;
+    setViewError(err: string): void;
+  }
+
+  export class ImageTile extends BaseMediaTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get lightboxUrl(): string;
+    get shape(): "image";
+  }
+
   export interface TilesCollectionOptions extends SimpleTileOptions {
     tileClassForEntry(entry: any): { new (entry: any, tileOptions: SimpleTileOptions): SimpleTile };
   }
