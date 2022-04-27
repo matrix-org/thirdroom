@@ -12,7 +12,7 @@ import {
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, setEulerFromQuaternion, Transform } from "./engine/component/transform";
 import { PhysicsSystem, RigidBody } from "./engine/physics";
-import { createCube, createScene } from "./engine/prefab";
+import { createCube, createScene, getPrefabTemplate } from "./engine/prefab";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
 import { RenderableVisibilitySystem } from "./engine/component/renderable";
@@ -135,7 +135,8 @@ export async function init(state: GameState): Promise<void> {
   const cubeSpawnSystem = (state: GameState) => {
     const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
     if (spawnCube.pressed) {
-      const cube = createCube(state);
+      // const cube = createCube(state);
+      const cube = getPrefabTemplate(state, "red-cube")?.create();
 
       addComponent(state.world, Networked, cube);
       // addComponent(state.world, NetworkTransform, cube);

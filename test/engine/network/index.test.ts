@@ -495,6 +495,7 @@ describe("Network Tests", () => {
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
       ents.forEach((eid) => {
+        // todo: default removeComponent to not clear component data
         removeComponent(state.world, Networked, eid, false);
       });
 
