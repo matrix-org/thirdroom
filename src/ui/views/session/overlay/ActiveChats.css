@@ -1,6 +1,21 @@
 .ActiveChats {
-  height: 100%;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+
+  width: 100%;
   gap: var(--sp-xs);
+}
+
+.ActiveChats__chat {
+  max-width: 100%;
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+
+  & .ChatView {
+    border: 1px solid var(--bg-surface-border);
+  }
 }
 
 .ActiveChats__tiles {

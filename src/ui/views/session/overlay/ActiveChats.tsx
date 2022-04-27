@@ -1,3 +1,5 @@
+import { Scroll } from "../../../atoms/scroll/Scroll";
+
 import "./ActiveChats.css";
 
 interface ActiveChatsProps {
@@ -8,8 +10,12 @@ interface ActiveChatsProps {
 export function ActiveChats({ chat, tiles }: ActiveChatsProps) {
   return (
     <div className="ActiveChats flex flex-column">
-      <div className="grow flex justify-end items-end">{chat}</div>
-      <div className="ActiveChats__tiles shrink-0 flex flex-wrap-reverse flex-row-reverse">{tiles}</div>
+      <div className="ActiveChats__chat grow flex justify-end items-end">{chat}</div>
+      <Scroll className="shrink-0" orientation="horizontal" type="scroll">
+        <div className="flex justify-end">
+          <div className="ActiveChats__tiles flex flex-row-reverse">{tiles}</div>
+        </div>
+      </Scroll>
     </div>
   );
 }

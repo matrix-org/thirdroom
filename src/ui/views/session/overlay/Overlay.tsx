@@ -136,20 +136,21 @@ export function Overlay({
     [onClose]
   );
 
-  const handleSelectRoom = (roomId: string) => {
-    if (selectedRoomListTab === RoomListTabs.Chats) {
-      if (!activeChats.has(roomId)) {
-        setActiveChats(
-          produce(activeChats, (draft) => {
-            draft.add(roomId);
-          })
-        );
-      }
-      if (selectedChatId === roomId) setSelectedChatId(undefined);
-      else setSelectedChatId(roomId);
-      return;
-    }
+  const handleSelectRoom = (roomId: string | undefined) => {
+    setSelectedChatId(undefined);
     setSelectedRoomId(roomId);
+  };
+
+  const handleSelectChat = (roomId: string) => {
+    if (!activeChats.has(roomId)) {
+      setActiveChats(
+        produce(activeChats, (draft) => {
+          draft.add(roomId);
+        })
+      );
+    }
+    if (selectedChatId === roomId) setSelectedChatId(undefined);
+    else setSelectedChatId(roomId);
   };
 
   const handleMinimizeChat = (roomId: string) => {
@@ -167,8 +168,8 @@ export function Overlay({
   };
 
   useEffect(() => {
-    setSelectedRoomId(activeWorldId);
-  }, [activeWorldId, activeChats]);
+    handleSelectRoom(activeWorldId);
+  }, [activeWorldId]);
 
   if (!isOpen) {
     return null;
@@ -200,7 +201,7 @@ export function Overlay({
                 />
               }
               title={roomName}
-              onClick={handleSelectRoom}
+              onClick={handleSelectChat}
               onClose={handleCloseChat}
             />
           );
@@ -235,8 +236,8 @@ export function Overlay({
               <RoomListContent
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
-                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? undefined : selectedRoomId}
-                onSelectRoom={handleSelectRoom}
+                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}
+                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectRoom}
                 onCreateWorld={onCreateWorld}
               />
             }
@@ -244,7 +245,8 @@ export function Overlay({
         }
       />
       <div className="Overlay__content grow">
-        {selectedRoomListTab === RoomListTabs.Chats ? renderActiveChats() : renderWorldPreview()}
+        {renderWorldPreview()}
+        {activeChats.size > 0 && renderActiveChats()}
       </div>
     </div>
   );
