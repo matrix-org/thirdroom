@@ -27,20 +27,18 @@ import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
-import {
-  broadcastReliable,
-  createIncomingNetworkSystem,
-  createOutgoingNetworkSystem,
-  createPeerIdIndexMessage,
-} from "./network";
+import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
+import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
+// import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
 const addPeerId = (state: GameState, peerId: string) => {
-  state.network.newPeers.push(peerId);
+  if (state.network.peers.includes(peerId) || state.network.peerId === peerId) return;
+
   state.network.peers.push(peerId);
-  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
-  if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+  state.network.newPeers.push(peerId);
+  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
@@ -55,7 +53,7 @@ const removePeerId = (state: GameState, peerId: string) => {
 
 const setPeerId = (state: GameState, peerId: string) => {
   state.network.peerId = peerId;
-  state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
 };
 
 const onMessage =
@@ -89,10 +87,9 @@ const onMessage =
       case WorkerMessageType.AddPeerId:
         addPeerId(state, message.peerId);
         break;
-      case WorkerMessageType.RemovePeerId: {
+      case WorkerMessageType.RemovePeerId:
         removePeerId(state, message.peerId);
         break;
-      }
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
         state.network.messages.push(message.packet);
@@ -100,8 +97,8 @@ const onMessage =
       case WorkerMessageType.StateChanged:
         onStateChange(state, message.state);
         break;
-      case WorkerMessageType.MakeHost:
-        state.network.hosting = true;
+      case WorkerMessageType.SetHost:
+        state.network.hosting = message.value;
         break;
     }
   };
@@ -187,6 +184,8 @@ export interface GameState {
   renderer: RenderState;
   time: TimeState;
   resourceManager: RemoteResourceManager;
+  prefabTemplateMap: Map<string, PrefabTemplate>;
+  entityPrefabMap: Map<number, string>;
   input: GameInputState;
   preSystems: System[];
   systems: System[];
@@ -282,6 +281,8 @@ async function onInit({
     scene,
     camera,
     resourceManager,
+    prefabTemplateMap: new Map(),
+    entityPrefabMap: new Map(),
     renderer,
     physicsWorld,
     input,
@@ -293,9 +294,12 @@ async function onInit({
     statsBuffer,
   };
 
+  registerDefaultPrefabs(state);
+
   state.preSystems.push(createIncomingNetworkSystem(state));
 
   state.postSystems.push(createOutgoingNetworkSystem(state));
+  // state.postSystems.push(NetworkTransformSystem, createOutgoingNetworkSystem(state));
 
   await init(state);
 

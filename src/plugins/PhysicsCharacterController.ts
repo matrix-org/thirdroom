@@ -2,11 +2,12 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
+import { Player } from "../engine/component/Player";
 import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { Networked, Owned } from "../engine/network";
+import { Networked, NetworkTransform, Owned } from "../engine/network";
 import { addRigidBody, RigidBody } from "../engine/physics";
 import { createCamera } from "../engine/prefab";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
@@ -127,12 +128,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   addCameraYawTargetComponent(world, playerRig);
 
-  const playerRigPosition = Transform.position[playerRig];
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic().setTranslation(
-    playerRigPosition[0],
-    playerRigPosition[1],
-    playerRigPosition[2]
-  );
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
@@ -144,7 +140,9 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.6;
 
+  addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
+  addComponent(world, NetworkTransform, playerRig);
   addComponent(world, Owned, playerRig);
 
   return playerRig;

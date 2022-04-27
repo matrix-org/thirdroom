@@ -67,6 +67,12 @@ export function SessionView() {
   const onEnteredWorld = useCallback(() => {
     setEnteredWorld(true);
     canvasRef.current?.requestPointerLock();
+
+    if (import.meta.env.VITE_USE_TESTNET) {
+      engine?.startTestNet();
+      return;
+    }
+
     if (engine && activeCall && powerLevels) {
       networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, activeCall);
     }

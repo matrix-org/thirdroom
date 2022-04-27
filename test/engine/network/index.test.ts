@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+// import { describe, it } from "vitest";
 import { ok, strictEqual } from "assert";
 import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
 
@@ -6,7 +6,6 @@ import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameWorker";
 import {
   createNetworkId,
-  deletedOwnedNetworkedQuery,
   deserializeCreates,
   deserializeDeletes,
   deserializeTransformChanged,
@@ -26,8 +25,14 @@ import {
   serializeUpdatesSnapshot,
   deserializeUpdatesSnapshot,
 } from "../../../src/engine/network";
-import { createCursorView, readFloat32, readUint32, readUint8 } from "../../../src/engine/network/CursorView";
-import { mockPhysicsWorld, mockRemoteResourceManager, mockRenderer } from "../mocks";
+import {
+  createCursorView,
+  readFloat32,
+  readString,
+  readUint32,
+  readUint8,
+} from "../../../src/engine/network/CursorView";
+import { mockGameState } from "../mocks";
 
 describe("Network Tests", () => {
   describe("networkId", () => {
@@ -407,7 +412,7 @@ describe("Network Tests", () => {
   });
   describe("creates serialization", () => {
     it("should #serializeCreates()", () => {
-      const state = { world: createWorld() } as unknown as GameState;
+      const state = mockGameState();
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -431,16 +436,11 @@ describe("Network Tests", () => {
 
       ents.forEach((eid) => {
         strictEqual(readUint32(reader), eid);
+        strictEqual(readString(reader), "cube");
       });
     });
     it("should #deserializeCreates()", () => {
-      const state = {
-        world: createWorld(),
-        network: { entityIdMap: new Map() },
-        resourceManager: mockRemoteResourceManager(),
-        physicsWorld: mockPhysicsWorld(),
-        renderer: mockRenderer(),
-      } as unknown as GameState;
+      const state = mockGameState();
 
       const writer = createCursorView();
 
@@ -479,7 +479,7 @@ describe("Network Tests", () => {
   });
   describe("deletes serialization", () => {
     it("should #serializeDeletes()", () => {
-      const state = { world: createWorld(), network: { idMap: new Map() } } as unknown as GameState;
+      const state = mockGameState();
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -495,7 +495,8 @@ describe("Network Tests", () => {
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
       ents.forEach((eid) => {
-        removeComponent(state.world, Networked, eid);
+        // todo: default removeComponent to not clear component data
+        removeComponent(state.world, Networked, eid, false);
       });
 
       serializeDeletes([state, writer]);
@@ -510,13 +511,7 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeDeletes()", () => {
-      const state = {
-        world: createWorld(),
-        network: { entityIdMap: new Map() },
-        resourceManager: mockRemoteResourceManager(),
-        physicsWorld: mockPhysicsWorld(),
-        renderer: mockRenderer(),
-      } as unknown as GameState;
+      const state = mockGameState();
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -541,22 +536,23 @@ describe("Network Tests", () => {
       strictEqual(remoteEntities.length, 3);
 
       ents.forEach((eid) => {
-        removeComponent(state.world, Networked, eid);
+        removeComponent(state.world, Networked, eid, false);
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 0);
 
-      strictEqual(deletedOwnedNetworkedQuery(state.world).length, 3);
+      // todo: make queue
+      // strictEqual(deletedOwnedNetworkedQuery(state.world).length, 3);
 
       const writer2 = createCursorView();
 
       serializeDeletes([state, writer2]);
 
-      const reader2 = createCursorView(writer.buffer);
-
       remoteEntities.forEach((eid) => {
         ok(entityExists(state.world, eid));
       });
+
+      const reader2 = createCursorView(writer2.buffer);
 
       deserializeDeletes([state, reader2]);
 
