@@ -143,7 +143,7 @@ export function WorldPreview({ session, room, roomId, onLoadWorld, onEnterWorld 
   else if (roomStatus & RoomStatus.Archived) title = "Room Archived";
   else if (roomStatus & RoomStatus.Joined) {
     title = room?.name || "Unnamed Room";
-    memberCount == room?.joinedMemberCount || 0;
+    memberCount = room?.joinedMemberCount || 0;
     options = (
       <Button
         variant={worldLoadState === WorldLoadState.Loaded ? "primary" : "secondary"}
