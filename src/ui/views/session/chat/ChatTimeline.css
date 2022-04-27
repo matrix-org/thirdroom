@@ -23,6 +23,9 @@
     & > li {
       width: 100%;
       padding: var(--sp-xs) var(--sp-md);
+      &.ChatAnnouncement {
+        padding: var(--sp-xxs) var(--sp-md);
+      }
     }
   }
 }
