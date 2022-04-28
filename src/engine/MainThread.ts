@@ -288,7 +288,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   return {
     startTestNet() {
-      ws = new WebSocket("ws://localhost:8080");
+      ws = new WebSocket("ws://localhost:9090");
       ws.binaryType = "arraybuffer";
 
       ws.addEventListener("open", (data) => {

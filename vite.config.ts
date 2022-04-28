@@ -4,9 +4,11 @@ import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
 import pluginRewriteAll from "vite-plugin-rewrite-all";
 
+import testnetServerPlugin from "./src/testnet";
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [pluginRewriteAll(), react(), crossOriginIsolation()],
+  plugins: [pluginRewriteAll(), react(), crossOriginIsolation(), testnetServerPlugin()],
   resolve: {
     dedupe: ["three", "bitecs"],
   },
