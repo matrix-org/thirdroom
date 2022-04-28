@@ -15,6 +15,7 @@ import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 
 export interface SessionOutletContext {
   activeWorld?: Room;
+  enteredWorld: boolean;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
   overlayOpen: boolean;

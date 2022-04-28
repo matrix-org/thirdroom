@@ -26,10 +26,7 @@
   position: absolute;
   bottom: var(--sp-md);
   right: var(--sp-md);
-
-  & div {
-    margin: var(--sp-xxs);
-  }
+  gap: var(--sp-xs);
 
   & .IconButton {
     padding: var(--sp-xs);
