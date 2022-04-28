@@ -119,7 +119,15 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   }
 
   async load() {
-    const timeline = await this._room.openTimeline();
+    let timeline;
+    // TODO: We can remove below condition
+    // if we have worlds and chats filtering in room list.
+    // see: https://github.com/matrix-org/thirdroom/pull/48#issuecomment-1111626938
+    if (this._room._timeline) {
+      timeline = this._room._timeline;
+    } else {
+      timeline = await this._room.openTimeline();
+    }
     this._tileOptions = this.childOptions({
       session: this._session,
       roomVM: this,

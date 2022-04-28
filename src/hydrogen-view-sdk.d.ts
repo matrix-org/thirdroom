@@ -485,6 +485,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export class Room extends BaseRoom {
+    _timeline: any;
     constructor(roomOptions: RoomOptions);
     sendEvent(eventType: string, content: any, attachments?: any, log?: any): Promise<void>;
     sendRedaction(eventIdOrTxnId: string, reason: string, log?: any): Promise<void>;
