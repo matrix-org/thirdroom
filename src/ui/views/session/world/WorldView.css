@@ -11,40 +11,25 @@
   pointer-events: all;
 }
 
-.WorldView > .Button,
-.WorldView__chat,
-.WorldView__controls {
-  position: absolute;
-}
-
-.WorldView > .Button {
-  left: var(--sp-md);
-  top: var(--sp-md);
-}
-
 .WorldView__chat {
   --chat-width: 385px;
-
+  background-color: red;
   max-width: var(--chat-width);
   width: 100%;
+  max-height: calc(100% - 70px);
+
+  position: absolute;
   bottom: var(--sp-md);
-  top: 50px;
   left: var(--sp-md);
-}
-.WorldView__chat--invisible {
-  display: none;
 }
 
 .WorldView__controls {
+  position: absolute;
   bottom: var(--sp-md);
   right: var(--sp-md);
 
   & div {
     margin: var(--sp-xxs);
-  }
-
-  & .Text {
-    color: var(--tc-world);
   }
 
   & .IconButton {

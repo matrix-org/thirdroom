@@ -46,7 +46,7 @@ export function WorldView() {
   return (
     <div className="WorldView">
       <Stats />
-      <div className="WorldView__chat">
+      <div className="WorldView__chat flex">
         <WorldChat open={chatOpen} room={activeWorld} />
       </div>
     </div>

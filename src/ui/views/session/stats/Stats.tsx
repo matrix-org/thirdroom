@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { StatsObject } from "../../../../engine/stats";
 import { useEngine } from "../../../hooks/useEngine";
+import { Text } from "../../../atoms/text/Text";
 import "./Stats.css";
 
 export function Stats() {
@@ -54,10 +55,10 @@ export function Stats() {
       {statsRef.current &&
         Object.entries(statsRef.current).map(([name, value]) => {
           return (
-            <div key={name}>
+            <Text variant="b1" color="world" key={name}>
               <b>{name}:</b>
               {" " + value}
-            </div>
+            </Text>
           );
         })}
     </div>

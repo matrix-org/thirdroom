@@ -3,8 +3,7 @@
   right: 8px;
   top: 54px;
   width: 200px;
-  padding: 8px;
-  background-color: rgba(0 0 0 / 50%);
-  color: var(--tc-world);
+  padding: var(--sp-xs);
+  background-color: var(--bg-world-overlay);
   overflow: hidden;
 }

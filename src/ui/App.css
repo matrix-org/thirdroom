@@ -16,6 +16,8 @@
   --bg-surface-scroll-track: transparent;
   --bg-surface-scroll-thumb: #0000001e;
 
+  --bg-world-overlay: rgba(0 0 0 / 50%);
+
   --bg-primary: hsl(209deg 93% 53%);
   --bg-primary-hover: hsl(209deg 93% 45%);
   --bg-primary-active: hsl(209deg 93% 40%);

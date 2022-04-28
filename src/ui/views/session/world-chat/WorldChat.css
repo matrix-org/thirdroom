@@ -1,8 +1,4 @@
 .WorldChat {
-  height: 100%;
+  width: 100%;
   overflow: hidden;
-
-  & .Text {
-    color: var(--tc-world);
-  }
 }

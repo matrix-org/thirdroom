@@ -1,7 +1,7 @@
 .WorldChat__TextMessageView {
   padding: var(--sp-xxs) var(--sp-xs);
-  background-color: #00000040;
-  border-radius: 8px;
+  background-color: var(--bg-world-overlay);
+  border-radius: var(--br-xs);
   display: inline-block;
 
   & > .Text {

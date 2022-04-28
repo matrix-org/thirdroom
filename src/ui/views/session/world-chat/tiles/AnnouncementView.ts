@@ -9,7 +9,7 @@ export class AnnouncementView extends TemplateView<RoomMemberTile> {
   render(t: Builder<RoomMemberTile>, vm: RoomMemberTile): Element {
     return t.li(
       { className: "WorldChat__AnnouncementView" },
-      t.div({ className: "Text Text-b2 Text--regular" }, vm.announcement)
+      t.div({ className: "Text Text-b2 Text--world Text--regular" }, vm.announcement)
     );
   }
 

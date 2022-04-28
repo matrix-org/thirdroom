@@ -1,0 +1,6 @@
+.WorldChatGap {
+  padding: var(--sp-xs) var(--sp-md);
+  background-color: var(--bg-world-overlay);
+  border-radius: var(--br-xs);
+  color: var(--tc-world);
+}

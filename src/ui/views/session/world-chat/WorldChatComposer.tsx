@@ -25,7 +25,7 @@ export function WorldChatComposer({ composerViewModel }: IWorldChatComposer) {
       <Icon color="world" src={MessageIC} size="sm" />
       <form className="grow" onSubmit={handleSubmit}>
         <input
-          className="Text Text-b2 Text-regular"
+          className="Text Text-b2 Text--world Text-regular"
           name="message"
           type="text"
           placeholder="Press Enter to chat"

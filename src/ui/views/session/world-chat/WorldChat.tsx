@@ -14,23 +14,22 @@ interface IWorldChat {
 export function WorldChat({ room, open }: IWorldChat) {
   const { loading, roomViewModel, error } = useRoomViewModel(room, worldChatTileClassForEntry);
 
-  if (!open) {
-    return null;
-  }
+  const renderTimeline = () =>
+    error ? (
+      <div className="grow flex justify-center items-center">
+        <Text>{error.message}</Text>
+      </div>
+    ) : loading || !roomViewModel ? (
+      <div className="grow flex justify-center items-center">
+        <Text>loading...</Text>
+      </div>
+    ) : (
+      <WorldChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
+    );
 
   return (
-    <div className="WorldChat flex flex-column" id="WorldChat">
-      {error ? (
-        <div className="grow flex justify-center items-center">
-          <Text>{error.message}</Text>
-        </div>
-      ) : loading || !roomViewModel ? (
-        <div className="grow flex justify-center items-center">
-          <Text>loading...</Text>
-        </div>
-      ) : (
-        <WorldChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
-      )}
+    <div className="WorldChat flex flex-column justify-end" id="WorldChat">
+      {open && renderTimeline()}
       {roomViewModel && <WorldChatComposer composerViewModel={roomViewModel.composerViewModel} />}
     </div>
   );
