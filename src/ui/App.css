@@ -3,6 +3,7 @@
 @import "./style/display.css";
 @import "./style/flex.css";
 @import "./style/text.css";
+@import "./style/legacy-scroll.css";
 
 @custom-selector :--heading h1, h2, h3, h4, h5, h6;
 

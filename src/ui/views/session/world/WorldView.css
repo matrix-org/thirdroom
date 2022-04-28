@@ -13,7 +13,6 @@
 
 .WorldView__chat {
   --chat-width: 385px;
-  background-color: red;
   max-width: var(--chat-width);
   width: 100%;
   max-height: calc(100% - 70px);

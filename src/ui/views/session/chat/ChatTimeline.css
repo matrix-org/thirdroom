@@ -6,8 +6,6 @@
 }
 .ChatTimeline .Timeline_scroller {
   height: 100%;
-  overflow: hidden;
-  overflow-y: auto;
 
   & > ul {
     list-style: none;

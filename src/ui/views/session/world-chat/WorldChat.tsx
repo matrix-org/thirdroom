@@ -5,6 +5,8 @@ import { WorldChatTimeline } from "./WorldChatTimeline";
 import { WorldChatComposer } from "./WorldChatComposer";
 import { useRoomViewModel, worldChatTileClassForEntry } from "../../../hooks/useRoomViewModel";
 import { Text } from "../../../atoms/text/Text";
+import { Icon } from "../../../atoms/icon/Icon";
+import MessageIC from "../../../../../res/ic/message.svg";
 
 interface IWorldChat {
   open: boolean;
@@ -30,7 +32,21 @@ export function WorldChat({ room, open }: IWorldChat) {
   return (
     <div className="WorldChat flex flex-column justify-end" id="WorldChat">
       {open && renderTimeline()}
-      {roomViewModel && <WorldChatComposer composerViewModel={roomViewModel.composerViewModel} />}
+      <div className="WorldChat__input flex items-center">
+        <Icon color="world" src={MessageIC} size="sm" />
+        {open && roomViewModel ? (
+          <>
+            <WorldChatComposer composerViewModel={roomViewModel.composerViewModel} />
+            <Text variant="b3" color="world" weight="bold" className="uppercase">
+              Enter
+            </Text>
+          </>
+        ) : (
+          <Text variant="b2" color="world">
+            Press <b>Enter</b> to chat
+          </Text>
+        )}
+      </div>
     </div>
   );
 }

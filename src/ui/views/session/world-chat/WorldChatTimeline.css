@@ -1,14 +1,9 @@
-.WorldChatTimeline {
-  background-color: blue;
-}
 .WorldChatTimeline .Timeline {
   width: 100%;
 }
 
 .WorldChatTimeline .Timeline_scroller {
   height: 100%;
-  overflow: hidden;
-  overflow-y: auto;
 
   & > ul {
     list-style: none;
