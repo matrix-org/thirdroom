@@ -20,35 +20,35 @@
 }
 
 .Icon--surface {
-  background-color: var(--tc-surface);
+  background-color: var(--ic-surface);
 }
 .Icon--surface-low {
-  background-color: var(--tc-surface-low);
+  background-color: var(--ic-surface-low);
 }
 .Icon--world {
-  background-color: var(--tc-world);
+  background-color: var(--ic-world);
 }
 .Icon--primary {
-  background-color: var(--tc-primary);
+  background-color: var(--ic-primary);
 }
 .Icon--on-primary {
-  background-color: var(--tc-on-primary);
+  background-color: var(--ic-on-primary);
 }
 .Icon--secondary {
-  background-color: var(--tc-secondary);
+  background-color: var(--ic-secondary);
 }
 .Icon--on-secondary {
-  background-color: var(--tc-on-secondary);
+  background-color: var(--ic-on-secondary);
 }
 .Icon--danger {
-  background-color: var(--tc-danger);
+  background-color: var(--ic-danger);
 }
 .Icon--on-danger {
-  background-color: var(--tc-on-danger);
+  background-color: var(--ic-on-danger);
 }
 .Icon--tooltip {
-  background-color: var(--tc-tooltip);
+  background-color: var(--ic-tooltip);
 }
 .Icon--link {
-  background-color: var(--tc-link);
+  background-color: var(--ic-link);
 }
