@@ -22,7 +22,7 @@ interface IIconButton {
   iconSrc: string;
   label: string;
   type?: "button" | "submit" | "reset";
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
 }
 

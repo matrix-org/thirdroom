@@ -11,6 +11,7 @@ import {
   Session,
   GapTile,
   TextTile,
+  ImageTile,
   RoomMemberTile,
   EncryptedEventTile,
 } from "@thirdroom/hydrogen-view-sdk";
@@ -19,7 +20,46 @@ import { useEffect } from "react";
 import { useAsync } from "./useAsync";
 import { useHydrogen } from "./useHydrogen";
 
-export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
+type tileClassForEntryType = (entry: TimelineEntry) => TileConstructor | undefined;
+
+export function chatTileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
+  if (entry.isGap) {
+    return GapTile;
+  } else if (entry.eventType) {
+    switch (entry.eventType) {
+      case "m.room.message": {
+        if (entry.isRedacted) {
+          return undefined;
+        }
+        const content = entry.content;
+        const msgtype = content && content.msgtype;
+        switch (msgtype) {
+          case "m.text":
+          case "m.notice":
+          case "m.emote":
+            return TextTile;
+          case "m.image":
+            return ImageTile;
+          default:
+            // unknown msgtype not rendered
+            return undefined;
+        }
+      }
+      case "m.room.member":
+        return RoomMemberTile;
+      case "m.room.encrypted":
+        if (entry.isRedacted) {
+          return undefined;
+        }
+        return EncryptedEventTile;
+      default:
+        // unknown type not rendered
+        return undefined;
+    }
+  }
+}
+
+export function worldChatTileClassForEntry(entry: TimelineEntry): TileConstructor | undefined {
   if (entry.isGap) {
     return GapTile;
   } else if (entry.eventType) {
@@ -57,6 +97,7 @@ export function tileClassForEntry(entry: TimelineEntry): TileConstructor | undef
 interface TRRoomViewModelOptions extends ViewModelOptions {
   room: Room;
   session: Session;
+  tileClassForEntry: tileClassForEntryType;
 }
 
 export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
@@ -64,24 +105,34 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   private _session: Session;
   private _timelineVM: TimelineViewModel | null;
   private _composerVM: ComposerViewModel;
+  private _tileClassForEntry: tileClassForEntryType;
   private _tileOptions?: TileOptions;
 
   constructor(options: TRRoomViewModelOptions) {
     super(options);
-    const { room, session } = options;
+    const { room, session, tileClassForEntry } = options;
     this._session = session;
     this._room = room;
+    this._tileClassForEntry = tileClassForEntry;
     this._timelineVM = null;
     this._composerVM = new ComposerViewModel(this);
   }
 
   async load() {
-    const timeline = await this._room.openTimeline();
+    let timeline;
+    // TODO: We can remove below condition
+    // if we have worlds and chats filtering in room list.
+    // see: https://github.com/matrix-org/thirdroom/pull/48#issuecomment-1111626938
+    if (this._room._timeline) {
+      timeline = this._room._timeline;
+    } else {
+      timeline = await this._room.openTimeline();
+    }
     this._tileOptions = this.childOptions({
       session: this._session,
       roomVM: this,
       timeline,
-      tileClassForEntry,
+      tileClassForEntry: this._tileClassForEntry,
     });
     this._timelineVM = this.track(
       new TimelineViewModel(
@@ -99,15 +150,26 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
 
   _createTile(entry: any) {
     if (this._tileOptions) {
-      const Tile = tileClassForEntry(entry);
+      const Tile = this._tileClassForEntry(entry);
       if (Tile) {
         return new Tile(entry, this._tileOptions);
       }
     }
   }
 
-  async _sendMessage(message: any, replyingTo: any) {
-    return false;
+  async _sendMessage(message: string): Promise<boolean> {
+    if (!message) return false;
+    try {
+      let msgtype = "m.text";
+      if (message.startsWith("/me ")) {
+        message = message.slice(4).trim();
+        msgtype = "m.emote";
+      }
+      await this._room.sendEvent("m.room.message", { msgtype, body: message });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async _pickAndSendFile() {}
@@ -137,7 +199,7 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
   startReply(entry: any) {}
 }
 
-export function useRoomViewModel(room: Room) {
+export function useRoomViewModel(room: Room, tileClassForEntry: tileClassForEntryType) {
   const { platform, logger, session, urlRouter, navigation } = useHydrogen(true);
 
   const {
@@ -148,6 +210,7 @@ export function useRoomViewModel(room: Room) {
     const roomViewModel = new TRRoomViewModel({
       session,
       room,
+      tileClassForEntry,
       platform,
       logger,
       urlCreator: urlRouter,

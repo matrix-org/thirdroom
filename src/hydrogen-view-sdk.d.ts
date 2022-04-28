@@ -435,6 +435,15 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     set isBetter(value: boolean | undefined);
   }
 
+  export class AttachmentUpload {
+    constructor({ filename, blob, platform }: { filename: string; blob: Blob; platform: Platform });
+    get size(): number;
+    get sentBytes(): number;
+    abort(): void;
+    get localPreview(): Blob;
+    dispose(): void;
+  }
+
   export interface RoomOptions {
     roomId: string;
     storage: any;
@@ -475,7 +484,22 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     dispose(): void;
   }
 
-  export class Room extends BaseRoom {}
+  export class Room extends BaseRoom {
+    _timeline: any;
+    constructor(roomOptions: RoomOptions);
+    sendEvent(eventType: string, content: any, attachments?: any, log?: any): Promise<void>;
+    sendRedaction(eventIdOrTxnId: string, reason: string, log?: any): Promise<void>;
+    ensureMessageKeyIsShared(log?: any): Promise<any>;
+    get avatarColorId(): string;
+    get isUnread(): boolean;
+    get notificationCount(): number;
+    get highlightCount(): number;
+    get isTrackingMembers(): boolean;
+    clearUnread(log?: any): Promise<void>;
+    leave(log?: any): Promise<void>;
+    createAttachment(blob: Blob, filename: string): AttachmentUpload;
+    dispose(): void;
+  }
 
   export class Client {
     sessionId: string;
@@ -664,7 +688,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get sender(): string;
     get memberPanelLink(): string;
     get avatarColorNumber(): number;
-    get avatarUrl(): string | null;
+    avatarUrl(size: number): string | null;
     get avatarLetter(): string;
     get avatarTitle(): string;
     get date(): string | null;
@@ -702,6 +726,27 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(entry: any, params: SimpleTileOptions);
     updateEntry(entry: any, param: any): any;
     get shape(): "message-status";
+  }
+
+  export class BaseMediaTile extends BaseMessageTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get isUploading(): boolean;
+    get uploadPercentage(): number | any;
+    get sendStatus(): string;
+    get thumbnailUrl(): string;
+    notifyVisible(): void;
+    get width(): number;
+    get height(): number;
+    get mimeType(): string | undefined;
+    get label(): any;
+    get error(): string | null;
+    setViewError(err: string): void;
+  }
+
+  export class ImageTile extends BaseMediaTile {
+    constructor(entry: any, options: SimpleTileOptions);
+    get lightboxUrl(): string;
+    get shape(): "image";
   }
 
   export interface TilesCollectionOptions extends SimpleTileOptions {
@@ -750,7 +795,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     clearReplyingTo(): void;
     get replyViewModel(): SimpleTile;
     get isEncrypted(): boolean;
-    sendMessage(message: any): Promise<boolean>;
+    sendMessage(message: string): Promise<boolean>;
     sendPicture(): void;
     sendFile(): void;
     sendVideo(): void;
