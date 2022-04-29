@@ -1,6 +1,6 @@
-import { RefObject, useCallback, useMemo, useRef, useState } from "react";
-import { Outlet, useLocation, useMatch } from "react-router-dom";
-import { GroupCall, ObservableValue, Room } from "@thirdroom/hydrogen-view-sdk";
+import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
+import { Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
+import { GroupCall, ObservableValue, Room, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
@@ -9,44 +9,62 @@ import { StatusBar } from "./statusbar/StatusBar";
 import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
+import {
+  useStore,
+  closeOverlay,
+  loadWorld,
+  setIsPointerLock,
+  setIsEnteredWorld,
+  openOverlay,
+  openWorldChat,
+  closeWorldChat,
+} from "../../hooks/useStore";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
+import { useKeyDown } from "../../hooks/useKeyDown";
+import { usePointerLockChange } from "../../hooks/usePointerLockChange";
 
 export interface SessionOutletContext {
-  activeWorld?: Room;
-  enteredWorld: boolean;
+  loadedWorld?: Room;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
 }
 
 export function SessionView() {
-  const { client, session } = useHydrogen(true);
+  const { client, session, platform } = useHydrogen(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
   const networkInterfaceRef = useRef<() => void>();
+  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+
+  const navigate = useNavigate();
 
   const location = useLocation();
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
 
   const worldMatch = useMatch({ path: "world/:worldId" });
-  const activeWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
-  const activeWorld = useRoom(session, activeWorldId);
+  const loadedWorldId = useStore((state) => state.world.loadedWorldId);
+  const loadedWorld = useRoom(session, loadedWorldId);
+
+  useEffect(() => {
+    const newLoadedWId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
+    loadWorld(newLoadedWId);
+  }, [worldMatch, location]);
 
   const { value: powerLevels } = useAsyncObservableValue(
-    () => (activeWorld ? activeWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
-    [activeWorld]
+    () => (loadedWorld ? loadedWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
+    [loadedWorld]
   );
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === activeWorldId ? call : []));
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === loadedWorldId ? call : []));
     return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, activeWorldId]);
-
-  const [enteredWorld, setEnteredWorld] = useState(false);
+  }, [calls, loadedWorldId]);
 
   const onLeftWorld = useCallback(() => {
-    setEnteredWorld(false);
+    loadWorld(undefined);
+    setIsEnteredWorld(false);
     document.exitPointerLock();
 
     if (activeCall) {
@@ -58,7 +76,8 @@ export function SessionView() {
     }
   }, [activeCall]);
   const onEnteredWorld = useCallback(() => {
-    setEnteredWorld(true);
+    closeOverlay();
+    setIsEnteredWorld(true);
     canvasRef.current?.requestPointerLock();
 
     if (import.meta.env.VITE_USE_TESTNET) {
@@ -71,32 +90,89 @@ export function SessionView() {
     }
   }, [client, engine, activeCall, powerLevels]);
 
+  const onLoadWorld = useCallback(
+    async (room: Room) => {
+      const isEnteredWorld = useStore.getState().world.isEnteredWorld;
+      if (isEnteredWorld) {
+        onLeftWorld();
+      }
+
+      navigate(`/world/${room.id}`);
+      return;
+    },
+    [navigate, onLeftWorld]
+  );
+
+  const onEnterWorld = useCallback(
+    async (room: Room) => {
+      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === room.id ? call : []));
+
+      let call = roomCalls.length && roomCalls[0];
+
+      if (!call) {
+        call = await session.callHandler.createCall(room.id, "m.voice", "Test World", CallIntent.Room);
+      }
+
+      const stream = await platform.mediaDevices.getMediaTracks(true, false);
+      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
+      await call.join(localMedia);
+
+      onEnteredWorld();
+    },
+    [platform, session, calls, onEnteredWorld]
+  );
+
+  useKeyDown((e) => {
+    if (e.key === "Escape") {
+      const { isChatOpen } = useStore.getState().world;
+      if (isChatOpen) {
+        canvasRef.current?.requestPointerLock();
+        closeWorldChat();
+      } else if (useStore.getState().overlay.isOpen) {
+        canvasRef.current?.requestPointerLock();
+        closeOverlay();
+      } else {
+        document.exitPointerLock();
+        openOverlay();
+      }
+    }
+    if (e.key === "Enter") {
+      const { isChatOpen } = useStore.getState().world;
+      if (!isChatOpen) {
+        document.exitPointerLock();
+        openWorldChat();
+      }
+    }
+  }, []);
+
+  usePointerLockChange(
+    canvasRef.current,
+    (isLocked) => {
+      setIsPointerLock(isLocked);
+    },
+    []
+  );
+
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
-      activeWorld,
+      loadedWorld,
       activeCall,
       canvasRef,
-      enteredWorld,
       onEnteredWorld,
       onLeftWorld,
     }),
-    [activeWorld, activeCall, enteredWorld, onEnteredWorld, onLeftWorld]
+    [loadedWorld, activeCall, canvasRef, onEnteredWorld, onLeftWorld]
   );
 
+  const { isEnteredWorld } = useStore.getState().world;
   return (
     <div className="SessionView">
       <canvas className="SessionView__viewport" ref={canvasRef} />
       {engine ? (
         <EngineContextProvider value={engine}>
           <Outlet context={outletContext} />
-          <Overlay
-            isHome={isHome}
-            activeWorldId={activeWorldId}
-            enteredWorld={enteredWorld}
-            onEnteredWorld={onEnteredWorld}
-            onLeftWorld={onLeftWorld}
-          />
-          <StatusBar showOverlayTip={!isHome && enteredWorld} title={isHome ? "Home" : activeWorld?.name} />
+          {isOverlayOpen && <Overlay isHome={isHome} onEnterWorld={onEnterWorld} onLoadWorld={onLoadWorld} />}
+          <StatusBar showOverlayTip={!isHome && isEnteredWorld} title={isHome ? "Home" : loadedWorld?.name} />
         </EngineContextProvider>
       ) : (
         <div>Initializing engine...</div>

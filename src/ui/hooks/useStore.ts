@@ -15,8 +15,8 @@ export interface OverlayState {
 export interface WorldState {
   isChatOpen: boolean;
   isPointerLock: boolean;
-  selectedWorldId: RoomId | undefined;
-  enteredWorldId: RoomId | undefined;
+  loadedWorldId: RoomId | undefined;
+  isEnteredWorld: boolean;
 }
 
 export interface StoreState {
@@ -35,8 +35,8 @@ export const useStore = create<StoreState>(() => ({
   world: {
     isChatOpen: false,
     isPointerLock: false,
-    selectedWorldId: undefined,
-    enteredWorldId: undefined,
+    loadedWorldId: undefined,
+    isEnteredWorld: false,
   },
 }));
 
@@ -89,14 +89,29 @@ export function selectChat(roomId: RoomId | undefined) {
 export function selectWorld(roomId: RoomId | undefined) {
   useStore.setState(
     produce((state) => {
-      state.world.selectedWorldId = roomId;
+      state.overlay.selectedWorldId = roomId;
     })
   );
 }
-export function enterWorld(roomId: RoomId | undefined) {
+export function loadWorld(roomId: RoomId | undefined) {
   useStore.setState(
     produce((state) => {
-      state.world.enteredWorldId = roomId;
+      state.world.loadedWorldId = roomId;
+    })
+  );
+}
+export function setIsEnteredWorld(isEntered: boolean) {
+  useStore.setState(
+    produce((state) => {
+      state.world.isEnteredWorld = isEntered;
+    })
+  );
+}
+
+export function setIsPointerLock(isPointerLock: boolean) {
+  useStore.setState(
+    produce((state) => {
+      state.world.isPointerLock = isPointerLock;
     })
   );
 }

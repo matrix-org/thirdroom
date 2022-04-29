@@ -18,6 +18,7 @@
   --bg-surface-scroll-thumb: #0000001e;
 
   --bg-world-overlay: rgba(0 0 0 / 50%);
+  --bg-world-border: #ffffff;
 
   --bg-primary: hsl(209deg 93% 53%);
   --bg-primary-hover: hsl(209deg 93% 45%);

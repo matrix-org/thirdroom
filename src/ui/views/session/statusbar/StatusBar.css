@@ -20,7 +20,7 @@
 
   & > .Text span {
     font-size: 8px;
-    border: 1px solid white;
+    border: 1px solid var(--bg-world-border);
     border-radius: var(--br-xs);
     padding: 2px var(--sp-xxs);
     margin-right: var(--sp-xs);

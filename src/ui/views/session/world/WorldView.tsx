@@ -13,8 +13,9 @@ import LogoutIC from "../../../../../res/ic/logout.svg";
 import "./WorldView.css";
 
 export function WorldView() {
-  const { activeWorld, enteredWorld, canvasRef } = useOutletContext<SessionOutletContext>();
+  const { loadedWorld, canvasRef } = useOutletContext<SessionOutletContext>();
   const isChatOpen = useStore((state) => state.world.isChatOpen);
+  const { isEnteredWorld } = useStore.getState().world;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -34,7 +35,7 @@ export function WorldView() {
     }
   }, [isChatOpen, canvasRef]);
 
-  if (!enteredWorld || !activeWorld) {
+  if (!isEnteredWorld || !loadedWorld) {
     return null;
   }
 
@@ -65,9 +66,9 @@ export function WorldView() {
     <div className="WorldView">
       <Stats />
       <div className="WorldView__chat flex">
-        <WorldChat open={isChatOpen} room={activeWorld} />
+        <WorldChat open={isChatOpen} room={loadedWorld} />
       </div>
-      {activeWorld && renderControl()}
+      {loadedWorld && renderControl()}
     </div>
   );
 }
