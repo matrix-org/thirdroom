@@ -5,7 +5,6 @@ import { GroupCall, ObservableValue, Room } from "@thirdroom/hydrogen-view-sdk";
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
 import { Overlay } from "./overlay/Overlay";
-import { usePointerLockState } from "../../hooks/usePointerLockState";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
@@ -18,12 +17,6 @@ export interface SessionOutletContext {
   enteredWorld: boolean;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
-  overlayOpen: boolean;
-  onOpenOverlay: () => void;
-  onCloseOverlay: () => void;
-  chatOpen: boolean;
-  onOpenChat: () => void;
-  onCloseChat: () => void;
 }
 
 export function SessionView() {
@@ -35,10 +28,11 @@ export function SessionView() {
   const location = useLocation();
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
+
   const worldMatch = useMatch({ path: "world/:worldId" });
   const activeWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
-
   const activeWorld = useRoom(session, activeWorldId);
+
   const { value: powerLevels } = useAsyncObservableValue(
     () => (activeWorld ? activeWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
     [activeWorld]
@@ -50,9 +44,7 @@ export function SessionView() {
   }, [calls, activeWorldId]);
 
   const [enteredWorld, setEnteredWorld] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const isPointerLocked = usePointerLockState(canvasRef.current);
-  const overlayOpen = !isPointerLocked && !chatOpen;
+
   const onLeftWorld = useCallback(() => {
     setEnteredWorld(false);
     document.exitPointerLock();
@@ -72,20 +64,6 @@ export function SessionView() {
       networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, activeCall);
     }
   }, [client, engine, activeCall, powerLevels]);
-  const onOpenOverlay = useCallback(() => {
-    document.exitPointerLock();
-  }, []);
-  const onCloseOverlay = useCallback(() => {
-    canvasRef.current?.requestPointerLock();
-  }, []);
-  const onOpenChat = useCallback(() => {
-    document.exitPointerLock();
-    setChatOpen(true);
-  }, []);
-  const onCloseChat = useCallback(() => {
-    canvasRef.current?.requestPointerLock();
-    setChatOpen(false);
-  }, []);
 
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
@@ -95,26 +73,8 @@ export function SessionView() {
       enteredWorld,
       onEnteredWorld,
       onLeftWorld,
-      overlayOpen,
-      onOpenOverlay,
-      onCloseOverlay,
-      chatOpen,
-      onOpenChat,
-      onCloseChat,
     }),
-    [
-      activeWorld,
-      activeCall,
-      enteredWorld,
-      onEnteredWorld,
-      onLeftWorld,
-      overlayOpen,
-      onOpenOverlay,
-      onCloseOverlay,
-      chatOpen,
-      onOpenChat,
-      onCloseChat,
-    ]
+    [activeWorld, activeCall, enteredWorld, onEnteredWorld, onLeftWorld]
   );
 
   return (
@@ -124,19 +84,13 @@ export function SessionView() {
         <EngineContextProvider value={engine}>
           <Outlet context={outletContext} />
           <Overlay
-            isOpen={overlayOpen}
-            onClose={onCloseOverlay}
             isHome={isHome}
             activeWorldId={activeWorldId}
             enteredWorld={enteredWorld}
             onEnteredWorld={onEnteredWorld}
             onLeftWorld={onLeftWorld}
           />
-          <StatusBar
-            showOverlayTip={!isHome && enteredWorld}
-            isOverlayOpen={overlayOpen}
-            title={isHome ? "Home" : activeWorld?.name}
-          />
+          <StatusBar showOverlayTip={!isHome && enteredWorld} title={isHome ? "Home" : activeWorld?.name} />
         </EngineContextProvider>
       ) : (
         <div>Initializing engine...</div>

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import produce from "immer";
 import classNames from "classnames";
 import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
@@ -20,32 +19,24 @@ import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
 import { useRoom } from "../../../hooks/useRoom";
 import { useCalls } from "../../../hooks/useCalls";
-import { useKeyDown } from "../../../hooks/useKeyDown";
+import { useStore, selectRoomListTab, selectChat, addActiveChat, deleteActiveChat } from "../../../hooks/useStore";
 
 interface OverlayProps {
   activeWorldId?: string;
-  isOpen: boolean;
   isHome: boolean;
   enteredWorld: boolean;
   onEnteredWorld: () => void;
   onLeftWorld: () => void;
-  onClose: () => void;
 }
 
-export function Overlay({
-  activeWorldId,
-  isOpen,
-  isHome,
-  onClose,
-  enteredWorld,
-  onEnteredWorld,
-  onLeftWorld,
-}: OverlayProps) {
+export function Overlay({ activeWorldId, isHome, enteredWorld, onEnteredWorld, onLeftWorld }: OverlayProps) {
   const { session, platform } = useHydrogen(true);
-  const [selectedRoomListTab, setSelectedRoomListTab] = useState(RoomListTabs.Home);
+  const selectedRoomListTab = useStore((state) => state.overlay.selectedRoomListTab);
 
-  const [activeChats, setActiveChats] = useState<Set<string>>(new Set());
-  const [selectedChatId, setSelectedChatId] = useState<undefined | string>(undefined);
+  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const activeChats = useStore((state) => state.overlay.activeChats);
+
+  const selectedChatId = useStore((state) => state.overlay.selectedChatId);
   const selectedChat = useRoom(session, selectedChatId);
 
   const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
@@ -123,55 +114,34 @@ export function Overlay({
     [platform, session, calls, onEnteredWorld]
   );
 
-  const handleRoomListTabSelect = (selectedTab: RoomListTabs) => {
-    setSelectedRoomListTab(selectedTab);
-  };
-
-  useKeyDown(
-    (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
   const handleSelectRoom = (roomId: string | undefined) => {
-    setSelectedChatId(undefined);
+    selectChat(undefined);
     setSelectedRoomId(roomId);
   };
 
   const handleSelectChat = (roomId: string) => {
     if (!activeChats.has(roomId)) {
-      setActiveChats(
-        produce(activeChats, (draft) => {
-          draft.add(roomId);
-        })
-      );
+      addActiveChat(roomId);
     }
-    if (selectedChatId === roomId) setSelectedChatId(undefined);
-    else setSelectedChatId(roomId);
+    if (selectedChatId === roomId) selectChat(undefined);
+    else selectChat(roomId);
   };
 
   const handleMinimizeChat = (roomId: string) => {
-    setSelectedChatId(undefined);
+    selectChat(undefined);
   };
   const handleCloseChat = (roomId: string) => {
     if (selectedChatId === roomId) {
-      setSelectedChatId(undefined);
+      selectChat(undefined);
     }
-    setActiveChats(
-      produce(activeChats, (draft) => {
-        draft.delete(roomId);
-      })
-    );
+    deleteActiveChat(roomId);
   };
 
   useEffect(() => {
     handleSelectRoom(activeWorldId);
   }, [activeWorldId]);
 
-  if (!isOpen) {
+  if (!isOverlayOpen) {
     return null;
   }
 
@@ -225,13 +195,13 @@ export function Overlay({
   };
 
   return (
-    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex")}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex items-end")}>
       <SidebarView
         open
         spaces={<SpacesView />}
         roomList={
           <RoomListView
-            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={handleRoomListTabSelect} />}
+            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
             content={
               <RoomListContent
                 selectedTab={selectedRoomListTab}

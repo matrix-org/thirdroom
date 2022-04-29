@@ -1,4 +1,5 @@
 import { Text } from "../../../atoms/text/Text";
+import { useStore } from "../../../hooks/useStore";
 import "./StatusBar.css";
 
 function OpenOverlayTip({ text }: { text: string }) {
@@ -14,11 +15,12 @@ function OpenOverlayTip({ text }: { text: string }) {
 
 interface StatusBarProps {
   showOverlayTip?: boolean;
-  isOverlayOpen?: boolean;
   title?: string | null;
 }
 
-export function StatusBar({ showOverlayTip, isOverlayOpen, title }: StatusBarProps) {
+export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
+  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+
   return (
     <div className="StatusBar shrink-0 flex items-center">
       <div className="StatusBar__left grow basis-0">

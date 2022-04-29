@@ -4,36 +4,25 @@ import { useOutletContext } from "react-router-dom";
 import { SessionOutletContext } from "../SessionView";
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
-import { useKeyDown } from "../../../hooks/useKeyDown";
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
+import { useStore, closeWorldChat } from "../../../hooks/useStore";
 import MicIC from "../../../../../res/ic/mic.svg";
 import HeadphoneIC from "../../../../../res/ic/headphone.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import "./WorldView.css";
 
 export function WorldView() {
-  const { activeWorld, enteredWorld, chatOpen, onOpenChat, onCloseChat, canvasRef } =
-    useOutletContext<SessionOutletContext>();
-
-  useKeyDown(
-    (e) => {
-      if (e.key === "Enter" && !chatOpen) {
-        onOpenChat();
-      } else if (e.key === "Escape" && chatOpen) {
-        onCloseChat();
-      }
-    },
-    [chatOpen, canvasRef]
-  );
+  const { activeWorld, enteredWorld, canvasRef } = useOutletContext<SessionOutletContext>();
+  const isChatOpen = useStore((state) => state.world.isChatOpen);
 
   useEffect(() => {
     const canvas = canvasRef.current;
 
     if (canvas) {
       const onClickCanvas = () => {
-        if (chatOpen) {
-          onCloseChat();
+        if (isChatOpen) {
+          closeWorldChat();
         }
       };
 
@@ -43,7 +32,7 @@ export function WorldView() {
         canvas.removeEventListener("click", onClickCanvas);
       };
     }
-  }, [chatOpen, onCloseChat, canvasRef]);
+  }, [isChatOpen, canvasRef]);
 
   if (!enteredWorld || !activeWorld) {
     return null;
@@ -76,7 +65,7 @@ export function WorldView() {
     <div className="WorldView">
       <Stats />
       <div className="WorldView__chat flex">
-        <WorldChat open={chatOpen} room={activeWorld} />
+        <WorldChat open={isChatOpen} room={activeWorld} />
       </div>
       {activeWorld && renderControl()}
     </div>
