@@ -30,14 +30,14 @@ export function createMatrixNetworkInterface(
 
   // TODO: should peer ids be keyed like the call ids? (userId, deviceId, sessionId)?
   // Or maybe just (userId, deviceId)?
-  engine.setPeerId(client.session.userId);
+  // engine.setPeerId(client.session.userId);
 
   let unsubscibeMembersObservable: SubscriptionHandle | undefined;
 
   const userId = client.session.userId;
 
   getInitialHost(userId)
-    .then((initialHostId) => joinWorld(initialHostId === userId))
+    .then((initialHostId) => joinWorld(userId, initialHostId === userId))
     .catch(console.error);
 
   function getInitialHost(userId: string): Promise<string> {
@@ -134,11 +134,9 @@ export function createMatrixNetworkInterface(
     });
   }
 
-  function joinWorld(isHost: boolean) {
-    if (isHost) {
-      engine.makeHost();
-    }
-
+  function joinWorld(userId: string, isHost: boolean) {
+    engine.setHost(isHost);
+    engine.setPeerId(userId);
     engine.setState({ joined: true });
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
@@ -181,7 +179,9 @@ export function createMatrixNetworkInterface(
       .filter((member) => member.isConnected && member.dataChannel);
 
     if (sortedConnectedMembers.length === 0 || !isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-      engine.makeHost();
+      engine.setHost(true);
+    } else {
+      engine.setHost(false);
     }
   }
 

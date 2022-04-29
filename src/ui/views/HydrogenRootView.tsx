@@ -95,9 +95,9 @@ function initHydrogen() {
   }
 
   // Container element used by Hydrogen for downloads etc.
-  const containerEl = document.createElement("div");
-  containerEl.id = "hydrogen-root";
-  document.body.append(containerEl);
+  const container = document.createElement("div");
+  container.id = "hydrogen-root";
+  document.body.append(container);
 
   const assetPaths = {
     downloadSandbox: downloadSandboxPath,
@@ -117,7 +117,7 @@ function initHydrogen() {
     development: import.meta.env.DEV,
   };
 
-  const platform = new Platform(containerEl, assetPaths, config, options);
+  const platform = new Platform({ container, assetPaths, config, options });
 
   const navigation = new Navigation(allowsChild);
   platform.setNavigation(navigation);
@@ -128,7 +128,7 @@ function initHydrogen() {
     client,
     platform,
     navigation,
-    containerEl,
+    containerEl: container,
     urlRouter: new MockRouter() as unknown as URLRouter,
     logger: platform.logger,
   };

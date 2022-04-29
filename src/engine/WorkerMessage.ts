@@ -36,7 +36,7 @@ export enum WorkerMessageType {
   AddPeerId = "add-peer-id",
   RemovePeerId = "remove-peer-id",
   StateChanged = "state-changed",
-  MakeHost = "make-host",
+  SetHost = "set-host",
 }
 
 export interface WorkerMessage {
@@ -206,8 +206,9 @@ export interface StateChangedMessage extends WorkerMessage {
   state: any;
 }
 
-export interface MakeHostMessage extends WorkerMessage {
-  type: WorkerMessageType.MakeHost;
+export interface SetHostMessage extends WorkerMessage {
+  type: WorkerMessageType.SetHost;
+  value: boolean;
 }
 
 export type WorkerMessages =
@@ -241,7 +242,7 @@ export type WorkerMessages =
   | AddPeerIdMessage
   | RemovePeerIdMessage
   | StateChangedMessage
-  | MakeHostMessage;
+  | SetHostMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage
