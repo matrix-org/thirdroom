@@ -41,77 +41,77 @@ export const useStore = create<StoreState>(() => ({
 }));
 
 export function openOverlay() {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.isOpen = true;
+  useStore.setState(
+    produce((state) => {
+      state.overlay.isOpen = true;
     })
   );
 }
 export function closeOverlay() {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.isOpen = false;
+  useStore.setState(
+    produce((state) => {
+      state.overlay.isOpen = false;
     })
   );
 }
 
 export function selectRoomListTab(tab: RoomListTabs) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.selectedRoomListTab = tab;
+  useStore.setState(
+    produce((state) => {
+      state.overlay.selectedRoomListTab = tab;
     })
   );
 }
 
 export function addActiveChat(roomId: RoomId) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.activeChats.add(roomId);
+  useStore.setState(
+    produce((state) => {
+      state.overlay.activeChats.add(roomId);
     })
   );
 }
 export function deleteActiveChat(roomId: RoomId) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.activeChats.delete(roomId);
+  useStore.setState(
+    produce((state) => {
+      state.overlay.activeChats.delete(roomId);
     })
   );
 }
 
 export function selectChat(roomId: RoomId | undefined) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.overlay.selectedChatId = roomId;
+  useStore.setState(
+    produce((state) => {
+      state.overlay.selectedChatId = roomId;
     })
   );
 }
 
 export function selectWorld(roomId: RoomId | undefined) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.world.selectedWorldId = roomId;
+  useStore.setState(
+    produce((state) => {
+      state.world.selectedWorldId = roomId;
     })
   );
 }
 export function enterWorld(roomId: RoomId | undefined) {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.world.enteredWorldId = roomId;
+  useStore.setState(
+    produce((state) => {
+      state.world.enteredWorldId = roomId;
     })
   );
 }
 
 export function openWorldChat() {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.world.isChatOpen = true;
+  useStore.setState(
+    produce((state) => {
+      state.world.isChatOpen = true;
     })
   );
 }
 export function closeWorldChat() {
-  useStore.setState((state) =>
-    produce(state, (draft) => {
-      draft.world.isChatOpen = false;
+  useStore.setState(
+    produce((state) => {
+      state.world.isChatOpen = false;
     })
   );
 }
