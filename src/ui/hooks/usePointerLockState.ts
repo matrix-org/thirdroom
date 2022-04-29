@@ -1,21 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+
+import { usePointerLockChange } from "./usePointerLockChange";
 
 export function usePointerLockState(targetEl: HTMLElement | null): boolean {
   const [pointerLocked, setPointerLocked] = useState(targetEl ? document.pointerLockElement === targetEl : false);
 
-  useEffect(() => {
-    const onPointerLockChange = () => {
-      setPointerLocked(targetEl ? document.pointerLockElement === targetEl : false);
-    };
+  const onPointerLockChange = useCallback((isLocked: boolean) => {
+    setPointerLocked(isLocked);
+  }, []);
 
-    setPointerLocked(targetEl ? document.pointerLockElement === targetEl : false);
-
-    document.addEventListener("pointerlockchange", onPointerLockChange);
-
-    return () => {
-      document.removeEventListener("pointerlockchange", onPointerLockChange);
-    };
-  }, [targetEl]);
+  usePointerLockChange(targetEl, onPointerLockChange, []);
 
   return pointerLocked;
 }
