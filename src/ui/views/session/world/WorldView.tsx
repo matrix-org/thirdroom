@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -6,36 +5,70 @@ import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
-import { useStore, closeWorldChat } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
+import { useKeyDown } from "../../../hooks/useKeyDown";
+import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
+import { useEvent } from "../../../hooks/useEvent";
+import { closeWorldChat, closeOverlay, openOverlay, openWorldChat, setIsPointerLock } from "../../../hooks/useStore";
 import MicIC from "../../../../../res/ic/mic.svg";
 import HeadphoneIC from "../../../../../res/ic/headphone.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import "./WorldView.css";
 
 export function WorldView() {
-  const { loadedWorld, canvasRef } = useOutletContext<SessionOutletContext>();
+  const { canvasRef, loadedWorld, onLeftWorld } = useOutletContext<SessionOutletContext>();
+  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const isChatOpen = useStore((state) => state.world.isChatOpen);
-  const { isEnteredWorld } = useStore.getState().world;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
+  useKeyDown((e) => {
+    const { isChatOpen, isEnteredWorld } = useStore.getState().world;
+    const { isOpen: isOverlayOpen } = useStore.getState().overlay;
+    if (isEnteredWorld === false) return;
+    const isEscape = e.key === "Escape";
 
-    if (canvas) {
-      const onClickCanvas = () => {
-        if (isChatOpen) {
-          closeWorldChat();
-        }
-      };
-
-      canvas.addEventListener("click", onClickCanvas);
-
-      return () => {
-        canvas.removeEventListener("click", onClickCanvas);
-      };
+    if (isEscape && isChatOpen) {
+      canvasRef.current?.requestPointerLock();
+      closeWorldChat();
+      return;
     }
-  }, [isChatOpen, canvasRef]);
+    if (isEscape && isOverlayOpen === false) {
+      document.exitPointerLock();
+      openOverlay();
+      return;
+    }
+    if (isEscape && isOverlayOpen) {
+      canvasRef.current?.requestPointerLock();
+      closeOverlay();
+      return;
+    }
+    if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
+      document.exitPointerLock();
+      openWorldChat();
+      return;
+    }
+    if (e.altKey && e.code === "KeyL") {
+      onLeftWorld();
+    }
+  }, []);
 
-  if (!isEnteredWorld || !loadedWorld) {
+  useEvent(
+    "click",
+    (e) => {
+      const { isChatOpen, isEnteredWorld } = useStore.getState().world;
+      const { isOpen: isOverlayOpen } = useStore.getState().overlay;
+      if (isEnteredWorld === false) return;
+
+      canvasRef.current?.requestPointerLock();
+      if (isChatOpen) closeWorldChat();
+      if (isOverlayOpen) closeOverlay();
+    },
+    canvasRef.current,
+    []
+  );
+
+  usePointerLockChange(canvasRef.current, setIsPointerLock, []);
+
+  if (isEnteredWorld === false || loadedWorld === undefined) {
     return null;
   }
 
@@ -54,7 +87,7 @@ export function WorldView() {
         </Text>
       </div>
       <div className="flex flex-column items-center">
-        <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={() => console.log("exit")} />
+        <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={() => onLeftWorld()} />
         <Text variant="b3" color="world" weight="bold">
           Alt + L
         </Text>

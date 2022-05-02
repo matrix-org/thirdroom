@@ -1,15 +1,15 @@
 import { Text } from "../../../atoms/text/Text";
-import { useStore } from "../../../hooks/useStore";
+import { closeOverlay, closeWorldChat, openOverlay, useStore } from "../../../hooks/useStore";
 import "./StatusBar.css";
 
-function OpenOverlayTip({ text }: { text: string }) {
+function OpenOverlayTip({ text, onClick }: { text: string; onClick: () => void }) {
   return (
-    <div className="OpenOverlay">
+    <button className="OpenOverlay" onClick={onClick} type="button">
       <Text className="flex items-center" color="world" variant="b3">
         <span>ESC</span>
         {text}
       </Text>
-    </div>
+    </button>
   );
 }
 
@@ -21,10 +21,23 @@ interface StatusBarProps {
 export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
+  const handleTipClick = () => {
+    console.log("clicked", isOverlayOpen);
+    if (isOverlayOpen) {
+      closeOverlay();
+    } else {
+      document.exitPointerLock();
+      closeWorldChat();
+      openOverlay();
+    }
+  };
+
   return (
     <div className="StatusBar shrink-0 flex items-center">
       <div className="StatusBar__left grow basis-0">
-        {showOverlayTip && <OpenOverlayTip text={isOverlayOpen ? "Close Overlay" : "Open Overlay"} />}
+        {showOverlayTip && (
+          <OpenOverlayTip onClick={handleTipClick} text={isOverlayOpen ? "Close Overlay" : "Open Overlay"} />
+        )}
       </div>
       <div className="StatusBar__center">
         {title && (

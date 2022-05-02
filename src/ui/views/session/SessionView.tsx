@@ -13,21 +13,19 @@ import {
   useStore,
   closeOverlay,
   loadWorld,
-  setIsPointerLock,
   setIsEnteredWorld,
   openOverlay,
-  openWorldChat,
   closeWorldChat,
 } from "../../hooks/useStore";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
-import { useKeyDown } from "../../hooks/useKeyDown";
-import { usePointerLockChange } from "../../hooks/usePointerLockChange";
 
 export interface SessionOutletContext {
   loadedWorld?: Room;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
+  onEnteredWorld: () => void;
+  onLeftWorld: () => void;
 }
 
 export function SessionView() {
@@ -65,6 +63,8 @@ export function SessionView() {
   const onLeftWorld = useCallback(() => {
     loadWorld(undefined);
     setIsEnteredWorld(false);
+    closeWorldChat();
+    openOverlay();
     document.exitPointerLock();
 
     if (activeCall) {
@@ -120,37 +120,6 @@ export function SessionView() {
       onEnteredWorld();
     },
     [platform, session, calls, onEnteredWorld]
-  );
-
-  useKeyDown((e) => {
-    if (e.key === "Escape") {
-      const { isChatOpen } = useStore.getState().world;
-      if (isChatOpen) {
-        canvasRef.current?.requestPointerLock();
-        closeWorldChat();
-      } else if (useStore.getState().overlay.isOpen) {
-        canvasRef.current?.requestPointerLock();
-        closeOverlay();
-      } else {
-        document.exitPointerLock();
-        openOverlay();
-      }
-    }
-    if (e.key === "Enter") {
-      const { isChatOpen } = useStore.getState().world;
-      if (!isChatOpen) {
-        document.exitPointerLock();
-        openWorldChat();
-      }
-    }
-  }, []);
-
-  usePointerLockChange(
-    canvasRef.current,
-    (isLocked) => {
-      setIsPointerLock(isLocked);
-    },
-    []
   );
 
   const outletContext = useMemo<SessionOutletContext>(
