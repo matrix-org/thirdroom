@@ -27,7 +27,7 @@
     "@radix-ui/react-scroll-area": "^0.1.4",
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
-    "@thirdroom/matrix-js-sdk": "^15.1.0",
+    "@thirdroom/matrix-js-sdk": "15.1.1",
     "bitecs": "^0.3.38",
     "classnames": "^2.3.1",
     "events": "^3.3.0",

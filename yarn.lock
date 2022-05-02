@@ -698,10 +698,10 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@thirdroom/matrix-js-sdk@^15.1.0":
-  version "15.1.0"
-  resolved "https://registry.yarnpkg.com/@thirdroom/matrix-js-sdk/-/matrix-js-sdk-15.1.0.tgz#d21186444a7164536e44d58c136729677b70e20b"
-  integrity sha512-m6+/9xaCeFQlj3L1c3LkAe1C09LfMnFa+ia39eVLzBCEsBHXv+LpSwhJQWtczRBM7XmS1uUJhK+7uzVF8zMOIg==
+"@thirdroom/matrix-js-sdk@15.1.1":
+  version "15.1.1"
+  resolved "https://registry.yarnpkg.com/@thirdroom/matrix-js-sdk/-/matrix-js-sdk-15.1.1.tgz#c8543aba97bd797dfb2cd836bf2ed914298c724a"
+  integrity sha512-jIkE/7fQE7NKqYfabBh48jWjyP8ZHQy7Je7dUc1eoXDPzPtKLuA6miPX1xQyvDNkQNA5AH13TPywFVPKuDV2CA==
   dependencies:
     "@babel/runtime" "^7.12.5"
     another-json "^0.2.0"
