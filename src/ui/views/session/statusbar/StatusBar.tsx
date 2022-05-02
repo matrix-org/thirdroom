@@ -22,7 +22,6 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
   const handleTipClick = () => {
-    console.log("clicked", isOverlayOpen);
     if (isOverlayOpen) {
       closeOverlay();
     } else {
