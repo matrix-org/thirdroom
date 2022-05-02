@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 
 import "./App.css";
 
-import { HydrogenRootView } from "./views/HydrogenRootView";
+import { MatrixRootView } from "./views/MatrixRootView";
 import { LoginView } from "./views/login/LoginView";
 import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
@@ -29,7 +29,7 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
 export function App() {
   return (
     <Routes>
-      <Route element={<HydrogenRootView />}>
+      <Route element={<MatrixRootView />}>
         <Route path="/login" element={<LoginView />} />
         <Route element={<SessionView />}>
           <Route path="world/:worldId" element={<WorldView />} />

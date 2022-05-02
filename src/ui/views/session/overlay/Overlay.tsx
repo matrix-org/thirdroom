@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import produce from "immer";
 import classNames from "classnames";
-import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCallIntent, GroupCallType, Room } from "@thirdroom/matrix-js-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./Overlay.css";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
-import { useHydrogen } from "../../../hooks/useHydrogen";
+import { useMatrix } from "../../../hooks/useMatrix";
 import { useRoomList } from "../../../hooks/useRoomList";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
@@ -41,30 +41,26 @@ export function Overlay({
   onEnteredWorld,
   onLeftWorld,
 }: OverlayProps) {
-  const { session, platform } = useHydrogen(true);
+  const { client } = useMatrix(true);
   const [selectedRoomListTab, setSelectedRoomListTab] = useState(RoomListTabs.Home);
 
   const [activeChats, setActiveChats] = useState<Set<string>>(new Set());
   const [selectedChatId, setSelectedChatId] = useState<undefined | string>(undefined);
-  const selectedChat = useRoom(session, selectedChatId);
+  const selectedChat = useRoom(client, selectedChatId);
 
   const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
-  const rooms = useRoomList(session);
-  const selectedRoom = useRoom(session, selectedRoomId);
-  const calls = useCalls(session);
+  const rooms = useRoomList(client);
+  const selectedRoom = useRoom(client, selectedRoomId);
+  const calls = useCalls(client);
 
   const navigate = useNavigate();
 
   const onCreateWorld = useCallback(async () => {
-    const roomBeingCreated = session.createRoom({
-      type: RoomType.Public,
+    const { room_id: roomId } = await client.createRoom({
+      visibility: "private" as any,
+      preset: "public_chat" as any,
       name: "Test World",
-      topic: undefined,
-      isEncrypted: false,
-      isFederationDisabled: false,
-      alias: undefined,
-      avatar: undefined,
-      powerLevelContentOverride: {
+      power_level_content_override: {
         invite: 100,
         kick: 100,
         ban: 100,
@@ -84,13 +80,13 @@ export function Overlay({
           "org.matrix.msc3401.call.member": 0,
         },
         users: {
-          [session.userId]: 100,
+          [client.getUserId()]: 100,
         },
       },
     });
 
-    navigate(`/world/${roomBeingCreated.id}`);
-  }, [session, navigate]);
+    navigate(`/world/${roomId}`);
+  }, [client, navigate]);
 
   const onLoadWorld = useCallback(
     async (room: Room) => {
@@ -98,7 +94,7 @@ export function Overlay({
         onLeftWorld();
       }
 
-      navigate(`/world/${room.id}`);
+      navigate(`/world/${room.roomId}`);
       return;
     },
     [navigate, enteredWorld, onLeftWorld]
@@ -106,21 +102,21 @@ export function Overlay({
 
   const onEnterWorld = useCallback(
     async (room: Room) => {
-      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === room.id ? call : []));
+      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.room.roomId === room.roomId ? call : []));
 
       let call = roomCalls.length && roomCalls[0];
 
       if (!call) {
-        call = await session.callHandler.createCall(room.id, "m.voice", "Test World", CallIntent.Room);
+        call = await client.createGroupCall(room.roomId, GroupCallType.Voice, GroupCallIntent.Room, [
+          { label: "channel", options: {} },
+        ]);
       }
 
-      const stream = await platform.mediaDevices.getMediaTracks(true, false);
-      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
-      await call.join(localMedia);
+      await call.enter();
 
       onEnteredWorld();
     },
-    [platform, session, calls, onEnteredWorld]
+    [client, calls, onEnteredWorld]
   );
 
   const handleRoomListTabSelect = (selectedTab: RoomListTabs) => {
@@ -180,10 +176,12 @@ export function Overlay({
     return (
       <ActiveChats
         chat={
-          selectedChat && <ChatView room={selectedChat} onMinimize={handleMinimizeChat} onClose={handleCloseChat} />
+          selectedChat && (
+            <ChatView client={client} room={selectedChat} onMinimize={handleMinimizeChat} onClose={handleCloseChat} />
+          )
         }
         tiles={[...activeChats].map((rId) => {
-          const room = session.rooms.get(rId);
+          const room = client.getRoom(rId);
           if (!room) return null;
 
           const roomName = room.name || "Empty room";
@@ -195,9 +193,9 @@ export function Overlay({
               avatar={
                 <Avatar
                   size="sm"
-                  imageSrc={room.avatarUrl}
+                  imageSrc={room.getAvatarUrl(client.getHomeserverUrl(), 96, 96, "crop")}
                   name={roomName}
-                  bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+                  bgColor={`var(--usercolor${getIdentifierColorNumber(room.roomId)})`}
                 />
               }
               title={roomName}
@@ -215,7 +213,7 @@ export function Overlay({
 
     return (
       <WorldPreview
-        session={session}
+        client={client}
         roomId={selectedRoomId}
         room={selectedRoom}
         onLoadWorld={onLoadWorld}
@@ -234,6 +232,7 @@ export function Overlay({
             header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={handleRoomListTabSelect} />}
             content={
               <RoomListContent
+                client={client}
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
                 selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Platform, MediaRepository } from "@thirdroom/hydrogen-view-sdk";
+import { MatrixClient } from "@thirdroom/matrix-js-sdk";
 
 export function avatarInitials(name: string): string {
   let firstChar = name.charAt(0);
@@ -50,15 +50,10 @@ export function getIdentifierColorNumber(id: string): number {
   return (hashCode(id) % 8) + 1;
 }
 
-export function getAvatarHttpUrl(
-  avatarUrl: string,
-  cssSize: number,
-  platform: Platform,
-  mediaRepository: MediaRepository
-): string | null {
+export function getAvatarHttpUrl(avatarUrl: string, cssSize: number, client: MatrixClient): string | null {
   if (avatarUrl) {
-    const imageSize = cssSize * platform.devicePixelRatio;
-    return mediaRepository.mxcUrlThumbnail(avatarUrl, imageSize, imageSize, "crop");
+    const imageSize = cssSize * devicePixelRatio;
+    return client.mxcUrlToHttp(avatarUrl, imageSize, imageSize, "crop");
   }
   return null;
 }

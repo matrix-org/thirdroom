@@ -1,6 +1,6 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { useState } from "react";
+import { MatrixClient, Room } from "@thirdroom/matrix-js-sdk";
 
-import { useRoomViewModel, chatTileClassForEntry } from "../../../hooks/useRoomViewModel";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
@@ -13,14 +13,15 @@ import MinusIC from "../../../../../res/ic/minus.svg";
 import "./ChatView.css";
 
 interface ChatViewProps {
+  client: MatrixClient;
   room: Room;
   onMinimize: (roomId: string) => void;
   onClose: (roomId: string) => void;
 }
 
-export function ChatView({ room, onMinimize, onClose }: ChatViewProps) {
+export function ChatView({ client, room, onMinimize, onClose }: ChatViewProps) {
   const roomName = room.name || "Empty room";
-  const { loading, roomViewModel, error } = useRoomViewModel(room, chatTileClassForEntry);
+  const [{ error, loading }] = useState<{ error?: Error; loading: boolean }>({ error: undefined, loading: false });
 
   const renderMsg = (msg: string) => <div className="grow flex justify-center items-center">{msg}</div>;
 
@@ -30,30 +31,35 @@ export function ChatView({ room, onMinimize, onClose }: ChatViewProps) {
         <ChatHeader
           avatar={
             <Avatar
-              imageSrc={room.avatarUrl}
+              imageSrc={room.getAvatarUrl(client.getHomeserverUrl(), 96, 96, "crop")}
               size="sm"
               name={roomName}
-              bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+              bgColor={`var(--usercolor${getIdentifierColorNumber(room.roomId)})`}
             />
           }
           title={roomName}
           options={
             <>
-              <IconButton variant="surface" label="Minimize" iconSrc={MinusIC} onClick={() => onMinimize(room.id)} />
-              <IconButton variant="surface" label="Close" iconSrc={CrossIC} onClick={() => onClose(room.id)} />
+              <IconButton
+                variant="surface"
+                label="Minimize"
+                iconSrc={MinusIC}
+                onClick={() => onMinimize(room.roomId)}
+              />
+              <IconButton variant="surface" label="Close" iconSrc={CrossIC} onClick={() => onClose(room.roomId)} />
             </>
           }
         />
       </div>
       {error && renderMsg(error.message)}
-      {!error && (loading || !roomViewModel) && renderMsg("Loading...")}
-      {!error && roomViewModel?.timelineViewModel && (
+      {!error && loading && renderMsg("Loading...")}
+      {!error && (
         <>
           <div className="grow">
-            <ChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
+            <ChatTimeline client={client} room={room} />
           </div>
           <div className="shrink-0">
-            <ChatComposer composerViewModel={roomViewModel.composerViewModel!} />
+            <ChatComposer client={client} room={room} />
           </div>
         </>
       )}

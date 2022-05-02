@@ -1,14 +1,15 @@
-import { ComposerViewModel } from "@thirdroom/hydrogen-view-sdk";
+import { MatrixClient, Room } from "@thirdroom/matrix-js-sdk";
 
 import "./WorldChatComposer.css";
 import { Icon } from "../../../atoms/icon/Icon";
 import MessageIC from "../../../../../res/ic/message.svg";
 
 interface IWorldChatComposer {
-  composerViewModel: ComposerViewModel;
+  client: MatrixClient;
+  room: Room;
 }
 
-export function WorldChatComposer({ composerViewModel }: IWorldChatComposer) {
+export function WorldChatComposer({ client, room }: IWorldChatComposer) {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     const target = ev.target as typeof ev.target & {
@@ -17,7 +18,9 @@ export function WorldChatComposer({ composerViewModel }: IWorldChatComposer) {
     const message = target.message.value.trim();
     if (message === "") return;
     target.message.value = "";
-    composerViewModel.sendMessage(message);
+
+    // TODO: Send message
+    console.log(message);
   };
 
   return (

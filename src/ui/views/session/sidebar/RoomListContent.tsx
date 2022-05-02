@@ -1,12 +1,11 @@
 import { MouseEventHandler } from "react";
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { MatrixClient, Room } from "@thirdroom/matrix-js-sdk";
 
-import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
 import { RoomTile } from "../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
-import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
+import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { RoomListTabs } from "./RoomListHeader";
@@ -15,6 +14,7 @@ import AddIC from "../../../../../res/ic/add.svg";
 import "./RoomListContent.css";
 
 interface IRoomListContent {
+  client: MatrixClient;
   selectedTab: RoomListTabs;
   rooms: Room[];
   selectedRoomId?: string;
@@ -22,9 +22,14 @@ interface IRoomListContent {
   onCreateWorld: MouseEventHandler;
 }
 
-export function RoomListContent({ selectedTab, rooms, selectedRoomId, onSelectRoom, onCreateWorld }: IRoomListContent) {
-  const { platform } = useHydrogen();
-
+export function RoomListContent({
+  client,
+  selectedTab,
+  rooms,
+  selectedRoomId,
+  onSelectRoom,
+  onCreateWorld,
+}: IRoomListContent) {
   const renderAvatar = (room: Room) => {
     const avatar = (
       <Avatar
@@ -32,11 +37,11 @@ export function RoomListContent({ selectedTab, rooms, selectedRoomId, onSelectRo
         size="lg"
         shape="circle"
         className="shrink-0"
-        bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-        imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 32, platform, room.mediaRepository)}
+        bgColor={`var(--usercolor${getIdentifierColorNumber(room.roomId)})`}
+        imageSrc={room.getAvatarUrl(client.getHomeserverUrl(), 32, 32, "crop")}
       />
     );
-    if (selectedRoomId === room.id) return <AvatarOutline>{avatar}</AvatarOutline>;
+    if (selectedRoomId === room.roomId) return <AvatarOutline>{avatar}</AvatarOutline>;
     return avatar;
   };
 
@@ -48,9 +53,9 @@ export function RoomListContent({ selectedTab, rooms, selectedRoomId, onSelectRo
       />
       {rooms.map((room) => (
         <RoomTile
-          key={room.id}
-          isActive={room.id === selectedRoomId}
-          onClick={() => onSelectRoom(room.id)}
+          key={room.roomId}
+          isActive={room.roomId === selectedRoomId}
+          onClick={() => onSelectRoom(room.roomId)}
           avatar={renderAvatar(room)}
           content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
         />

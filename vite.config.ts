@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     dedupe: ["three", "bitecs"],
   },
+  optimizeDeps: {
+    include: ["@thirdroom/matrix-js-sdk"],
+  },
   css: {
     postcss: {
       plugins: [

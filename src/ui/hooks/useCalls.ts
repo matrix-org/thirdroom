@@ -1,7 +1,22 @@
-import { Session } from "@thirdroom/hydrogen-view-sdk";
+import { MatrixClient } from "@thirdroom/matrix-js-sdk";
+import { useEffect, useState } from "react";
 
-import { useObservableMap } from "./useObservableMap";
+export function useCalls(client: MatrixClient) {
+  const [groupCalls, setGroupCalls] = useState(() => new Map(client.groupCallEventHandler.groupCalls));
 
-export function useCalls(session: Session) {
-  return useObservableMap(() => session.callHandler.calls, [session]);
+  useEffect(() => {
+    function onGroupCallIncoming() {
+      setGroupCalls(new Map(client.groupCallEventHandler.groupCalls));
+    }
+
+    setGroupCalls(new Map(client.groupCallEventHandler.groupCalls));
+
+    client.addListener("GroupCall.incoming", onGroupCallIncoming);
+
+    return () => {
+      client.removeListener("GroupCall.incoming", onGroupCallIncoming);
+    };
+  }, [client]);
+
+  return groupCalls;
 }

@@ -1,18 +1,19 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { useState } from "react";
+import { MatrixClient, Room } from "@thirdroom/matrix-js-sdk";
 
 import "./WorldChat.css";
 import { WorldChatTimeline } from "./WorldChatTimeline";
 import { WorldChatComposer } from "./WorldChatComposer";
-import { useRoomViewModel, worldChatTileClassForEntry } from "../../../hooks/useRoomViewModel";
 import { Text } from "../../../atoms/text/Text";
 
 interface IWorldChat {
   open: boolean;
+  client: MatrixClient;
   room: Room;
 }
 
-export function WorldChat({ room, open }: IWorldChat) {
-  const { loading, roomViewModel, error } = useRoomViewModel(room, worldChatTileClassForEntry);
+export function WorldChat({ client, room, open }: IWorldChat) {
+  const [{ error, loading }] = useState<{ error?: Error; loading: boolean }>({ error: undefined, loading: false });
 
   if (!open) {
     return null;
@@ -24,14 +25,16 @@ export function WorldChat({ room, open }: IWorldChat) {
         <div className="grow flex justify-center items-center">
           <Text>{error.message}</Text>
         </div>
-      ) : loading || !roomViewModel ? (
+      ) : loading ? (
         <div className="grow flex justify-center items-center">
           <Text>loading...</Text>
         </div>
       ) : (
-        <WorldChatTimeline timelineViewModel={roomViewModel.timelineViewModel!} />
+        <>
+          <WorldChatTimeline client={client} room={room} />
+          <WorldChatComposer client={client} room={room} />
+        </>
       )}
-      {roomViewModel && <WorldChatComposer composerViewModel={roomViewModel.composerViewModel} />}
     </div>
   );
 }

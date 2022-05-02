@@ -6,8 +6,10 @@ import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import "./WorldView.css";
 import { useKeyDown } from "../../../hooks/useKeyDown";
+import { useMatrix } from "../../../hooks/useMatrix";
 
 export function WorldView() {
+  const { client } = useMatrix(true);
   const { activeWorld, chatOpen, onOpenChat, onCloseChat, canvasRef } = useOutletContext<SessionOutletContext>();
 
   useKeyDown(
@@ -47,7 +49,7 @@ export function WorldView() {
     <div className="WorldView">
       <Stats />
       <div className="WorldView__chat">
-        <WorldChat open={chatOpen} room={activeWorld} />
+        <WorldChat client={client} open={chatOpen} room={activeWorld} />
       </div>
     </div>
   );

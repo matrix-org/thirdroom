@@ -1,9 +1,9 @@
-import { GroupCall, Session } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, MatrixClient } from "@thirdroom/matrix-js-sdk";
 import { useMemo } from "react";
 
 import { useCalls } from "./useCalls";
 
-export function useCallsByRoom(session: Session, roomId: string): GroupCall[] {
-  const calls = useCalls(session);
-  return useMemo(() => Array.from(calls.values()).filter((call) => call.roomId === roomId) || [], [roomId, calls]);
+export function useCallsByRoom(client: MatrixClient, roomId: string): GroupCall[] {
+  const calls = useCalls(client);
+  return useMemo(() => Array.from(calls.values()).filter((call) => call.room.roomId === roomId) || [], [roomId, calls]);
 }

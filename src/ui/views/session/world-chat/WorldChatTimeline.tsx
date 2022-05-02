@@ -1,17 +1,12 @@
-import { useRef } from "react";
-import { TimelineViewModel } from "@thirdroom/hydrogen-view-sdk";
+import { MatrixClient, Room } from "@thirdroom/matrix-js-sdk";
 
 import "./WorldChatTimeline.css";
-import { useEmbedTimeline } from "../../../hooks/useEmbedTimeline";
-import { viewClassForTile } from "./tiles";
 
 interface IWorldChatTimeline {
-  timelineViewModel: TimelineViewModel;
+  client: MatrixClient;
+  room: Room;
 }
 
-export function WorldChatTimeline({ timelineViewModel }: IWorldChatTimeline) {
-  const timelineViewContainerRef = useRef<HTMLDivElement>(null);
-  useEmbedTimeline(timelineViewContainerRef, timelineViewModel, viewClassForTile);
-
-  return <div className="WorldChatTimeline grow flex hydrogen" ref={timelineViewContainerRef} />;
+export function WorldChatTimeline({ client, room }: IWorldChatTimeline) {
+  return <div className="WorldChatTimeline grow flex hydrogen" />;
 }

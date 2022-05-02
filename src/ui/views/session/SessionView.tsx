@@ -1,6 +1,6 @@
 import { RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useMatch } from "react-router-dom";
-import { GroupCall, ObservableValue, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/matrix-js-sdk";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
@@ -8,10 +8,9 @@ import { Overlay } from "./overlay/Overlay";
 import { usePointerLockState } from "../../hooks/usePointerLockState";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useRoom } from "../../hooks/useRoom";
-import { useHydrogen } from "../../hooks/useHydrogen";
+import { useMatrix } from "../../hooks/useMatrix";
 import { useCalls } from "../../hooks/useCalls";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
-import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 
 export interface SessionOutletContext {
   activeWorld?: Room;
@@ -26,7 +25,7 @@ export interface SessionOutletContext {
 }
 
 export function SessionView() {
-  const { client, session } = useHydrogen(true);
+  const { client } = useMatrix(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
   const networkInterfaceRef = useRef<() => void>();
@@ -37,14 +36,10 @@ export function SessionView() {
   const worldMatch = useMatch({ path: "world/:worldId" });
   const activeWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
 
-  const activeWorld = useRoom(session, activeWorldId);
-  const { value: powerLevels } = useAsyncObservableValue(
-    () => (activeWorld ? activeWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
-    [activeWorld]
-  );
-  const calls = useCalls(session);
+  const activeWorld = useRoom(client, activeWorldId);
+  const calls = useCalls(client);
   const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === activeWorldId ? call : []));
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.room.roomId === activeWorldId ? call : []));
     return roomCalls.length ? roomCalls[0] : undefined;
   }, [calls, activeWorldId]);
 
@@ -73,10 +68,10 @@ export function SessionView() {
       return;
     }
 
-    if (engine && activeCall && powerLevels) {
-      networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, activeCall);
+    if (engine && activeCall) {
+      networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, activeCall);
     }
-  }, [client, engine, activeCall, powerLevels]);
+  }, [client, engine, activeCall]);
   const onOpenOverlay = useCallback(() => {
     document.exitPointerLock();
   }, []);

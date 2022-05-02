@@ -1,8 +1,28 @@
-import { Room, Session } from "@thirdroom/hydrogen-view-sdk";
+import { Room, MatrixClient } from "@thirdroom/matrix-js-sdk";
+import { useEffect, useState } from "react";
 
-import { useObservableMap } from "./useObservableMap";
+export function useRoom(client: MatrixClient, roomId: string | undefined): Room | undefined {
+  const [room, setRoom] = useState(roomId ? client.getRoom(roomId) : undefined);
 
-export function useRoom(session: Session, roomId: string | undefined): Room | undefined {
-  const rooms = useObservableMap(() => session.rooms, [session.rooms]);
-  return roomId ? rooms.get(roomId) : undefined;
+  useEffect(() => {
+    function onRoom(room: Room) {
+      if (room.roomId === roomId) {
+        setRoom(room);
+      }
+    }
+
+    if (roomId) {
+      setRoom(client.getRoom(roomId));
+    } else {
+      setRoom(undefined);
+    }
+
+    client.addListener("Room", onRoom);
+
+    return () => {
+      client.removeListener("Room", onRoom);
+    };
+  }, [client, roomId]);
+
+  return room;
 }

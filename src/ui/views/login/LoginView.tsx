@@ -1,9 +1,10 @@
 import { useState } from "react";
 
-import { useHydrogen } from "../../hooks/useHydrogen";
+import { useInteractiveLogin } from "../../hooks/useInteractiveLogin";
+import { defaultHomeserver } from "../../utils/client";
 
 export function LoginView() {
-  const { platform, client, setSession } = useHydrogen();
+  const [, login] = useInteractiveLogin();
   const [authenticating, setAuthenticating] = useState(false);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -17,17 +18,8 @@ export function LoginView() {
     setAuthenticating(true);
 
     try {
-      const loginOptions = await client.queryLogin(form.homeserver.value).result;
-
-      // TODO: Handle other login types
-
-      await client.startWithLogin(loginOptions.password(form.username.value, form.password.value));
-
-      if (client.session) {
-        setSession(client.session);
-      } else {
-        setAuthenticating(false);
-      }
+      await login(form.homeserver.value, form.username.value, form.password.value);
+      setAuthenticating(false);
     } catch (error) {
       console.error(error);
       setAuthenticating(false);
@@ -41,7 +33,7 @@ export function LoginView() {
   return (
     <form style={{ height: "100%" }} className="flex flex-column justify-center items-center" onSubmit={handleLogin}>
       <label htmlFor="homeserver">Homeserver</label>
-      <input defaultValue={platform.config.defaultHomeServer} name="homeserver" placeholder="homeserver" required />
+      <input defaultValue={defaultHomeserver} name="homeserver" placeholder="homeserver" required />
       <br />
       <label htmlFor="username">Username</label>
       <input name="username" placeholder="username" required />
