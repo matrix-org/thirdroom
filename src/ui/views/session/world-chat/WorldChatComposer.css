@@ -1,12 +1,5 @@
 .WorldChatComposer {
-  padding: var(--sp-xs);
-  border-radius: var(--br-xs);
-  background-color: #00000040;
-
-  & .Icon {
-    margin-right: var(--sp-xs);
-  }
-
+  line-height: 0;
   & input {
     min-width: 0;
     width: 100%;
@@ -17,11 +10,7 @@
       outline: none;
     }
     &::placeholder {
-      color: rgba(255 255 255 / 80%);
+      color: var(--tc-world);
     }
-  }
-
-  &:focus-within {
-    background-color: #00000080;
   }
 }

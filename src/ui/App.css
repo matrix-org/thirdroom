@@ -3,6 +3,7 @@
 @import "./style/display.css";
 @import "./style/flex.css";
 @import "./style/text.css";
+@import "./style/legacy-scroll.css";
 
 @custom-selector :--heading h1, h2, h3, h4, h5, h6;
 
@@ -15,6 +16,11 @@
   --bg-surface-active: #ebebeb;
   --bg-surface-scroll-track: transparent;
   --bg-surface-scroll-thumb: #0000001e;
+
+  --bg-world-overlay: rgba(0 0 0 / 50%);
+  --bg-world-hover: rgba(0 0 0 / 20%);
+  --bg-world-active: rgba(0 0 0 / 30%);
+  --bg-world-border: #ffffff;
 
   --bg-primary: hsl(209deg 93% 53%);
   --bg-primary-hover: hsl(209deg 93% 45%);

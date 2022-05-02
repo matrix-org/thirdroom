@@ -17,12 +17,21 @@
   padding: var(--sp-xxs);
   padding-right: var(--sp-xs);
   border-radius: var(--br-md);
+  cursor: pointer;
 
   & > .Text span {
-    font-size: 8px;
-    border: 1px solid white;
-    border-radius: var(--br-xs);
     padding: 2px var(--sp-xxs);
     margin-right: var(--sp-xs);
+    border: 1px solid var(--bg-world-border);
+    border-radius: var(--br-xs);
+    font-size: 8px;
+    line-height: 14px;
+  }
+  &:hover {
+    background-color: var(--bg-world-hover);
+  }
+  &:active,
+  &:focus {
+    background-color: var(--bg-world-active);
   }
 }

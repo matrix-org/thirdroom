@@ -4,8 +4,6 @@
 
 .WorldChatTimeline .Timeline_scroller {
   height: 100%;
-  overflow: hidden;
-  overflow-y: auto;
 
   & > ul {
     list-style: none;
@@ -22,92 +20,4 @@
       margin-top: var(--sp-xs);
     }
   }
-}
-
-/* ----spinner----- */
-
-.WorldChatTimeline .GapView {
-  padding: var(--sp-xs) var(--sp-md);
-  background-color: #00000040;
-  border-radius: 8px;
-  color: var(--tc-world);
-
-  display: flex;
-  align-items: center;
-  & > *:first-child {
-    margin-right: var(--sp-xs);
-  }
-}
-
-@keyframes spinner {
-  0% {
-    transform: rotate(0);
-    stroke-dasharray: 0 0 10 90;
-  }
-  45% {
-    stroke-dasharray: 0 0 90 10;
-  }
-  75% {
-    stroke-dasharray: 0 50 50 0;
-  }
-  100% {
-    transform: rotate(360deg);
-    stroke-dasharray: 10 90 0 0;
-  }
-}
-
-.hydrogen:not(.legacy) .spinner circle {
-  transform-origin: 50% 50%;
-  animation-name: spinner;
-  animation-duration: 2s;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
-  stroke-dasharray: 0 0 85 85;
-  fill: none;
-  stroke: var(--ic-world);
-  stroke-width: 12;
-  stroke-linecap: butt;
-}
-
-.hydrogen.legacy .spinner {
-  display: inline-block;
-  position: relative;
-}
-
-.hydrogen.legacy .spinner div {
-  box-sizing: border-box;
-  display: block;
-  position: absolute;
-  padding: 2px;
-  border: 2px solid var(--ic-world);
-  border-radius: 50%;
-  animation: legacy-spinner 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  border-color: var(--ic-world) transparent transparent;
-  width: var(--size);
-  height: var(--size);
-}
-
-.hydrogen.legacy .spinner div:nth-child(1) {
-  animation-delay: -0.45s;
-}
-.hydrogen.legacy .spinner div:nth-child(2) {
-  animation-delay: -0.3s;
-}
-.hydrogen.legacy .spinner div:nth-child(3) {
-  animation-delay: -0.15s;
-}
-
-@keyframes legacy-spinner {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.spinner {
-  --size: 20px;
-  width: var(--size);
-  height: var(--size);
 }

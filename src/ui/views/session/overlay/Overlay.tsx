@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import produce from "immer";
+import { useCallback } from "react";
 import classNames from "classnames";
-import { Room, RoomType, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
+import { Room, RoomType } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import "./Overlay.css";
@@ -19,39 +18,35 @@ import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile
 import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
 import { useRoom } from "../../../hooks/useRoom";
-import { useCalls } from "../../../hooks/useCalls";
-import { useKeyDown } from "../../../hooks/useKeyDown";
+import {
+  useStore,
+  selectRoomListTab,
+  selectWorld,
+  selectChat,
+  addActiveChat,
+  deleteActiveChat,
+} from "../../../hooks/useStore";
 
 interface OverlayProps {
-  activeWorldId?: string;
-  isOpen: boolean;
   isHome: boolean;
-  enteredWorld: boolean;
-  onEnteredWorld: () => void;
-  onLeftWorld: () => void;
-  onClose: () => void;
+  onLoadWorld: (room: Room) => Promise<void>;
+  onEnterWorld: (room: Room) => Promise<void>;
 }
 
-export function Overlay({
-  activeWorldId,
-  isOpen,
-  isHome,
-  onClose,
-  enteredWorld,
-  onEnteredWorld,
-  onLeftWorld,
-}: OverlayProps) {
-  const { session, platform } = useHydrogen(true);
-  const [selectedRoomListTab, setSelectedRoomListTab] = useState(RoomListTabs.Home);
+export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
+  const { session } = useHydrogen(true);
+  const rooms = useRoomList(session);
 
-  const [activeChats, setActiveChats] = useState<Set<string>>(new Set());
-  const [selectedChatId, setSelectedChatId] = useState<undefined | string>(undefined);
+  const selectedRoomListTab = useStore((state) => state.overlay.selectedRoomListTab);
+
+  const activeChats = useStore((state) => state.overlay.activeChats);
+  const selectedChatId = useStore((state) => state.overlay.selectedChatId);
   const selectedChat = useRoom(session, selectedChatId);
 
-  const [selectedRoomId, setSelectedRoomId] = useState(activeWorldId);
-  const rooms = useRoomList(session);
-  const selectedRoom = useRoom(session, selectedRoomId);
-  const calls = useCalls(session);
+  const selectedWorldId = useStore((state) => state.overlay.selectedWorldId);
+  const selectedWorld = useRoom(session, selectedWorldId);
+
+  const { isEnteredWorld, loadedWorldId } = useStore.getState().world;
 
   const navigate = useNavigate();
 
@@ -92,88 +87,28 @@ export function Overlay({
     navigate(`/world/${roomBeingCreated.id}`);
   }, [session, navigate]);
 
-  const onLoadWorld = useCallback(
-    async (room: Room) => {
-      if (enteredWorld) {
-        onLeftWorld();
-      }
-
-      navigate(`/world/${room.id}`);
-      return;
-    },
-    [navigate, enteredWorld, onLeftWorld]
-  );
-
-  const onEnterWorld = useCallback(
-    async (room: Room) => {
-      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === room.id ? call : []));
-
-      let call = roomCalls.length && roomCalls[0];
-
-      if (!call) {
-        call = await session.callHandler.createCall(room.id, "m.voice", "Test World", CallIntent.Room);
-      }
-
-      const stream = await platform.mediaDevices.getMediaTracks(true, false);
-      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
-      await call.join(localMedia);
-
-      onEnteredWorld();
-    },
-    [platform, session, calls, onEnteredWorld]
-  );
-
-  const handleRoomListTabSelect = (selectedTab: RoomListTabs) => {
-    setSelectedRoomListTab(selectedTab);
-  };
-
-  useKeyDown(
-    (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  const handleSelectRoom = (roomId: string | undefined) => {
-    setSelectedChatId(undefined);
-    setSelectedRoomId(roomId);
+  const handleSelectWorld = (roomId: string | undefined) => {
+    selectChat(undefined);
+    selectWorld(roomId);
   };
 
   const handleSelectChat = (roomId: string) => {
     if (!activeChats.has(roomId)) {
-      setActiveChats(
-        produce(activeChats, (draft) => {
-          draft.add(roomId);
-        })
-      );
+      addActiveChat(roomId);
     }
-    if (selectedChatId === roomId) setSelectedChatId(undefined);
-    else setSelectedChatId(roomId);
+    if (selectedChatId === roomId) selectChat(undefined);
+    else selectChat(roomId);
   };
 
   const handleMinimizeChat = (roomId: string) => {
-    setSelectedChatId(undefined);
+    selectChat(undefined);
   };
   const handleCloseChat = (roomId: string) => {
     if (selectedChatId === roomId) {
-      setSelectedChatId(undefined);
+      selectChat(undefined);
     }
-    setActiveChats(
-      produce(activeChats, (draft) => {
-        draft.delete(roomId);
-      })
-    );
+    deleteActiveChat(roomId);
   };
-
-  useEffect(() => {
-    handleSelectRoom(activeWorldId);
-  }, [activeWorldId]);
-
-  if (!isOpen) {
-    return null;
-  }
 
   const renderActiveChats = () => {
     if (activeChats.size === 0) return null;
@@ -211,33 +146,35 @@ export function Overlay({
   };
 
   const renderWorldPreview = () => {
-    if (!((selectedRoomId && selectedRoomId !== activeWorldId) || (selectedRoomId && !enteredWorld))) return null;
+    if (!selectedWorldId) return null;
+    if (selectedWorldId === loadedWorldId && isEnteredWorld) return null;
 
     return (
       <WorldPreview
         session={session}
-        roomId={selectedRoomId}
-        room={selectedRoom}
+        roomId={selectedWorldId}
+        room={selectedWorld}
         onLoadWorld={onLoadWorld}
         onEnterWorld={onEnterWorld}
       />
     );
   };
 
+  const isNoBg = isHome || !isEnteredWorld;
   return (
-    <div className={classNames("Overlay", { "Overlay--no-bg": isHome || !enteredWorld }, "flex")}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": isNoBg }, "flex items-end")}>
       <SidebarView
         open
         spaces={<SpacesView />}
         roomList={
           <RoomListView
-            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={handleRoomListTabSelect} />}
+            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
             content={
               <RoomListContent
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
-                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedRoomId}
-                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectRoom}
+                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
+                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectWorld}
                 onCreateWorld={onCreateWorld}
               />
             }

@@ -1,16 +1,13 @@
-import { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
-export function useKeyDown(callback: (e: KeyboardEvent) => void, deps: unknown[]) {
+export function useKeyDown(callback: (e: KeyboardEvent) => void, deps: React.DependencyList) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const memoCallback = useCallback(callback, deps);
+
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      callback(e);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
+    window.addEventListener("keydown", memoCallback);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", memoCallback);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [memoCallback]);
 }

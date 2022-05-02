@@ -1,8 +1,13 @@
 .WorldChat {
-  height: 100%;
+  width: 100%;
   overflow: hidden;
+}
+.WorldChat__input {
+  padding: var(--sp-xs);
+  border-radius: var(--br-xs);
+  background-color: var(--bg-world-overlay);
 
-  & .Text {
-    color: var(--tc-world);
+  & .Icon {
+    margin-right: var(--sp-xs);
   }
 }

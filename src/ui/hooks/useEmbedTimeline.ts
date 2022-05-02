@@ -15,6 +15,8 @@ export function useEmbedTimeline(
     const timelineView = new HydrogenTimelineView(timelineViewModel, viewClassForTile);
     if (host.current) {
       const tvDOM = timelineView.mount() as Element;
+      const tvScroll = tvDOM.querySelector(".Timeline_scroller")!;
+      tvScroll.classList.add("legacy-scroll", "legacy-scroll--vertical", "legacy-scroll--invisible");
       while (host.current.lastChild) {
         host.current.removeChild(host.current.lastChild);
       }
