@@ -22,6 +22,7 @@ import {
   // NetworkTransform
 } from "./engine/network";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
+import { playAudioFromWorker } from "./engine/audio";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -152,6 +153,8 @@ export async function init(state: GameState): Promise<void> {
       RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
       addChild(scene, cube);
+
+      playAudioFromWorker("/audio/bach.mp3", cube);
     }
   };
 

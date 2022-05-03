@@ -1,3 +1,4 @@
+import { audioSystem, createAudioState, disposeAudioState, preloadDefaultAudio, playAudio } from "./audio";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
@@ -62,7 +63,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 }
 
 export interface Engine {
-  startTestNet(): void;
+  connectToTestNet(): void;
   setHost(value: boolean): void;
   setState(state: any): void;
   setPeerId(peerId: string): void;
@@ -75,7 +76,15 @@ export interface Engine {
   dispose(): void;
 }
 
+export function initAudio() {
+  const audioState = createAudioState();
+  preloadDefaultAudio(audioState);
+  return audioState;
+}
+
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
+  const audioState = initAudio();
+
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {
@@ -133,6 +142,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         type: WorkerMessageType.InitializeGameWorker,
         renderableTripleBuffer,
         inputTripleBuffer: inputManager.tripleBuffer,
+        audioTripleBuffer: audioState.tripleBuffer,
         renderWorkerMessagePort,
         resourceManagerBuffer,
         statsSharedArrayBuffer: statsBuffer.buffer,
@@ -254,6 +264,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       case WorkerMessageType.UnreliableNetworkBroadcast:
         broadcastUnreliable(message.packet);
         break;
+      case WorkerMessageType.PlayAudio:
+        playAudio(audioState, message.filepath, message.eid);
     }
   };
 
@@ -265,7 +277,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   function update() {
     inputManager.update();
-
+    audioSystem(audioState);
     animationFrameId = requestAnimationFrame(update);
   }
 
@@ -287,7 +299,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   }
 
   return {
-    startTestNet() {
+    connectToTestNet() {
       ws = new WebSocket("ws://localhost:9090");
       ws.binaryType = "arraybuffer";
 
@@ -408,6 +420,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       inputManager.dispose();
       gameWorker.terminate();
       disposeRenderWorker();
+      disposeAudioState(audioState);
     },
   };
 }

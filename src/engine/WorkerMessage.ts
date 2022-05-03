@@ -37,6 +37,7 @@ export enum WorkerMessageType {
   RemovePeerId = "remove-peer-id",
   StateChanged = "state-changed",
   SetHost = "set-host",
+  PlayAudio = "play-audio",
 }
 
 export interface WorkerMessage {
@@ -45,6 +46,7 @@ export interface WorkerMessage {
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
+  audioTripleBuffer: TripleBufferState;
   inputTripleBuffer: TripleBufferState;
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
@@ -211,6 +213,12 @@ export interface SetHostMessage extends WorkerMessage {
   value: boolean;
 }
 
+export interface PlayAudioMessage extends WorkerMessage {
+  type: WorkerMessageType.PlayAudio;
+  filepath: string;
+  eid: number;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -242,7 +250,8 @@ export type WorkerMessages =
   | AddPeerIdMessage
   | RemovePeerIdMessage
   | StateChangedMessage
-  | SetHostMessage;
+  | SetHostMessage
+  | PlayAudioMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

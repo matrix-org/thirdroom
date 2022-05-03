@@ -194,6 +194,7 @@ export interface GameState {
   camera: number;
   statsBuffer: StatsBuffer;
   network: NetworkState;
+  audio: { tripleBuffer: TripleBufferState };
 }
 
 const generateInputGetters = (
@@ -211,6 +212,7 @@ const generateInputGetters = (
   );
 
 async function onInit({
+  audioTripleBuffer,
   inputTripleBuffer,
   resourceManagerBuffer,
   renderWorkerMessagePort,
@@ -276,6 +278,10 @@ async function onInit({
     messageHandlers: {},
   };
 
+  const audio = {
+    tripleBuffer: audioTripleBuffer,
+  };
+
   const state: GameState = {
     world,
     scene,
@@ -285,6 +291,7 @@ async function onInit({
     entityPrefabMap: new Map(),
     renderer,
     physicsWorld,
+    audio,
     input,
     time,
     network,
@@ -319,6 +326,11 @@ const renderableTripleBufferSystem = ({ renderer }: GameState) => {
   swapWriteBuffer(renderer.tripleBuffer);
 };
 
+const audioTripleBufferSystem = ({ audio }: GameState) => {
+  copyToWriteBuffer(audio.tripleBuffer, renderableBuffer);
+  swapWriteBuffer(audio.tripleBuffer);
+};
+
 const timeSystem = ({ time }: GameState) => {
   const now = performance.now();
   time.dt = (now - time.elapsed) / 1000;
@@ -343,6 +355,7 @@ const pipeline = (state: GameState) => {
 
   updateWorldMatrixSystem(state);
   renderableTripleBufferSystem(state);
+  audioTripleBufferSystem(state);
 };
 
 // timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
