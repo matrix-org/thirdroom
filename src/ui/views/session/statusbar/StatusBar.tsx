@@ -1,5 +1,5 @@
 import { Text } from "../../../atoms/text/Text";
-import { closeOverlay, closeWorldChat, openOverlay, useStore } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 import "./StatusBar.css";
 
 function OpenOverlayTip({ text, onClick }: { text: string; onClick: () => void }) {
@@ -19,7 +19,8 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
-  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
+  const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
 
   const handleTipClick = () => {
     if (isOverlayOpen) {
