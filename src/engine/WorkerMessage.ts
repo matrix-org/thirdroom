@@ -3,6 +3,7 @@ import { OffscreenCanvas } from "three";
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
+import { ComponentInfo } from "./MainThread";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -37,6 +38,14 @@ export enum WorkerMessageType {
   RemovePeerId = "remove-peer-id",
   StateChanged = "state-changed",
   SetHost = "set-host",
+  LoadEditor = "load-editor",
+  EditorLoaded = "editor-loaded",
+  DisposeEditor = "dispose-editor",
+  SetComponentProperty = "set-component-property",
+  RemoveComponent = "remove-component",
+  SelectionChanged = "selection-changed",
+  ComponentInfoChanged = "component-info-changed",
+  ComponentPropertyChanged = "component-property-changed",
 }
 
 export interface WorkerMessage {
@@ -211,6 +220,53 @@ export interface SetHostMessage extends WorkerMessage {
   value: boolean;
 }
 
+export interface LoadEditorMessage extends WorkerMessage {
+  type: WorkerMessageType.LoadEditor;
+}
+
+export interface DisposeEditorMessage extends WorkerMessage {
+  type: WorkerMessageType.DisposeEditor;
+}
+
+export interface EditorLoadedMessage extends WorkerMessage {
+  type: WorkerMessageType.EditorLoaded;
+  componentInfos: [number, ComponentInfo][];
+}
+
+export interface SetComponentPropertyMessage extends WorkerMessage {
+  type: WorkerMessageType.SetComponentProperty;
+  entities: number[];
+  propertyId: number;
+  value: any;
+}
+
+export interface RemoveComponentMessage extends WorkerMessage {
+  type: WorkerMessageType.RemoveComponent;
+  entities: number[];
+  componentId: number;
+}
+
+export interface SelectionChangedMessage extends WorkerMessage {
+  type: WorkerMessageType.SelectionChanged;
+  selection: {
+    entities: number[];
+    components: number[];
+  };
+  initialValues: Map<number, any>;
+}
+
+export interface ComponentInfoChangedMessage extends WorkerMessage {
+  type: WorkerMessageType.ComponentInfoChanged;
+  componentId: number;
+  componentInfo: ComponentInfo;
+}
+
+export interface ComponentPropertyChangedMessage extends WorkerMessage {
+  type: WorkerMessageType.ComponentPropertyChanged;
+  propertyId: number;
+  value: any;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -242,7 +298,15 @@ export type WorkerMessages =
   | AddPeerIdMessage
   | RemovePeerIdMessage
   | StateChangedMessage
-  | SetHostMessage;
+  | SetHostMessage
+  | LoadEditorMessage
+  | EditorLoadedMessage
+  | DisposeEditorMessage
+  | SetComponentPropertyMessage
+  | RemoveComponentMessage
+  | SelectionChangedMessage
+  | ComponentInfoChangedMessage
+  | ComponentPropertyChangedMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

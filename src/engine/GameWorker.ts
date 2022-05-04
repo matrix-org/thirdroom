@@ -29,6 +29,7 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
+import { EditorState, initEditorState, onDisposeEditor, onEditorMessage, onLoadEditor } from "./editor";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -65,6 +66,7 @@ const onMessage =
 
     const message = data as WorkerMessages;
 
+    // TODO: This switch statement is doing a lot of heavy lifting. We could be doing simpler checks.
     switch (message.type) {
       case WorkerMessageType.StartGameWorker:
         onStart(state);
@@ -99,6 +101,16 @@ const onMessage =
         break;
       case WorkerMessageType.SetHost:
         state.network.hosting = message.value;
+        break;
+      case WorkerMessageType.LoadEditor:
+        onLoadEditor(state);
+        break;
+      case WorkerMessageType.DisposeEditor:
+        onDisposeEditor(state);
+        break;
+      case WorkerMessageType.SetComponentProperty:
+      case WorkerMessageType.RemoveComponent:
+        onEditorMessage(state, message);
         break;
     }
   };
@@ -194,6 +206,7 @@ export interface GameState {
   camera: number;
   statsBuffer: StatsBuffer;
   network: NetworkState;
+  editorState: EditorState;
 }
 
 const generateInputGetters = (
@@ -292,6 +305,7 @@ async function onInit({
     preSystems: [],
     postSystems: [],
     statsBuffer,
+    editorState: initEditorState(),
   };
 
   registerDefaultPrefabs(state);
