@@ -18,42 +18,30 @@ import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile
 import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
 import { useRoom } from "../../../hooks/useRoom";
-import {
-  useStore,
-  selectRoomListTab,
-  selectWorld,
-  selectChat,
-  addActiveChat,
-  deleteActiveChat,
-} from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 
 interface OverlayProps {
-  isHome: boolean;
   onLoadWorld: (room: Room) => Promise<void>;
   onEnterWorld: (room: Room) => Promise<void>;
 }
 
-export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
+export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const { session } = useHydrogen(true);
   const rooms = useRoomList(session);
-
-  const selectedRoomListTab = useStore((state) => state.overlay.selectedRoomListTab);
-
-  const activeChats = useStore((state) => state.overlay.activeChats);
-  const selectedChatId = useStore((state) => state.overlay.selectedChatId);
+  const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
+  const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
+  const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
+  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
-
-  const selectedWorldId = useStore((state) => state.overlay.selectedWorldId);
-  const selectedWorld = useRoom(session, selectedWorldId);
-
-  const { isEnteredWorld, loadedWorldId } = useStore.getState().world;
 
   const navigate = useNavigate();
 
   const onCreateWorld = useCallback(async () => {
+    const name = "Test World";
+
     const roomBeingCreated = session.createRoom({
       type: RoomType.Public,
-      name: "Test World",
+      name,
       topic: undefined,
       isEncrypted: false,
       isFederationDisabled: false,
@@ -87,36 +75,11 @@ export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
     navigate(`/world/${roomBeingCreated.id}`);
   }, [session, navigate]);
 
-  const handleSelectWorld = (roomId: string | undefined) => {
-    selectChat(undefined);
-    selectWorld(roomId);
-  };
-
-  const handleSelectChat = (roomId: string) => {
-    if (!activeChats.has(roomId)) {
-      addActiveChat(roomId);
-    }
-    if (selectedChatId === roomId) selectChat(undefined);
-    else selectChat(roomId);
-  };
-
-  const handleMinimizeChat = (roomId: string) => {
-    selectChat(undefined);
-  };
-  const handleCloseChat = (roomId: string) => {
-    if (selectedChatId === roomId) {
-      selectChat(undefined);
-    }
-    deleteActiveChat(roomId);
-  };
-
   const renderActiveChats = () => {
     if (activeChats.size === 0) return null;
     return (
       <ActiveChats
-        chat={
-          selectedChat && <ChatView room={selectedChat} onMinimize={handleMinimizeChat} onClose={handleCloseChat} />
-        }
+        chat={selectedChat && <ChatView room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />}
         tiles={[...activeChats].map((rId) => {
           const room = session.rooms.get(rId);
           if (!room) return null;
@@ -136,8 +99,8 @@ export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
                 />
               }
               title={roomName}
-              onClick={handleSelectChat}
-              onClose={handleCloseChat}
+              onClick={selectChat}
+              onClose={closeChat}
             />
           );
         })}
@@ -145,24 +108,8 @@ export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
     );
   };
 
-  const renderWorldPreview = () => {
-    if (!selectedWorldId) return null;
-    if (selectedWorldId === loadedWorldId && isEnteredWorld) return null;
-
-    return (
-      <WorldPreview
-        session={session}
-        roomId={selectedWorldId}
-        room={selectedWorld}
-        onLoadWorld={onLoadWorld}
-        onEnterWorld={onEnterWorld}
-      />
-    );
-  };
-
-  const isNoBg = isHome || !isEnteredWorld;
   return (
-    <div className={classNames("Overlay", { "Overlay--no-bg": isNoBg }, "flex items-end")}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       <SidebarView
         open
         spaces={<SpacesView />}
@@ -174,7 +121,7 @@ export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
                 selectedTab={selectedRoomListTab}
                 rooms={rooms}
                 selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
-                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? handleSelectChat : handleSelectWorld}
+                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? selectChat : selectWorld}
                 onCreateWorld={onCreateWorld}
               />
             }
@@ -182,7 +129,7 @@ export function Overlay({ isHome, onLoadWorld, onEnterWorld }: OverlayProps) {
         }
       />
       <div className="Overlay__content grow">
-        {renderWorldPreview()}
+        <WorldPreview session={session} onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />
         {activeChats.size > 0 && renderActiveChats()}
       </div>
     </div>
