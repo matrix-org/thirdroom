@@ -12,6 +12,7 @@ import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
+import { playAudioFromWorker } from "../audio";
 
 /* Prefab Factories */
 
@@ -153,8 +154,8 @@ export function registerDefaultPrefabs(state: GameState) {
   });
   registerPrefab(state, {
     name: "red-cube",
-    create: () =>
-      createCube(
+    create: () => {
+      const eid = createCube(
         state,
         loadRemoteResource(state.resourceManager, {
           type: "geometry",
@@ -167,7 +168,12 @@ export function registerDefaultPrefabs(state: GameState) {
           roughnessFactor: 0.8,
           metallicFactor: 0.8,
         })
-      ),
+      );
+
+      playAudioFromWorker("/audio/bach.mp3", eid);
+
+      return eid;
+    },
   });
   registerPrefab(state, {
     name: "green-cube",

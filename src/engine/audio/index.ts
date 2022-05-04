@@ -200,25 +200,31 @@ export const updatePannerPositions = (audioState: AudioState) => {
     return audioState;
   }
 
-  const listener = audioState.context.listener;
+  const { listener } = audioState.context;
 
-  listener.upX.value = 0;
-  listener.upY.value = 1;
-  listener.upZ.value = 0;
+  if (listener.upX) {
+    listener.upX.value = 0;
+    listener.upY.value = 1;
+    listener.upZ.value = 0;
+  }
 
-  listener.positionX.value = tempPosition.x;
-  listener.positionY.value = tempPosition.y;
-  listener.positionZ.value = tempPosition.z;
+  if (listener.positionX) {
+    listener.positionX.value = tempPosition.x;
+    listener.positionY.value = tempPosition.y;
+    listener.positionZ.value = tempPosition.z;
+  } else {
+    listener.setPosition(tempPosition.x, tempPosition.y, tempPosition.z);
+  }
 
   const e = tempMatrix4.elements;
   const v = new Vector3(-e[8], -e[9], -e[10]).normalize();
-  const rx = v.x;
-  const ry = v.y;
-  const rz = v.z;
-
-  listener.forwardX.value = rx;
-  listener.forwardY.value = ry;
-  listener.forwardZ.value = rz;
+  if (listener.forwardX) {
+    listener.forwardX.value = v.x;
+    listener.forwardY.value = v.y;
+    listener.forwardZ.value = v.z;
+  } else {
+    listener.setOrientation(v.x, v.y, v.z, 0, 1, 0);
+  }
 
   audioState.entityPanners.forEach((panner, eid) => {
     const { currentTime } = audioState.context;

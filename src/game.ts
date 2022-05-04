@@ -153,8 +153,6 @@ export async function init(state: GameState): Promise<void> {
       RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
       addChild(scene, cube);
-
-      playAudioFromWorker("/audio/bach.mp3", cube);
     }
   };
 
