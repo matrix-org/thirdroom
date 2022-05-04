@@ -15,7 +15,7 @@ export interface AudioState {
   transformViews: TransformView[];
   entityPanners: Map<number, PannerNode>;
   playerEntity: number;
-  master: {
+  main: {
     bus: ChannelMergerNode;
     gain: GainNode;
   };
@@ -116,7 +116,7 @@ export const addEntityPanner = (
 └─L────R─┘
   ▲    ▲
 ┌────────┐
-│ master │ master channel volume
+│ main   │ main channel volume
 │ gain   │ todo: connect reverb gain
 └─L────R─┘
   ▲    ▲
@@ -128,16 +128,16 @@ export const addEntityPanner = (
 export const createAudioState = (): AudioState => {
   const context = new AudioContext();
 
-  const masterGain = new GainNode(context);
-  const masterBus = new ChannelMergerNode(context);
-  masterGain.connect(context.destination);
-  // masterBus.connect(masterGain);
+  const mainGain = new GainNode(context);
+  const mainBus = new ChannelMergerNode(context);
+  mainGain.connect(context.destination);
+  // mainBus.connect(mainGain);
 
   const sampleBus = new ChannelMergerNode(context);
   const sampleGain = new GainNode(context);
   // sampleBus.connect(sampleGain);
-  // sampleGain.connect(masterBus);
-  sampleGain.connect(masterGain);
+  // sampleGain.connect(mainBus);
+  sampleGain.connect(mainGain);
 
   const sampleCache = new Map<string, AudioBuffer>();
 
@@ -163,9 +163,9 @@ export const createAudioState = (): AudioState => {
     transformViews,
     entityPanners,
     playerEntity: NOOP,
-    master: {
-      bus: masterBus,
-      gain: masterGain,
+    main: {
+      bus: mainBus,
+      gain: mainGain,
     },
     sample: {
       bus: sampleBus,
@@ -217,7 +217,7 @@ export const updatePannerPositions = (audioState: AudioState) => {
   }
 
   const e = tempMatrix4.elements;
-  const v = new Vector3(-e[8], -e[9], -e[10]).normalize();
+  const v = tempPosition.set(-e[8], -e[9], -e[10]).normalize();
   if (listener.forwardX) {
     listener.forwardX.value = v.x;
     listener.forwardY.value = v.y;
@@ -246,8 +246,7 @@ export const playQueuedAudio = (audioState: AudioState) => {
   while (queue.length) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const [filepath, eid] = queue.shift()!;
-    if (eid) playAudioAtEntity(audioState, filepath, eid);
-    else playAudio(audioState, filepath);
+    playAudio(audioState, filepath, eid);
   }
   return audioState;
 };
