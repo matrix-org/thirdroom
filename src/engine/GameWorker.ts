@@ -92,7 +92,7 @@ const onMessage =
         break;
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
-        state.network.messages.push(message.packet);
+        state.network.incoming.push(message.packet);
         break;
       case WorkerMessageType.StateChanged:
         onStateChange(state, message.state);
@@ -156,7 +156,7 @@ export interface RenderState {
 
 export interface NetworkState {
   hosting: boolean;
-  messages: ArrayBuffer[];
+  incoming: ArrayBuffer[];
   entityIdMap: Map<number, number>;
   peerId: string;
   peers: string[];
@@ -266,7 +266,7 @@ async function onInit({
 
   const network: NetworkState = {
     hosting: false,
-    messages: [],
+    incoming: [],
     entityIdMap: new Map<number, number>(),
     peerId: "",
     peers: [],
