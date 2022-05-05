@@ -91,8 +91,6 @@ export function initEditor(state: GameState) {
 export function onLoadEditor(state: GameState) {
   state.editorState.editorLoaded = true;
 
-  console.log("enable action map");
-
   enableActionMap(state, editorActionMap);
 
   postMessage({
@@ -132,7 +130,6 @@ export function EditorStateSystem(state: GameState) {
   const selectedEntities = selectedQuery(state.world);
 
   if (!shallowArraysEqual(selectedEntities, state.editorState.selectedEntities)) {
-    console.log("changed");
     updateSelectedEntities(state, selectedEntities.slice());
   }
 }
@@ -211,8 +208,6 @@ function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   components.push(componentId);
   const propertyId = state.editorState.propertyIdMap.get(Transform.position)!;
   initialValues.set(propertyId, state.editorState.propertyGetterMap.get(propertyId)!(state, selectedEntities[0]));
-
-  console.log("send selection changed", selectedEntities, components, initialValues);
 
   postMessage({
     type: WorkerMessageType.SelectionChanged,
@@ -294,7 +289,6 @@ export function EditorSelectionSystem(state: GameState) {
   const raycastResults = getRaycastResults(state, editorRayId);
 
   if (raycastResults && raycastResults.length > 0) {
-    console.log("raycastResults", raycastResults);
     const intersection = raycastResults[raycastResults.length - 1];
 
     const selectedEntities = state.editorState.selectedEntities;

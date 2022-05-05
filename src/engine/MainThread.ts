@@ -1,4 +1,4 @@
-import { EditorEventType, Selection } from "./editor/types";
+import { EditorEventType, Selection } from "./editor/editor.common";
 import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
@@ -273,8 +273,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   function emitEditorEvent(type: EditorEventType, ...args: any[]) {
     const listeners = editorState.eventListeners.get(type);
 
-    console.log(listeners);
-
     if (!listeners) {
       return;
     }
@@ -290,7 +288,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   }
 
   function onSelectionChanged(selection: Selection, initialValues: Map<number, any>) {
-    console.log("onSelectionChanged", selection, initialValues);
     editorState.selection = selection;
     editorState.componentProperties = initialValues;
 

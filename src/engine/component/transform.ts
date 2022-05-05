@@ -5,7 +5,7 @@ import { gameBuffer, renderableBuffer } from "./buffers";
 import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config";
 import { GameState, World } from "../GameWorker";
-import { registerEditorComponent } from "../editor";
+import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 
 export interface Transform extends IComponent {

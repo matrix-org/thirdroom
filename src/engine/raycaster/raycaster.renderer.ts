@@ -22,7 +22,6 @@ export function initRendererRaycaster(state: RenderWorkerState) {
 }
 
 function onRaycastMessage(state: RenderWorkerState, message: RaycastMessage) {
-  console.log("onRaycastMessage");
   state.raycaster.messages.push(message);
 }
 
@@ -58,8 +57,6 @@ function RendererRaycasterSystem(state: RenderWorkerState) {
           }
         }
       }
-
-      console.log("rayaster results sent", results);
 
       state.gameWorkerMessageTarget.postMessage({
         type: WorkerMessageType.RaycastResults,

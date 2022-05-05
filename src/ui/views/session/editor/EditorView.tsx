@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { EditorEventType } from "../../../../engine/editor/types";
+import { EditorEventType } from "../../../../engine/editor/editor.common";
 import {
   ComponentInfo,
   ComponentPropertyInfo,
@@ -15,17 +15,13 @@ function useEditor(): boolean {
 
   useEffect(() => {
     function onEditorLoaded() {
-      console.log("editorLoaded");
       setLoading(false);
     }
 
     engine.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
     engine.loadEditor();
 
-    console.log("loadEditor");
-
     return () => {
-      console.log("disposeEditor");
       engine.disposeEditor();
       engine.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
     };

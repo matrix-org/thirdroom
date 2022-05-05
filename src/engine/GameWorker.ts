@@ -29,7 +29,14 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
-import { EditorState, initEditor, initEditorState, onDisposeEditor, onEditorMessage, onLoadEditor } from "./editor";
+import {
+  EditorState,
+  initEditor,
+  initEditorState,
+  onDisposeEditor,
+  onEditorMessage,
+  onLoadEditor,
+} from "./editor/editor.game";
 import { initRaycaster, initRaycasterState, RaycasterState } from "./raycaster/raycaster.game";
 // import { NetworkTransformSystem } from "./network";
 

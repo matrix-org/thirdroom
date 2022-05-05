@@ -3,7 +3,7 @@ import type { vec3 } from "gl-matrix";
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
-import { ComponentPropertyValues } from "./editor";
+import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
 import { RaycastResult, RayId } from "./raycaster/raycaster.common";
 
