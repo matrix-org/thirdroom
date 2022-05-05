@@ -1,10 +1,11 @@
-import { OffscreenCanvas } from "three";
-
+import type { OffscreenCanvas } from "three";
+import type { vec3 } from "gl-matrix";
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor";
-import { ComponentInfo } from "./component/types";
+import { ComponentInfo, ComponentPropertyValue } from "./component/types";
+import { RaycastResult, RayId } from "./raycaster/raycaster.common";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -48,10 +49,12 @@ export enum WorkerMessageType {
   SelectionChanged = "selection-changed",
   ComponentInfoChanged = "component-info-changed",
   ComponentPropertyChanged = "component-property-changed",
+  Raycast = "raycast",
+  RaycastResults = "raycast-results",
 }
 
-export interface WorkerMessage {
-  type: WorkerMessageType;
+export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> {
+  type: T;
 }
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
@@ -253,7 +256,7 @@ export interface SetComponentPropertyMessage extends WorkerMessage {
   type: WorkerMessageType.SetComponentProperty;
   entities: number[];
   propertyId: number;
-  value: any;
+  value: ComponentPropertyValue;
 }
 
 export interface SelectionChangedMessage extends WorkerMessage {
@@ -262,7 +265,7 @@ export interface SelectionChangedMessage extends WorkerMessage {
     entities: number[];
     components: number[];
   };
-  initialValues: Map<number, any>;
+  initialValues: Map<number, ComponentPropertyValue>;
 }
 
 export interface ComponentInfoChangedMessage extends WorkerMessage {
@@ -274,7 +277,20 @@ export interface ComponentInfoChangedMessage extends WorkerMessage {
 export interface ComponentPropertyChangedMessage extends WorkerMessage {
   type: WorkerMessageType.ComponentPropertyChanged;
   propertyId: number;
-  value: any;
+  value: ComponentPropertyValue;
+}
+
+export interface RaycastMessage extends WorkerMessage {
+  type: WorkerMessageType.Raycast;
+  rayId: RayId;
+  origin: vec3;
+  direction: vec3;
+}
+
+export interface RaycastResultsMessage extends WorkerMessage {
+  type: WorkerMessageType.RaycastResults;
+  rayId: number;
+  results: RaycastResult[];
 }
 
 export type WorkerMessages =
@@ -317,7 +333,9 @@ export type WorkerMessages =
   | RemoveComponentMessage
   | SelectionChangedMessage
   | ComponentInfoChangedMessage
-  | ComponentPropertyChangedMessage;
+  | ComponentPropertyChangedMessage
+  | RaycastMessage
+  | RaycastResultsMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

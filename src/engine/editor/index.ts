@@ -1,8 +1,9 @@
-import { defineComponent, defineQuery } from "bitecs";
+import { addComponent, Component, defineComponent, defineQuery, removeComponent } from "bitecs";
+import { vec3, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameWorker";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
-import { WorkerMessages, WorkerMessageType } from "../WorkerMessage";
+import { SelectionChangedMessage, WorkerMessages, WorkerMessageType } from "../WorkerMessage";
 import {
   ComponentPropertyGetter,
   ComponentPropertyGetters,
@@ -16,12 +17,25 @@ import {
   ComponentPropertyType,
   ComponentPropertyStore,
 } from "../component/types";
+import { getDirection, Transform } from "../component/transform";
+import {
+  ActionMap,
+  ActionType,
+  BindingType,
+  ButtonActionState,
+  disableActionMap,
+  enableActionMap,
+} from "../input/ActionMappingSystem";
+import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
 
 export interface EditorState {
+  rayId: number;
   editorLoaded: boolean;
   messages: WorkerMessages[];
   selectedEntities: number[];
+  componentIdMap: Map<Component, number>;
   componentInfoMap: Map<number, ComponentInfo>;
+  propertyIdMap: Map<ComponentPropertyStore, number>;
   propertyGetterMap: Map<number, ComponentPropertyGetter>;
   propertySetterMap: Map<number, ComponentPropertySetter>;
   componentAdderMap: Map<number, ComponentAdder>;
@@ -32,30 +46,67 @@ export interface EditorState {
 
 export function initEditorState(): EditorState {
   return {
+    rayId: createRay(),
     editorLoaded: false,
     messages: [],
     selectedEntities: [],
     nextComponentId: 1,
+    componentIdMap: new Map(),
     componentInfoMap: new Map(),
     componentAdderMap: new Map(),
     componentRemoverMap: new Map(),
     nextPropertyId: 1,
+    propertyIdMap: new Map(),
     propertyGetterMap: new Map(),
     propertySetterMap: new Map(),
   };
 }
 
+export enum EditorActions {
+  select = "Editor/select",
+}
+
+const editorActionMap: ActionMap = {
+  id: "Editor",
+  actions: [
+    {
+      id: "select",
+      path: EditorActions.select,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyG",
+        },
+      ],
+    },
+  ],
+};
+
+export function initEditor(state: GameState) {
+  state.postSystems.push(EditorStateSystem);
+  state.postSystems.push(EditorSelectionSystem);
+}
+
 export function onLoadEditor(state: GameState) {
   state.editorState.editorLoaded = true;
+
+  console.log("enable action map");
+
+  enableActionMap(state, editorActionMap);
+
   postMessage({
     type: WorkerMessageType.EditorLoaded,
     componentInfos: state.editorState.componentInfoMap,
   });
+
+  addComponent(state.world, Selected, state.camera);
 }
 
-export function onDisposeEditor({ editorState }: GameState) {
-  editorState.editorLoaded = false;
-  editorState.messages.length = 0;
+export function onDisposeEditor(state: GameState) {
+  state.editorState.editorLoaded = false;
+  state.editorState.messages.length = 0;
+  disableActionMap(state, editorActionMap);
 }
 
 export function onEditorMessage(state: GameState, message: WorkerMessages) {
@@ -81,6 +132,7 @@ export function EditorStateSystem(state: GameState) {
   const selectedEntities = selectedQuery(state.world);
 
   if (!shallowArraysEqual(selectedEntities, state.editorState.selectedEntities)) {
+    console.log("changed");
     updateSelectedEntities(state, selectedEntities.slice());
   }
 }
@@ -151,14 +203,25 @@ function onSetComponentProperty(
 function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   state.editorState.selectedEntities = selectedEntities;
 
-  // postMessage({
-  //   type: WorkerMessageType.SelectionChanged,
-  //   selection: {
-  //     entities: selectedEntities,
-  //     components: [],
-  //   },
-  //   initialValues: [],
-  // } as SelectionChangedMessage);
+  const components: number[] = [];
+  const initialValues: Map<number, ComponentPropertyValue> = new Map();
+
+  // TODO: Do this dynamically
+  const componentId = state.editorState.componentIdMap.get(Transform)!;
+  components.push(componentId);
+  const propertyId = state.editorState.propertyIdMap.get(Transform.position)!;
+  initialValues.set(propertyId, state.editorState.propertyGetterMap.get(propertyId)!(state, selectedEntities[0]));
+
+  console.log("send selection changed", selectedEntities, components, initialValues);
+
+  postMessage({
+    type: WorkerMessageType.SelectionChanged,
+    selection: {
+      entities: selectedEntities,
+      components,
+    },
+    initialValues,
+  } as SelectionChangedMessage);
 }
 
 export interface ComponentPropertyDefinition<PropType extends ComponentPropertyType> {
@@ -192,6 +255,7 @@ export interface ComponentDefinition<Props extends ComponentPropertyMap = {}> {
 
 export function registerEditorComponent<Props extends ComponentPropertyMap>(
   state: GameState,
+  component: Component,
   definition: ComponentDefinition<Props>
 ) {
   const editorState = state.editorState;
@@ -205,15 +269,48 @@ export function registerEditorComponent<Props extends ComponentPropertyMap>(
       type,
     };
     props.push(propInfo);
+    editorState.propertyIdMap.set(store, propertyId);
     editorState.propertyGetterMap.set(propertyId, ComponentPropertyGetters[type](store));
     editorState.propertySetterMap.set(propertyId, ComponentPropertySetters[type](store));
   }
 
   const componentId = editorState.nextComponentId++;
+  editorState.componentIdMap.set(component, componentId);
   editorState.componentInfoMap.set(componentId, {
     name: definition.name,
     props,
   });
   editorState.componentAdderMap.set(componentId, definition.add);
   editorState.componentRemoverMap.set(componentId, definition.remove);
+}
+
+const editorRayId = 0;
+
+export function EditorSelectionSystem(state: GameState) {
+  if (!state.editorState.editorLoaded) {
+    return;
+  }
+
+  const raycastResults = getRaycastResults(state, editorRayId);
+
+  if (raycastResults && raycastResults.length > 0) {
+    console.log("raycastResults", raycastResults);
+    const intersection = raycastResults[raycastResults.length - 1];
+
+    const selectedEntities = state.editorState.selectedEntities;
+
+    for (let i = 0; i < selectedEntities.length; i++) {
+      removeComponent(state.world, Selected, selectedEntities[i]);
+    }
+
+    addComponent(state.world, Selected, intersection.entity);
+  }
+
+  const select = state.input.actions.get(EditorActions.select) as ButtonActionState;
+
+  if (select.pressed) {
+    const direction = getDirection(vec3.create(), Transform.worldMatrix[state.camera]);
+    vec3.negate(direction, direction);
+    raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[state.camera]), direction);
+  }
 }

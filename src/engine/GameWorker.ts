@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -29,7 +29,8 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
-import { EditorState, initEditorState, onDisposeEditor, onEditorMessage, onLoadEditor } from "./editor";
+import { EditorState, initEditor, initEditorState, onDisposeEditor, onEditorMessage, onLoadEditor } from "./editor";
+import { initRaycaster, initRaycasterState, RaycasterState } from "./raycaster/raycaster.game";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -66,7 +67,14 @@ const onMessage =
 
     const message = data as WorkerMessages;
 
-    // TODO: This switch statement is doing a lot of heavy lifting. We could be doing simpler checks.
+    const handler = state.messageHandlers[message.type];
+
+    if (handler) {
+      handler(state, message as any);
+      return;
+    }
+
+    // TODO: This switch statement is doing a lot of heavy lifting. Move to the message handler map above.
     switch (message.type) {
       case WorkerMessageType.StartGameWorker:
         onStart(state);
@@ -207,6 +215,8 @@ export interface GameState {
   statsBuffer: StatsBuffer;
   network: NetworkState;
   editorState: EditorState;
+  raycaster: RaycasterState;
+  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: GameState, message: T) => void }>;
 }
 
 const generateInputGetters = (
@@ -306,9 +316,17 @@ async function onInit({
     postSystems: [],
     statsBuffer,
     editorState: initEditorState(),
+    raycaster: initRaycasterState(),
+    messageHandlers: {},
   };
 
+  initRaycaster(state);
+  initEditor(state);
+
   registerDefaultPrefabs(state);
+
+  // TODO: Register components in some other file.
+  registerTransformComponent(state);
 
   state.preSystems.push(createIncomingNetworkSystem(state));
 

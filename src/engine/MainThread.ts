@@ -273,6 +273,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   function emitEditorEvent(type: EditorEventType, ...args: any[]) {
     const listeners = editorState.eventListeners.get(type);
 
+    console.log(listeners);
+
     if (!listeners) {
       return;
     }
@@ -288,9 +290,15 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   }
 
   function onSelectionChanged(selection: Selection, initialValues: Map<number, any>) {
+    console.log("onSelectionChanged", selection, initialValues);
     editorState.selection = selection;
     editorState.componentProperties = initialValues;
+
     emitEditorEvent(EditorEventType.SelectionChanged, selection);
+
+    for (const [propertyId, value] of initialValues) {
+      emitEditorEvent(EditorEventType.ComponentPropertyChanged, propertyId, value);
+    }
   }
 
   function onComponentInfoChanged(componentId: number, componentInfo: ComponentInfo) {

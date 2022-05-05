@@ -8,7 +8,6 @@ import {
   ComponentPropertyValue,
 } from "../../../../engine/component/types";
 import { useEngine } from "../../../hooks/useEngine";
-import "./EditorView.css";
 
 function useEditor(): boolean {
   const engine = useEngine();
@@ -16,13 +15,17 @@ function useEditor(): boolean {
 
   useEffect(() => {
     function onEditorLoaded() {
+      console.log("editorLoaded");
       setLoading(false);
     }
 
     engine.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
     engine.loadEditor();
 
+    console.log("loadEditor");
+
     return () => {
+      console.log("disposeEditor");
       engine.disposeEditor();
       engine.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
     };
@@ -90,6 +93,7 @@ function useComponentProperty<T extends ComponentPropertyType>(propId: number): 
   const onChange = useCallback(
     (value: ComponentPropertyValue<T>) => {
       engine.setComponentProperty(propId, value);
+      setValue(value);
     },
     [engine, propId]
   );
@@ -127,15 +131,27 @@ export function Vector3Input({ name, value, onChange }: Vector3InputProps) {
       <div>{name}:</div>
       <div>
         <span>X:</span>
-        <input type="text" value={x} onChange={(e) => onChange(new Float32Array([parseFloat(e.target.value), y, z]))} />
+        <input
+          type="text"
+          value={x}
+          onChange={(e) => onChange(new Float32Array([parseFloat(e.target.value) || 0, y, z]))}
+        />
       </div>
       <div>
         <span>Y:</span>
-        <input type="text" value={y} onChange={(e) => onChange(new Float32Array([x, parseFloat(e.target.value), z]))} />
+        <input
+          type="text"
+          value={y}
+          onChange={(e) => onChange(new Float32Array([x, parseFloat(e.target.value) || 0, z]))}
+        />
       </div>
       <div>
         <span>Z:</span>
-        <input type="text" value={z} onChange={(e) => onChange(new Float32Array([x, y, parseFloat(e.target.value)]))} />
+        <input
+          type="text"
+          value={z}
+          onChange={(e) => onChange(new Float32Array([x, y, parseFloat(e.target.value) || 0]))}
+        />
       </div>
     </div>
   );
