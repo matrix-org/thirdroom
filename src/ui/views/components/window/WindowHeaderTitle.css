@@ -1,0 +1,5 @@
+.WindowHeaderTitle {
+  & > .Text:not(:only-child) {
+    margin-left: var(--sp-xs);
+  }
+}

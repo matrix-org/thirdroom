@@ -1,0 +1,7 @@
+.WindowFooter {
+  padding: var(--sp-xs);
+}
+
+.WindowFooter__center {
+  margin: 0 var(--sp-md);
+}

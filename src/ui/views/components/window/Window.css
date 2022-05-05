@@ -1,0 +1,6 @@
+.Window {
+  height: 100%;
+  border-radius: var(--br-lg);
+  background-color: var(--bg-surface);
+  overflow: hidden;
+}
