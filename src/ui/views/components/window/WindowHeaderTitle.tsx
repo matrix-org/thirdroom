@@ -1,16 +1,15 @@
 import { Text } from "../../../atoms/text/Text";
-import { Icon } from "../../../atoms/icon/Icon";
 import "./WindowHeaderTitle.css";
 
 interface WindowHeaderTitleProps {
-  iconSrc?: string;
+  icon?: React.ReactNode;
   children: string;
 }
 
-export function WindowHeaderTitle({ iconSrc, children }: WindowHeaderTitleProps) {
+export function WindowHeaderTitle({ icon, children }: WindowHeaderTitleProps) {
   return (
     <div className="WindowHeaderTitle flex items-center">
-      {iconSrc && <Icon className="shrink-0" src={iconSrc} color="surface" />}
+      {icon}
       <Text className="truncate" weight="bold">
         {children}
       </Text>

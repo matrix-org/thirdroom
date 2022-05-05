@@ -3,6 +3,7 @@ import { WindowHeader } from "./WindowHeader";
 import { WindowHeaderTitle } from "./WindowHeaderTitle";
 import { WindowContent } from "./WindowContent";
 import { WindowFooter } from "./WindowFooter";
+import { Icon } from "../../../atoms/icon/Icon";
 import { IconButton } from "../../../atoms/button/IconButton";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import ExploreIC from "../../../../../res/ic/explore.svg";
@@ -17,7 +18,11 @@ export default function WindowStories() {
       <Window
         header={
           <WindowHeader
-            left={<WindowHeaderTitle iconSrc={ExploreIC}>Discover</WindowHeaderTitle>}
+            left={
+              <WindowHeaderTitle icon={<Icon className="shrink-0" src={ExploreIC} color="surface" />}>
+                Discover
+              </WindowHeaderTitle>
+            }
             right={<IconButton label="Options" iconSrc={MoreHorizontalIC} onClick={(a) => console.log("clicked")} />}
           />
         }
