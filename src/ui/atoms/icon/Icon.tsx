@@ -16,7 +16,7 @@ interface IIcon {
     | "on-danger"
     | "tooltip"
     | "link";
-  size?: "md" | "sm" | "xs";
+  size?: "lg" | "md" | "sm" | "xs";
   src: string;
   isImage?: boolean;
 }

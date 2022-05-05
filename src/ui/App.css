@@ -77,6 +77,7 @@
   --sp-xxs: 5px;
 
   /* icon sizes */
+  --ic-lg: 40px;
   --ic-md: 20px;
   --ic-sm: 15px;
   --ic-xs: 10px;
@@ -88,6 +89,10 @@
   --av-sm: 30px;
   --av-xs: 25px;
   --av-xxs: 20px;
+
+  /* thumbnail sizes */
+  --th-md: 200px;
+  --th-sm: 150px;
 
   /* border radius */
   --br-lg: 16px;
