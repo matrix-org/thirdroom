@@ -1,9 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import {
-  addComponent,
-  defineQuery,
-  // removeEntity,
-} from "bitecs";
+import { addComponent, defineQuery, removeEntity } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import { GameState } from "./engine/GameWorker";
@@ -158,9 +154,9 @@ export async function init(state: GameState): Promise<void> {
 
       addChild(scene, cube);
 
-      // setTimeout(() => {
-      //   removeEntity(state.world, cube);
-      // }, 3000);
+      setTimeout(() => {
+        removeEntity(state.world, cube);
+      }, 3000);
     }
   };
 

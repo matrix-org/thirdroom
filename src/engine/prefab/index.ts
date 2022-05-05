@@ -169,6 +169,26 @@ export function registerDefaultPrefabs(state: GameState) {
           metallicFactor: 0.8,
         })
       );
+      return eid;
+    },
+  });
+  registerPrefab(state, {
+    name: "musical-cube",
+    create: () => {
+      const eid = createCube(
+        state,
+        loadRemoteResource(state.resourceManager, {
+          type: "geometry",
+          geometryType: GeometryType.Box,
+        }),
+        loadRemoteResource(state.resourceManager, {
+          type: "material",
+          materialType: MaterialType.Physical,
+          baseColorFactor: [1, 0, 0, 1.0],
+          roughnessFactor: 0.8,
+          metallicFactor: 0.8,
+        })
+      );
 
       playAudioFromWorker("/audio/bach.mp3", eid);
 

@@ -113,7 +113,7 @@ export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
 // eslint-disable-next-line new-cap
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 
-// todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
+// bitecs todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
 export const networkIdQuery = defineQuery([Networked, Owned]);
 export const createNetworkIdQuery = enterQuery(networkIdQuery);
 export const deleteNetworkIdQuery = exitQuery(networkIdQuery);
@@ -288,6 +288,7 @@ export function serializeCreates(input: NetPipeData) {
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
+      console.log("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
       console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
     }
@@ -424,6 +425,7 @@ export function serializeDeletes(input: NetPipeData) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
     writeUint32(v, nid);
+    console.log("serialized deletion for nid", nid, "eid", eid);
   }
   return input;
 }
@@ -437,6 +439,7 @@ export function deserializeDeletes(input: NetPipeData) {
     if (!eid) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
+      console.log("deserialized deletion for nid", nid, "eid", eid);
       removeEntity(state.world, eid);
       state.network.entityIdMap.delete(nid);
     }
@@ -606,17 +609,12 @@ export function createOutgoingNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
   const input: NetPipeData = [state, cursorView];
   return function OutgoingNetworkSystem(state: GameState) {
+    // assign networkIds before serializing game state
     const entered = createNetworkIdQuery(state.world);
     for (let i = 0; i < entered.length; i++) {
       const eid = entered[i];
       Networked.networkId[eid] = createNetworkId(state) || 0;
       console.log("networkId", Networked.networkId[eid], "assigned to eid", eid);
-    }
-    const exited = deleteNetworkIdQuery(state.world);
-    for (let i = 0; i < exited.length; i++) {
-      const eid = exited[i];
-      deleteNetworkId(state, Networked.networkId[eid]);
-      Networked.networkId[eid] = NOOP;
     }
 
     // only send updates when:
@@ -660,6 +658,14 @@ export function createOutgoingNetworkSystem(state: GameState) {
     // todo: unreliably send changed updates
     // const updateMsg = createUpdateChangedMessage(input);
     // broadcastUneliable(state, updateMsg);
+
+    // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
+    const exited = deleteNetworkIdQuery(state.world);
+    for (let i = 0; i < exited.length; i++) {
+      const eid = exited[i];
+      deleteNetworkId(state, Networked.networkId[eid]);
+      Networked.networkId[eid] = NOOP;
+    }
   };
 }
 

@@ -52,6 +52,8 @@ export const queueAudioBuffer = (audioState: AudioState, filename: string, eid?:
   audioState.sample.queue.push([filename, eid]);
 };
 
+const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
 export const playAudioBuffer = (
   { context, sample: { bus, gain } }: AudioState,
   audioBuffer: AudioBuffer,
@@ -59,7 +61,7 @@ export const playAudioBuffer = (
 ) => {
   const sampleSource = context.createBufferSource();
   sampleSource.buffer = audioBuffer;
-  sampleSource.playbackRate.value = 1;
+  sampleSource.playbackRate.value = rndRange(0.25, 0.75);
   sampleSource.connect(out);
   sampleSource.start();
   return sampleSource;
