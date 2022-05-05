@@ -81,3 +81,15 @@
 .basis-0 {
   flex-basis: 0;
 }
+
+.gap-xxs {
+  gap: var(--sp-xxs);
+}
+
+.gap-xs {
+  gap: var(--sp-xs);
+}
+
+.gap-sm {
+  gap: var(--sp-sm);
+}

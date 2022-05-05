@@ -8,8 +8,9 @@ interface IInput {
   name?: string;
   placeholder?: string;
   type?: "text" | "password" | "email" | "number" | "search";
+  inputSize?: "sm" | "md";
   state?: "success" | "error";
-  value?: string;
+  value?: string | number;
   defaultValue?: string;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
@@ -26,6 +27,7 @@ export function Input({
   name,
   placeholder,
   type = "text",
+  inputSize = "md",
   state,
   value,
   defaultValue,
@@ -37,7 +39,7 @@ export function Input({
   readonly,
   size = 1,
 }: IInput) {
-  const inputClass = classNames("Input", className, {
+  const inputClass = classNames(`Input Input-${inputSize}`, className, {
     "Input--success": state === "success",
     "Input--error": state === "error",
   });
