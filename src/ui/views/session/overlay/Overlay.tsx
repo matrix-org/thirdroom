@@ -17,6 +17,7 @@ import { ActiveChats } from "./ActiveChats";
 import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile";
 import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
+import { CreateWorld } from "../create-world/CreateWorld";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore } from "../../../hooks/useStore";
 
@@ -33,6 +34,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
+  const isWindowOpen = true;
 
   const navigate = useNavigate();
 
@@ -75,63 +77,65 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
     navigate(`/world/${roomBeingCreated.id}`);
   }, [session, navigate]);
 
-  const renderActiveChats = () => {
-    if (activeChats.size === 0) return null;
-    return (
-      <ActiveChats
-        chat={selectedChat && <ChatView room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />}
-        tiles={[...activeChats].map((rId) => {
-          const room = session.rooms.get(rId);
-          if (!room) return null;
-
-          const roomName = room.name || "Empty room";
-          return (
-            <ActiveChatTile
-              key={rId}
-              isActive={rId === selectedChatId}
-              roomId={rId}
-              avatar={
-                <Avatar
-                  size="sm"
-                  imageSrc={room.avatarUrl}
-                  name={roomName}
-                  bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-                />
-              }
-              title={roomName}
-              onClick={selectChat}
-              onClose={closeChat}
-            />
-          );
-        })}
-      />
-    );
-  };
-
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       <SidebarView
-        open
         spaces={<SpacesView />}
         roomList={
-          <RoomListView
-            header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
-            content={
-              <RoomListContent
-                selectedTab={selectedRoomListTab}
-                rooms={rooms}
-                selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
-                onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? selectChat : selectWorld}
-                onCreateWorld={onCreateWorld}
-              />
-            }
-          />
+          isWindowOpen ? undefined : (
+            <RoomListView
+              header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
+              content={
+                <RoomListContent
+                  selectedTab={selectedRoomListTab}
+                  rooms={rooms}
+                  selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
+                  onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? selectChat : selectWorld}
+                  onCreateWorld={onCreateWorld}
+                />
+              }
+            />
+          )
         }
       />
-      <div className="Overlay__content grow">
-        <WorldPreview session={session} onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />
-        {activeChats.size > 0 && renderActiveChats()}
-      </div>
+      {isWindowOpen ? (
+        <div className="Overlay__window grow flex">
+          <CreateWorld />
+        </div>
+      ) : (
+        <div className="Overlay__content grow">
+          <WorldPreview session={session} onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />
+          {activeChats.size === 0 ? undefined : (
+            <ActiveChats
+              chat={selectedChat && <ChatView room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />}
+              tiles={[...activeChats].map((rId) => {
+                const room = session.rooms.get(rId);
+                if (!room) return null;
+
+                const roomName = room.name || "Empty room";
+                return (
+                  <ActiveChatTile
+                    key={rId}
+                    isActive={rId === selectedChatId}
+                    roomId={rId}
+                    avatar={
+                      <Avatar
+                        size="sm"
+                        imageSrc={room.avatarUrl}
+                        name={roomName}
+                        bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+                      />
+                    }
+                    title={roomName}
+                    onClick={selectChat}
+                    onClose={closeChat}
+                  />
+                );
+              })}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

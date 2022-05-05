@@ -5,10 +5,12 @@
   width: 100%;
   height: 100%;
 
-  background-color: rgba(0 0 0 / 50%);
+  padding: var(--sp-xs);
   padding-top: 50px;
   padding-bottom: var(--sp-md);
+  background-color: rgba(0 0 0 / 50%);
   pointer-events: none;
+  gap: var(--sp-xs);
 }
 
 .Overlay--no-bg {
@@ -16,8 +18,11 @@
   pointer-events: all;
 }
 
+.Overlay__window {
+  height: 100%;
+}
+
 .Overlay__content {
-  margin: 0 var(--sp-xs);
   position: relative;
   pointer-events: all;
 }
