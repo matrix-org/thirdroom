@@ -40,7 +40,7 @@ import { GameState } from "../GameWorker";
 import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
 import { NOOP } from "../config";
-import { Player } from "../component/Player";
+import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics";
 
 /* Types */
@@ -67,11 +67,11 @@ export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 
 
 export const createNetworkId = ({ network }: GameState) => {
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  const peerIdIndex = network.peerIdMap.get(network.peerId);
+  const peerIdIndex = network.peerIdToIndex.get(network.peerId);
 
   if (peerIdIndex === undefined) {
-    // console.error("could not create networkId, peerId not set in peerIdMap");
-    throw new Error("could not create networkId, peerId not set in peerIdMap");
+    // console.error("could not create networkId, peerId not set in peerIdToIndex map");
+    throw new Error("could not create networkId, peerId not set in peerIdToIndex map");
   }
 
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
@@ -117,8 +117,6 @@ export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 export const networkIdQuery = defineQuery([Networked, Owned]);
 export const createNetworkIdQuery = enterQuery(networkIdQuery);
 export const deleteNetworkIdQuery = exitQuery(networkIdQuery);
-
-export const ownedPlayerQuery = defineQuery([Player, Owned]);
 
 /* Transform serialization */
 
@@ -322,7 +320,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   addComponent(state.world, Networked, eid);
   // addComponent(state.world, NetworkTransform, eid);
   Networked.networkId[eid] = nid;
-  state.network.entityIdMap.set(nid, eid);
+  state.network.networkIdToEntityId.set(nid, eid);
 
   addChild(state.scene, eid);
 
@@ -335,7 +333,7 @@ export function deserializeCreates(input: NetPipeData) {
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const prefabName = readString(v);
-    const existingEntity = state.network.entityIdMap.get(nid);
+    const existingEntity = state.network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
     const eid = createRemoteNetworkedEntity(state, nid, prefabName);
     console.log("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
@@ -388,7 +386,7 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
       // continue;
@@ -404,7 +402,7 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
       // continue;
@@ -435,13 +433,13 @@ export function deserializeDeletes(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.log("deserialized deletion for nid", nid, "eid", eid);
       removeEntity(state.world, eid);
-      state.network.entityIdMap.delete(nid);
+      state.network.networkIdToEntityId.delete(nid);
     }
   }
   return input;
@@ -452,7 +450,7 @@ export function deserializeDeletes(input: NetPipeData) {
 // host sends peerIdIndex to new peers
 export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   const [state, v] = input;
-  const peerIdIndex = state.network.peerIdMap.get(peerId);
+  const peerIdIndex = state.network.peerIdToIndex.get(peerId);
 
   console.log("sending peerIdIndex", peerId, peerIdIndex);
   if (peerIdIndex === undefined) {
@@ -475,7 +473,8 @@ export function deserializePeerIdIndex(input: NetPipeData) {
   const encodedPeerId = new Uint8Array(v.buffer, v.cursor, peerIdByteLength);
   const peerId = textDecoder.decode(encodedPeerId);
   const peerIdIndex = readUint8(v);
-  state.network.peerIdMap.set(peerId, peerIdIndex);
+  state.network.peerIdToIndex.set(peerId, peerIdIndex);
+  state.network.indexToPeerId.set(peerIdIndex, peerId);
   console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
@@ -582,7 +581,7 @@ export const broadcastReliable = (packet: ArrayBuffer) => {
   });
 };
 
-export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
+export const broadcastUnreliable = (packet: ArrayBuffer) => {
   postMessage({
     type: WorkerMessageType.UnreliableNetworkBroadcast,
     packet,
@@ -631,7 +630,7 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
   // - peerIdIndex has been assigned
   // - player rig has spawned
   const haveConnectedPeers = state.network.peers.length > 0;
-  const receivedPeerIdIndex = state.network.peerIdMap.has(state.network.peerId);
+  const receivedPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
   const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
 
   if (haveConnectedPeers && receivedPeerIdIndex && spawnedPlayerRig) {
@@ -642,10 +641,12 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
       while (state.network.newPeers.length) {
         const peerId = state.network.newPeers.shift();
         if (peerId) {
-          // broadcast peerIdIndex message if hosting
+          // if hosting, broadcast peerIdIndex message
           if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+          // send snapshot to peer
           if (snapshotMsg.byteLength) {
             sendReliable(peerId, snapshotMsg);
+            // todo: also send this player's NID as an add-player message
           }
         }
       }

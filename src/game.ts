@@ -188,7 +188,7 @@ const spawnPointQuery = defineQuery([SpawnPoint]);
 export async function onStateChange(state: GameState, { joined }: { joined: boolean }) {
   const { scene, world } = state;
 
-  await waitUntil(() => state.network.peerIdMap.has(state.network.peerId));
+  await waitUntil(() => state.network.peerIdToIndex.has(state.network.peerId));
 
   if (joined && !playerRig) {
     const spawnPoints = spawnPointQuery(world);

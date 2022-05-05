@@ -1,4 +1,4 @@
-import { audioSystem, createAudioState, disposeAudioState, preloadDefaultAudio, playAudio } from "./audio";
+import { mainAudioSystem, disposeAudioState, initAudioState } from "./audio";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
@@ -76,15 +76,7 @@ export interface Engine {
   dispose(): void;
 }
 
-export function initAudio() {
-  const audioState = createAudioState();
-  preloadDefaultAudio(audioState);
-  return audioState;
-}
-
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
-  const audioState = initAudio();
-
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
   const {
@@ -103,6 +95,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
   const statsBuffer = createStatsBuffer();
+
+  const audioState = initAudioState(gameWorker);
 
   /* Wait for workers to be ready */
 
@@ -264,8 +258,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       case WorkerMessageType.UnreliableNetworkBroadcast:
         broadcastUnreliable(message.packet);
         break;
-      case WorkerMessageType.PlayAudio:
-        playAudio(audioState, message.filepath, message.eid);
     }
   };
 
@@ -277,7 +269,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   function update() {
     inputManager.update();
-    audioSystem(audioState);
+    mainAudioSystem(audioState);
     animationFrameId = requestAnimationFrame(update);
   }
 

@@ -38,6 +38,8 @@ export enum WorkerMessageType {
   StateChanged = "state-changed",
   SetHost = "set-host",
   PlayAudio = "play-audio",
+  SetAudioListener = "set-audio-listener",
+  SetAudioPeerEntity = "set-audio-peer-entity",
 }
 
 export interface WorkerMessage {
@@ -219,6 +221,17 @@ export interface PlayAudioMessage extends WorkerMessage {
   eid: number;
 }
 
+export interface SetAudioListenerMessage extends WorkerMessage {
+  type: WorkerMessageType.SetAudioListener;
+  eid: number;
+}
+
+export interface SetAudioPeerEntityMessage extends WorkerMessage {
+  type: WorkerMessageType.SetAudioPeerEntity;
+  peerId: string;
+  eid: number;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -251,7 +264,9 @@ export type WorkerMessages =
   | RemovePeerIdMessage
   | StateChangedMessage
   | SetHostMessage
-  | PlayAudioMessage;
+  | PlayAudioMessage
+  | SetAudioListenerMessage
+  | SetAudioPeerEntityMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

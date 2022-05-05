@@ -2,10 +2,21 @@ import { pipe } from "bitecs";
 import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
+import { renderableBuffer } from "../component";
+import { enteredOwnedPlayerQuery, enteredRemotePlayerQuery } from "../component/Player";
 import { maxEntities, NOOP } from "../config";
+import { GameState } from "../GameWorker";
+import { getPeerIdFromNetworkId, Networked } from "../network";
 import { TransformView } from "../RenderWorker";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../TripleBuffer";
-import { WorkerMessageType } from "../WorkerMessage";
+import {
+  copyToWriteBuffer,
+  createTripleBuffer,
+  getReadBufferIndex,
+  swapReadBuffer,
+  swapWriteBuffer,
+  TripleBufferState,
+} from "../TripleBuffer";
+import { WorkerMessages, WorkerMessageType } from "../WorkerMessage";
 
 /* Types */
 
@@ -14,7 +25,8 @@ export interface AudioState {
   tripleBuffer: TripleBufferState;
   transformViews: TransformView[];
   entityPanners: Map<number, PannerNode>;
-  playerEntity: number;
+  listenerEntity: number;
+  peerEntities: Map<string, number>;
   main: {
     bus: ChannelMergerNode;
     gain: GainNode;
@@ -93,13 +105,6 @@ export const playAudioAtEntity = async (audioState: AudioState, filepath: string
   } else console.error(`error: could not play audio ${filepath} - audio buffer not found`);
 };
 
-export const preloadDefaultAudio = async (
-  audioState: AudioState,
-  defaultAudioFiles: string[] = ["/audio/cricket.ogg"]
-) => {
-  defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
-};
-
 export const addEntityPanner = (
   audioState: AudioState,
   eid: number,
@@ -164,7 +169,8 @@ export const createAudioState = (): AudioState => {
     tripleBuffer,
     transformViews,
     entityPanners,
-    playerEntity: NOOP,
+    listenerEntity: NOOP,
+    peerEntities: new Map(),
     main: {
       bus: mainBus,
       gain: mainGain,
@@ -178,24 +184,71 @@ export const createAudioState = (): AudioState => {
   };
 };
 
+export const preloadDefaultAudio = async (
+  audioState: AudioState,
+  defaultAudioFiles: string[] = ["/audio/cricket.ogg"]
+) => {
+  defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
+};
+
+export const setAudioListener = (audioState: AudioState, eid: number) => {
+  audioState.listenerEntity = eid;
+};
+
+export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
+  audioState.peerEntities.set(peerId, eid);
+};
+
+export const bindAudioStateEvents = (audioState: AudioState, gameWorker: Worker) => {
+  // todo: register messages on a single event listener
+  gameWorker.addEventListener("message", ({ data }) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    switch (message.type) {
+      case WorkerMessageType.PlayAudio:
+        playAudio(audioState, message.filepath, message.eid);
+        break;
+      case WorkerMessageType.SetAudioListener:
+        setAudioListener(audioState, message.eid);
+        break;
+      case WorkerMessageType.SetAudioPeerEntity:
+        setAudioPeerEntity(audioState, message.peerId, message.eid);
+        break;
+    }
+  });
+};
+
+export function initAudioState(gameWorker: Worker) {
+  const audioState = createAudioState();
+  preloadDefaultAudio(audioState);
+  bindAudioStateEvents(audioState, gameWorker);
+  return audioState;
+}
+
 export const disposeAudioState = (audioState: AudioState) => {
   audioState.context.close();
 };
 
-/* Systems */
+/* Main Thread Systems */
 
 const tempMatrix4 = new Matrix4();
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 export const updatePannerPositions = (audioState: AudioState) => {
-  audioState.playerEntity = 67;
+  if (audioState.listenerEntity === NOOP) {
+    return audioState;
+  }
 
   swapReadBuffer(audioState.tripleBuffer);
   const Transform = audioState.transformViews[getReadBufferIndex(audioState.tripleBuffer)];
 
   tempMatrix4
-    .fromArray(Transform.worldMatrix[audioState.playerEntity])
+    .fromArray(Transform.worldMatrix[audioState.listenerEntity])
     .decompose(tempPosition, tempQuaternion, tempScale);
 
   if (isNaN(tempQuaternion.x)) {
@@ -253,4 +306,44 @@ export const playQueuedAudio = (audioState: AudioState) => {
   return audioState;
 };
 
-export const audioSystem: (audioState: AudioState) => AudioState = pipe(updatePannerPositions, playQueuedAudio);
+export const mainAudioSystem: (audioState: AudioState) => AudioState = pipe(updatePannerPositions, playQueuedAudio);
+
+/* Game Thread Systems */
+
+export const audioTripleBufferSystem = (gameState: GameState) => {
+  const {
+    audio: { tripleBuffer },
+  } = gameState;
+  copyToWriteBuffer(tripleBuffer, renderableBuffer);
+  swapWriteBuffer(tripleBuffer);
+  return gameState;
+};
+
+export const sendPlayerEntitiesToMain = (gameState: GameState) => {
+  const newOwnedPlayers = enteredOwnedPlayerQuery(gameState.world);
+  for (let i = 0; i < newOwnedPlayers.length; i++) {
+    const eid = newOwnedPlayers[i];
+    postMessage({
+      type: WorkerMessageType.SetAudioListener,
+      eid,
+    });
+  }
+  // todo: add Player component to new player entities coming in through the network
+  const newRemotePlayers = enteredRemotePlayerQuery(gameState.world);
+  for (let i = 0; i < newRemotePlayers.length; i++) {
+    const eid = newRemotePlayers[i];
+    const nid = Networked.networkId[eid];
+    const peerIdIndex = getPeerIdFromNetworkId(nid);
+    postMessage({
+      type: WorkerMessageType.SetAudioPeerEntity,
+      // todo: main<->game messages reference peerId via peerIdIndex
+      peerId: gameState.network.indexToPeerId.get(peerIdIndex),
+      eid,
+    });
+  }
+};
+
+export const gameAudioSystem: (gameState: GameState) => GameState = pipe(
+  audioTripleBufferSystem,
+  sendPlayerEntitiesToMain
+);
