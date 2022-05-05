@@ -337,7 +337,19 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Public,
   }
 
-  type RoomBeingCreated = any;
+  export class RoomBeingCreated extends EventEmitter<any> {
+    public readonly id: string;
+    public readonly mediaRepository: MediaRepository;
+    public readonly platform: Platform;
+    get avatarColorId(): string;
+    get avatarUrl(): string | undefined;
+    get avatarBlobUrl(): string | undefined;
+    get roomId(): string | undefined;
+    get name(): string;
+    get isBeingCreated(): boolean;
+    get error(): Error | undefined;
+    cancel(): void;
+  }
 
   export enum RoomStatus {
     None = 1 << 0,
@@ -352,6 +364,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     userId: string;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
+    roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
     callHandler: CallHandler;
     createRoom(options: any): RoomBeingCreated;
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;

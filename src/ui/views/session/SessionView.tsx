@@ -9,22 +9,14 @@ import { StatusBar } from "./statusbar/StatusBar";
 import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
-import {
-  useStore,
-  closeOverlay,
-  loadWorld,
-  setIsEnteredWorld,
-  openOverlay,
-  closeWorldChat,
-} from "../../hooks/useStore";
+import { useStore } from "../../hooks/useStore";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 
 export interface SessionOutletContext {
-  loadedWorld?: Room;
+  world?: Room;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
-  onEnteredWorld: () => void;
   onLeftWorld: () => void;
 }
 
@@ -41,30 +33,28 @@ export function SessionView() {
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
 
-  const worldMatch = useMatch({ path: "world/:worldId" });
-  const loadedWorldId = useStore((state) => state.world.loadedWorldId);
-  const loadedWorld = useRoom(session, loadedWorldId);
+  const worldMatch = useMatch({ path: "world/:worldId/*" });
+  const { worldId, setInitialWorld, leftWorld, enteredWorld } = useStore((state) => state.world);
+  const world = useRoom(session, worldId);
+
+  const nextWorldId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
 
   useEffect(() => {
-    const newLoadedWId = worldMatch ? worldMatch.params["worldId"] || location.hash : undefined;
-    loadWorld(newLoadedWId);
-  }, [worldMatch, location]);
+    setInitialWorld(nextWorldId);
+  }, [nextWorldId, setInitialWorld]);
 
   const { value: powerLevels } = useAsyncObservableValue(
-    () => (loadedWorld ? loadedWorld.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
-    [loadedWorld]
+    () => (world ? world.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
+    [world]
   );
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === loadedWorldId ? call : []));
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === worldId ? call : []));
     return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, loadedWorldId]);
+  }, [calls, worldId]);
 
   const onLeftWorld = useCallback(() => {
-    loadWorld(undefined);
-    setIsEnteredWorld(false);
-    closeWorldChat();
-    openOverlay();
+    leftWorld();
     document.exitPointerLock();
 
     if (activeCall) {
@@ -74,25 +64,29 @@ export function SessionView() {
     if (networkInterfaceRef.current) {
       networkInterfaceRef.current();
     }
-  }, [activeCall]);
-  const onEnteredWorld = useCallback(() => {
-    closeOverlay();
-    setIsEnteredWorld(true);
-    canvasRef.current?.requestPointerLock();
+  }, [activeCall, leftWorld]);
 
-    if (import.meta.env.VITE_USE_TESTNET) {
-      engine?.connectToTestNet();
-      return;
-    }
+  const onEnteredWorld = useCallback(
+    (call: GroupCall) => {
+      enteredWorld();
+      canvasRef.current?.requestPointerLock();
 
-    if (engine && activeCall && powerLevels) {
-      networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, activeCall);
-    }
-  }, [client, engine, activeCall, powerLevels]);
+      if (import.meta.env.VITE_USE_TESTNET) {
+        engine?.connectToTestNet();
+        return;
+      }
+
+      if (engine && powerLevels) {
+        networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, call);
+      }
+    },
+    [client, engine, powerLevels, enteredWorld]
+  );
 
   const onLoadWorld = useCallback(
     async (room: Room) => {
       const isEnteredWorld = useStore.getState().world.isEnteredWorld;
+
       if (isEnteredWorld) {
         onLeftWorld();
       }
@@ -117,31 +111,31 @@ export function SessionView() {
       const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
       await call.join(localMedia);
 
-      onEnteredWorld();
+      onEnteredWorld(call);
     },
     [platform, session, calls, onEnteredWorld]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
-      loadedWorld,
+      world,
       activeCall,
       canvasRef,
-      onEnteredWorld,
       onLeftWorld,
     }),
-    [loadedWorld, activeCall, canvasRef, onEnteredWorld, onLeftWorld]
+    [world, activeCall, canvasRef, onLeftWorld]
   );
 
-  const { isEnteredWorld } = useStore.getState().world;
+  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
+
   return (
     <div className="SessionView">
       <canvas className="SessionView__viewport" ref={canvasRef} />
       {engine ? (
         <EngineContextProvider value={engine}>
           <Outlet context={outletContext} />
-          {isOverlayOpen && <Overlay isHome={isHome} onEnterWorld={onEnterWorld} onLoadWorld={onLoadWorld} />}
-          <StatusBar showOverlayTip={!isHome && isEnteredWorld} title={isHome ? "Home" : loadedWorld?.name} />
+          {isOverlayOpen && <Overlay onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
+          <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
         </EngineContextProvider>
       ) : (
         <div>Initializing engine...</div>
