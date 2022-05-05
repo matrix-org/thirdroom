@@ -16,6 +16,7 @@ export function Vector3Input({ value, onChange }: Vector3InputProps) {
         className="flex grow"
         type="text"
         value={x}
+        inputSize="sm"
         onChange={(e) => onChange(new Float32Array([parseFloat(e.target.value) || 0, y, z]))}
       />
       <Label className="shrink-0">Y:</Label>
@@ -23,6 +24,7 @@ export function Vector3Input({ value, onChange }: Vector3InputProps) {
         className="flex grow"
         type="text"
         value={y}
+        inputSize="sm"
         onChange={(e) => onChange(new Float32Array([x, parseFloat(e.target.value) || 0, z]))}
       />
       <Label className="shrink-0">Z:</Label>
@@ -30,6 +32,7 @@ export function Vector3Input({ value, onChange }: Vector3InputProps) {
         className="flex grow"
         type="text"
         value={z}
+        inputSize="sm"
         onChange={(e) => onChange(new Float32Array([x, y, parseFloat(e.target.value) || 0]))}
       />
     </div>
