@@ -1,3 +1,5 @@
+import { EditorEventType, Selection } from "./editor/types";
+import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
@@ -61,37 +63,6 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export interface Selection {
-  entities: number[];
-  components: number[];
-}
-
-export interface ComponentPropertyInfo {
-  id: number;
-  name: string;
-  type: EditorPropType;
-}
-
-export enum EditorPropType {
-  Vec3 = "vec3",
-}
-
-export interface EditorPropTypeToDataType {
-  [EditorPropType.Vec3]: number[];
-}
-
-export interface ComponentInfo {
-  name: string;
-  props: ComponentPropertyInfo[];
-}
-
-export enum EditorEventType {
-  EditorLoaded = "editor-loaded",
-  SelectionChanged = "selection-changed",
-  ComponentInfoChanged = "component-info-changed",
-  ComponentPropertyChanged = "component-property-changed",
-}
-
 export interface Engine {
   startTestNet(): void;
   setHost(value: boolean): void;
@@ -108,16 +79,16 @@ export interface Engine {
   getSelection(): Selection;
   getComponentInfo(componentId: number): ComponentInfo | undefined;
   removeComponent(componentId: number): void;
-  getComponentProperty<T extends EditorPropType>(propertyId: number): EditorPropTypeToDataType[T] | undefined;
+  getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined;
   setComponentProperty<T>(propertyId: number, value: T): void;
   addListener(type: EditorEventType.SelectionChanged, listener: (selection: Selection) => void): void;
   addListener(
     type: EditorEventType.ComponentInfoChanged,
     listener: (componentId: number, componentInfo: ComponentInfo) => void
   ): void;
-  addListener<T extends EditorPropType>(
+  addListener<T extends ComponentPropertyType>(
     type: EditorEventType.ComponentPropertyChanged,
-    listener: (propertyId: number, value: EditorPropTypeToDataType[T]) => void
+    listener: (propertyId: number, value: ComponentPropertyValue<T>) => void
   ): void;
   addListener(type: EditorEventType, listener: (...args: any[]) => void): void;
   removeListener(type: EditorEventType, listener: (...args: any[]) => void): void;
@@ -531,7 +502,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         componentId,
       });
     },
-    getComponentProperty<T extends EditorPropType>(propertyId: number): EditorPropTypeToDataType[T] | undefined {
+    getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined {
       return editorState.componentProperties.get(propertyId);
     },
     setComponentProperty<T>(propertyId: number, value: T): void {

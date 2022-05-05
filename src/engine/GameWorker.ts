@@ -22,7 +22,7 @@ import {
 } from "./WorkerMessage";
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
-import { renderableBuffer } from "./component";
+import { renderableBuffer } from "./component/buffers";
 import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";

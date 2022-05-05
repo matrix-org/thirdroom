@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { EditorEventType } from "../../../../engine/editor/types";
 import {
   ComponentInfo,
   ComponentPropertyInfo,
-  EditorEventType,
-  EditorPropType,
-  EditorPropTypeToDataType,
-} from "../../../../engine/MainThread";
+  ComponentPropertyType,
+  ComponentPropertyValue,
+} from "../../../../engine/component/types";
 import { useEngine } from "../../../hooks/useEngine";
 import "./EditorView.css";
 
@@ -78,26 +78,24 @@ function useComponent(componentId: number): (ComponentInfo & { removeComponent()
   return { ...componentInfo, removeComponent };
 }
 
-interface ComponentPropertyInputProps<Value> {
-  value: Value;
-  onChange(value: Value): void;
+interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
+  value: ComponentPropertyValue<T> | undefined;
+  onChange(value: ComponentPropertyValue<T>): void;
 }
 
-function useSelectionComponentProperty<T extends EditorPropType>(
-  propId: number
-): ComponentPropertyInputProps<EditorPropTypeToDataType[T] | undefined> {
+function useComponentProperty<T extends ComponentPropertyType>(propId: number): ComponentPropertyInputProps<T> {
   const engine = useEngine();
   const [value, setValue] = useState(() => engine.getComponentProperty<T>(propId));
 
   const onChange = useCallback(
-    (value: EditorPropTypeToDataType[T]) => {
+    (value: ComponentPropertyValue<T>) => {
       engine.setComponentProperty(propId, value);
     },
     [engine, propId]
   );
 
   useEffect(() => {
-    function onComponentPropertyChanged(changedPropId: number, nextValue: EditorPropTypeToDataType[T]) {
+    function onComponentPropertyChanged(changedPropId: number, nextValue: ComponentPropertyValue<T>) {
       if (changedPropId === propId) {
         setValue(nextValue);
       }
@@ -117,36 +115,36 @@ function useSelectionComponentProperty<T extends EditorPropType>(
 
 interface Vector3InputProps {
   name: string;
-  value: number[] | undefined;
-  onChange: (value: number[]) => void;
+  value: Float32Array | undefined;
+  onChange: (value: Float32Array) => void;
 }
 
 export function Vector3Input({ name, value, onChange }: Vector3InputProps) {
-  const [x, y, z] = value || [0, 0, 0];
+  const [x, y, z] = value || new Float32Array(3);
 
   return (
     <div>
       <div>{name}:</div>
       <div>
         <span>X:</span>
-        <input type="text" value={x} onChange={(e) => onChange([parseFloat(e.target.value), y, z])} />
+        <input type="text" value={x} onChange={(e) => onChange(new Float32Array([parseFloat(e.target.value), y, z]))} />
       </div>
       <div>
         <span>Y:</span>
-        <input type="text" value={y} onChange={(e) => onChange([x, parseFloat(e.target.value), z])} />
+        <input type="text" value={y} onChange={(e) => onChange(new Float32Array([x, parseFloat(e.target.value), z]))} />
       </div>
       <div>
         <span>Z:</span>
-        <input type="text" value={z} onChange={(e) => onChange([x, y, parseFloat(e.target.value)])} />
+        <input type="text" value={z} onChange={(e) => onChange(new Float32Array([x, y, parseFloat(e.target.value)]))} />
       </div>
     </div>
   );
 }
 
 export function ComponentPropertyContainer({ id, name, type }: ComponentPropertyInfo) {
-  const props = useSelectionComponentProperty<typeof type>(id);
+  const props = useComponentProperty<typeof type>(id);
 
-  if (type === EditorPropType.Vec3) {
+  if (type === ComponentPropertyType.vec3) {
     return <Vector3Input name={name} {...props} />;
   } else {
     return <div>{name}</div>;

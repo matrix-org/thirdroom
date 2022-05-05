@@ -3,7 +3,8 @@ import { OffscreenCanvas } from "three";
 import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBufferState } from "./TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
-import { ComponentInfo } from "./MainThread";
+import { ComponentPropertyValues } from "./editor";
+import { ComponentInfo } from "./component/types";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -41,8 +42,9 @@ export enum WorkerMessageType {
   LoadEditor = "load-editor",
   EditorLoaded = "editor-loaded",
   DisposeEditor = "dispose-editor",
-  SetComponentProperty = "set-component-property",
+  AddComponent = "add-component",
   RemoveComponent = "remove-component",
+  SetComponentProperty = "set-component-property",
   SelectionChanged = "selection-changed",
   ComponentInfoChanged = "component-info-changed",
   ComponentPropertyChanged = "component-property-changed",
@@ -233,17 +235,25 @@ export interface EditorLoadedMessage extends WorkerMessage {
   componentInfos: [number, ComponentInfo][];
 }
 
-export interface SetComponentPropertyMessage extends WorkerMessage {
-  type: WorkerMessageType.SetComponentProperty;
+export interface AddComponentMessage<Props extends ComponentPropertyValues = ComponentPropertyValues>
+  extends WorkerMessage {
+  type: WorkerMessageType.AddComponent;
   entities: number[];
-  propertyId: number;
-  value: any;
+  componentId: number;
+  props?: Props;
 }
 
 export interface RemoveComponentMessage extends WorkerMessage {
   type: WorkerMessageType.RemoveComponent;
   entities: number[];
   componentId: number;
+}
+
+export interface SetComponentPropertyMessage extends WorkerMessage {
+  type: WorkerMessageType.SetComponentProperty;
+  entities: number[];
+  propertyId: number;
+  value: any;
 }
 
 export interface SelectionChangedMessage extends WorkerMessage {
@@ -303,6 +313,7 @@ export type WorkerMessages =
   | EditorLoadedMessage
   | DisposeEditorMessage
   | SetComponentPropertyMessage
+  | AddComponentMessage
   | RemoveComponentMessage
   | SelectionChangedMessage
   | ComponentInfoChangedMessage
