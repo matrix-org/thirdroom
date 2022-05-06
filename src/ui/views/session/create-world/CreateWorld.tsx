@@ -7,7 +7,6 @@ import { Input } from "../../../atoms/input/Input";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
-import { SettingTileFlex } from "../../components/setting-tile/SettingTileFlex";
 import { Window } from "../../components/window/Window";
 import { WindowHeader } from "../../components/window/WindowHeader";
 import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
@@ -50,22 +49,22 @@ export function CreateWorld() {
                 <IconButton size="lg" iconSrc={AddIC} label="Add world avatar" />
               </Thumbnail>
             </SettingTile>
-            <SettingTileFlex>
-              <SettingTile label={<Label>Name</Label>}>
+            <div className="flex gap-lg">
+              <SettingTile className="grow" label={<Label>Name</Label>}>
                 <Input required />
               </SettingTile>
-              <SettingTile label={<Label>Private</Label>}>
+              <SettingTile className="grow" label={<Label>Private</Label>}>
                 <Switch defaultChecked={true} required />
               </SettingTile>
-            </SettingTileFlex>
-            <SettingTileFlex>
-              <SettingTile label={<Label>Topic</Label>}>
+            </div>
+            <div className="flex gap-lg">
+              <SettingTile className="grow" label={<Label>Topic</Label>}>
                 <Input required />
               </SettingTile>
-              <SettingTile label={<Label>Alias</Label>}>
+              <SettingTile className="grow" label={<Label>Alias</Label>}>
                 <Input />
               </SettingTile>
-            </SettingTileFlex>
+            </div>
           </div>
         </Scroll>
       </WindowContent>

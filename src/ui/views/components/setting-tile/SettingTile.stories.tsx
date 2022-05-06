@@ -1,5 +1,4 @@
 import { SettingTile } from "./SettingTile";
-import { SettingTileFlex } from "./SettingTileFlex";
 import { Label } from "../../../atoms/text/Label";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Input } from "../../../atoms/input/Input";
@@ -24,7 +23,7 @@ export default function SettingTileStories() {
       >
         <Input id="defaultDisplayName" defaultValue="Kalu" />
       </SettingTile>
-      <SettingTileFlex>
+      <div className="flex gap-lg">
         <SettingTile
           label={<Label htmlFor="defaultDisplayName">Default Display Name</Label>}
           options={
@@ -53,7 +52,7 @@ export default function SettingTileStories() {
         >
           <Input id="defaultDisplayName" defaultValue="Kalu" />
         </SettingTile>
-      </SettingTileFlex>
+      </div>
     </div>
   );
 }

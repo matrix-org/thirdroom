@@ -1,8 +1,0 @@
-.SettingTileFlex {
-  gap: var(--sp-lg);
-
-  & > * {
-    flex-grow: 1;
-    flex-basis: 0;
-  }
-}
