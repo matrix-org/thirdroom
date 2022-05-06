@@ -45,7 +45,7 @@ export const mockRenderState = () => ({
 });
 
 export const mockNetworkState = () => ({
-  entityIdMap: new Map(),
+  networkIdToEntityId: new Map(),
 });
 
 export const mockGameState = () => {

@@ -46,7 +46,12 @@ describe("Network Tests", () => {
     });
     it("should #createNetworkId", () => {
       const state = {
-        network: { peerId: "abc", peerIdMap: new Map([["abc", 0x00ff]]), localIdCount: 0x000f, removedLocalIds: [] },
+        network: {
+          peerId: "abc",
+          peerIdToIndex: new Map([["abc", 0x00ff]]),
+          localIdCount: 0x000f,
+          removedLocalIds: [],
+        },
       } as unknown as GameState;
       const nid = createNetworkId(state);
       strictEqual(nid, 0x000f_00ff);
@@ -277,7 +282,7 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesSnapshot()", () => {
-      const state = { world: createWorld(), network: { entityIdMap: new Map() } } as unknown as GameState;
+      const state = { world: createWorld(), network: { networkIdToEntityId: new Map() } } as unknown as GameState;
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -292,7 +297,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.entityIdMap.set(eid, eid);
+        state.network.networkIdToEntityId.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -366,7 +371,7 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesChanged()", () => {
-      const state = { world: createWorld(), network: { entityIdMap: new Map() } } as unknown as GameState;
+      const state = { world: createWorld(), network: { networkIdToEntityId: new Map() } } as unknown as GameState;
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -381,7 +386,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.entityIdMap.set(eid, eid);
+        state.network.networkIdToEntityId.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -473,7 +478,7 @@ describe("Network Tests", () => {
         ok(incomingEid !== outgoingEid);
 
         strictEqual(Networked.networkId[incomingEid], outgoingEid);
-        strictEqual(state.network.entityIdMap.get(outgoingEid), incomingEid);
+        strictEqual(state.network.networkIdToEntityId.get(outgoingEid), incomingEid);
       }
     });
   });

@@ -1,5 +1,5 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld, IWorld } from "bitecs";
+import { addEntity, createWorld, IWorld, removeEntity } from "bitecs";
 
 import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
@@ -29,6 +29,7 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
+import { gameAudioSystem } from "./audio";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -38,14 +39,21 @@ const addPeerId = (state: GameState, peerId: string) => {
 
   state.network.peers.push(peerId);
   state.network.newPeers.push(peerId);
-  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) {
+    const peerIdIndex = state.network.peerIdCount++;
+    state.network.peerIdToIndex.set(peerId, peerIdIndex);
+    state.network.indexToPeerId.set(peerIdIndex, peerId);
+  }
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
   const i = state.network.peers.indexOf(peerId);
   if (i > -1) {
+    const eid = state.network.peerIdToEntityId.get(peerId);
+    if (eid) removeEntity(state.world, eid);
+
     state.network.peers.splice(i, 1);
-    state.network.peerIdMap.delete(peerId);
+    state.network.peerIdToIndex.delete(peerId);
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
@@ -53,7 +61,7 @@ const removePeerId = (state: GameState, peerId: string) => {
 
 const setPeerId = (state: GameState, peerId: string) => {
   state.network.peerId = peerId;
-  if (state.network.hosting) state.network.peerIdMap.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) state.network.peerIdToIndex.set(peerId, state.network.peerIdCount++);
 };
 
 const onMessage =
@@ -92,7 +100,7 @@ const onMessage =
         break;
       case WorkerMessageType.ReliableNetworkMessage:
       case WorkerMessageType.UnreliableNetworkMessage:
-        state.network.messages.push(message.packet);
+        state.network.incoming.push(message.packet);
         break;
       case WorkerMessageType.StateChanged:
         onStateChange(state, message.state);
@@ -156,13 +164,15 @@ export interface RenderState {
 
 export interface NetworkState {
   hosting: boolean;
-  messages: ArrayBuffer[];
-  entityIdMap: Map<number, number>;
+  incoming: ArrayBuffer[];
+  peerIdToEntityId: Map<string, number>;
+  networkIdToEntityId: Map<number, number>;
   peerId: string;
   peers: string[];
   newPeers: string[];
   peerIdCount: number;
-  peerIdMap: Map<string, number>;
+  peerIdToIndex: Map<string, number>;
+  indexToPeerId: Map<number, string>;
   localIdCount: number;
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
@@ -194,6 +204,7 @@ export interface GameState {
   camera: number;
   statsBuffer: StatsBuffer;
   network: NetworkState;
+  audio: { tripleBuffer: TripleBufferState };
 }
 
 const generateInputGetters = (
@@ -211,6 +222,7 @@ const generateInputGetters = (
   );
 
 async function onInit({
+  audioTripleBuffer,
   inputTripleBuffer,
   resourceManagerBuffer,
   renderWorkerMessagePort,
@@ -264,16 +276,22 @@ async function onInit({
 
   const network: NetworkState = {
     hosting: false,
-    messages: [],
-    entityIdMap: new Map<number, number>(),
+    incoming: [],
+    networkIdToEntityId: new Map<number, number>(),
+    peerIdToEntityId: new Map(),
     peerId: "",
     peers: [],
     newPeers: [],
-    peerIdMap: new Map(),
+    peerIdToIndex: new Map(),
+    indexToPeerId: new Map(),
     peerIdCount: 0,
     localIdCount: 0,
     removedLocalIds: [],
     messageHandlers: {},
+  };
+
+  const audio = {
+    tripleBuffer: audioTripleBuffer,
   };
 
   const state: GameState = {
@@ -285,6 +303,7 @@ async function onInit({
     entityPrefabMap: new Map(),
     renderer,
     physicsWorld,
+    audio,
     input,
     time,
     network,
@@ -343,6 +362,7 @@ const pipeline = (state: GameState) => {
 
   updateWorldMatrixSystem(state);
   renderableTripleBufferSystem(state);
+  gameAudioSystem(state);
 };
 
 // timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz

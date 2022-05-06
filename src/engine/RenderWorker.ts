@@ -88,7 +88,7 @@ export default {
   ): void => localEventTarget!.removeEventListener(type, callback, options),
 };
 
-interface TransformView {
+export interface TransformView {
   worldMatrix: Float32Array[];
   worldMatrixNeedsUpdate: Uint8Array;
 }
