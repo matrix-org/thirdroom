@@ -360,8 +360,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
+  interface ISessionInfo {
+    id: string;
+    deviceId: string;
+    userId: string;
+    homeserver: string;
+  }
+
   export class Session {
     userId: string;
+    _sessionInfo: ISessionInfo;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;

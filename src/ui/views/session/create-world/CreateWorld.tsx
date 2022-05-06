@@ -1,3 +1,6 @@
+import React, { useCallback, useRef, useState } from "react";
+
+import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 import { Button } from "../../../atoms/button/Button";
 import { IconButton } from "../../../atoms/button/IconButton";
@@ -6,17 +9,71 @@ import { Label } from "../../../atoms/text/Label";
 import { Input } from "../../../atoms/input/Input";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
+import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
 import { WindowHeader } from "../../components/window/WindowHeader";
 import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
-import { WindowFooter } from "../../components/window/WindowFooter";
 import LanguageIC from "../../../../../res/ic/language.svg";
+import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { useStore } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import { CreateWorldOptions } from "../overlay/Overlay";
 import "./CreateWorld.css";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
-export function CreateWorld() {
+interface CreateWorldProps {
+  onCreate: (opts: CreateWorldOptions) => void;
+}
+
+export function CreateWorld({ onCreate }: CreateWorldProps) {
+  const { session } = useHydrogen(true);
+  const { homeserver } = session._sessionInfo;
+  const userHSDomain = getMxIdDomain(session.userId);
+  const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
+  const formRef = useRef<HTMLFormElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatar, setAvatar] = useState<File | null>();
+  const [isAliasAvail, setAliasAvail] = useState<boolean>();
+  const isMounted = useIsMounted();
+
+  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+    evt.preventDefault();
+    const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
+      nameInput: HTMLInputElement;
+      topicInput: HTMLInputElement;
+      isPrivateInput: HTMLInputElement;
+      aliasInput: HTMLInputElement;
+    };
+    console.log(nameInput.value, topicInput.value, isPrivateInput.checked, aliasInput.value);
+  };
+
+  const handleAvatarChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(evt);
+    const attachment = evt.target.files?.item(0);
+    setAvatar(attachment);
+  };
+
+  const debouncedAliasChange = useCallback(
+    async (evt: React.ChangeEvent<HTMLInputElement>) => {
+      if (!isMounted) return;
+      setAliasAvail(undefined);
+      const { value } = evt.target;
+      if (value.trim() === "") return;
+      const isAvail = await isRoomAliasAvailable(homeserver, `#${value}:${userHSDomain}`);
+      if (evt.target.value !== value) return;
+      if (!isMounted) return;
+      setAliasAvail(isAvail);
+    },
+    [homeserver, userHSDomain, isMounted]
+  );
+
+  const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
+
   return (
     <Window
       className="grow"
@@ -27,45 +84,74 @@ export function CreateWorld() {
               Create World
             </WindowHeaderTitle>
           }
+          right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
         />
       }
     >
-      <WindowContent
-        footer={
-          <WindowFooter
-            left={
-              <Button fill="outline" onClick={() => console.log("click")}>
-                Cancel
-              </Button>
-            }
-            right={<Button onClick={() => console.log("click")}>Create World</Button>}
-          />
-        }
-      >
+      <WindowContent>
         <Scroll>
-          <div className="CreateWorld__content">
-            <SettingTile label={<Label>Avatar</Label>}>
-              <Thumbnail size="sm">
-                <IconButton size="xl" iconSrc={AddIC} label="Add world avatar" />
+          <form ref={formRef} className="CreateWorld__content" onSubmit={handleSubmit}>
+            <SettingTile label={<Label>World Avatar</Label>}>
+              <Thumbnail size="sm" className="flex">
+                {avatar ? (
+                  <ThumbnailImg src={URL.createObjectURL(avatar)} />
+                ) : (
+                  <>
+                    <input
+                      style={{ display: "none" }}
+                      ref={avatarInputRef}
+                      onChange={handleAvatarChange}
+                      type="file"
+                      accept="image/*"
+                      name="avatarInput"
+                    />
+                    <IconButton
+                      onClick={() => avatarInputRef.current?.click()}
+                      size="xl"
+                      iconSrc={AddIC}
+                      label="Add world avatar"
+                    />
+                  </>
+                )}
               </Thumbnail>
             </SettingTile>
             <div className="flex gap-lg">
-              <SettingTile className="grow" label={<Label>Name</Label>}>
-                <Input required />
+              <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
+                <Input name="nameInput" required />
               </SettingTile>
-              <SettingTile className="grow" label={<Label>Private</Label>}>
-                <Switch defaultChecked={true} required />
+              <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                <Switch name="isPrivateInput" defaultChecked={true} />
               </SettingTile>
             </div>
             <div className="flex gap-lg">
-              <SettingTile className="grow" label={<Label>Topic</Label>}>
-                <Input required />
+              <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
+                <Input name="topicInput" />
               </SettingTile>
-              <SettingTile className="grow" label={<Label>Alias</Label>}>
-                <Input />
+              <SettingTile
+                className="grow basis-0"
+                label={
+                  <Label color={isAliasAvail ? "secondary" : isAliasAvail === false ? "danger" : undefined}>
+                    {isAliasAvail ? "Alias (Available)" : isAliasAvail === false ? "Alias (Already in use)" : "Alias"}
+                  </Label>
+                }
+              >
+                <Input
+                  name="aliasInput"
+                  state={isAliasAvail ? "success" : isAliasAvail === false ? "error" : undefined}
+                  onChange={handleAliasChange}
+                  maxLength={255 - (userHSDomain.length + 2) /*for -> #:*/}
+                  before={<Text variant="b2">#</Text>}
+                  after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
+                />
               </SettingTile>
             </div>
-          </div>
+            <div className="flex gap-md">
+              <Button fill="outline" onClick={() => selectWindow()}>
+                Cancel
+              </Button>
+              <Button type="submit">Create World</Button>
+            </div>
+          </form>
         </Scroll>
       </WindowContent>
     </Window>

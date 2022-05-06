@@ -19,6 +19,7 @@ interface IInput {
   autoFocus?: boolean;
   readonly?: boolean;
   size?: number;
+  maxLength?: number;
   before?: React.ReactNode;
   after?: React.ReactNode;
 }
@@ -40,6 +41,7 @@ export function Input({
   autoFocus = false,
   readonly,
   size = 1,
+  maxLength,
   before,
   after,
 }: IInput) {
@@ -66,6 +68,7 @@ export function Input({
         autoFocus={autoFocus}
         readOnly={readonly}
         size={size}
+        maxLength={maxLength}
       />
       {after}
     </div>

@@ -10,7 +10,7 @@ interface IButton {
   fill?: "solid" | "outline";
   size?: "md" | "lg" | "xl";
   type?: "button" | "submit" | "reset";
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   children: React.ReactNode;
   disabled?: boolean;
 }
