@@ -6,6 +6,10 @@
   background-size: cover;
   background-repeat: no-repeat;
 }
+.Icon--xl {
+  width: var(--ic-xl);
+  height: var(--ic-xl);
+}
 .Icon--lg {
   width: var(--ic-lg);
   height: var(--ic-lg);

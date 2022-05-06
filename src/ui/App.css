@@ -77,7 +77,8 @@
   --sp-xxs: 5px;
 
   /* icon sizes */
-  --ic-lg: 40px;
+  --ic-xl: 40px;
+  --ic-lg: 30px;
   --ic-md: 20px;
   --ic-sm: 15px;
   --ic-xs: 10px;

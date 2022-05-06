@@ -16,7 +16,7 @@ export default function ThumbnailStories() {
         <ThumbnailImg src={LogoSvg} alt="My thumbnail" />
       </Thumbnail>
       <Thumbnail size="sm">
-        <IconButton size="lg" iconSrc={AddIC} label="Add" />
+        <IconButton size="xl" iconSrc={AddIC} label="Add" />
       </Thumbnail>
     </div>
   );

@@ -18,7 +18,7 @@ interface IIconButton {
     | "on-danger"
     | "tooltip"
     | "link";
-  size?: "lg" | "md" | "sm";
+  size?: "xl" | "lg" | "md" | "sm";
   iconSrc: string;
   label: string;
   type?: "button" | "submit" | "reset";

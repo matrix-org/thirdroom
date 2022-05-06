@@ -46,7 +46,7 @@ export function CreateWorld() {
           <div className="CreateWorld__content">
             <SettingTile label={<Label>Avatar</Label>}>
               <Thumbnail size="sm">
-                <IconButton size="lg" iconSrc={AddIC} label="Add world avatar" />
+                <IconButton size="xl" iconSrc={AddIC} label="Add world avatar" />
               </Thumbnail>
             </SettingTile>
             <div className="flex gap-lg">
