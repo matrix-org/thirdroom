@@ -57,6 +57,7 @@ import {
   initRendererRaycasterState,
   RendererRaycasterState,
 } from "./raycaster/raycaster.renderer";
+import { EditorRendererState, initEditorRendererState } from "./editor/editor.renderer";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -104,8 +105,9 @@ interface RenderableView {
   visible: Uint8Array;
 }
 
-interface Renderable {
+export interface Renderable {
   object?: Object3D;
+  helper?: Object3D;
   eid: number;
   resourceId: number;
 }
@@ -131,6 +133,7 @@ export interface RenderWorkerState {
   gameWorkerMessageTarget: PostMessageTarget;
   statsBuffer: StatsBuffer;
   raycaster: RendererRaycasterState;
+  editor: EditorRendererState;
   preSystems: RenderWorkerSystem[];
   postSystems: RenderWorkerSystem[];
   messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: RenderWorkerState, message: T) => void }>;
@@ -282,6 +285,7 @@ async function onInit({
     renderableViews,
     gameWorkerMessageTarget,
     statsBuffer,
+    editor: initEditorRendererState(),
     raycaster: initRendererRaycasterState(),
     messageHandlers: {},
     preSystems: [],
@@ -336,7 +340,7 @@ function onUpdate(state: RenderWorkerState) {
   const Renderable = renderableViews[bufferIndex];
 
   for (let i = 0; i < renderables.length; i++) {
-    const { object, eid } = renderables[i];
+    const { object, helper, eid } = renderables[i];
 
     if (!object) {
       continue;
@@ -353,11 +357,23 @@ function onUpdate(state: RenderWorkerState) {
       object.position.lerp(tempPosition, lerpAlpha);
       object.quaternion.slerp(tempQuaternion, lerpAlpha);
       object.scale.lerp(tempScale, lerpAlpha);
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
     } else {
       tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
       object.matrix.fromArray(Transform.worldMatrix[eid]);
       object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
       object.matrixWorldNeedsUpdate = false;
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
     }
   }
 
@@ -508,10 +524,18 @@ function onRemoveRenderable(
     const removed = renderables.splice(index, 1);
     renderableIndices.delete(eid);
 
-    if (removed.length > 0 && removed[0].object) {
-      const object = removed[0].object;
-      scene.remove(object);
-      objectToEntityMap.delete(object);
+    if (removed.length > 0) {
+      const { object, helper } = removed[0];
+
+      if (object) {
+        scene.remove(object);
+        objectToEntityMap.delete(object);
+      }
+
+      if (helper) {
+        scene.remove(helper);
+        objectToEntityMap.delete(helper);
+      }
     }
   }
 }

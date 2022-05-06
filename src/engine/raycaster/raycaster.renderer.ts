@@ -1,4 +1,4 @@
-import { BoxBufferGeometry, Event, Intersection, Mesh, MeshBasicMaterial, Object3D, Raycaster } from "three";
+import { Event, Intersection, Object3D, Raycaster } from "three";
 
 import { RenderWorkerState } from "../RenderWorker";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
@@ -43,10 +43,6 @@ function RendererRaycasterSystem(state: RenderWorkerState) {
 
         if (intersection) {
           const entity = state.objectToEntityMap.get(intersection.object);
-
-          const helper = new Mesh(new BoxBufferGeometry(), new MeshBasicMaterial({ color: 0xff0000 }));
-          helper.position.copy(intersection.point);
-          state.scene.add(helper);
 
           if (entity !== undefined) {
             results.push({

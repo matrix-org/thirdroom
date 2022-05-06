@@ -9,7 +9,7 @@ export interface RaycasterState {
   results: Map<number, RaycastResult[]>;
 }
 
-export function initRaycasterState(): RaycasterState {
+export function createRaycasterState(): RaycasterState {
   return {
     messages: [],
     results: new Map(),
