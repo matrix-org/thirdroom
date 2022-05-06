@@ -278,6 +278,7 @@ async function onInit({
     hosting: false,
     incoming: [],
     networkIdToEntityId: new Map<number, number>(),
+    peerIdToEntityId: new Map(),
     peerId: "",
     peers: [],
     newPeers: [],
