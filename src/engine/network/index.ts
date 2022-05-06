@@ -630,10 +630,9 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
   // - peerIdIndex has been assigned
   // - player rig has spawned
   const haveConnectedPeers = state.network.peers.length > 0;
-  const receivedPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
   const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
 
-  if (haveConnectedPeers && receivedPeerIdIndex && spawnedPlayerRig) {
+  if (haveConnectedPeers && spawnedPlayerRig) {
     // send snapshot update to all new peers
     const haveNewPeers = state.network.newPeers.length > 0;
     if (haveNewPeers) {
@@ -672,6 +671,9 @@ export function createOutgoingNetworkSystem(state: GameState) {
     deleteNetworkIds
   );
   return function OutgoingNetworkSystem(state: GameState) {
+    const hasPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
+    if (!hasPeerIdIndex) return state;
+
     return pipeline(state);
 
     // assignNetworkIds(state);
@@ -728,6 +730,9 @@ export function createIncomingNetworkSystem(state: GameState) {
   registerIncomingMessageHandler(state, NetworkMessage.AssignPeerIdIndex, deserializePeerIdIndex);
 
   return function IncomingNetworkSystem(state: GameState) {
+    const hasPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
+    if (!hasPeerIdIndex) return state;
+
     processNetworkMessages(state);
   };
 }
