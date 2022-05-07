@@ -83,4 +83,4 @@ Just like with MIDs and MEIDs. Remote entities will need a mapping to local enti
   - Can I/they add / update / delete this?
 - Synchronization Layer
   - Data and time
-  - Decide where property synchronization, command-based synchronization, and input synchronization methods are used. Are we using lockstep networking at all or not?
+  - Decide where property synchronization, command-based synchronization, and input synchronization methods are used. Are we using lockstep networking or snapshot interpolation?
