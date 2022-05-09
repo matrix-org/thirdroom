@@ -308,6 +308,15 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(allowsChild: NavigationAllowsChildHandler);
   }
 
+  export interface IBlobHandle {
+    nativeBlob: any;
+    url: string;
+    size: number;
+    mimeType: string;
+    readAsBuffer(): BufferSource;
+    dispose(): void;
+  }
+
   export class Platform {
     sessionInfoStorage: ISessionInfoStorage;
     devicePixelRatio: number;
@@ -323,6 +332,13 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(options: { container: HTMLElement; assetPaths: any; config: any; options?: any; cryptoExtras?: any });
 
     setNavigation(navigation: Navigation): void;
+    openFile(mimeType: string): Promise<
+      | {
+          name: string;
+          blob: IBlobHandle;
+        }
+      | undefined
+    >;
 
     dispose(): void;
   }
@@ -360,13 +376,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
-  interface ISessionInfo {
-    id: string;
-    deviceId: string;
-    userId: string;
-    homeserver: string;
-  }
-
   interface ICreateRoom {
     type: RoomType;
     name?: string;
@@ -376,7 +385,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     alias?: string;
     avatar?: {
       name: string;
-      blob: Blob;
+      blob: IBlobHandle;
       info: {
         w?: number;
         h?: number;

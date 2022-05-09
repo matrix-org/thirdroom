@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from "react";
-import { RoomType } from "@thirdroom/hydrogen-view-sdk";
+import React, { useCallback, useState } from "react";
+import { RoomType, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
@@ -30,7 +30,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 
 export interface CreateWorldOptions {
-  avatar?: File;
+  avatar?: IBlobHandle;
   name: string;
   topic?: string;
   type: RoomType;
@@ -38,15 +38,12 @@ export interface CreateWorldOptions {
 }
 
 export function CreateWorld() {
-  const { session } = useHydrogen(true);
+  const { session, platform } = useHydrogen(true);
   const { homeserver } = session._sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  const [avatar, setAvatar] = useState<File | null>();
+  const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
 
@@ -57,12 +54,12 @@ export function CreateWorld() {
       const avatarInfo = !avatar
         ? undefined
         : {
-            name: avatar.name,
+            name: avatar.nativeBlob.name,
             blob: avatar,
             info: {
-              mimetype: avatar.type,
+              mimetype: avatar.nativeBlob.type,
               size: avatar.size,
-              ...(await getImageDimension(avatar)),
+              ...(await getImageDimension(avatar.nativeBlob)),
             },
           };
       const roomBeingCreated = await session.createRoom({
@@ -116,14 +113,9 @@ export function CreateWorld() {
       type: isPrivateInput.checked ? RoomType.Private : RoomType.Private,
       name: nameInput.value,
       topic: topicInput.value || undefined,
-      avatar: !avatar ? undefined : avatar,
+      avatar: !avatarBlob ? undefined : avatarBlob,
       alias: aliasInput.value || undefined,
     });
-  };
-
-  const handleAvatarChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
-    const attachment = evt.target.files?.item(0);
-    setAvatar(attachment);
   };
 
   const debouncedAliasChange = useCallback(
@@ -161,18 +153,15 @@ export function CreateWorld() {
     >
       <WindowContent aside=" ">
         <Scroll>
-          <form ref={formRef} className="CreateWorld__content" onSubmit={handleSubmit}>
+          <form className="CreateWorld__content" onSubmit={handleSubmit}>
             <SettingTile label={<Label>World Avatar</Label>}>
               <ThumbnailHover
                 content={
-                  !avatar ? undefined : (
+                  !avatarBlob ? undefined : (
                     <IconButton
                       variant="world"
                       onClick={() => {
-                        if (avatarInputRef.current) {
-                          avatarInputRef.current.value = "";
-                          setAvatar(undefined);
-                        }
+                        setAvatarBlob(undefined);
                       }}
                       size="xl"
                       iconSrc={CrossCircleIC}
@@ -182,19 +171,15 @@ export function CreateWorld() {
                 }
               >
                 <Thumbnail size="sm" className="flex">
-                  <input
-                    style={{ display: "none" }}
-                    ref={avatarInputRef}
-                    onChange={handleAvatarChange}
-                    type="file"
-                    accept="image/*"
-                    name="avatarInput"
-                  />
-                  {avatar ? (
-                    <ThumbnailImg src={URL.createObjectURL(avatar)} />
+                  {avatarBlob ? (
+                    <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
                   ) : (
                     <IconButton
-                      onClick={() => avatarInputRef.current?.click()}
+                      onClick={async () => {
+                        const data = await platform.openFile("image/*");
+                        if (!data) return;
+                        setAvatarBlob(data.blob);
+                      }}
                       size="xl"
                       iconSrc={AddIC}
                       label="Add world avatar"
