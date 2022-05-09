@@ -1,0 +1,10 @@
+.ThumbnailBadgeWrapper {
+  display: inline-flex;
+  position: relative;
+  line-height: 0;
+}
+.ThumbnailBadgeWrapper__item {
+  position: absolute;
+  left: var(--sp-xs);
+  top: var(--sp-xs);
+}

@@ -1,7 +1,5 @@
-import { useCallback } from "react";
 import classNames from "classnames";
-import { Room, RoomType } from "@thirdroom/hydrogen-view-sdk";
-import { useNavigate } from "react-router-dom";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
@@ -21,14 +19,6 @@ import { CreateWorld } from "../create-world/CreateWorld";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 
-export interface CreateWorldOptions {
-  avatar?: string;
-  name: string;
-  topic?: string;
-  type: RoomType;
-  alias: string;
-}
-
 interface OverlayProps {
   onLoadWorld: (room: Room) => Promise<void>;
   onEnterWorld: (room: Room) => Promise<void>;
@@ -43,48 +33,6 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
-
-  const navigate = useNavigate();
-
-  const handleCreateWorld = useCallback(
-    async ({ avatar, name, topic, type, alias }: CreateWorldOptions) => {
-      const roomBeingCreated = session.createRoom({
-        type,
-        avatar,
-        name,
-        topic,
-        alias,
-        isEncrypted: false,
-        isFederationDisabled: false,
-        powerLevelContentOverride: {
-          invite: 100,
-          kick: 100,
-          ban: 100,
-          redact: 50,
-          state_default: 0,
-          events_default: 0,
-          users_default: 0,
-          events: {
-            "m.room.power_levels": 100,
-            "m.room.history_visibility": 100,
-            "m.room.tombstone": 100,
-            "m.room.encryption": 100,
-            "m.room.name": 50,
-            "m.room.message": 0,
-            "m.room.encrypted": 50,
-            "m.sticker": 50,
-            "org.matrix.msc3401.call.member": 0,
-          },
-          users: {
-            [session.userId]: 100,
-          },
-        },
-      });
-
-      navigate(`/world/${roomBeingCreated.id}`);
-    },
-    [session, navigate]
-  );
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
@@ -109,7 +57,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
       />
       {selectedWindow ? (
         <div className="Overlay__window grow flex">
-          {selectedWindow === OverlayWindow.CREATE_WORLD && <CreateWorld onCreate={handleCreateWorld} />}
+          {selectedWindow === OverlayWindow.CREATE_WORLD && <CreateWorld />}
         </div>
       ) : (
         <div className="Overlay__content grow">

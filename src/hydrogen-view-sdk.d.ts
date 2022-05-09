@@ -367,6 +367,26 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     homeserver: string;
   }
 
+  interface ICreateRoom {
+    type: RoomType;
+    name?: string;
+    topic?: string;
+    isEncrypted?: boolean;
+    isFederationDisabled?: boolean;
+    alias?: string;
+    avatar?: {
+      name: string;
+      blob: Blob;
+      info: {
+        w?: number;
+        h?: number;
+        mimetype: string;
+        size: number;
+      };
+    };
+    powerLevelContentOverride?: any;
+  }
+
   export class Session {
     userId: string;
     _sessionInfo: ISessionInfo;
@@ -374,7 +394,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
     callHandler: CallHandler;
-    createRoom(options: any): RoomBeingCreated;
+    createRoom(options: ICreateRoom): RoomBeingCreated;
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
   }

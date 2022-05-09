@@ -1,4 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
+import { RoomType } from "@thirdroom/hydrogen-view-sdk";
+import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -10,6 +12,7 @@ import { Input } from "../../../atoms/input/Input";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
+import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
 import { WindowHeader } from "../../components/window/WindowHeader";
@@ -17,43 +20,108 @@ import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
+import { getImageDimension } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
-import { CreateWorldOptions } from "../overlay/Overlay";
 import "./CreateWorld.css";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 
-interface CreateWorldProps {
-  onCreate: (opts: CreateWorldOptions) => void;
+export interface CreateWorldOptions {
+  avatar?: File;
+  name: string;
+  topic?: string;
+  type: RoomType;
+  alias?: string;
 }
 
-export function CreateWorld({ onCreate }: CreateWorldProps) {
+export function CreateWorld() {
   const { session } = useHydrogen(true);
   const { homeserver } = session._sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
+
   const formRef = useRef<HTMLFormElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
   const [avatar, setAvatar] = useState<File | null>();
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
 
+  const navigate = useNavigate();
+
+  const handleCreateWorld = useCallback(
+    async ({ avatar, name, topic, type, alias }: CreateWorldOptions) => {
+      const avatarInfo = !avatar
+        ? undefined
+        : {
+            name: avatar.name,
+            blob: avatar,
+            info: {
+              mimetype: avatar.type,
+              size: avatar.size,
+              ...(await getImageDimension(avatar)),
+            },
+          };
+      const roomBeingCreated = await session.createRoom({
+        type,
+        avatar: avatarInfo,
+        name,
+        topic,
+        alias,
+        isEncrypted: false,
+        isFederationDisabled: false,
+        powerLevelContentOverride: {
+          invite: 100,
+          kick: 100,
+          ban: 100,
+          redact: 50,
+          state_default: 0,
+          events_default: 0,
+          users_default: 0,
+          events: {
+            "m.room.power_levels": 100,
+            "m.room.history_visibility": 100,
+            "m.room.tombstone": 100,
+            "m.room.encryption": 100,
+            "m.room.name": 50,
+            "m.room.message": 0,
+            "m.room.encrypted": 50,
+            "m.sticker": 50,
+            "org.matrix.msc3401.call.member": 0,
+          },
+          users: {
+            [session.userId]: 100,
+          },
+        },
+      });
+
+      navigate(`/world/${roomBeingCreated.id}`);
+    },
+    [session, navigate]
+  );
+
   const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
+    if (isAliasAvail === false) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
       isPrivateInput: HTMLInputElement;
       aliasInput: HTMLInputElement;
     };
-    console.log(nameInput.value, topicInput.value, isPrivateInput.checked, aliasInput.value);
+    handleCreateWorld({
+      type: isPrivateInput.checked ? RoomType.Private : RoomType.Private,
+      name: nameInput.value,
+      topic: topicInput.value || undefined,
+      avatar: !avatar ? undefined : avatar,
+      alias: aliasInput.value || undefined,
+    });
   };
 
   const handleAvatarChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(evt);
     const attachment = evt.target.files?.item(0);
     setAvatar(attachment);
   };
@@ -62,9 +130,12 @@ export function CreateWorld({ onCreate }: CreateWorldProps) {
     async (evt: React.ChangeEvent<HTMLInputElement>) => {
       if (!isMounted) return;
       setAliasAvail(undefined);
-      const { value } = evt.target;
-      if (value.trim() === "") return;
+      if (evt.target.value.trim() === "") return;
+
+      const value = evt.target.value.replace(/\s/g, "-");
+      if (evt.target.value !== value) evt.target.value = value;
       const isAvail = await isRoomAliasAvailable(homeserver, `#${value}:${userHSDomain}`);
+
       if (evt.target.value !== value) return;
       if (!isMounted) return;
       setAliasAvail(isAvail);
@@ -88,32 +159,49 @@ export function CreateWorld({ onCreate }: CreateWorldProps) {
         />
       }
     >
-      <WindowContent>
+      <WindowContent aside=" ">
         <Scroll>
           <form ref={formRef} className="CreateWorld__content" onSubmit={handleSubmit}>
             <SettingTile label={<Label>World Avatar</Label>}>
-              <Thumbnail size="sm" className="flex">
-                {avatar ? (
-                  <ThumbnailImg src={URL.createObjectURL(avatar)} />
-                ) : (
-                  <>
-                    <input
-                      style={{ display: "none" }}
-                      ref={avatarInputRef}
-                      onChange={handleAvatarChange}
-                      type="file"
-                      accept="image/*"
-                      name="avatarInput"
+              <ThumbnailHover
+                content={
+                  !avatar ? undefined : (
+                    <IconButton
+                      variant="world"
+                      onClick={() => {
+                        if (avatarInputRef.current) {
+                          avatarInputRef.current.value = "";
+                          setAvatar(undefined);
+                        }
+                      }}
+                      size="xl"
+                      iconSrc={CrossCircleIC}
+                      label="Remove world avatar"
                     />
+                  )
+                }
+              >
+                <Thumbnail size="sm" className="flex">
+                  <input
+                    style={{ display: "none" }}
+                    ref={avatarInputRef}
+                    onChange={handleAvatarChange}
+                    type="file"
+                    accept="image/*"
+                    name="avatarInput"
+                  />
+                  {avatar ? (
+                    <ThumbnailImg src={URL.createObjectURL(avatar)} />
+                  ) : (
                     <IconButton
                       onClick={() => avatarInputRef.current?.click()}
                       size="xl"
                       iconSrc={AddIC}
                       label="Add world avatar"
                     />
-                  </>
-                )}
-              </Thumbnail>
+                  )}
+                </Thumbnail>
+              </ThumbnailHover>
             </SettingTile>
             <div className="flex gap-lg">
               <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
@@ -149,7 +237,9 @@ export function CreateWorld({ onCreate }: CreateWorldProps) {
               <Button fill="outline" onClick={() => selectWindow()}>
                 Cancel
               </Button>
-              <Button type="submit">Create World</Button>
+              <Button type="submit" disabled={isAliasAvail === false}>
+                Create World
+              </Button>
             </div>
           </form>
         </Scroll>

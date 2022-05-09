@@ -5,12 +5,15 @@ interface DebounceOptions {
   immediate?: boolean;
 }
 
-export function useDebounce(callback: (...args: any[]) => void, options?: DebounceOptions): (...args: any[]) => void {
+export function useDebounce<T extends any[]>(
+  callback: (...args: T) => void,
+  options?: DebounceOptions
+): (...args: T) => void {
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const { wait, immediate } = options ?? {};
 
   const debounceCallback = useCallback(
-    (...cbArgs) => {
+    (...cbArgs: T) => {
       if (timeoutIdRef.current !== null) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
