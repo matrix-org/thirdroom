@@ -27,6 +27,13 @@ export function SessionView() {
   const networkInterfaceRef = useRef<() => void>();
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
+  useEffect(() => {
+    console.log("session view mounted");
+    return () => {
+      console.log("session view unmounted");
+    };
+  }, []);
+
   const navigate = useNavigate();
 
   const location = useLocation();
