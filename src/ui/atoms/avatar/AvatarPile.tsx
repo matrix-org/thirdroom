@@ -1,7 +1,9 @@
+import { ReactNode } from "react";
+
 import "./AvatarPile.css";
 
 interface IAvatarPile {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function AvatarPile({ children }: IAvatarPile) {

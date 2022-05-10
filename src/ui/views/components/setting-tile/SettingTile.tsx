@@ -1,11 +1,12 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 
 import "./SettingTile.css";
 interface SettingTileProps {
   className?: string;
-  label: React.ReactNode;
-  options?: React.ReactNode;
-  children: React.ReactNode;
+  label: ReactNode;
+  options?: ReactNode;
+  children: ReactNode;
 }
 
 export function SettingTile({ className, label, options, children }: SettingTileProps) {

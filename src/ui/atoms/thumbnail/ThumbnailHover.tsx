@@ -1,8 +1,9 @@
+import { ReactNode } from "react";
 import "./ThumbnailHover.css";
 
 interface ThumbnailHoverPops {
-  content?: React.ReactNode;
-  children: React.ReactNode;
+  content?: ReactNode;
+  children: ReactNode;
 }
 
 export function ThumbnailHover({ content, children }: ThumbnailHoverPops) {

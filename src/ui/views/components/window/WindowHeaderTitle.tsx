@@ -1,8 +1,10 @@
+import { ReactNode } from "react";
+
 import { Text } from "../../../atoms/text/Text";
 import "./WindowHeaderTitle.css";
 
 interface WindowHeaderTitleProps {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   children: string;
 }
 

@@ -1,9 +1,10 @@
+import { ReactNode } from "react";
 import "./WindowHeader.css";
 
 interface WindowHeaderProps {
-  left?: React.ReactNode;
-  center?: React.ReactNode;
-  right?: React.ReactNode;
+  left?: ReactNode;
+  center?: ReactNode;
+  right?: ReactNode;
 }
 
 export function WindowHeader({ left, center, right }: WindowHeaderProps) {

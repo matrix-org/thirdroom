@@ -1,10 +1,12 @@
+import { ReactNode } from "react";
+
 import { Scroll } from "../../../atoms/scroll/Scroll";
 
 import "./ActiveChats.css";
 
 interface ActiveChatsProps {
-  chat?: React.ReactNode;
-  tiles: React.ReactNode;
+  chat?: ReactNode;
+  tiles: ReactNode;
 }
 
 export function ActiveChats({ chat, tiles }: ActiveChatsProps) {

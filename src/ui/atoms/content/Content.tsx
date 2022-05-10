@@ -1,11 +1,12 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 import "./Content.css";
 
 interface ContentProps {
   className?: string;
-  top?: React.ReactNode;
-  children?: React.ReactNode;
-  bottom?: React.ReactNode;
+  top?: ReactNode;
+  children?: ReactNode;
+  bottom?: ReactNode;
 }
 
 export function Content({ className, top, children, bottom }: ContentProps) {

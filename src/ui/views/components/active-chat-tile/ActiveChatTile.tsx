@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 
 import { Text } from "../../../atoms/text/Text";
@@ -8,7 +9,7 @@ import "./ActiveChatTile.css";
 
 interface IActiveChatTile {
   roomId: string;
-  avatar: React.ReactNode;
+  avatar: ReactNode;
   title: string;
   isActive: boolean;
   onClick: (roomId: string) => void;

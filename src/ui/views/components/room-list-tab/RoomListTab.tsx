@@ -1,3 +1,4 @@
+import { MouseEvent } from "react";
 import classNames from "classnames";
 
 import { Icon } from "../../../atoms/icon/Icon";
@@ -8,7 +9,7 @@ interface IRoomListTab {
   iconSrc: string;
   name: string;
   isActive?: boolean;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function RoomListTab({ className, iconSrc, name, isActive = false, onClick }: IRoomListTab) {

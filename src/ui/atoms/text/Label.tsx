@@ -1,3 +1,4 @@
+import { ReactNode, CSSProperties } from "react";
 import classNames from "classnames";
 
 import { Text } from "./Text";
@@ -7,9 +8,9 @@ interface ILabel {
   id?: string;
   className?: string;
   color?: textColor;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   htmlFor?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function Label({ id, className, color = "surface", style, htmlFor, children }: ILabel) {

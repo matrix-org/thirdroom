@@ -1,3 +1,4 @@
+import { ReactNode, ChangeEvent } from "react";
 import classNames from "classnames";
 
 import "./Input.css";
@@ -12,7 +13,7 @@ interface IInput {
   state?: "success" | "error";
   value?: string;
   defaultValue?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   required?: boolean;
   autoComplete?: "on" | "off";
@@ -20,8 +21,8 @@ interface IInput {
   readonly?: boolean;
   size?: number;
   maxLength?: number;
-  before?: React.ReactNode;
-  after?: React.ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
 }
 
 export function Input({

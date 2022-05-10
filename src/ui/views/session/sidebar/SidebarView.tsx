@@ -1,10 +1,11 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 
 import "./SidebarView.css";
 
 interface SidebarViewProps {
-  spaces: React.ReactNode;
-  roomList?: React.ReactNode;
+  spaces: ReactNode;
+  roomList?: ReactNode;
 }
 
 export function SidebarView({ spaces, roomList }: SidebarViewProps) {

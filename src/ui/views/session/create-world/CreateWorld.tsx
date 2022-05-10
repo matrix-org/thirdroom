@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import { useCallback, useState, FormEvent, ChangeEvent } from "react";
 import { RoomType, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
@@ -100,7 +100,7 @@ export function CreateWorld() {
     [session, navigate]
   );
 
-  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     if (isAliasAvail === false) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
@@ -119,7 +119,7 @@ export function CreateWorld() {
   };
 
   const debouncedAliasChange = useCallback(
-    async (evt: React.ChangeEvent<HTMLInputElement>) => {
+    async (evt: ChangeEvent<HTMLInputElement>) => {
       if (!isMounted) return;
       setAliasAvail(undefined);
       if (evt.target.value.trim() === "") return;

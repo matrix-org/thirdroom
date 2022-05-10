@@ -1,9 +1,10 @@
+import { ReactNode } from "react";
 import "./WindowFooter.css";
 
 interface WindowFooterProps {
-  left?: React.ReactNode;
-  center?: React.ReactNode;
-  right?: React.ReactNode;
+  left?: ReactNode;
+  center?: ReactNode;
+  right?: ReactNode;
 }
 
 export function WindowFooter({ left, center, right }: WindowFooterProps) {

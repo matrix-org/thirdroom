@@ -1,9 +1,11 @@
-import "./RoomListView.css";
+import { ReactNode } from "react";
+
 import { Scroll } from "../../../atoms/scroll/Scroll";
+import "./RoomListView.css";
 
 interface RoomListViewProps {
-  header: React.ReactNode;
-  content: React.ReactNode;
+  header: ReactNode;
+  content: ReactNode;
 }
 
 export function RoomListView({ header, content }: RoomListViewProps) {

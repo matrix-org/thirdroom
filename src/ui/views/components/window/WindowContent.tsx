@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 
 import { Content } from "../../../atoms/content/Content";
@@ -5,10 +6,10 @@ import "./WindowContent.css";
 
 interface WindowContentProps {
   className?: string;
-  header?: React.ReactNode;
-  footer?: React.ReactNode;
-  aside?: React.ReactNode;
-  children: React.ReactNode;
+  header?: ReactNode;
+  footer?: ReactNode;
+  aside?: ReactNode;
+  children: ReactNode;
 }
 
 export function WindowContent({ className, header, footer, aside, children }: WindowContentProps) {

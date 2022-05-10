@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect } from "react";
+import { useCallback, useEffect, DependencyList } from "react";
 
 export function useEvent(
   type: keyof HTMLElementEventMap,
   callback: (e: Event) => void,
   element: Element | Document | Window | null,
-  deps: React.DependencyList
+  deps: DependencyList
 ) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoCallback = useCallback(callback, deps);

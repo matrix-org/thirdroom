@@ -1,8 +1,10 @@
+import { ReactNode } from "react";
+
 import "./AvatarBadgeWrapper.css";
 
 interface IAvatarBadgeWrapper {
-  badge: React.ReactNode;
-  children: React.ReactNode;
+  badge: ReactNode;
+  children: ReactNode;
 }
 
 export function AvatarBadgeWrapper({ badge, children }: IAvatarBadgeWrapper) {

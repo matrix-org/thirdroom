@@ -1,3 +1,4 @@
+import { FormEvent } from "react";
 import { ComposerViewModel } from "@thirdroom/hydrogen-view-sdk";
 
 import { IconButton } from "../../../atoms/button/IconButton";
@@ -9,7 +10,7 @@ interface ChatComposerProps {
 }
 
 export function ChatComposer({ composerViewModel }: ChatComposerProps) {
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = (ev: FormEvent) => {
     ev.preventDefault();
     const target = ev.target as typeof ev.target & {
       message: { value: string };

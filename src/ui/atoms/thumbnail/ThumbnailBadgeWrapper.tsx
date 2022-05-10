@@ -1,8 +1,9 @@
+import { ReactNode } from "react";
 import "./ThumbnailBadgeWrapper.css";
 
 interface ThumbnailBadgeWrapperProps {
-  badge: React.ReactNode;
-  children: React.ReactNode;
+  badge: ReactNode;
+  children: ReactNode;
 }
 
 export function ThumbnailBadgeWrapper({ badge, children }: ThumbnailBadgeWrapperProps) {
