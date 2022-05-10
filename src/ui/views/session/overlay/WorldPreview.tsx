@@ -32,7 +32,9 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
   const closeOverlay = useStore((state) => state.overlay.closeOverlay);
   const { worldId, loadState, loadError, loadingWorld, loadedWorld, loadWorldError, enteringWorld, enteredWorld } =
     useStore((state) => state.world);
+
   const previewWorldId = selectedWorldId || worldId;
+  const isPreviewLoaded = previewWorldId === worldId;
 
   const room = useRoom(session, previewWorldId);
   const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
@@ -58,7 +60,7 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     (e: MouseEvent) => {
       e.preventDefault();
 
-      if (loadState === WorldLoadState.None && room) {
+      if ((!isPreviewLoaded || loadState === WorldLoadState.None) && room) {
         loadingWorld(room.id);
         onLoadWorld(room)
           .then(() => {
@@ -85,6 +87,7 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     [
       loadState,
       room,
+      isPreviewLoaded,
       loadingWorld,
       onLoadWorld,
       loadedWorld,
@@ -156,10 +159,13 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
   else if (roomStatus & RoomStatus.Joined) {
     title = room?.name || "Unnamed Room";
     memberCount = room?.joinedMemberCount || 0;
-    desc = loadError ? loadError.message : undefined;
+    desc = isPreviewLoaded && loadError ? loadError.message : undefined;
     options = (
-      <Button variant={loadState === WorldLoadState.Loaded ? "primary" : "secondary"} onClick={onClickRoomLoadButton}>
-        {WorldLoadButtonText[loadState]}
+      <Button
+        variant={isPreviewLoaded && loadState === WorldLoadState.Loaded ? "primary" : "secondary"}
+        onClick={onClickRoomLoadButton}
+      >
+        {isPreviewLoaded ? WorldLoadButtonText[loadState] : WorldLoadButtonText[WorldLoadState.None]}
       </Button>
     );
   } else if (roomStatus === RoomStatus.None && selectedWorldId) {
