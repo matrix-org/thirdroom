@@ -48,7 +48,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
                   rooms={rooms}
                   selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
                   onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? selectChat : selectWorld}
-                  onCreateWorld={() => selectWindow(OverlayWindow.CREATE_WORLD)}
+                  onCreateWorld={() => selectWindow(OverlayWindow.CreateWorld)}
                 />
               }
             />
@@ -57,7 +57,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
       />
       {selectedWindow ? (
         <div className="Overlay__window grow flex">
-          {selectedWindow === OverlayWindow.CREATE_WORLD && <CreateWorld />}
+          {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}
         </div>
       ) : (
         <div className="Overlay__content grow">

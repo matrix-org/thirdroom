@@ -5,7 +5,7 @@ import { RoomId } from "@thirdroom/hydrogen-view-sdk";
 import { RoomListTabs } from "../views/session/sidebar/RoomListHeader";
 
 export enum OverlayWindow {
-  CREATE_WORLD = "create_world",
+  CreateWorld = "create_world",
 }
 
 export enum WorldLoadState {
