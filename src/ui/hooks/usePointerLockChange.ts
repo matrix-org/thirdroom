@@ -1,9 +1,9 @@
-import React, { useEffect, useCallback } from "react";
+import { useEffect, useCallback, DependencyList } from "react";
 
 export function usePointerLockChange(
   targetEl: HTMLElement | null,
   callback: (isLocked: boolean) => void,
-  deps: React.DependencyList
+  deps: DependencyList
 ) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoCallback = useCallback(callback, deps);

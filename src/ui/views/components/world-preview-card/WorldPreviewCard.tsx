@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
@@ -8,7 +10,7 @@ export interface IWorldPreviewCard {
   title: string;
   desc?: string;
   memberCount?: number | string;
-  options?: React.ReactNode;
+  options?: ReactNode;
 }
 
 export function WorldPreviewCard({ title, desc, memberCount, options }: IWorldPreviewCard) {

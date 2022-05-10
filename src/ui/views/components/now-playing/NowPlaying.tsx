@@ -1,11 +1,12 @@
+import { ReactNode } from "react";
 import "./NowPlaying.css";
 
 interface INowPlaying {
-  avatar: React.ReactNode;
-  content: React.ReactNode;
-  options?: React.ReactNode;
-  leftControls: React.ReactNode;
-  rightControls: React.ReactNode;
+  avatar: ReactNode;
+  content: ReactNode;
+  options?: ReactNode;
+  leftControls: ReactNode;
+  rightControls: ReactNode;
 }
 
 export function NowPlaying({ avatar, content, options, leftControls, rightControls }: INowPlaying) {

@@ -1,11 +1,12 @@
-import { Text } from "../../../atoms/text/Text";
+import { ReactNode } from "react";
 
+import { Text } from "../../../atoms/text/Text";
 import "./ChatHeader.css";
 
 interface IChatHeader {
-  avatar: React.ReactNode;
+  avatar: ReactNode;
   title: string;
-  options: React.ReactNode;
+  options: ReactNode;
 }
 
 export function ChatHeader({ avatar, title, options }: IChatHeader) {

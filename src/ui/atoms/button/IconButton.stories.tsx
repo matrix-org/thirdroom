@@ -7,6 +7,12 @@ export default function IconButtonStories() {
   return (
     <div className="flex">
       <div>
+        <IconButton label="Home" size="xl" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
+      </div>
+      <div>
+        <IconButton label="Home" size="lg" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
+      </div>
+      <div>
         <IconButton label="Home" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
         <IconButton label="Home" variant="surface-low" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />
         <IconButton label="Home" variant="world" iconSrc={HomeIC} onClick={(a) => console.log("clicked")} />

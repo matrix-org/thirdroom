@@ -1,7 +1,9 @@
+import { ReactNode } from "react";
+
 import "./AvatarOutline.css";
 
 interface IAvatarOutline {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function AvatarOutline({ children }: IAvatarOutline) {

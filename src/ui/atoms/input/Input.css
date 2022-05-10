@@ -1,23 +1,59 @@
 .Input {
   width: 100%;
-  padding: var(--sp-xs);
   min-width: 0;
   background-color: var(--bg-surface-low);
-  color: var(--tc-surface);
-  border: none;
-  border-radius: var(--br-sm);
+  display: flex;
+  align-items: center;
 
+  & input {
+    flex: 1 1 0;
+    height: 100%;
+    border: none;
+    background-color: transparent;
+    color: var(--tc-surface);
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: var(--tc-surface-low);
+    }
+  }
+  &:focus-within {
+    outline: var(--outline);
+    outline-offset: var(--outline-offset);
+  }
+}
+
+.Input--sm {
+  height: 30px;
+  gap: var(--sp-xxs);
+  padding: 0 var(--sp-xxs);
+  border-radius: var(--br-xs);
+}
+.Input--md {
+  height: 40px;
+  gap: var(--sp-xxs);
+  padding: 0 var(--sp-xs);
+  border-radius: var(--br-sm);
+}
+.Input--lg {
+  height: 60px;
+  gap: var(--sp-xs);
+  padding: 0 var(--sp-md);
+  border-radius: var(--br-lg);
+}
+.Input--sm input {
+  font-size: var(--fs-b3);
+  letter-spacing: var(--ls-b3);
+  line-height: var(--lh-b3);
+}
+.Input--md input,
+.Input--lg input {
   font-size: var(--fs-b2);
   letter-spacing: var(--ls-b2);
   line-height: var(--lh-b2);
-
-  &::placeholder {
-    color: var(--tc-surface-low);
-  }
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
 }
 
 .Input--success {
@@ -27,4 +63,12 @@
 .Input--error {
   background-color: var(--bg-danger-soft-hover);
   box-shadow: var(--bs-danger-border);
+}
+
+.Input--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  & input {
+    cursor: not-allowed;
+  }
 }

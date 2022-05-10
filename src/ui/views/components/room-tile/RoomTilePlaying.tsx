@@ -1,8 +1,10 @@
+import { ReactNode } from "react";
+
 import { Text } from "../../../atoms/text/Text";
 import "./RoomTilePlaying.css";
 
 interface IRoomTilePlaying {
-  avatar: React.ReactNode;
+  avatar: ReactNode;
   children: string;
 }
 

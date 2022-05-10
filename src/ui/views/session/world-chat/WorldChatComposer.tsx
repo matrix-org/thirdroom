@@ -1,3 +1,4 @@
+import { FormEvent } from "react";
 import { ComposerViewModel } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldChatComposer.css";
@@ -7,7 +8,7 @@ interface IWorldChatComposer {
 }
 
 export function WorldChatComposer({ composerViewModel }: IWorldChatComposer) {
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = (ev: FormEvent) => {
     ev.preventDefault();
     const target = ev.target as typeof ev.target & {
       message: { value: string };

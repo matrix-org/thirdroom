@@ -1,3 +1,4 @@
+import { MouseEvent } from "react";
 import classNames from "classnames";
 
 import { Icon } from "../../../atoms/icon/Icon";
@@ -9,7 +10,7 @@ interface ISidebarTab {
   name: string;
   variant?: "surface" | "surface-low" | "primary" | "secondary" | "danger";
   isActive?: boolean;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function SidebarTab({ className, iconSrc, name, variant = "surface", isActive = false, onClick }: ISidebarTab) {

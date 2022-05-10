@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, CSSProperties } from "react";
 import classNames from "classnames";
 import "./Avatar.css";
 
@@ -39,7 +39,7 @@ export function Avatar({
     "noselect"
   );
 
-  const style: React.CSSProperties = {};
+  const style: CSSProperties = {};
   if (isFallback || !imageSrc) style.backgroundColor = bgColor;
 
   return (

@@ -4,6 +4,10 @@ import { RoomId } from "@thirdroom/hydrogen-view-sdk";
 
 import { RoomListTabs } from "../views/session/sidebar/RoomListHeader";
 
+export enum OverlayWindow {
+  CreateWorld = "create_world",
+}
+
 export enum WorldLoadState {
   None = "none",
   Loading = "loading",
@@ -22,6 +26,11 @@ export interface OverlayState {
 export interface OverlaySidebarState {
   selectedRoomListTab: RoomListTabs;
   selectRoomListTab(tab: RoomListTabs): void;
+}
+
+export interface OverlayWindowState {
+  selectedWindow?: OverlayWindow;
+  selectWindow(window?: OverlayWindow): void;
 }
 
 export interface OverlayWorldState {
@@ -65,6 +74,7 @@ export interface PointerLockState {
 export interface StoreState {
   overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
+  overlayWindow: OverlayWindowState;
   overlayChat: OverlayChatState;
   overlayWorld: OverlayWorldState;
   world: WorldState;
@@ -92,6 +102,14 @@ export const useStore = create<StoreState>()(
       selectRoomListTab(tab: RoomListTabs) {
         set((state) => {
           state.overlaySidebar.selectedRoomListTab = tab;
+        });
+      },
+    },
+    overlayWindow: {
+      selectedWindow: undefined,
+      selectWindow(window?: OverlayWindow) {
+        set((state) => {
+          state.overlayWindow.selectedWindow = window;
         });
       },
     },
@@ -146,6 +164,7 @@ export const useStore = create<StoreState>()(
           state.world.worldId = roomId;
           state.world.loadError = undefined;
           state.world.loadState = WorldLoadState.None;
+          state.overlayWindow.selectedWindow = undefined;
         });
       },
       loadingWorld(roomId: RoomId | undefined) {
