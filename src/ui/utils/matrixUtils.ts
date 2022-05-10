@@ -1,3 +1,5 @@
+import { Room, ObservableMap } from "@thirdroom/hydrogen-view-sdk";
+
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
 
 export function getMxIdDomain(mxId: string) {
@@ -19,5 +21,16 @@ export async function isRoomAliasAvailable(homeserver: string, alias: string): P
     return false;
   } catch {
     return false;
+  }
+}
+
+export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: string): Room | void {
+  if (alias.startsWith("#") === false) return;
+  const items = rooms.values();
+
+  let item = items.next();
+  while (item.done === false) {
+    if (item.value.canonicalAlias === alias) return item.value;
+    item = items.next();
   }
 }
