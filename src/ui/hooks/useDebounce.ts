@@ -9,7 +9,7 @@ export function useDebounce<T extends any[]>(
   callback: (...args: T) => void,
   options?: DebounceOptions
 ): (...args: T) => void {
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<number | null>(null);
   const { wait, immediate } = options ?? {};
 
   const debounceCallback = useCallback(
@@ -21,7 +21,7 @@ export function useDebounce<T extends any[]>(
         callback(...cbArgs);
       }
 
-      timeoutIdRef.current = setTimeout(() => {
+      timeoutIdRef.current = window.setTimeout(() => {
         callback(...cbArgs);
         timeoutIdRef.current = null;
       }, wait);
