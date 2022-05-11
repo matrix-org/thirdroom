@@ -34,10 +34,6 @@ export function LoginView() {
     }
   };
 
-  if (authenticating) {
-    return <p>Login in progress...</p>;
-  }
-
   return (
     <div className="LoginView flex justify-center items-center">
       <div className="LoginView__card grow flex flex-column gap-xl">
@@ -59,6 +55,7 @@ export function LoginView() {
               defaultValue={platform.config.defaultHomeServer}
               name="homeserver"
               placeholder="matrix.org"
+              disabled={authenticating}
               required
             />
           </SettingTile>
@@ -72,7 +69,7 @@ export function LoginView() {
               </Label>
             }
           >
-            <Input name="username" required />
+            <Input name="username" disabled={authenticating} required />
           </SettingTile>
           <SettingTile
             label={
@@ -81,10 +78,10 @@ export function LoginView() {
               </Label>
             }
           >
-            <Input name="password" type="password" required />
+            <Input name="password" type="password" disabled={authenticating} required />
           </SettingTile>
-          <Button variant="primary" type="submit">
-            Login
+          <Button variant="primary" type="submit" disabled={authenticating}>
+            {authenticating ? "Login in progress..." : "Login"}
           </Button>
         </form>
       </div>
