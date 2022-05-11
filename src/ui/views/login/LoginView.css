@@ -1,0 +1,18 @@
+.LoginView {
+  height: 100%;
+  padding: var(--sp-md);
+  background-color: var(--bg-surface-low);
+}
+.LoginView__card {
+  width: 100%;
+  max-width: 450px;
+  padding: var(--sp-lg);
+  background-color: var(--bg-surface);
+  border-radius: var(--br-md);
+}
+.LoginView__form {
+  & > .Text,
+  & > .Button {
+    margin-top: var(--sp-md);
+  }
+}
