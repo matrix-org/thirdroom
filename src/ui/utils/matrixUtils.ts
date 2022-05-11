@@ -28,9 +28,7 @@ export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: stri
   if (alias.startsWith("#") === false) return;
   const items = rooms.values();
 
-  let item = items.next();
-  while (item.done === false) {
-    if (item.value.canonicalAlias === alias) return item.value;
-    item = items.next();
+  for (const room of items) {
+    if (room.canonicalAlias === alias) return room;
   }
 }
