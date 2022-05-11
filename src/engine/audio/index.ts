@@ -2,7 +2,7 @@ import { pipe } from "bitecs";
 import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
-import { renderableBuffer } from "../component";
+import { renderableBuffer } from "../component/buffers";
 import { enteredOwnedPlayerQuery, enteredRemotePlayerQuery } from "../component/Player";
 import { maxEntities, NOOP } from "../config";
 import { GameState } from "../GameWorker";
