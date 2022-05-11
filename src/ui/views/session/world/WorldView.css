@@ -20,6 +20,7 @@
   position: absolute;
   bottom: var(--sp-md);
   left: var(--sp-md);
+  pointer-events: none;
 }
 
 .WorldView__controls {
