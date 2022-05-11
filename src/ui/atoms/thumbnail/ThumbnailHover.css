@@ -1,0 +1,22 @@
+.ThumbnailHover {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--br-lg);
+
+  &:hover .ThumbnailHover__content {
+    display: inline-flex;
+  }
+}
+.ThumbnailHover,
+.ThumbnailHover__content {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+.ThumbnailHover__content {
+  display: none;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: #0009;
+}

@@ -1,3 +1,5 @@
+import { ReactNode, MouseEvent } from "react";
+
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 
@@ -5,8 +7,8 @@ import "./CategoryHeader.css";
 interface ICategoryHeader {
   iconSrc?: string;
   title: string;
-  options?: React.ReactNode;
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  options?: ReactNode;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function CategoryHeader({ iconSrc, title, options, onClick }: ICategoryHeader) {

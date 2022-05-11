@@ -308,6 +308,15 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(allowsChild: NavigationAllowsChildHandler);
   }
 
+  export interface IBlobHandle {
+    nativeBlob: any;
+    url: string;
+    size: number;
+    mimeType: string;
+    readAsBuffer(): BufferSource;
+    dispose(): void;
+  }
+
   export class Platform {
     sessionInfoStorage: ISessionInfoStorage;
     devicePixelRatio: number;
@@ -323,6 +332,13 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(options: { container: HTMLElement; assetPaths: any; config: any; options?: any; cryptoExtras?: any });
 
     setNavigation(navigation: Navigation): void;
+    openFile(mimeType: string): Promise<
+      | {
+          name: string;
+          blob: IBlobHandle;
+        }
+      | undefined
+    >;
 
     dispose(): void;
   }
@@ -360,13 +376,34 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
+  interface ICreateRoom {
+    type: RoomType;
+    name?: string;
+    topic?: string;
+    isEncrypted?: boolean;
+    isFederationDisabled?: boolean;
+    alias?: string;
+    avatar?: {
+      name: string;
+      blob: IBlobHandle;
+      info: {
+        w?: number;
+        h?: number;
+        mimetype: string;
+        size: number;
+      };
+    };
+    powerLevelContentOverride?: any;
+  }
+
   export class Session {
     userId: string;
+    _sessionInfo: ISessionInfo;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
     callHandler: CallHandler;
-    createRoom(options: any): RoomBeingCreated;
+    createRoom(options: ICreateRoom): RoomBeingCreated;
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
   }

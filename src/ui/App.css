@@ -77,6 +77,8 @@
   --sp-xxs: 5px;
 
   /* icon sizes */
+  --ic-xl: 40px;
+  --ic-lg: 30px;
   --ic-md: 20px;
   --ic-sm: 15px;
   --ic-xs: 10px;
@@ -88,6 +90,10 @@
   --av-sm: 30px;
   --av-xs: 25px;
   --av-xxs: 20px;
+
+  /* thumbnail sizes */
+  --th-md: 200px;
+  --th-sm: 150px;
 
   /* border radius */
   --br-lg: 16px;
@@ -128,6 +134,10 @@
   --bs-primary-border: inset 0 0 0 1px var(--bg-primary);
   --bs-secondary-border: inset 0 0 0 1px var(--bg-secondary);
   --bs-danger-border: inset 0 0 0 1px var(--bg-danger);
+
+  /* outline */
+  --outline: var(--tc-surface) solid 2px;
+  --outline-offset: -2px;
 
   /* other */
   --usercolor1: #368bd6;
@@ -174,8 +184,8 @@ code {
   -webkit-tap-highlight-color: transparent;
 }
 *:focus {
-  outline: var(--tc-surface) solid 2px;
-  outline-offset: -2px;
+  outline: var(--outline);
+  outline-offset: var(--outline-offset);
 }
 
 :--heading {

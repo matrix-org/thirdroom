@@ -1,3 +1,4 @@
+import { FormEvent } from "react";
 import { useState } from "react";
 
 import { useHydrogen } from "../../hooks/useHydrogen";
@@ -6,7 +7,7 @@ export function LoginView() {
   const { platform, login } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
 
-  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget.elements as typeof event.currentTarget.elements & {
       homeserver: HTMLInputElement;

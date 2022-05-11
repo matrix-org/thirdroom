@@ -1,12 +1,13 @@
+import { ReactNode, MouseEvent } from "react";
 import classNames from "classnames";
 import "./RoomTile.css";
 
 interface IRoomTile {
-  avatar: React.ReactNode;
-  content: React.ReactNode;
-  options?: React.ReactNode;
+  avatar: ReactNode;
+  content: ReactNode;
+  options?: ReactNode;
   isActive?: boolean;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function RoomTile({ avatar, content, options, isActive = false, onClick }: IRoomTile) {

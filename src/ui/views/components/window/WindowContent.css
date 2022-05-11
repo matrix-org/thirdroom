@@ -1,0 +1,7 @@
+.WindowContent {
+  height: 100%;
+}
+.WindowContent__aside {
+  max-width: 625px;
+  width: 100%;
+}

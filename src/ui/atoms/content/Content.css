@@ -1,0 +1,14 @@
+.Content {
+  display: flex;
+  flex-direction: column;
+}
+
+.Content__top,
+.Content__bottom {
+  flex-shrink: 0;
+}
+.Content__grow {
+  flex-grow: 1;
+  min-height: 0;
+  min-width: 0;
+}
