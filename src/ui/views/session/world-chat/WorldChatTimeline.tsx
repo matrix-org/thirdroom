@@ -13,5 +13,5 @@ export function WorldChatTimeline({ timelineViewModel }: IWorldChatTimeline) {
   const timelineViewContainerRef = useRef<HTMLDivElement>(null);
   useEmbedTimeline(timelineViewContainerRef, timelineViewModel, viewClassForTile);
 
-  return <div className="WorldChatTimeline grow flex hydrogen" ref={timelineViewContainerRef} />;
+  return <div className="WorldChatTimeline grow flex" ref={timelineViewContainerRef} />;
 }

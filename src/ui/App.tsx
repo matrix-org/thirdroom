@@ -33,6 +33,7 @@ export function App() {
         <Route path="/login" element={<LoginView />} />
         <Route element={<SessionView />}>
           <Route path="world/:worldId" element={<WorldView />} />
+          <Route path="world/" element={<WorldView />} />
           <Route path="/" element={<HomeView />} />
         </Route>
       </Route>

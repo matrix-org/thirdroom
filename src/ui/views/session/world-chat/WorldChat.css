@@ -6,6 +6,7 @@
   padding: var(--sp-xs);
   border-radius: var(--br-xs);
   background-color: var(--bg-world-overlay);
+  pointer-events: all;
 
   & .Icon {
     margin-right: var(--sp-xs);
