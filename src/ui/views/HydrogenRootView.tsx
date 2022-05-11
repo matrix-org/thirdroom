@@ -172,13 +172,6 @@ export function HydrogenRootView() {
   const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
   useEffect(() => {
-    console.log("hyrdogen view mounted");
-    return () => {
-      console.log("hyrdogen view unmounted");
-    };
-  }, []);
-
-  useEffect(() => {
     return () => {
       client.dispose();
       containerEl.remove();
@@ -256,7 +249,6 @@ export function HydrogenRootView() {
   const error = initialSessionLoadError || errorLoggingIn;
 
   if (loading) {
-    console.log("loading", loadingInitialSession, loggingIn);
     return (
       <div className="flex justify-center items-center" style={{ height: "100%" }}>
         <Text variant="b1" weight="semi-bold">
@@ -267,7 +259,6 @@ export function HydrogenRootView() {
   }
 
   if (error) {
-    console.log("error");
     return (
       <div className="flex justify-center items-center" style={{ height: "100%" }}>
         <Text variant="b1" weight="semi-bold">
@@ -278,14 +269,10 @@ export function HydrogenRootView() {
   }
 
   if (!currentSession && !loginPathMatch) {
-    console.log("redirect to login");
     return <Navigate to="/login" />;
   } else if (currentSession && loginPathMatch) {
-    console.log("redirect to home");
     return <Navigate to="/" />;
   }
-
-  console.log("render outlet");
 
   return (
     <HydrogenContextProvider value={context}>
