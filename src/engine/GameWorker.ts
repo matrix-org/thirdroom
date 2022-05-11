@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld, removeEntity } from "bitecs";
 
-import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config";
 import {
@@ -22,13 +22,22 @@ import {
 } from "./WorkerMessage";
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
-import { renderableBuffer } from "./component";
+import { renderableBuffer } from "./component/buffers";
 import { init, onStateChange } from "../game";
 import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
+import {
+  EditorState,
+  initEditor,
+  initEditorState,
+  onDisposeEditor,
+  onEditorMessage,
+  onLoadEditor,
+} from "./editor/editor.game";
+import { createRaycasterState, initRaycaster, RaycasterState } from "./raycaster/raycaster.game";
 import { gameAudioSystem } from "./audio";
 // import { NetworkTransformSystem } from "./network";
 
@@ -73,6 +82,14 @@ const onMessage =
 
     const message = data as WorkerMessages;
 
+    const handler = state.messageHandlers[message.type];
+
+    if (handler) {
+      handler(state, message as any);
+      return;
+    }
+
+    // TODO: This switch statement is doing a lot of heavy lifting. Move to the message handler map above.
     switch (message.type) {
       case WorkerMessageType.StartGameWorker:
         onStart(state);
@@ -107,6 +124,16 @@ const onMessage =
         break;
       case WorkerMessageType.SetHost:
         state.network.hosting = message.value;
+        break;
+      case WorkerMessageType.LoadEditor:
+        onLoadEditor(state);
+        break;
+      case WorkerMessageType.DisposeEditor:
+        onDisposeEditor(state);
+        break;
+      case WorkerMessageType.SetComponentProperty:
+      case WorkerMessageType.RemoveComponent:
+        onEditorMessage(state, message);
         break;
     }
   };
@@ -204,6 +231,9 @@ export interface GameState {
   camera: number;
   statsBuffer: StatsBuffer;
   network: NetworkState;
+  editorState: EditorState;
+  raycaster: RaycasterState;
+  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: GameState, message: T) => void }>;
   audio: { tripleBuffer: TripleBufferState };
 }
 
@@ -311,9 +341,18 @@ async function onInit({
     preSystems: [],
     postSystems: [],
     statsBuffer,
+    editorState: initEditorState(),
+    raycaster: createRaycasterState(),
+    messageHandlers: {},
   };
 
+  initRaycaster(state);
+  initEditor(state);
+
   registerDefaultPrefabs(state);
+
+  // TODO: Register components in some other file.
+  registerTransformComponent(state);
 
   state.preSystems.push(createIncomingNetworkSystem(state));
 

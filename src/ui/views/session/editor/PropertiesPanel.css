@@ -1,0 +1,7 @@
+.PropertiesPanel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  padding: var(--sp-md);
+  border-radius: var(--br-xs);
+}

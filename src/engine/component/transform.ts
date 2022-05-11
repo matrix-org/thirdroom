@@ -1,10 +1,12 @@
-import { addComponent, addEntity, IComponent } from "bitecs";
+import { addComponent, addEntity, IComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { gameBuffer, renderableBuffer } from ".";
+import { gameBuffer, renderableBuffer } from "./buffers";
 import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config";
-import { World } from "../GameWorker";
+import { GameState, World } from "../GameWorker";
+import { registerEditorComponent } from "../editor/editor.game";
+import { ComponentPropertyType } from "./types";
 
 export interface Transform extends IComponent {
   position: Float32Array[];
@@ -39,6 +41,28 @@ export const Transform: Transform = {
   prevSibling: addView(gameBuffer, Uint32Array, maxEntities),
   nextSibling: addView(gameBuffer, Uint32Array, maxEntities),
 };
+
+export function registerTransformComponent(state: GameState) {
+  registerEditorComponent(state, Transform, {
+    name: "Transform",
+    props: {
+      position: {
+        type: ComponentPropertyType.vec3,
+        store: Transform.position,
+      },
+    },
+    add(state, eid, props) {
+      addTransformComponent(state.world, eid);
+
+      if (props && props.position) {
+        Transform.position[eid].set(props.position);
+      }
+    },
+    remove(state, eid) {
+      removeComponent(state.world, Transform, eid);
+    },
+  });
+}
 
 export function addTransformComponent(world: World, eid: number) {
   addComponent(world, Transform, eid);
@@ -410,4 +434,9 @@ export function* getChildren(parentEid: number): Generator<number, number> {
   }
 
   return 0;
+}
+
+export function getDirection(out: vec3, matrix: mat4): vec3 {
+  vec3.set(out, matrix[8], matrix[9], matrix[10]);
+  return vec3.normalize(out, out);
 }

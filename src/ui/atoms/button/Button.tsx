@@ -8,7 +8,7 @@ interface IButton {
   className?: string;
   variant?: "primary" | "secondary" | "danger";
   fill?: "solid" | "outline";
-  size?: "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   type?: "button" | "submit" | "reset";
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
@@ -32,7 +32,7 @@ export function Button({
   let renderChild;
 
   const getText = (text: string, key?: number | string) => (
-    <Text key={key} variant="b2" color={textColor} weight="semi-bold">
+    <Text key={key} variant={size === "xs" ? "b3" : "b2"} color={textColor} weight="semi-bold">
       {text}
     </Text>
   );

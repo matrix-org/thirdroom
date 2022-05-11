@@ -1,3 +1,5 @@
+import { EditorEventType, Selection } from "./editor/editor.common";
+import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
 import { mainAudioSystem, disposeAudioState, initAudioState } from "./audio";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
@@ -73,7 +75,32 @@ export interface Engine {
   disconnect(): void;
   getStats(): StatsObject;
   exportScene(): void;
+  loadEditor(): void;
+  disposeEditor(): void;
+  getSelection(): Selection;
+  getComponentInfo(componentId: number): ComponentInfo | undefined;
+  removeComponent(componentId: number): void;
+  getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined;
+  setComponentProperty<T>(propertyId: number, value: T): void;
+  addListener(type: EditorEventType.SelectionChanged, listener: (selection: Selection) => void): void;
+  addListener(
+    type: EditorEventType.ComponentInfoChanged,
+    listener: (componentId: number, componentInfo: ComponentInfo) => void
+  ): void;
+  addListener<T extends ComponentPropertyType>(
+    type: EditorEventType.ComponentPropertyChanged,
+    listener: (propertyId: number, value: ComponentPropertyValue<T>) => void
+  ): void;
+  addListener(type: EditorEventType, listener: (...args: any[]) => void): void;
+  removeListener(type: EditorEventType, listener: (...args: any[]) => void): void;
   dispose(): void;
+}
+
+interface EditorState {
+  selection: Selection;
+  componentInfoMap: Map<number, ComponentInfo>;
+  componentProperties: Map<number, any>;
+  eventListeners: Map<string, ((...args: any[]) => void)[]>;
 }
 
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
@@ -238,6 +265,53 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     }
   };
 
+  /* Editor Messages */
+
+  const editorState: EditorState = {
+    selection: { entities: [], components: [] },
+    componentInfoMap: new Map(),
+    componentProperties: new Map(),
+    eventListeners: new Map(),
+  };
+
+  function emitEditorEvent(type: EditorEventType, ...args: any[]) {
+    const listeners = editorState.eventListeners.get(type);
+
+    if (!listeners) {
+      return;
+    }
+
+    for (const listener of listeners) {
+      listener(...args);
+    }
+  }
+
+  function onEditorLoaded(componentInfos: [number, ComponentInfo][]) {
+    editorState.componentInfoMap = new Map(componentInfos);
+    emitEditorEvent(EditorEventType.EditorLoaded);
+  }
+
+  function onSelectionChanged(selection: Selection, initialValues: Map<number, any>) {
+    editorState.selection = selection;
+    editorState.componentProperties = initialValues;
+
+    emitEditorEvent(EditorEventType.SelectionChanged, selection);
+
+    for (const [propertyId, value] of initialValues) {
+      emitEditorEvent(EditorEventType.ComponentPropertyChanged, propertyId, value);
+    }
+  }
+
+  function onComponentInfoChanged(componentId: number, componentInfo: ComponentInfo) {
+    editorState.componentInfoMap.set(componentId, componentInfo);
+    emitEditorEvent(EditorEventType.ComponentInfoChanged, componentId, componentInfo);
+  }
+
+  function onComponentPropertyChanged(propertyId: number, value: any) {
+    editorState.componentProperties.set(propertyId, value);
+    emitEditorEvent(EditorEventType.ComponentPropertyChanged, propertyId, value);
+  }
+
   const onGameWorkerMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
       return;
@@ -257,6 +331,18 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         break;
       case WorkerMessageType.UnreliableNetworkBroadcast:
         broadcastUnreliable(message.packet);
+        break;
+      case WorkerMessageType.EditorLoaded:
+        onEditorLoaded(message.componentInfos);
+        break;
+      case WorkerMessageType.SelectionChanged:
+        onSelectionChanged(message.selection, message.initialValues);
+        break;
+      case WorkerMessageType.ComponentInfoChanged:
+        onComponentInfoChanged(message.componentId, message.componentInfo);
+        break;
+      case WorkerMessageType.ComponentPropertyChanged:
+        onComponentPropertyChanged(message.propertyId, message.value);
         break;
     }
   };
@@ -398,6 +484,65 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         type: WorkerMessageType.SetPeerId,
         peerId,
       });
+    },
+    loadEditor() {
+      gameWorker.postMessage({
+        type: WorkerMessageType.LoadEditor,
+      });
+    },
+    disposeEditor() {
+      editorState.selection = { entities: [], components: [] };
+      editorState.componentInfoMap.clear();
+      editorState.componentProperties.clear();
+      gameWorker.postMessage({
+        type: WorkerMessageType.DisposeEditor,
+      });
+    },
+    getSelection(): Selection {
+      return editorState.selection;
+    },
+    getComponentInfo(componentId: number): ComponentInfo | undefined {
+      return editorState.componentInfoMap.get(componentId);
+    },
+    removeComponent(componentId: number): void {
+      gameWorker.postMessage({
+        type: WorkerMessageType.RemoveComponent,
+        entities: editorState.selection.entities,
+        componentId,
+      });
+    },
+    getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined {
+      return editorState.componentProperties.get(propertyId);
+    },
+    setComponentProperty<T>(propertyId: number, value: T): void {
+      gameWorker.postMessage({
+        type: WorkerMessageType.SetComponentProperty,
+        entities: editorState.selection.entities,
+        propertyId,
+        value,
+      });
+    },
+    addListener(type: EditorEventType, listener: (...args: any[]) => void): void {
+      const listeners = editorState.eventListeners.get(type) || [];
+      listeners.push(listener);
+      editorState.eventListeners.set(type, listeners);
+    },
+    removeListener(type: EditorEventType, listener: (...args: any[]) => void): void {
+      const listeners = editorState.eventListeners.get(type);
+
+      if (listeners) {
+        const index = listeners.indexOf(listener);
+
+        if (index === -1) {
+          return;
+        }
+
+        listeners.splice(index, 1);
+
+        if (listeners.length === 0) {
+          editorState.eventListeners.delete(type);
+        }
+      }
     },
     getStats() {
       return getStats(statsBuffer);

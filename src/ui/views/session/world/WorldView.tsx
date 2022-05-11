@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -13,6 +14,7 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import HeadphoneIC from "../../../../../res/ic/headphone.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import "./WorldView.css";
+import { EditorView } from "../editor/EditorView";
 
 export function WorldView() {
   const { canvasRef, world, onLeftWorld } = useOutletContext<SessionOutletContext>();
@@ -20,6 +22,7 @@ export function WorldView() {
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
+  const [editorEnabled, setEditorEnabled] = useState(false);
 
   useKeyDown(
     (e) => {
@@ -48,6 +51,9 @@ export function WorldView() {
       }
       if (e.altKey && e.code === "KeyL") {
         onLeftWorld();
+      }
+      if (e.code === "Backquote") {
+        setEditorEnabled((enabled) => !enabled);
       }
     },
     [isEnteredWorld, isChatOpen, isOverlayOpen, openWorldChat, closeWorldChat, openOverlay, closeOverlay]
@@ -105,6 +111,7 @@ export function WorldView() {
         <WorldChat open={isChatOpen} room={world} />
       </div>
       {world && renderControl()}
+      {world && editorEnabled && <EditorView />}
     </div>
   );
 }

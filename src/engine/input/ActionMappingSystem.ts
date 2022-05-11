@@ -132,3 +132,19 @@ export function ActionMappingSystem(state: GameState) {
     }
   }
 }
+
+export function enableActionMap(state: GameState, actionMap: ActionMap) {
+  const index = state.input.actionMaps.indexOf(actionMap);
+
+  if (index === -1) {
+    state.input.actionMaps.push(actionMap);
+  }
+}
+
+export function disableActionMap(state: GameState, actionMap: ActionMap) {
+  const index = state.input.actionMaps.indexOf(actionMap);
+
+  if (index !== -1) {
+    state.input.actionMaps.splice(index, 1);
+  }
+}

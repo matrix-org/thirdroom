@@ -11,7 +11,7 @@ interface IInput {
   type?: "text" | "password" | "email" | "number" | "search";
   inputSize?: "sm" | "md" | "lg";
   state?: "success" | "error";
-  value?: string;
+  value?: string | number;
   defaultValue?: string;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;

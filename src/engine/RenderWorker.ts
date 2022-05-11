@@ -52,6 +52,12 @@ import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
 import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
 import { createStatsBuffer, StatsBuffer, writeRenderWorkerStats } from "./stats";
+import {
+  initRendererRaycaster,
+  initRendererRaycasterState,
+  RendererRaycasterState,
+} from "./raycaster/raycaster.renderer";
+import { EditorRendererState, initEditorRendererState } from "./editor/editor.renderer";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -99,11 +105,14 @@ interface RenderableView {
   visible: Uint8Array;
 }
 
-interface Renderable {
+export interface Renderable {
   object?: Object3D;
+  helper?: Object3D;
   eid: number;
   resourceId: number;
 }
+
+type RenderWorkerSystem = (state: RenderWorkerState) => void;
 
 export interface RenderWorkerState {
   needsResize: boolean;
@@ -116,12 +125,18 @@ export interface RenderWorkerState {
   resourceManager: ResourceManager;
   renderableMessageQueue: RenderableMessages[];
   renderables: Renderable[];
+  objectToEntityMap: Map<Object3D, number>;
   renderableIndices: Map<number, number>;
   renderableTripleBuffer: TripleBufferState;
   transformViews: TransformView[];
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;
   statsBuffer: StatsBuffer;
+  raycaster: RendererRaycasterState;
+  editor: EditorRendererState;
+  preSystems: RenderWorkerSystem[];
+  postSystems: RenderWorkerSystem[];
+  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: RenderWorkerState, message: T) => void }>;
 }
 
 let _state: RenderWorkerState;
@@ -148,6 +163,13 @@ function onMessage({ data }: any) {
 
   if (!_state) {
     console.warn(`Render worker not initialized before processing ${message.type}`);
+    return;
+  }
+
+  const handler = _state.messageHandlers[message.type];
+
+  if (handler) {
+    handler(_state, message as any);
     return;
   }
 
@@ -255,6 +277,7 @@ async function onInit({
     canvasWidth: initialCanvasWidth,
     canvasHeight: initialCanvasHeight,
     renderableMessageQueue: [],
+    objectToEntityMap: new Map(),
     renderables: [],
     renderableIndices: new Map<number, number>(),
     renderableTripleBuffer,
@@ -262,7 +285,14 @@ async function onInit({
     renderableViews,
     gameWorkerMessageTarget,
     statsBuffer,
+    editor: initEditorRendererState(),
+    raycaster: initRendererRaycasterState(),
+    messageHandlers: {},
+    preSystems: [],
+    postSystems: [],
   };
+
+  initRendererRaycaster(state);
 
   console.log("RenderWorker initialized");
 
@@ -310,7 +340,7 @@ function onUpdate(state: RenderWorkerState) {
   const Renderable = renderableViews[bufferIndex];
 
   for (let i = 0; i < renderables.length; i++) {
-    const { object, eid } = renderables[i];
+    const { object, helper, eid } = renderables[i];
 
     if (!object) {
       continue;
@@ -327,11 +357,23 @@ function onUpdate(state: RenderWorkerState) {
       object.position.lerp(tempPosition, lerpAlpha);
       object.quaternion.slerp(tempQuaternion, lerpAlpha);
       object.scale.lerp(tempScale, lerpAlpha);
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
     } else {
       tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
       object.matrix.fromArray(Transform.worldMatrix[eid]);
       object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
       object.matrixWorldNeedsUpdate = false;
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
     }
   }
 
@@ -343,7 +385,15 @@ function onUpdate(state: RenderWorkerState) {
     state.needsResize = false;
   }
 
+  for (let i = 0; i < state.preSystems.length; i++) {
+    state.preSystems[i](state);
+  }
+
   renderer.render(state.scene, state.camera);
+
+  for (let i = 0; i < state.postSystems.length; i++) {
+    state.postSystems[i](state);
+  }
 
   const end = performance.now();
 
@@ -397,7 +447,7 @@ function processRenderableMessages(state: RenderWorkerState) {
 
 function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage) {
   const { resourceId, eid } = message;
-  const { renderableMessageQueue, renderableIndices, renderables, scene, resourceManager } = state;
+  const { renderableMessageQueue, renderableIndices, renderables, objectToEntityMap, scene, resourceManager } = state;
   let renderableIndex = renderableIndices.get(eid);
   const resourceInfo = resourceManager.store.get(resourceId);
 
@@ -421,6 +471,7 @@ function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage
       renderableIndex = renderables.length;
       renderableIndices.set(eid, renderables.length);
       renderables.push({ object, eid, resourceId });
+      objectToEntityMap.set(object, eid);
     }
 
     state.scene.add(object);
@@ -464,7 +515,7 @@ function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage
 }
 
 function onRemoveRenderable(
-  { renderableIndices, renderables, scene }: RenderWorkerState,
+  { renderableIndices, renderables, objectToEntityMap, scene }: RenderWorkerState,
   { eid }: RemoveRenderableMessage
 ) {
   const index = renderableIndices.get(eid);
@@ -473,8 +524,18 @@ function onRemoveRenderable(
     const removed = renderables.splice(index, 1);
     renderableIndices.delete(eid);
 
-    if (removed.length > 0 && removed[0].object) {
-      scene.remove(removed[0].object);
+    if (removed.length > 0) {
+      const { object, helper } = removed[0];
+
+      if (object) {
+        scene.remove(object);
+        objectToEntityMap.delete(object);
+      }
+
+      if (helper) {
+        scene.remove(helper);
+        objectToEntityMap.delete(helper);
+      }
     }
   }
 }
