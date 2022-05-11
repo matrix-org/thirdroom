@@ -10,9 +10,9 @@ import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
 import { useStore } from "../../hooks/useStore";
+import { useRoomIdFromAlias } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
-import { getRoomWithAlias } from "../../utils/matrixUtils";
 
 export interface SessionOutletContext {
   world?: Room;
@@ -37,9 +37,9 @@ export function SessionView() {
   const worldMatch = useMatch({ path: "world/:worldId/*" });
   const { worldId, setInitialWorld, leftWorld, enteredWorld } = useStore((state) => state.world);
   const world = useRoom(session, worldId);
+  const nextWorldIdFromAlias = useRoomIdFromAlias(location.hash);
 
-  const nextWorld = getRoomWithAlias(session.rooms, location.hash);
-  const nextWorldId = worldMatch ? worldMatch.params["worldId"] : nextWorld?.id;
+  const nextWorldId = worldMatch ? worldMatch.params["worldId"] : nextWorldIdFromAlias;
 
   useEffect(() => {
     setInitialWorld(nextWorldId);
