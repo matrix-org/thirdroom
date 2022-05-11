@@ -22,6 +22,7 @@ export function useRoomIdFromAlias(alias?: string) {
       resolveRoomAlias(homeserver, alias).then((result) => {
         if (!isMounted) return;
         if (result.roomId) setRoomId(result.roomId);
+        else setRoomId(undefined);
       });
     }
   }, [session, homeserver, alias, isMounted]);
