@@ -33,7 +33,6 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
   const { worldId, loadState, loadError, loadingWorld, loadedWorld, loadWorldError, enteringWorld, enteredWorld } =
     useStore((state) => state.world);
   const previewWorldId = selectedWorldId || worldId;
-
   const room = useRoom(session, previewWorldId);
   const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useHydrogen } from "../../hooks/useHydrogen";
 
 export function LoginView() {
-  const { platform, client, setSession } = useHydrogen();
+  const { platform, login } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -18,17 +18,8 @@ export function LoginView() {
     setAuthenticating(true);
 
     try {
-      const loginOptions = await client.queryLogin(form.homeserver.value).result;
-
-      // TODO: Handle other login types
-
-      await client.startWithLogin(loginOptions.password(form.username.value, form.password.value));
-
-      if (client.session) {
-        setSession(client.session);
-      } else {
-        setAuthenticating(false);
-      }
+      await login(form.homeserver.value, form.username.value, form.password.value);
+      setAuthenticating(false);
     } catch (error) {
       console.error(error);
       setAuthenticating(false);
