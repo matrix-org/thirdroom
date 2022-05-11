@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import classNames from "classnames";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 
@@ -7,7 +8,7 @@ import "./Tooltip.css";
 
 interface ITooltip {
   className?: string;
-  content: React.ReactNode;
+  content: ReactNode;
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "center" | "end";
   delayDuration?: number;
@@ -15,7 +16,7 @@ interface ITooltip {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   portalled?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function Tooltip({

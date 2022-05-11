@@ -72,7 +72,7 @@ export function SessionView() {
       canvasRef.current?.requestPointerLock();
 
       if (import.meta.env.VITE_USE_TESTNET) {
-        engine?.startTestNet();
+        engine?.connectToTestNet();
         return;
       }
 

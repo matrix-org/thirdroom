@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery } from "bitecs";
+import { addComponent, defineQuery, removeEntity } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import { GameState } from "./engine/GameWorker";
@@ -22,6 +22,7 @@ import {
   // NetworkTransform
 } from "./engine/network";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
+// import { playAudioFromWorker } from "./engine/audio";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
@@ -136,7 +137,7 @@ export async function init(state: GameState): Promise<void> {
     const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
     if (spawnCube.pressed) {
       // const cube = createCube(state);
-      const cube = getPrefabTemplate(state, "red-cube")?.create();
+      const cube = getPrefabTemplate(state, "blue-cube")?.create();
 
       addComponent(state.world, Networked, cube);
       // addComponent(state.world, NetworkTransform, cube);
@@ -152,6 +153,10 @@ export async function init(state: GameState): Promise<void> {
       RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
       addChild(scene, cube);
+
+      setTimeout(() => {
+        removeEntity(state.world, cube);
+      }, 3000);
     }
   };
 
@@ -183,7 +188,7 @@ const spawnPointQuery = defineQuery([SpawnPoint]);
 export async function onStateChange(state: GameState, { joined }: { joined: boolean }) {
   const { scene, world } = state;
 
-  await waitUntil(() => state.network.peerIdMap.has(state.network.peerId));
+  await waitUntil(() => state.network.peerIdToIndex.has(state.network.peerId));
 
   if (joined && !playerRig) {
     const spawnPoints = spawnPointQuery(world);

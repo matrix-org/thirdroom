@@ -21,6 +21,7 @@ import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
+import { useAsyncCallback } from "../hooks/useAsyncCallback";
 
 const defaultHomeServer = "matrix.org";
 
@@ -144,6 +145,27 @@ function initHydrogen() {
   return hydrogenInstance;
 }
 
+async function loadSession(client: Client, session: Session) {
+  await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
+    const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
+
+    return (
+      isCatchupSync ||
+      loadStatus === LoadStatus.LoginFailed ||
+      loadStatus === LoadStatus.Error ||
+      loadStatus === LoadStatus.Ready
+    );
+  });
+
+  const loadStatus = client.loadStatus.get();
+
+  if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
+    await client.startLogout(client.sessionId);
+  }
+
+  await session.callHandler.loadCalls("m.room" as CallIntent);
+}
+
 export function HydrogenRootView() {
   const [session, setSession] = useState<Session>();
 
@@ -171,40 +193,41 @@ export function HydrogenRootView() {
 
     await client.startWithExistingSession(sessionId);
 
-    return client.session;
-  }, [platform, client]);
-
-  const currentSession = session || initialSession;
-
-  const { loading: loadingClient, error: clientLoadError } = useAsync(async () => {
-    if (!currentSession) {
-      return;
-    }
-
-    await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
-      const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
-
-      return (
-        isCatchupSync ||
-        loadStatus === LoadStatus.LoginFailed ||
-        loadStatus === LoadStatus.Error ||
-        loadStatus === LoadStatus.Ready
-      );
-    });
-
-    const loadStatus = client.loadStatus.get();
-
-    if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
+    if (client.session) {
       try {
-        await client.startLogout(client.sessionId);
+        await loadSession(client, client.session);
       } catch (error) {
-        console.error(error);
-        setSession(undefined);
+        console.error("Error loading initial session", error);
+        return undefined;
       }
     }
 
-    await currentSession.callHandler.loadCalls("m.room" as CallIntent);
-  }, [client, currentSession]);
+    return client.session;
+  }, [platform, client]);
+
+  const {
+    loading: loggingIn,
+    error: errorLoggingIn,
+    callback: login,
+  } = useAsyncCallback<(homeserverUrl: string, username: string, password: string) => Promise<void>, void>(
+    async (homeserverUrl, username, password) => {
+      const loginOptions = await client.queryLogin(homeserverUrl).result;
+
+      // TODO: Handle other login types
+
+      await client.startWithLogin(loginOptions.password(username, password));
+
+      if (client.session) {
+        await loadSession(client, client.session);
+        setSession(client.session);
+      } else {
+        throw Error("Unknown error logging in.");
+      }
+    },
+    [client]
+  );
+
+  const currentSession = session || initialSession;
 
   const context = useMemo<HydrogenContext>(
     () => ({
@@ -215,15 +238,15 @@ export function HydrogenRootView() {
       urlRouter,
       logger,
       session: currentSession,
-      setSession,
+      login,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, setSession]
+    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, login]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
 
-  const loading = loadingInitialSession || loadingClient;
-  const error = initialSessionLoadError || clientLoadError;
+  const loading = loadingInitialSession || loggingIn;
+  const error = initialSessionLoadError || errorLoggingIn;
 
   if (loading) {
     return (

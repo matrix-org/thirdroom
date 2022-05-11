@@ -1,5 +1,6 @@
 import { EditorEventType, Selection } from "./editor/editor.common";
 import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
+import { mainAudioSystem, disposeAudioState, initAudioState } from "./audio";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
@@ -64,7 +65,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
 }
 
 export interface Engine {
-  startTestNet(): void;
+  connectToTestNet(): void;
   setHost(value: boolean): void;
   setState(state: any): void;
   setPeerId(peerId: string): void;
@@ -122,6 +123,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   const statsBuffer = createStatsBuffer();
 
+  const audioState = initAudioState(gameWorker);
+
   /* Wait for workers to be ready */
 
   await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
@@ -160,6 +163,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         type: WorkerMessageType.InitializeGameWorker,
         renderableTripleBuffer,
         inputTripleBuffer: inputManager.tripleBuffer,
+        audioTripleBuffer: audioState.tripleBuffer,
         renderWorkerMessagePort,
         resourceManagerBuffer,
         statsSharedArrayBuffer: statsBuffer.buffer,
@@ -351,7 +355,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   function update() {
     inputManager.update();
-
+    mainAudioSystem(audioState);
     animationFrameId = requestAnimationFrame(update);
   }
 
@@ -373,7 +377,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   }
 
   return {
-    startTestNet() {
+    connectToTestNet() {
       ws = new WebSocket("ws://localhost:9090");
       ws.binaryType = "arraybuffer";
 
@@ -553,6 +557,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       inputManager.dispose();
       gameWorker.terminate();
       disposeRenderWorker();
+      disposeAudioState(audioState);
     },
   };
 }

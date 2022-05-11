@@ -1,13 +1,13 @@
+import { RefObject, useEffect } from "react";
 import {
   TimelineView as HydrogenTimelineView,
   TimelineViewModel,
   SimpleTile,
   TileViewConstructor,
 } from "@thirdroom/hydrogen-view-sdk";
-import React, { useEffect } from "react";
 
 export function useEmbedTimeline(
-  host: React.RefObject<HTMLDivElement>,
+  host: RefObject<HTMLDivElement>,
   timelineViewModel: TimelineViewModel,
   viewClassForTile: (vm: SimpleTile) => TileViewConstructor
 ) {

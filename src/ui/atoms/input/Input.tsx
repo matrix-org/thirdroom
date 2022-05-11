@@ -1,3 +1,4 @@
+import { ReactNode, ChangeEvent } from "react";
 import classNames from "classnames";
 
 import "./Input.css";
@@ -8,17 +9,20 @@ interface IInput {
   name?: string;
   placeholder?: string;
   type?: "text" | "password" | "email" | "number" | "search";
-  inputSize?: "sm" | "md";
+  inputSize?: "sm" | "md" | "lg";
   state?: "success" | "error";
   value?: string | number;
   defaultValue?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   required?: boolean;
   autoComplete?: "on" | "off";
   autoFocus?: boolean;
   readonly?: boolean;
   size?: number;
+  maxLength?: number;
+  before?: ReactNode;
+  after?: ReactNode;
 }
 
 export function Input({
@@ -38,28 +42,36 @@ export function Input({
   autoFocus = false,
   readonly,
   size = 1,
+  maxLength,
+  before,
+  after,
 }: IInput) {
-  const inputClass = classNames(`Input Input-${inputSize}`, className, {
+  const inputClass = classNames(`Input Input--${inputSize}`, className, {
     "Input--success": state === "success",
     "Input--error": state === "error",
+    "Input--disabled": disabled,
   });
 
   return (
-    <input
-      className={inputClass}
-      id={id}
-      name={name}
-      placeholder={placeholder}
-      type={type}
-      value={value}
-      defaultValue={defaultValue}
-      onChange={onChange}
-      disabled={disabled}
-      required={required}
-      autoComplete={autoComplete}
-      autoFocus={autoFocus}
-      readOnly={readonly}
-      size={size}
-    />
+    <div className={inputClass}>
+      {before}
+      <input
+        id={id}
+        name={name}
+        placeholder={placeholder}
+        type={type}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        disabled={disabled}
+        required={required}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
+        readOnly={readonly}
+        size={size}
+        maxLength={maxLength}
+      />
+      {after}
+    </div>
   );
 }

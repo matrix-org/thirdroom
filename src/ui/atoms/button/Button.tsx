@@ -1,4 +1,4 @@
-import React from "react";
+import { ReactNode, MouseEvent } from "react";
 import classNames from "classnames";
 
 import { Text } from "../text/Text";
@@ -10,8 +10,8 @@ interface IButton {
   fill?: "solid" | "outline";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   type?: "button" | "submit" | "reset";
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  children: React.ReactNode;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  children: ReactNode;
   disabled?: boolean;
 }
 

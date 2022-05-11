@@ -12,6 +12,7 @@ import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
+import { playAudioFromWorker } from "../audio";
 
 /* Prefab Factories */
 
@@ -74,7 +75,7 @@ export const createCube = (
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
@@ -153,8 +154,8 @@ export function registerDefaultPrefabs(state: GameState) {
   });
   registerPrefab(state, {
     name: "red-cube",
-    create: () =>
-      createCube(
+    create: () => {
+      const eid = createCube(
         state,
         loadRemoteResource(state.resourceManager, {
           type: "geometry",
@@ -167,7 +168,32 @@ export function registerDefaultPrefabs(state: GameState) {
           roughnessFactor: 0.8,
           metallicFactor: 0.8,
         })
-      ),
+      );
+      return eid;
+    },
+  });
+  registerPrefab(state, {
+    name: "musical-cube",
+    create: () => {
+      const eid = createCube(
+        state,
+        loadRemoteResource(state.resourceManager, {
+          type: "geometry",
+          geometryType: GeometryType.Box,
+        }),
+        loadRemoteResource(state.resourceManager, {
+          type: "material",
+          materialType: MaterialType.Physical,
+          baseColorFactor: [1, 0, 0, 1.0],
+          roughnessFactor: 0.8,
+          metallicFactor: 0.8,
+        })
+      );
+
+      playAudioFromWorker("/audio/bach.mp3", eid);
+
+      return eid;
+    },
   });
   registerPrefab(state, {
     name: "green-cube",

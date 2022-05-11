@@ -2,4 +2,5 @@
   width: 400px;
   background-color: var(--bg-surface);
   border-radius: var(--br-xs);
+  overflow: hidden;
 }

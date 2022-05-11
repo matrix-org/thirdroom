@@ -51,6 +51,9 @@ export enum WorkerMessageType {
   ComponentPropertyChanged = "component-property-changed",
   Raycast = "raycast",
   RaycastResults = "raycast-results",
+  PlayAudio = "play-audio",
+  SetAudioListener = "set-audio-listener",
+  SetAudioPeerEntity = "set-audio-peer-entity",
 }
 
 export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> {
@@ -59,6 +62,7 @@ export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> 
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
+  audioTripleBuffer: TripleBufferState;
   inputTripleBuffer: TripleBufferState;
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
@@ -293,6 +297,23 @@ export interface RaycastResultsMessage extends WorkerMessage {
   results: RaycastResult[];
 }
 
+export interface PlayAudioMessage extends WorkerMessage {
+  type: WorkerMessageType.PlayAudio;
+  filepath: string;
+  eid: number;
+}
+
+export interface SetAudioListenerMessage extends WorkerMessage {
+  type: WorkerMessageType.SetAudioListener;
+  eid: number;
+}
+
+export interface SetAudioPeerEntityMessage extends WorkerMessage {
+  type: WorkerMessageType.SetAudioPeerEntity;
+  peerId: string;
+  eid: number;
+}
+
 export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
@@ -335,7 +356,10 @@ export type WorkerMessages =
   | ComponentInfoChangedMessage
   | ComponentPropertyChangedMessage
   | RaycastMessage
-  | RaycastResultsMessage;
+  | RaycastResultsMessage
+  | PlayAudioMessage
+  | SetAudioListenerMessage
+  | SetAudioPeerEntityMessage;
 
 export type RenderableMessages =
   | AddRenderableMessage

@@ -40,7 +40,7 @@ import { GameState } from "../GameWorker";
 import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
 import { NOOP } from "../config";
-import { Player } from "../component/Player";
+import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics";
 
 /* Types */
@@ -67,11 +67,11 @@ export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 
 
 export const createNetworkId = ({ network }: GameState) => {
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  const peerIdIndex = network.peerIdMap.get(network.peerId);
+  const peerIdIndex = network.peerIdToIndex.get(network.peerId);
 
   if (peerIdIndex === undefined) {
-    // console.error("could not create networkId, peerId not set in peerIdMap");
-    throw new Error("could not create networkId, peerId not set in peerIdMap");
+    // console.error("could not create networkId, peerId not set in peerIdToIndex map");
+    throw new Error("could not create networkId, peerId not set in peerIdToIndex map");
   }
 
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
@@ -113,12 +113,10 @@ export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
 // eslint-disable-next-line new-cap
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 
-// todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
+// bitecs todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
 export const networkIdQuery = defineQuery([Networked, Owned]);
 export const createNetworkIdQuery = enterQuery(networkIdQuery);
 export const deleteNetworkIdQuery = exitQuery(networkIdQuery);
-
-export const ownedPlayerQuery = defineQuery([Player, Owned]);
 
 /* Transform serialization */
 
@@ -288,6 +286,7 @@ export function serializeCreates(input: NetPipeData) {
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
+      console.log("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
       console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
     }
@@ -321,7 +320,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   addComponent(state.world, Networked, eid);
   // addComponent(state.world, NetworkTransform, eid);
   Networked.networkId[eid] = nid;
-  state.network.entityIdMap.set(nid, eid);
+  state.network.networkIdToEntityId.set(nid, eid);
 
   addChild(state.scene, eid);
 
@@ -334,7 +333,7 @@ export function deserializeCreates(input: NetPipeData) {
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const prefabName = readString(v);
-    const existingEntity = state.network.entityIdMap.get(nid);
+    const existingEntity = state.network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
     const eid = createRemoteNetworkedEntity(state, nid, prefabName);
     console.log("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
@@ -387,7 +386,7 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
       // continue;
@@ -403,7 +402,7 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
       // continue;
@@ -424,6 +423,7 @@ export function serializeDeletes(input: NetPipeData) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
     writeUint32(v, nid);
+    console.log("serialized deletion for nid", nid, "eid", eid);
   }
   return input;
 }
@@ -433,12 +433,13 @@ export function deserializeDeletes(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = state.network.entityIdMap.get(nid);
+    const eid = state.network.networkIdToEntityId.get(nid);
     if (!eid) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
+      console.log("deserialized deletion for nid", nid, "eid", eid);
       removeEntity(state.world, eid);
-      state.network.entityIdMap.delete(nid);
+      state.network.networkIdToEntityId.delete(nid);
     }
   }
   return input;
@@ -449,7 +450,7 @@ export function deserializeDeletes(input: NetPipeData) {
 // host sends peerIdIndex to new peers
 export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   const [state, v] = input;
-  const peerIdIndex = state.network.peerIdMap.get(peerId);
+  const peerIdIndex = state.network.peerIdToIndex.get(peerId);
 
   console.log("sending peerIdIndex", peerId, peerIdIndex);
   if (peerIdIndex === undefined) {
@@ -472,7 +473,8 @@ export function deserializePeerIdIndex(input: NetPipeData) {
   const encodedPeerId = new Uint8Array(v.buffer, v.cursor, peerIdByteLength);
   const peerId = textDecoder.decode(encodedPeerId);
   const peerIdIndex = readUint8(v);
-  state.network.peerIdMap.set(peerId, peerIdIndex);
+  state.network.peerIdToIndex.set(peerId, peerIdIndex);
+  state.network.indexToPeerId.set(peerIdIndex, peerId);
   console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
@@ -579,7 +581,7 @@ export const broadcastReliable = (packet: ArrayBuffer) => {
   });
 };
 
-export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
+export const broadcastUnreliable = (packet: ArrayBuffer) => {
   postMessage({
     type: WorkerMessageType.UnreliableNetworkBroadcast,
     packet,
@@ -602,52 +604,80 @@ export const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
   });
 };
 
+const assignNetworkIds = (state: GameState) => {
+  const entered = createNetworkIdQuery(state.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    Networked.networkId[eid] = createNetworkId(state) || 0;
+    console.log("networkId", Networked.networkId[eid], "assigned to eid", eid);
+  }
+  return state;
+};
+
+const deleteNetworkIds = (state: GameState) => {
+  const exited = deleteNetworkIdQuery(state.world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    deleteNetworkId(state, Networked.networkId[eid]);
+    Networked.networkId[eid] = NOOP;
+  }
+  return state;
+};
+
+const sendUpdates = (input: NetPipeData) => (state: GameState) => {
+  // only send updates when:
+  // - we have connected peers
+  // - peerIdIndex has been assigned
+  // - player rig has spawned
+  const haveConnectedPeers = state.network.peers.length > 0;
+  const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
+
+  if (haveConnectedPeers && spawnedPlayerRig) {
+    // send snapshot update to all new peers
+    const haveNewPeers = state.network.newPeers.length > 0;
+    if (haveNewPeers) {
+      const snapshotMsg = createFullSnapshotMessage(input);
+      while (state.network.newPeers.length) {
+        const peerId = state.network.newPeers.shift();
+        if (peerId) {
+          // if hosting, broadcast peerIdIndex message
+          if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
+          // send snapshot to peer
+          if (snapshotMsg.byteLength) {
+            sendReliable(peerId, snapshotMsg);
+            // todo: also send this player's NID as an add-player message
+          }
+        }
+      }
+    } else {
+      // reliably send full messages for now
+      const msg = createFullChangedMessage(input);
+      if (msg.byteLength) broadcastReliable(msg);
+    }
+  }
+
+  return state;
+};
+
 export function createOutgoingNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
   const input: NetPipeData = [state, cursorView];
+  const pipeline = pipe(
+    // assign networkIds before serializing game state
+    assignNetworkIds,
+    // serialize and send all outgoing updates
+    sendUpdates(input),
+    // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
+    deleteNetworkIds
+  );
   return function OutgoingNetworkSystem(state: GameState) {
-    const entered = createNetworkIdQuery(state.world);
-    for (let i = 0; i < entered.length; i++) {
-      const eid = entered[i];
-      Networked.networkId[eid] = createNetworkId(state) || 0;
-      console.log("networkId", Networked.networkId[eid], "assigned to eid", eid);
-    }
-    const exited = deleteNetworkIdQuery(state.world);
-    for (let i = 0; i < exited.length; i++) {
-      const eid = exited[i];
-      deleteNetworkId(state, Networked.networkId[eid]);
-      Networked.networkId[eid] = NOOP;
-    }
+    const hasPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
+    if (!hasPeerIdIndex) return state;
 
-    // only send updates when:
-    // - we have connected peers
-    // - peerIdIndex has been assigned
-    // - player rig has spawned
-    const haveConnectedPeers = state.network.peers.length > 0;
-    const receivedPeerIdIndex = state.network.peerIdMap.has(state.network.peerId);
-    const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
+    return pipeline(state);
 
-    if (haveConnectedPeers && receivedPeerIdIndex && spawnedPlayerRig) {
-      // send snapshot update to all new peers
-      const haveNewPeers = state.network.newPeers.length > 0;
-      if (haveNewPeers) {
-        const snapshotMsg = createFullSnapshotMessage(input);
-        while (state.network.newPeers.length) {
-          const peerId = state.network.newPeers.shift();
-          if (peerId) {
-            // broadcast peerIdIndex message if hosting
-            if (state.network.hosting) broadcastReliable(createPeerIdIndexMessage(state, peerId));
-            if (snapshotMsg.byteLength) {
-              sendReliable(peerId, snapshotMsg);
-            }
-          }
-        }
-      } else {
-        // reliably send full messages for now
-        const msg = createFullChangedMessage(input);
-        if (msg.byteLength) broadcastReliable(msg);
-      }
-    }
+    // assignNetworkIds(state);
+    // sendUpdates(state);
 
     // todo: reliably send creates
     // const createMsg = createCreateMessage(input);
@@ -660,6 +690,8 @@ export function createOutgoingNetworkSystem(state: GameState) {
     // todo: unreliably send changed updates
     // const updateMsg = createUpdateChangedMessage(input);
     // broadcastUneliable(state, updateMsg);
+
+    // deleteNetworkIds(state);
   };
 }
 
@@ -678,8 +710,8 @@ const processNetworkMessage = (state: GameState, msg: ArrayBuffer) => {
 };
 
 const processNetworkMessages = (state: GameState) => {
-  while (state.network.messages.length) {
-    const msg = state.network.messages.pop();
+  while (state.network.incoming.length) {
+    const msg = state.network.incoming.pop();
     if (msg) processNetworkMessage(state, msg);
   }
 };
@@ -698,6 +730,9 @@ export function createIncomingNetworkSystem(state: GameState) {
   registerIncomingMessageHandler(state, NetworkMessage.AssignPeerIdIndex, deserializePeerIdIndex);
 
   return function IncomingNetworkSystem(state: GameState) {
+    const hasPeerIdIndex = state.network.peerIdToIndex.has(state.network.peerId);
+    if (!hasPeerIdIndex) return state;
+
     processNetworkMessages(state);
   };
 }

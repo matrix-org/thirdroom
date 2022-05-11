@@ -6,6 +6,8 @@ export const title = "Icon";
 export default function IconStories() {
   return (
     <div className="flex">
+      <Icon color="surface" size="xl" src={HomeIC} />
+      <Icon color="surface" size="lg" src={HomeIC} />
       <Icon color="surface" src={HomeIC} />
       <Icon color="surface-low" src={HomeIC} />
       <Icon color="world" size="sm" src={HomeIC} />

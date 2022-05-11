@@ -1,4 +1,4 @@
-import React from "react";
+import { ReactNode, CSSProperties } from "react";
 import classNames from "classnames";
 import "./Text.css";
 
@@ -18,13 +18,13 @@ export type textColor =
 interface IText {
   id?: string;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   variant?: "h2" | "s1" | "b1" | "b2" | "b3";
   color?: textColor;
   weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "label" | "div";
   htmlFor?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function Text({
