@@ -1,7 +1,15 @@
 import { FormEvent } from "react";
 import { useState } from "react";
 
+import { Text } from "../../atoms/text/Text";
+import { Input } from "../../atoms/input/Input";
+import { Button } from "../../atoms/button/Button";
+import { Label } from "../../atoms/text/Label";
+import { SettingTile } from "../components/setting-tile/SettingTile";
 import { useHydrogen } from "../../hooks/useHydrogen";
+import { Icon } from "../../atoms/icon/Icon";
+import PlanetIC from "../../../../res/ic/planet.svg";
+import "./LoginView.css";
 
 export function LoginView() {
   const { platform, login } = useHydrogen();
@@ -26,22 +34,57 @@ export function LoginView() {
     }
   };
 
-  if (authenticating) {
-    return <p>Login in progress...</p>;
-  }
-
   return (
-    <form style={{ height: "100%" }} className="flex flex-column justify-center items-center" onSubmit={handleLogin}>
-      <label htmlFor="homeserver">Homeserver</label>
-      <input defaultValue={platform.config.defaultHomeServer} name="homeserver" placeholder="homeserver" required />
-      <br />
-      <label htmlFor="username">Username</label>
-      <input name="username" placeholder="username" required />
-      <br />
-      <label htmlFor="password">Password</label>
-      <input name="password" placeholder="password" type="password" required />
-      <br />
-      <button type="submit">Login</button>
-    </form>
+    <div className="LoginView flex justify-center items-center">
+      <div className="LoginView__card grow flex flex-column gap-xl">
+        <div className="flex items-center gap-sm">
+          <Icon src={PlanetIC} size="lg" />
+          <Text variant="h2" weight="bold">
+            Third Room
+          </Text>
+        </div>
+        <form className="LoginView__form flex flex-column gap-md" onSubmit={handleLogin}>
+          <SettingTile
+            label={
+              <Label color="surface-low" htmlFor="homeserver">
+                Homeserver
+              </Label>
+            }
+          >
+            <Input
+              defaultValue={platform.config.defaultHomeServer}
+              name="homeserver"
+              placeholder="matrix.org"
+              disabled={authenticating}
+              required
+            />
+          </SettingTile>
+          <Text variant="s1" weight="bold">
+            Login
+          </Text>
+          <SettingTile
+            label={
+              <Label color="surface-low" htmlFor="username">
+                Username
+              </Label>
+            }
+          >
+            <Input name="username" disabled={authenticating} required />
+          </SettingTile>
+          <SettingTile
+            label={
+              <Label color="surface-low" htmlFor="password">
+                Password
+              </Label>
+            }
+          >
+            <Input name="password" type="password" disabled={authenticating} required />
+          </SettingTile>
+          <Button variant="primary" type="submit" disabled={authenticating}>
+            {authenticating ? "Login in progress..." : "Login"}
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 }
