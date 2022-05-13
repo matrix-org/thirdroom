@@ -1,5 +1,5 @@
 import { useCallback, useState, FormEvent, ChangeEvent } from "react";
-import { RoomVisibility, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+import { RoomVisibility, IBlobHandle, RoomType } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
@@ -63,13 +63,14 @@ export function CreateWorld() {
             },
           };
       const roomBeingCreated = await session.createRoom({
+        type: RoomType.World,
         visibility,
         avatar: avatarInfo,
         name,
         topic,
         alias,
         isEncrypted: false,
-        isFederationDisabled: false,
+        isFederationDisabled: true,
         powerLevelContentOverride: {
           invite: 100,
           kick: 100,
@@ -110,7 +111,7 @@ export function CreateWorld() {
       aliasInput: HTMLInputElement;
     };
     handleCreateWorld({
-      visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Private,
+      visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
       topic: topicInput.value || undefined,
       avatar: !avatarBlob ? undefined : avatarBlob,

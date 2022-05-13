@@ -399,6 +399,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       };
     };
     powerLevelContentOverride?: any;
+    initialState?: any[];
   }
 
   export class Session {
