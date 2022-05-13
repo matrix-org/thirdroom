@@ -347,10 +347,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     mxcUrlThumbnail(url: string, width: number, height: number, method: "crop" | "scale"): string | null;
   }
 
-  export enum RoomType {
+  export enum RoomVisibility {
     DirectMessage,
     Private,
     Public,
+  }
+
+  export enum RoomType {
+    World,
   }
 
   export class RoomBeingCreated extends EventEmitter<any> {
@@ -377,7 +381,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   interface ICreateRoom {
-    type: RoomType;
+    type?: RoomType;
+    visibility: RoomVisibility;
     name?: string;
     topic?: string;
     isEncrypted?: boolean;
