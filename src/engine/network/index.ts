@@ -42,6 +42,9 @@ import { NOOP } from "../config";
 import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics";
 
+// type hack for postMessage(data, transfers) signature in worker
+const worker: Worker = self as any;
+
 /* Types */
 
 export enum NetworkMessage {
@@ -630,7 +633,7 @@ export const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId: string) => {
   //   sendReliable(state, peerId, packet);
   // });
-  postMessage(
+  worker.postMessage(
     {
       type: WorkerMessageType.ReliableNetworkBroadcast,
       packet,
@@ -643,7 +646,7 @@ export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId: string) => {
   //   sendUnreliable(peerId, packet);
   // });
-  postMessage(
+  worker.postMessage(
     {
       type: WorkerMessageType.UnreliableNetworkBroadcast,
       packet,
@@ -655,7 +658,7 @@ export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
 export const sendReliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
   // todo: headers
   // packet = writeHeaders(state, peerId, packet);
-  postMessage(
+  worker.postMessage(
     {
       type: WorkerMessageType.ReliableNetworkMessage,
       peerId,
@@ -666,7 +669,7 @@ export const sendReliable = (state: GameState, peerId: string, packet: ArrayBuff
 };
 
 export const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
-  postMessage(
+  worker.postMessage(
     {
       type: WorkerMessageType.UnreliableNetworkMessage,
       peerId,
@@ -721,6 +724,7 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
           if (snapshotMsg.byteLength) {
             sendReliable(state, theirPeerId, snapshotMsg);
           }
+
           // send this player's NID so remote knows what our player entity is
           playerNetworkIdMessageQueue.push(theirPeerId);
         }

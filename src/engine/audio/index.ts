@@ -190,20 +190,20 @@ export const setAudioListener = (audioState: AudioState, eid: number) => {
 export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
   console.log("setAudioPeerEntity", peerId, eid);
   audioState.peerEntities.set(peerId, eid);
+
+  const mediaStreamSource = audioState.peerMediaStreamSourceMap.get(peerId);
+  if (!mediaStreamSource)
+    return console.error("could not setAudioPeerEntity - mediaStreamSource not found for peer", peerId);
+
+  const panner = audioState.entityPanners.get(eid);
+  if (!panner) return console.error("could not setAudioPeerEntity - panner not found for eid", eid, "peerId", peerId);
+
+  mediaStreamSource.connect(panner);
 };
 
 export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
   const mediaStreamSource = audioState.context.createMediaStreamSource(mediaStream);
   audioState.peerMediaStreamSourceMap.set(peerId, mediaStreamSource);
-
-  const eid = audioState.peerEntities.get(peerId);
-  if (eid) {
-    const panner = audioState.entityPanners.get(eid);
-    if (panner) mediaStreamSource.connect(panner);
-    else console.error("could not setPeerMediaStream - panner not found for eid", eid, "peerId", peerId);
-  } else {
-    console.error("could not setPeerMediaStream - entity not found for peerId", peerId);
-  }
 };
 
 export const bindAudioStateEvents = (audioState: AudioState, gameWorker: Worker) => {
