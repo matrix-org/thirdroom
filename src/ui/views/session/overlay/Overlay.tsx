@@ -1,10 +1,11 @@
+import { useEffect } from "react";
 import classNames from "classnames";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useRoomList } from "../../../hooks/useRoomList";
+import { useRoomsOfType, RoomType } from "../../../hooks/useRoomsOfType";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
@@ -26,13 +27,20 @@ interface OverlayProps {
 
 export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const { session } = useHydrogen(true);
-  const rooms = useRoomList(session);
+  const [rooms, setRoomsType] = useRoomsOfType(session, RoomType.World);
+
   const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
   const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
+
+  useEffect(() => {
+    if (selectedRoomListTab === RoomListTabs.Home) setRoomsType(RoomType.Room);
+    if (selectedRoomListTab === RoomListTabs.Worlds) setRoomsType(RoomType.World);
+    if (selectedRoomListTab === RoomListTabs.Chats) setRoomsType(RoomType.Direct);
+  }, [selectedRoomListTab, setRoomsType]);
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
