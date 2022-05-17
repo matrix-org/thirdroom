@@ -55,7 +55,7 @@ describe("Network Tests", () => {
         },
       } as unknown as GameState;
       const nid = createNetworkId(state);
-      strictEqual(qnid, 0x000f_00ff);
+      strictEqual(nid, 0x000f_00ff);
     });
   });
   describe("tranform serialization", () => {
