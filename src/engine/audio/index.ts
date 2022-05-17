@@ -26,12 +26,11 @@ export interface AudioState {
   entityPanners: Map<number, PannerNode>;
   listenerEntity: number;
   peerEntities: Map<string, number>;
+  peerMediaStreamSourceMap: Map<string, MediaStreamAudioSourceNode>;
   main: {
-    bus: ChannelMergerNode;
     gain: GainNode;
   };
   sample: {
-    bus: ChannelMergerNode;
     gain: GainNode;
     cache: Map<string, AudioBuffer>;
     queue: [string, number?][];
@@ -66,7 +65,7 @@ export const queueAudioBuffer = (audioState: AudioState, filename: string, eid?:
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export const playAudioBuffer = (
-  { context, sample: { bus, gain } }: AudioState,
+  { context, sample: { gain } }: AudioState,
   audioBuffer: AudioBuffer,
   out: AudioNode = gain
 ) => {
@@ -135,14 +134,9 @@ export const createAudioState = (): AudioState => {
   const context = new AudioContext();
 
   const mainGain = new GainNode(context);
-  const mainBus = new ChannelMergerNode(context);
   mainGain.connect(context.destination);
-  // mainBus.connect(mainGain);
 
-  const sampleBus = new ChannelMergerNode(context);
   const sampleGain = new GainNode(context);
-  // sampleBus.connect(sampleGain);
-  // sampleGain.connect(mainBus);
   sampleGain.connect(mainGain);
 
   const sampleCache = new Map<string, AudioBuffer>();
@@ -170,12 +164,11 @@ export const createAudioState = (): AudioState => {
     entityPanners,
     listenerEntity: NOOP,
     peerEntities: new Map(),
+    peerMediaStreamSourceMap: new Map(),
     main: {
-      bus: mainBus,
       gain: mainGain,
     },
     sample: {
-      bus: sampleBus,
       gain: sampleGain,
       cache: sampleCache,
       queue: sampleQueue,
@@ -185,7 +178,7 @@ export const createAudioState = (): AudioState => {
 
 export const preloadDefaultAudio = async (
   audioState: AudioState,
-  defaultAudioFiles: string[] = ["/audio/cricket.ogg"]
+  defaultAudioFiles: string[] = ["/audio/bach.mp3", "/audio/hit.wav"]
 ) => {
   defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
 };
@@ -197,6 +190,20 @@ export const setAudioListener = (audioState: AudioState, eid: number) => {
 export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
   console.log("setAudioPeerEntity", peerId, eid);
   audioState.peerEntities.set(peerId, eid);
+};
+
+export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
+  const mediaStreamSource = audioState.context.createMediaStreamSource(mediaStream);
+  audioState.peerMediaStreamSourceMap.set(peerId, mediaStreamSource);
+
+  const eid = audioState.peerEntities.get(peerId);
+  if (eid) {
+    const panner = audioState.entityPanners.get(eid);
+    if (panner) mediaStreamSource.connect(panner);
+    else console.error("could not setPeerMediaStream - panner not found for eid", eid, "peerId", peerId);
+  } else {
+    console.error("could not setPeerMediaStream - entity not found for peerId", peerId);
+  }
 };
 
 export const bindAudioStateEvents = (audioState: AudioState, gameWorker: Worker) => {
