@@ -43,16 +43,18 @@ import { gameAudioSystem } from "./audio";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
+const mapPeerIdAndIndex = (state: GameState, peerId: string) => {
+  const peerIdIndex = state.network.peerIdCount++;
+  state.network.peerIdToIndex.set(peerId, peerIdIndex);
+  state.network.indexToPeerId.set(peerIdIndex, peerId);
+};
+
 const addPeerId = (state: GameState, peerId: string) => {
   if (state.network.peers.includes(peerId) || state.network.peerId === peerId) return;
 
   state.network.peers.push(peerId);
   state.network.newPeers.push(peerId);
-  if (state.network.hosting) {
-    const peerIdIndex = state.network.peerIdCount++;
-    state.network.peerIdToIndex.set(peerId, peerIdIndex);
-    state.network.indexToPeerId.set(peerIdIndex, peerId);
-  }
+  if (state.network.hosting) mapPeerIdAndIndex(state, peerId);
 };
 
 const removePeerId = (state: GameState, peerId: string) => {
@@ -70,7 +72,11 @@ const removePeerId = (state: GameState, peerId: string) => {
 
 const setPeerId = (state: GameState, peerId: string) => {
   state.network.peerId = peerId;
-  if (state.network.hosting) state.network.peerIdToIndex.set(peerId, state.network.peerIdCount++);
+  if (state.network.hosting) mapPeerIdAndIndex(state, peerId);
+};
+
+const setHost = (state: GameState, value: boolean) => {
+  state.network.hosting = value;
 };
 
 const onMessage =
@@ -123,7 +129,7 @@ const onMessage =
         onStateChange(state, message.state);
         break;
       case WorkerMessageType.SetHost:
-        state.network.hosting = message.value;
+        setHost(state, message.value);
         break;
       case WorkerMessageType.LoadEditor:
         onLoadEditor(state);

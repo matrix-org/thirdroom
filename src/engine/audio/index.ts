@@ -3,10 +3,9 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
 import { renderableBuffer } from "../component/buffers";
-import { enteredOwnedPlayerQuery, enteredRemotePlayerQuery } from "../component/Player";
+import { enteredOwnedPlayerQuery } from "../component/Player";
 import { maxEntities, NOOP } from "../config";
 import { GameState } from "../GameWorker";
-import { getPeerIdFromNetworkId, Networked } from "../network";
 import { TransformView } from "../RenderWorker";
 import {
   copyToWriteBuffer,
@@ -196,6 +195,7 @@ export const setAudioListener = (audioState: AudioState, eid: number) => {
 };
 
 export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
+  console.log("setAudioPeerEntity", peerId, eid);
   audioState.peerEntities.set(peerId, eid);
 };
 
@@ -329,18 +329,19 @@ export const sendPlayerEntitiesToMain = (gameState: GameState) => {
     });
   }
   // todo: add Player component to new player entities coming in through the network
-  const newRemotePlayers = enteredRemotePlayerQuery(gameState.world);
-  for (let i = 0; i < newRemotePlayers.length; i++) {
-    const eid = newRemotePlayers[i];
-    const nid = Networked.networkId[eid];
-    const peerIdIndex = getPeerIdFromNetworkId(nid);
-    postMessage({
-      type: WorkerMessageType.SetAudioPeerEntity,
-      // todo: main<->game messages reference peerId via peerIdIndex
-      peerId: gameState.network.indexToPeerId.get(peerIdIndex),
-      eid,
-    });
-  }
+  // const newRemotePlayers = enteredRemotePlayerQuery(gameState.world);
+  // for (let i = 0; i < newRemotePlayers.length; i++) {
+  //   const eid = newRemotePlayers[i];
+  //   const nid = Networked.networkId[eid];
+  //   const peerIdIndex = getPeerIdFromNetworkId(nid);
+  //   console.log("#sendPlayerEntitiesToMain() - WorkerMessageType.SetAudioPeerEntity");
+  //   postMessage({
+  //     type: WorkerMessageType.SetAudioPeerEntity,
+  //     // todo: main<->game messages reference peerId via peerIdIndex
+  //     peerId: gameState.network.indexToPeerId.get(peerIdIndex),
+  //     eid,
+  //   });
+  // }
 };
 
 export const gameAudioSystem: (gameState: GameState) => GameState = pipe(
