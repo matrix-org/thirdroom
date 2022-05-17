@@ -70,7 +70,7 @@ export function CreateWorld() {
         topic,
         alias,
         isEncrypted: false,
-        isFederationDisabled: true,
+        isFederationDisabled: false,
         powerLevelContentOverride: {
           invite: 100,
           kick: 100,
