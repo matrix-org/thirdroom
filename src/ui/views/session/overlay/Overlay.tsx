@@ -1,11 +1,9 @@
-import { useEffect } from "react";
 import classNames from "classnames";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useRoomsOfType, RoomType } from "../../../hooks/useRoomsOfType";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
@@ -19,6 +17,10 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
+import { RoomListHome } from "../sidebar/RoomListHome";
+import { RoomListWorld } from "../sidebar/RoomListWorlds";
+import { RoomListChats } from "../sidebar/RoomListChats";
+import { RoomListFriends } from "../sidebar/RoomListFriends";
 
 interface OverlayProps {
   onLoadWorld: (room: Room) => Promise<void>;
@@ -27,20 +29,12 @@ interface OverlayProps {
 
 export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const { session } = useHydrogen(true);
-  const [rooms, setRoomsType] = useRoomsOfType(session, RoomType.World);
 
   const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
   const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
-  const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
-  const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
-
-  useEffect(() => {
-    if (selectedRoomListTab === RoomListTabs.Home) setRoomsType(RoomType.Room);
-    if (selectedRoomListTab === RoomListTabs.Worlds) setRoomsType(RoomType.World);
-    if (selectedRoomListTab === RoomListTabs.Chats) setRoomsType(RoomType.Direct);
-  }, [selectedRoomListTab, setRoomsType]);
+  const { selectedWindow } = useStore((state) => state.overlayWindow);
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
@@ -51,13 +45,12 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
             <RoomListView
               header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
               content={
-                <RoomListContent
-                  selectedTab={selectedRoomListTab}
-                  rooms={rooms}
-                  selectedRoomId={selectedRoomListTab === RoomListTabs.Chats ? selectedChatId : selectedWorldId}
-                  onSelectRoom={selectedRoomListTab === RoomListTabs.Chats ? selectChat : selectWorld}
-                  onCreateWorld={() => selectWindow(OverlayWindow.CreateWorld)}
-                />
+                <RoomListContent>
+                  {selectedRoomListTab === RoomListTabs.Home && <RoomListHome />}
+                  {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld />}
+                  {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
+                  {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
+                </RoomListContent>
               }
             />
           )

@@ -516,6 +516,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export class BaseRoom extends EventEmitter<any> {
     constructor(roomOptions: RoomOptions);
+    getStateEvent(type: string, key?: string): any;
     notifyRoomKey(roomKey: RoomKey, eventIds: string[], log?: any): Promise<void>;
     load(summary: any, txn: any, log: any): Promise<void>;
     observeMember(userId: string): Promise<RetainedObservableValue<RoomMember> | null>;
@@ -525,6 +526,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get id(): RoomId;
     get avatarUrl(): string | null;
     get avatarColorId(): string;
+    get type(): string | undefined;
     get lastMessageTimestamp(): number;
     get isLowPriority(): boolean;
     get isEncrypted(): boolean;
@@ -534,6 +536,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get joinedMemberCount(): number;
     get mediaRepository(): MediaRepository;
     get membership(): any;
+    get isDirectMessage(): boolean;
     isDirectMessageForUserId(userId: string): boolean;
     observePowerLevels(): Promise<RetainedObservableValue<PowerLevels>>;
     enableKeyBackup(keyBackup: boolean): void;

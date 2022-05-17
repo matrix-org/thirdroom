@@ -7,22 +7,22 @@ function roomListComparator(a: Room, b: Room) {
   return b.lastMessageTimestamp - a.lastMessageTimestamp;
 }
 
-export enum RoomType {
-  Room = "m.room",
-  Direct = "m.direct",
-  World = "m.world",
+export enum RoomTypes {
+  World,
+  Room,
+  Direct,
 }
 
-export function useRoomsOfType(session: Session, initialType: RoomType): [Room[], (type: RoomType) => void] {
+export function useRoomsOfType(session: Session, initialType: RoomTypes): [Room[], (type: RoomTypes) => void] {
   const [type, setType] = useState(initialType);
 
   return [
     useObservableList(() => {
       const roomFilter = (room: Room) => {
-        // TODO:
-        if (type === RoomType.Direct) return true;
-        if (type === RoomType.World) return true;
-        return true;
+        if (type === RoomTypes.World) return room.type === "org.matrix.msc3815.world";
+        if (type === RoomTypes.Room && !room.type) return true;
+        if (type === RoomTypes.Direct) return room.isDirectMessage;
+        return false;
       };
       return session.rooms.filterValues(roomFilter).sortValues(roomListComparator);
     }, [session.rooms, type]),
