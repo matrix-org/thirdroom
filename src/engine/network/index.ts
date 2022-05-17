@@ -67,7 +67,7 @@ const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1
 export const getPeerIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
-// hack
+// hack - could also temporarily send whole peerId string to avoid potential collisions
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 const peerIdIndex = rndRange(0, 0xffff);
 export const createNetworkId = ({ network }: GameState) => {
@@ -732,6 +732,7 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
     }
   }
 
+  // this arrives before creation messages despite being sent after
   while (playerNetworkIdMessageQueue.length) {
     const otherPeerId = playerNetworkIdMessageQueue.shift();
     if (otherPeerId) sendReliable(state, otherPeerId, createPlayerNetworkIdMessage(state, state.network.peerId));
