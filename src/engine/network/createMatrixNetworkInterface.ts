@@ -157,9 +157,6 @@ export function createMatrixNetworkInterface(
         if (member.isConnected && member.dataChannel && !engine.hasPeer(member.userId)) {
           updateHost();
           engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia as unknown as MediaStream);
-        } else if (engine.hasPeer(member.userId)) {
-          // engine.removePeer(member.userId);
-          // console.log("onRemove (exists)", member);
         }
       },
     });
