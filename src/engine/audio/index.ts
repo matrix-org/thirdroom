@@ -198,7 +198,8 @@ export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: 
   const panner = audioState.entityPanners.get(eid);
   if (!panner) return console.error("could not setAudioPeerEntity - panner not found for eid", eid, "peerId", peerId);
 
-  mediaStreamSource.connect(panner);
+  // mediaStreamSource.connect(panner);
+  mediaStreamSource.connect(audioState.context.destination);
 };
 
 export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
