@@ -188,7 +188,6 @@ export const setAudioListener = (audioState: AudioState, eid: number) => {
 };
 
 export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
-  console.log("setAudioPeerEntity", peerId, eid);
   audioState.peerEntities.set(peerId, eid);
 
   const mediaStreamSource = audioState.peerMediaStreamSourceMap.get(peerId);
