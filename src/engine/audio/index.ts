@@ -202,7 +202,12 @@ export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: 
 };
 
 export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
-  // console.log(mediaStream);
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+  const audioEl = document.createElement("audio");
+  audioEl.srcObject = mediaStream;
+  audioEl.play();
+  audioEl.muted = true;
+
   const mediaStreamSource = audioState.context.createMediaStreamSource(mediaStream);
   audioState.peerMediaStreamSourceMap.set(peerId, mediaStreamSource);
 };
