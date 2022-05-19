@@ -57,6 +57,7 @@ export enum NetworkMessage {
   Prefab,
   AssignPeerIdIndex,
   InformPlayerNetworkId,
+  NewPeerSnapshot,
 }
 
 const writeMessageType = writeUint8;
@@ -351,16 +352,13 @@ export function deserializeCreates(input: NetPipeData) {
 export function serializeUpdatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const entities = ownedNetworkedQuery(state.world);
-  const writeCount = spaceUint32(v);
-  let count = 0;
+  writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
     writeUint32(v, nid);
     serializeTransformSnapshot(v, eid);
-    count += 1;
   }
-  writeCount(count);
   return input;
 }
 
@@ -707,8 +705,6 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
   const haveConnectedPeers = state.network.peers.length > 0;
   const spawnedPlayerRig = ownedPlayerQuery(state.world).length > 0;
 
-  const playerNetworkIdMessageQueue = [];
-
   if (haveConnectedPeers && spawnedPlayerRig) {
     // send snapshot update to all new peers
     const haveNewPeers = state.network.newPeers.length > 0;
@@ -726,7 +722,8 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
           }
 
           // send this player's NID so remote knows what our player entity is
-          playerNetworkIdMessageQueue.push(theirPeerId);
+          // todo: this arrives before creation messages despite being sent after
+          sendReliable(state, theirPeerId, createPlayerNetworkIdMessage(state, state.network.peerId));
         }
       }
     } else {
@@ -734,12 +731,6 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
       const msg = createFullChangedMessage(input);
       if (msg.byteLength) broadcastReliable(state, msg);
     }
-  }
-
-  // this arrives before creation messages despite being sent after
-  while (playerNetworkIdMessageQueue.length) {
-    const otherPeerId = playerNetworkIdMessageQueue.shift();
-    if (otherPeerId) sendReliable(state, otherPeerId, createPlayerNetworkIdMessage(state, state.network.peerId));
   }
 
   return state;
@@ -836,7 +827,7 @@ const applyNetworkTransformToRigidBodyAndTransform = (body: RapierRigidBody, eid
 };
 
 export function NetworkTransformSystem({ world }: GameState) {
-  // apply network transform to the rigidbody for remote networked entities
+  // lerp rigidbody towards network transform remote networked entities
   const remoteRigidBodyEntities = remoteRigidBodyQuery(world);
   for (let i = 0; i < remoteRigidBodyEntities.length; i++) {
     const eid = remoteRigidBodyEntities[i];
