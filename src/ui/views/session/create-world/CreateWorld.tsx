@@ -18,6 +18,7 @@ import { Window } from "../../components/window/Window";
 import { WindowHeader } from "../../components/window/WindowHeader";
 import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
+import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
 import { getImageDimension } from "../../../utils/common";
@@ -28,6 +29,8 @@ import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import "./CreateWorld.css";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
+import { WindowFooter } from "../../components/window/WindowFooter";
+import { Content } from "../../../atoms/content/Content";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -94,6 +97,15 @@ export function CreateWorld() {
             [session.userId]: 100,
           },
         },
+        initialState: [
+          {
+            type: "m.world",
+            content: {
+              scene_url: "mxc://example/scene.glb",
+              scene_preview_url: "mxc://example/thumbnail.jpeg",
+            },
+          },
+        ],
       });
 
       navigate(`/world/${roomBeingCreated.id}`);
@@ -139,97 +151,121 @@ export function CreateWorld() {
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
   return (
-    <Window
-      className="grow"
-      header={
-        <WindowHeader
-          left={
-            <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
-              Create World
-            </WindowHeaderTitle>
-          }
-          right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
-        />
-      }
-    >
-      <WindowContent aside=" ">
-        <Scroll>
-          <form className="CreateWorld__content" onSubmit={handleSubmit}>
-            <SettingTile label={<Label>World Avatar</Label>}>
-              <ThumbnailHover
-                content={
-                  !avatarBlob ? undefined : (
-                    <IconButton
-                      variant="world"
-                      onClick={() => {
-                        setAvatarBlob(undefined);
-                      }}
-                      size="xl"
-                      iconSrc={CrossCircleIC}
-                      label="Remove world avatar"
-                    />
-                  )
-                }
-              >
-                <Thumbnail size="sm" className="flex">
-                  {avatarBlob ? (
-                    <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
-                  ) : (
-                    <IconButton
-                      onClick={async () => {
-                        const data = await platform.openFile("image/*");
-                        if (!data) return;
-                        setAvatarBlob(data.blob);
-                      }}
-                      size="xl"
-                      iconSrc={AddIC}
-                      label="Add world avatar"
-                    />
-                  )}
-                </Thumbnail>
-              </ThumbnailHover>
-            </SettingTile>
-            <div className="flex gap-lg">
-              <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
-                <Input name="nameInput" required />
-              </SettingTile>
-              <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-                <Switch name="isPrivateInput" defaultChecked={true} />
-              </SettingTile>
-            </div>
-            <div className="flex gap-lg">
-              <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
-                <Input name="topicInput" />
-              </SettingTile>
-              <SettingTile
-                className="grow basis-0"
-                label={
-                  <Label color={isAliasAvail ? "secondary" : isAliasAvail === false ? "danger" : undefined}>
-                    {isAliasAvail ? "Alias (Available)" : isAliasAvail === false ? "Alias (Already in use)" : "Alias"}
-                  </Label>
-                }
-              >
-                <Input
-                  name="aliasInput"
-                  state={isAliasAvail ? "success" : isAliasAvail === false ? "error" : undefined}
-                  onChange={handleAliasChange}
-                  maxLength={255 - (userHSDomain.length + 2) /*for -> #:*/}
-                  before={<Text variant="b2">#</Text>}
-                  after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
-                />
-              </SettingTile>
-            </div>
-            <div className="flex gap-md">
-              <Button fill="outline" onClick={() => selectWindow()}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isAliasAvail === false}>
+    <Window className="grow">
+      <Content
+        onSubmit={handleSubmit}
+        top={
+          <WindowHeader
+            left={
+              <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
                 Create World
-              </Button>
-            </div>
-          </form>
-        </Scroll>
-      </WindowContent>
+              </WindowHeaderTitle>
+            }
+            right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
+          />
+        }
+      >
+        <WindowContent
+          children={
+            <Content
+              children={
+                <Scroll>
+                  <div className="CreateWorld__content">
+                    <SettingTile label={<Label>World Avatar</Label>}>
+                      <ThumbnailHover
+                        content={
+                          !avatarBlob ? undefined : (
+                            <IconButton
+                              variant="world"
+                              onClick={() => {
+                                setAvatarBlob(undefined);
+                              }}
+                              size="xl"
+                              iconSrc={CrossCircleIC}
+                              label="Remove world avatar"
+                            />
+                          )
+                        }
+                      >
+                        <Thumbnail size="sm" className="flex">
+                          {avatarBlob ? (
+                            <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
+                          ) : (
+                            <IconButton
+                              onClick={async () => {
+                                const data = await platform.openFile("image/*");
+                                if (!data) return;
+                                setAvatarBlob(data.blob);
+                              }}
+                              size="xl"
+                              iconSrc={AddIC}
+                              label="Add world avatar"
+                            />
+                          )}
+                        </Thumbnail>
+                      </ThumbnailHover>
+                    </SettingTile>
+                    <div className="flex gap-lg">
+                      <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
+                        <Input name="nameInput" required />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                        <Switch name="isPrivateInput" defaultChecked={true} />
+                      </SettingTile>
+                    </div>
+                    <div className="flex gap-lg">
+                      <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
+                        <Input name="topicInput" />
+                      </SettingTile>
+                      <SettingTile
+                        className="grow basis-0"
+                        label={
+                          <Label color={isAliasAvail ? "secondary" : isAliasAvail === false ? "danger" : undefined}>
+                            {isAliasAvail
+                              ? "Alias (Available)"
+                              : isAliasAvail === false
+                              ? "Alias (Already in use)"
+                              : "Alias"}
+                          </Label>
+                        }
+                      >
+                        <Input
+                          name="aliasInput"
+                          state={isAliasAvail ? "success" : isAliasAvail === false ? "error" : undefined}
+                          onChange={handleAliasChange}
+                          maxLength={255 - (userHSDomain.length + 2) /*for -> #:*/}
+                          before={<Text variant="b2">#</Text>}
+                          after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
+                        />
+                      </SettingTile>
+                    </div>
+                  </div>
+                </Scroll>
+              }
+              bottom={
+                <WindowFooter
+                  left={
+                    <Button fill="outline" onClick={() => selectWindow()}>
+                      Cancel
+                    </Button>
+                  }
+                  right={
+                    <Button type="submit" disabled={isAliasAvail === false}>
+                      Create World
+                    </Button>
+                  }
+                />
+              }
+            />
+          }
+          aside={
+            <WindowAside className="flex">
+              <Button>Upload Thumbnail</Button>
+              <Button>Upload Scene</Button>
+            </WindowAside>
+          }
+        />
+      </Content>
     </Window>
   );
 }

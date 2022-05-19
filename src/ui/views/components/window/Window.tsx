@@ -6,17 +6,11 @@ import "./Window.css";
 
 interface WindowProps {
   className?: string;
-  header: ReactNode;
-  footer?: ReactNode;
   children: ReactNode;
 }
 
-export function Window({ className, header, footer, children }: WindowProps) {
+export function Window({ className, children }: WindowProps) {
   const windowClass = classNames("Window", className);
 
-  return (
-    <Content className={windowClass} top={header} bottom={footer}>
-      {children}
-    </Content>
-  );
+  return <Content className={windowClass}>{children}</Content>;
 }

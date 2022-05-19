@@ -6,20 +6,16 @@ import "./WindowContent.css";
 
 interface WindowContentProps {
   className?: string;
-  header?: ReactNode;
-  footer?: ReactNode;
-  aside?: ReactNode;
   children: ReactNode;
+  aside?: ReactNode;
 }
 
-export function WindowContent({ className, header, footer, aside, children }: WindowContentProps) {
+export function WindowContent({ className, children, aside }: WindowContentProps) {
   const contentClass = classNames("WindowContent flex", className);
 
   return (
     <div className={contentClass}>
-      <Content className="WindowContent__main grow" top={header} bottom={footer}>
-        {children}
-      </Content>
+      <Content className="WindowContent__main grow">{children}</Content>
       {aside && <aside className="WindowContent__aside">{aside}</aside>}
     </div>
   );

@@ -497,6 +497,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get sentBytes(): number;
     abort(): void;
     get localPreview(): Blob;
+    upload(hsApi: HomeServerApi, progressCallback: () => void, log?: any): Promise<void>;
     dispose(): void;
   }
 
