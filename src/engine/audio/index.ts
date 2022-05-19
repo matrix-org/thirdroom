@@ -205,7 +205,8 @@ export const setPeerMediaStream = (audioState: AudioState, peerId: string, media
     // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
     const audioEl = document.createElement("audio");
     audioEl.srcObject = mediaStream;
-    audioEl.play();
+    audioEl.setAttribute("autoplay", "autoplay");
+    audioEl.setAttribute("playsinline", "playsinline");
     audioEl.muted = true;
   }
 
