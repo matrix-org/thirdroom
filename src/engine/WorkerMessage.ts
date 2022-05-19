@@ -68,6 +68,7 @@ export interface InitializeGameWorkerMessage extends WorkerMessage {
   renderWorkerMessagePort?: MessagePort;
   resourceManagerBuffer: SharedArrayBuffer;
   statsSharedArrayBuffer: SharedArrayBuffer;
+  hierarchyTripleBuffer: TripleBufferState;
 }
 
 export interface GameWorkerInitializedMessage extends WorkerMessage {
@@ -265,11 +266,10 @@ export interface SetComponentPropertyMessage extends WorkerMessage {
 
 export interface SelectionChangedMessage extends WorkerMessage {
   type: WorkerMessageType.SelectionChanged;
-  selection: {
-    entities: number[];
-    components: number[];
-  };
-  initialValues: Map<number, ComponentPropertyValue>;
+  selectedEntities: number[];
+  activeEntity?: number;
+  activeEntityComponents?: number[];
+  activeEntityTripleBuffer?: TripleBufferState;
 }
 
 export interface ComponentInfoChangedMessage extends WorkerMessage {

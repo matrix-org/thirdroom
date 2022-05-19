@@ -264,6 +264,7 @@ async function onInit({
   renderWorkerMessagePort,
   renderableTripleBuffer,
   statsSharedArrayBuffer,
+  hierarchyTripleBuffer,
 }: InitializeGameWorkerMessage): Promise<GameState> {
   const renderPort = renderWorkerMessagePort || workerScope;
 
@@ -347,7 +348,7 @@ async function onInit({
     preSystems: [],
     postSystems: [],
     statsBuffer,
-    editorState: initEditorState(),
+    editorState: initEditorState(hierarchyTripleBuffer),
     raycaster: createRaycasterState(),
     messageHandlers: {},
   };

@@ -12,7 +12,17 @@ import {
   WorkerMessages,
   WorkerMessageType,
   PostMessageTarget,
+  InitializeGameWorkerMessage,
 } from "./WorkerMessage";
+import {
+  createMainThreadEditorState,
+  disposeEditor,
+  initEditorMainThread,
+  loadEditor,
+  mainEditorSystem,
+  removeComponent,
+  setComponentProperty,
+} from "./editor/editor.main";
 
 export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
@@ -96,13 +106,6 @@ export interface Engine {
   dispose(): void;
 }
 
-interface EditorState {
-  selection: Selection;
-  componentInfoMap: Map<number, ComponentInfo>;
-  componentProperties: Map<number, any>;
-  eventListeners: Map<string, ((...args: any[]) => void)[]>;
-}
-
 export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const inputManager = createInputManager(canvas);
   const gameWorker = new GameWorker();
@@ -124,6 +127,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const statsBuffer = createStatsBuffer();
 
   const audioState = initAudioState(gameWorker);
+
+  const editorState = createMainThreadEditorState();
 
   /* Wait for workers to be ready */
 
@@ -167,7 +172,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         renderWorkerMessagePort,
         resourceManagerBuffer,
         statsSharedArrayBuffer: statsBuffer.buffer,
-      },
+        hierarchyTripleBuffer: editorState.hierarchyTripleBuffer,
+      } as InitializeGameWorkerMessage,
       renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
     );
 
@@ -213,6 +219,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   renderWorker.addEventListener("message", onRenderWorkerMessage);
 
   /* Game Worker Messages */
+
+  initEditorMainThread(editorState, gameWorker);
 
   const onPeerMessage = ({ data }: { data: ArrayBuffer }) => {
     gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
@@ -265,53 +273,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     }
   };
 
-  /* Editor Messages */
-
-  const editorState: EditorState = {
-    selection: { entities: [], components: [] },
-    componentInfoMap: new Map(),
-    componentProperties: new Map(),
-    eventListeners: new Map(),
-  };
-
-  function emitEditorEvent(type: EditorEventType, ...args: any[]) {
-    const listeners = editorState.eventListeners.get(type);
-
-    if (!listeners) {
-      return;
-    }
-
-    for (const listener of listeners) {
-      listener(...args);
-    }
-  }
-
-  function onEditorLoaded(componentInfos: [number, ComponentInfo][]) {
-    editorState.componentInfoMap = new Map(componentInfos);
-    emitEditorEvent(EditorEventType.EditorLoaded);
-  }
-
-  function onSelectionChanged(selection: Selection, initialValues: Map<number, any>) {
-    editorState.selection = selection;
-    editorState.componentProperties = initialValues;
-
-    emitEditorEvent(EditorEventType.SelectionChanged, selection);
-
-    for (const [propertyId, value] of initialValues) {
-      emitEditorEvent(EditorEventType.ComponentPropertyChanged, propertyId, value);
-    }
-  }
-
-  function onComponentInfoChanged(componentId: number, componentInfo: ComponentInfo) {
-    editorState.componentInfoMap.set(componentId, componentInfo);
-    emitEditorEvent(EditorEventType.ComponentInfoChanged, componentId, componentInfo);
-  }
-
-  function onComponentPropertyChanged(propertyId: number, value: any) {
-    editorState.componentProperties.set(propertyId, value);
-    emitEditorEvent(EditorEventType.ComponentPropertyChanged, propertyId, value);
-  }
-
   const onGameWorkerMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
       return;
@@ -332,18 +293,6 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       case WorkerMessageType.UnreliableNetworkBroadcast:
         broadcastUnreliable(message.packet);
         break;
-      case WorkerMessageType.EditorLoaded:
-        onEditorLoaded(message.componentInfos);
-        break;
-      case WorkerMessageType.SelectionChanged:
-        onSelectionChanged(message.selection, message.initialValues);
-        break;
-      case WorkerMessageType.ComponentInfoChanged:
-        onComponentInfoChanged(message.componentId, message.componentInfo);
-        break;
-      case WorkerMessageType.ComponentPropertyChanged:
-        onComponentPropertyChanged(message.propertyId, message.value);
-        break;
     }
   };
 
@@ -356,6 +305,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   function update() {
     inputManager.update();
     mainAudioSystem(audioState);
+    mainEditorSystem(editorState);
     animationFrameId = requestAnimationFrame(update);
   }
 
@@ -490,41 +440,29 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       });
     },
     loadEditor() {
-      gameWorker.postMessage({
-        type: WorkerMessageType.LoadEditor,
-      });
+      loadEditor(gameWorker);
     },
     disposeEditor() {
-      editorState.selection = { entities: [], components: [] };
-      editorState.componentInfoMap.clear();
-      editorState.componentProperties.clear();
-      gameWorker.postMessage({
-        type: WorkerMessageType.DisposeEditor,
-      });
+      disposeEditor(editorState, gameWorker);
     },
     getSelection(): Selection {
-      return editorState.selection;
+      return {
+        activeEntity: editorState.activeEntity,
+        activeEntityComponents: editorState.activeEntityComponents,
+        selectedEntities: editorState.selectedEntities,
+      };
     },
     getComponentInfo(componentId: number): ComponentInfo | undefined {
       return editorState.componentInfoMap.get(componentId);
     },
     removeComponent(componentId: number): void {
-      gameWorker.postMessage({
-        type: WorkerMessageType.RemoveComponent,
-        entities: editorState.selection.entities,
-        componentId,
-      });
+      removeComponent(editorState, gameWorker, componentId);
     },
     getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined {
       return editorState.componentProperties.get(propertyId);
     },
     setComponentProperty<T>(propertyId: number, value: T): void {
-      gameWorker.postMessage({
-        type: WorkerMessageType.SetComponentProperty,
-        entities: editorState.selection.entities,
-        propertyId,
-        value,
-      });
+      setComponentProperty(editorState, gameWorker, propertyId, value);
     },
     addListener(type: EditorEventType, listener: (...args: any[]) => void): void {
       const listeners = editorState.eventListeners.get(type) || [];

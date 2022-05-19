@@ -1,7 +1,7 @@
 import { addComponent, addEntity, IComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { gameBuffer, renderableBuffer } from "./buffers";
+import { gameBuffer, renderableBuffer, hierarchyBuffer } from "./buffers";
 import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config";
 import { GameState, World } from "../GameWorker";
@@ -23,6 +23,7 @@ export interface Transform extends IComponent {
   firstChild: Uint32Array;
   prevSibling: Uint32Array;
   nextSibling: Uint32Array;
+  hierarchyUpdated: Uint8Array;
 }
 
 export const Transform: Transform = {
@@ -36,10 +37,11 @@ export const Transform: Transform = {
   static: addView(gameBuffer, Uint8Array, maxEntities),
   worldMatrixNeedsUpdate: addView(renderableBuffer, Uint8Array, maxEntities),
 
-  parent: addView(gameBuffer, Uint32Array, maxEntities),
-  firstChild: addView(gameBuffer, Uint32Array, maxEntities),
-  prevSibling: addView(gameBuffer, Uint32Array, maxEntities),
-  nextSibling: addView(gameBuffer, Uint32Array, maxEntities),
+  parent: addView(hierarchyBuffer, Uint32Array, maxEntities),
+  firstChild: addView(hierarchyBuffer, Uint32Array, maxEntities),
+  prevSibling: addView(hierarchyBuffer, Uint32Array, maxEntities),
+  nextSibling: addView(hierarchyBuffer, Uint32Array, maxEntities),
+  hierarchyUpdated: addView(hierarchyBuffer, Uint8Array, maxEntities),
 };
 
 export function registerTransformComponent(state: GameState) {
@@ -71,6 +73,7 @@ export function addTransformComponent(world: World, eid: number) {
   mat4.identity(Transform.localMatrix[eid]);
   mat4.identity(Transform.worldMatrix[eid]);
   Transform.worldMatrixNeedsUpdate[eid] = 1;
+  Transform.hierarchyUpdated[eid] = 1;
 }
 
 export function createTransformEntity(world: World) {
