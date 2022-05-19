@@ -27,7 +27,7 @@
     "@radix-ui/react-scroll-area": "^0.1.4",
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
-    "@thirdroom/hydrogen-view-sdk": "0.0.8",
+    "@thirdroom/hydrogen-view-sdk": "0.0.9",
     "bitecs": "^0.3.38",
     "classnames": "^2.3.1",
     "gl-matrix": "^3.4.3",
