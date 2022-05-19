@@ -93,9 +93,9 @@ export const createRawCube = (
   const materialResourceId = loadRemoteResource(resourceManager, {
     type: "material",
     materialType: MaterialType.Physical,
-    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-    roughnessFactor: 0.8,
-    metallicFactor: 0.8,
+    baseColorFactor: [1, 1, 1, 1.0],
+    roughnessFactor: 0.1,
+    metallicFactor: 0.9,
   });
 
   const resourceId = loadRemoteResource(resourceManager, {
@@ -115,13 +115,13 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
 
+  // how this player looks to others
+  state.entityPrefabMap.set(playerRig, "player-cube");
+
+  state.network.peerIdToEntityId.set(state.network.peerId, playerRig);
+
   const lowerCube = createRawCube(state);
-  const upperCube = createRawCube(state);
-
-  Transform.position[upperCube].set([0, 1.5, 0]);
-
   addChild(playerRig, lowerCube);
-  addChild(playerRig, upperCube);
 
   addComponent(world, PlayerRig, playerRig);
   Transform.position[playerRig][2] = 50;
@@ -140,10 +140,11 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.6;
 
+  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
+  addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
   addComponent(world, NetworkTransform, playerRig);
-  addComponent(world, Owned, playerRig);
 
   return playerRig;
 };

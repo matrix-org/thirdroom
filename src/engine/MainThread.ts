@@ -1,6 +1,6 @@
 import { EditorEventType, Selection } from "./editor/editor.common";
 import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
-import { mainAudioSystem, disposeAudioState, initAudioState } from "./audio";
+import { mainAudioSystem, disposeAudioState, initAudioState, setPeerMediaStream } from "./audio";
 import GameWorker from "./GameWorker?worker";
 import { createInputManager } from "./input/InputManager";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
@@ -70,7 +70,7 @@ export interface Engine {
   setState(state: any): void;
   setPeerId(peerId: string): void;
   hasPeer(peerId: string): boolean;
-  addPeer(peerId: string, dataChannel: RTCDataChannel): void;
+  addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream): void;
   removePeer(peerId: string): void;
   disconnect(): void;
   getStats(): StatsObject;
@@ -450,7 +450,7 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
     hasPeer(peerId: string): boolean {
       return reliableChannels.has(peerId);
     },
-    addPeer(peerId: string, dataChannel: RTCDataChannel) {
+    addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
       if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
       else unreliableChannels.set(peerId, dataChannel);
 
@@ -470,6 +470,10 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
       dataChannel.binaryType = "arraybuffer";
       dataChannel.addEventListener("open", onOpen);
+
+      if (mediaStream) {
+        setPeerMediaStream(audioState, peerId, mediaStream);
+      }
     },
     removePeer(peerId: string) {
       onPeerLeft(peerId);

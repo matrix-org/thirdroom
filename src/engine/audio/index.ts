@@ -3,10 +3,9 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
 import { renderableBuffer } from "../component/buffers";
-import { enteredOwnedPlayerQuery, enteredRemotePlayerQuery } from "../component/Player";
+import { enteredOwnedPlayerQuery } from "../component/Player";
 import { maxEntities, NOOP } from "../config";
 import { GameState } from "../GameWorker";
-import { getPeerIdFromNetworkId, Networked } from "../network";
 import { TransformView } from "../RenderWorker";
 import {
   copyToWriteBuffer,
@@ -27,12 +26,11 @@ export interface AudioState {
   entityPanners: Map<number, PannerNode>;
   listenerEntity: number;
   peerEntities: Map<string, number>;
+  peerMediaStreamSourceMap: Map<string, MediaStreamAudioSourceNode>;
   main: {
-    bus: ChannelMergerNode;
     gain: GainNode;
   };
   sample: {
-    bus: ChannelMergerNode;
     gain: GainNode;
     cache: Map<string, AudioBuffer>;
     queue: [string, number?][];
@@ -67,7 +65,7 @@ export const queueAudioBuffer = (audioState: AudioState, filename: string, eid?:
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export const playAudioBuffer = (
-  { context, sample: { bus, gain } }: AudioState,
+  { context, sample: { gain } }: AudioState,
   audioBuffer: AudioBuffer,
   out: AudioNode = gain
 ) => {
@@ -136,14 +134,9 @@ export const createAudioState = (): AudioState => {
   const context = new AudioContext();
 
   const mainGain = new GainNode(context);
-  const mainBus = new ChannelMergerNode(context);
   mainGain.connect(context.destination);
-  // mainBus.connect(mainGain);
 
-  const sampleBus = new ChannelMergerNode(context);
   const sampleGain = new GainNode(context);
-  // sampleBus.connect(sampleGain);
-  // sampleGain.connect(mainBus);
   sampleGain.connect(mainGain);
 
   const sampleCache = new Map<string, AudioBuffer>();
@@ -171,12 +164,11 @@ export const createAudioState = (): AudioState => {
     entityPanners,
     listenerEntity: NOOP,
     peerEntities: new Map(),
+    peerMediaStreamSourceMap: new Map(),
     main: {
-      bus: mainBus,
       gain: mainGain,
     },
     sample: {
-      bus: sampleBus,
       gain: sampleGain,
       cache: sampleCache,
       queue: sampleQueue,
@@ -186,7 +178,7 @@ export const createAudioState = (): AudioState => {
 
 export const preloadDefaultAudio = async (
   audioState: AudioState,
-  defaultAudioFiles: string[] = ["/audio/cricket.ogg"]
+  defaultAudioFiles: string[] = ["/audio/bach.mp3", "/audio/hit.wav"]
 ) => {
   defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
 };
@@ -197,6 +189,30 @@ export const setAudioListener = (audioState: AudioState, eid: number) => {
 
 export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: number) => {
   audioState.peerEntities.set(peerId, eid);
+
+  const mediaStreamSource = audioState.peerMediaStreamSourceMap.get(peerId);
+  if (!mediaStreamSource)
+    return console.error("could not setAudioPeerEntity - mediaStreamSource not found for peer", peerId);
+
+  const panner = audioState.entityPanners.get(eid);
+  if (!panner) return console.error("could not setAudioPeerEntity - panner not found for eid", eid, "peerId", peerId);
+
+  mediaStreamSource.connect(panner);
+};
+
+const isChrome = !!window.chrome;
+
+export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
+  if (isChrome) {
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+    const audioEl = new Audio();
+    audioEl.srcObject = mediaStream;
+    audioEl.setAttribute("autoplay", "autoplay");
+    audioEl.muted = true;
+  }
+
+  const mediaStreamSource = audioState.context.createMediaStreamSource(mediaStream);
+  audioState.peerMediaStreamSourceMap.set(peerId, mediaStreamSource);
 };
 
 export const bindAudioStateEvents = (audioState: AudioState, gameWorker: Worker) => {
@@ -329,18 +345,19 @@ export const sendPlayerEntitiesToMain = (gameState: GameState) => {
     });
   }
   // todo: add Player component to new player entities coming in through the network
-  const newRemotePlayers = enteredRemotePlayerQuery(gameState.world);
-  for (let i = 0; i < newRemotePlayers.length; i++) {
-    const eid = newRemotePlayers[i];
-    const nid = Networked.networkId[eid];
-    const peerIdIndex = getPeerIdFromNetworkId(nid);
-    postMessage({
-      type: WorkerMessageType.SetAudioPeerEntity,
-      // todo: main<->game messages reference peerId via peerIdIndex
-      peerId: gameState.network.indexToPeerId.get(peerIdIndex),
-      eid,
-    });
-  }
+  // const newRemotePlayers = enteredRemotePlayerQuery(gameState.world);
+  // for (let i = 0; i < newRemotePlayers.length; i++) {
+  //   const eid = newRemotePlayers[i];
+  //   const nid = Networked.networkId[eid];
+  //   const peerIdIndex = getPeerIdFromNetworkId(nid);
+  //   console.log("#sendPlayerEntitiesToMain() - WorkerMessageType.SetAudioPeerEntity");
+  //   postMessage({
+  //     type: WorkerMessageType.SetAudioPeerEntity,
+  //     // todo: main<->game messages reference peerId via peerIdIndex
+  //     peerId: gameState.network.indexToPeerId.get(peerIdIndex),
+  //     eid,
+  //   });
+  // }
 };
 
 export const gameAudioSystem: (gameState: GameState) => GameState = pipe(
