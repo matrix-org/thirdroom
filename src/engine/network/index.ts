@@ -56,7 +56,7 @@ export enum NetworkMessage {
   FullSnapshot,
   Prefab,
   AssignPeerIdIndex,
-  AssignPlayerNetworkId,
+  InformPlayerNetworkId,
 }
 
 const writeMessageType = writeUint8;
@@ -539,7 +539,7 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
 
 export function createPlayerNetworkIdMessage(state: GameState, peerId: string) {
   const input: NetPipeData = [state, messageView];
-  writeMessageType(messageView, NetworkMessage.AssignPlayerNetworkId);
+  writeMessageType(messageView, NetworkMessage.InformPlayerNetworkId);
   serializePlayerNetworkId(input, peerId);
   return sliceCursorView(messageView);
 }
@@ -814,7 +814,7 @@ export function createIncomingNetworkSystem(state: GameState) {
   registerIncomingMessageHandler(state, NetworkMessage.FullSnapshot, deserializeSnapshot);
   registerIncomingMessageHandler(state, NetworkMessage.FullChanged, deserializeFullUpdate);
   registerIncomingMessageHandler(state, NetworkMessage.AssignPeerIdIndex, deserializePeerIdIndex);
-  registerIncomingMessageHandler(state, NetworkMessage.AssignPlayerNetworkId, deserializePlayerNetworkId);
+  registerIncomingMessageHandler(state, NetworkMessage.InformPlayerNetworkId, deserializePlayerNetworkId);
 
   return function IncomingNetworkSystem(state: GameState) {
     processNetworkMessages(state);
