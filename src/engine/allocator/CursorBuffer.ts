@@ -1,4 +1,5 @@
-import { TypedArrayConstructor } from "./types";
+import { ComponentPropertyType } from "../component/types";
+import { TypedArray, TypedArrayConstructor } from "./types";
 import { roundUpToMultiple4, roundUpToMultiple8 } from "./util";
 
 const $cursor = Symbol("cursor");
@@ -67,3 +68,13 @@ export const addViewAoA = <T extends TypedArrayConstructor>(
 export const addViewVector3 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 3, n);
 export const addViewVector4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 4, n);
 export const addViewMatrix4 = (stackBuffer: CursorBuffer, n: number) => addViewAoA(stackBuffer, Float32Array, 16, n);
+
+export function addViewByComponentPropertyType(
+  buffer: CursorBuffer,
+  propertyType: ComponentPropertyType,
+  size: number
+): TypedArray | TypedArray[] | undefined {
+  if (propertyType === ComponentPropertyType.vec3) {
+    return addViewVector3(buffer, size);
+  }
+}

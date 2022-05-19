@@ -10,19 +10,19 @@ interface PropertiesPanelProps {
 }
 
 export function PropertiesPanel({ className }: PropertiesPanelProps) {
-  const { entities, components } = useEditorSelection();
+  const { selectedEntities, activeEntityComponents } = useEditorSelection();
 
   return (
     <div className={classNames("PropertiesPanel gap-xs", className)}>
       <Text className="shrink-0" weight="bold">
         Properties:
       </Text>
-      {entities.length === 0 ? (
+      {selectedEntities.length === 0 || activeEntityComponents === undefined || activeEntityComponents.length === 0 ? (
         <div>
           <Text color="surface-low">Nothing Selected</Text>
         </div>
       ) : (
-        components.map((id) => <ComponentContainer key={id} id={id} />)
+        activeEntityComponents.map((id) => <ComponentContainer key={id} id={id} />)
       )}
     </div>
   );
