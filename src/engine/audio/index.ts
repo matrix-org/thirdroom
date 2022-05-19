@@ -200,13 +200,14 @@ export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: 
   mediaStreamSource.connect(panner);
 };
 
+const isChrome = !!window.chrome;
+
 export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
-  if (window.navigator.userAgent.includes("Chrome")) {
+  if (isChrome) {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
-    const audioEl = document.createElement("audio");
+    const audioEl = new Audio();
     audioEl.srcObject = mediaStream;
     audioEl.setAttribute("autoplay", "autoplay");
-    audioEl.setAttribute("playsinline", "playsinline");
     audioEl.muted = true;
   }
 

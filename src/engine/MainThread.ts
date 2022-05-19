@@ -70,7 +70,7 @@ export interface Engine {
   setState(state: any): void;
   setPeerId(peerId: string): void;
   hasPeer(peerId: string): boolean;
-  addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream: MediaStream): void;
+  addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream): void;
   removePeer(peerId: string): void;
   disconnect(): void;
   getStats(): StatsObject;

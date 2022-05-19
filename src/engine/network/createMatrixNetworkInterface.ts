@@ -143,7 +143,7 @@ export function createMatrixNetworkInterface(
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
           updateHost();
-          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia as unknown as MediaStream);
+          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
@@ -156,14 +156,14 @@ export function createMatrixNetworkInterface(
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !engine.hasPeer(member.userId)) {
           updateHost();
-          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia as unknown as MediaStream);
+          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
     });
 
     for (const [, member] of groupCall.members) {
       if (member.isConnected && member.dataChannel) {
-        engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia as unknown as MediaStream);
+        engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
       }
     }
   }
