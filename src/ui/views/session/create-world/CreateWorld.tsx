@@ -24,16 +24,21 @@ import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils"
 import { getImageDimension } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
-import AddIC from "../../../../../res/ic/add.svg";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
-import "./CreateWorld.css";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { WindowFooter } from "../../components/window/WindowFooter";
 import { Content } from "../../../atoms/content/Content";
+import { CreateWorldPreview } from "./CreateWorldPreview";
+import AddIC from "../../../../../res/ic/add.svg";
+import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import { SceneUpload } from "./SceneUpload";
+import "./CreateWorld.css";
+import { ScenePreviewUpload } from "./ScenePreviewUpload";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
+  sceneMxc: string;
+  scenePrevMxc: string;
   name: string;
   topic?: string;
   visibility: RoomVisibility;
@@ -47,13 +52,16 @@ export function CreateWorld() {
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
 
   const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
+  const [sceneMxc, setSceneMxc] = useState<string>();
+  const [scenePrevMxc, setScenePrevMxc] = useState<string>();
+  const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
 
   const navigate = useNavigate();
 
   const handleCreateWorld = useCallback(
-    async ({ avatar, name, topic, visibility, alias }: CreateWorldOptions) => {
+    async ({ avatar, name, sceneMxc, scenePrevMxc, topic, visibility, alias }: CreateWorldOptions) => {
       const avatarInfo = !avatar
         ? undefined
         : {
@@ -101,8 +109,8 @@ export function CreateWorld() {
           {
             type: "m.world",
             content: {
-              scene_url: "mxc://example/scene.glb",
-              scene_preview_url: "mxc://example/thumbnail.jpeg",
+              scene_url: sceneMxc,
+              scene_preview_url: scenePrevMxc,
             },
           },
         ],
@@ -115,7 +123,7 @@ export function CreateWorld() {
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    if (isAliasAvail === false) return;
+    if (isAliasAvail === false || !sceneMxc || !scenePrevMxc) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
@@ -125,6 +133,8 @@ export function CreateWorld() {
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
+      sceneMxc,
+      scenePrevMxc,
       topic: topicInput.value || undefined,
       avatar: !avatarBlob ? undefined : avatarBlob,
       alias: aliasInput.value || undefined,
@@ -149,6 +159,10 @@ export function CreateWorld() {
   );
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
+
+  const handleSceneMxcChange = useCallback(setSceneMxc, [setSceneMxc]);
+  const handlePreviewMxcChange = useCallback(setScenePrevMxc, [setScenePrevMxc]);
+  const handlePreviewBlobChange = useCallback(setScenePrevBlob, [setScenePrevBlob]);
 
   return (
     <Window>
@@ -177,9 +191,7 @@ export function CreateWorld() {
                           !avatarBlob ? undefined : (
                             <IconButton
                               variant="world"
-                              onClick={() => {
-                                setAvatarBlob(undefined);
-                              }}
+                              onClick={() => setAvatarBlob(undefined)}
                               size="xl"
                               iconSrc={CrossCircleIC}
                               label="Remove world avatar"
@@ -205,6 +217,10 @@ export function CreateWorld() {
                         </Thumbnail>
                       </ThumbnailHover>
                     </SettingTile>
+                    <div className="flex gap-lg">
+                      <SceneUpload onMxcChange={handleSceneMxcChange} />
+                      <ScenePreviewUpload onMxcChange={handlePreviewMxcChange} onBlobChange={handlePreviewBlobChange} />
+                    </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
                         <Input name="nameInput" required />
@@ -250,7 +266,7 @@ export function CreateWorld() {
                     </Button>
                   }
                   right={
-                    <Button type="submit" disabled={isAliasAvail === false}>
+                    <Button type="submit" disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc}>
                       Create World
                     </Button>
                   }
@@ -260,8 +276,10 @@ export function CreateWorld() {
           }
           aside={
             <WindowAside className="flex">
-              <Button>Upload Thumbnail</Button>
-              <Button>Upload Scene</Button>
+              <CreateWorldPreview
+                className="grow"
+                src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+              />
             </WindowAside>
           }
         />

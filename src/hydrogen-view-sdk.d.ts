@@ -405,6 +405,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export class Session {
     userId: string;
     _sessionInfo: ISessionInfo;
+    _hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
@@ -492,12 +493,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export class AttachmentUpload {
-    constructor({ filename, blob, platform }: { filename: string; blob: Blob; platform: Platform });
+    constructor({ filename, blob, platform }: { filename: string; blob: IBlobHandle; platform: Platform });
     get size(): number;
     get sentBytes(): number;
     abort(): void;
     get localPreview(): Blob;
+    encrypt(): Promise<void>;
     upload(hsApi: HomeServerApi, progressCallback: () => void, log?: any): Promise<void>;
+    applyToContent(urlPath: string, content: {}): void;
     dispose(): void;
   }
 

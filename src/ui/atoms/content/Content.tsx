@@ -21,6 +21,11 @@ export function Content({ className, top, children, bottom, onSubmit }: ContentP
     </>
   );
 
-  if (onSubmit) return <form className={sectionClass}>{content}</form>;
+  if (onSubmit)
+    return (
+      <form onSubmit={onSubmit} className={sectionClass}>
+        {content}
+      </form>
+    );
   return <div className={sectionClass}>{content}</div>;
 }
