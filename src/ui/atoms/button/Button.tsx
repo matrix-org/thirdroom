@@ -8,7 +8,7 @@ interface IButton {
   className?: string;
   variant?: "primary" | "secondary" | "danger";
   fill?: "solid" | "outline";
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "mds" | "md" | "lg" | "xl";
   type?: "button" | "submit" | "reset";
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
