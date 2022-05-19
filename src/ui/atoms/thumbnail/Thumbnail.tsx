@@ -5,7 +5,7 @@ import "./Thumbnail.css";
 interface ThumbnailProps {
   className?: string;
   bgColor?: string;
-  size?: "md" | "sm";
+  size?: "md" | "md-3x5" | "sm" | "sm-3x5";
   children: ReactNode;
 }
 

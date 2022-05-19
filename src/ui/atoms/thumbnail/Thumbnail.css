@@ -12,8 +12,16 @@
   width: var(--th-md);
   height: var(--th-md);
 }
+.Thumbnail--md-3x5 {
+  height: var(--th-md);
+  width: var(--th-md-3x5);
+}
 
 .Thumbnail--sm {
   width: var(--th-sm);
   height: var(--th-sm);
+}
+.Thumbnail--sm-3x5 {
+  height: var(--th-sm);
+  width: var(--th-sm-3x5);
 }
