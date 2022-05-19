@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import classNames from "classnames";
 
-import { Content } from "../../../atoms/content/Content";
 import "./WindowContent.css";
 
 interface WindowContentProps {
@@ -15,7 +14,7 @@ export function WindowContent({ className, children, aside }: WindowContentProps
 
   return (
     <div className={contentClass}>
-      <Content className="WindowContent__main grow">{children}</Content>
+      <div className="WindowContent__main grow flex">{children}</div>
       {aside && <aside className="WindowContent__aside">{aside}</aside>}
     </div>
   );

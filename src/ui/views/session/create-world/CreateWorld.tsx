@@ -151,7 +151,7 @@ export function CreateWorld() {
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
   return (
-    <Window className="grow">
+    <Window>
       <Content
         onSubmit={handleSubmit}
         top={

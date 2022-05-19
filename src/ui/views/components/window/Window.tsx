@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import classNames from "classnames";
 
-import { Content } from "../../../atoms/content/Content";
 import "./Window.css";
 
 interface WindowProps {
@@ -10,7 +9,7 @@ interface WindowProps {
 }
 
 export function Window({ className, children }: WindowProps) {
-  const windowClass = classNames("Window", className);
+  const windowClass = classNames("Window flex", className);
 
-  return <Content className={windowClass}>{children}</Content>;
+  return <div className={windowClass}>{children}</div>;
 }
