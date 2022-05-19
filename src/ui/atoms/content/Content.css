@@ -7,8 +7,11 @@
 .Content__bottom {
   flex-shrink: 0;
 }
-.Content__grow {
+.Content__children {
   flex-grow: 1;
   min-height: 0;
   min-width: 0;
+  & > .Content {
+    height: 100%;
+  }
 }
