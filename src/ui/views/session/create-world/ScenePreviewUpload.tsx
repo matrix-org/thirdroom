@@ -52,7 +52,7 @@ export function ScenePreviewUpload({
               {mxc && `Size: ${bytesToSize(scenePrevBlob.size)}`}
               {!mxc && `Uploading: ${bytesToSize(sentBytes)} / ${bytesToSize(scenePrevBlob.size)}`}
             </Text>
-            <Button size="mds" onClick={() => setScenePrevBlob(undefined)} fill="outline">
+            <Button onClick={() => setScenePrevBlob(undefined)} fill="outline">
               Clear Preview
             </Button>
           </>
@@ -60,7 +60,6 @@ export function ScenePreviewUpload({
           <>
             <Text variant="b3">Upload world scene preview.</Text>
             <Button
-              size="mds"
               onClick={async () => {
                 const data = await platform.openFile("image/*");
                 if (!data) return;

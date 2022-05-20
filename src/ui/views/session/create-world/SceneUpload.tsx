@@ -45,7 +45,7 @@ export function SceneUpload({ onMxcChange }: { onMxcChange: (Url?: string) => vo
               {mxc && `Size: ${bytesToSize(sceneBlob.size)}`}
               {!mxc && `Uploading: ${bytesToSize(sentBytes)} / ${bytesToSize(sceneBlob.size)}`}
             </Text>
-            <Button size="mds" onClick={() => setSceneBlob(undefined)} fill="outline">
+            <Button onClick={() => setSceneBlob(undefined)} fill="outline">
               Clear Scene
             </Button>
           </>
@@ -53,7 +53,6 @@ export function SceneUpload({ onMxcChange }: { onMxcChange: (Url?: string) => vo
           <>
             <Text variant="b3">Upload gltf world scene file.</Text>
             <Button
-              size="mds"
               onClick={async () => {
                 const data = await platform.openFile("*");
                 if (!data) return;

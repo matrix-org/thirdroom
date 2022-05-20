@@ -131,7 +131,7 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     return renderCard({
       title: room?.name || "Unnamed Room",
       options: (
-        <Button variant="primary" disabled onClick={() => {}}>
+        <Button size="lg" variant="primary" disabled onClick={() => {}}>
           Joining World...
         </Button>
       ),
@@ -162,6 +162,7 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     desc = isPreviewLoaded && loadError ? loadError.message : undefined;
     options = (
       <Button
+        size="lg"
         variant={isPreviewLoaded && loadState === WorldLoadState.Loaded ? "primary" : "secondary"}
         onClick={onClickRoomLoadButton}
       >
@@ -171,7 +172,7 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
   } else if (roomStatus === RoomStatus.None && selectedWorldId) {
     title = room?.name || "Unnamed Room";
     options = (
-      <Button variant="primary" onClick={() => onJoinWorld(selectedWorldId)}>
+      <Button size="lg" variant="primary" onClick={() => onJoinWorld(selectedWorldId)}>
         Join World
       </Button>
     );

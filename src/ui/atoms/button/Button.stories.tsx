@@ -8,6 +8,18 @@ export default function ButtonStories() {
   return (
     <div className="flex flex-wrap">
       <div>
+        <Button size="xxl" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xxl" variant="secondary" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xxl" variant="danger" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
         <Button size="xl" onClick={() => false}>
           Hello, World
         </Button>
@@ -37,6 +49,42 @@ export default function ButtonStories() {
           Hello, World
         </Button>
         <Button variant="danger" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button size="sm" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="sm" variant="danger" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button size="xs" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xs" variant="secondary" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xs" variant="danger" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button size="xxl" variant="primary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xxl" variant="secondary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xxl" variant="danger" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
       </div>
@@ -73,6 +121,30 @@ export default function ButtonStories() {
           Hello, World
         </Button>
         <Button variant="danger" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button size="sm" variant="primary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="sm" variant="secondary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="sm" variant="danger" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+      </div>
+
+      <div>
+        <Button size="xs" variant="primary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xs" variant="secondary" fill="outline" onClick={() => false}>
+          Hello, World
+        </Button>
+        <Button size="xs" variant="danger" fill="outline" onClick={() => false}>
           Hello, World
         </Button>
       </div>

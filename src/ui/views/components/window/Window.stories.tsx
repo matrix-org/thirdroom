@@ -34,11 +34,15 @@ export default function WindowStories() {
           bottom={
             <WindowFooter
               left={
-                <Button fill="outline" onClick={() => console.log("click")}>
+                <Button size="lg" fill="outline" onClick={() => console.log("click")}>
                   Cancel
                 </Button>
               }
-              right={<Button onClick={() => console.log("click")}>Create World</Button>}
+              right={
+                <Button size="lg" onClick={() => console.log("click")}>
+                  Create World
+                </Button>
+              }
             />
           }
         />
