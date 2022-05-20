@@ -231,4 +231,22 @@ export function registerDefaultPrefabs(state: GameState) {
         })
       ),
   });
+  registerPrefab(state, {
+    name: "player-cube",
+    create: () =>
+      createCube(
+        state,
+        loadRemoteResource(state.resourceManager, {
+          type: "geometry",
+          geometryType: GeometryType.Box,
+        }),
+        loadRemoteResource(state.resourceManager, {
+          type: "material",
+          materialType: MaterialType.Physical,
+          baseColorFactor: [1, 1, 1, 1.0],
+          roughnessFactor: 0.1,
+          metallicFactor: 0.9,
+        })
+      ),
+  });
 }

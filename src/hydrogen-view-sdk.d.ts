@@ -1125,7 +1125,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getMediaTracks(audio: true | MediaDeviceInfo, video: boolean | MediaDeviceInfo): Promise<Stream>;
     getScreenShareTrack(): Promise<Stream | undefined>;
   }
-  export interface Stream {
+  export interface Stream extends MediaStream {
     readonly audioTrack: AudioTrack | undefined;
     readonly videoTrack: Track | undefined;
     readonly id: string;

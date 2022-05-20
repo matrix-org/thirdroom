@@ -32,7 +32,7 @@ function onDisposeEditor(state: RenderWorkerState) {
 }
 
 function onSelectionChanged(state: RenderWorkerState, message: SelectionChangedMessage) {
-  state.editor.selectedEntities = message.selection.entities;
+  state.editor.selectedEntities = message.selectedEntities;
 }
 
 // function EditorRendererSystem(state: RenderWorkerState) {

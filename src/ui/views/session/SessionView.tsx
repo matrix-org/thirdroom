@@ -1,6 +1,8 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
 import { Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { GroupCall, ObservableValue, Room, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 import "./SessionView.css";
 import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
@@ -131,17 +133,19 @@ export function SessionView() {
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
 
   return (
-    <div className="SessionView">
-      <canvas className="SessionView__viewport" ref={canvasRef} />
-      {engine ? (
-        <EngineContextProvider value={engine}>
-          <Outlet context={outletContext} />
-          {isOverlayOpen && <Overlay onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
-          <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
-        </EngineContextProvider>
-      ) : (
-        <div>Initializing engine...</div>
-      )}
-    </div>
+    <DndProvider backend={HTML5Backend}>
+      <div className="SessionView">
+        <canvas className="SessionView__viewport" ref={canvasRef} />
+        {engine ? (
+          <EngineContextProvider value={engine}>
+            <Outlet context={outletContext} />
+            {isOverlayOpen && <Overlay onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
+            <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
+          </EngineContextProvider>
+        ) : (
+          <div>Initializing engine...</div>
+        )}
+      </div>
+    </DndProvider>
   );
 }

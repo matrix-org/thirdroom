@@ -27,12 +27,16 @@ import {
   enableActionMap,
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../TripleBuffer";
+import { hierarchyBuffer } from "../component/buffers";
 
 export interface EditorState {
   rayId: number;
   editorLoaded: boolean;
   messages: WorkerMessages[];
   selectedEntities: number[];
+  activeEntity?: number;
+  activeEntityChanged: boolean;
   componentIdMap: Map<Component, number>;
   componentInfoMap: Map<number, ComponentInfo>;
   propertyIdMap: Map<ComponentPropertyStore, number>;
@@ -42,14 +46,17 @@ export interface EditorState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
+  hierarchyTripleBuffer: TripleBufferState;
 }
 
-export function initEditorState(): EditorState {
+export function initEditorState(hierarchyTripleBuffer: TripleBufferState): EditorState {
   return {
     rayId: createRay(),
     editorLoaded: false,
     messages: [],
     selectedEntities: [],
+    activeEntity: undefined,
+    activeEntityChanged: false,
     nextComponentId: 1,
     componentIdMap: new Map(),
     componentInfoMap: new Map(),
@@ -59,6 +66,7 @@ export function initEditorState(): EditorState {
     propertyIdMap: new Map(),
     propertyGetterMap: new Map(),
     propertySetterMap: new Map(),
+    hierarchyTripleBuffer,
   };
 }
 
@@ -129,9 +137,15 @@ export function EditorStateSystem(state: GameState) {
 
   const selectedEntities = selectedQuery(state.world);
 
-  if (!shallowArraysEqual(selectedEntities, state.editorState.selectedEntities)) {
+  if (
+    !shallowArraysEqual(selectedEntities, state.editorState.selectedEntities) ||
+    state.editorState.activeEntityChanged
+  ) {
     updateSelectedEntities(state, selectedEntities.slice());
   }
+
+  copyToWriteBuffer(state.editorState.hierarchyTripleBuffer, hierarchyBuffer);
+  swapWriteBuffer(state.editorState.hierarchyTripleBuffer);
 }
 
 function processEditorMessage(state: GameState, message: WorkerMessages) {
@@ -200,22 +214,21 @@ function onSetComponentProperty(
 function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   state.editorState.selectedEntities = selectedEntities;
 
-  const components: number[] = [];
-  const initialValues: Map<number, ComponentPropertyValue> = new Map();
+  const activeEntity = state.editorState.activeEntity;
 
-  // TODO: Do this dynamically
-  const componentId = state.editorState.componentIdMap.get(Transform)!;
-  components.push(componentId);
-  const propertyId = state.editorState.propertyIdMap.get(Transform.position)!;
-  initialValues.set(propertyId, state.editorState.propertyGetterMap.get(propertyId)!(state, selectedEntities[0]));
+  let activeEntityComponents: number[] | undefined;
+  let activeEntityTripleBuffer: TripleBufferState | undefined;
+
+  if (state.editorState.activeEntityChanged) {
+    // TODO: collect active entity components and construct activeEntityTripleBuffer
+  }
 
   postMessage({
     type: WorkerMessageType.SelectionChanged,
-    selection: {
-      entities: selectedEntities,
-      components,
-    },
-    initialValues,
+    selectedEntities,
+    activeEntity,
+    activeEntityComponents,
+    activeEntityTripleBuffer,
   } as SelectionChangedMessage);
 }
 
@@ -298,6 +311,11 @@ export function EditorSelectionSystem(state: GameState) {
     }
 
     addComponent(state.world, Selected, intersection.entity);
+
+    if (intersection.entity !== state.editorState.activeEntity) {
+      state.editorState.activeEntity = intersection.entity;
+      state.editorState.activeEntityChanged = true;
+    }
   }
 
   const select = state.input.actions.get(EditorActions.select) as ButtonActionState;

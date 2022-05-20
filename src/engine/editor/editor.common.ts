@@ -1,6 +1,13 @@
+import { addViewByComponentPropertyType, createCursorBuffer } from "../allocator/CursorBuffer";
+import { TypedArray } from "../allocator/types";
+import { ComponentInfo } from "../component/types";
+import { maxEntities } from "../config";
+import { TripleBufferState } from "../TripleBuffer";
+
 export interface Selection {
-  entities: number[];
-  components: number[];
+  activeEntity?: number;
+  activeEntityComponents?: number[];
+  selectedEntities: number[];
 }
 
 export enum EditorEventType {
@@ -8,4 +15,30 @@ export enum EditorEventType {
   SelectionChanged = "selection-changed",
   ComponentInfoChanged = "component-info-changed",
   ComponentPropertyChanged = "component-property-changed",
+}
+
+export interface ActiveEntityView {
+  [propertyId: number]: TypedArray | TypedArray[] | undefined;
+}
+
+export function createActiveEntityViews(
+  activeEntityTripleBuffer: TripleBufferState,
+  activeEntityComponents: number[],
+  componentInfoMap: Map<number, ComponentInfo>
+): ActiveEntityView[] {
+  return activeEntityTripleBuffer.buffers.map((sharedArrayBuffer) => {
+    const cursorBuffer = createCursorBuffer(sharedArrayBuffer);
+    const activeEntityView: ActiveEntityView = {};
+
+    for (const componentId of activeEntityComponents) {
+      const componentInfo = componentInfoMap.get(componentId);
+
+      if (componentInfo) {
+        for (const property of componentInfo.props) {
+          activeEntityView[property.id] = addViewByComponentPropertyType(cursorBuffer, property.type, maxEntities);
+        }
+      }
+    }
+    return activeEntityView;
+  });
 }
