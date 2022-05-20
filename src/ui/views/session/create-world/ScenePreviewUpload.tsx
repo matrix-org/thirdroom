@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -38,6 +38,12 @@ export function ScenePreviewUpload({
 
   useEffect(() => onMxcChange(mxc), [mxc, onMxcChange]);
 
+  const handleScenePrevSelect = useCallback(async () => {
+    const data = await platform.openFile("image/*");
+    if (!data) return;
+    setScenePrevBlob(data.blob);
+  }, [setScenePrevBlob, platform]);
+
   return (
     <SettingTile className="grow basis-0" label={<Label>Scene Preview *</Label>}>
       <div className="flex flex-column items-start gap-xxs">
@@ -57,13 +63,7 @@ export function ScenePreviewUpload({
         ) : (
           <>
             <Text variant="b3">Upload world scene preview.</Text>
-            <Button
-              onClick={async () => {
-                const data = await platform.openFile("image/*");
-                if (!data) return;
-                setScenePrevBlob(data.blob);
-              }}
-            >
+            <Button onClick={handleScenePrevSelect}>
               <Icon src={UploadIC} color="on-primary" />
               Upload Preview
             </Button>

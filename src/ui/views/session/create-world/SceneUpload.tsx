@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -31,6 +31,12 @@ export function SceneUpload({ onMxcChange }: { onMxcChange: (Url?: string) => vo
 
   useEffect(() => onMxcChange(mxc), [mxc, onMxcChange]);
 
+  const handleSceneSelect = useCallback(async () => {
+    const data = await platform.openFile(".glb");
+    if (!data) return;
+    setSceneBlob(data.blob);
+  }, [setSceneBlob, platform]);
+
   return (
     <SettingTile className="grow basis-0" label={<Label>Scene *</Label>}>
       <div className="flex flex-column items-start gap-xxs">
@@ -49,14 +55,8 @@ export function SceneUpload({ onMxcChange }: { onMxcChange: (Url?: string) => vo
           </>
         ) : (
           <>
-            <Text variant="b3">Upload gltf world scene file.</Text>
-            <Button
-              onClick={async () => {
-                const data = await platform.openFile("*");
-                if (!data) return;
-                setSceneBlob(data.blob);
-              }}
-            >
+            <Text variant="b3">Upload glb world scene file.</Text>
+            <Button onClick={handleSceneSelect}>
               <Icon src={UploadIC} color="on-primary" />
               Upload Scene
             </Button>
