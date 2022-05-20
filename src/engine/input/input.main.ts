@@ -1,50 +1,55 @@
 import { addView, createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
-import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer } from "../TripleBuffer";
+import { MainThreadState } from "../MainThread";
+import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer, TripleBufferState } from "../TripleBuffer";
 import { flagGet, flagSet } from "./Bitmask";
 import { Keys, codeToKeyCode } from "./KeyCodes";
 
-export type InputState = {
+export interface MainThreadInputState {
+  tripleBuffer: TripleBufferState;
   buffer: CursorBuffer;
   keyboard: Uint32Array;
   mouse: {
     movement: Float32Array;
     buttons: Uint32Array;
   };
-};
-
-export function createInputManager(canvas: HTMLCanvasElement) {
-  const inputState = createInputState();
-  const tripleBuffer = createTripleBuffer(inputState.buffer.byteLength);
-
-  const dispose = bindInputEvents(inputState, canvas);
-
-  return {
-    tripleBuffer,
-    update() {
-      copyToWriteBuffer(tripleBuffer, inputState.buffer);
-      swapWriteBuffer(tripleBuffer);
-
-      inputState.mouse.movement[0] = 0;
-      inputState.mouse.movement[1] = 0;
-    },
-    dispose() {
-      dispose();
-    },
-  };
+  dispose?: () => void;
 }
 
-export const createInputState = (buffer: CursorBuffer = createCursorBuffer()): InputState => {
-  return {
-    buffer,
-    keyboard: addView(buffer, Uint32Array, Math.ceil(Keys.length / 32)),
-    mouse: {
-      movement: addView(buffer, Float32Array, 2),
-      buttons: addView(buffer, Uint32Array, 1),
-    },
-  };
+export default {
+  create() {
+    const buffer = createCursorBuffer();
+    const tripleBuffer = createTripleBuffer(buffer.byteLength);
+
+    return {
+      buffer,
+      tripleBuffer,
+      keyboard: addView(buffer, Uint32Array, Math.ceil(Keys.length / 32)),
+      mouse: {
+        movement: addView(buffer, Float32Array, 2),
+        buttons: addView(buffer, Uint32Array, 1),
+      },
+    };
+  },
+  async init(state: MainThreadState) {
+    state.input.dispose = bindInputEvents(state.input, state.canvas);
+    state.systems.push(MainThreadInputSystem);
+  },
+  dispose(state: MainThreadState) {
+    if (state.input.dispose) {
+      state.input.dispose();
+    }
+  },
 };
 
-export const bindInputEvents = (inputState: InputState, canvas: HTMLElement): (() => void) => {
+function MainThreadInputSystem(state: MainThreadState) {
+  copyToWriteBuffer(state.input.tripleBuffer, state.input.buffer);
+  swapWriteBuffer(state.input.tripleBuffer);
+
+  state.input.mouse.movement[0] = 0;
+  state.input.mouse.movement[1] = 0;
+}
+
+const bindInputEvents = (inputState: MainThreadInputState, canvas: HTMLElement): (() => void) => {
   function onMouseDown({ buttons }: MouseEvent) {
     if (document.pointerLockElement === canvas) {
       inputState.mouse.buttons[0] = buttons;
@@ -99,21 +104,21 @@ export const bindInputEvents = (inputState: InputState, canvas: HTMLElement): ((
   };
 };
 
-type InputStateGetter = (inputState: InputState) => number;
+type InputStateGetter = (inputState: MainThreadInputState) => number;
 
 const keyIndexToInputState =
   (index: number): InputStateGetter =>
-  (inputState: InputState) =>
+  (inputState: MainThreadInputState) =>
     flagGet(inputState.keyboard, index);
 
 const mouseMovementIndexToInputState =
   (index: number): InputStateGetter =>
-  (inputState: InputState) =>
+  (inputState: MainThreadInputState) =>
     inputState.mouse.movement[index];
 
 const mouseButtonIndexToInputState =
   (index: number): InputStateGetter =>
-  (inputState: InputState) =>
+  (inputState: MainThreadInputState) =>
     flagGet(inputState.mouse.buttons, index);
 
 export const InputStateGetters: { [path: string]: InputStateGetter } = Object.fromEntries([

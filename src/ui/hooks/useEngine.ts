@@ -1,14 +1,14 @@
 import { RefObject, useState, useEffect, createContext, useContext } from "react";
 
-import { initEngine, Engine } from "../../engine/MainThread";
+import { initEngine, MainThreadState } from "../../engine/MainThread";
 import { useIsMounted } from "./useIsMounted";
 
 export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
-  const [engine, setEngine] = useState<Engine>();
+  const [engine, setEngine] = useState<MainThreadState>();
   const isMounted = useIsMounted();
 
   useEffect(() => {
-    let _engine: Engine | undefined;
+    let _engine: MainThreadState | undefined;
 
     if (canvasRef.current) {
       initEngine(canvasRef.current)
@@ -53,7 +53,7 @@ export function useInitEngine(canvasRef: RefObject<HTMLCanvasElement>) {
   return engine;
 }
 
-const EngineContext = createContext<Engine | undefined>(undefined);
+const EngineContext = createContext<MainThreadState | undefined>(undefined);
 
 export const EngineContextProvider = EngineContext.Provider;
 

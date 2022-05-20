@@ -8,7 +8,6 @@ export function useEditorSelection(): Selection {
   const [selection, setSelection] = useState(engine.getSelection());
 
   useEffect(() => {
-    engine.setState(engine.getSelection());
     engine.addListener(EditorEventType.SelectionChanged, setSelection);
 
     return () => {

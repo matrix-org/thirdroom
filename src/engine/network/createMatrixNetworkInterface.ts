@@ -1,6 +1,6 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 
-import { Engine } from "../MainThread";
+import { MainThreadState, sendWorldJoinedMessage } from "../MainThread";
 
 function memberComparator(a: Member, b: Member): number {
   if (a.eventTimestamp === b.eventTimestamp) {
@@ -19,7 +19,7 @@ function isOlderThanLocalHost(groupCall: GroupCall, member: Member): boolean {
 }
 
 export function createMatrixNetworkInterface(
-  engine: Engine,
+  engine: MainThreadState,
   client: Client,
   powerLevels: PowerLevels,
   groupCall: GroupCall
@@ -186,7 +186,7 @@ export function createMatrixNetworkInterface(
   return () => {
     engine.disconnect();
 
-    engine.setState({ joined: false });
+    sendWorldJoinedMessage(engine, false);
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();

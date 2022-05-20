@@ -1,6 +1,6 @@
 import { vec3 } from "gl-matrix";
 
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameThread";
 import { RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult, RayId } from "./raycaster.common";
 

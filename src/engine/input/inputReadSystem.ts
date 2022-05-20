@@ -1,4 +1,4 @@
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameThread";
 import { swapReadBuffer } from "../TripleBuffer";
 
 export const inputReadSystem = ({ input }: GameState) => {

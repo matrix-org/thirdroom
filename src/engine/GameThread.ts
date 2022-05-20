@@ -12,7 +12,7 @@ import {
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
-import { createInputState, InputState, InputStateGetters } from "./input/InputManager";
+import { createInputState, MainThreadInputState, InputStateGetters } from "./input/input.main";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -213,7 +213,7 @@ export interface NetworkState {
 
 export interface GameInputState {
   tripleBuffer: TripleBufferState;
-  inputStates: InputState[];
+  inputStates: MainThreadInputState[];
   actions: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
@@ -244,7 +244,7 @@ export interface GameState {
 }
 
 const generateInputGetters = (
-  inputStates: InputState[],
+  inputStates: MainThreadInputState[],
   inputTripleBuffer: TripleBufferState
 ): { [path: string]: number } =>
   Object.defineProperties(
@@ -263,12 +263,10 @@ async function onInit({
   resourceManagerBuffer,
   renderWorkerMessagePort,
   renderableTripleBuffer,
-  statsSharedArrayBuffer,
+  statsBuffer,
   hierarchyTripleBuffer,
 }: InitializeGameWorkerMessage): Promise<GameState> {
   const renderPort = renderWorkerMessagePort || workerScope;
-
-  const statsBuffer = createStatsBuffer(statsSharedArrayBuffer);
 
   const world = createWorld<World>(maxEntities);
 

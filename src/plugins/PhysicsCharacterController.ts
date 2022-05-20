@@ -5,7 +5,7 @@ import { Object3D, Quaternion, Vector3 } from "three";
 import { Player } from "../engine/component/Player";
 import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
-import { GameState } from "../engine/GameWorker";
+import { GameState } from "../engine/GameThread";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
 import { Networked, NetworkTransform, Owned } from "../engine/network";
 import { addRigidBody, RigidBody } from "../engine/physics";

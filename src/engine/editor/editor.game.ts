@@ -1,7 +1,7 @@
 import { addComponent, Component, defineComponent, defineQuery, removeComponent } from "bitecs";
 import { vec3, mat4 } from "gl-matrix";
 
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameThread";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
 import { SelectionChangedMessage, WorkerMessages, WorkerMessageType } from "../WorkerMessage";
 import {

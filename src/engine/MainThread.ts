@@ -1,10 +1,11 @@
-import { EditorEventType, Selection } from "./editor/editor.common";
-import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
-import { mainAudioSystem, disposeAudioState, initAudioState, setPeerMediaStream } from "./audio";
+import EventEmitter from "events";
+
 import GameWorker from "./GameWorker?worker";
-import { createInputManager } from "./input/InputManager";
+import input, { MainThreadInputState } from "./input/input.main";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
-import { createStatsBuffer, getStats, StatsObject } from "./stats";
+import stats, { MainThreadStatsState } from "./stats/stats.main";
+import audio, { MainThreadAudioState } from "./audio/audio.main";
+import network, { MainThreadNetworkState } from "./network/network.main";
 import { createTripleBuffer } from "./TripleBuffer";
 import {
   GameWorkerInitializedMessage,
@@ -13,16 +14,9 @@ import {
   WorkerMessageType,
   PostMessageTarget,
   InitializeGameWorkerMessage,
+  InitializeRenderWorkerMessage,
 } from "./WorkerMessage";
-import {
-  createMainThreadEditorState,
-  disposeEditor,
-  initEditorMainThread,
-  loadEditor,
-  mainEditorSystem,
-  removeComponent,
-  setComponentProperty,
-} from "./editor/editor.main";
+import editor, { MainThreadEditorState } from "./editor/editor.main";
 
 export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
@@ -42,7 +36,7 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
     gameWorkerMessageTarget = interWorkerChannel.port2;
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
-    const result = await import("./RenderWorker");
+    const result = await import("./RenderThread");
     renderWorker = result.default as Worker;
     renderWorkerMessageTarget = result.default;
     gameWorkerMessageTarget = gameWorker;
@@ -74,40 +68,22 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export interface Engine {
-  connectToTestNet(): void;
-  setHost(value: boolean): void;
-  setState(state: any): void;
-  setPeerId(peerId: string): void;
-  hasPeer(peerId: string): boolean;
-  addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream): void;
-  removePeer(peerId: string): void;
-  disconnect(): void;
-  getStats(): StatsObject;
-  exportScene(): void;
-  loadEditor(): void;
-  disposeEditor(): void;
-  getSelection(): Selection;
-  getComponentInfo(componentId: number): ComponentInfo | undefined;
-  removeComponent(componentId: number): void;
-  getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined;
-  setComponentProperty<T>(propertyId: number, value: T): void;
-  addListener(type: EditorEventType.SelectionChanged, listener: (selection: Selection) => void): void;
-  addListener(
-    type: EditorEventType.ComponentInfoChanged,
-    listener: (componentId: number, componentInfo: ComponentInfo) => void
-  ): void;
-  addListener<T extends ComponentPropertyType>(
-    type: EditorEventType.ComponentPropertyChanged,
-    listener: (propertyId: number, value: ComponentPropertyValue<T>) => void
-  ): void;
-  addListener(type: EditorEventType, listener: (...args: any[]) => void): void;
-  removeListener(type: EditorEventType, listener: (...args: any[]) => void): void;
-  dispose(): void;
+export type MainThreadSystem = (state: MainThreadState) => void;
+
+export interface MainThreadState extends EventEmitter {
+  canvas: HTMLCanvasElement;
+  animationFrameId?: number;
+  gameWorker: Worker;
+  editor: MainThreadEditorState;
+  systems: MainThreadSystem[];
+  network: MainThreadNetworkState;
+  stats: MainThreadStatsState;
+  audio: MainThreadAudioState;
+  input: MainThreadInputState;
+  disposeRenderWorker: () => void;
 }
 
-export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
-  const inputManager = createInputManager(canvas);
+export async function initEngine(canvas: HTMLCanvasElement): Promise<MainThreadState> {
   const gameWorker = new GameWorker();
   const {
     renderWorker,
@@ -124,11 +100,20 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const renderWorkerMessagePort =
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
-  const statsBuffer = createStatsBuffer();
-
-  const audioState = initAudioState(gameWorker);
-
-  const editorState = createMainThreadEditorState();
+  const state: MainThreadState = Object.assign(
+    {
+      canvas,
+      gameWorker,
+      editor: editor.create(),
+      network: network.create(),
+      stats: stats.create(),
+      audio: audio.create(),
+      input: input.create(),
+      systems: [],
+      disposeRenderWorker,
+    },
+    new EventEmitter()
+  );
 
   /* Wait for workers to be ready */
 
@@ -142,8 +127,8 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
         initialCanvasWidth: canvas.clientWidth,
         initialCanvasHeight: canvas.clientHeight,
         resourceManagerBuffer,
-        statsSharedArrayBuffer: statsBuffer.buffer,
-      },
+        statsBuffer: state.stats.buffer,
+      } as InitializeRenderWorkerMessage,
       gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
         ? [gameWorkerMessageTarget, canvasTarget]
         : undefined
@@ -167,12 +152,12 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       {
         type: WorkerMessageType.InitializeGameWorker,
         renderableTripleBuffer,
-        inputTripleBuffer: inputManager.tripleBuffer,
-        audioTripleBuffer: audioState.tripleBuffer,
+        inputTripleBuffer: state.input.tripleBuffer,
+        audioTripleBuffer: state.audio.tripleBuffer,
         renderWorkerMessagePort,
         resourceManagerBuffer,
-        statsSharedArrayBuffer: statsBuffer.buffer,
-        hierarchyTripleBuffer: editorState.hierarchyTripleBuffer,
+        statsBuffer: state.stats.buffer,
+        hierarchyTripleBuffer: state.editor.hierarchyTripleBuffer,
       } as InitializeGameWorkerMessage,
       renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
     );
@@ -218,290 +203,34 @@ export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   renderWorker.addEventListener("message", onRenderWorkerMessage);
 
-  /* Game Worker Messages */
+  /* Init Modules */
 
-  initEditorMainThread(editorState, gameWorker);
-
-  const onPeerMessage = ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
-  };
-
-  let ws: WebSocket | undefined;
-
-  const reliableChannels: Map<string, RTCDataChannel> = new Map();
-  const unreliableChannels: Map<string, RTCDataChannel> = new Map();
-
-  const sendReliable = (peerId: string, packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      const peer = reliableChannels.get(peerId);
-      if (peer) peer.send(packet);
-    }
-  };
-
-  const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      const peer = unreliableChannels.get(peerId);
-      if (peer) peer.send(packet);
-    }
-  };
-
-  const broadcastReliable = (packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      reliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(packet);
-        }
-      });
-    }
-  };
-
-  const broadcastUnreliable = (packet: ArrayBuffer) => {
-    if (ws) {
-      ws?.send(packet);
-    } else {
-      unreliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(packet);
-        }
-      });
-    }
-  };
-
-  const onGameWorkerMessage = ({ data }: MessageEvent) => {
-    if (typeof data !== "object") {
-      return;
-    }
-
-    const message = data as WorkerMessages;
-
-    switch (message.type) {
-      case WorkerMessageType.ReliableNetworkMessage:
-        sendReliable(message.peerId, message.packet);
-        break;
-      case WorkerMessageType.UnreliableNetworkMessage:
-        sendUnreliable(message.peerId, message.packet);
-        break;
-      case WorkerMessageType.ReliableNetworkBroadcast:
-        broadcastReliable(message.packet);
-        break;
-      case WorkerMessageType.UnreliableNetworkBroadcast:
-        broadcastUnreliable(message.packet);
-        break;
-    }
-  };
-
-  gameWorker.addEventListener("message", onGameWorkerMessage);
+  await input.init(state);
+  await editor.init(state);
 
   /* Update loop for input manager */
 
-  let animationFrameId: number;
-
   function update() {
-    inputManager.update();
-    mainAudioSystem(audioState);
-    mainEditorSystem(editorState);
-    animationFrameId = requestAnimationFrame(update);
+    for (let i = 0; i < state.systems.length; i++) {
+      state.systems[i](state);
+    }
+
+    state.animationFrameId = requestAnimationFrame(update);
   }
 
   update();
 
-  function onPeerLeft(peerId: string) {
-    const reliableChannel = reliableChannels.get(peerId);
-    const unreliableChannel = reliableChannels.get(peerId);
-    reliableChannel?.removeEventListener("message", onPeerMessage);
-    unreliableChannel?.removeEventListener("message", onPeerMessage);
+  return state;
+}
 
-    reliableChannels.delete(peerId);
-    unreliableChannels.delete(peerId);
-
-    gameWorker.postMessage({
-      type: WorkerMessageType.RemovePeerId,
-      peerId,
-    });
+export function disposeEngine(state: MainThreadState) {
+  if (state.animationFrameId !== undefined) {
+    cancelAnimationFrame(state.animationFrameId);
   }
-
-  return {
-    connectToTestNet() {
-      ws = new WebSocket("ws://localhost:9090");
-      ws.binaryType = "arraybuffer";
-
-      ws.addEventListener("open", (data) => {
-        console.log("connected to websocket server");
-      });
-
-      ws.addEventListener("close", (data) => {});
-
-      const setHostFn = (data: { data: any }) => {
-        if (data.data === "setHost") {
-          console.log("ws - setHost");
-          gameWorker.postMessage({
-            type: WorkerMessageType.SetHost,
-            value: true,
-          });
-          ws?.removeEventListener("message", setHostFn);
-        }
-      };
-      ws.addEventListener("message", setHostFn);
-
-      const setPeerIdFn = (data: { data: any }) => {
-        try {
-          const d: any = JSON.parse(data.data);
-          if (d.setPeerId) {
-            console.log("ws - setPeerId", d.setPeerId);
-            gameWorker.postMessage({
-              type: WorkerMessageType.SetPeerId,
-              peerId: d.setPeerId,
-            });
-            gameWorker.postMessage({
-              type: WorkerMessageType.StateChanged,
-              state: { joined: true },
-            });
-
-            ws?.addEventListener("message", onPeerMessage);
-
-            ws?.removeEventListener("message", setPeerIdFn);
-          }
-        } catch {}
-      };
-      ws.addEventListener("message", setPeerIdFn);
-
-      const addPeerId = (data: { data: any }) => {
-        try {
-          const d: any = JSON.parse(data.data);
-          if (d.addPeerId) {
-            console.log("ws - addPeerId", d.addPeerId);
-            gameWorker.postMessage({
-              type: WorkerMessageType.AddPeerId,
-              peerId: d.addPeerId,
-            });
-          }
-        } catch {}
-      };
-      ws.addEventListener("message", addPeerId);
-    },
-    setHost(value: boolean) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.SetHost,
-        value,
-      });
-    },
-    setState(state: any) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.StateChanged,
-        state,
-      });
-    },
-    hasPeer(peerId: string): boolean {
-      return reliableChannels.has(peerId);
-    },
-    addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
-      if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
-      else unreliableChannels.set(peerId, dataChannel);
-
-      const onOpen = () => {
-        const onClose = () => {
-          onPeerLeft(peerId);
-        };
-
-        dataChannel.addEventListener("message", onPeerMessage);
-        dataChannel.addEventListener("close", onClose);
-
-        gameWorker.postMessage({
-          type: WorkerMessageType.AddPeerId,
-          peerId,
-        });
-      };
-
-      dataChannel.binaryType = "arraybuffer";
-      dataChannel.addEventListener("open", onOpen);
-
-      if (mediaStream) {
-        setPeerMediaStream(audioState, peerId, mediaStream);
-      }
-    },
-    removePeer(peerId: string) {
-      onPeerLeft(peerId);
-    },
-    disconnect() {
-      for (const [peerId] of reliableChannels) {
-        onPeerLeft(peerId);
-      }
-    },
-    setPeerId(peerId: string) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.SetPeerId,
-        peerId,
-      });
-    },
-    loadEditor() {
-      loadEditor(gameWorker);
-    },
-    disposeEditor() {
-      disposeEditor(editorState, gameWorker);
-    },
-    getSelection(): Selection {
-      return {
-        activeEntity: editorState.activeEntity,
-        activeEntityComponents: editorState.activeEntityComponents,
-        selectedEntities: editorState.selectedEntities,
-      };
-    },
-    getComponentInfo(componentId: number): ComponentInfo | undefined {
-      return editorState.componentInfoMap.get(componentId);
-    },
-    removeComponent(componentId: number): void {
-      removeComponent(editorState, gameWorker, componentId);
-    },
-    getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined {
-      return editorState.componentProperties.get(propertyId);
-    },
-    setComponentProperty<T>(propertyId: number, value: T): void {
-      setComponentProperty(editorState, gameWorker, propertyId, value);
-    },
-    addListener(type: EditorEventType, listener: (...args: any[]) => void): void {
-      const listeners = editorState.eventListeners.get(type) || [];
-      listeners.push(listener);
-      editorState.eventListeners.set(type, listeners);
-    },
-    removeListener(type: EditorEventType, listener: (...args: any[]) => void): void {
-      const listeners = editorState.eventListeners.get(type);
-
-      if (listeners) {
-        const index = listeners.indexOf(listener);
-
-        if (index === -1) {
-          return;
-        }
-
-        listeners.splice(index, 1);
-
-        if (listeners.length === 0) {
-          editorState.eventListeners.delete(type);
-        }
-      }
-    },
-    getStats() {
-      return getStats(statsBuffer);
-    },
-    exportScene() {
-      gameWorker.postMessage({
-        type: WorkerMessageType.ExportScene,
-      });
-    },
-    dispose() {
-      cancelAnimationFrame(animationFrameId);
-      inputManager.dispose();
-      gameWorker.terminate();
-      disposeRenderWorker();
-      disposeAudioState(audioState);
-    },
-  };
+  input.dispose(state);
+  state.gameWorker.terminate();
+  state.disposeRenderWorker();
+  audio.dispose(state);
 }
 
 function downloadFile(buffer: ArrayBuffer, fileName: string) {
@@ -513,4 +242,13 @@ function downloadFile(buffer: ArrayBuffer, fileName: string) {
   el.download = fileName;
   el.click();
   document.body.removeChild(el);
+}
+
+export function sendWorldJoinedMessage(state: MainThreadState, joined: boolean) {
+  state.gameWorker.postMessage({
+    type: WorkerMessageType.StateChanged,
+    state: {
+      joined,
+    },
+  });
 }

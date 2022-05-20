@@ -2,10 +2,10 @@ import { Object3D } from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 
 import { GLTFEntityDescription } from ".";
-import { RenderWorkerState } from "../RenderWorker";
+import { RenderThreadState } from "../RenderThread";
 import { ExportGLTFMessage } from "../WorkerMessage";
 
-function inflateObject3D(state: RenderWorkerState, entity: GLTFEntityDescription): Object3D {
+function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription): Object3D {
   const renderable = entity.components.find(({ type }) => type === "renderable");
 
   let object: Object3D;
@@ -33,7 +33,7 @@ function inflateObject3D(state: RenderWorkerState, entity: GLTFEntityDescription
   return object;
 }
 
-export async function exportSceneAsGLTF(state: RenderWorkerState, message: ExportGLTFMessage) {
+export async function exportSceneAsGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
   const scene = inflateObject3D(state, message.scene);
 
   const gltfExporter = new GLTFExporter();

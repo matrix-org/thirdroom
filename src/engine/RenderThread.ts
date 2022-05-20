@@ -51,7 +51,8 @@ import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
 import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
-import { createStatsBuffer, StatsBuffer, writeRenderWorkerStats } from "./stats";
+import { StatsBuffer } from "./stats/stats.common";
+import { writeRenderWorkerStats } from "./stats/stats.render";
 import {
   initRendererRaycaster,
   initRendererRaycasterState,
@@ -112,9 +113,9 @@ export interface Renderable {
   resourceId: number;
 }
 
-type RenderWorkerSystem = (state: RenderWorkerState) => void;
+type RenderThreadSystem = (state: RenderThreadState) => void;
 
-export interface RenderWorkerState {
+export interface RenderThreadState {
   needsResize: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -134,12 +135,12 @@ export interface RenderWorkerState {
   statsBuffer: StatsBuffer;
   raycaster: RendererRaycasterState;
   editor: EditorRendererState;
-  preSystems: RenderWorkerSystem[];
-  postSystems: RenderWorkerSystem[];
-  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: RenderWorkerState, message: T) => void }>;
+  preSystems: RenderThreadSystem[];
+  postSystems: RenderThreadSystem[];
+  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: RenderThreadState, message: T) => void }>;
 }
 
-let _state: RenderWorkerState;
+let _state: RenderThreadState;
 
 function onMessage({ data }: any) {
   if (typeof data !== "object") {
@@ -210,15 +211,13 @@ async function onInit({
   initialCanvasHeight,
   resourceManagerBuffer,
   renderableTripleBuffer,
-  statsSharedArrayBuffer,
-}: InitializeRenderWorkerMessage): Promise<RenderWorkerState> {
+  statsBuffer,
+}: InitializeRenderWorkerMessage): Promise<RenderThreadState> {
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 
   if (gameWorkerMessageTarget instanceof MessagePort) {
     gameWorkerMessageTarget.start();
   }
-
-  const statsBuffer = createStatsBuffer(statsSharedArrayBuffer);
 
   const scene = new Scene();
 
@@ -267,7 +266,7 @@ async function onInit({
       } as RenderableView)
   );
 
-  const state: RenderWorkerState = {
+  const state: RenderThreadState = {
     needsResize: true,
     camera,
     scene,
@@ -299,7 +298,7 @@ async function onInit({
   return state;
 }
 
-function onStart(state: RenderWorkerState, message: StartRenderWorkerMessage) {
+function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
   state.renderer.setAnimationLoop(() => onUpdate(state));
 }
 
@@ -311,7 +310,7 @@ const tempScale = new Vector3();
 let staleFrameCounter = 0;
 let staleTripleBufferCounter = 0;
 
-function onUpdate(state: RenderWorkerState) {
+function onUpdate(state: RenderThreadState) {
   const {
     clock,
     needsResize,
@@ -412,17 +411,17 @@ function onUpdate(state: RenderWorkerState) {
   writeRenderWorkerStats(statsBuffer, dt, frameDuration, renderer, staleFrameCounter);
 }
 
-function onResize(state: RenderWorkerState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
   state.needsResize = true;
   state.canvasWidth = canvasWidth;
   state.canvasHeight = canvasHeight;
 }
 
-function onRenderableMessage({ renderableMessageQueue }: RenderWorkerState, message: RenderableMessages) {
+function onRenderableMessage({ renderableMessageQueue }: RenderThreadState, message: RenderableMessages) {
   renderableMessageQueue.push(message);
 }
 
-function processRenderableMessages(state: RenderWorkerState) {
+function processRenderableMessages(state: RenderThreadState) {
   const { renderableMessageQueue } = state;
 
   while (renderableMessageQueue.length) {
@@ -445,7 +444,7 @@ function processRenderableMessages(state: RenderWorkerState) {
   }
 }
 
-function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage) {
+function onAddRenderable(state: RenderThreadState, message: AddRenderableMessage) {
   const { resourceId, eid } = message;
   const { renderableMessageQueue, renderableIndices, renderables, objectToEntityMap, scene, resourceManager } = state;
   let renderableIndex = renderableIndices.get(eid);
@@ -515,7 +514,7 @@ function onAddRenderable(state: RenderWorkerState, message: AddRenderableMessage
 }
 
 function onRemoveRenderable(
-  { renderableIndices, renderables, objectToEntityMap, scene }: RenderWorkerState,
+  { renderableIndices, renderables, objectToEntityMap, scene }: RenderThreadState,
   { eid }: RemoveRenderableMessage
 ) {
   const index = renderableIndices.get(eid);
@@ -540,7 +539,7 @@ function onRemoveRenderable(
   }
 }
 
-function onSetActiveScene(state: RenderWorkerState, { eid, resourceId }: SetActiveSceneMessage) {
+function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: SetActiveSceneMessage) {
   const { resourceManager } = state;
   const resourceInfo = resourceManager.store.get(resourceId);
 
@@ -567,7 +566,7 @@ function onSetActiveScene(state: RenderWorkerState, { eid, resourceId }: SetActi
   }
 }
 
-function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMessage) {
+function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMessage) {
   const { renderableIndices, renderables } = state;
   const index = renderableIndices.get(eid);
 
@@ -585,7 +584,7 @@ function onSetActiveCamera(state: RenderWorkerState, { eid }: SetActiveCameraMes
   }
 }
 
-async function onExportGLTF(state: RenderWorkerState, message: ExportGLTFMessage) {
+async function onExportGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
   const buffer = await exportSceneAsGLTF(state, message);
 
   postToMainThread({

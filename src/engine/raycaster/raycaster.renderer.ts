@@ -1,6 +1,6 @@
 import { Event, Intersection, Object3D, Raycaster } from "three";
 
-import { RenderWorkerState } from "../RenderWorker";
+import { RenderThreadState } from "../RenderThread";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
 
@@ -16,18 +16,18 @@ export function initRendererRaycasterState(): RendererRaycasterState {
   };
 }
 
-export function initRendererRaycaster(state: RenderWorkerState) {
+export function initRendererRaycaster(state: RenderThreadState) {
   state.messageHandlers[WorkerMessageType.Raycast] = onRaycastMessage;
   state.preSystems.push(RendererRaycasterSystem);
 }
 
-function onRaycastMessage(state: RenderWorkerState, message: RaycastMessage) {
+function onRaycastMessage(state: RenderThreadState, message: RaycastMessage) {
   state.raycaster.messages.push(message);
 }
 
 const intersections: Intersection<Object3D<Event>>[] = [];
 
-function RendererRaycasterSystem(state: RenderWorkerState) {
+function RendererRaycasterSystem(state: RenderThreadState) {
   while (state.raycaster.messages.length) {
     const msg = state.raycaster.messages.pop();
 

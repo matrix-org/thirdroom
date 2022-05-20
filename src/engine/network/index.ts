@@ -35,12 +35,13 @@ import {
   writeUint8,
 } from "./CursorView";
 import { addChild, Transform } from "../component/transform";
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameThread";
 import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
 import { NOOP } from "../config";
 import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics";
+import { sendAudioPeerEntityMessage } from "../audio/audio.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -523,11 +524,7 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     if (peid !== undefined) {
       state.network.peerIdToEntityId.set(peerId, peid);
       console.log("deserializePlayerNetworkId", state.network.peerIdToEntityId);
-      postMessage({
-        type: WorkerMessageType.SetAudioPeerEntity,
-        peerId: peerId,
-        eid: peid,
-      });
+      sendAudioPeerEntityMessage(peerId, peid);
       clearInterval(interval);
     }
   }, 10);

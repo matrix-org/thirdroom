@@ -1,4 +1,4 @@
-import { RenderWorkerState } from "../RenderWorker";
+import { RenderThreadState } from "../RenderThread";
 import { SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 
 export interface EditorRendererState {
@@ -15,23 +15,23 @@ export function initEditorRendererState(): EditorRendererState {
   };
 }
 
-export function initEditorRenderer(state: RenderWorkerState) {
+export function initEditorRenderer(state: RenderThreadState) {
   state.messageHandlers[WorkerMessageType.LoadEditor] = onLoadEditor;
   state.messageHandlers[WorkerMessageType.DisposeEditor] = onDisposeEditor;
   state.messageHandlers[WorkerMessageType.SelectionChanged] = onSelectionChanged;
   //state.preSystems.push(EditorRendererSystem);
 }
 
-function onLoadEditor(state: RenderWorkerState) {
+function onLoadEditor(state: RenderThreadState) {
   state.editor.editorLoaded = true;
 }
 
-function onDisposeEditor(state: RenderWorkerState) {
+function onDisposeEditor(state: RenderThreadState) {
   state.editor.editorLoaded = false;
   state.editor.selectedEntities.length = 0;
 }
 
-function onSelectionChanged(state: RenderWorkerState, message: SelectionChangedMessage) {
+function onSelectionChanged(state: RenderThreadState, message: SelectionChangedMessage) {
   state.editor.selectedEntities = message.selectedEntities;
 }
 

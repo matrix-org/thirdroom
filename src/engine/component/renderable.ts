@@ -3,7 +3,7 @@ import { addComponent, hasComponent, IComponent } from "bitecs";
 import { renderableBuffer } from "./buffers";
 import { addView } from "../allocator/CursorBuffer";
 import { maxEntities } from "../config";
-import { GameState, World } from "../GameWorker";
+import { GameState, World } from "../GameThread";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
 import { traverse } from "./transform";
 

@@ -6,6 +6,7 @@ import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
 import { RaycastResult, RayId } from "./raycaster/raycaster.common";
+import { StatsBuffer } from "./stats/stats.common";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -67,7 +68,7 @@ export interface InitializeGameWorkerMessage extends WorkerMessage {
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
   resourceManagerBuffer: SharedArrayBuffer;
-  statsSharedArrayBuffer: SharedArrayBuffer;
+  statsBuffer: StatsBuffer;
   hierarchyTripleBuffer: TripleBufferState;
 }
 
@@ -92,7 +93,7 @@ export interface InitializeRenderWorkerMessage extends WorkerMessage {
   resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
-  statsSharedArrayBuffer: SharedArrayBuffer;
+  statsBuffer: StatsBuffer;
 }
 
 export interface RenderWorkerInitializedMessage extends WorkerMessage {
