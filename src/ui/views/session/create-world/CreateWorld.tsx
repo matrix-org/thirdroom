@@ -223,14 +223,11 @@ export function CreateWorld() {
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
                         <Input name="nameInput" required />
                       </SettingTile>
-                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-                        <Switch name="isPrivateInput" defaultChecked={true} />
-                      </SettingTile>
-                    </div>
-                    <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
                         <Input name="topicInput" />
                       </SettingTile>
+                    </div>
+                    <div className="flex gap-lg">
                       <SettingTile
                         className="grow basis-0"
                         label={
@@ -251,6 +248,9 @@ export function CreateWorld() {
                           before={<Text variant="b2">#</Text>}
                           after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
                         />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                        <Switch name="isPrivateInput" defaultChecked={true} />
                       </SettingTile>
                     </div>
                   </div>
