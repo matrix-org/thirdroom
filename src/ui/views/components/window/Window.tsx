@@ -9,7 +9,5 @@ interface WindowProps {
 }
 
 export function Window({ className, children }: WindowProps) {
-  const windowClass = classNames("Window flex", className);
-
-  return <div className={windowClass}>{children}</div>;
+  return <div className={classNames("Window flex", className)}>{children}</div>;
 }
