@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -22,14 +22,12 @@ export function ScenePreviewUpload({
   const { session, platform } = useHydrogen(true);
   const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
   const [sentBytes, setProgress] = useState(0);
-  const handleProgress = useCallback((sentBytes: number) => {
-    setProgress(sentBytes);
-  }, []);
+
   const {
     mxc,
     upload,
     cancel: cancelUpload,
-  } = useAttachmentUpload(session._hsApi, platform, useDebounce(handleProgress, { wait: 200, immediate: true }));
+  } = useAttachmentUpload(session._hsApi, platform, useDebounce(setProgress, { wait: 200, immediate: true }));
 
   useEffect(() => {
     onBlobChange(scenePrevBlob);

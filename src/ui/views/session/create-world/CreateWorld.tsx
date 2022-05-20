@@ -160,9 +160,11 @@ export function CreateWorld() {
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
-  const handleSceneMxcChange = useCallback(setSceneMxc, [setSceneMxc]);
-  const handlePreviewMxcChange = useCallback(setScenePrevMxc, [setScenePrevMxc]);
-  const handlePreviewBlobChange = useCallback(setScenePrevBlob, [setScenePrevBlob]);
+  const handleAvatarSelect = useCallback(async () => {
+    const data = await platform.openFile("image/*");
+    if (!data) return;
+    setAvatarBlob(data.blob);
+  }, [setAvatarBlob, platform]);
 
   return (
     <Window>
@@ -204,11 +206,7 @@ export function CreateWorld() {
                             <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
                           ) : (
                             <IconButton
-                              onClick={async () => {
-                                const data = await platform.openFile("image/*");
-                                if (!data) return;
-                                setAvatarBlob(data.blob);
-                              }}
+                              onClick={handleAvatarSelect}
                               size="xl"
                               iconSrc={AddIC}
                               label="Add world avatar"
@@ -218,8 +216,8 @@ export function CreateWorld() {
                       </ThumbnailHover>
                     </SettingTile>
                     <div className="flex gap-lg">
-                      <SceneUpload onMxcChange={handleSceneMxcChange} />
-                      <ScenePreviewUpload onMxcChange={handlePreviewMxcChange} onBlobChange={handlePreviewBlobChange} />
+                      <SceneUpload onMxcChange={setSceneMxc} />
+                      <ScenePreviewUpload onMxcChange={setScenePrevMxc} onBlobChange={setScenePrevBlob} />
                     </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
@@ -261,12 +259,12 @@ export function CreateWorld() {
               bottom={
                 <WindowFooter
                   left={
-                    <Button fill="outline" onClick={() => selectWindow()}>
+                    <Button size="lg" fill="outline" onClick={() => selectWindow()}>
                       Cancel
                     </Button>
                   }
                   right={
-                    <Button type="submit" disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc}>
+                    <Button size="lg" type="submit" disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc}>
                       Create World
                     </Button>
                   }
