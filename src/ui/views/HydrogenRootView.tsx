@@ -22,6 +22,7 @@ import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
+import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 
 const defaultHomeServer = "matrix.org";
 
@@ -134,13 +135,7 @@ function initHydrogen() {
     logger: platform.logger,
   };
 
-  const global = window as unknown as any;
-
-  if (!global.thirdroom) {
-    global.thirdroom = {};
-  }
-
-  global.thirdroom.hydrogen = hydrogenInstance;
+  registerThirdroomGlobalVar("hydrogen", hydrogenInstance);
 
   return hydrogenInstance;
 }

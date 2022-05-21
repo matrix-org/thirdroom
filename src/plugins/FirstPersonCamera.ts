@@ -2,7 +2,7 @@ import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm } from "gl-matrix";
 
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
-import { GameState, World } from "../engine/GameThread";
+import { GameState, World } from "../engine/GameWorker";
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",

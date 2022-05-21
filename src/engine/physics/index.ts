@@ -10,11 +10,11 @@ import {
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState, World } from "../GameThread";
+import { GameState, World } from "../GameWorker";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network";
-import { playAudioFromWorker } from "../audio";
+import { playAudioFromWorker } from "../audio/audio.game";
 
 const RigidBodySoA = defineComponent({});
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);

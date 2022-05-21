@@ -1,29 +1,65 @@
 import {
-  WorkerMessages,
-  WorkerMessageType,
+  NetworkMessageType,
   ReliableNetworkMessage,
   UnreliableNetworkMessage,
   ReliableNetworkBroadcast,
   UnreliableNetworkBroadcast,
-} from "../WorkerMessage";
-import { MainThreadState } from "../MainThread";
-import { setPeerMediaStream } from "../audio/audio.main";
+} from "./network.common";
+import { IMainThreadContext } from "../MainThread";
+import { AudioScope, setPeerMediaStream } from "../audio/audio.main";
+import { getScope, registerMessageHandler } from "../types/types.common";
+
+/*********
+ * Types *
+ ********/
+
+export interface IMainNetworkScope {
+  reliableChannels: Map<string, RTCDataChannel>;
+  unreliableChannels: Map<string, RTCDataChannel>;
+  ws?: WebSocket;
+  // event listener references here for access upon disposal (removeEventListener)
+  onPeerMessage?: ({ data }: { data: ArrayBuffer }) => void;
+}
+
+/******************
+ * Initialization *
+ *****************/
+
+export const NetworkScope: () => IMainNetworkScope = () => ({
+  reliableChannels: new Map<string, RTCDataChannel>(),
+  unreliableChannels: new Map<string, RTCDataChannel>(),
+});
+
+export async function NetworkModule(ctx: IMainThreadContext) {
+  // const network = getScope(ctx, NetworkScope);
+
+  const disposables = [
+    registerMessageHandler(ctx, NetworkMessageType.ReliableNetworkMessage, onReliableNetworkMessage),
+    registerMessageHandler(ctx, NetworkMessageType.UnreliableNetworkMessage, onUnreliableNetworkMessage),
+    registerMessageHandler(ctx, NetworkMessageType.ReliableNetworkBroadcast, onReliableNetworkBroadcast),
+    registerMessageHandler(ctx, NetworkMessageType.UnreliableNetworkBroadcast, onUnreliableNetworkBroadcast),
+  ];
+
+  return () => {
+    for (const dispose of disposables) {
+      dispose();
+    }
+  };
+}
+
+/********************
+ * Message Handlers *
+ *******************/
 
 const onPeerMessage =
   (gameWorker: Worker) =>
   ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
+    gameWorker.postMessage({ type: NetworkMessageType.ReliableNetworkMessage, packet: data }, [data]);
   };
 
-export interface MainThreadNetworkState {
-  ws: WebSocket | undefined;
-  reliableChannels: Map<string, RTCDataChannel>;
-  unreliableChannels: Map<string, RTCDataChannel>;
-  onGameWorkerMessage: Function;
-}
-
-const sendReliable = (netState: MainThreadNetworkState, message: ReliableNetworkMessage) => {
-  const { ws, reliableChannels } = netState;
+const onReliableNetworkMessage = (mainThread: IMainThreadContext, message: ReliableNetworkMessage) => {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { ws, reliableChannels } = netScope;
   const { peerId, packet } = message;
   if (ws) {
     ws.send(packet);
@@ -33,8 +69,9 @@ const sendReliable = (netState: MainThreadNetworkState, message: ReliableNetwork
   }
 };
 
-const sendUnreliable = (netState: MainThreadNetworkState, message: UnreliableNetworkMessage) => {
-  const { ws, unreliableChannels } = netState;
+const onUnreliableNetworkMessage = (mainThread: IMainThreadContext, message: UnreliableNetworkMessage) => {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { ws, unreliableChannels } = netScope;
   const { peerId, packet } = message;
   if (ws) {
     ws.send(packet);
@@ -44,8 +81,9 @@ const sendUnreliable = (netState: MainThreadNetworkState, message: UnreliableNet
   }
 };
 
-const broadcastReliable = (netState: MainThreadNetworkState, message: ReliableNetworkBroadcast) => {
-  const { ws, reliableChannels } = netState;
+const onReliableNetworkBroadcast = (mainThread: IMainThreadContext, message: ReliableNetworkBroadcast) => {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { ws, reliableChannels } = netScope;
   const { packet } = message;
   if (ws) {
     ws.send(packet);
@@ -58,8 +96,9 @@ const broadcastReliable = (netState: MainThreadNetworkState, message: ReliableNe
   }
 };
 
-const broadcastUnreliable = (netState: MainThreadNetworkState, message: UnreliableNetworkBroadcast) => {
-  const { ws, unreliableChannels } = netState;
+const onUnreliableNetworkBroadcast = (mainThread: IMainThreadContext, message: UnreliableNetworkBroadcast) => {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { ws, unreliableChannels } = netScope;
   const { packet } = message;
   if (ws) {
     ws?.send(packet);
@@ -72,79 +111,36 @@ const broadcastUnreliable = (netState: MainThreadNetworkState, message: Unreliab
   }
 };
 
-function onPeerLeft(mainState: MainThreadState, peerId: string) {
-  const {
-    gameWorker,
-    network: { reliableChannels, unreliableChannels },
-  } = mainState;
+function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
+  const { gameWorker } = mainThread;
+  const netScope = getScope(mainThread, NetworkScope);
+  const { reliableChannels, unreliableChannels } = netScope;
   const reliableChannel = reliableChannels.get(peerId);
   const unreliableChannel = unreliableChannels.get(peerId);
-  reliableChannel?.removeEventListener("message", onPeerMessage(gameWorker));
-  unreliableChannel?.removeEventListener("message", onPeerMessage(gameWorker));
+  if (netScope.onPeerMessage) {
+    reliableChannel?.removeEventListener("message", netScope.onPeerMessage);
+    unreliableChannel?.removeEventListener("message", netScope.onPeerMessage);
+  }
 
   reliableChannels.delete(peerId);
   unreliableChannels.delete(peerId);
 
   gameWorker.postMessage({
-    type: WorkerMessageType.RemovePeerId,
+    type: NetworkMessageType.RemovePeerId,
     peerId,
   });
 }
 
-const onGameWorkerMessage =
-  (network: MainThreadNetworkState) =>
-  ({ data }: MessageEvent) => {
-    if (typeof data !== "object") {
-      return;
-    }
+/*******
+ * API *
+ ******/
 
-    const message = data as WorkerMessages;
+export function connectToTestNet(mainThread: IMainThreadContext) {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { gameWorker } = mainThread;
 
-    switch (message.type) {
-      case WorkerMessageType.ReliableNetworkMessage:
-        sendReliable(network, message);
-        break;
-      case WorkerMessageType.UnreliableNetworkMessage:
-        sendUnreliable(network, message);
-        break;
-      case WorkerMessageType.ReliableNetworkBroadcast:
-        broadcastReliable(network, message);
-        break;
-      case WorkerMessageType.UnreliableNetworkBroadcast:
-        broadcastUnreliable(network, message);
-        break;
-    }
-  };
-
-/***************
- * External API *
- ***************/
-
-export const createNetworkState = () => ({
-  reliableChannels: new Map(),
-  unreliableChannels: new Map(),
-});
-
-export const disposeNetworkState = (mainState: MainThreadState) => {
-  const { network, gameWorker } = mainState;
-  gameWorker.removeEventListener("message", network.onGameWorkerMessage);
-};
-
-export const initNetworkState = (mainState: MainThreadState) => {
-  bindNetworkEvents(mainState);
-};
-
-export const bindNetworkEvents = (mainState: MainThreadState) => {
-  const { network, gameWorker } = mainState;
-  network.onGameWorkerMessage = onGameWorkerMessage(network);
-  gameWorker.addEventListener("message", network.onGameWorkerMessage);
-};
-
-export function connectToTestNet(mainState: MainThreadState) {
-  const { network, gameWorker } = mainState;
-
-  network.ws = new WebSocket("ws://localhost:9090");
-  const { ws } = network;
+  netScope.ws = new WebSocket("ws://localhost:9090");
+  const { ws } = netScope;
 
   ws.binaryType = "arraybuffer";
 
@@ -158,7 +154,7 @@ export function connectToTestNet(mainState: MainThreadState) {
     if (data.data === "setHost") {
       console.log("ws - setHost");
       gameWorker.postMessage({
-        type: WorkerMessageType.SetHost,
+        type: NetworkMessageType.SetHost,
         value: true,
       });
       ws?.removeEventListener("message", setHostFn);
@@ -172,11 +168,11 @@ export function connectToTestNet(mainState: MainThreadState) {
       if (d.setPeerId) {
         console.log("ws - setPeerId", d.setPeerId);
         gameWorker.postMessage({
-          type: WorkerMessageType.SetPeerId,
+          type: NetworkMessageType.SetPeerId,
           peerId: d.setPeerId,
         });
         gameWorker.postMessage({
-          type: WorkerMessageType.StateChanged,
+          type: NetworkMessageType.StateChanged,
           state: { joined: true },
         });
 
@@ -194,7 +190,7 @@ export function connectToTestNet(mainState: MainThreadState) {
       if (d.addPeerId) {
         console.log("ws - addPeerId", d.addPeerId);
         gameWorker.postMessage({
-          type: WorkerMessageType.AddPeerId,
+          type: NetworkMessageType.AddPeerId,
           peerId: d.addPeerId,
         });
       }
@@ -203,51 +199,53 @@ export function connectToTestNet(mainState: MainThreadState) {
   ws.addEventListener("message", addPeerId);
 }
 
-export function setHost(mainState: MainThreadState, value: boolean) {
-  const { gameWorker } = mainState;
+export function setHost(mainThread: IMainThreadContext, value: boolean) {
+  const { gameWorker } = mainThread;
   gameWorker.postMessage({
-    type: WorkerMessageType.SetHost,
+    type: NetworkMessageType.SetHost,
     value,
   });
 }
 
-export function setState(mainState: MainThreadState, state: any) {
-  const { gameWorker } = mainState;
+export function setState(mainThread: IMainThreadContext, state: any) {
+  const { gameWorker } = mainThread;
   gameWorker.postMessage({
-    type: WorkerMessageType.StateChanged,
+    type: NetworkMessageType.StateChanged,
     state,
   });
 }
 
-export function hasPeer(mainState: MainThreadState, peerId: string): boolean {
-  const { reliableChannels } = mainState.network;
+export function hasPeer(mainThread: IMainThreadContext, peerId: string): boolean {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { reliableChannels } = netScope;
   return reliableChannels.has(peerId);
 }
 
 export function addPeer(
-  mainState: MainThreadState,
+  mainThread: IMainThreadContext,
   peerId: string,
   dataChannel: RTCDataChannel,
   mediaStream?: MediaStream
 ) {
-  const {
-    gameWorker,
-    network: { reliableChannels, unreliableChannels },
-  } = mainState;
+  const { gameWorker } = mainThread;
+  const netScope = getScope(mainThread, NetworkScope);
+  const audioScope = getScope(mainThread, AudioScope);
+  const { reliableChannels, unreliableChannels } = netScope;
 
   if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
   else unreliableChannels.set(peerId, dataChannel);
 
   const onOpen = () => {
     const onClose = () => {
-      onPeerLeft(mainState, peerId);
+      onPeerLeft(mainThread, peerId);
     };
 
-    dataChannel.addEventListener("message", onPeerMessage(gameWorker));
+    netScope.onPeerMessage = onPeerMessage(gameWorker);
+    dataChannel.addEventListener("message", netScope.onPeerMessage);
     dataChannel.addEventListener("close", onClose);
 
     gameWorker.postMessage({
-      type: WorkerMessageType.AddPeerId,
+      type: NetworkMessageType.AddPeerId,
       peerId,
     });
   };
@@ -256,33 +254,26 @@ export function addPeer(
   dataChannel.addEventListener("open", onOpen);
 
   if (mediaStream) {
-    setPeerMediaStream(mainState.audio, peerId, mediaStream);
+    setPeerMediaStream(audioScope, peerId, mediaStream);
   }
 }
 
-export function removePeer(mainState: MainThreadState, peerId: string) {
-  onPeerLeft(mainState, peerId);
+export function removePeer(mainThread: IMainThreadContext, peerId: string) {
+  onPeerLeft(mainThread, peerId);
 }
 
-export function disconnect(mainState: MainThreadState) {
-  const {
-    network: { reliableChannels },
-  } = mainState;
+export function disconnect(mainThread: IMainThreadContext) {
+  const netScope = getScope(mainThread, NetworkScope);
+  const { reliableChannels } = netScope;
   for (const [peerId] of reliableChannels) {
-    onPeerLeft(mainState, peerId);
+    onPeerLeft(mainThread, peerId);
   }
 }
 
-export function setPeerId(mainState: MainThreadState, peerId: string) {
-  const { gameWorker } = mainState;
+export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
+  const { gameWorker } = mainThread;
   gameWorker.postMessage({
-    type: WorkerMessageType.SetPeerId,
+    type: NetworkMessageType.SetPeerId,
     peerId,
   });
 }
-
-export default {
-  create: createNetworkState,
-  init: initNetworkState,
-  dispose: disposeNetworkState,
-};

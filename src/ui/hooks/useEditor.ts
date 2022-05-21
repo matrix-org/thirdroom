@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { useEngine } from "./useEngine";
+import { useMainThreadContext } from "./useMainThread";
 import { EditorEventType } from "../../engine/editor/editor.common";
+import { getScope } from "../../engine/types/types.common";
+import { EditorScope, sendDisposeEditorMessage, sendLoadEditorMessage } from "../../engine/editor/editor.main";
 
 export function useEditor(): boolean {
-  const engine = useEngine();
+  const mainThread = useMainThreadContext();
+  const editor = getScope(mainThread, EditorScope);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -12,14 +15,14 @@ export function useEditor(): boolean {
       setLoading(false);
     }
 
-    engine.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
-    engine.loadEditor();
+    editor.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
+    sendLoadEditorMessage(mainThread);
 
     return () => {
-      engine.disposeEditor();
-      engine.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
+      sendDisposeEditorMessage(mainThread);
+      editor.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
     };
-  }, [engine]);
+  }, [editor, mainThread]);
 
   return loading;
 }

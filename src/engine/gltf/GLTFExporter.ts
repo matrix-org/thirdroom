@@ -2,7 +2,7 @@ import { Object3D } from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 
 import { GLTFEntityDescription } from ".";
-import { RenderThreadState } from "../RenderThread";
+import { RenderThreadState } from "../RenderWorker";
 import { ExportGLTFMessage } from "../WorkerMessage";
 
 function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription): Object3D {

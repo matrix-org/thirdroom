@@ -1,19 +1,26 @@
 import { useState, useEffect } from "react";
 
 import { EditorEventType, Selection } from "../../engine/editor/editor.common";
-import { useEngine } from "./useEngine";
+import { EditorScope } from "../../engine/editor/editor.main";
+import { getScope } from "../../engine/types/types.common";
+import { useMainThreadContext } from "./useMainThread";
 
 export function useEditorSelection(): Selection {
-  const engine = useEngine();
-  const [selection, setSelection] = useState(engine.getSelection());
+  const mainThread = useMainThreadContext();
+  const editor = getScope(mainThread, EditorScope);
+  const [selection, setSelection] = useState({
+    activeEntity: editor.activeEntity,
+    activeEntityComponents: editor.activeEntityComponents,
+    selectedEntities: editor.selectedEntities,
+  });
 
   useEffect(() => {
-    engine.addListener(EditorEventType.SelectionChanged, setSelection);
+    editor.addListener(EditorEventType.SelectionChanged, setSelection);
 
     return () => {
-      engine.removeListener(EditorEventType.SelectionChanged, setSelection);
+      editor.removeListener(EditorEventType.SelectionChanged, setSelection);
     };
-  }, [engine]);
+  }, [editor]);
 
   return selection;
 }

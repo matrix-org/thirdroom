@@ -2,7 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineQuery, removeEntity } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
-import { GameState } from "./engine/GameThread";
+import { GameState } from "./engine/GameWorker";
 import { ActionMappingSystem, ActionType, BindingType, ButtonActionState } from "./engine/input/ActionMappingSystem";
 import {
   createPlayerRig,

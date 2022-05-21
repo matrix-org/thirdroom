@@ -1,7 +1,7 @@
 import { addViewByComponentPropertyType, createCursorBuffer } from "../allocator/CursorBuffer";
 import { TypedArray } from "../allocator/types";
 import { ComponentInfo } from "../component/types";
-import { maxEntities } from "../config";
+import { maxEntities } from "../config.common";
 import { TripleBufferState } from "../TripleBuffer";
 
 export interface Selection {

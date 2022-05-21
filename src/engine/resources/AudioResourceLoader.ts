@@ -1,4 +1,4 @@
-import { AudioState, getAudioBuffer } from "../audio";
+import { IAudioScope, getAudioBuffer } from "../audio/audio.main";
 import {
   // loadResource,
   ResourceDefinition,
@@ -17,12 +17,12 @@ export interface AudioDefinition extends ResourceDefinition {
 
 export function AudioResourceLoader(
   manager: ResourceManager,
-  audioState: AudioState
+  audio: IAudioScope
 ): ResourceLoader<AudioDefinition, AudioBuffer> {
   return {
     type: AUDIO_RESOURCE,
     async load(def) {
-      const audioBuffer = await getAudioBuffer(audioState, def.url);
+      const audioBuffer = await getAudioBuffer(audio, def.url);
       return {
         name: def.name,
         resource: audioBuffer,

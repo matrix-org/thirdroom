@@ -2,9 +2,17 @@ import { pipe } from "bitecs";
 
 import { renderableBuffer } from "../component/buffers";
 import { enteredOwnedPlayerQuery } from "../component/Player";
-import { GameState } from "../GameThread";
+import { NOOP } from "../config.common";
+import { GameState } from "../GameWorker";
 import { copyToWriteBuffer, swapWriteBuffer } from "../TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
+
+export const playAudioFromWorker = (filepath: string, eid: number = NOOP) =>
+  postMessage({
+    type: WorkerMessageType.PlayAudio,
+    filepath,
+    eid,
+  });
 
 export const sendAudioPeerEntityMessage = (peerId: string, eid: number) => {
   postMessage({

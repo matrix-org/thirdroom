@@ -1,4 +1,4 @@
-import { GameState } from "../GameThread";
+import { GameState } from "../GameWorker";
 
 export interface GameThreadModule<ModuleState> {
   create(): ModuleState;

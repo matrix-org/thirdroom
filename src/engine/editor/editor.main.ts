@@ -1,3 +1,5 @@
+import EventEmitter from "events";
+
 import { ComponentInfo } from "../component/types";
 import { ActiveEntityView, createActiveEntityViews, EditorEventType, Selection } from "./editor.common";
 import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../TripleBuffer";
@@ -5,19 +7,15 @@ import {
   ComponentInfoChangedMessage,
   ComponentPropertyChangedMessage,
   EditorLoadedMessage,
+  SaveGLTFMessage,
   SelectionChangedMessage,
-  WorkerMessages,
   WorkerMessageType,
 } from "../WorkerMessage";
 import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
-import { maxEntities } from "../config";
-import { MainThreadModule } from "../types/types.main";
-import { MainThreadState } from "../MainThread";
-
-export default {
-  create: createMainThreadEditorState,
-  init: initEditorMainThread,
-} as MainThreadModule<MainThreadEditorState>;
+import { maxEntities } from "../config.common";
+import { IMainThreadContext } from "../MainThread";
+import { getScope, registerMessageHandler, registerSystem } from "../types/types.common";
+import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
 
 interface HierarchyView {
   parent: Uint32Array;
@@ -27,7 +25,7 @@ interface HierarchyView {
   hierarchyUpdated: Uint8Array;
 }
 
-export interface MainThreadEditorState {
+export interface EditorScope extends EventEmitter {
   selectedEntities: number[];
   activeEntity?: number;
   activeEntityComponents?: number[];
@@ -41,7 +39,8 @@ export interface MainThreadEditorState {
   activeEntityView?: ActiveEntityView;
 }
 
-function createMainThreadEditorState(): MainThreadEditorState {
+// Access module-specific state by importing this context in your systems, modules, or React components
+export function EditorScope(ctx: IMainThreadContext): EditorScope {
   const hierarchyTripleBuffer = createTripleBuffer();
   const cursorBuffers = hierarchyTripleBuffer.buffers.map((b) => createCursorBuffer(b));
 
@@ -58,55 +57,73 @@ function createMainThreadEditorState(): MainThreadEditorState {
       } as HierarchyView)
   );
 
-  return {
-    selectedEntities: [],
-    activeEntity: undefined,
-    activeEntityComponents: [],
-    componentInfoMap: new Map(),
-    componentProperties: new Map(),
-    hierarchyTripleBuffer,
-    hierarchyViews,
-    activeHierarchyView: hierarchyViews[getReadBufferIndex(hierarchyTripleBuffer)],
+  return Object.assign(
+    {
+      selectedEntities: [],
+      activeEntity: undefined,
+      activeEntityComponents: [],
+      componentInfoMap: new Map(),
+      componentProperties: new Map(),
+      hierarchyTripleBuffer,
+      hierarchyViews,
+      activeHierarchyView: hierarchyViews[getReadBufferIndex(hierarchyTripleBuffer)],
+    },
+    new EventEmitter()
+  );
+}
+
+export function EditorModule(ctx: IMainThreadContext) {
+  const editor = getScope(ctx, EditorScope);
+
+  ctx.initialGameWorkerState.hierarchyTripleBuffer = editor.hierarchyTripleBuffer;
+
+  const disposables = [
+    registerMessageHandler(ctx, WorkerMessageType.EditorLoaded, onEditorLoaded),
+    registerMessageHandler(ctx, WorkerMessageType.SelectionChanged, onSelectionChanged),
+    registerMessageHandler(ctx, WorkerMessageType.ComponentInfoChanged, onComponentInfoChanged),
+    registerMessageHandler(ctx, WorkerMessageType.ComponentPropertyChanged, onComponentPropertyChanged),
+    registerMessageHandler(ctx, WorkerMessageType.SaveGLTF, onSaveGLTF),
+    registerSystem(ctx, MainThreadEditorSystem),
+    registerThirdroomGlobalFn("exportScene", () => {
+      sendExportSceneMessage(ctx);
+    }),
+  ];
+
+  return () => {
+    // Optional dispose function
+    sendDisposeEditorMessage(ctx);
+
+    for (const dispose of disposables) {
+      dispose();
+    }
   };
 }
 
-function initEditorMainThread(state: MainThreadState) {
-  state.gameWorker.addEventListener("message", ({ data }) => {
-    if (typeof data !== "object") {
-      return;
-    }
+function MainThreadEditorSystem(mainThread: IMainThreadContext) {
+  const editor = getScope(mainThread, EditorScope);
 
-    const message = data as WorkerMessages;
+  // Set activeHierarchyView to point to the latest updated triple buffer view containing scene hierarchy info
+  swapReadBuffer(editor.hierarchyTripleBuffer);
+  editor.activeHierarchyView = editor.hierarchyViews[getReadBufferIndex(editor.hierarchyTripleBuffer)];
 
-    switch (message.type) {
-      case WorkerMessageType.EditorLoaded:
-        onEditorLoaded(state, message);
-        break;
-      case WorkerMessageType.SelectionChanged:
-        onSelectionChanged(state, message);
-        break;
-      case WorkerMessageType.ComponentInfoChanged:
-        onComponentInfoChanged(state, message);
-        break;
-      case WorkerMessageType.ComponentPropertyChanged:
-        onComponentPropertyChanged(state, message);
-        break;
-    }
-  });
-
-  state.systems.push(mainEditorSystem);
+  if (editor.activeEntityTripleBuffer && editor.activeEntityViews) {
+    swapReadBuffer(editor.activeEntityTripleBuffer);
+    editor.activeEntityView = editor.activeEntityViews[getReadBufferIndex(editor.activeEntityTripleBuffer)];
+  }
 }
 
-function onEditorLoaded(state: MainThreadState, message: EditorLoadedMessage) {
-  state.editor.componentInfoMap = new Map(message.componentInfos);
-  state.emit(EditorEventType.EditorLoaded);
+function onEditorLoaded(mainThread: IMainThreadContext, message: EditorLoadedMessage) {
+  const editor = getScope(mainThread, EditorScope);
+  editor.componentInfoMap = new Map(message.componentInfos);
+  editor.emit(EditorEventType.EditorLoaded);
 }
 
-function onSelectionChanged(state: MainThreadState, message: SelectionChangedMessage) {
-  state.editor.selectedEntities = message.selectedEntities;
-  state.editor.activeEntity = message.activeEntity;
-  state.editor.activeEntityComponents = message.activeEntityComponents;
-  state.editor.activeEntityTripleBuffer = message.activeEntityTripleBuffer;
+function onSelectionChanged(mainThread: IMainThreadContext, message: SelectionChangedMessage) {
+  const editor = getScope(mainThread, EditorScope);
+  editor.selectedEntities = message.selectedEntities;
+  editor.activeEntity = message.activeEntity;
+  editor.activeEntityComponents = message.activeEntityComponents;
+  editor.activeEntityTripleBuffer = message.activeEntityTripleBuffer;
 
   let activeEntityViews: ActiveEntityView[] | undefined;
   let activeEntityView: ActiveEntityView | undefined;
@@ -115,57 +132,60 @@ function onSelectionChanged(state: MainThreadState, message: SelectionChangedMes
     activeEntityViews = createActiveEntityViews(
       message.activeEntityTripleBuffer,
       message.activeEntityComponents,
-      state.editor.componentInfoMap
+      editor.componentInfoMap
     );
     activeEntityView = activeEntityViews[getReadBufferIndex(message.activeEntityTripleBuffer)];
   }
 
-  state.editor.activeEntityViews = activeEntityViews;
-  state.editor.activeEntityView = activeEntityView;
+  editor.activeEntityViews = activeEntityViews;
+  editor.activeEntityView = activeEntityView;
 
-  state.emit(EditorEventType.SelectionChanged, {
-    selectedEntities: state.editor.selectedEntities,
-    activeEntity: state.editor.activeEntity,
-    activeEntityComponents: state.editor.activeEntityComponents,
+  editor.emit(EditorEventType.SelectionChanged, {
+    selectedEntities: editor.selectedEntities,
+    activeEntity: editor.activeEntity,
+    activeEntityComponents: editor.activeEntityComponents,
   } as Selection);
 }
 
-function onComponentInfoChanged(state: MainThreadState, message: ComponentInfoChangedMessage) {
-  state.editor.componentInfoMap.set(message.componentId, message.componentInfo);
-  state.emit(EditorEventType.ComponentInfoChanged, message.componentId, message.componentInfo);
+function onComponentInfoChanged(ctx: IMainThreadContext, message: ComponentInfoChangedMessage) {
+  const editor = getScope(ctx, EditorScope);
+  editor.componentInfoMap.set(message.componentId, message.componentInfo);
+  editor.emit(EditorEventType.ComponentInfoChanged, message.componentId, message.componentInfo);
 }
 
-function onComponentPropertyChanged(state: MainThreadState, message: ComponentPropertyChangedMessage) {}
+function onComponentPropertyChanged(ctx: IMainThreadContext, message: ComponentPropertyChangedMessage) {}
 
-export function sendLoadEditorMessage({ gameWorker }: MainThreadState) {
-  gameWorker.postMessage({
-    type: WorkerMessageType.LoadEditor,
-  });
+function onSaveGLTF(ctx: IMainThreadContext, message: SaveGLTFMessage) {
+  downloadFile(message.buffer, "scene.glb");
 }
 
-export function sendDisposeEditorMessage({ editor, gameWorker }: MainThreadState) {
-  editor.selectedEntities = [];
-  editor.componentInfoMap.clear();
-  editor.componentProperties.clear();
-  gameWorker.postMessage({
-    type: WorkerMessageType.DisposeEditor,
-  });
+function downloadFile(buffer: ArrayBuffer, fileName: string) {
+  const blob = new Blob([buffer], { type: "application/octet-stream" });
+  const el = document.createElement("a");
+  el.style.display = "none";
+  document.body.appendChild(el);
+  el.href = URL.createObjectURL(blob);
+  el.download = fileName;
+  el.click();
+  document.body.removeChild(el);
 }
 
-export function sendRemoveComponentMessage({ editor, gameWorker }: MainThreadState, componentId: number) {
-  gameWorker.postMessage({
+export function sendLoadEditorMessage(ctx: IMainThreadContext) {
+  ctx.gameWorker.postMessage({ type: WorkerMessageType.LoadEditor });
+}
+
+export function sendRemoveComponentMessage(ctx: IMainThreadContext, componentId: number) {
+  const editor = getScope(ctx, EditorScope);
+  ctx.gameWorker.postMessage({
     type: WorkerMessageType.RemoveComponent,
     entities: editor.selectedEntities,
     componentId,
   });
 }
 
-export function sendSetComponentPropertyMessage(
-  { editor, gameWorker }: MainThreadState,
-  propertyId: number,
-  value: any
-) {
-  gameWorker.postMessage({
+export function sendSetComponentPropertyMessage(ctx: IMainThreadContext, propertyId: number, value: any) {
+  const editor = getScope(ctx, EditorScope);
+  ctx.gameWorker.postMessage({
     type: WorkerMessageType.SetComponentProperty,
     entities: editor.selectedEntities,
     propertyId,
@@ -173,22 +193,12 @@ export function sendSetComponentPropertyMessage(
   });
 }
 
-export function sendExportSceneMessage(state: MainThreadState) {
-  state.gameWorker.postMessage({
+export function sendExportSceneMessage(ctx: IMainThreadContext) {
+  ctx.gameWorker.postMessage({
     type: WorkerMessageType.ExportScene,
   });
 }
 
-function mainEditorSystem(state: MainThreadState) {
-  const editorState = state.editor;
-
-  // Set activeHierarchyView to point to the latest updated triple buffer view containing scene hierarchy info
-  swapReadBuffer(editorState.hierarchyTripleBuffer);
-  editorState.activeHierarchyView = editorState.hierarchyViews[getReadBufferIndex(editorState.hierarchyTripleBuffer)];
-
-  if (editorState.activeEntityTripleBuffer && editorState.activeEntityViews) {
-    swapReadBuffer(editorState.activeEntityTripleBuffer);
-    editorState.activeEntityView =
-      editorState.activeEntityViews[getReadBufferIndex(editorState.activeEntityTripleBuffer)];
-  }
+export function sendDisposeEditorMessage(ctx: IMainThreadContext) {
+  ctx.gameWorker.postMessage({ type: WorkerMessageType.DisposeEditor });
 }

@@ -1,37 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 
-import { StatsObject } from "../../../../engine/stats";
-import { useEngine } from "../../../hooks/useEngine";
+import { getStats, StatsObject } from "../../../../engine/stats/stats.main";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Text } from "../../../atoms/text/Text";
 import "./Stats.css";
+import { registerThirdroomGlobalFn } from "../../../../engine/utils/registerThirdroomGlobal";
 
 export function Stats() {
-  const { getStats } = useEngine();
+  const mainThread = useMainThreadContext();
   const [showStats, setShowStats] = useState<boolean>(false);
   const [, setFrame] = useState<number>(0);
   const statsRef = useRef<StatsObject>();
 
   useEffect(() => {
-    const global = window as unknown as any;
-
-    if (!global.thirdroom) {
-      global.thirdroom = {};
-    }
-
-    global.thirdroom.showStats = (value = true) => {
+    return registerThirdroomGlobalFn("showStats", (value: boolean) => {
       setShowStats(value);
-    };
-
-    return () => {
-      global.thirdroom.showStats = () => {};
-    };
+    });
   }, []);
 
   useEffect(() => {
     let timeoutId: number;
 
     const onUpdate = () => {
-      const stats = getStats();
+      const stats = getStats(mainThread);
       statsRef.current = stats;
 
       if (stats) {
@@ -48,7 +39,7 @@ export function Stats() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [getStats, showStats]);
+  }, [mainThread, showStats]);
 
   return showStats ? (
     <div className="Stats">

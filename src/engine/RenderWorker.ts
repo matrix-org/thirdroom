@@ -15,7 +15,7 @@ import {
 
 import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
 import { swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
-import { maxEntities, tickRate } from "./config";
+import { maxEntities, tickRate } from "./config.common";
 import {
   createResourceManager,
   onAddResourceRef,
@@ -211,8 +211,11 @@ async function onInit({
   initialCanvasHeight,
   resourceManagerBuffer,
   renderableTripleBuffer,
-  statsBuffer,
+  initialRenderWorkerState,
 }: InitializeRenderWorkerMessage): Promise<RenderThreadState> {
+  const { statsBuffer } = initialRenderWorkerState as {
+    statsBuffer: StatsBuffer;
+  };
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 
   if (gameWorkerMessageTarget instanceof MessagePort) {

@@ -6,7 +6,6 @@ import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
 import { RaycastResult, RayId } from "./raycaster/raycaster.common";
-import { StatsBuffer } from "./stats/stats.common";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -63,13 +62,10 @@ export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> 
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
-  audioTripleBuffer: TripleBufferState;
-  inputTripleBuffer: TripleBufferState;
   renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
   resourceManagerBuffer: SharedArrayBuffer;
-  statsBuffer: StatsBuffer;
-  hierarchyTripleBuffer: TripleBufferState;
+  initialGameWorkerState: { [key: string]: any };
 }
 
 export interface GameWorkerInitializedMessage extends WorkerMessage {
@@ -93,7 +89,7 @@ export interface InitializeRenderWorkerMessage extends WorkerMessage {
   resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
-  statsBuffer: StatsBuffer;
+  initialRenderWorkerState: { [key: string]: any };
 }
 
 export interface RenderWorkerInitializedMessage extends WorkerMessage {

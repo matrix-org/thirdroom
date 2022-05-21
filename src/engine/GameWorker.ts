@@ -3,7 +3,7 @@ import { addEntity, createWorld, IWorld, removeEntity } from "bitecs";
 
 import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
-import { maxEntities, tickRate } from "./config";
+import { maxEntities, tickRate } from "./config.common";
 import {
   RemoteResourceManager,
   createRemoteResourceManager,
@@ -12,7 +12,6 @@ import {
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
 import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
-import { createInputState, MainThreadInputState, InputStateGetters } from "./input/input.main";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -24,7 +23,8 @@ import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component/buffers";
 import { init, onStateChange } from "../game";
-import { createStatsBuffer, StatsBuffer, writeGameWorkerStats } from "./stats";
+import { StatsBuffer } from "./stats/stats.common";
+import { writeGameWorkerStats } from "./stats/stats.game";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { CursorView } from "./network/CursorView";
 import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
@@ -38,7 +38,8 @@ import {
   onLoadEditor,
 } from "./editor/editor.game";
 import { createRaycasterState, initRaycaster, RaycasterState } from "./raycaster/raycaster.game";
-import { gameAudioSystem } from "./audio";
+import { gameAudioSystem } from "./audio/audio.game";
+import { createInputState, InputState, InputStateGetters } from "./input/input.common";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -213,7 +214,7 @@ export interface NetworkState {
 
 export interface GameInputState {
   tripleBuffer: TripleBufferState;
-  inputStates: MainThreadInputState[];
+  inputStates: InputState[];
   actions: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
@@ -244,7 +245,7 @@ export interface GameState {
 }
 
 const generateInputGetters = (
-  inputStates: MainThreadInputState[],
+  inputStates: InputState[],
   inputTripleBuffer: TripleBufferState
 ): { [path: string]: number } =>
   Object.defineProperties(
@@ -258,14 +259,18 @@ const generateInputGetters = (
   );
 
 async function onInit({
-  audioTripleBuffer,
-  inputTripleBuffer,
   resourceManagerBuffer,
   renderWorkerMessagePort,
   renderableTripleBuffer,
-  statsBuffer,
-  hierarchyTripleBuffer,
+  initialGameWorkerState,
 }: InitializeGameWorkerMessage): Promise<GameState> {
+  const { inputTripleBuffer, audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } = initialGameWorkerState as {
+    inputTripleBuffer: TripleBufferState;
+    audioTripleBuffer: TripleBufferState;
+    hierarchyTripleBuffer: TripleBufferState;
+    statsBuffer: StatsBuffer;
+  };
+
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);

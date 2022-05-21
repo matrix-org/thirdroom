@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState, GameInputState } from "../GameThread";
+import { GameState, GameInputState } from "../GameWorker";
 
 export enum ActionType {
   Vector2 = "Vector2",

@@ -1,6 +1,6 @@
 import { Event, Intersection, Object3D, Raycaster } from "three";
 
-import { RenderThreadState } from "../RenderThread";
+import { RenderThreadState } from "../RenderWorker";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
 

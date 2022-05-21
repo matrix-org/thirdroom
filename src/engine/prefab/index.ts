@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
-import { GameState } from "../GameThread";
+import { GameState } from "../GameWorker";
 import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
 import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
 import { addRigidBody } from "../physics";
@@ -12,7 +12,7 @@ import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
-import { playAudioFromWorker } from "../audio";
+import { playAudioFromWorker } from "../audio/audio.game";
 
 /* Prefab Factories */
 

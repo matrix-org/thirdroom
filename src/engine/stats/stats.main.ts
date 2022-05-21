@@ -1,20 +1,24 @@
-import { MainThreadState } from "../MainThread";
-import { MainThreadModule } from "../types/types.main";
+import { IMainThreadContext } from "../MainThread";
+import { getScope } from "../types/types.common";
 import { StatNames, Stats, StatsBuffer } from "./stats.common";
 
-export interface MainThreadStatsState {
+export interface StatsScope {
   buffer: StatsBuffer;
   stats: StatsObject;
 }
 
-export default {
-  create() {
-    return {
-      buffer: createStatsBuffer(),
-      stats: Object.fromEntries(StatNames.map((key) => [key, 0])) as StatsObject,
-    };
-  },
-} as MainThreadModule<MainThreadStatsState>;
+export function StatsScope(): StatsScope {
+  return {
+    buffer: createStatsBuffer(),
+    stats: Object.fromEntries(StatNames.map((key) => [key, 0])) as StatsObject,
+  };
+}
+
+export function StatsModule(context: IMainThreadContext) {
+  const stats = getScope(context, StatsScope);
+  context.initialGameWorkerState.statsBuffer = stats.buffer;
+  context.initialRenderWorkerState.statsBuffer = stats.buffer;
+}
 
 function createStatsBuffer(): StatsBuffer {
   const buffer = new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * StatNames.length);
@@ -28,7 +32,8 @@ function createStatsBuffer(): StatsBuffer {
 
 export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: number | string };
 
-export function getStats({ stats: { stats, buffer } }: MainThreadState): StatsObject {
+export function getStats(context: IMainThreadContext): StatsObject {
+  const { stats, buffer } = getScope(context, StatsScope);
   stats.fps = buffer.f32[Stats.fps].toFixed(2);
   stats.frameTime = (buffer.f32[Stats.frameTime] * 1000).toFixed(2);
   stats.frameDuration = (buffer.f32[Stats.frameDuration] * 1000).toFixed(2);

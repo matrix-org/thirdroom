@@ -35,10 +35,10 @@ import {
   writeUint8,
 } from "./CursorView";
 import { addChild, Transform } from "../component/transform";
-import { GameState } from "../GameThread";
+import { GameState } from "../GameWorker";
 import { WorkerMessageType } from "../WorkerMessage";
 import { createCube } from "../prefab";
-import { NOOP } from "../config";
+import { NOOP } from "../config.common";
 import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics";
 import { sendAudioPeerEntityMessage } from "../audio/audio.game";

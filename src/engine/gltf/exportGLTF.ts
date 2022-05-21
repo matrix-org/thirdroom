@@ -3,7 +3,7 @@ import { hasComponent } from "bitecs";
 import { GLTFComponentDescription, GLTFEntityDescription } from ".";
 import { Renderable } from "../component/renderable";
 import { getChildren, Transform } from "../component/transform";
-import { GameState } from "../GameThread";
+import { GameState } from "../GameWorker";
 import { ExportGLTFMessage, WorkerMessageType } from "../WorkerMessage";
 
 function serializeEntity(state: GameState, eid: number): GLTFEntityDescription {

@@ -1,4 +1,4 @@
-import { RenderThreadState } from "../RenderThread";
+import { RenderThreadState } from "../RenderWorker";
 import { SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 
 export interface EditorRendererState {

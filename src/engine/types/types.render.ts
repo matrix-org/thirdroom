@@ -1,4 +1,4 @@
-import { RenderThreadState } from "../RenderThread";
+import { RenderThreadState } from "../RenderWorker";
 
 export interface RenderThreadModule<ModuleState> {
   create(): ModuleState;
