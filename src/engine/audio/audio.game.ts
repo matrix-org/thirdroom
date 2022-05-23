@@ -4,7 +4,7 @@ import { renderableBuffer } from "../component/buffers";
 import { enteredOwnedPlayerQuery } from "../component/Player";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameWorker";
-import { copyToWriteBuffer, swapWriteBuffer } from "../TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer } from "../allocator/TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
 
 export const playAudioFromWorker = (filepath: string, eid: number = NOOP) =>

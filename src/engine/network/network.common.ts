@@ -2,10 +2,8 @@ import { Message } from "../module/module.common";
 
 export enum NetworkMessageType {
   // Main -> Game
-  ReliableNetworkMessage = "reliable-network-message",
-  ReliableNetworkBroadcast = "reliable-network-broadcast",
-  UnreliableNetworkMessage = "unreliable-network-message",
-  UnreliableNetworkBroadcast = "unreliable-network-broadcast",
+  NetworkMessage = "reliable-network-message",
+  NetworkBroadcast = "reliable-network-broadcast",
 
   // Game -> Main
   SetPeerId = "set-peer-id",
@@ -17,22 +15,15 @@ export enum NetworkMessageType {
 
 // Main -> Game
 
-export interface ReliableNetworkMessage extends Message<NetworkMessageType.ReliableNetworkMessage> {
+export interface NetworkMessage extends Message<NetworkMessageType.NetworkMessage> {
   peerId: string;
   packet: ArrayBuffer;
+  reliable: boolean;
 }
 
-export interface UnreliableNetworkMessage extends Message<NetworkMessageType.UnreliableNetworkMessage> {
-  peerId: string;
+export interface NetworkBroadcast extends Message<NetworkMessageType.NetworkBroadcast> {
   packet: ArrayBuffer;
-}
-
-export interface ReliableNetworkBroadcast extends Message<NetworkMessageType.ReliableNetworkBroadcast> {
-  packet: ArrayBuffer;
-}
-
-export interface UnreliableNetworkBroadcast extends Message<NetworkMessageType.UnreliableNetworkBroadcast> {
-  packet: ArrayBuffer;
+  reliable: boolean;
 }
 
 // Game -> Main

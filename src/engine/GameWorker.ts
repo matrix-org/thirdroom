@@ -1,5 +1,5 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld, IWorld, removeEntity } from "bitecs";
+import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
 import { createCursorBuffer } from "./allocator/CursorBuffer";
@@ -11,7 +11,7 @@ import {
   remoteResourceLoaded,
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./TripleBuffer";
+import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./allocator/TripleBuffer";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -26,8 +26,7 @@ import { init, onStateChange } from "../game";
 import { StatsBuffer } from "./stats/stats.common";
 import { writeGameWorkerStats } from "./stats/stats.game";
 import { exportGLTF } from "./gltf/exportGLTF";
-import { CursorView } from "./network/CursorView";
-import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network";
+import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network/network.game";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
 import {
   EditorState,
@@ -40,45 +39,50 @@ import {
 import { createRaycasterState, initRaycaster, RaycasterState } from "./raycaster/raycaster.game";
 import { gameAudioSystem } from "./audio/audio.game";
 import { createInputState, InputState, InputStateGetters } from "./input/input.common";
+import { BaseThreadContext, registerModules, updateSystemOrder } from "./module/module.common";
+import * as gameConfig from "./config.game";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
-const mapPeerIdAndIndex = (state: GameState, peerId: string) => {
-  const peerIdIndex = state.network.peerIdCount++;
-  state.network.peerIdToIndex.set(peerId, peerIdIndex);
-  state.network.indexToPeerId.set(peerIdIndex, peerId);
-};
-
-const addPeerId = (state: GameState, peerId: string) => {
-  if (state.network.peers.includes(peerId) || state.network.peerId === peerId) return;
-
-  state.network.peers.push(peerId);
-  state.network.newPeers.push(peerId);
-  if (state.network.hosting) mapPeerIdAndIndex(state, peerId);
-};
-
-const removePeerId = (state: GameState, peerId: string) => {
-  const i = state.network.peers.indexOf(peerId);
-  if (i > -1) {
-    const eid = state.network.peerIdToEntityId.get(peerId);
-    if (eid) removeEntity(state.world, eid);
-
-    state.network.peers.splice(i, 1);
-    state.network.peerIdToIndex.delete(peerId);
-  } else {
-    console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
+async function onInitMessage({ data }: { data: WorkerMessages }) {
+  if (typeof data !== "object") {
+    return;
   }
-};
 
-const setPeerId = (state: GameState, peerId: string) => {
-  state.network.peerId = peerId;
-  if (state.network.hosting) mapPeerIdAndIndex(state, peerId);
-};
+  const message = data as WorkerMessages;
 
-const setHost = (state: GameState, value: boolean) => {
-  state.network.hosting = value;
-};
+  if (message.type === WorkerMessageType.InitializeGameWorker) {
+    workerScope.removeEventListener("message", onInitMessage);
+
+    try {
+      if (message.renderWorkerMessagePort) {
+        message.renderWorkerMessagePort.start();
+      }
+
+      const state = await onInit(message);
+
+      workerScope.addEventListener("message", onMessage(state));
+
+      if (message.renderWorkerMessagePort) {
+        message.renderWorkerMessagePort.addEventListener("message", onMessage(state));
+      }
+
+      await registerModules(state, gameConfig.modules);
+
+      postMessage({
+        type: WorkerMessageType.GameWorkerInitialized,
+      } as GameWorkerInitializedMessage);
+    } catch (error) {
+      postMessage({
+        type: WorkerMessageType.GameWorkerError,
+        error,
+      } as GameWorkerErrorMessage);
+    }
+  }
+}
+
+workerScope.addEventListener("message", onInitMessage);
 
 const onMessage =
   (state: GameState) =>
@@ -89,10 +93,12 @@ const onMessage =
 
     const message = data as WorkerMessages;
 
-    const handler = state.messageHandlers[message.type];
+    const handlers = state.messageHandlers.get(message.type);
 
-    if (handler) {
-      handler(state, message as any);
+    if (handlers) {
+      for (let i = 0; i < handlers.length; i++) {
+        handlers[i](state, message);
+      }
       return;
     }
 
@@ -101,6 +107,8 @@ const onMessage =
       case WorkerMessageType.StartGameWorker:
         onStart(state);
         break;
+
+      // resource
       case WorkerMessageType.ResourceLoaded:
         remoteResourceLoaded(state.resourceManager, message.resourceId, message.remoteResource);
         break;
@@ -110,28 +118,16 @@ const onMessage =
       case WorkerMessageType.ResourceDisposed:
         remoteResourceDisposed(state.resourceManager, message.resourceId);
         break;
+
       case WorkerMessageType.ExportScene:
         exportGLTF(state, state.scene);
         break;
-      case WorkerMessageType.SetPeerId:
-        setPeerId(state, message.peerId);
-        break;
-      case WorkerMessageType.AddPeerId:
-        addPeerId(state, message.peerId);
-        break;
-      case WorkerMessageType.RemovePeerId:
-        removePeerId(state, message.peerId);
-        break;
-      case WorkerMessageType.ReliableNetworkMessage:
-      case WorkerMessageType.UnreliableNetworkMessage:
-        state.network.incoming.push(message.packet);
-        break;
+
       case WorkerMessageType.StateChanged:
         onStateChange(state, message.state);
         break;
-      case WorkerMessageType.SetHost:
-        setHost(state, message.value);
-        break;
+
+      // editor
       case WorkerMessageType.LoadEditor:
         onLoadEditor(state);
         break;
@@ -144,43 +140,6 @@ const onMessage =
         break;
     }
   };
-
-async function onInitMessage({ data }: { data: WorkerMessages }) {
-  if (typeof data !== "object") {
-    return;
-  }
-
-  const message = data as WorkerMessages;
-
-  if (message.type === WorkerMessageType.InitializeGameWorker) {
-    try {
-      if (message.renderWorkerMessagePort) {
-        message.renderWorkerMessagePort.start();
-      }
-
-      const state = await onInit(message);
-
-      postMessage({
-        type: WorkerMessageType.GameWorkerInitialized,
-      } as GameWorkerInitializedMessage);
-
-      workerScope.addEventListener("message", onMessage(state));
-
-      if (message.renderWorkerMessagePort) {
-        message.renderWorkerMessagePort.addEventListener("message", onMessage(state));
-      }
-    } catch (error) {
-      postMessage({
-        type: WorkerMessageType.GameWorkerError,
-        error,
-      } as GameWorkerErrorMessage);
-    }
-
-    workerScope.removeEventListener("message", onInitMessage);
-  }
-}
-
-workerScope.addEventListener("message", onInitMessage);
 
 export type World = IWorld;
 
@@ -196,22 +155,6 @@ export interface RenderState {
   port: RenderPort;
 }
 
-export interface NetworkState {
-  hosting: boolean;
-  incoming: ArrayBuffer[];
-  peerIdToEntityId: Map<string, number>;
-  networkIdToEntityId: Map<number, number>;
-  peerId: string;
-  peers: string[];
-  newPeers: string[];
-  peerIdCount: number;
-  peerIdToIndex: Map<string, number>;
-  indexToPeerId: Map<number, string>;
-  localIdCount: number;
-  removedLocalIds: number[];
-  messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
-}
-
 export interface GameInputState {
   tripleBuffer: TripleBufferState;
   inputStates: InputState[];
@@ -222,7 +165,7 @@ export interface GameInputState {
 
 export type System = (state: GameState) => void;
 
-export interface GameState {
+export interface GameState extends BaseThreadContext {
   world: World;
   physicsWorld: RAPIER.World;
   renderer: RenderState;
@@ -237,10 +180,8 @@ export interface GameState {
   scene: number;
   camera: number;
   statsBuffer: StatsBuffer;
-  network: NetworkState;
   editorState: EditorState;
   raycaster: RaycasterState;
-  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: GameState, message: T) => void }>;
   audio: { tripleBuffer: TripleBufferState };
 }
 
@@ -314,22 +255,6 @@ async function onInit({
     dt: 0,
   };
 
-  const network: NetworkState = {
-    hosting: false,
-    incoming: [],
-    networkIdToEntityId: new Map<number, number>(),
-    peerIdToEntityId: new Map(),
-    peerId: "",
-    peers: [],
-    newPeers: [],
-    peerIdToIndex: new Map(),
-    indexToPeerId: new Map(),
-    peerIdCount: 0,
-    localIdCount: 0,
-    removedLocalIds: [],
-    messageHandlers: {},
-  };
-
   const audio = {
     tripleBuffer: audioTripleBuffer,
   };
@@ -346,14 +271,16 @@ async function onInit({
     audio,
     input,
     time,
-    network,
+    systemGraphChanged: true,
+    systemGraph: [],
     systems: [],
     preSystems: [],
     postSystems: [],
     statsBuffer,
     editorState: initEditorState(hierarchyTripleBuffer),
     raycaster: createRaycasterState(),
-    messageHandlers: {},
+    messageHandlers: new Map(),
+    scopes: new Map(),
   };
 
   initRaycaster(state);
@@ -401,8 +328,10 @@ const pipeline = (state: GameState) => {
     state.preSystems[i](state);
   }
 
-  for (let i = 0; i < state.systems.length; i++) {
-    state.systems[i](state);
+  const systems = updateSystemOrder(state);
+
+  for (let i = 0; i < systems.length; i++) {
+    systems[i](state);
   }
 
   for (let i = 0; i < state.postSystems.length; i++) {

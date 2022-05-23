@@ -13,7 +13,7 @@ import { Quaternion, Vector3 } from "three";
 import { GameState, World } from "../GameWorker";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
-import { Networked, Owned } from "../network";
+import { Networked, Owned } from "../network/network.game";
 import { playAudioFromWorker } from "../audio/audio.game";
 
 const RigidBodySoA = defineComponent({});

@@ -1,10 +1,4 @@
-import {
-  NetworkMessageType,
-  ReliableNetworkMessage,
-  UnreliableNetworkMessage,
-  ReliableNetworkBroadcast,
-  UnreliableNetworkBroadcast,
-} from "./network.common";
+import { NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
 import { IMainThreadContext } from "../MainThread";
 import { AudioScope, setPeerMediaStream } from "../audio/audio.main";
 import { getScope, registerMessageHandler } from "../module/module.common";
@@ -34,10 +28,8 @@ export async function NetworkModule(ctx: IMainThreadContext) {
   // const network = getScope(ctx, NetworkScope);
 
   const disposables = [
-    registerMessageHandler(ctx, NetworkMessageType.ReliableNetworkMessage, onReliableNetworkMessage),
-    registerMessageHandler(ctx, NetworkMessageType.UnreliableNetworkMessage, onUnreliableNetworkMessage),
-    registerMessageHandler(ctx, NetworkMessageType.ReliableNetworkBroadcast, onReliableNetworkBroadcast),
-    registerMessageHandler(ctx, NetworkMessageType.UnreliableNetworkBroadcast, onUnreliableNetworkBroadcast),
+    registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onNetworkMessage),
+    registerMessageHandler(ctx, NetworkMessageType.NetworkBroadcast, onNetworkBroadcast),
   ];
 
   return () => {
@@ -54,56 +46,31 @@ export async function NetworkModule(ctx: IMainThreadContext) {
 const onPeerMessage =
   (gameWorker: Worker) =>
   ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: NetworkMessageType.ReliableNetworkMessage, packet: data }, [data]);
+    gameWorker.postMessage({ type: NetworkMessageType.NetworkMessage, packet: data }, [data]);
   };
 
-const onReliableNetworkMessage = (mainThread: IMainThreadContext, message: ReliableNetworkMessage) => {
+const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
   const netScope = getScope(mainThread, NetworkScope);
-  const { ws, reliableChannels } = netScope;
-  const { peerId, packet } = message;
+  const { ws, reliableChannels, unreliableChannels } = netScope;
+  const { peerId, packet, reliable } = message;
   if (ws) {
     ws.send(packet);
   } else {
-    const peer = reliableChannels.get(peerId);
+    const channels = reliable ? reliableChannels : unreliableChannels;
+    const peer = channels.get(peerId);
     if (peer) peer.send(packet);
   }
 };
 
-const onUnreliableNetworkMessage = (mainThread: IMainThreadContext, message: UnreliableNetworkMessage) => {
+const onNetworkBroadcast = (mainThread: IMainThreadContext, message: NetworkBroadcast) => {
   const netScope = getScope(mainThread, NetworkScope);
-  const { ws, unreliableChannels } = netScope;
-  const { peerId, packet } = message;
+  const { ws, reliableChannels, unreliableChannels } = netScope;
+  const { packet, reliable } = message;
   if (ws) {
     ws.send(packet);
   } else {
-    const peer = unreliableChannels.get(peerId);
-    if (peer) peer.send(packet);
-  }
-};
-
-const onReliableNetworkBroadcast = (mainThread: IMainThreadContext, message: ReliableNetworkBroadcast) => {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { ws, reliableChannels } = netScope;
-  const { packet } = message;
-  if (ws) {
-    ws.send(packet);
-  } else {
-    reliableChannels.forEach((peer) => {
-      if (peer.readyState === "open") {
-        peer.send(packet);
-      }
-    });
-  }
-};
-
-const onUnreliableNetworkBroadcast = (mainThread: IMainThreadContext, message: UnreliableNetworkBroadcast) => {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { ws, unreliableChannels } = netScope;
-  const { packet } = message;
-  if (ws) {
-    ws?.send(packet);
-  } else {
-    unreliableChannels.forEach((peer) => {
+    const channels = reliable ? reliableChannels : unreliableChannels;
+    channels.forEach((peer) => {
       if (peer.readyState === "open") {
         peer.send(packet);
       }

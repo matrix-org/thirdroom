@@ -2,7 +2,7 @@ import EventEmitter from "events";
 
 import { ComponentInfo } from "../component/types";
 import { ActiveEntityView, createActiveEntityViews, EditorEventType, Selection } from "./editor.common";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../TripleBuffer";
+import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import {
   ComponentInfoChangedMessage,
   ComponentPropertyChangedMessage,

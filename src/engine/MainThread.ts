@@ -1,6 +1,6 @@
 import GameWorker from "./GameWorker?worker";
 import { createResourceManagerBuffer } from "./resources/ResourceManager";
-import { createTripleBuffer } from "./TripleBuffer";
+import { createTripleBuffer } from "./allocator/TripleBuffer";
 import {
   GameWorkerInitializedMessage,
   RenderWorkerInitializedMessage,
@@ -10,7 +10,14 @@ import {
   InitializeGameWorkerMessage,
   InitializeRenderWorkerMessage,
 } from "./WorkerMessage";
-import { BaseThreadContext, Message, registerModules, ScopeFactory, ThreadSystem } from "./module/module.common";
+import {
+  BaseThreadContext,
+  Message,
+  registerModules,
+  ScopeFactory,
+  ThreadSystem,
+  updateSystemOrder,
+} from "./module/module.common";
 import { modules } from "./config.main";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
@@ -38,6 +45,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   } = await initRenderWorker(canvas, gameWorker);
 
   const context: IMainThreadContext = {
+    systemGraph: [],
+    systemGraphChanged: true,
     systems: [],
     scopes: new Map(),
     canvas,
@@ -142,8 +151,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   /* Update loop for input manager */
 
   function update() {
-    for (let i = 0; i < context.systems.length; i++) {
-      context.systems[i](context);
+    const systems = updateSystemOrder(context);
+
+    for (let i = 0; i < systems.length; i++) {
+      systems[i](context);
     }
 
     context.animationFrameId = requestAnimationFrame(update);

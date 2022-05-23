@@ -14,7 +14,7 @@ import {
 } from "three";
 
 import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
-import { swapReadBuffer, getReadBufferIndex } from "./TripleBuffer";
+import { swapReadBuffer, getReadBufferIndex } from "./allocator/TripleBuffer";
 import { maxEntities, tickRate } from "./config.common";
 import {
   createResourceManager,
@@ -46,7 +46,7 @@ import {
   PostMessageTarget,
   ExportGLTFMessage,
 } from "./WorkerMessage";
-import { TripleBufferState } from "./TripleBuffer";
+import { TripleBufferState } from "./allocator/TripleBuffer";
 import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";

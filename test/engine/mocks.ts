@@ -3,7 +3,7 @@ import { createWorld } from "bitecs";
 
 import { RemoteResourceInfo, RemoteResourceManager } from "../../src/engine/resources/RemoteResourceManager";
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
-import { createTripleBuffer } from "../../src/engine/TripleBuffer";
+import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import { registerDefaultPrefabs } from "../../src/engine/prefab";
 import { GameState } from "../../src/engine/GameWorker";
 
@@ -53,10 +53,14 @@ export const mockGameState = () => {
     world: createWorld(),
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
-    network: mockNetworkState(),
     resourceManager: mockRemoteResourceManager(),
     physicsWorld: mockPhysicsWorld(),
     renderer: mockRenderState(),
+    systemGraphChanged: true,
+    systemGraph: [],
+    systems: [],
+    messageHandlers: new Map(),
+    scopes: new Map(),
   } as unknown as GameState;
 
   registerDefaultPrefabs(gameState);

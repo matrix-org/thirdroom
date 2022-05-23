@@ -1,7 +1,7 @@
 import type { OffscreenCanvas } from "three";
 import type { vec3 } from "gl-matrix";
 import { ResourceDefinition } from "./resources/ResourceManager";
-import { TripleBufferState } from "./TripleBuffer";
+import { TripleBufferState } from "./allocator/TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";

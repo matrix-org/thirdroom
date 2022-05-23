@@ -27,7 +27,7 @@ import {
   enableActionMap,
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { hierarchyBuffer } from "../component/buffers";
 
 export interface EditorState {

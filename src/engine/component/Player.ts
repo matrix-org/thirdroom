@@ -1,6 +1,6 @@
 import { defineComponent, defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 
-import { Owned } from "../network";
+import { Owned } from "../network/network.game";
 
 export const Player = defineComponent({});
 
@@ -12,7 +12,6 @@ export const ownedPlayerQuery = defineQuery([Player, Owned]);
 export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
 export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
 
-// eslint-disable-next-line new-cap
 export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
 export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
 export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);

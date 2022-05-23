@@ -4,7 +4,7 @@ import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/Cursor
 import { maxEntities, NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
 import { TransformView } from "../RenderWorker";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../TripleBuffer";
+import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { getScope, registerMessageHandler, registerSystem } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
 

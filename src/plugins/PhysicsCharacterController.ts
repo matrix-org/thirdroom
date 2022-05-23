@@ -7,7 +7,9 @@ import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { Networked, NetworkTransform, Owned } from "../engine/network";
+import { getScope } from "../engine/module/module.common";
+import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
+import { NetworkScope } from "../engine/network/network.game";
 import { addRigidBody, RigidBody } from "../engine/physics";
 import { createCamera } from "../engine/prefab";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
@@ -111,6 +113,7 @@ export const createRawCube = (
 
 export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const { world, physicsWorld } = state;
+  const network = getScope(state, NetworkScope);
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
@@ -118,7 +121,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   // how this player looks to others
   state.entityPrefabMap.set(playerRig, "player-cube");
 
-  state.network.peerIdToEntityId.set(state.network.peerId, playerRig);
+  network.peerIdToEntityId.set(network.peerId, playerRig);
 
   const lowerCube = createRawCube(state);
   addChild(playerRig, lowerCube);

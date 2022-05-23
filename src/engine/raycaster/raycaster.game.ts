@@ -1,6 +1,7 @@
 import { vec3 } from "gl-matrix";
 
 import { GameState } from "../GameWorker";
+import { registerMessageHandler } from "../module/module.common";
 import { RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult, RayId } from "./raycaster.common";
 
@@ -17,7 +18,7 @@ export function createRaycasterState(): RaycasterState {
 }
 
 export function initRaycaster(state: GameState) {
-  state.messageHandlers[WorkerMessageType.RaycastResults] = onRaycasterMessage;
+  registerMessageHandler(state, WorkerMessageType.RaycastResults, onRaycasterMessage);
   state.preSystems.push(RaycasterSystem);
 }
 

@@ -19,9 +19,11 @@ import { RenderableVisibilitySystem } from "./engine/component/renderable";
 import {
   Owned,
   Networked,
+  NetworkScope,
   // NetworkTransform
-} from "./engine/network";
+} from "./engine/network/network.game";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
+import { getScope, registerSystem } from "./engine/module/module.common";
 // import { playAudioFromWorker } from "./engine/audio";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -160,15 +162,13 @@ export async function init(state: GameState): Promise<void> {
     }
   };
 
-  state.systems.push(
-    GLTFLoaderSystem,
-    ActionMappingSystem,
-    FirstPersonCameraSystem,
-    PlayerControllerSystem,
-    PhysicsSystem,
-    RenderableVisibilitySystem,
-    cubeSpawnSystem
-  );
+  registerSystem(state, GLTFLoaderSystem);
+  registerSystem(state, ActionMappingSystem);
+  registerSystem(state, FirstPersonCameraSystem);
+  registerSystem(state, PlayerControllerSystem);
+  registerSystem(state, PhysicsSystem);
+  registerSystem(state, RenderableVisibilitySystem);
+  registerSystem(state, cubeSpawnSystem);
 }
 
 const waitUntil = (fn: Function) =>
@@ -187,8 +187,9 @@ const spawnPointQuery = defineQuery([SpawnPoint]);
 
 export async function onStateChange(state: GameState, { joined }: { joined: boolean }) {
   const { scene, world } = state;
+  const network = getScope(state, NetworkScope);
 
-  await waitUntil(() => state.network.peerIdToIndex.has(state.network.peerId));
+  await waitUntil(() => network.peerIdToIndex.has(network.peerId));
 
   if (joined && !playerRig) {
     const spawnPoints = spawnPointQuery(world);
