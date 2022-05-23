@@ -1,13 +1,13 @@
 import { NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
-import { IMainThreadContext } from "../MainThread";
-import { AudioScope, setPeerMediaStream } from "../audio/audio.main";
-import { getScope, registerMessageHandler } from "../module/module.common";
+import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
+import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 
 /*********
  * Types *
  ********/
 
-export interface IMainNetworkScope {
+export interface NetworkModuleState {
   reliableChannels: Map<string, RTCDataChannel>;
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
@@ -19,25 +19,26 @@ export interface IMainNetworkScope {
  * Initialization *
  *****************/
 
-export const NetworkScope: () => IMainNetworkScope = () => ({
-  reliableChannels: new Map<string, RTCDataChannel>(),
-  unreliableChannels: new Map<string, RTCDataChannel>(),
+export const NetworkModule = defineModule<IMainThreadContext, IInitialMainThreadState, NetworkModuleState>({
+  create() {
+    return {
+      reliableChannels: new Map<string, RTCDataChannel>(),
+      unreliableChannels: new Map<string, RTCDataChannel>(),
+    };
+  },
+  init(ctx) {
+    const disposables = [
+      registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onNetworkMessage),
+      registerMessageHandler(ctx, NetworkMessageType.NetworkBroadcast, onNetworkBroadcast),
+    ];
+
+    return () => {
+      for (const dispose of disposables) {
+        dispose();
+      }
+    };
+  },
 });
-
-export async function NetworkModule(ctx: IMainThreadContext) {
-  // const network = getScope(ctx, NetworkScope);
-
-  const disposables = [
-    registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onNetworkMessage),
-    registerMessageHandler(ctx, NetworkMessageType.NetworkBroadcast, onNetworkBroadcast),
-  ];
-
-  return () => {
-    for (const dispose of disposables) {
-      dispose();
-    }
-  };
-}
 
 /********************
  * Message Handlers *
@@ -50,8 +51,8 @@ const onPeerMessage =
   };
 
 const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { ws, reliableChannels, unreliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const { ws, reliableChannels, unreliableChannels } = network;
   const { peerId, packet, reliable } = message;
   if (ws) {
     ws.send(packet);
@@ -63,8 +64,8 @@ const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessag
 };
 
 const onNetworkBroadcast = (mainThread: IMainThreadContext, message: NetworkBroadcast) => {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { ws, reliableChannels, unreliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const { ws, reliableChannels, unreliableChannels } = network;
   const { packet, reliable } = message;
   if (ws) {
     ws.send(packet);
@@ -80,13 +81,13 @@ const onNetworkBroadcast = (mainThread: IMainThreadContext, message: NetworkBroa
 
 function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
   const { gameWorker } = mainThread;
-  const netScope = getScope(mainThread, NetworkScope);
-  const { reliableChannels, unreliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
   const unreliableChannel = unreliableChannels.get(peerId);
-  if (netScope.onPeerMessage) {
-    reliableChannel?.removeEventListener("message", netScope.onPeerMessage);
-    unreliableChannel?.removeEventListener("message", netScope.onPeerMessage);
+  if (network.onPeerMessage) {
+    reliableChannel?.removeEventListener("message", network.onPeerMessage);
+    unreliableChannel?.removeEventListener("message", network.onPeerMessage);
   }
 
   reliableChannels.delete(peerId);
@@ -103,11 +104,11 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
  ******/
 
 export function connectToTestNet(mainThread: IMainThreadContext) {
-  const netScope = getScope(mainThread, NetworkScope);
+  const network = getModule(mainThread, NetworkModule);
   const { gameWorker } = mainThread;
 
-  netScope.ws = new WebSocket("ws://localhost:9090");
-  const { ws } = netScope;
+  network.ws = new WebSocket("ws://localhost:9090");
+  const { ws } = network;
 
   ws.binaryType = "arraybuffer";
 
@@ -183,8 +184,8 @@ export function setState(mainThread: IMainThreadContext, state: any) {
 }
 
 export function hasPeer(mainThread: IMainThreadContext, peerId: string): boolean {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { reliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const { reliableChannels } = network;
   return reliableChannels.has(peerId);
 }
 
@@ -195,9 +196,9 @@ export function addPeer(
   mediaStream?: MediaStream
 ) {
   const { gameWorker } = mainThread;
-  const netScope = getScope(mainThread, NetworkScope);
-  const audioScope = getScope(mainThread, AudioScope);
-  const { reliableChannels, unreliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const audio = getModule(mainThread, AudioModule);
+  const { reliableChannels, unreliableChannels } = network;
 
   if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
   else unreliableChannels.set(peerId, dataChannel);
@@ -207,8 +208,8 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    netScope.onPeerMessage = onPeerMessage(gameWorker);
-    dataChannel.addEventListener("message", netScope.onPeerMessage);
+    network.onPeerMessage = onPeerMessage(gameWorker);
+    dataChannel.addEventListener("message", network.onPeerMessage);
     dataChannel.addEventListener("close", onClose);
 
     gameWorker.postMessage({
@@ -221,7 +222,7 @@ export function addPeer(
   dataChannel.addEventListener("open", onOpen);
 
   if (mediaStream) {
-    setPeerMediaStream(audioScope, peerId, mediaStream);
+    setPeerMediaStream(audio, peerId, mediaStream);
   }
 }
 
@@ -230,8 +231,8 @@ export function removePeer(mainThread: IMainThreadContext, peerId: string) {
 }
 
 export function disconnect(mainThread: IMainThreadContext) {
-  const netScope = getScope(mainThread, NetworkScope);
-  const { reliableChannels } = netScope;
+  const network = getModule(mainThread, NetworkModule);
+  const { reliableChannels } = network;
   for (const [peerId] of reliableChannels) {
     onPeerLeft(mainThread, peerId);
   }

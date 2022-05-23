@@ -4,7 +4,7 @@ import { addEntity } from "bitecs";
 import { GameState } from "../GameWorker";
 import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
 import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
-import { addRigidBody } from "../physics";
+import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MaterialType } from "../resources/MaterialResourceLoader";
 import { SceneDefinition, SCENE_RESOURCE } from "../resources/SceneResourceLoader";
 import { CameraType } from "../resources/CameraResourceLoader";
@@ -13,6 +13,7 @@ import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudioFromWorker } from "../audio/audio.game";
+import { getModule } from "../module/module.common";
 
 /* Prefab Factories */
 
@@ -62,7 +63,8 @@ export const createCube = (
     metallicFactor: 0.8,
   })
 ) => {
-  const { world, resourceManager, physicsWorld } = state;
+  const { world, resourceManager } = state;
+  const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 

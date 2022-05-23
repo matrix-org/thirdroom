@@ -7,10 +7,10 @@ import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { getScope } from "../engine/module/module.common";
+import { getModule } from "../engine/module/module.common";
 import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
-import { NetworkScope } from "../engine/network/network.game";
-import { addRigidBody, RigidBody } from "../engine/physics";
+import { NetworkModule } from "../engine/network/network.game";
+import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCamera } from "../engine/prefab";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
 import { MaterialType } from "../engine/resources/MaterialResourceLoader";
@@ -112,8 +112,9 @@ export const createRawCube = (
 };
 
 export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
-  const { world, physicsWorld } = state;
-  const network = getScope(state, NetworkScope);
+  const { world } = state;
+  const { physicsWorld } = getModule(state, PhysicsModule);
+  const network = getModule(state, NetworkModule);
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
@@ -153,6 +154,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 };
 
 export const PlayerControllerSystem = (state: GameState) => {
+  const { physicsWorld } = getModule(state, PhysicsModule);
   const playerRig = playerRigQuery(state.world)[0];
   const body = RigidBody.store.get(playerRig);
   if (body) {
@@ -174,10 +176,10 @@ export const PlayerControllerSystem = (state: GameState) => {
     shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
 
     // todo: tune interaction groups
-    const shapeCastResult = state.physicsWorld.castShape(
+    const shapeCastResult = physicsWorld.castShape(
       shapeCastPosition,
       shapeCastRotation,
-      state.physicsWorld.gravity,
+      physicsWorld.gravity,
       colliderShape,
       state.time.dt,
       CharacterShapecastInteractionGroup
@@ -246,6 +248,6 @@ export const PlayerControllerSystem = (state: GameState) => {
     }
 
     body.applyImpulse(moveForce, true);
-    body.applyForce(state.physicsWorld.gravity as Vector3, true);
+    body.applyForce(physicsWorld.gravity as Vector3, true);
   }
 };

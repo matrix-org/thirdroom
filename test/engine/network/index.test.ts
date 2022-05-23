@@ -24,7 +24,7 @@ import {
   deserializeTransformSnapshot,
   serializeUpdatesSnapshot,
   deserializeUpdatesSnapshot,
-  NetworkScope,
+  NetworkModule,
 } from "../../../src/engine/network/network.game";
 import {
   createCursorView,
@@ -34,7 +34,7 @@ import {
   readUint8,
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
-import { getScope } from "../../../src/engine/module/module.common";
+import { getModule } from "../../../src/engine/module/module.common";
 
 describe("Network Tests", () => {
   describe("networkId", () => {
@@ -286,7 +286,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeUpdatesSnapshot()", () => {
       const state = mockGameState();
-      const network = getScope(state, NetworkScope);
+      const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -376,7 +376,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeUpdatesChanged()", () => {
       const state = mockGameState();
-      const network = getScope(state, NetworkScope);
+      const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -451,7 +451,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeCreates()", () => {
       const state = mockGameState();
-      const network = getScope(state, NetworkScope);
+      const network = getModule(state, NetworkModule);
 
       const writer = createCursorView();
 

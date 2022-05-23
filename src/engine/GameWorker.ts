@@ -1,4 +1,3 @@
-import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
@@ -68,7 +67,7 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
         message.renderWorkerMessagePort.addEventListener("message", onMessage(state));
       }
 
-      await registerModules(state, gameConfig.modules);
+      await registerModules(message.initialGameWorkerState, state, gameConfig.modules);
 
       postMessage({
         type: WorkerMessageType.GameWorkerInitialized,
@@ -167,13 +166,11 @@ export type System = (state: GameState) => void;
 
 export interface GameState extends BaseThreadContext {
   world: World;
-  physicsWorld: RAPIER.World;
   renderer: RenderState;
   time: TimeState;
   resourceManager: RemoteResourceManager;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
-  input: GameInputState;
   preSystems: System[];
   systems: System[];
   postSystems: System[];
@@ -185,19 +182,12 @@ export interface GameState extends BaseThreadContext {
   audio: { tripleBuffer: TripleBufferState };
 }
 
-const generateInputGetters = (
-  inputStates: InputState[],
-  inputTripleBuffer: TripleBufferState
-): { [path: string]: number } =>
-  Object.defineProperties(
-    {},
-    Object.fromEntries(
-      Object.entries(InputStateGetters).map(([path, getter]) => [
-        path,
-        { enumerable: true, get: () => getter(inputStates[getReadBufferIndex(inputTripleBuffer)]) },
-      ])
-    )
-  );
+export interface IInitialGameThreadState {
+  inputTripleBuffer: TripleBufferState;
+  audioTripleBuffer: TripleBufferState;
+  hierarchyTripleBuffer: TripleBufferState;
+  statsBuffer: StatsBuffer;
+}
 
 async function onInit({
   resourceManagerBuffer,
@@ -205,12 +195,8 @@ async function onInit({
   renderableTripleBuffer,
   initialGameWorkerState,
 }: InitializeGameWorkerMessage): Promise<GameState> {
-  const { inputTripleBuffer, audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } = initialGameWorkerState as {
-    inputTripleBuffer: TripleBufferState;
-    audioTripleBuffer: TripleBufferState;
-    hierarchyTripleBuffer: TripleBufferState;
-    statsBuffer: StatsBuffer;
-  };
+  const { inputTripleBuffer, audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } =
+    initialGameWorkerState as IInitialGameThreadState;
 
   const renderPort = renderWorkerMessagePort || workerScope;
 
@@ -226,28 +212,11 @@ async function onInit({
   addTransformComponent(world, camera);
   addChild(scene, camera);
 
-  await RAPIER.init();
-
-  const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
-  const physicsWorld = new RAPIER.World(gravity);
-
-  const inputStates = inputTripleBuffer.buffers
-    .map((buffer) => createCursorBuffer(buffer))
-    .map((buffer) => createInputState(buffer));
-
   const resourceManager = createRemoteResourceManager(resourceManagerBuffer, renderPort);
 
   const renderer: RenderState = {
     tripleBuffer: renderableTripleBuffer,
     port: renderPort,
-  };
-
-  const input: GameInputState = {
-    tripleBuffer: inputTripleBuffer,
-    inputStates,
-    actions: new Map(),
-    actionMaps: [],
-    raw: generateInputGetters(inputStates, inputTripleBuffer),
   };
 
   const time: TimeState = {
@@ -267,9 +236,7 @@ async function onInit({
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     renderer,
-    physicsWorld,
     audio,
-    input,
     time,
     systemGraphChanged: true,
     systemGraph: [],
@@ -280,7 +247,7 @@ async function onInit({
     editorState: initEditorState(hierarchyTripleBuffer),
     raycaster: createRaycasterState(),
     messageHandlers: new Map(),
-    scopes: new Map(),
+    modules: new Map(),
   };
 
   initRaycaster(state);

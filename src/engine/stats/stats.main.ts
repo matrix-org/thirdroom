@@ -1,12 +1,12 @@
-import { IMainThreadContext } from "../MainThread";
-import { getScope } from "../module/module.common";
+import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
+import { defineModule, getModule } from "../module/module.common";
 import { StatNames, Stats, StatsBuffer } from "./stats.common";
 
 /*********
  * Types *
  ********/
 
-export interface StatsScope {
+export interface StatsModuleState {
   buffer: StatsBuffer;
   stats: StatsObject;
 }
@@ -17,18 +17,19 @@ export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: n
  * Initialization *
  *****************/
 
-export function StatsScope(): StatsScope {
-  return {
-    buffer: createStatsBuffer(),
-    stats: Object.fromEntries(StatNames.map((key) => [key, 0])) as StatsObject,
-  };
-}
-
-export function StatsModule(context: IMainThreadContext) {
-  const stats = getScope(context, StatsScope);
-  context.initialGameWorkerState.statsBuffer = stats.buffer;
-  context.initialRenderWorkerState.statsBuffer = stats.buffer;
-}
+export const StatsModule = defineModule<IMainThreadContext, IInitialMainThreadState, StatsModuleState>({
+  create() {
+    return {
+      buffer: createStatsBuffer(),
+      stats: Object.fromEntries(StatNames.map((key) => [key, 0])) as StatsObject,
+    };
+  },
+  init(context) {
+    const stats = getModule(context, StatsModule);
+    context.initialGameWorkerState.statsBuffer = stats.buffer;
+    context.initialRenderWorkerState.statsBuffer = stats.buffer;
+  },
+});
 
 function createStatsBuffer(): StatsBuffer {
   const buffer = new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * StatNames.length);
@@ -45,7 +46,7 @@ function createStatsBuffer(): StatsBuffer {
  ******/
 
 export function getStats(context: IMainThreadContext): StatsObject {
-  const { stats, buffer } = getScope(context, StatsScope);
+  const { stats, buffer } = getModule(context, StatsModule);
   stats.fps = buffer.f32[Stats.fps].toFixed(2);
   stats.frameTime = (buffer.f32[Stats.frameTime] * 1000).toFixed(2);
   stats.frameDuration = (buffer.f32[Stats.frameDuration] * 1000).toFixed(2);

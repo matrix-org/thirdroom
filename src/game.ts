@@ -11,7 +11,7 @@ import {
 } from "./plugins/PhysicsCharacterController";
 import { FirstPersonCameraActions, FirstPersonCameraSystem } from "./plugins/FirstPersonCamera";
 import { addChild, setEulerFromQuaternion, Transform } from "./engine/component/transform";
-import { PhysicsSystem, RigidBody } from "./engine/physics";
+import { PhysicsSystem, RigidBody } from "./engine/physics/physics.game";
 import { createCube, createScene, getPrefabTemplate } from "./engine/prefab";
 import { createGLTFEntity } from "./engine/gltf/GLTFLoader";
 import { GLTFLoaderSystem } from "./engine/gltf/GLTFLoaderSystem";
@@ -19,11 +19,11 @@ import { RenderableVisibilitySystem } from "./engine/component/renderable";
 import {
   Owned,
   Networked,
-  NetworkScope,
+  NetworkModule,
   // NetworkTransform
 } from "./engine/network/network.game";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
-import { getScope, registerSystem } from "./engine/module/module.common";
+import { getModule, registerSystem } from "./engine/module/module.common";
 // import { playAudioFromWorker } from "./engine/audio";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -187,7 +187,7 @@ const spawnPointQuery = defineQuery([SpawnPoint]);
 
 export async function onStateChange(state: GameState, { joined }: { joined: boolean }) {
   const { scene, world } = state;
-  const network = getScope(state, NetworkScope);
+  const network = getModule(state, NetworkModule);
 
   await waitUntil(() => network.peerIdToIndex.has(network.peerId));
 

@@ -10,11 +10,36 @@ import {
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState, World } from "../GameWorker";
+import { GameState, IInitialGameThreadState, World } from "../GameWorker";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
 import { playAudioFromWorker } from "../audio/audio.game";
+import { defineModule, getModule } from "../module/module.common";
+
+interface PhysicsModuleState {
+  physicsWorld: RAPIER.World;
+  eventQueue: RAPIER.EventQueue;
+  handleMap: Map<number, number>;
+}
+
+export const PhysicsModule = defineModule<GameState, IInitialGameThreadState, PhysicsModuleState>({
+  async create() {
+    await RAPIER.init();
+
+    const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
+    const physicsWorld = new RAPIER.World(gravity);
+    const handleMap = new Map<number, number>();
+    const eventQueue = new RAPIER.EventQueue(true);
+
+    return {
+      physicsWorld,
+      eventQueue,
+      handleMap,
+    };
+  },
+  async init() {},
+});
 
 const RigidBodySoA = defineComponent({});
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
@@ -47,8 +72,10 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
 };
 
 // todo: put on physicsstate
-const handleMap = new Map<number, number>();
-export const PhysicsSystem = ({ world, physicsWorld, time }: GameState) => {
+
+export const PhysicsSystem = (state: GameState) => {
+  const { world, time } = state;
+  const { physicsWorld, handleMap, eventQueue } = getModule(state, PhysicsModule);
   // remove rigidbody from physics world
   const exited = exitedPhysicsQuery(world);
   for (let i = 0; i < exited.length; i++) {
@@ -89,9 +116,6 @@ export const PhysicsSystem = ({ world, physicsWorld, time }: GameState) => {
       }
     }
   }
-
-  // todo: put on physicsstate
-  const eventQueue = new RAPIER.EventQueue(true);
 
   physicsWorld.timestep = time.dt;
   physicsWorld.step(eventQueue);

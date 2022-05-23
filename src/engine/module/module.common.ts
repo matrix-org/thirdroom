@@ -10,38 +10,55 @@ export interface BaseThreadContext {
   systemGraphChanged: boolean;
   systemGraph: SystemGraphNode[];
   systems: ThreadSystem<any>[];
-  scopes: Map<ScopeFactory<any, any>, any>;
+  modules: Map<Module<any, any, any>, any>;
   messageHandlers: Map<string, MessageHandler<any, string, Message<any>>[]>;
 }
 
-export type ScopeFactory<ThreadContext extends BaseThreadContext, ScopeState> = (ctx: ThreadContext) => ScopeState;
-
-export function getScope<ThreadContext extends BaseThreadContext, Scope>(
+export function getModule<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}>(
   threadContext: ThreadContext,
-  scopeFactory: ScopeFactory<ThreadContext, Scope>
-): Scope {
-  let scopeState = threadContext.scopes.get(scopeFactory);
-
-  if (!scopeState) {
-    scopeState = scopeFactory(threadContext);
-    threadContext.scopes.set(scopeFactory, scopeState);
-  }
-
-  return scopeState;
+  module: Module<ThreadContext, InitialState, ModuleState>
+): ModuleState {
+  return threadContext.modules.get(module);
 }
 
-export type Module<ThreadContext extends BaseThreadContext> = (
-  ctx: ThreadContext
-) => void | (() => void) | Promise<void> | Promise<() => void>;
+interface Module<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}> {
+  create: ((initialState: InitialState) => ModuleState) | ((initialState: InitialState) => Promise<ModuleState>);
+  init: (ctx: ThreadContext) => void | (() => void) | Promise<void> | Promise<() => void>;
+}
+
+export function defineModule<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}>(
+  moduleDef: Module<ThreadContext, InitialState, ModuleState>
+) {
+  return moduleDef;
+}
 
 export async function registerModules<ThreadContext extends BaseThreadContext>(
+  initialState: any,
   context: ThreadContext,
-  modules: Module<ThreadContext>[]
+  modules: Module<ThreadContext, {}, {}>[]
 ) {
   const moduleDisposeFunctions: (() => void)[] = [];
 
+  const createPromises = modules.map((module) => {
+    const result = module.create(initialState);
+
+    if (result.hasOwnProperty("then")) {
+      return result;
+    } else {
+      return Promise.resolve(result);
+    }
+  });
+
+  const moduleStates = await Promise.all(createPromises);
+
+  for (let i = 0; i < moduleStates.length; i++) {
+    const module = modules[i];
+    const moduleState = moduleStates[i];
+    context.modules.set(module, moduleState);
+  }
+
   for (const module of modules) {
-    const result = module(context);
+    const result = module.init(context);
 
     let dispose: (() => void) | void;
 

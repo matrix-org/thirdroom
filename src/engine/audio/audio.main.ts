@@ -2,17 +2,17 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config.common";
-import { IMainThreadContext } from "../MainThread";
+import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
 import { TransformView } from "../RenderWorker";
 import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
-import { getScope, registerMessageHandler, registerSystem } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, registerSystem } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
 
 /*********
  * Types *
  ********/
 
-export interface IAudioScope {
+export interface AudioModuleState {
   context: AudioContext;
   tripleBuffer: TripleBufferState;
   transformViews: TransformView[];
@@ -51,75 +51,77 @@ export interface IAudioScope {
 │ gain   │
 └─L────R─┘
  */
-export function AudioScope(ctx: IMainThreadContext): IAudioScope {
-  const audioCtx = new AudioContext();
 
-  const mainGain = new GainNode(audioCtx);
-  mainGain.connect(audioCtx.destination);
+export const AudioModule = defineModule<IMainThreadContext, IInitialMainThreadState, AudioModuleState>({
+  create() {
+    const audioCtx = new AudioContext();
 
-  const sampleGain = new GainNode(audioCtx);
-  sampleGain.connect(mainGain);
+    const mainGain = new GainNode(audioCtx);
+    mainGain.connect(audioCtx.destination);
 
-  const sampleCache = new Map<string, AudioBuffer>();
+    const sampleGain = new GainNode(audioCtx);
+    sampleGain.connect(mainGain);
 
-  const tripleBuffer = createTripleBuffer();
-  const cursorBuffers = tripleBuffer.buffers.map((b) => createCursorBuffer(b));
-  const transformViews = cursorBuffers.map(
-    (buffer) =>
-      ({
-        // note: needs synced with renderableBuffer properties in game worker
-        // todo: abstract the need to sync structure with renderableBuffer properties
-        worldMatrix: addViewMatrix4(buffer, maxEntities),
-        worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
-      } as TransformView)
-  );
+    const sampleCache = new Map<string, AudioBuffer>();
 
-  const entityPanners = new Map<number, PannerNode>();
+    const tripleBuffer = createTripleBuffer();
+    const cursorBuffers = tripleBuffer.buffers.map((b) => createCursorBuffer(b));
+    const transformViews = cursorBuffers.map(
+      (buffer) =>
+        ({
+          // note: needs synced with renderableBuffer properties in game worker
+          // todo: abstract the need to sync structure with renderableBuffer properties
+          worldMatrix: addViewMatrix4(buffer, maxEntities),
+          worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+        } as TransformView)
+    );
 
-  const sampleQueue: [string, number][] = [];
+    const entityPanners = new Map<number, PannerNode>();
 
-  return {
-    context: audioCtx,
-    tripleBuffer,
-    transformViews,
-    entityPanners,
-    listenerEntity: NOOP,
-    peerEntities: new Map(),
-    peerMediaStreamSourceMap: new Map(),
-    main: {
-      gain: mainGain,
-    },
-    sample: {
-      gain: sampleGain,
-      cache: sampleCache,
-      queue: sampleQueue,
-    },
-  };
-}
+    const sampleQueue: [string, number][] = [];
 
-export async function AudioModule(ctx: IMainThreadContext) {
-  const audio = getScope(ctx, AudioScope);
+    return {
+      context: audioCtx,
+      tripleBuffer,
+      transformViews,
+      entityPanners,
+      listenerEntity: NOOP,
+      peerEntities: new Map(),
+      peerMediaStreamSourceMap: new Map(),
+      main: {
+        gain: mainGain,
+      },
+      sample: {
+        gain: sampleGain,
+        cache: sampleCache,
+        queue: sampleQueue,
+      },
+    };
+  },
+  async init(ctx) {
+    const audio = getModule(ctx, AudioModule);
 
-  ctx.initialGameWorkerState.audioTripleBuffer = audio.tripleBuffer;
+    ctx.initialGameWorkerState.audioTripleBuffer = audio.tripleBuffer;
 
-  preloadDefaultAudio(audio);
+    preloadDefaultAudio(audio);
 
-  const disposables = [
-    registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
-    registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
-    registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
+    const disposables = [
+      registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
+      registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
+      registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
 
-    registerSystem(ctx, MainAudioSystem),
-  ];
+      registerSystem(ctx, MainAudioSystem),
+    ];
 
-  return () => {
-    audio.context.close();
+    return () => {
+      audio.context.close();
 
-    for (const dispose of disposables) {
-      dispose();
-    }
-  };
-}
+      for (const dispose of disposables) {
+        dispose();
+      }
+    };
+  },
+});
 
 /*********
  * Utils *
@@ -139,7 +141,7 @@ Adds a new PannerNode for an entity to enable audio emissions from that particul
 └─L────R─┘
  */
 export const addEntityPanner = (
-  audioState: IAudioScope,
+  audioState: AudioModuleState,
   eid: number,
   panner: PannerNode = new PannerNode(audioState.context)
 ) => {
@@ -149,7 +151,7 @@ export const addEntityPanner = (
 };
 
 export const preloadDefaultAudio = async (
-  audioState: IAudioScope,
+  audioState: AudioModuleState,
   defaultAudioFiles: string[] = ["/audio/bach.mp3", "/audio/hit.wav"]
 ) => {
   defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
@@ -157,7 +159,7 @@ export const preloadDefaultAudio = async (
 
 const isChrome = !!window.chrome;
 
-export const setPeerMediaStream = (audioState: IAudioScope, peerId: string, mediaStream: MediaStream) => {
+export const setPeerMediaStream = (audioState: AudioModuleState, peerId: string, mediaStream: MediaStream) => {
   // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
   if (isChrome) {
     const audioEl = new Audio();
@@ -178,7 +180,7 @@ export const fetchAudioBuffer = async (ctx: AudioContext, filepath: string) => {
 };
 
 export const getAudioBuffer = async (
-  { context, sample: { cache } }: IAudioScope,
+  { context, sample: { cache } }: AudioModuleState,
   filepath: string
 ): Promise<AudioBuffer> => {
   if (cache.has(filepath)) return cache.get(filepath) as AudioBuffer;
@@ -192,7 +194,7 @@ export const getAudioBuffer = async (
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export const playAudioBuffer = (
-  { context, sample: { gain } }: IAudioScope,
+  { context, sample: { gain } }: AudioModuleState,
   audioBuffer: AudioBuffer,
   out: AudioNode = gain
 ) => {
@@ -204,7 +206,7 @@ export const playAudioBuffer = (
   return sampleSource;
 };
 
-export const playAudioAtEntity = async (audioState: IAudioScope, filepath: string, eid: number) => {
+export const playAudioAtEntity = async (audioState: AudioModuleState, filepath: string, eid: number) => {
   const audioBuffer = await getAudioBuffer(audioState, filepath);
   if (audioBuffer) {
     if (!audioState.entityPanners.has(eid)) addEntityPanner(audioState, eid);
@@ -218,22 +220,22 @@ export const playAudioAtEntity = async (audioState: IAudioScope, filepath: strin
  *******************/
 
 export const onPlayAudio = async (mainThread: IMainThreadContext, message: PlayAudioMessage) => {
-  const audioScope = getScope(mainThread, AudioScope);
+  const audio = getModule(mainThread, AudioModule);
   const { filepath, eid } = message;
 
   if (eid !== NOOP) {
-    playAudioAtEntity(audioScope, filepath, eid);
+    playAudioAtEntity(audio, filepath, eid);
     return;
   }
-  const audioBuffer = await getAudioBuffer(audioScope, filepath);
-  if (audioBuffer) playAudioBuffer(audioScope, audioBuffer);
+  const audioBuffer = await getAudioBuffer(audio, filepath);
+  if (audioBuffer) playAudioBuffer(audio, audioBuffer);
   else console.error(`error: could not play audio ${filepath} - audio buffer not found`);
 };
 
 // sets the entity that the listener is positioned at
 export const onSetAudioListener = (mainThread: IMainThreadContext, message: SetAudioListenerMessage) => {
-  const audioScope = getScope(mainThread, AudioScope);
-  audioScope.listenerEntity = message.eid;
+  const audio = getModule(mainThread, AudioModule);
+  audio.listenerEntity = message.eid;
 };
 
 /*
@@ -250,16 +252,16 @@ Connects a MediaStream to an entity's PannerNode to enable spatial VoIP
 └─L────R─┘
  */
 export const onSetAudioPeerEntity = (mainThread: IMainThreadContext, message: SetAudioPeerEntityMessage) => {
-  const audioScope = getScope(mainThread, AudioScope);
+  const audioModule = getModule(mainThread, AudioModule);
   const { peerId, eid } = message;
 
-  audioScope.peerEntities.set(peerId, eid);
+  audioModule.peerEntities.set(peerId, eid);
 
-  const mediaStreamSource = audioScope.peerMediaStreamSourceMap.get(peerId);
+  const mediaStreamSource = audioModule.peerMediaStreamSourceMap.get(peerId);
   if (!mediaStreamSource)
     return console.error("could not setAudioPeerEntity - mediaStreamSource not found for peer", peerId);
 
-  const panner = audioScope.entityPanners.get(eid);
+  const panner = audioModule.entityPanners.get(eid);
   if (!panner) return console.error("could not setAudioPeerEntity - panner not found for eid", eid, "peerId", peerId);
 
   mediaStreamSource.connect(panner);
@@ -274,24 +276,24 @@ const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 export function MainAudioSystem(mainThread: IMainThreadContext) {
-  const audioScope = getScope(mainThread, AudioScope);
+  const audioModule = getModule(mainThread, AudioModule);
 
-  if (audioScope.listenerEntity === NOOP) {
-    return audioScope;
+  if (audioModule.listenerEntity === NOOP) {
+    return audioModule;
   }
 
-  swapReadBuffer(audioScope.tripleBuffer);
-  const Transform = audioScope.transformViews[getReadBufferIndex(audioScope.tripleBuffer)];
+  swapReadBuffer(audioModule.tripleBuffer);
+  const Transform = audioModule.transformViews[getReadBufferIndex(audioModule.tripleBuffer)];
 
   tempMatrix4
-    .fromArray(Transform.worldMatrix[audioScope.listenerEntity])
+    .fromArray(Transform.worldMatrix[audioModule.listenerEntity])
     .decompose(tempPosition, tempQuaternion, tempScale);
 
   if (isNaN(tempQuaternion.x)) {
-    return audioScope;
+    return audioModule;
   }
 
-  const { listener } = audioScope.context;
+  const { listener } = audioModule.context;
 
   if (listener.upX) {
     listener.upX.value = 0;
@@ -317,8 +319,8 @@ export function MainAudioSystem(mainThread: IMainThreadContext) {
     listener.setOrientation(v.x, v.y, v.z, 0, 1, 0);
   }
 
-  audioScope.entityPanners.forEach((panner, eid) => {
-    const { currentTime } = audioScope.context;
+  audioModule.entityPanners.forEach((panner, eid) => {
+    const { currentTime } = audioModule.context;
 
     tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
 

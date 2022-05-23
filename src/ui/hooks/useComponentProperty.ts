@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 
 import { ComponentPropertyType, ComponentPropertyValue } from "../../engine/component/types";
 import { EditorEventType } from "../../engine/editor/editor.common";
-import { EditorScope, sendSetComponentPropertyMessage } from "../../engine/editor/editor.main";
-import { getScope } from "../../engine/module/module.common";
+import { EditorModule, sendSetComponentPropertyMessage } from "../../engine/editor/editor.main";
+import { getModule } from "../../engine/module/module.common";
 import { useMainThreadContext } from "./useMainThread";
 
 interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
@@ -13,7 +13,7 @@ interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
 
 export function useComponentProperty<T extends ComponentPropertyType>(propId: number): ComponentPropertyInputProps<T> {
   const mainThread = useMainThreadContext();
-  const editor = getScope(mainThread, EditorScope);
+  const editor = getModule(mainThread, EditorModule);
   const [value, setValue] = useState<ComponentPropertyValue<T> | undefined>(() =>
     editor.componentProperties.get(propId)
   );

@@ -10,21 +10,13 @@ import {
   InitializeGameWorkerMessage,
   InitializeRenderWorkerMessage,
 } from "./WorkerMessage";
-import {
-  BaseThreadContext,
-  Message,
-  registerModules,
-  ScopeFactory,
-  ThreadSystem,
-  updateSystemOrder,
-} from "./module/module.common";
+import { BaseThreadContext, Message, registerModules, ThreadSystem, updateSystemOrder } from "./module/module.common";
 import { modules } from "./config.main";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
 export interface IMainThreadContext extends BaseThreadContext {
   systems: ThreadSystem<this>[];
-  scopes: Map<ScopeFactory<this, any>, any>;
   canvas: HTMLCanvasElement;
   animationFrameId?: number;
   gameWorker: Worker;
@@ -32,6 +24,8 @@ export interface IMainThreadContext extends BaseThreadContext {
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
 }
+
+export type IInitialMainThreadState = {};
 
 export async function MainThread(canvas: HTMLCanvasElement) {
   const gameWorker = new GameWorker();
@@ -48,7 +42,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     systemGraph: [],
     systemGraphChanged: true,
     systems: [],
-    scopes: new Map(),
+    modules: new Map(),
     canvas,
     gameWorker,
     renderWorker,
@@ -66,7 +60,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   /* Initialize all modules and retrieve data needed to send to workers */
 
-  const disposeModules = await registerModules(context, modules);
+  const disposeModules = await registerModules({}, context, modules);
 
   /* Wait for workers to be ready */
 
