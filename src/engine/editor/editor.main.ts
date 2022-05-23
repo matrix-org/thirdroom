@@ -16,6 +16,11 @@ import { maxEntities } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
 import { getScope, registerMessageHandler, registerSystem } from "../types/types.common";
 import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
+import { downloadFile } from "../utils/downloadFile";
+
+/*********
+ * Types *
+ ********/
 
 interface HierarchyView {
   parent: Uint32Array;
@@ -38,6 +43,10 @@ export interface EditorScope extends EventEmitter {
   activeEntityViews?: ActiveEntityView[];
   activeEntityView?: ActiveEntityView;
 }
+
+/******************
+ * Initialization *
+ *****************/
 
 // Access module-specific state by importing this context in your systems, modules, or React components
 export function EditorScope(ctx: IMainThreadContext): EditorScope {
@@ -99,6 +108,10 @@ export function EditorModule(ctx: IMainThreadContext) {
   };
 }
 
+/***********
+ * Systems *
+ **********/
+
 function MainThreadEditorSystem(mainThread: IMainThreadContext) {
   const editor = getScope(mainThread, EditorScope);
 
@@ -111,6 +124,10 @@ function MainThreadEditorSystem(mainThread: IMainThreadContext) {
     editor.activeEntityView = editor.activeEntityViews[getReadBufferIndex(editor.activeEntityTripleBuffer)];
   }
 }
+
+/********************
+ * Message Handlers *
+ *******************/
 
 function onEditorLoaded(mainThread: IMainThreadContext, message: EditorLoadedMessage) {
   const editor = getScope(mainThread, EditorScope);
@@ -156,19 +173,12 @@ function onComponentInfoChanged(ctx: IMainThreadContext, message: ComponentInfoC
 function onComponentPropertyChanged(ctx: IMainThreadContext, message: ComponentPropertyChangedMessage) {}
 
 function onSaveGLTF(ctx: IMainThreadContext, message: SaveGLTFMessage) {
-  downloadFile(message.buffer, "scene.glb");
+  downloadFile(message.buffer, "scene.glb", "application/octet-stream");
 }
 
-function downloadFile(buffer: ArrayBuffer, fileName: string) {
-  const blob = new Blob([buffer], { type: "application/octet-stream" });
-  const el = document.createElement("a");
-  el.style.display = "none";
-  document.body.appendChild(el);
-  el.href = URL.createObjectURL(blob);
-  el.download = fileName;
-  el.click();
-  document.body.removeChild(el);
-}
+/*******
+ * API *
+ ******/
 
 export function sendLoadEditorMessage(ctx: IMainThreadContext) {
   ctx.gameWorker.postMessage({ type: WorkerMessageType.LoadEditor });

@@ -2,10 +2,20 @@ import { IMainThreadContext } from "../MainThread";
 import { getScope } from "../types/types.common";
 import { StatNames, Stats, StatsBuffer } from "./stats.common";
 
+/*********
+ * Types *
+ ********/
+
 export interface StatsScope {
   buffer: StatsBuffer;
   stats: StatsObject;
 }
+
+export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: number | string };
+
+/******************
+ * Initialization *
+ *****************/
 
 export function StatsScope(): StatsScope {
   return {
@@ -30,7 +40,9 @@ function createStatsBuffer(): StatsBuffer {
   };
 }
 
-export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: number | string };
+/*******
+ * API *
+ ******/
 
 export function getStats(context: IMainThreadContext): StatsObject {
   const { stats, buffer } = getScope(context, StatsScope);

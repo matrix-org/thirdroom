@@ -6,6 +6,10 @@ import { flagSet } from "./Bitmask";
 import { createInputState } from "./input.common";
 import { codeToKeyCode } from "./KeyCodes";
 
+/*********
+ * Types *
+ ********/
+
 export interface IInputScope {
   tripleBuffer: TripleBufferState;
   buffer: CursorBuffer;
@@ -14,8 +18,11 @@ export interface IInputScope {
     movement: Float32Array;
     buttons: Uint32Array;
   };
-  dispose?: () => void;
 }
+
+/******************
+ * Initialization *
+ *****************/
 
 export function InputScope(ctx: IMainThreadContext): IInputScope {
   const buffer = createCursorBuffer();
@@ -33,25 +40,8 @@ export function InputModule(ctx: IMainThreadContext) {
 
   ctx.initialGameWorkerState.inputTripleBuffer = input.tripleBuffer;
 
-  const disposables = [bindInputEvents(input, ctx.canvas), registerSystem(ctx, MainThreadInputSystem)];
+  const { canvas } = ctx;
 
-  return () => {
-    for (const dispose of disposables) {
-      dispose();
-    }
-  };
-}
-
-function MainThreadInputSystem(ctx: IMainThreadContext) {
-  const input = getScope(ctx, InputScope);
-  copyToWriteBuffer(input.tripleBuffer, input.buffer);
-  swapWriteBuffer(input.tripleBuffer);
-
-  input.mouse.movement[0] = 0;
-  input.mouse.movement[1] = 0;
-}
-
-const bindInputEvents = (input: IInputScope, canvas: HTMLElement): (() => void) => {
   function onMouseDown({ buttons }: MouseEvent) {
     if (document.pointerLockElement === canvas) {
       input.mouse.buttons[0] = buttons;
@@ -96,6 +86,8 @@ const bindInputEvents = (input: IInputScope, canvas: HTMLElement): (() => void) 
   window.addEventListener("mousemove", onMouseMove);
   canvas.addEventListener("blur", onBlur);
 
+  const disposeInputSystem = registerSystem(ctx, MainThreadInputSystem);
+
   return () => {
     canvas.removeEventListener("mousedown", onMouseDown);
     canvas.removeEventListener("mouseup", onMouseUp);
@@ -103,5 +95,19 @@ const bindInputEvents = (input: IInputScope, canvas: HTMLElement): (() => void) 
     window.removeEventListener("keyup", onKeyUp);
     window.removeEventListener("mousemove", onMouseMove);
     canvas.removeEventListener("blur", onBlur);
+    disposeInputSystem();
   };
-};
+}
+
+/***********
+ * Systems *
+ **********/
+
+function MainThreadInputSystem(ctx: IMainThreadContext) {
+  const input = getScope(ctx, InputScope);
+  copyToWriteBuffer(input.tripleBuffer, input.buffer);
+  swapWriteBuffer(input.tripleBuffer);
+
+  input.mouse.movement[0] = 0;
+  input.mouse.movement[1] = 0;
+}
