@@ -5,7 +5,7 @@ import { maxEntities, NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
 import { TransformView } from "../RenderWorker";
 import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../TripleBuffer";
-import { getScope, registerMessageHandler, registerSystem } from "../types/types.common";
+import { getScope, registerMessageHandler, registerSystem } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
 
 /*********

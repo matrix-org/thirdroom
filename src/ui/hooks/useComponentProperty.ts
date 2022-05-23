@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { ComponentPropertyType, ComponentPropertyValue } from "../../engine/component/types";
 import { EditorEventType } from "../../engine/editor/editor.common";
 import { EditorScope, sendSetComponentPropertyMessage } from "../../engine/editor/editor.main";
-import { getScope } from "../../engine/types/types.common";
+import { getScope } from "../../engine/module/module.common";
 import { useMainThreadContext } from "./useMainThread";
 
 interface ComponentPropertyInputProps<T extends ComponentPropertyType> {

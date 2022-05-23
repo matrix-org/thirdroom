@@ -10,7 +10,7 @@ import {
   InitializeGameWorkerMessage,
   InitializeRenderWorkerMessage,
 } from "./WorkerMessage";
-import { BaseThreadContext, Message, registerModules, ScopeFactory, ThreadSystem } from "./types/types.common";
+import { BaseThreadContext, Message, registerModules, ScopeFactory, ThreadSystem } from "./module/module.common";
 import { modules } from "./config.main";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;

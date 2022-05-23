@@ -1,4 +1,4 @@
-import { Message } from "../types/types.common";
+import { Message } from "../module/module.common";
 
 export enum NetworkMessageType {
   // Main -> Game

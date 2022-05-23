@@ -1,7 +1,7 @@
 import { createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
 import { IMainThreadContext } from "../MainThread";
 import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer, TripleBufferState } from "../TripleBuffer";
-import { getScope, registerSystem } from "../types/types.common";
+import { getScope, registerSystem } from "../module/module.common";
 import { flagSet } from "./Bitmask";
 import { createInputState } from "./input.common";
 import { codeToKeyCode } from "./KeyCodes";

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useMainThreadContext } from "./useMainThread";
 import { EditorEventType } from "../../engine/editor/editor.common";
-import { getScope } from "../../engine/types/types.common";
+import { getScope } from "../../engine/module/module.common";
 import { EditorScope, sendDisposeEditorMessage, sendLoadEditorMessage } from "../../engine/editor/editor.main";
 
 export function useEditor(): boolean {

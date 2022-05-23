@@ -7,7 +7,7 @@ import {
 } from "./network.common";
 import { IMainThreadContext } from "../MainThread";
 import { AudioScope, setPeerMediaStream } from "../audio/audio.main";
-import { getScope, registerMessageHandler } from "../types/types.common";
+import { getScope, registerMessageHandler } from "../module/module.common";
 
 /*********
  * Types *

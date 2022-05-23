@@ -1,5 +1,5 @@
 import { IMainThreadContext } from "../MainThread";
-import { getScope } from "../types/types.common";
+import { getScope } from "../module/module.common";
 import { StatNames, Stats, StatsBuffer } from "./stats.common";
 
 /*********

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { EditorEventType, Selection } from "../../engine/editor/editor.common";
 import { EditorScope } from "../../engine/editor/editor.main";
-import { getScope } from "../../engine/types/types.common";
+import { getScope } from "../../engine/module/module.common";
 import { useMainThreadContext } from "./useMainThread";
 
 export function useEditorSelection(): Selection {

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ComponentInfo } from "../../engine/component/types";
 import { EditorEventType } from "../../engine/editor/editor.common";
 import { EditorScope, sendRemoveComponentMessage } from "../../engine/editor/editor.main";
-import { getScope } from "../../engine/types/types.common";
+import { getScope } from "../../engine/module/module.common";
 import { useMainThreadContext } from "./useMainThread";
 
 export function useComponent(componentId: number): (ComponentInfo & { removeComponent(): void }) | undefined {

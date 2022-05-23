@@ -14,7 +14,7 @@ import {
 import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
 import { maxEntities } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
-import { getScope, registerMessageHandler, registerSystem } from "../types/types.common";
+import { getScope, registerMessageHandler, registerSystem } from "../module/module.common";
 import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
 import { downloadFile } from "../utils/downloadFile";
 
