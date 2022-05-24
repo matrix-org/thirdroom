@@ -9,8 +9,6 @@ import {
   defineComponent,
   Types,
 } from "bitecs";
-import { Quaternion, Vector3 } from "three";
-import { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 
 import {
   createCursorView,
@@ -35,11 +33,9 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { addChild, Transform } from "../component/transform";
-import { GameState } from "../GameWorker";
-import { createCube } from "../prefab";
+import { GameState, IInitialGameThreadState } from "../GameWorker";
 import { NOOP } from "../config.common";
-import { ownedPlayerQuery } from "../component/Player";
-import { RigidBody } from "../physics/physics.game";
+import { Player } from "../component/Player";
 import { sendAudioPeerEntityMessage } from "../audio/audio.game";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import {
@@ -50,6 +46,7 @@ import {
   SetHostMessage,
   SetPeerIdMessage,
 } from "./network.common";
+import { createPrefabEntity } from "../prefab";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -258,6 +255,14 @@ export const networkIdQuery = defineQuery([Networked, Owned]);
 export const enteredNetworkIdQuery = enterQuery(networkIdQuery);
 export const exitedNetworkIdQuery = exitQuery(networkIdQuery);
 
+export const ownedPlayerQuery = defineQuery([Player, Owned]);
+export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
+export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
+
+export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
+export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
+export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);
+
 /* Transform serialization */
 
 export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
@@ -433,19 +438,6 @@ export function serializeCreates(input: NetPipeData) {
   }
   return input;
 }
-
-// TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
-// add component+system for loading and swapping the prefab
-const createLoadingEntity = createCube;
-
-const createPrefabEntity = (state: GameState, prefab: string) => {
-  const create = state.prefabTemplateMap.get(prefab)?.create;
-  if (create) {
-    return create(state);
-  } else {
-    return createLoadingEntity(state);
-  }
-};
 
 export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab: string) {
   const network = getModule(state, NetworkModule);
@@ -955,29 +947,4 @@ const registerInboundMessageHandler = (network: GameNetworkState, type: number, 
 
 export function InboundNetworkSystem(state: GameState) {
   processNetworkMessages(state);
-}
-
-export const remoteRigidBodyQuery = defineQuery([RigidBody, Networked, NetworkTransform, Not(Owned)]);
-
-const applyNetworkTransformToRigidBodyAndTransform = (body: RapierRigidBody, eid: number) => {
-  const netPosition = NetworkTransform.position[eid];
-  const netQuaternion = NetworkTransform.quaternion[eid];
-
-  Transform.position[eid].set(netPosition);
-  Transform.quaternion[eid].set(netQuaternion);
-
-  body.setTranslation(new Vector3().fromArray(netPosition), true);
-  body.setRotation(new Quaternion().fromArray(netQuaternion), true);
-};
-
-export function NetworkTransformSystem({ world }: GameState) {
-  // lerp rigidbody towards network transform for remote networked entities
-  const remoteRigidBodyEntities = remoteRigidBodyQuery(world);
-  for (let i = 0; i < remoteRigidBodyEntities.length; i++) {
-    const eid = remoteRigidBodyEntities[i];
-    const body = RigidBody.store.get(eid);
-    if (body) {
-      applyNetworkTransformToRigidBodyAndTransform(body, eid);
-    }
-  }
 }

@@ -252,3 +252,16 @@ export function registerDefaultPrefabs(state: GameState) {
       ),
   });
 }
+
+// TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
+// add component+system for loading and swapping the prefab
+export const createLoadingEntity = createCube;
+
+export const createPrefabEntity = (state: GameState, prefab: string) => {
+  const create = state.prefabTemplateMap.get(prefab)?.create;
+  if (create) {
+    return create(state);
+  } else {
+    return createLoadingEntity(state);
+  }
+};

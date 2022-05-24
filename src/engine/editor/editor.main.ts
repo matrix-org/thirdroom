@@ -67,19 +67,16 @@ export const EditorModule = defineModule<IMainThreadContext, IInitialMainThreadS
         } as HierarchyView)
     );
 
-    return Object.assign(
-      {
-        selectedEntities: [],
-        activeEntity: undefined,
-        activeEntityComponents: [],
-        componentInfoMap: new Map(),
-        componentProperties: new Map(),
-        hierarchyTripleBuffer,
-        hierarchyViews,
-        activeHierarchyView: hierarchyViews[getReadBufferIndex(hierarchyTripleBuffer)],
-      },
-      new EventEmitter()
-    );
+    return Object.assign(new EventEmitter(), {
+      selectedEntities: [],
+      activeEntity: undefined,
+      activeEntityComponents: [],
+      componentInfoMap: new Map(),
+      componentProperties: new Map(),
+      hierarchyTripleBuffer,
+      hierarchyViews,
+      activeHierarchyView: hierarchyViews[getReadBufferIndex(hierarchyTripleBuffer)],
+    });
   },
   init(ctx) {
     const editor = getModule(ctx, EditorModule);

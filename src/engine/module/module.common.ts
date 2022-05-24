@@ -108,9 +108,12 @@ export function registerMessageHandler<ThreadContext extends BaseThreadContext, 
   };
 }
 
+type RegisterComponentFunction<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
+
 export interface Config<ThreadContext extends BaseThreadContext> {
   modules: Module<ThreadContext, any, any>[];
   systems: ThreadSystem<ThreadContext>[];
+  components?: RegisterComponentFunction<ThreadContext>[];
 }
 
 export function defineConfig<ThreadContext extends BaseThreadContext>(

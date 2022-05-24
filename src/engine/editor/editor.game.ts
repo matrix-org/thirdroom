@@ -24,7 +24,7 @@ import {
   ComponentPropertyType,
   ComponentPropertyStore,
 } from "../component/types";
-import { getDirection, Transform } from "../component/transform";
+import { getDirection, registerTransformComponent, Transform } from "../component/transform";
 import {
   ActionMap,
   ActionType,
@@ -95,6 +95,8 @@ export const EditorModule = defineModule<GameState, IInitialGameThreadState, Edi
       registerMessageHandler(ctx, WorkerMessageType.RemoveComponent, onEditorMessage),
       registerMessageHandler(ctx, WorkerMessageType.SetComponentProperty, onEditorMessage),
     ];
+
+    registerTransformComponent(ctx);
 
     return () => {
       for (const dispose of disposables) {

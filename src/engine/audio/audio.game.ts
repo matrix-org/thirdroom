@@ -1,12 +1,12 @@
 import { pipe } from "bitecs";
 
 import { renderableBuffer } from "../component/buffers";
-import { enteredOwnedPlayerQuery } from "../component/Player";
 import { NOOP } from "../config.common";
 import { GameState, IInitialGameThreadState } from "../GameWorker";
 import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
 import { defineModule, getModule } from "../module/module.common";
+import { enteredOwnedPlayerQuery } from "../network/network.game";
 
 interface GameAudioState {
   tripleBuffer: TripleBufferState;

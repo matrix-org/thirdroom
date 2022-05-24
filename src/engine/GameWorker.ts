@@ -1,6 +1,6 @@
 import { addEntity, createWorld, IWorld } from "bitecs";
 
-import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import {
   RemoteResourceManager,
@@ -186,9 +186,6 @@ async function onInit({
   };
 
   registerDefaultPrefabs(state);
-
-  // TODO: Register components in some other file.
-  registerTransformComponent(state);
 
   return state;
 }

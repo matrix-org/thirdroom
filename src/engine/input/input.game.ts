@@ -38,6 +38,8 @@ const generateInputGetters = (
 export const InputModule = defineModule<GameState, IInitialGameThreadState, GameInputModuleState>({
   create({ inputTripleBuffer }): GameInputModuleState {
     const inputStates = inputTripleBuffer.buffers
+      // TODO: When we pass the cursor buffer from main thread to the game thread, it comes with the cursor buffer properties already set. We can remove this line entirely, but then in createInputState we add additional views. Somehow we need to reuse the same cursor buffer defs and input state views.
+      // We could just postMessage the entire input state and avoid creating the cursor buffers altogether
       .map((buffer) => createCursorBuffer(buffer))
       .map((buffer) => createInputState(buffer));
 
