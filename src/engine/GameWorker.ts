@@ -17,28 +17,12 @@ import {
   GameWorkerInitializedMessage,
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
-import { ActionState, ActionMap } from "./input/ActionMappingSystem";
 import { renderableBuffer } from "./component/buffers";
-import { init, onStateChange } from "../game";
 import { StatsBuffer } from "./stats/stats.common";
-import { writeGameWorkerStats } from "./stats/stats.game";
 import { exportGLTF } from "./gltf/exportGLTF";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
-import {
-  EditorState,
-  initEditor,
-  initEditorState,
-  onDisposeEditor,
-  onEditorMessage,
-  onLoadEditor,
-} from "./editor/editor.game";
-import { createRaycasterState, initRaycaster, RaycasterState } from "./raycaster/raycaster.game";
-import { gameAudioSystem } from "./audio/audio.game";
-import { InputState } from "./input/input.common";
-import { BaseThreadContext, registerModules, updateSystemOrder } from "./module/module.common";
-import * as gameConfig from "./config.game";
-import { InputReadSystem } from "./input/input.game";
-// import { NetworkTransformSystem } from "./network";
+import { BaseThreadContext, registerModules, ThreadSystem } from "./module/module.common";
+import gameConfig from "./config.game";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -67,8 +51,6 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
       }
 
       await registerModules(message.initialGameWorkerState, state, gameConfig.modules);
-
-      await init(state);
 
       postMessage({
         type: WorkerMessageType.GameWorkerInitialized,
@@ -122,31 +104,10 @@ const onMessage =
       case WorkerMessageType.ExportScene:
         exportGLTF(state, state.scene);
         break;
-
-      case WorkerMessageType.StateChanged:
-        onStateChange(state, message.state);
-        break;
-
-      // editor
-      case WorkerMessageType.LoadEditor:
-        onLoadEditor(state);
-        break;
-      case WorkerMessageType.DisposeEditor:
-        onDisposeEditor(state);
-        break;
-      case WorkerMessageType.SetComponentProperty:
-      case WorkerMessageType.RemoveComponent:
-        onEditorMessage(state, message);
-        break;
     }
   };
 
 export type World = IWorld;
-
-export interface TimeState {
-  elapsed: number;
-  dt: number;
-}
 
 export type RenderPort = MessagePort | (typeof globalThis & Worker);
 
@@ -155,15 +116,10 @@ export interface RenderState {
   port: RenderPort;
 }
 
-export interface GameInputState {
-  tripleBuffer: TripleBufferState;
-  inputStates: InputState[];
-  actions: Map<string, ActionState>;
-  actionMaps: ActionMap[];
-  raw: { [path: string]: number };
+export interface TimeState {
+  elapsed: number;
+  dt: number;
 }
-
-export type System = (state: GameState) => void;
 
 export interface GameState extends BaseThreadContext {
   world: World;
@@ -172,15 +128,9 @@ export interface GameState extends BaseThreadContext {
   resourceManager: RemoteResourceManager;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
-  preSystems: System[];
-  systems: System[];
-  postSystems: System[];
+  systems: Map<ThreadSystem<GameState>, boolean>;
   scene: number;
   camera: number;
-  statsBuffer: StatsBuffer;
-  editorState: EditorState;
-  raycaster: RaycasterState;
-  audio: { tripleBuffer: TripleBufferState };
 }
 
 export interface IInitialGameThreadState {
@@ -194,10 +144,7 @@ async function onInit({
   resourceManagerBuffer,
   renderWorkerMessagePort,
   renderableTripleBuffer,
-  initialGameWorkerState,
 }: InitializeGameWorkerMessage): Promise<GameState> {
-  const { audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } = initialGameWorkerState as IInitialGameThreadState;
-
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);
@@ -224,10 +171,6 @@ async function onInit({
     dt: 0,
   };
 
-  const audio = {
-    tripleBuffer: audioTripleBuffer,
-  };
-
   const state: GameState = {
     world,
     scene,
@@ -236,22 +179,11 @@ async function onInit({
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     renderer,
-    audio,
     time,
-    systemGraphChanged: true,
-    systemGraph: [],
-    systems: [],
-    preSystems: [],
-    postSystems: [],
-    statsBuffer,
-    editorState: initEditorState(hierarchyTripleBuffer),
-    raycaster: createRaycasterState(),
+    systems: new Map(),
     messageHandlers: new Map(),
     modules: new Map(),
   };
-
-  initRaycaster(state);
-  initEditor(state);
 
   registerDefaultPrefabs(state);
 
@@ -265,42 +197,19 @@ function onStart(state: GameState) {
   update(state);
 }
 
-const updateWorldMatrixSystem = (state: GameState) => {
+export function TimeSystem(state: GameState) {
+  const now = performance.now();
+  state.time.dt = (now - state.time.elapsed) / 1000;
+  state.time.elapsed = now;
+}
+
+export const UpdateWorldMatrixSystem = (state: GameState) => {
   updateMatrixWorld(state.scene);
 };
 
-const renderableTripleBufferSystem = ({ renderer }: GameState) => {
+export const RenderableTripleBufferSystem = ({ renderer }: GameState) => {
   copyToWriteBuffer(renderer.tripleBuffer, renderableBuffer);
   swapWriteBuffer(renderer.tripleBuffer);
-};
-
-const timeSystem = ({ time }: GameState) => {
-  const now = performance.now();
-  time.dt = (now - time.elapsed) / 1000;
-  time.elapsed = now;
-};
-
-const pipeline = (state: GameState) => {
-  timeSystem(state);
-  InputReadSystem(state);
-
-  for (let i = 0; i < state.preSystems.length; i++) {
-    state.preSystems[i](state);
-  }
-
-  const systems = updateSystemOrder(state);
-
-  for (let i = 0; i < systems.length; i++) {
-    systems[i](state);
-  }
-
-  for (let i = 0; i < state.postSystems.length; i++) {
-    state.postSystems[i](state);
-  }
-
-  updateWorldMatrixSystem(state);
-  renderableTripleBufferSystem(state);
-  gameAudioSystem(state);
 };
 
 // timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
@@ -310,12 +219,11 @@ const pipeline = (state: GameState) => {
 const timeoutOffset = 4;
 
 function update(state: GameState) {
-  pipeline(state);
+  for (let i = 0; i < gameConfig.systems.length; i++) {
+    gameConfig.systems[i](state);
+  }
 
   const frameDuration = performance.now() - state.time.elapsed;
   const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
-
-  writeGameWorkerStats(state, frameDuration);
-
   setTimeout(() => update(state), remainder);
 }

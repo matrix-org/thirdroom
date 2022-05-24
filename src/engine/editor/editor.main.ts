@@ -14,7 +14,7 @@ import {
 import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
 import { maxEntities } from "../config.common";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { defineModule, getModule, registerMessageHandler, registerSystem } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
 import { downloadFile } from "../utils/downloadFile";
 
@@ -92,7 +92,6 @@ export const EditorModule = defineModule<IMainThreadContext, IInitialMainThreadS
       registerMessageHandler(ctx, WorkerMessageType.ComponentInfoChanged, onComponentInfoChanged),
       registerMessageHandler(ctx, WorkerMessageType.ComponentPropertyChanged, onComponentPropertyChanged),
       registerMessageHandler(ctx, WorkerMessageType.SaveGLTF, onSaveGLTF),
-      registerSystem(ctx, MainThreadEditorSystem),
       registerThirdroomGlobalFn("exportScene", () => {
         sendExportSceneMessage(ctx);
       }),
@@ -113,7 +112,7 @@ export const EditorModule = defineModule<IMainThreadContext, IInitialMainThreadS
  * Systems *
  **********/
 
-function MainThreadEditorSystem(mainThread: IMainThreadContext) {
+export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
   const editor = getModule(mainThread, EditorModule);
 
   // Set activeHierarchyView to point to the latest updated triple buffer view containing scene hierarchy info

@@ -1,7 +1,7 @@
 import { createCursorBuffer } from "../allocator/CursorBuffer";
 import { getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { GameState, IInitialGameThreadState } from "../GameWorker";
-import { defineModule, getModule, registerSystem } from "../module/module.common";
+import { defineModule, getModule } from "../module/module.common";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { createInputState, InputState, InputStateGetters } from "./input.common";
 
@@ -49,9 +49,7 @@ export const InputModule = defineModule<GameState, IInitialGameThreadState, Game
       raw: generateInputGetters(inputStates, inputTripleBuffer),
     };
   },
-  init(ctx) {
-    registerSystem(ctx, InputReadSystem);
-  },
+  init(ctx) {},
 });
 
 /***********

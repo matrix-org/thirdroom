@@ -1,9 +1,23 @@
-import { GameState } from "../GameWorker";
-import { Stats } from "./stats.common";
+import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { defineModule, getModule } from "../module/module.common";
+import { Stats, StatsBuffer } from "./stats.common";
 
-export function writeGameWorkerStats(state: GameState, frameDuration: number) {
-  state.statsBuffer.f32[Stats.gameTime] = state.time.dt;
-  state.statsBuffer.f32[Stats.gameDuration] = frameDuration;
+interface StatsModuleState {
+  statsBuffer: StatsBuffer;
 }
 
-export function StatsModule() {}
+export const StatsModule = defineModule<GameState, IInitialGameThreadState, StatsModuleState>({
+  create({ statsBuffer }) {
+    return {
+      statsBuffer,
+    };
+  },
+  init() {},
+});
+
+export function GameWorkerStatsSystem(state: GameState) {
+  const stats = getModule(state, StatsModule);
+  const frameDuration = performance.now() - state.time.elapsed;
+  stats.statsBuffer.f32[Stats.gameTime] = state.time.dt;
+  stats.statsBuffer.f32[Stats.gameDuration] = frameDuration;
+}

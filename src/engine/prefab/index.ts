@@ -12,7 +12,7 @@ import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
-import { playAudioFromWorker } from "../audio/audio.game";
+import { playAudio } from "../audio/audio.game";
 import { getModule } from "../module/module.common";
 
 /* Prefab Factories */
@@ -192,7 +192,7 @@ export function registerDefaultPrefabs(state: GameState) {
         })
       );
 
-      playAudioFromWorker("/audio/bach.mp3", eid);
+      playAudio("/audio/bach.mp3", eid);
 
       return eid;
     },

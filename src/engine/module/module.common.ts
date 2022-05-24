@@ -1,15 +1,7 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
-interface SystemGraphNode {
-  system: ThreadSystem<any>;
-  before?: ThreadSystem<any>[];
-  after?: ThreadSystem<any>[];
-}
-
 export interface BaseThreadContext {
-  systemGraphChanged: boolean;
-  systemGraph: SystemGraphNode[];
-  systems: ThreadSystem<any>[];
+  systems: Map<ThreadSystem<any>, boolean>;
   modules: Map<Module<any, any, any>, any>;
   messageHandlers: Map<string, MessageHandler<any, string, Message<any>>[]>;
 }
@@ -21,7 +13,7 @@ export function getModule<ThreadContext extends BaseThreadContext, InitialState 
   return threadContext.modules.get(module);
 }
 
-interface Module<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}> {
+export interface Module<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}> {
   create: ((initialState: InitialState) => ModuleState) | ((initialState: InitialState) => Promise<ModuleState>);
   init: (ctx: ThreadContext) => void | (() => void) | Promise<void> | Promise<() => void>;
 }
@@ -116,70 +108,13 @@ export function registerMessageHandler<ThreadContext extends BaseThreadContext, 
   };
 }
 
-interface RegisterSystemOptions<ThreadContext extends BaseThreadContext> {
-  before?: ThreadSystem<ThreadContext>[];
-  after?: ThreadSystem<ThreadContext>[];
+export interface Config<ThreadContext extends BaseThreadContext> {
+  modules: Module<ThreadContext, any, any>[];
+  systems: ThreadSystem<ThreadContext>[];
 }
 
-export function registerSystem<ThreadContext extends BaseThreadContext>(
-  ctx: ThreadContext,
-  system: ThreadSystem<ThreadContext>,
-  options?: RegisterSystemOptions<ThreadContext>
-) {
-  ctx.systemGraphChanged = true;
-  ctx.systemGraph.push({
-    system,
-    before: options?.before,
-    after: options?.after,
-  });
-
-  return () => {
-    ctx.systemGraphChanged = true;
-
-    const index = ctx.systemGraph.findIndex((node) => node.system === system);
-
-    if (index !== -1) {
-      ctx.systemGraph.splice(index, 1);
-    }
-  };
-}
-
-export function updateSystemOrder<ThreadContext extends BaseThreadContext>(
-  ctx: ThreadContext
-): ThreadSystem<ThreadContext>[] {
-  // TODO: Implement this
-  // if (ctx.systemGraphChanged) {
-
-  //   const workingNodes = ctx.systemGraph.map((item) => ({ ...item }));
-  //   let depCount = 0;
-  //   let systemsLeft = ctx.systems.length;
-  //   let lastSystemsLeft = systemsLeft;
-
-  //   ctx.systems.length = 0;
-
-  //   while (systemsLeft > 0) {
-  //     for (const node of workingNodes) {
-  //       if ((node.after?.length || 0) + (node.before?.length || 0) === depCount) {
-  //         systemsLeft--;
-  //       }
-  //     }
-
-  //     if (systemsLeft === lastSystemsLeft) {
-  //       throw new Error("Invalid system dependencies.");
-  //     }
-
-  //     lastSystemsLeft = systemsLeft;
-  //     depCount++;
-  //   }
-  // }
-
-  if (ctx.systemGraphChanged) {
-    ctx.systems.length = 0;
-
-    for (let i = 0; i < ctx.systemGraph.length; i++) {
-      ctx.systems.push(ctx.systemGraph[i].system);
-    }
-  }
-
-  return ctx.systems;
+export function defineConfig<ThreadContext extends BaseThreadContext>(
+  config: Config<ThreadContext>
+): Config<ThreadContext> {
+  return config;
 }

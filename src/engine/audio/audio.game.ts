@@ -3,36 +3,53 @@ import { pipe } from "bitecs";
 import { renderableBuffer } from "../component/buffers";
 import { enteredOwnedPlayerQuery } from "../component/Player";
 import { NOOP } from "../config.common";
-import { GameState } from "../GameWorker";
-import { copyToWriteBuffer, swapWriteBuffer } from "../allocator/TripleBuffer";
+import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
+import { defineModule, getModule } from "../module/module.common";
 
-export const playAudioFromWorker = (filepath: string, eid: number = NOOP) =>
+interface GameAudioState {
+  tripleBuffer: TripleBufferState;
+}
+
+export const AudioModule = defineModule<GameState, IInitialGameThreadState, GameAudioState>({
+  create: ({ audioTripleBuffer }) => ({
+    tripleBuffer: audioTripleBuffer,
+  }),
+  init() {},
+});
+
+/**
+ * API
+ */
+
+export const playAudio = (filepath: string, eid: number = NOOP) =>
   postMessage({
     type: WorkerMessageType.PlayAudio,
     filepath,
     eid,
   });
 
-export const sendAudioPeerEntityMessage = (peerId: string, eid: number) => {
+export const sendAudioPeerEntityMessage = (peerId: string, eid: number) =>
   postMessage({
     type: WorkerMessageType.SetAudioPeerEntity,
     peerId,
     eid,
   });
-};
 
-export const audioTripleBufferSystem = (gameState: GameState) => {
-  const {
-    audio: { tripleBuffer },
-  } = gameState;
+/**
+ * Systems
+ */
+
+export const AudioTripleBufferSystem = (ctx: GameState) => {
+  const { tripleBuffer } = getModule(ctx, AudioModule);
   copyToWriteBuffer(tripleBuffer, renderableBuffer);
   swapWriteBuffer(tripleBuffer);
-  return gameState;
+  return ctx;
 };
 
-export const sendPlayerEntitiesToMain = (gameState: GameState) => {
-  const newOwnedPlayers = enteredOwnedPlayerQuery(gameState.world);
+export const SetPlayerListenerSystem = (ctx: GameState) => {
+  const newOwnedPlayers = enteredOwnedPlayerQuery(ctx.world);
   for (let i = 0; i < newOwnedPlayers.length; i++) {
     const eid = newOwnedPlayers[i];
     postMessage({
@@ -49,9 +66,7 @@ export const sendPlayerEntitiesToMain = (gameState: GameState) => {
   //   console.log("#sendPlayerEntitiesToMain() - WorkerMessageType.SetAudioPeerEntity");
   //   sendAudioPeerEntityMessage(peerId, eid);
   // }
+  return ctx;
 };
 
-export const gameAudioSystem: (gameState: GameState) => GameState = pipe(
-  audioTripleBufferSystem,
-  sendPlayerEntitiesToMain
-);
+export const AudioSystem: (gameState: GameState) => GameState = pipe(SetPlayerListenerSystem, AudioTripleBufferSystem);

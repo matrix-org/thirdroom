@@ -14,7 +14,7 @@ import { GameState, IInitialGameThreadState, World } from "../GameWorker";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
-import { playAudioFromWorker } from "../audio/audio.game";
+import { playAudio } from "../audio/audio.game";
 import { defineModule, getModule } from "../module/module.common";
 
 interface PhysicsModuleState {
@@ -121,7 +121,7 @@ export const PhysicsSystem = (state: GameState) => {
   physicsWorld.step(eventQueue);
 
   eventQueue.drainContactEvents((handle1: RAPIER.RigidBodyHandle, handle2: RAPIER.RigidBodyHandle) => {
-    playAudioFromWorker("/audio/hit.wav", handleMap.get(handle2));
+    playAudio("/audio/hit.wav", handleMap.get(handle2));
   });
 };
 

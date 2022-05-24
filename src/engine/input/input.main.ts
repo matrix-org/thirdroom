@@ -1,7 +1,7 @@
 import { createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
 import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
-import { defineModule, getModule, registerSystem } from "../module/module.common";
+import { defineModule, getModule } from "../module/module.common";
 import { flagSet } from "./Bitmask";
 import { createInputState } from "./input.common";
 import { codeToKeyCode } from "./KeyCodes";
@@ -86,8 +86,6 @@ export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadSt
     window.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("blur", onBlur);
 
-    const disposeInputSystem = registerSystem(ctx, MainThreadInputSystem);
-
     return () => {
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mouseup", onMouseUp);
@@ -95,7 +93,6 @@ export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadSt
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("blur", onBlur);
-      disposeInputSystem();
     };
   },
 });
@@ -104,7 +101,7 @@ export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadSt
  * Systems *
  **********/
 
-function MainThreadInputSystem(ctx: IMainThreadContext) {
+export function MainThreadInputSystem(ctx: IMainThreadContext) {
   const input = getModule(ctx, InputModule);
   copyToWriteBuffer(input.tripleBuffer, input.buffer);
   swapWriteBuffer(input.tripleBuffer);

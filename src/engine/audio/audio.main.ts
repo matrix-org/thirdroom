@@ -5,7 +5,7 @@ import { maxEntities, NOOP } from "../config.common";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
 import { TransformView } from "../RenderWorker";
 import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
-import { defineModule, getModule, registerMessageHandler, registerSystem } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
 
 /*********
@@ -109,8 +109,6 @@ export const AudioModule = defineModule<IMainThreadContext, IInitialMainThreadSt
       registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
       registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
       registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
-
-      registerSystem(ctx, MainAudioSystem),
     ];
 
     return () => {
@@ -275,7 +273,7 @@ const tempMatrix4 = new Matrix4();
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
-export function MainAudioSystem(mainThread: IMainThreadContext) {
+export function MainThreadAudioSystem(mainThread: IMainThreadContext) {
   const audioModule = getModule(mainThread, AudioModule);
 
   if (audioModule.listenerEntity === NOOP) {
