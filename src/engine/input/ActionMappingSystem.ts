@@ -1,6 +1,8 @@
 import { vec2 } from "gl-matrix";
 
 import { GameState, GameInputState } from "../GameWorker";
+import { getModule } from "../module/module.common";
+import { InputModule } from "./input.game";
 
 export enum ActionType {
   Vector2 = "Vector2",
@@ -119,32 +121,38 @@ const ActionTypesToBindings: {
 };
 
 export function ActionMappingSystem(state: GameState) {
+  const input = getModule(state, InputModule);
+
   // Note not optimized at all
-  for (const actionMap of state.input.actionMaps) {
+  for (const actionMap of input.actionMaps) {
     for (const action of actionMap.actions) {
-      if (!state.input.actions.has(action.path)) {
-        state.input.actions.set(action.path, ActionTypesToBindings[action.type].create());
+      if (!input.actions.has(action.path)) {
+        input.actions.set(action.path, ActionTypesToBindings[action.type].create());
       }
 
       for (const binding of action.bindings) {
-        ActionTypesToBindings[action.type].bindings[binding.type](state.input, action.path, binding);
+        ActionTypesToBindings[action.type].bindings[binding.type](input, action.path, binding);
       }
     }
   }
 }
 
 export function enableActionMap(state: GameState, actionMap: ActionMap) {
-  const index = state.input.actionMaps.indexOf(actionMap);
+  const input = getModule(state, InputModule);
+
+  const index = input.actionMaps.indexOf(actionMap);
 
   if (index === -1) {
-    state.input.actionMaps.push(actionMap);
+    input.actionMaps.push(actionMap);
   }
 }
 
 export function disableActionMap(state: GameState, actionMap: ActionMap) {
-  const index = state.input.actionMaps.indexOf(actionMap);
+  const input = getModule(state, InputModule);
+
+  const index = input.actionMaps.indexOf(actionMap);
 
   if (index !== -1) {
-    state.input.actionMaps.splice(index, 1);
+    input.actionMaps.splice(index, 1);
   }
 }

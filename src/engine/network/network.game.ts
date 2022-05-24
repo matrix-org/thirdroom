@@ -41,7 +41,7 @@ import { NOOP } from "../config.common";
 import { ownedPlayerQuery } from "../component/Player";
 import { RigidBody } from "../physics/physics.game";
 import { sendAudioPeerEntityMessage } from "../audio/audio.game";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, registerSystem } from "../module/module.common";
 import {
   AddPeerIdMessage,
   NetworkMessage,
@@ -112,6 +112,12 @@ export const NetworkModule = defineModule({
     messageHandlers: {},
   }),
   init(ctx: GameState) {
+    // registerSystem(ctx, createInboundNetworkSystem(ctx));
+    // registerSystem(ctx, createOutboundNetworkSystem(ctx));
+
+    ctx.preSystems.push(createInboundNetworkSystem(ctx));
+    ctx.postSystems.push(createOutboundNetworkSystem(ctx));
+
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
       registerMessageHandler(ctx, NetworkMessageType.SetPeerId, onSetPeerId),
@@ -867,7 +873,7 @@ const sendUpdates = (input: NetPipeData) => (state: GameState) => {
   return state;
 };
 
-export function createOutgoingNetworkSystem(state: GameState) {
+export function createOutboundNetworkSystem(state: GameState) {
   const cursorView = createCursorView();
   const input: NetPipeData = [state, cursorView];
   const pipeline = pipe(
@@ -878,7 +884,7 @@ export function createOutgoingNetworkSystem(state: GameState) {
     // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
     deleteNetworkIds
   );
-  return function OutgoingNetworkSystem(state: GameState) {
+  return function OutboundNetworkSystem(state: GameState) {
     const network = getModule(state, NetworkModule);
     const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
     if (!hasPeerIdIndex) return state;
@@ -904,7 +910,7 @@ export function createOutgoingNetworkSystem(state: GameState) {
   };
 }
 
-/* Incoming */
+/* Inbound */
 
 const deserializeSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
 const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
@@ -926,22 +932,22 @@ const processNetworkMessages = (state: GameState) => {
   }
 };
 
-const registerIncomingMessageHandler = (state: GameState, type: number, cb: (input: NetPipeData) => void) => {
+const registerInboundMessageHandler = (state: GameState, type: number, cb: (input: NetPipeData) => void) => {
   const network = getModule(state, NetworkModule);
   network.messageHandlers[type] = cb;
 };
 
-export function createIncomingNetworkSystem(state: GameState) {
-  registerIncomingMessageHandler(state, NetworkAction.Create, deserializeCreates);
-  registerIncomingMessageHandler(state, NetworkAction.UpdateChanged, deserializeUpdatesChanged);
-  registerIncomingMessageHandler(state, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
-  registerIncomingMessageHandler(state, NetworkAction.Delete, deserializeDeletes);
-  registerIncomingMessageHandler(state, NetworkAction.FullSnapshot, deserializeSnapshot);
-  registerIncomingMessageHandler(state, NetworkAction.FullChanged, deserializeFullUpdate);
-  registerIncomingMessageHandler(state, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
-  registerIncomingMessageHandler(state, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
+export function createInboundNetworkSystem(state: GameState) {
+  registerInboundMessageHandler(state, NetworkAction.Create, deserializeCreates);
+  registerInboundMessageHandler(state, NetworkAction.UpdateChanged, deserializeUpdatesChanged);
+  registerInboundMessageHandler(state, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
+  registerInboundMessageHandler(state, NetworkAction.Delete, deserializeDeletes);
+  registerInboundMessageHandler(state, NetworkAction.FullSnapshot, deserializeSnapshot);
+  registerInboundMessageHandler(state, NetworkAction.FullChanged, deserializeFullUpdate);
+  registerInboundMessageHandler(state, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
+  registerInboundMessageHandler(state, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
 
-  return function IncomingNetworkSystem(state: GameState) {
+  return function InboundNetworkSystem(state: GameState) {
     processNetworkMessages(state);
   };
 }

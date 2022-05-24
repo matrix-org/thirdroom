@@ -24,12 +24,15 @@ import {
 } from "./engine/network/network.game";
 import { SpawnPoint } from "./engine/component/SpawnPoint";
 import { getModule, registerSystem } from "./engine/module/module.common";
+import { InputModule } from "./engine/input/input.game";
 // import { playAudioFromWorker } from "./engine/audio";
 
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export async function init(state: GameState): Promise<void> {
-  state.input.actionMaps = [
+  const input = getModule(state, InputModule);
+
+  input.actionMaps = [
     {
       id: "movement",
       actions: [
@@ -135,10 +138,9 @@ export async function init(state: GameState): Promise<void> {
 
   createGLTFEntity(state, "/gltf/modern_city_block_fixed/modern_city_block.gltf", scene);
 
-  const cubeSpawnSystem = (state: GameState) => {
-    const spawnCube = state.input.actions.get("SpawnCube") as ButtonActionState;
+  const CubeSpawnSystem = (state: GameState) => {
+    const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
     if (spawnCube.pressed) {
-      // const cube = createCube(state);
       const cube = getPrefabTemplate(state, "blue-cube")?.create();
 
       addComponent(state.world, Networked, cube);
@@ -168,7 +170,7 @@ export async function init(state: GameState): Promise<void> {
   registerSystem(state, PlayerControllerSystem);
   registerSystem(state, PhysicsSystem);
   registerSystem(state, RenderableVisibilitySystem);
-  registerSystem(state, cubeSpawnSystem);
+  registerSystem(state, CubeSpawnSystem);
 }
 
 const waitUntil = (fn: Function) =>

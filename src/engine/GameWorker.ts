@@ -1,7 +1,6 @@
 import { addEntity, createWorld, IWorld } from "bitecs";
 
 import { addChild, addTransformComponent, registerTransformComponent, updateMatrixWorld } from "./component/transform";
-import { createCursorBuffer } from "./allocator/CursorBuffer";
 import { maxEntities, tickRate } from "./config.common";
 import {
   RemoteResourceManager,
@@ -10,7 +9,7 @@ import {
   remoteResourceLoaded,
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { copyToWriteBuffer, getReadBufferIndex, swapWriteBuffer, TripleBufferState } from "./allocator/TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "./allocator/TripleBuffer";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -19,13 +18,11 @@ import {
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
 import { ActionState, ActionMap } from "./input/ActionMappingSystem";
-import { inputReadSystem } from "./input/inputReadSystem";
 import { renderableBuffer } from "./component/buffers";
 import { init, onStateChange } from "../game";
 import { StatsBuffer } from "./stats/stats.common";
 import { writeGameWorkerStats } from "./stats/stats.game";
 import { exportGLTF } from "./gltf/exportGLTF";
-import { createIncomingNetworkSystem, createOutgoingNetworkSystem } from "./network/network.game";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
 import {
   EditorState,
@@ -37,9 +34,10 @@ import {
 } from "./editor/editor.game";
 import { createRaycasterState, initRaycaster, RaycasterState } from "./raycaster/raycaster.game";
 import { gameAudioSystem } from "./audio/audio.game";
-import { createInputState, InputState, InputStateGetters } from "./input/input.common";
+import { InputState } from "./input/input.common";
 import { BaseThreadContext, registerModules, updateSystemOrder } from "./module/module.common";
 import * as gameConfig from "./config.game";
+import { InputReadSystem } from "./input/input.game";
 // import { NetworkTransformSystem } from "./network";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -59,6 +57,7 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
         message.renderWorkerMessagePort.start();
       }
 
+      // initialize GameWorkerContext
       const state = await onInit(message);
 
       workerScope.addEventListener("message", onMessage(state));
@@ -68,6 +67,8 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
       }
 
       await registerModules(message.initialGameWorkerState, state, gameConfig.modules);
+
+      await init(state);
 
       postMessage({
         type: WorkerMessageType.GameWorkerInitialized,
@@ -195,8 +196,7 @@ async function onInit({
   renderableTripleBuffer,
   initialGameWorkerState,
 }: InitializeGameWorkerMessage): Promise<GameState> {
-  const { inputTripleBuffer, audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } =
-    initialGameWorkerState as IInitialGameThreadState;
+  const { audioTripleBuffer, hierarchyTripleBuffer, statsBuffer } = initialGameWorkerState as IInitialGameThreadState;
 
   const renderPort = renderWorkerMessagePort || workerScope;
 
@@ -258,13 +258,6 @@ async function onInit({
   // TODO: Register components in some other file.
   registerTransformComponent(state);
 
-  state.preSystems.push(createIncomingNetworkSystem(state));
-
-  state.postSystems.push(createOutgoingNetworkSystem(state));
-  // state.postSystems.push(NetworkTransformSystem, createOutgoingNetworkSystem(state));
-
-  await init(state);
-
   return state;
 }
 
@@ -289,7 +282,7 @@ const timeSystem = ({ time }: GameState) => {
 
 const pipeline = (state: GameState) => {
   timeSystem(state);
-  inputReadSystem(state);
+  InputReadSystem(state);
 
   for (let i = 0; i < state.preSystems.length; i++) {
     state.preSystems[i](state);

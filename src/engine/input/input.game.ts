@@ -1,16 +1,9 @@
-import { createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
-import {
-  copyToWriteBuffer,
-  createTripleBuffer,
-  swapReadBuffer,
-  swapWriteBuffer,
-  TripleBufferState,
-} from "../allocator/TripleBuffer";
+import { createCursorBuffer } from "../allocator/CursorBuffer";
+import { getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { GameState, IInitialGameThreadState } from "../GameWorker";
 import { defineModule, getModule, registerSystem } from "../module/module.common";
-import { flagSet } from "./Bitmask";
-import { createInputState } from "./input.common";
-import { codeToKeyCode } from "./KeyCodes";
+import { ActionMap, ActionState } from "./ActionMappingSystem";
+import { createInputState, InputState, InputStateGetters } from "./input.common";
 
 /*********
  * Types *
@@ -56,14 +49,16 @@ export const InputModule = defineModule<GameState, IInitialGameThreadState, Game
       raw: generateInputGetters(inputStates, inputTripleBuffer),
     };
   },
-  init(ctx) {},
+  init(ctx) {
+    registerSystem(ctx, InputReadSystem);
+  },
 });
 
 /***********
  * Systems *
  **********/
 
-export const inputReadSystem = (ctx: GameState) => {
+export const InputReadSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   swapReadBuffer(input.tripleBuffer);
 };

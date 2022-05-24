@@ -7,6 +7,7 @@ import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameWorker";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
+import { InputModule } from "../engine/input/input.game";
 import { getModule } from "../engine/module/module.common";
 import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
@@ -155,6 +156,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
 export const PlayerControllerSystem = (state: GameState) => {
   const { physicsWorld } = getModule(state, PhysicsModule);
+  const input = getModule(state, InputModule);
   const playerRig = playerRigQuery(state.world)[0];
   const body = RigidBody.store.get(playerRig);
   if (body) {
@@ -165,10 +167,10 @@ export const PlayerControllerSystem = (state: GameState) => {
     body.setRotation(obj.quaternion, true);
 
     // Handle Input
-    const moveVec = state.input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-    const jump = state.input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-    const crouch = state.input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-    const sprint = state.input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+    const moveVec = input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+    const jump = input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+    const crouch = input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+    const sprint = input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
     linearVelocity.copy(body.linvel() as Vector3);
 
