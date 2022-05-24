@@ -11,7 +11,7 @@ export default function WorldPreviewCardStories() {
         desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
         memberCount={234}
         options={
-          <Button variant="primary" onClick={() => console.log("clicked")}>
+          <Button size="lg" variant="primary" onClick={() => console.log("clicked")}>
             Join World
           </Button>
         }
@@ -23,7 +23,7 @@ export default function WorldPreviewCardStories() {
       <WorldPreviewCard
         title="Arch linux"
         options={
-          <Button variant="primary" onClick={() => console.log("clicked")}>
+          <Button size="lg" variant="primary" onClick={() => console.log("clicked")}>
             Join World
           </Button>
         }

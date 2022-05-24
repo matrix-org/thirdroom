@@ -1,0 +1,11 @@
+.Category {
+  position: relative;
+
+  & .CategoryHeader {
+    background-color: var(--bg-surface);
+
+    position: sticky;
+    top: 0;
+    z-index: 99;
+  }
+}

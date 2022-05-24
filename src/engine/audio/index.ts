@@ -200,7 +200,7 @@ export const setAudioPeerEntity = (audioState: AudioState, peerId: string, eid: 
   mediaStreamSource.connect(panner);
 };
 
-const isChrome = !!window.chrome;
+const isChrome = /Chrome/.test(navigator.userAgent);
 
 export const setPeerMediaStream = (audioState: AudioState, peerId: string, mediaStream: MediaStream) => {
   if (isChrome) {

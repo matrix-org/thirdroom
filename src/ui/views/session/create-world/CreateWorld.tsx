@@ -1,5 +1,5 @@
 import { useCallback, useState, FormEvent, ChangeEvent } from "react";
-import { RoomType, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+import { RoomVisibility, IBlobHandle, RoomType } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
@@ -18,22 +18,30 @@ import { Window } from "../../components/window/Window";
 import { WindowHeader } from "../../components/window/WindowHeader";
 import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
+import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
 import { getImageDimension } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
-import AddIC from "../../../../../res/ic/add.svg";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
-import "./CreateWorld.css";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
+import { WindowFooter } from "../../components/window/WindowFooter";
+import { Content } from "../../../atoms/content/Content";
+import { CreateWorldPreview } from "./CreateWorldPreview";
+import AddIC from "../../../../../res/ic/add.svg";
+import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import { SceneUpload } from "./SceneUpload";
+import "./CreateWorld.css";
+import { ScenePreviewUpload } from "./ScenePreviewUpload";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
+  sceneMxc: string;
+  scenePrevMxc: string;
   name: string;
   topic?: string;
-  type: RoomType;
+  visibility: RoomVisibility;
   alias?: string;
 }
 
@@ -44,13 +52,16 @@ export function CreateWorld() {
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
 
   const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
+  const [sceneMxc, setSceneMxc] = useState<string>();
+  const [scenePrevMxc, setScenePrevMxc] = useState<string>();
+  const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
 
   const navigate = useNavigate();
 
   const handleCreateWorld = useCallback(
-    async ({ avatar, name, topic, type, alias }: CreateWorldOptions) => {
+    async ({ avatar, name, sceneMxc, scenePrevMxc, topic, visibility, alias }: CreateWorldOptions) => {
       const avatarInfo = !avatar
         ? undefined
         : {
@@ -63,7 +74,8 @@ export function CreateWorld() {
             },
           };
       const roomBeingCreated = await session.createRoom({
-        type,
+        type: RoomType.World,
+        visibility,
         avatar: avatarInfo,
         name,
         topic,
@@ -93,6 +105,15 @@ export function CreateWorld() {
             [session.userId]: 100,
           },
         },
+        initialState: [
+          {
+            type: "m.world",
+            content: {
+              scene_url: sceneMxc,
+              scene_preview_url: scenePrevMxc,
+            },
+          },
+        ],
       });
 
       navigate(`/world/${roomBeingCreated.id}`);
@@ -102,7 +123,7 @@ export function CreateWorld() {
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    if (isAliasAvail === false) return;
+    if (isAliasAvail === false || !sceneMxc || !scenePrevMxc) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
@@ -110,8 +131,10 @@ export function CreateWorld() {
       aliasInput: HTMLInputElement;
     };
     handleCreateWorld({
-      type: isPrivateInput.checked ? RoomType.Private : RoomType.Private,
+      visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
+      sceneMxc,
+      scenePrevMxc,
       topic: topicInput.value || undefined,
       avatar: !avatarBlob ? undefined : avatarBlob,
       alias: aliasInput.value || undefined,
@@ -137,98 +160,128 @@ export function CreateWorld() {
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
+  const handleAvatarSelect = useCallback(async () => {
+    const data = await platform.openFile("image/*");
+    if (!data) return;
+    setAvatarBlob(data.blob);
+  }, [setAvatarBlob, platform]);
+
   return (
-    <Window
-      className="grow"
-      header={
-        <WindowHeader
-          left={
-            <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
-              Create World
-            </WindowHeaderTitle>
-          }
-          right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
-        />
-      }
-    >
-      <WindowContent aside=" ">
-        <Scroll>
-          <form className="CreateWorld__content" onSubmit={handleSubmit}>
-            <SettingTile label={<Label>World Avatar</Label>}>
-              <ThumbnailHover
-                content={
-                  !avatarBlob ? undefined : (
-                    <IconButton
-                      variant="world"
-                      onClick={() => {
-                        setAvatarBlob(undefined);
-                      }}
-                      size="xl"
-                      iconSrc={CrossCircleIC}
-                      label="Remove world avatar"
-                    />
-                  )
-                }
-              >
-                <Thumbnail size="sm" className="flex">
-                  {avatarBlob ? (
-                    <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
-                  ) : (
-                    <IconButton
-                      onClick={async () => {
-                        const data = await platform.openFile("image/*");
-                        if (!data) return;
-                        setAvatarBlob(data.blob);
-                      }}
-                      size="xl"
-                      iconSrc={AddIC}
-                      label="Add world avatar"
-                    />
-                  )}
-                </Thumbnail>
-              </ThumbnailHover>
-            </SettingTile>
-            <div className="flex gap-lg">
-              <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
-                <Input name="nameInput" required />
-              </SettingTile>
-              <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-                <Switch name="isPrivateInput" defaultChecked={true} />
-              </SettingTile>
-            </div>
-            <div className="flex gap-lg">
-              <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
-                <Input name="topicInput" />
-              </SettingTile>
-              <SettingTile
-                className="grow basis-0"
-                label={
-                  <Label color={isAliasAvail ? "secondary" : isAliasAvail === false ? "danger" : undefined}>
-                    {isAliasAvail ? "Alias (Available)" : isAliasAvail === false ? "Alias (Already in use)" : "Alias"}
-                  </Label>
-                }
-              >
-                <Input
-                  name="aliasInput"
-                  state={isAliasAvail ? "success" : isAliasAvail === false ? "error" : undefined}
-                  onChange={handleAliasChange}
-                  maxLength={255 - (userHSDomain.length + 2) /*for -> #:*/}
-                  before={<Text variant="b2">#</Text>}
-                  after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
-                />
-              </SettingTile>
-            </div>
-            <div className="flex gap-md">
-              <Button fill="outline" onClick={() => selectWindow()}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isAliasAvail === false}>
+    <Window>
+      <Content
+        onSubmit={handleSubmit}
+        top={
+          <WindowHeader
+            left={
+              <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
                 Create World
-              </Button>
-            </div>
-          </form>
-        </Scroll>
-      </WindowContent>
+              </WindowHeaderTitle>
+            }
+            right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
+          />
+        }
+      >
+        <WindowContent
+          children={
+            <Content
+              children={
+                <Scroll>
+                  <div className="CreateWorld__content">
+                    <SettingTile label={<Label>World Avatar</Label>}>
+                      <ThumbnailHover
+                        content={
+                          !avatarBlob ? undefined : (
+                            <IconButton
+                              variant="world"
+                              onClick={() => setAvatarBlob(undefined)}
+                              size="xl"
+                              iconSrc={CrossCircleIC}
+                              label="Remove world avatar"
+                            />
+                          )
+                        }
+                      >
+                        <Thumbnail size="sm" className="flex">
+                          {avatarBlob ? (
+                            <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
+                          ) : (
+                            <IconButton
+                              onClick={handleAvatarSelect}
+                              size="xl"
+                              iconSrc={AddIC}
+                              label="Add world avatar"
+                            />
+                          )}
+                        </Thumbnail>
+                      </ThumbnailHover>
+                    </SettingTile>
+                    <div className="flex gap-lg">
+                      <SceneUpload onMxcChange={setSceneMxc} />
+                      <ScenePreviewUpload onMxcChange={setScenePrevMxc} onBlobChange={setScenePrevBlob} />
+                    </div>
+                    <div className="flex gap-lg">
+                      <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
+                        <Input name="nameInput" required />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Topic</Label>}>
+                        <Input name="topicInput" />
+                      </SettingTile>
+                    </div>
+                    <div className="flex gap-lg">
+                      <SettingTile
+                        className="grow basis-0"
+                        label={
+                          <Label color={isAliasAvail ? "secondary" : isAliasAvail === false ? "danger" : undefined}>
+                            {isAliasAvail
+                              ? "Alias (Available)"
+                              : isAliasAvail === false
+                              ? "Alias (Already in use)"
+                              : "Alias"}
+                          </Label>
+                        }
+                      >
+                        <Input
+                          name="aliasInput"
+                          state={isAliasAvail ? "success" : isAliasAvail === false ? "error" : undefined}
+                          onChange={handleAliasChange}
+                          maxLength={255 - (userHSDomain.length + 2) /*for -> #:*/}
+                          before={<Text variant="b2">#</Text>}
+                          after={<Text variant="b2">{`:${userHSDomain}`}</Text>}
+                        />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                        <Switch name="isPrivateInput" defaultChecked={true} />
+                      </SettingTile>
+                    </div>
+                  </div>
+                </Scroll>
+              }
+              bottom={
+                <WindowFooter
+                  left={
+                    <Button size="lg" fill="outline" onClick={() => selectWindow()}>
+                      Cancel
+                    </Button>
+                  }
+                  right={
+                    <Button size="lg" type="submit" disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc}>
+                      Create World
+                    </Button>
+                  }
+                />
+              }
+            />
+          }
+          aside={
+            <WindowAside className="flex">
+              <CreateWorldPreview
+                className="grow"
+                src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+              />
+            </WindowAside>
+          }
+        />
+      </Content>
     </Window>
   );
 }

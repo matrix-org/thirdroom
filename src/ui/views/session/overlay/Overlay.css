@@ -20,6 +20,7 @@
 
 .Overlay__window {
   height: 100%;
+  pointer-events: all;
 }
 
 .Overlay__content {

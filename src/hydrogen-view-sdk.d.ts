@@ -347,10 +347,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     mxcUrlThumbnail(url: string, width: number, height: number, method: "crop" | "scale"): string | null;
   }
 
-  export enum RoomType {
+  export enum RoomVisibility {
     DirectMessage,
     Private,
     Public,
+  }
+
+  export enum RoomType {
+    World,
   }
 
   export class RoomBeingCreated extends EventEmitter<any> {
@@ -377,7 +381,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   interface ICreateRoom {
-    type: RoomType;
+    type?: RoomType;
+    visibility: RoomVisibility;
     name?: string;
     topic?: string;
     isEncrypted?: boolean;
@@ -394,11 +399,13 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       };
     };
     powerLevelContentOverride?: any;
+    initialState?: any[];
   }
 
   export class Session {
     userId: string;
     _sessionInfo: ISessionInfo;
+    _hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
@@ -486,11 +493,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export class AttachmentUpload {
-    constructor({ filename, blob, platform }: { filename: string; blob: Blob; platform: Platform });
+    constructor({ filename, blob, platform }: { filename: string; blob: IBlobHandle; platform: Platform });
     get size(): number;
     get sentBytes(): number;
     abort(): void;
     get localPreview(): Blob;
+    encrypt(): Promise<void>;
+    upload(hsApi: HomeServerApi, progressCallback: () => void, log?: any): Promise<void>;
+    applyToContent(urlPath: string, content: {}): void;
     dispose(): void;
   }
 
@@ -510,6 +520,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export class BaseRoom extends EventEmitter<any> {
     constructor(roomOptions: RoomOptions);
+    getStateEvent(type: string, key?: string): any;
     notifyRoomKey(roomKey: RoomKey, eventIds: string[], log?: any): Promise<void>;
     load(summary: any, txn: any, log: any): Promise<void>;
     observeMember(userId: string): Promise<RetainedObservableValue<RoomMember> | null>;
@@ -519,6 +530,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get id(): RoomId;
     get avatarUrl(): string | null;
     get avatarColorId(): string;
+    get type(): string | undefined;
     get lastMessageTimestamp(): number;
     get isLowPriority(): boolean;
     get isEncrypted(): boolean;
@@ -528,6 +540,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get joinedMemberCount(): number;
     get mediaRepository(): MediaRepository;
     get membership(): any;
+    get isDirectMessage(): boolean;
     isDirectMessageForUserId(userId: string): boolean;
     observePowerLevels(): Promise<RetainedObservableValue<PowerLevels>>;
     enableKeyBackup(keyBackup: boolean): void;

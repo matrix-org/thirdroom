@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { FormEventHandler, ReactNode } from "react";
 import classNames from "classnames";
 import "./Content.css";
 
@@ -7,16 +7,25 @@ interface ContentProps {
   top?: ReactNode;
   children?: ReactNode;
   bottom?: ReactNode;
+  onSubmit?: FormEventHandler;
 }
 
-export function Content({ className, top, children, bottom }: ContentProps) {
+export function Content({ className, top, children, bottom, onSubmit }: ContentProps) {
   const sectionClass = classNames("Content", className);
 
-  return (
-    <div className={sectionClass}>
+  const content = (
+    <>
       {top && <div className="Content__top">{top}</div>}
-      {children && <div className="Content__grow">{children}</div>}
+      {children && <div className="Content__children">{children}</div>}
       {bottom && <div className="Content__bottom">{bottom}</div>}
-    </div>
+    </>
   );
+
+  if (onSubmit)
+    return (
+      <form onSubmit={onSubmit} className={sectionClass}>
+        {content}
+      </form>
+    );
+  return <div className={sectionClass}>{content}</div>;
 }
