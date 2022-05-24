@@ -1,8 +1,8 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState, GameInputState } from "../GameWorker";
+import { GameState } from "../GameWorker";
 import { getModule } from "../module/module.common";
-import { InputModule } from "./input.game";
+import { InputModule, GameInputModuleState } from "./input.game";
 
 export enum ActionType {
   Vector2 = "Vector2",
@@ -64,14 +64,14 @@ const ActionTypesToBindings: {
   [key: string]: {
     create: () => any;
     bindings: {
-      [key: string]: (input: GameInputState, path: string, bindingDef: ActionBinding) => void;
+      [key: string]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => void;
     };
   };
 } = {
   [ActionType.Button]: {
     create: () => ({ pressed: false, released: false, held: false }),
     bindings: {
-      [BindingType.Button]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.Button]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const down = input.raw[(bindingDef as any).path];
         const value = input.actions.get(path) as ButtonActionState;
 
@@ -84,13 +84,13 @@ const ActionTypesToBindings: {
   [ActionType.Vector2]: {
     create: () => vec2.create(),
     bindings: {
-      [BindingType.Axes]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.Axes]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const { x, y } = bindingDef as AxesBinding;
         const value = input.actions.get(path) as vec2;
         value[0] = input.raw[x] || 0;
         value[1] = input.raw[y] || 0;
       },
-      [BindingType.DirectionalButtons]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.DirectionalButtons]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
 
         let x = 0;

@@ -2,7 +2,7 @@ import { defineConfig } from "./module/module.common";
 import { AudioModule, AudioSystem } from "./audio/audio.game";
 import { InputModule, InputReadSystem } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkModule } from "./network/network.game";
+import { InboundNetworkSystem, NetworkModule, OutboundNetworkSystem } from "./network/network.game";
 import { GameState, RenderableTripleBufferSystem, UpdateWorldMatrixSystem, TimeSystem } from "./GameWorker";
 import { GLTFLoaderSystem } from "./gltf/GLTFLoaderSystem";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
@@ -31,6 +31,8 @@ export default defineConfig<GameState>({
     RaycasterSystem,
     AudioSystem,
 
+    InboundNetworkSystem,
+
     GLTFLoaderSystem,
     ActionMappingSystem,
     FirstPersonCameraSystem,
@@ -41,6 +43,8 @@ export default defineConfig<GameState>({
 
     EditorStateSystem,
     EditorSelectionSystem,
+
+    OutboundNetworkSystem,
 
     UpdateWorldMatrixSystem,
     RenderableTripleBufferSystem,

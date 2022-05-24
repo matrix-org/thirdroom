@@ -624,9 +624,10 @@ export function createPeerIdIndexMessage(state: GameState, peerId: string) {
 
 /* Player NetworkId Message */
 
-export async function serializePlayerNetworkId(input: NetPipeData, peerId: string) {
+export async function serializePlayerNetworkId(input: NetPipeData) {
   const [state, cv] = input;
   const network = getModule(state, NetworkModule);
+  const peerId = network.peerId;
   const peerEid = network.peerIdToEntityId.get(peerId);
   const peerIdIndex = network.peerIdToIndex.get(peerId);
   console.log(`serializePlayerNetworkId`, peerId, peerEid, peerIdIndex);
@@ -651,25 +652,34 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
 
+  const peid = network.networkIdToEntityId.get(peerNid);
+  if (peid !== undefined) {
+    network.peerIdToEntityId.set(peerId, peid);
+    console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
+    sendAudioPeerEntityMessage(peerId, peid);
+  } else {
+    console.error("could not find peer's entityId within network.networkIdToEntityId");
+  }
+
   // hack - for some reason this message arrives before the peer entity is created
   // despite being sent after the entity creation message
-  const interval = setInterval(() => {
-    const peid = network.networkIdToEntityId.get(peerNid);
-    if (peid !== undefined) {
-      network.peerIdToEntityId.set(peerId, peid);
-      console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
-      sendAudioPeerEntityMessage(peerId, peid);
-      clearInterval(interval);
-    }
-  }, 10);
+  // const interval = setInterval(() => {
+  //   const peid = network.networkIdToEntityId.get(peerNid);
+  //   if (peid !== undefined) {
+  //     network.peerIdToEntityId.set(peerId, peid);
+  //     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
+  //     sendAudioPeerEntityMessage(peerId, peid);
+  //     clearInterval(interval);
+  //   }
+  // }, 10);
 
   return input;
 }
 
-export function createPlayerNetworkIdMessage(state: GameState, peerId: string) {
+export function createPlayerNetworkIdMessage(state: GameState) {
   const input: NetPipeData = [state, messageView];
   writeMessageType(messageView, NetworkAction.InformPlayerNetworkId);
-  serializePlayerNetworkId(input, peerId);
+  serializePlayerNetworkId(input);
   return sliceCursorView(messageView);
 }
 
@@ -680,6 +690,15 @@ const setMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   writeMessageType(v, type);
   return input;
 };
+
+// playerNetIdMsg + createMsg + deleteMsg
+export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  setMessageType(NetworkAction.NewPeerSnapshot),
+  serializePlayerNetworkId,
+  serializeCreatesSnapshot,
+  serializeUpdatesSnapshot,
+  ([_, v]) => sliceCursorView(v)
+);
 
 // reliably send all entities and their data to newly seen clients on-join
 export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
@@ -847,21 +866,15 @@ const sendUpdates = (ctx: GameState) => {
     // send snapshot update to all new peers
     const haveNewPeers = network.newPeers.length > 0;
     if (haveNewPeers) {
-      const snapshotMsg = createFullSnapshotMessage(input);
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(input);
+
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
           // if hosting, broadcast peerIdIndex message
           if (network.hosting) broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
 
-          // send snapshot to peer
-          if (snapshotMsg.byteLength) {
-            sendReliable(ctx, theirPeerId, snapshotMsg);
-          }
-
-          // send this player's NID so remote knows what our player entity is
-          // todo: this arrives before creation messages despite being sent after
-          sendReliable(ctx, theirPeerId, createPlayerNetworkIdMessage(ctx, network.peerId));
+          sendReliable(ctx, theirPeerId, newPeerSnapshotMsg);
         }
       }
     } else {
@@ -874,19 +887,9 @@ const sendUpdates = (ctx: GameState) => {
   return ctx;
 };
 
-// export function createOutboundNetworkSystem(state: GameState) {
-//   const cursorView = createCursorView();
-//   const input: NetPipeData = [state, cursorView];
-// const pipeline = pipe(
-//   // assign networkIds before serializing game state
-//   assignNetworkIds,
-//   // serialize and send all outgoing updates
-//   sendUpdates(input),
-//   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
-//   deleteNetworkIds
-// );
 export function OutboundNetworkSystem(state: GameState) {
   const network = getModule(state, NetworkModule);
+
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
   if (!hasPeerIdIndex) return state;
 
@@ -898,26 +901,7 @@ export function OutboundNetworkSystem(state: GameState) {
   deleteNetworkIds(state);
 
   return state;
-  // return pipeline(state);
-
-  // assignNetworkIds(state);
-  // sendUpdates(state);
-
-  // todo: reliably send creates
-  // const createMsg = createCreateMessage(input);
-  // broadcastReliable(state, createMsg)
-
-  // todo: reliably send deletes
-  // const deleteMsg = createDeleteMessage(input);
-  // broadcastReliable(state, deleteMsg);
-
-  // todo: unreliably send changed updates
-  // const updateMsg = createUpdateChangedMessage(input);
-  // broadcastUneliable(state, updateMsg);
-
-  // deleteNetworkIds(state);
 }
-// }
 
 /* Inbound */
 
