@@ -17,7 +17,7 @@ export const StatsModule = defineModule<GameState, IInitialGameThreadState, Stat
 
 export function GameWorkerStatsSystem(state: GameState) {
   const stats = getModule(state, StatsModule);
-  const frameDuration = performance.now() - state.time.elapsed;
-  stats.statsBuffer.f32[Stats.gameTime] = state.time.dt;
+  const frameDuration = performance.now() - state.elapsed;
+  stats.statsBuffer.f32[Stats.gameTime] = state.dt;
   stats.statsBuffer.f32[Stats.gameDuration] = frameDuration;
 }

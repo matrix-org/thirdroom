@@ -50,10 +50,4 @@ export const InputModule = defineModule<GameState, IInitialGameThreadState, Game
 export const InputReadSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   swapReadBuffer(input.inputStateTripleBufferView.tripleBuffer);
-
-  // console.log(getReadView(input.inputStateTripleBufferView).mouse.movement);
-
-  if (input.raw.KeyT) {
-    console.log("pressed T");
-  }
 };

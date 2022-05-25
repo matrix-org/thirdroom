@@ -1,7 +1,7 @@
 // Ported from https://github.com/p4checo/triplebuffer-sync
 // Which is originally ported from https://github.com/remis-thoughts/blog/blob/master/triple-buffering/src/main/md/triple-buffering.md
 
-export type TripleBufferState = {
+export type TripleBuffer = {
   byteLength: number;
   buffers: SharedArrayBuffer[];
   byteViews: Uint8Array[];
@@ -34,7 +34,7 @@ export const createTripleBuffer = (
    * readBufferIndex:   2
    */
   flags: Uint8Array = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6)
-): TripleBufferState => ({ byteLength, buffers, byteViews, flags });
+): TripleBuffer => ({ byteLength, buffers, byteViews, flags });
 
 const readyToRead = (flags: number) => {
   return (flags & 0x40) !== 0;
@@ -48,16 +48,16 @@ const swapWriteWithTempAndMarkChanged = (flags: number) => {
   return 0x40 | ((flags & 0xc) << 2) | ((flags & 0x30) >> 2) | (flags & 0x3);
 };
 
-export const getReadBufferIndex = (tb: TripleBufferState) => Atomics.load(tb.flags, 0) & 0x3;
-export const getReadBuffer = (tb: TripleBufferState) => tb.buffers[getReadBufferIndex(tb)];
-export const getReadView = (tb: TripleBufferState) => tb.byteViews[getReadBufferIndex(tb)];
+export const getReadBufferIndex = (tb: TripleBuffer) => Atomics.load(tb.flags, 0) & 0x3;
+export const getReadBuffer = (tb: TripleBuffer) => tb.buffers[getReadBufferIndex(tb)];
+export const getReadView = (tb: TripleBuffer) => tb.byteViews[getReadBufferIndex(tb)];
 
-export const getWriteBufferIndex = (tb: TripleBufferState) => (Atomics.load(tb.flags, 0) & 0x30) >> 4;
-export const getWriteBuffer = (tb: TripleBufferState) => tb.buffers[getWriteBufferIndex(tb)];
-export const copyToWriteBuffer = (tb: TripleBufferState, buffer: ArrayBuffer) =>
+export const getWriteBufferIndex = (tb: TripleBuffer) => (Atomics.load(tb.flags, 0) & 0x30) >> 4;
+export const getWriteBuffer = (tb: TripleBuffer) => tb.buffers[getWriteBufferIndex(tb)];
+export const copyToWriteBuffer = (tb: TripleBuffer, buffer: ArrayBuffer) =>
   tb.byteViews[getWriteBufferIndex(tb)].set(new Uint8Array(buffer));
 
-export const swapReadBuffer = (tb: TripleBufferState) => {
+export const swapReadBuffer = (tb: TripleBuffer) => {
   const flags = Atomics.load(tb.flags, 0);
 
   do {
@@ -69,7 +69,7 @@ export const swapReadBuffer = (tb: TripleBufferState) => {
   return true;
 };
 
-export const swapWriteBuffer = (tb: TripleBufferState) => {
+export const swapWriteBuffer = (tb: TripleBuffer) => {
   const flags = Atomics.load(tb.flags, 0);
 
   while (Atomics.compareExchange(tb.flags, 0, flags, swapWriteWithTempAndMarkChanged(flags)) === flags);

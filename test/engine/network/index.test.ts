@@ -3,7 +3,6 @@ import { ok, strictEqual } from "assert";
 import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
 
 import { Transform } from "../../../src/engine/component/transform";
-import { GameState } from "../../../src/engine/GameWorker";
 import {
   createNetworkId,
   deserializeCreates,
@@ -35,6 +34,7 @@ import {
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
+import { GameState } from "../../../src/engine/GameTypes";
 
 describe("Network Tests", () => {
   describe("networkId", () => {

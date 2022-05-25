@@ -6,6 +6,7 @@ import { maxEntities } from "../config.common";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
 import { traverse } from "./transform";
 import { GameState, World } from "../GameTypes";
+import { CursorBuffer } from "../allocator/CursorBuffer";
 
 export interface Renderable extends IComponent {
   resourceId: Uint32Array;
@@ -19,15 +20,28 @@ export const Renderable: Renderable = {
   visible: addView(renderableBuffer, Uint8Array, maxEntities),
 };
 
-export function addRenderableComponent({ world, renderer: { port } }: GameState, eid: number, resourceId: number) {
+export interface RenderableView {
+  resourceId: Uint32Array;
+  interpolate: Uint8Array;
+  visible: Uint8Array;
+}
+export function createRenderView(buffer: CursorBuffer): RenderableView {
+  return {
+    resourceId: addView(buffer as unknown as CursorBuffer, Uint32Array, maxEntities),
+    interpolate: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+    visible: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+  };
+}
+
+export function addRenderableComponent({ world, renderPort }: GameState, eid: number, resourceId: number) {
   addComponent(world, Renderable, eid);
   Renderable.interpolate[eid] = 1;
   Renderable.resourceId[eid] = resourceId;
-  port.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
+  renderPort.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
 }
 
 export function setActiveScene(state: GameState, eid: number, resourceId: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.SetActiveScene,
     eid,
     resourceId,
@@ -36,7 +50,7 @@ export function setActiveScene(state: GameState, eid: number, resourceId: number
 }
 
 export function setActiveCamera(state: GameState, eid: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.SetActiveCamera,
     eid,
   } as SetActiveCameraMessage);

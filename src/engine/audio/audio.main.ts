@@ -3,8 +3,8 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config.common";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { TransformView } from "../RenderWorker";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { TransformView } from "../component/transform";
+import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
 
@@ -14,7 +14,7 @@ import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPe
 
 export interface AudioModuleState {
   context: AudioContext;
-  tripleBuffer: TripleBufferState;
+  tripleBuffer: TripleBuffer;
   transformViews: TransformView[];
   entityPanners: Map<number, PannerNode>;
   listenerEntity: number;

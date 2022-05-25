@@ -5,7 +5,7 @@ import { RemoteResourceInfo, RemoteResourceManager } from "../../src/engine/reso
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
 import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import { registerDefaultPrefabs } from "../../src/engine/prefab";
-import { GameState } from "../../src/engine/GameWorker";
+import { GameState } from "../../src/engine/GameTypes";
 
 export const mockPostMessageTarget = () =>
   ({

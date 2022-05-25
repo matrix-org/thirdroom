@@ -5,6 +5,7 @@ import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
 import {
   AddComponentMessage,
+  ExportSceneMessage,
   RemoveComponentMessage,
   SelectionChangedMessage,
   SetComponentPropertyMessage,
@@ -34,10 +35,11 @@ import {
   enableActionMap,
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import { hierarchyBuffer } from "../component/buffers";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { InputModule } from "../input/input.game";
+import { exportGLTF } from "../gltf/exportGLTF";
 
 /*********
  * Types *
@@ -59,7 +61,7 @@ export interface EditorModuleState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
-  hierarchyTripleBuffer: TripleBufferState;
+  hierarchyTripleBuffer: TripleBuffer;
 }
 
 /******************
@@ -94,6 +96,7 @@ export const EditorModule = defineModule<GameState, IInitialGameThreadState, Edi
       registerMessageHandler(ctx, WorkerMessageType.AddComponent, onEditorMessage),
       registerMessageHandler(ctx, WorkerMessageType.RemoveComponent, onEditorMessage),
       registerMessageHandler(ctx, WorkerMessageType.SetComponentProperty, onEditorMessage),
+      registerMessageHandler(ctx, WorkerMessageType.ExportScene, onExportScene),
     ];
 
     registerTransformComponent(ctx);
@@ -181,6 +184,10 @@ function onSetComponentProperty(state: GameState, message: SetComponentPropertyM
   }
 }
 
+function onExportScene(state: GameState, message: ExportSceneMessage) {
+  exportGLTF(state, state.scene);
+}
+
 /***********
  * Systems *
  **********/
@@ -253,7 +260,7 @@ function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   const activeEntity = editor.activeEntity;
 
   let activeEntityComponents: number[] | undefined;
-  let activeEntityTripleBuffer: TripleBufferState | undefined;
+  let activeEntityTripleBuffer: TripleBuffer | undefined;
 
   if (editor.activeEntityChanged) {
     // TODO: collect active entity components and construct activeEntityTripleBuffer

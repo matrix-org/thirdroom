@@ -74,7 +74,7 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
 // todo: put on physicsstate
 
 export const PhysicsSystem = (state: GameState) => {
-  const { world, time } = state;
+  const { world, dt } = state;
   const { physicsWorld, handleMap, eventQueue } = getModule(state, PhysicsModule);
   // remove rigidbody from physics world
   const exited = exitedPhysicsQuery(world);
@@ -117,7 +117,7 @@ export const PhysicsSystem = (state: GameState) => {
     }
   }
 
-  physicsWorld.timestep = time.dt;
+  physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
 
   eventQueue.drainContactEvents((handle1: RAPIER.RigidBodyHandle, handle2: RAPIER.RigidBodyHandle) => {

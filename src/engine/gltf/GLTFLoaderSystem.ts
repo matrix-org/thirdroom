@@ -18,8 +18,10 @@ import { SpawnPoint } from "../component/SpawnPoint";
 import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { PhysicsModule } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 
 function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?: number) {
+  const { resourceManager } = getModule(state, RendererModule);
   const { physicsWorld } = getModule(state, PhysicsModule);
   const { world } = state;
   const eid = addEntity(world);
@@ -56,7 +58,7 @@ function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?
         setActiveCamera(state, eid);
         break;
       case "directional-light": {
-        const lightResourceId = loadRemoteResource(state.resourceManager, {
+        const lightResourceId = loadRemoteResource(resourceManager, {
           type: LIGHT_RESOURCE,
           lightType: LightType.Directional,
           intensity: 0.5,
@@ -79,7 +81,8 @@ function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?
 export const gltfQuery = defineQuery([GLTFLoader]);
 
 export function GLTFLoaderSystem(state: GameState) {
-  const { world, resourceManager } = state;
+  const { resourceManager } = getModule(state, RendererModule);
+  const { world } = state;
   const entities = gltfQuery(world);
 
   for (let i = 0; i < entities.length; i++) {

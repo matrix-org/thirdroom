@@ -14,6 +14,7 @@ import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudio } from "../audio/audio.game";
 import { getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 
 /* Prefab Factories */
 
@@ -23,6 +24,7 @@ interface SceneProps {
 }
 
 export function createScene(state: GameState, props: SceneProps = {}): number {
+  const { resourceManager } = getModule(state, RendererModule);
   const eid = createTransformEntity(state.world);
 
   const sceneDef: SceneDefinition = {
@@ -30,7 +32,7 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
   };
 
   if (props.environmentMapUrl) {
-    const environmentMap = loadRemoteResource(state.resourceManager, {
+    const environmentMap = loadRemoteResource(resourceManager, {
       type: "texture",
       textureType: TextureType.RGBE,
       url: props.environmentMapUrl,
@@ -40,7 +42,7 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
     sceneDef.backgroundTextureResourceId = environmentMap;
   }
 
-  const sceneResourceId = loadRemoteResource(state.resourceManager, sceneDef);
+  const sceneResourceId = loadRemoteResource(resourceManager, sceneDef);
 
   if (props.setActive === undefined || props.setActive) {
     setActiveScene(state, eid, sceneResourceId);
@@ -49,24 +51,29 @@ export function createScene(state: GameState, props: SceneProps = {}): number {
   return eid;
 }
 
-export const createCube = (
-  state: GameState,
-  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  }),
-  materialResourceId = loadRemoteResource(state.resourceManager, {
-    type: "material",
-    materialType: MaterialType.Physical,
-    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-    roughnessFactor: 0.8,
-    metallicFactor: 0.8,
-  })
-) => {
-  const { world, resourceManager } = state;
+export const createCube = (state: GameState, geometryResourceId?: number, materialResourceId?: number) => {
+  const { resourceManager } = getModule(state, RendererModule);
+  const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
   addTransformComponent(world, eid);
+
+  if (!geometryResourceId) {
+    geometryResourceId = loadRemoteResource(resourceManager, {
+      type: "geometry",
+      geometryType: GeometryType.Box,
+    });
+  }
+
+  if (!materialResourceId) {
+    materialResourceId = loadRemoteResource(resourceManager, {
+      type: "material",
+      materialType: MaterialType.Physical,
+      baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+      roughnessFactor: 0.8,
+      metallicFactor: 0.8,
+    });
+  }
 
   const resourceId = loadRemoteResource(resourceManager, {
     type: "mesh",
@@ -87,9 +94,10 @@ export const createCube = (
 };
 
 export function createCamera(state: GameState, setActive = true): number {
+  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const cameraResource = loadRemoteResource(state.resourceManager, {
+  const cameraResource = loadRemoteResource(resourceManager, {
     type: "camera",
     cameraType: CameraType.Perspective,
     yfov: 75,
@@ -105,9 +113,10 @@ export function createCamera(state: GameState, setActive = true): number {
 }
 
 export function createDirectionalLight(state: GameState, parentEid?: number) {
+  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const lightResourceId = loadRemoteResource(state.resourceManager, {
+  const lightResourceId = loadRemoteResource(resourceManager, {
     type: LIGHT_RESOURCE,
     lightType: LightType.Directional,
     intensity: 0.5,
@@ -150,6 +159,8 @@ export function getPrefabTemplate(state: GameState, name: string) {
 }
 
 export function registerDefaultPrefabs(state: GameState) {
+  const { resourceManager } = getModule(state, RendererModule);
+
   registerPrefab(state, {
     name: "random-cube",
     create: createCube,
@@ -159,11 +170,11 @@ export function registerDefaultPrefabs(state: GameState) {
     create: () => {
       const eid = createCube(
         state,
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "geometry",
           geometryType: GeometryType.Box,
         }),
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "material",
           materialType: MaterialType.Physical,
           baseColorFactor: [1, 0, 0, 1.0],
@@ -179,11 +190,11 @@ export function registerDefaultPrefabs(state: GameState) {
     create: () => {
       const eid = createCube(
         state,
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "geometry",
           geometryType: GeometryType.Box,
         }),
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "material",
           materialType: MaterialType.Physical,
           baseColorFactor: [1, 0, 0, 1.0],
@@ -202,11 +213,11 @@ export function registerDefaultPrefabs(state: GameState) {
     create: () =>
       createCube(
         state,
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "geometry",
           geometryType: GeometryType.Box,
         }),
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "material",
           materialType: MaterialType.Physical,
           baseColorFactor: [0, 1, 0, 1.0],
@@ -220,11 +231,11 @@ export function registerDefaultPrefabs(state: GameState) {
     create: () =>
       createCube(
         state,
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "geometry",
           geometryType: GeometryType.Box,
         }),
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "material",
           materialType: MaterialType.Physical,
           baseColorFactor: [0, 0, 1, 1.0],
@@ -238,11 +249,11 @@ export function registerDefaultPrefabs(state: GameState) {
     create: () =>
       createCube(
         state,
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "geometry",
           geometryType: GeometryType.Box,
         }),
-        loadRemoteResource(state.resourceManager, {
+        loadRemoteResource(resourceManager, {
           type: "material",
           materialType: MaterialType.Physical,
           baseColorFactor: [1, 1, 1, 1.0],

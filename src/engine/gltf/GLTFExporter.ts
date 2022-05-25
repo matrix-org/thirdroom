@@ -2,16 +2,19 @@ import { Object3D } from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 
 import { GLTFEntityDescription } from ".";
+import { getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../RenderWorker";
 import { ExportGLTFMessage } from "../WorkerMessage";
 
 function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription): Object3D {
+  const { resourceManager } = getModule(state, RendererModule);
   const renderable = entity.components.find(({ type }) => type === "renderable");
 
   let object: Object3D;
 
   if (renderable) {
-    object = state.resourceManager.store.get(renderable.resourceId)!.resource as Object3D;
+    object = resourceManager.store.get(renderable.resourceId)!.resource as Object3D;
   } else {
     object = new Object3D();
   }
@@ -34,6 +37,7 @@ function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription
 }
 
 export async function exportSceneAsGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
+  const rendererState = getModule(state, RendererModule);
   const scene = inflateObject3D(state, message.scene);
 
   const gltfExporter = new GLTFExporter();
@@ -44,9 +48,9 @@ export async function exportSceneAsGLTF(state: RenderThreadState, message: Expor
     embedImages: true,
   });
 
-  for (const renderable of state.renderables) {
+  for (const renderable of rendererState.renderables) {
     if (renderable.object) {
-      state.scene.add(renderable.object);
+      rendererState.scene.add(renderable.object);
     }
   }
 

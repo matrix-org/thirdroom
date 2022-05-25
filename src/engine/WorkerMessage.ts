@@ -1,7 +1,7 @@
 import type { OffscreenCanvas } from "three";
 import type { vec3 } from "gl-matrix";
 import { ResourceDefinition } from "./resources/ResourceManager";
-import { TripleBufferState } from "./allocator/TripleBuffer";
+import { TripleBuffer } from "./allocator/TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
@@ -62,9 +62,7 @@ export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> 
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
-  renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
-  resourceManagerBuffer: SharedArrayBuffer;
   initialGameWorkerState: { [key: string]: any };
 }
 
@@ -83,12 +81,10 @@ export interface GameWorkerErrorMessage extends WorkerMessage {
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
-  gameWorkerMessageTarget: PostMessageTarget;
   canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  renderableTripleBuffer: TripleBufferState;
-  resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+  gameWorkerMessageTarget: PostMessageTarget;
   initialRenderWorkerState: { [key: string]: any };
 }
 
@@ -266,7 +262,7 @@ export interface SelectionChangedMessage extends WorkerMessage {
   selectedEntities: number[];
   activeEntity?: number;
   activeEntityComponents?: number[];
-  activeEntityTripleBuffer?: TripleBufferState;
+  activeEntityTripleBuffer?: TripleBuffer;
 }
 
 export interface ComponentInfoChangedMessage extends WorkerMessage {

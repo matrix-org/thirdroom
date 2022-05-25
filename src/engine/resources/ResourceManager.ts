@@ -1,3 +1,6 @@
+import { getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.render";
+import { RenderThreadState } from "../RenderWorker";
 import {
   AddResourceRefMessage,
   LoadResourceMessage,
@@ -81,9 +84,10 @@ export function registerResourceLoader(
 }
 
 export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteResource = undefined>(
-  manager: ResourceManager,
+  state: RenderThreadState,
   { resourceDef, resourceId }: LoadResourceMessage<Def>
 ): void {
+  const manager = getModule(state, RendererModule).resourceManager;
   const { type } = resourceDef;
   const loader: ResourceLoader<Def, Resource, RemoteResource> = manager.resourceLoaders.get(type)!;
 
@@ -135,7 +139,8 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
     });
 }
 
-export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddResourceRefMessage) {
+export function onAddResourceRef(state: RenderThreadState, { resourceId }: AddResourceRefMessage) {
+  const manager = getModule(state, RendererModule).resourceManager;
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {
@@ -151,7 +156,8 @@ export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddRe
   resourceInfo.refCount++;
 }
 
-export function onRemoveResourceRef(manager: ResourceManager, { resourceId }: RemoveResourceRefMessage) {
+export function onRemoveResourceRef(state: RenderThreadState, { resourceId }: RemoveResourceRefMessage) {
+  const manager = getModule(state, RendererModule).resourceManager;
   const resourceInfo = manager.store.get(resourceId);
 
   if (!resourceInfo) {

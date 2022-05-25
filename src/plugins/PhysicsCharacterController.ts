@@ -13,6 +13,7 @@ import { Networked, NetworkTransform, Owned } from "../engine/network/network.ga
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCamera } from "../engine/prefab";
+import { RendererModule } from "../engine/renderer/renderer.game";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
 import { MaterialType } from "../engine/resources/MaterialResourceLoader";
 import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
@@ -82,16 +83,18 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (
-  state: GameState,
-  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  })
-) => {
-  const { world, resourceManager } = state;
+export const createRawCube = (state: GameState, geometryResourceId?: number) => {
+  const { resourceManager } = getModule(state, RendererModule);
+  const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
+
+  if (!geometryResourceId) {
+    geometryResourceId = loadRemoteResource(resourceManager, {
+      type: "geometry",
+      geometryType: GeometryType.Box,
+    });
+  }
 
   const materialResourceId = loadRemoteResource(resourceManager, {
     type: "material",
@@ -183,7 +186,7 @@ export const PlayerControllerSystem = (state: GameState) => {
       shapeCastRotation,
       physicsWorld.gravity,
       colliderShape,
-      state.time.dt,
+      state.dt,
       CharacterShapecastInteractionGroup
     );
 
@@ -198,7 +201,7 @@ export const PlayerControllerSystem = (state: GameState) => {
         .set(moveVec[0], 0, -moveVec[1])
         .normalize()
         .applyQuaternion(obj.quaternion)
-        .multiplyScalar(walkSpeed * state.time.dt);
+        .multiplyScalar(walkSpeed * state.dt);
 
       if (!isGrounded) {
         moveForce.multiplyScalar(inAirModifier);
@@ -215,13 +218,13 @@ export const PlayerControllerSystem = (state: GameState) => {
       speed > minSlideSpeed &&
       isGrounded &&
       !isSliding &&
-      state.time.dt > lastSlideTime + slideCooldown
+      state.dt > lastSlideTime + slideCooldown
     ) {
       slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
       moveForce.add(slideForce);
       isSliding = true;
-      lastSlideTime = state.time.elapsed;
-    } else if (crouch.released || state.time.dt > lastSlideTime + slideCooldown) {
+      lastSlideTime = state.elapsed;
+    } else if (crouch.released || state.dt > lastSlideTime + slideCooldown) {
       isSliding = false;
     }
 
@@ -237,7 +240,7 @@ export const PlayerControllerSystem = (state: GameState) => {
       dragForce
         .copy(linearVelocity)
         .negate()
-        .multiplyScalar(dragMultiplier * state.time.dt);
+        .multiplyScalar(dragMultiplier * state.dt);
 
       dragForce.y = 0;
 

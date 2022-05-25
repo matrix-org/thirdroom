@@ -7,7 +7,9 @@ import { maxEntities, NOOP } from "../config.common";
 import { GameState, World } from "../GameTypes";
 import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
+import { CursorBuffer } from "../allocator/CursorBuffer";
 
+// GameWorker view
 export interface Transform extends IComponent {
   position: Float32Array[];
   rotation: Float32Array[];
@@ -43,6 +45,19 @@ export const Transform: Transform = {
   nextSibling: addView(hierarchyBuffer, Uint32Array, maxEntities),
   hierarchyUpdated: addView(hierarchyBuffer, Uint8Array, maxEntities),
 };
+
+// RenderWorker view
+export interface TransformView {
+  worldMatrix: Float32Array[];
+  worldMatrixNeedsUpdate: Uint8Array;
+}
+
+export function createTransformView(buffer: CursorBuffer): TransformView {
+  return {
+    worldMatrix: addViewMatrix4(buffer, maxEntities),
+    worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+  };
+}
 
 export function registerTransformComponent(state: GameState) {
   registerEditorComponent(state, Transform, {

@@ -1,6 +1,4 @@
 import GameWorker from "./GameWorker?worker";
-import { createResourceManagerBuffer } from "./resources/ResourceManager";
-import { createTripleBuffer } from "./allocator/TripleBuffer";
 import {
   GameWorkerInitializedMessage,
   RenderWorkerInitializedMessage,
@@ -38,7 +36,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   } = await initRenderWorker(canvas, gameWorker);
 
   const context: IMainThreadContext = {
-    systems: new Map(),
+    systems: mainThreadConfig.systems,
     modules: new Map(),
     canvas,
     gameWorker,
@@ -48,16 +46,18 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     initialRenderWorkerState: {},
   };
 
-  const renderableTripleBuffer = createTripleBuffer();
-
-  const resourceManagerBuffer = createResourceManagerBuffer();
-
   const renderWorkerMessagePort =
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
 
   /* Initialize all modules and retrieve data needed to send to workers */
 
-  const disposeModules = await registerModules({}, context, mainThreadConfig.modules);
+  const disposeModules = await registerModules(
+    {
+      canvas,
+    },
+    context,
+    mainThreadConfig.modules
+  );
 
   /* Wait for workers to be ready */
 
@@ -65,12 +65,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     renderWorker.postMessage(
       {
         type: WorkerMessageType.InitializeRenderWorker,
-        renderableTripleBuffer,
         gameWorkerMessageTarget,
         canvasTarget,
-        initialCanvasWidth: context.canvas.clientWidth,
-        initialCanvasHeight: context.canvas.clientHeight,
-        resourceManagerBuffer,
+        initialCanvasWidth: canvas.clientWidth,
+        initialCanvasHeight: canvas.clientHeight,
         initialRenderWorkerState: context.initialRenderWorkerState,
       } as InitializeRenderWorkerMessage,
       gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
@@ -95,9 +93,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     context.gameWorker.postMessage(
       {
         type: WorkerMessageType.InitializeGameWorker,
-        renderableTripleBuffer,
         renderWorkerMessagePort,
-        resourceManagerBuffer,
         initialGameWorkerState: context.initialGameWorkerState,
       } as InitializeGameWorkerMessage,
       renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
@@ -139,10 +135,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     type: WorkerMessageType.StartGameWorker,
   });
 
-  /* Update loop for input manager */
+  /* Update loop */
 
   function update() {
-    const systems = mainThreadConfig.systems;
+    const systems = context.systems;
 
     for (let i = 0; i < systems.length; i++) {
       systems[i](context);
@@ -196,24 +192,12 @@ async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
     canvasTarget = canvas;
   }
 
-  function onResize() {
-    renderWorker.postMessage({
-      type: WorkerMessageType.RenderWorkerResize,
-      canvasWidth: canvas.clientWidth,
-      canvasHeight: canvas.clientHeight,
-    });
-  }
-
-  window.addEventListener("resize", onResize);
-
   return {
     renderWorker,
     canvasTarget,
     renderWorkerMessageTarget,
     gameWorkerMessageTarget,
     dispose() {
-      window.removeEventListener("resize", onResize);
-
       if (renderWorker instanceof Worker) {
         renderWorker.terminate();
       }
