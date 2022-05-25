@@ -4,7 +4,7 @@ import { vec3, quat, mat4 } from "gl-matrix";
 import { gameBuffer, renderableBuffer, hierarchyBuffer } from "./buffers";
 import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config.common";
-import { GameState, World } from "../GameWorker";
+import { GameState, World } from "../GameTypes";
 import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 

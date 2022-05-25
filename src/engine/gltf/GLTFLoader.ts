@@ -1,6 +1,6 @@
 import { addComponent, addEntity, defineComponent, Types } from "bitecs";
 
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { addChild, addTransformComponent } from "../component/transform";
 

@@ -10,7 +10,7 @@ import {
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState, IInitialGameThreadState, World } from "../GameWorker";
+import { GameState, IInitialGameThreadState, World } from "../GameTypes";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";

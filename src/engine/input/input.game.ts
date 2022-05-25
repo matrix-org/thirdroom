@@ -1,6 +1,6 @@
 import { swapReadBuffer } from "../allocator/TripleBuffer";
 import { getReadView, TripleBufferView } from "../allocator/TripleBufferView";
-import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InputState, InputStateGetters } from "./input.common";

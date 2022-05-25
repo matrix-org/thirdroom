@@ -2,7 +2,7 @@ import { pipe } from "bitecs";
 
 import { renderableBuffer } from "../component/buffers";
 import { NOOP } from "../config.common";
-import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
 import { defineModule, getModule } from "../module/module.common";

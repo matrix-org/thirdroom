@@ -3,7 +3,7 @@ import { defineQuery, Not } from "bitecs";
 import { Vector3, Quaternion } from "three";
 
 import { Transform } from "../component/transform";
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { Networked, NetworkTransform, Owned } from "./network.game";
 

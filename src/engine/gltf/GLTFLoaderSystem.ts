@@ -9,7 +9,7 @@ import {
   Transform,
   updateMatrix,
 } from "../component/transform";
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { addRenderableComponent, setActiveCamera } from "../component/renderable";
 import { GLTFEntityDescription, RemoteGLTF } from ".";
 import { GLTFLoader } from "./GLTFLoader";

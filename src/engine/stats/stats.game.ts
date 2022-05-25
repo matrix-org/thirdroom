@@ -1,4 +1,4 @@
-import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
 import { Stats, StatsBuffer } from "./stats.common";
 

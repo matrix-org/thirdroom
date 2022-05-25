@@ -1,15 +1,13 @@
-import { addEntity, createWorld, IWorld } from "bitecs";
+import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import {
-  RemoteResourceManager,
   createRemoteResourceManager,
   remoteResourceDisposed,
   remoteResourceLoaded,
   remoteResourceLoadError,
 } from "./resources/RemoteResourceManager";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "./allocator/TripleBuffer";
 import {
   InitializeGameWorkerMessage,
   WorkerMessages,
@@ -17,14 +15,11 @@ import {
   GameWorkerInitializedMessage,
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
-import { renderableBuffer } from "./component/buffers";
-import { StatsBuffer } from "./stats/stats.common";
 import { exportGLTF } from "./gltf/exportGLTF";
-import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
-import { BaseThreadContext, registerModules, ThreadSystem } from "./module/module.common";
+import { registerDefaultPrefabs } from "./prefab";
+import { registerModules } from "./module/module.common";
 import gameConfig from "./config.game";
-import { TripleBufferView } from "./allocator/TripleBufferView";
-import { InputState } from "./input/input.common";
+import { GameState, RenderState, TimeState, World } from "./GameTypes";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -109,39 +104,6 @@ const onMessage =
     }
   };
 
-export type World = IWorld;
-
-export type RenderPort = MessagePort | (typeof globalThis & Worker);
-
-export interface RenderState {
-  tripleBuffer: TripleBufferState;
-  port: RenderPort;
-}
-
-export interface TimeState {
-  elapsed: number;
-  dt: number;
-}
-
-export interface GameState extends BaseThreadContext {
-  world: World;
-  renderer: RenderState;
-  time: TimeState;
-  resourceManager: RemoteResourceManager;
-  prefabTemplateMap: Map<string, PrefabTemplate>;
-  entityPrefabMap: Map<number, string>;
-  systems: Map<ThreadSystem<GameState>, boolean>;
-  scene: number;
-  camera: number;
-}
-
-export interface IInitialGameThreadState {
-  inputStateTripleBufferView: TripleBufferView<InputState>;
-  audioTripleBuffer: TripleBufferState;
-  hierarchyTripleBuffer: TripleBufferState;
-  statsBuffer: StatsBuffer;
-}
-
 async function onInit({
   resourceManagerBuffer,
   renderWorkerMessagePort,
@@ -195,21 +157,6 @@ async function onInit({
 function onStart(state: GameState) {
   update(state);
 }
-
-export function TimeSystem(state: GameState) {
-  const now = performance.now();
-  state.time.dt = (now - state.time.elapsed) / 1000;
-  state.time.elapsed = now;
-}
-
-export const UpdateWorldMatrixSystem = (state: GameState) => {
-  updateMatrixWorld(state.scene);
-};
-
-export const RenderableTripleBufferSystem = ({ renderer }: GameState) => {
-  copyToWriteBuffer(renderer.tripleBuffer, renderableBuffer);
-  swapWriteBuffer(renderer.tripleBuffer);
-};
 
 // timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
 // ex. Our game loop should be called every 16.666ms, it took 3ms this frame.

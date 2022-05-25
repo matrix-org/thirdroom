@@ -4,7 +4,7 @@ import { mat4, vec3, quat } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, setEulerFromQuaternion, Transform } from "../../engine/component/transform";
-import { GameState, IInitialGameThreadState } from "../../engine/GameWorker";
+import { GameState, IInitialGameThreadState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/GLTFLoader";
 import { ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";

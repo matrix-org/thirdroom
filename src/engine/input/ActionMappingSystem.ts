@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { InputModule, GameInputModuleState } from "./input.game";
 

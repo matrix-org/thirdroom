@@ -2,7 +2,7 @@ import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm } from "gl-matrix";
 
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
-import { GameState, World } from "../engine/GameWorker";
+import { GameState, World } from "../engine/GameTypes";
 import { InputModule } from "../engine/input/input.game";
 import { getModule } from "../engine/module/module.common";
 

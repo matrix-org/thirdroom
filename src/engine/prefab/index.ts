@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
 import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";

@@ -1,6 +1,6 @@
 import { vec3 } from "gl-matrix";
 
-import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult, RayId } from "./raycaster.common";

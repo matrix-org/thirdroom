@@ -33,7 +33,7 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { addChild, Transform } from "../component/transform";
-import { GameState, IInitialGameThreadState } from "../GameWorker";
+import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
 import { sendAudioPeerEntityMessage } from "../audio/audio.game";

@@ -3,7 +3,6 @@ import { AudioModule, AudioSystem } from "./audio/audio.game";
 import { InputModule, InputReadSystem } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { InboundNetworkSystem, NetworkModule, OutboundNetworkSystem } from "./network/network.game";
-import { GameState, RenderableTripleBufferSystem, UpdateWorldMatrixSystem, TimeSystem } from "./GameWorker";
 import { GLTFLoaderSystem } from "./gltf/GLTFLoaderSystem";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import { FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
@@ -13,6 +12,8 @@ import { CubeSpawnSystem, ExampleModule } from "../plugins/example/example";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 import { EditorModule, EditorSelectionSystem, EditorStateSystem } from "./editor/editor.game";
+import { RenderableTripleBufferSystem, UpdateWorldMatrixSystem, TimeSystem } from "./GameSystems";
+import { GameState } from "./GameTypes";
 
 export default defineConfig<GameState>({
   modules: [
