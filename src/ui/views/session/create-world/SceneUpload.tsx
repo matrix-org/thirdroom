@@ -21,7 +21,7 @@ export function SceneUpload({ onMxcChange }: { onMxcChange: (Url?: string) => vo
     mxc,
     upload,
     cancel: cancelUpload,
-  } = useAttachmentUpload(session._hsApi, platform, useDebounce(setProgress, { wait: 200, immediate: true }));
+  } = useAttachmentUpload(session.hsApi, platform, useDebounce(setProgress, { wait: 200, immediate: true }));
 
   useEffect(() => {
     setProgress(0);

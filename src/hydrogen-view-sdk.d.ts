@@ -405,7 +405,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export class Session {
     userId: string;
     _sessionInfo: ISessionInfo;
-    _hsApi: HomeServerApi;
+    hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
