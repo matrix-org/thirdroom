@@ -661,18 +661,6 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
   }
 
-  // hack - for some reason this message arrives before the peer entity is created
-  // despite being sent after the entity creation message
-  // const interval = setInterval(() => {
-  //   const peid = network.networkIdToEntityId.get(peerNid);
-  //   if (peid !== undefined) {
-  //     network.peerIdToEntityId.set(peerId, peid);
-  //     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
-  //     sendAudioPeerEntityMessage(peerId, peid);
-  //     clearInterval(interval);
-  //   }
-  // }, 10);
-
   return input;
 }
 
