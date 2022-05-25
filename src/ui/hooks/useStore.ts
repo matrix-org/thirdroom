@@ -2,10 +2,17 @@ import create from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { RoomId } from "@thirdroom/hydrogen-view-sdk";
 
-import { RoomListTabs } from "../views/session/sidebar/RoomListHeader";
+export enum RoomListTabs {
+  Home = "Home",
+  Worlds = "Worlds",
+  Chats = "Chats",
+  Friends = "Friends",
+  Settings = "Settings",
+}
 
 export enum OverlayWindow {
   CreateWorld = "create_world",
+  UserProfile = "user_profile",
 }
 
 export enum WorldLoadState {

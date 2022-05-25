@@ -9,6 +9,7 @@ export interface HydrogenContext {
   logger: ILogger;
   urlRouter: URLRouter;
   login: (homeserverUrl: string, username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export interface AuthenticatedHydrogenContext extends HydrogenContext {

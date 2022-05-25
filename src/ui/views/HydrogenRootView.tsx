@@ -22,6 +22,7 @@ import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
+import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 
 const defaultHomeServer = "matrix.org";
 
@@ -227,6 +228,17 @@ export function HydrogenRootView() {
     [client]
   );
 
+  const {
+    loading: loggingOut,
+    error: errorLoggingOut,
+    callback: logout,
+  } = useAsyncCallback<() => Promise<void>, void>(async () => {
+    if (client && client.session) {
+      await client.startLogout(client.session.sessionInfo.id);
+      setSession(undefined);
+    }
+  }, [client, session]);
+
   const currentSession = session || initialSession;
 
   const context = useMemo<HydrogenContext>(
@@ -239,32 +251,35 @@ export function HydrogenRootView() {
       logger,
       session: currentSession,
       login,
+      logout,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, login]
+    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, login, logout]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
 
-  const loading = loadingInitialSession || loggingIn;
-  const error = initialSessionLoadError || errorLoggingIn;
+  const loading = loadingInitialSession || loggingIn || loggingOut;
+  const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
+
+  let content;
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+    content = (
+      <LoadingScreen>
         <Text variant="b1" weight="semi-bold">
           Loading...
         </Text>
-      </div>
+      </LoadingScreen>
     );
   }
 
   if (error) {
-    return (
-      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+    content = (
+      <LoadingScreen>
         <Text variant="b1" weight="semi-bold">
           {error.message}
         </Text>
-      </div>
+      </LoadingScreen>
     );
   }
 
@@ -277,6 +292,7 @@ export function HydrogenRootView() {
   return (
     <HydrogenContextProvider value={context}>
       <Outlet />
+      {content}
     </HydrogenContextProvider>
   );
 }

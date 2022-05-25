@@ -8,15 +8,16 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
 import { RoomListView } from "../sidebar/RoomListView";
-import { RoomListHeader, RoomListTabs } from "../sidebar/RoomListHeader";
+import { RoomListHeader } from "../sidebar/RoomListHeader";
 import { RoomListContent } from "../sidebar/RoomListContent";
 import { ActiveChats } from "./ActiveChats";
 import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile";
 import { ChatView } from "../chat/ChatView";
 import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
+import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, OverlayWindow } from "../../../hooks/useStore";
+import { useStore, RoomListTabs, OverlayWindow } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListWorld } from "../sidebar/RoomListWorlds";
 import { RoomListChats } from "../sidebar/RoomListChats";
@@ -59,6 +60,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
       {selectedWindow ? (
         <div className="Overlay__window grow flex">
           {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}
+          {selectedWindow === OverlayWindow.UserProfile && <UserProfile />}
         </div>
       ) : (
         <div className="Overlay__content grow">

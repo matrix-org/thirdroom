@@ -6,7 +6,7 @@ import { getRoomWithAlias, resolveRoomAlias } from "../utils/matrixUtils";
 
 export function useRoomIdFromAlias(alias?: string) {
   const { session } = useHydrogen(true);
-  const { homeserver } = session._sessionInfo;
+  const { homeserver } = session.sessionInfo;
   const [roomId, setRoomId] = useState<string>();
   const isMounted = useIsMounted();
 
