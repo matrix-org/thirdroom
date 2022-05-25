@@ -136,6 +136,8 @@
   --bs-secondary-border: inset 0 0 0 1px var(--bg-secondary);
   --bs-danger-border: inset 0 0 0 1px var(--bg-danger);
 
+  --bs-dropdown: 0 2px 10px 0 hsl(0deg 0% 0% / 20%);
+
   /* outline */
   --outline: var(--tc-surface) solid 2px;
   --outline-offset: -2px;
