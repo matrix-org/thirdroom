@@ -1,17 +1,16 @@
-import { createCursorBuffer } from "../allocator/CursorBuffer";
-import { getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { swapReadBuffer } from "../allocator/TripleBuffer";
+import { getReadView, TripleBufferView } from "../allocator/TripleBufferView";
 import { GameState, IInitialGameThreadState } from "../GameWorker";
 import { defineModule, getModule } from "../module/module.common";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
-import { createInputState, InputState, InputStateGetters } from "./input.common";
+import { InputState, InputStateGetters } from "./input.common";
 
 /*********
  * Types *
  ********/
 
 export interface GameInputModuleState {
-  tripleBuffer: TripleBufferState;
-  inputStates: InputState[];
+  inputStateTripleBufferView: TripleBufferView<InputState>;
   actions: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
@@ -21,34 +20,24 @@ export interface GameInputModuleState {
  * Initialization *
  *****************/
 
-const generateInputGetters = (
-  inputStates: InputState[],
-  inputTripleBuffer: TripleBufferState
-): { [path: string]: number } =>
+const generateInputGetters = (inputStateTripleBufferView: TripleBufferView<InputState>): { [path: string]: number } =>
   Object.defineProperties(
     {},
     Object.fromEntries(
       Object.entries(InputStateGetters).map(([path, getter]) => [
         path,
-        { enumerable: true, get: () => getter(inputStates[getReadBufferIndex(inputTripleBuffer)]) },
+        { enumerable: true, get: () => getter(getReadView(inputStateTripleBufferView)) },
       ])
     )
   );
 
 export const InputModule = defineModule<GameState, IInitialGameThreadState, GameInputModuleState>({
-  create({ inputTripleBuffer }): GameInputModuleState {
-    const inputStates = inputTripleBuffer.buffers
-      // TODO: When we pass the cursor buffer from main thread to the game thread, it comes with the cursor buffer properties already set. We can remove this line entirely, but then in createInputState we add additional views. Somehow we need to reuse the same cursor buffer defs and input state views.
-      // We could just postMessage the entire input state and avoid creating the cursor buffers altogether
-      .map((buffer) => createCursorBuffer(buffer))
-      .map((buffer) => createInputState(buffer));
-
+  create({ inputStateTripleBufferView }): GameInputModuleState {
     return {
-      tripleBuffer: inputTripleBuffer,
-      inputStates,
+      inputStateTripleBufferView,
       actions: new Map(),
       actionMaps: [],
-      raw: generateInputGetters(inputStates, inputTripleBuffer),
+      raw: generateInputGetters(inputStateTripleBufferView),
     };
   },
   init(ctx) {},
@@ -60,5 +49,11 @@ export const InputModule = defineModule<GameState, IInitialGameThreadState, Game
 
 export const InputReadSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
-  swapReadBuffer(input.tripleBuffer);
+  swapReadBuffer(input.inputStateTripleBufferView.tripleBuffer);
+
+  // console.log(getReadView(input.inputStateTripleBufferView).mouse.movement);
+
+  if (input.raw.KeyT) {
+    console.log("pressed T");
+  }
 };

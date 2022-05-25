@@ -1,23 +1,20 @@
-import { createCursorBuffer, CursorBuffer } from "../allocator/CursorBuffer";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { copyToWriteBuffer, createTripleBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer } from "../allocator/TripleBuffer";
 import { defineModule, getModule } from "../module/module.common";
 import { flagSet } from "./Bitmask";
-import { createInputState } from "./input.common";
 import { codeToKeyCode } from "./KeyCodes";
+import { createInputStateTripleBufferView, createInputStateView, InputState } from "./input.common";
+import { TripleBufferView } from "../allocator/TripleBufferView";
+import { CursorBufferView } from "../allocator/CursorBufferView";
+import { clearCursorBufferView, getBuffer } from "../allocator/CursorBufferView";
 
 /*********
  * Types *
  ********/
 
 export interface InputModuleState {
-  tripleBuffer: TripleBufferState;
-  buffer: CursorBuffer;
-  keyboard: Uint32Array;
-  mouse: {
-    movement: Float32Array;
-    buttons: Uint32Array;
-  };
+  inputStateTripleBufferView: TripleBufferView<InputState>;
+  inputState: CursorBufferView<InputState>;
 }
 
 /******************
@@ -26,25 +23,24 @@ export interface InputModuleState {
 
 export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadState, InputModuleState>({
   create() {
-    const buffer = createCursorBuffer();
-    const tripleBuffer = createTripleBuffer(buffer.byteLength);
-    const inputState = createInputState(buffer);
+    const inputStateTripleBufferView = createInputStateTripleBufferView();
+    const inputState = createInputStateView();
 
     return {
-      tripleBuffer,
-      ...inputState,
+      inputStateTripleBufferView,
+      inputState,
     };
   },
   init(ctx) {
-    const input = getModule(ctx, InputModule);
+    const { inputStateTripleBufferView, inputState } = getModule(ctx, InputModule);
 
-    ctx.initialGameWorkerState.inputTripleBuffer = input.tripleBuffer;
+    ctx.initialGameWorkerState.inputStateTripleBufferView = inputStateTripleBufferView;
 
     const { canvas } = ctx;
 
     function onMouseDown({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        input.mouse.buttons[0] = buttons;
+        inputState.mouse.buttons[0] = buttons;
       } else {
         canvas.requestPointerLock();
       }
@@ -52,31 +48,31 @@ export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadSt
 
     function onMouseUp({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        input.mouse.buttons[0] = buttons;
+        inputState.mouse.buttons[0] = buttons;
       }
     }
 
     function onKeyDown({ code }: KeyboardEvent) {
       if (document.pointerLockElement === canvas) {
-        flagSet(input.keyboard, codeToKeyCode(code), 1);
+        flagSet(inputState.keyboard, codeToKeyCode(code), 1);
       }
     }
 
     function onKeyUp({ code }: KeyboardEvent) {
       if (document.pointerLockElement === canvas) {
-        flagSet(input.keyboard, codeToKeyCode(code), 0);
+        flagSet(inputState.keyboard, codeToKeyCode(code), 0);
       }
     }
 
     function onMouseMove({ movementX, movementY }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        input.mouse.movement[0] += movementX;
-        input.mouse.movement[1] += movementY;
+        inputState.mouse.movement[0] += movementX;
+        inputState.mouse.movement[1] += movementY;
       }
     }
 
     function onBlur() {
-      input.buffer.clear();
+      clearCursorBufferView(inputState);
     }
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -103,9 +99,9 @@ export const InputModule = defineModule<IMainThreadContext, IInitialMainThreadSt
 
 export function MainThreadInputSystem(ctx: IMainThreadContext) {
   const input = getModule(ctx, InputModule);
-  copyToWriteBuffer(input.tripleBuffer, input.buffer);
-  swapWriteBuffer(input.tripleBuffer);
+  copyToWriteBuffer(input.inputStateTripleBufferView.tripleBuffer, getBuffer(input.inputState));
+  swapWriteBuffer(input.inputStateTripleBufferView.tripleBuffer);
 
-  input.mouse.movement[0] = 0;
-  input.mouse.movement[1] = 0;
+  input.inputState.mouse.movement[0] = 0;
+  input.inputState.mouse.movement[1] = 0;
 }

@@ -1,25 +1,33 @@
 import { addView, CursorBuffer } from "../allocator/CursorBuffer";
+import { createCursorBufferView } from "../allocator/CursorBufferView";
+import { createTripleBufferView } from "../allocator/TripleBufferView";
 import { flagGet } from "./Bitmask";
 import { Keys } from "./KeyCodes";
 
-export type InputState = {
-  buffer: CursorBuffer;
+export interface InputState {
   keyboard: Uint32Array;
   mouse: {
     movement: Float32Array;
     buttons: Uint32Array;
   };
-};
+}
 
-export function createInputState(buffer: CursorBuffer): InputState {
+function createInputState(buffer: CursorBuffer): InputState {
   return {
-    buffer,
     keyboard: addView(buffer, Uint32Array, Math.ceil(Keys.length / 32)),
     mouse: {
       movement: addView(buffer, Float32Array, 2),
       buttons: addView(buffer, Uint32Array, 1),
     },
   };
+}
+
+export function createInputStateView() {
+  return createCursorBufferView(createInputState);
+}
+
+export function createInputStateTripleBufferView() {
+  return createTripleBufferView(createInputState);
 }
 
 type InputStateGetter = (input: InputState) => number;

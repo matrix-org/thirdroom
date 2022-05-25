@@ -23,6 +23,8 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { PrefabTemplate, registerDefaultPrefabs } from "./prefab";
 import { BaseThreadContext, registerModules, ThreadSystem } from "./module/module.common";
 import gameConfig from "./config.game";
+import { TripleBufferView } from "./allocator/TripleBufferView";
+import { InputState } from "./input/input.common";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -134,7 +136,7 @@ export interface GameState extends BaseThreadContext {
 }
 
 export interface IInitialGameThreadState {
-  inputTripleBuffer: TripleBufferState;
+  inputStateTripleBufferView: TripleBufferView<InputState>;
   audioTripleBuffer: TripleBufferState;
   hierarchyTripleBuffer: TripleBufferState;
   statsBuffer: StatsBuffer;

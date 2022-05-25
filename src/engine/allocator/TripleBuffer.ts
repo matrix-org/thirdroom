@@ -4,7 +4,7 @@
 export type TripleBufferState = {
   byteLength: number;
   buffers: SharedArrayBuffer[];
-  views: Uint8Array[];
+  byteViews: Uint8Array[];
   flags: Uint8Array;
 };
 
@@ -18,7 +18,7 @@ export const createTripleBuffer = (
     new SharedArrayBuffer(byteLength),
   ],
 
-  views: Uint8Array[] = [new Uint8Array(buffers[0]), new Uint8Array(buffers[1]), new Uint8Array(buffers[2])],
+  byteViews: Uint8Array[] = [new Uint8Array(buffers[0]), new Uint8Array(buffers[1]), new Uint8Array(buffers[2])],
 
   /**
    * template:
@@ -34,7 +34,7 @@ export const createTripleBuffer = (
    * readBufferIndex:   2
    */
   flags: Uint8Array = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6)
-): TripleBufferState => ({ byteLength, buffers, views, flags });
+): TripleBufferState => ({ byteLength, buffers, byteViews, flags });
 
 const readyToRead = (flags: number) => {
   return (flags & 0x40) !== 0;
@@ -50,12 +50,12 @@ const swapWriteWithTempAndMarkChanged = (flags: number) => {
 
 export const getReadBufferIndex = (tb: TripleBufferState) => Atomics.load(tb.flags, 0) & 0x3;
 export const getReadBuffer = (tb: TripleBufferState) => tb.buffers[getReadBufferIndex(tb)];
-export const getReadView = (tb: TripleBufferState) => tb.views[getReadBufferIndex(tb)];
+export const getReadView = (tb: TripleBufferState) => tb.byteViews[getReadBufferIndex(tb)];
 
 export const getWriteBufferIndex = (tb: TripleBufferState) => (Atomics.load(tb.flags, 0) & 0x30) >> 4;
 export const getWriteBuffer = (tb: TripleBufferState) => tb.buffers[getWriteBufferIndex(tb)];
 export const copyToWriteBuffer = (tb: TripleBufferState, buffer: ArrayBuffer) =>
-  tb.views[getWriteBufferIndex(tb)].set(new Uint8Array(buffer));
+  tb.byteViews[getWriteBufferIndex(tb)].set(new Uint8Array(buffer));
 
 export const swapReadBuffer = (tb: TripleBufferState) => {
   const flags = Atomics.load(tb.flags, 0);
