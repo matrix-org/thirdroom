@@ -402,9 +402,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     initialState?: any[];
   }
 
+  export interface RoomStateHandler {
+    handleRoomState(room: Room, stateEvent: StateEvent, syncWriteTxn: Transaction, log: ILogItem): void;
+    updateRoomMembers(room: Room, memberChanges: Map<string, MemberChange>): void;
+  }
+
   export class Session {
     userId: string;
-    _sessionInfo: ISessionInfo;
+    sessionInfo: ISessionInfo;
     hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
@@ -412,6 +417,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     callHandler: CallHandler;
     createRoom(options: ICreateRoom): RoomBeingCreated;
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
+    observeRoomState(handler: RoomStateHandler): () => void;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
   }
 

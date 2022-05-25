@@ -6,6 +6,10 @@ export function getMxIdDomain(mxId: string) {
   return mxId.slice(mxId.indexOf(":") + 1);
 }
 
+export function getMxIdUsername(mxId: string) {
+  return mxId.slice(1, mxId.indexOf(":"));
+}
+
 export async function resolveRoomAlias(
   homeserver: string,
   alias: string

@@ -47,7 +47,7 @@ export interface CreateWorldOptions {
 
 export function CreateWorld() {
   const { session, platform } = useHydrogen(true);
-  const { homeserver } = session._sessionInfo;
+  const { homeserver } = session.sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
 
