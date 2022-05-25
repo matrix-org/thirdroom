@@ -624,7 +624,7 @@ export function createPeerIdIndexMessage(state: GameState, peerId: string) {
 
 /* Player NetworkId Message */
 
-export async function serializePlayerNetworkId(input: NetPipeData) {
+export function serializePlayerNetworkId(input: NetPipeData) {
   const [state, cv] = input;
   const network = getModule(state, NetworkModule);
   const peerId = network.peerId;
@@ -853,7 +853,7 @@ const deleteNetworkIds = (state: GameState) => {
 
 const sendUpdates = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
-  const input: NetPipeData = [ctx, network.cursorView];
+  const data: NetPipeData = [ctx, network.cursorView];
 
   // only send updates when:
   // - we have connected peers
@@ -866,7 +866,7 @@ const sendUpdates = (ctx: GameState) => {
     // send snapshot update to all new peers
     const haveNewPeers = network.newPeers.length > 0;
     if (haveNewPeers) {
-      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(input);
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
 
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
@@ -879,7 +879,7 @@ const sendUpdates = (ctx: GameState) => {
       }
     } else {
       // reliably send full messages for now
-      const msg = createFullChangedMessage(input);
+      const msg = createFullChangedMessage(data);
       if (msg.byteLength) broadcastReliable(ctx, msg);
     }
   }
@@ -913,7 +913,16 @@ const processNetworkMessage = (state: GameState, msg: ArrayBuffer) => {
   const messageType = readUint8(cursorView);
   const input: NetPipeData = [state, cursorView];
   const { messageHandlers } = getModule(state, NetworkModule);
+
   const handler = messageHandlers[messageType];
+  if (!handler) {
+    console.error(
+      "could not process network message, no handler registered for messageType",
+      NetworkAction[messageType]
+    );
+    return;
+  }
+
   handler(input);
 };
 
