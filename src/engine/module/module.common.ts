@@ -1,7 +1,7 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
 export interface BaseThreadContext {
-  systems: Map<ThreadSystem<any>, boolean>;
+  systems: ThreadSystem<any>[];
   modules: Map<Module<any, any, any>, any>;
   messageHandlers: Map<string, MessageHandler<any, string, Message<any>>[]>;
 }

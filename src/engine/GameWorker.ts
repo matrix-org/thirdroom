@@ -140,7 +140,7 @@ async function onInit({
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     renderer,
-    systems: new Map(),
+    systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),
   };
@@ -161,8 +161,8 @@ function onStart(state: GameState) {
 const timeoutOffset = 4;
 
 function update(state: GameState) {
-  for (let i = 0; i < gameConfig.systems.length; i++) {
-    gameConfig.systems[i](state);
+  for (let i = 0; i < state.systems.length; i++) {
+    state.systems[i](state);
   }
 
   const frameDuration = performance.now() - state.elapsed;

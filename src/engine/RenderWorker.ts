@@ -1,26 +1,14 @@
-import { PerspectiveCamera, Quaternion, Vector3, Matrix4 } from "three";
-
-import { swapReadBuffer, getReadBufferIndex } from "./allocator/TripleBuffer";
-import { tickRate } from "./config.common";
 import { onAddResourceRef, onLoadResource, onRemoveResourceRef } from "./resources/ResourceManager";
 import {
   InitializeRenderWorkerMessage,
   WorkerMessages,
   WorkerMessageType,
-  StartRenderWorkerMessage,
   RenderWorkerErrorMessage,
   RenderWorkerInitializedMessage,
 } from "./WorkerMessage";
-import { getModule, registerModules } from "./module/module.common";
+import { registerModules } from "./module/module.common";
 import renderConfig from "./config.render";
-import { StatsModule } from "./stats/stats.render";
-import {
-  onRenderableMessage,
-  onResize,
-  processRenderableMessages,
-  RendererModule,
-  RenderThreadState,
-} from "./renderer/renderer.render";
+import { onRenderableMessage, onResize, onStart, RenderThreadState } from "./renderer/renderer.render";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -118,8 +106,6 @@ function onMessage({ data }: any) {
   }
 }
 
-const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
-
 async function onInit({
   canvasTarget,
   gameWorkerMessageTarget,
@@ -140,7 +126,7 @@ async function onInit({
     messageHandlers: new Map(),
     preSystems: [],
     postSystems: [],
-    systems: new Map(),
+    systems: [],
     modules: new Map(),
   };
 
@@ -159,116 +145,4 @@ async function onInit({
   console.log("RenderWorker initialized");
 
   return state;
-}
-
-function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
-  const { renderer } = getModule(state, RendererModule);
-  renderer.setAnimationLoop(() => onUpdate(state));
-}
-
-const tempMatrix4 = new Matrix4();
-const tempPosition = new Vector3();
-const tempQuaternion = new Quaternion();
-const tempScale = new Vector3();
-
-function onUpdate(state: RenderThreadState) {
-  const renderModule = getModule(state, RendererModule);
-  const {
-    needsResize,
-    renderer,
-    canvasWidth,
-    canvasHeight,
-    renderableTripleBuffer,
-    transformViews,
-    renderableViews,
-    renderables,
-    scene,
-    camera,
-  } = renderModule;
-
-  processRenderableMessages(state);
-
-  const now = performance.now();
-  const dt = (state.dt = now - state.elapsed);
-  state.elapsed = now;
-  const frameRate = 1 / dt;
-  const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
-
-  const bufferSwapped = swapReadBuffer(renderableTripleBuffer);
-
-  const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
-  const Transform = transformViews[bufferIndex];
-  const Renderable = renderableViews[bufferIndex];
-
-  for (let i = 0; i < renderables.length; i++) {
-    const { object, helper, eid } = renderables[i];
-
-    if (!object) {
-      continue;
-    }
-
-    object.visible = !!Renderable.visible[eid];
-
-    if (!Transform.worldMatrixNeedsUpdate[eid]) {
-      continue;
-    }
-
-    if (Renderable.interpolate[eid]) {
-      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
-      object.position.lerp(tempPosition, lerpAlpha);
-      object.quaternion.slerp(tempQuaternion, lerpAlpha);
-      object.scale.lerp(tempScale, lerpAlpha);
-
-      if (helper) {
-        helper.position.copy(object.position);
-        helper.quaternion.copy(object.quaternion);
-        helper.scale.copy(object.scale);
-      }
-    } else {
-      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
-      object.matrix.fromArray(Transform.worldMatrix[eid]);
-      object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
-      object.matrixWorldNeedsUpdate = false;
-
-      if (helper) {
-        helper.position.copy(object.position);
-        helper.quaternion.copy(object.quaternion);
-        helper.scale.copy(object.scale);
-      }
-    }
-  }
-
-  if (needsResize && renderModule.camera.type === "PerspectiveCamera") {
-    const perspectiveCamera = renderModule.camera as PerspectiveCamera;
-    perspectiveCamera.aspect = canvasWidth / canvasHeight;
-    perspectiveCamera.updateProjectionMatrix();
-    renderer.setSize(canvasWidth, canvasHeight, false);
-    renderModule.needsResize = false;
-  }
-
-  for (let i = 0; i < state.preSystems.length; i++) {
-    state.preSystems[i](state);
-  }
-
-  renderer.render(scene, camera);
-
-  for (let i = 0; i < renderConfig.systems.length; i++) {
-    renderConfig.systems[i](state);
-  }
-
-  for (let i = 0; i < state.postSystems.length; i++) {
-    state.postSystems[i](state);
-  }
-
-  const stats = getModule(state, StatsModule);
-
-  if (bufferSwapped) {
-    if (stats.staleTripleBufferCounter > 1) {
-      stats.staleFrameCounter++;
-    }
-
-    stats.staleTripleBufferCounter = 0;
-  } else {
-    stats.staleTripleBufferCounter++;
-  }
 }

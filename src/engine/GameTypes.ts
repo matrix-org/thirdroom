@@ -3,7 +3,7 @@ import { IWorld } from "bitecs";
 import { TripleBuffer } from "./allocator/TripleBuffer";
 import { TripleBufferView } from "./allocator/TripleBufferView";
 import { InputState } from "./input/input.common";
-import { BaseThreadContext, ThreadSystem } from "./module/module.common";
+import { BaseThreadContext } from "./module/module.common";
 import { PrefabTemplate } from "./prefab";
 import { RemoteResourceManager } from "./resources/RemoteResourceManager";
 import { StatsBuffer } from "./stats/stats.common";
@@ -25,7 +25,6 @@ export interface GameState extends BaseThreadContext {
   resourceManager: RemoteResourceManager;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
-  systems: Map<ThreadSystem<GameState>, boolean>;
   scene: number;
   camera: number;
 }

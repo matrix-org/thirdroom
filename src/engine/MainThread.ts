@@ -36,7 +36,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   } = await initRenderWorker(canvas, gameWorker);
 
   const context: IMainThreadContext = {
-    systems: new Map(),
+    systems: mainThreadConfig.systems,
     modules: new Map(),
     canvas,
     gameWorker,
@@ -138,8 +138,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   /* Update loop */
 
   function update() {
-    for (let i = 0; i < mainThreadConfig.systems.length; i++) {
-      mainThreadConfig.systems[i](context);
+    for (let i = 0; i < context.systems.length; i++) {
+      context.systems[i](context);
     }
 
     context.animationFrameId = requestAnimationFrame(update);

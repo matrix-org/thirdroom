@@ -1,17 +1,21 @@
 import {
   ACESFilmicToneMapping,
   Camera,
+  Matrix4,
   Object3D,
   PCFSoftShadowMap,
   PerspectiveCamera,
+  Quaternion,
   Scene,
   sRGBEncoding,
+  Vector3,
   WebGLRenderer,
 } from "three";
 
 import { createCursorBuffer, addViewMatrix4, addView } from "../allocator/CursorBuffer";
-import { TripleBuffer } from "../allocator/TripleBuffer";
-import { maxEntities } from "../config.common";
+import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import { clamp } from "../component/transform";
+import { maxEntities, tickRate } from "../config.common";
 import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
 import { BaseThreadContext, defineModule, getModule } from "../module/module.common";
 import { CameraResourceLoader } from "../resources/CameraResourceLoader";
@@ -28,6 +32,7 @@ import {
 import { SceneResourceLoader } from "../resources/SceneResourceLoader";
 import { TextureResourceLoader } from "../resources/TextureResourceLoader";
 import { StatsBuffer } from "../stats/stats.common";
+import { StatsModule } from "../stats/stats.render";
 import {
   AddRenderableMessage,
   PostMessageTarget,
@@ -36,6 +41,7 @@ import {
   RenderWorkerResizeMessage,
   SetActiveCameraMessage,
   SetActiveSceneMessage,
+  StartRenderWorkerMessage,
   WorkerMessageType,
 } from "../WorkerMessage";
 
@@ -167,6 +173,118 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
   },
   init(ctx) {},
 });
+
+export function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
+  const { renderer } = getModule(state, RendererModule);
+  renderer.setAnimationLoop(() => onUpdate(state));
+}
+
+const tempMatrix4 = new Matrix4();
+const tempPosition = new Vector3();
+const tempQuaternion = new Quaternion();
+const tempScale = new Vector3();
+
+function onUpdate(state: RenderThreadState) {
+  const renderModule = getModule(state, RendererModule);
+  const {
+    needsResize,
+    renderer,
+    canvasWidth,
+    canvasHeight,
+    renderableTripleBuffer,
+    transformViews,
+    renderableViews,
+    renderables,
+    scene,
+    camera,
+  } = renderModule;
+
+  processRenderableMessages(state);
+
+  const now = performance.now();
+  const dt = (state.dt = now - state.elapsed);
+  state.elapsed = now;
+  const frameRate = 1 / dt;
+  const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
+
+  const bufferSwapped = swapReadBuffer(renderableTripleBuffer);
+
+  const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
+  const Transform = transformViews[bufferIndex];
+  const Renderable = renderableViews[bufferIndex];
+
+  for (let i = 0; i < renderables.length; i++) {
+    const { object, helper, eid } = renderables[i];
+
+    if (!object) {
+      continue;
+    }
+
+    object.visible = !!Renderable.visible[eid];
+
+    if (!Transform.worldMatrixNeedsUpdate[eid]) {
+      continue;
+    }
+
+    if (Renderable.interpolate[eid]) {
+      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
+      object.position.lerp(tempPosition, lerpAlpha);
+      object.quaternion.slerp(tempQuaternion, lerpAlpha);
+      object.scale.lerp(tempScale, lerpAlpha);
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
+    } else {
+      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
+      object.matrix.fromArray(Transform.worldMatrix[eid]);
+      object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
+      object.matrixWorldNeedsUpdate = false;
+
+      if (helper) {
+        helper.position.copy(object.position);
+        helper.quaternion.copy(object.quaternion);
+        helper.scale.copy(object.scale);
+      }
+    }
+  }
+
+  if (needsResize && renderModule.camera.type === "PerspectiveCamera") {
+    const perspectiveCamera = renderModule.camera as PerspectiveCamera;
+    perspectiveCamera.aspect = canvasWidth / canvasHeight;
+    perspectiveCamera.updateProjectionMatrix();
+    renderer.setSize(canvasWidth, canvasHeight, false);
+    renderModule.needsResize = false;
+  }
+
+  for (let i = 0; i < state.preSystems.length; i++) {
+    state.preSystems[i](state);
+  }
+
+  renderer.render(scene, camera);
+
+  for (let i = 0; i < state.systems.length; i++) {
+    state.systems[i](state);
+  }
+
+  for (let i = 0; i < state.postSystems.length; i++) {
+    state.postSystems[i](state);
+  }
+
+  const stats = getModule(state, StatsModule);
+
+  if (bufferSwapped) {
+    if (stats.staleTripleBufferCounter > 1) {
+      stats.staleFrameCounter++;
+    }
+
+    stats.staleTripleBufferCounter = 0;
+  } else {
+    stats.staleTripleBufferCounter++;
+  }
+}
 
 export function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
   const renderer = getModule(state, RendererModule);
