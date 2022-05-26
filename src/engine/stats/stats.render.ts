@@ -1,4 +1,5 @@
 import { defineModule, getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState, IInitialRenderThreadState } from "../RenderWorker";
 import { Stats, StatsBuffer } from "./stats.common";
 
@@ -20,11 +21,12 @@ export const StatsModule = defineModule<RenderThreadState, IInitialRenderThreadS
 });
 
 export function RenderThreadStatsSystem(state: RenderThreadState) {
+  const renderModule = getModule(state, RendererModule);
   const {
     render: { frame, calls, triangles, points, lines },
     memory: { geometries, textures },
     programs,
-  } = state.renderer.info;
+  } = renderModule.renderer.info;
 
   const { statsBuffer, staleFrameCounter } = getModule(state, StatsModule);
 

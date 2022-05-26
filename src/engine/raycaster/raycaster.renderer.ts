@@ -1,6 +1,7 @@
 import { Event, Intersection, Object3D, Raycaster } from "three";
 
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState, IInitialRenderThreadState } from "../RenderWorker";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
@@ -30,7 +31,8 @@ function onRaycastMessage(state: RenderThreadState, message: RaycastMessage) {
 const intersections: Intersection<Object3D<Event>>[] = [];
 
 export function RendererRaycasterSystem(state: RenderThreadState) {
-  const { scene, objectToEntityMap } = state;
+  const renderModule = getModule(state, RendererModule);
+  const { scene, objectToEntityMap } = renderModule;
   const raycasterState = getModule(state, RaycasterModule);
 
   while (raycasterState.messages.length) {
