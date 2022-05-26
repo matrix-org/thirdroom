@@ -262,6 +262,12 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     [Symbol.iterator](): IterableIterator<T>;
   }
 
+  export enum LoginFailure {
+    Connection = "Connection",
+    Credentials = "Credentials",
+    Unknown = "Unknown",
+  }
+
   export enum LoadStatus {
     NotLoading = "NotLoading",
     Login = "Login",
@@ -582,6 +588,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     loadStatus: ObservableValue<LoadStatus>;
 
     constructor(platform: Platform);
+    get loginFailure(): LoginFailure;
 
     startWithExistingSession(sessionId: string): Promise<void>;
 

@@ -11,6 +11,7 @@ import {
   URLRouter,
   CallIntent,
   ILogger,
+  LoginFailure,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -23,6 +24,7 @@ import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
+import { Button } from "../atoms/button/Button";
 
 const defaultHomeServer = "matrix.org";
 
@@ -167,6 +169,12 @@ async function loadSession(client: Client, session: Session) {
   await session.callHandler.loadCalls("m.room" as CallIntent);
 }
 
+function loginFailureToMsg(loginFailure: LoginFailure) {
+  if (loginFailure === LoginFailure.Connection) return "Connection timeout. Please try again.";
+  if (loginFailure === LoginFailure.Credentials) return "Invalid password. Please try again.";
+  if (loginFailure === LoginFailure.Unknown) return "Unknown error. Please try again.";
+}
+
 export function HydrogenRootView() {
   const [session, setSession] = useState<Session>();
 
@@ -268,11 +276,11 @@ export function HydrogenRootView() {
 
   if (error) {
     content = (
-      <LoadingScreen>
+      <LoadingScreen className="gap-md">
         <Text variant="b1" weight="semi-bold">
-          {error.message}
-          {/* TODO: add refresh button */}
+          {errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error.message}
         </Text>
+        <Button onClick={() => window.location.reload()}>Refresh</Button>
       </LoadingScreen>
     );
   }
