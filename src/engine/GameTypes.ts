@@ -5,7 +5,6 @@ import { TripleBufferView } from "./allocator/TripleBufferView";
 import { InputState } from "./input/input.common";
 import { BaseThreadContext } from "./module/module.common";
 import { PrefabTemplate } from "./prefab";
-import { RemoteResourceManager } from "./resources/RemoteResourceManager";
 import { StatsBuffer } from "./stats/stats.common";
 
 export type World = IWorld;
@@ -22,7 +21,6 @@ export interface GameState extends BaseThreadContext {
   dt: number;
   world: World;
   renderer: RenderState;
-  resourceManager: RemoteResourceManager;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
   scene: number;
@@ -30,6 +28,7 @@ export interface GameState extends BaseThreadContext {
 }
 
 export interface IInitialGameThreadState {
+  renderPort: RenderPort;
   inputStateTripleBufferView: TripleBufferView<InputState>;
   audioTripleBuffer: TripleBuffer;
   hierarchyTripleBuffer: TripleBuffer;

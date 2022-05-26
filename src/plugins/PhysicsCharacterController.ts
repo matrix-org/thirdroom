@@ -13,6 +13,7 @@ import { Networked, NetworkTransform, Owned } from "../engine/network/network.ga
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCamera } from "../engine/prefab";
+import { RendererModule } from "../engine/renderer/renderer.game";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
 import { MaterialType } from "../engine/resources/MaterialResourceLoader";
 import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
@@ -82,16 +83,18 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (
-  state: GameState,
-  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  })
-) => {
-  const { world, resourceManager } = state;
+export const createRawCube = (state: GameState, geometryResourceId?: number) => {
+  const { resourceManager } = getModule(state, RendererModule);
+  const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
+
+  if (!geometryResourceId) {
+    geometryResourceId = loadRemoteResource(resourceManager, {
+      type: "geometry",
+      geometryType: GeometryType.Box,
+    });
+  }
 
   const materialResourceId = loadRemoteResource(resourceManager, {
     type: "material",

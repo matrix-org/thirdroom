@@ -3,18 +3,21 @@ import { addComponent, addEntity, defineComponent, Types } from "bitecs";
 import { GameState } from "../GameTypes";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { addChild, addTransformComponent } from "../component/transform";
+import { RendererModule } from "../renderer/renderer.game";
+import { getModule } from "../module/module.common";
 
 export const GLTFLoader = defineComponent({
   resourceId: Types.ui32,
 });
 
-export function addGLTFLoaderComponent({ resourceManager, world }: GameState, eid: number, url: string) {
+export function addGLTFLoaderComponent(state: GameState, eid: number, url: string) {
+  const { resourceManager } = getModule(state, RendererModule);
   const resourceId = loadRemoteResource(resourceManager, {
     type: "gltf",
     url,
   });
 
-  addComponent(world, GLTFLoader, eid);
+  addComponent(state.world, GLTFLoader, eid);
   GLTFLoader.resourceId[eid] = resourceId;
 }
 

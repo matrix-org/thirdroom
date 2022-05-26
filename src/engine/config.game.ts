@@ -14,6 +14,7 @@ import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 import { EditorModule, EditorSelectionSystem, EditorStateSystem } from "./editor/editor.game";
 import { RenderableTripleBufferSystem, UpdateWorldMatrixSystem, TimeSystem } from "./GameSystems";
 import { GameState } from "./GameTypes";
+import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -24,18 +25,19 @@ export default defineConfig<GameState>({
     RaycasterModule,
     StatsModule,
     EditorModule,
+    RendererModule,
     ExampleModule,
   ],
   systems: [
     TimeSystem,
     InputReadSystem,
+    ActionMappingSystem,
     RaycasterSystem,
     AudioSystem,
 
     InboundNetworkSystem,
 
     GLTFLoaderSystem,
-    ActionMappingSystem,
     FirstPersonCameraSystem,
     PlayerControllerSystem,
     PhysicsSystem,
@@ -50,5 +52,7 @@ export default defineConfig<GameState>({
     UpdateWorldMatrixSystem,
     RenderableTripleBufferSystem,
     GameWorkerStatsSystem,
+
+    RenderableSystem,
   ],
 });
