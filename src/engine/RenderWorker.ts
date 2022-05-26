@@ -44,16 +44,13 @@ import {
   SetActiveCameraMessage,
   SetActiveSceneMessage,
   PostMessageTarget,
-  ExportGLTFMessage,
 } from "./WorkerMessage";
 import { TripleBufferState } from "./allocator/TripleBuffer";
 import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
-import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
 import { StatsBuffer } from "./stats/stats.common";
 import { writeRenderWorkerStats } from "./stats/stats.render";
-import { EditorRendererState, initEditorRendererState } from "./editor/editor.renderer";
 import { BaseThreadContext, registerModules } from "./module/module.common";
 import renderConfig from "./config.render";
 
@@ -69,7 +66,7 @@ if (isWorker) {
 }
 
 // outbound RenderThread -> MainThread
-function postToMainThread(data: any, transfer?: (Transferable | OffscreenCanvas)[]) {
+export function postToMainThread(data: any, transfer?: (Transferable | OffscreenCanvas)[]) {
   if (isWorker) {
     (globalThis as any).postMessage(data, transfer);
   } else {
@@ -132,7 +129,6 @@ export interface RenderThreadState extends BaseThreadContext {
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;
   statsBuffer: StatsBuffer;
-  editor: EditorRendererState;
   preSystems: RenderThreadSystem[];
   postSystems: RenderThreadSystem[];
 }
@@ -194,9 +190,6 @@ function onMessage({ data }: any) {
       break;
     case WorkerMessageType.RemoveResourceRef:
       onRemoveResourceRef(_state.resourceManager, message);
-      break;
-    case WorkerMessageType.ExportGLTF:
-      onExportGLTF(_state, message);
       break;
   }
 }
@@ -286,7 +279,6 @@ async function onInit({
     renderableViews,
     gameWorkerMessageTarget,
     statsBuffer,
-    editor: initEditorRendererState(),
     messageHandlers: new Map(),
     preSystems: [],
     postSystems: [],
@@ -585,13 +577,4 @@ function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMes
 
     state.camera = camera;
   }
-}
-
-async function onExportGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
-  const buffer = await exportSceneAsGLTF(state, message);
-
-  postToMainThread({
-    type: WorkerMessageType.SaveGLTF,
-    buffer,
-  });
 }

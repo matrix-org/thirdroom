@@ -1,4 +1,4 @@
-//import { EditorModule } from "./editor/editor.renderer";
+import { EditorModule } from "./editor/editor.renderer";
 import { defineConfig } from "./module/module.common";
 import { RaycasterModule, RendererRaycasterSystem } from "./raycaster/raycaster.renderer";
 // import { RendererModule, RendererSystem } from "./renderer/renderer.render";
@@ -8,7 +8,7 @@ export default defineConfig({
   modules: [
     // RendererModule,
     RaycasterModule,
-    // EditorModule,
+    EditorModule,
     // StatsModule,
   ],
   systems: [

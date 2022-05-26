@@ -1,6 +1,7 @@
-import { registerMessageHandler } from "../module/module.common";
-import { RenderThreadState } from "../RenderWorker";
-import { SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
+import { exportSceneAsGLTF } from "../gltf/GLTFExporter";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { postToMainThread, RenderThreadState, IInitialRenderThreadState } from "../RenderWorker";
+import { ExportGLTFMessage, SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 
 export interface EditorRendererState {
   editorLoaded: boolean;
@@ -8,67 +9,51 @@ export interface EditorRendererState {
   prevSelectedEntities: number[];
 }
 
-export function initEditorRendererState(): EditorRendererState {
-  return {
-    editorLoaded: false,
-    selectedEntities: [],
-    prevSelectedEntities: [],
-  };
-}
+export const EditorModule = defineModule<RenderThreadState, IInitialRenderThreadState, EditorRendererState>({
+  create() {
+    return {
+      editorLoaded: false,
+      selectedEntities: [],
+      prevSelectedEntities: [],
+    };
+  },
+  init(ctx) {
+    const disposables = [
+      registerMessageHandler(ctx, WorkerMessageType.LoadEditor, onLoadEditor),
+      registerMessageHandler(ctx, WorkerMessageType.DisposeEditor, onDisposeEditor),
+      registerMessageHandler(ctx, WorkerMessageType.SelectionChanged, onSelectionChanged),
+      registerMessageHandler(ctx, WorkerMessageType.ExportGLTF, onExportGLTF),
+    ];
 
-export function initEditorRenderer(state: RenderThreadState) {
-  registerMessageHandler(state, WorkerMessageType.LoadEditor, onLoadEditor);
-  registerMessageHandler(state, WorkerMessageType.DisposeEditor, onDisposeEditor);
-  registerMessageHandler(state, WorkerMessageType.SelectionChanged, onSelectionChanged);
-  //state.preSystems.push(EditorRendererSystem);
-}
+    return () => {
+      for (const dispose of disposables) {
+        dispose();
+      }
+    };
+  },
+});
 
 function onLoadEditor(state: RenderThreadState) {
-  state.editor.editorLoaded = true;
+  const editor = getModule(state, EditorModule);
+  editor.editorLoaded = true;
 }
 
 function onDisposeEditor(state: RenderThreadState) {
-  state.editor.editorLoaded = false;
-  state.editor.selectedEntities.length = 0;
+  const editor = getModule(state, EditorModule);
+  editor.editorLoaded = false;
+  editor.selectedEntities.length = 0;
 }
 
 function onSelectionChanged(state: RenderThreadState, message: SelectionChangedMessage) {
-  state.editor.selectedEntities = message.selectedEntities;
+  const editor = getModule(state, EditorModule);
+  editor.selectedEntities = message.selectedEntities;
 }
 
-// function EditorRendererSystem(state: RenderWorkerState) {
-//   const { editorLoaded, helpersNeedUpdate, selectedEntities, prevSelectedEntities } = state.editor;
+async function onExportGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
+  const buffer = await exportSceneAsGLTF(state, message);
 
-//   if (helpersNeedUpdate) {
-//     if (editorLoaded) {
-//       for (let i = 0; i < state.renderables; i++) {
-//         if () {
-
-//         }
-//       }
-//     } else {
-
-//     }
-
-//     state.editor.helpersNeedUpdate = false;
-//   }
-
-//   if (!editorLoaded) {
-//     return;
-//   }
-// }
-
-// const helperMaterial = new MeshBasicMaterial({ color: 0xffff00, wireframe: true, depthTest: false });
-
-// function createHelper(renderable: Renderable): Object3D | undefined {
-//   if (!renderable.object) {
-//     return undefined;
-//   }
-
-//   if (renderable.object.type === "Mesh") {
-//     const mesh = renderable.object as Mesh;
-//     return new Mesh(mesh.geometry, helperMaterial);
-//   }
-
-//   return undefined;
-// }
+  postToMainThread({
+    type: WorkerMessageType.SaveGLTF,
+    buffer,
+  });
+}
