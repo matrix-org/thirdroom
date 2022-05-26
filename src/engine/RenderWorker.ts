@@ -1,29 +1,26 @@
-import { Scene, Object3D, PerspectiveCamera, Quaternion, Vector3, Matrix4, Camera } from "three";
+import { PerspectiveCamera, Quaternion, Vector3, Matrix4 } from "three";
 
 import { swapReadBuffer, getReadBufferIndex } from "./allocator/TripleBuffer";
 import { tickRate } from "./config.common";
-import { onAddResourceRef, onLoadResource, onRemoveResourceRef, ResourceState } from "./resources/ResourceManager";
+import { onAddResourceRef, onLoadResource, onRemoveResourceRef } from "./resources/ResourceManager";
 import {
-  AddRenderableMessage,
   InitializeRenderWorkerMessage,
-  RemoveRenderableMessage,
-  RenderWorkerResizeMessage,
   WorkerMessages,
   WorkerMessageType,
   StartRenderWorkerMessage,
   RenderWorkerErrorMessage,
   RenderWorkerInitializedMessage,
-  RenderableMessages,
-  SetActiveCameraMessage,
-  SetActiveSceneMessage,
-  PostMessageTarget,
 } from "./WorkerMessage";
-import { TripleBuffer } from "./allocator/TripleBuffer";
-import { StatsBuffer } from "./stats/stats.common";
-import { BaseThreadContext, getModule, registerModules } from "./module/module.common";
+import { getModule, registerModules } from "./module/module.common";
 import renderConfig from "./config.render";
 import { StatsModule } from "./stats/stats.render";
-import { RendererModule } from "./renderer/renderer.render";
+import {
+  onRenderableMessage,
+  onResize,
+  processRenderableMessages,
+  RendererModule,
+  RenderThreadState,
+} from "./renderer/renderer.render";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -59,44 +56,6 @@ export default {
     options?: EventListenerOptions | boolean
   ): void => localEventTarget!.removeEventListener(type, callback, options),
 };
-
-export interface TransformView {
-  worldMatrix: Float32Array[];
-  worldMatrixNeedsUpdate: Uint8Array;
-}
-
-export interface RenderableView {
-  resourceId: Uint32Array;
-  interpolate: Uint8Array;
-  visible: Uint8Array;
-}
-
-export interface Renderable {
-  object?: Object3D;
-  helper?: Object3D;
-  eid: number;
-  resourceId: number;
-}
-
-type RenderThreadSystem = (state: RenderThreadState) => void;
-
-export interface IInitialRenderThreadState {
-  statsBuffer: StatsBuffer;
-  resourceManagerBuffer: SharedArrayBuffer;
-  renderableTripleBuffer: TripleBuffer;
-  gameWorkerMessageTarget: MessagePort;
-  initialCanvasWidth: number;
-  initialCanvasHeight: number;
-  canvasTarget: HTMLElement;
-}
-
-export interface RenderThreadState extends BaseThreadContext {
-  elapsed: number;
-  dt: number;
-  gameWorkerMessageTarget: PostMessageTarget;
-  preSystems: RenderThreadSystem[];
-  postSystems: RenderThreadSystem[];
-}
 
 let _state: RenderThreadState;
 
@@ -311,180 +270,5 @@ function onUpdate(state: RenderThreadState) {
     stats.staleTripleBufferCounter = 0;
   } else {
     stats.staleTripleBufferCounter++;
-  }
-}
-
-function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
-  const renderer = getModule(state, RendererModule);
-  renderer.needsResize = true;
-  renderer.canvasWidth = canvasWidth;
-  renderer.canvasHeight = canvasHeight;
-}
-
-function onRenderableMessage(state: RenderThreadState, message: RenderableMessages) {
-  const { renderableMessageQueue } = getModule(state, RendererModule);
-  renderableMessageQueue.push(message);
-}
-
-function processRenderableMessages(state: RenderThreadState) {
-  const { renderableMessageQueue } = getModule(state, RendererModule);
-  while (renderableMessageQueue.length) {
-    const message = renderableMessageQueue.shift() as RenderableMessages;
-
-    switch (message.type) {
-      case WorkerMessageType.AddRenderable:
-        onAddRenderable(state, message);
-        break;
-      case WorkerMessageType.RemoveRenderable:
-        onRemoveRenderable(state, message);
-        break;
-      case WorkerMessageType.SetActiveCamera:
-        onSetActiveCamera(state, message);
-        break;
-      case WorkerMessageType.SetActiveScene:
-        onSetActiveScene(state, message);
-        break;
-    }
-  }
-}
-
-function onAddRenderable(state: RenderThreadState, message: AddRenderableMessage) {
-  const { resourceId, eid } = message;
-  const { renderableMessageQueue, renderableIndices, renderables, objectToEntityMap, scene, resourceManager } =
-    getModule(state, RendererModule);
-  let renderableIndex = renderableIndices.get(eid);
-  const resourceInfo = resourceManager.store.get(resourceId);
-
-  if (!resourceInfo) {
-    console.warn(`AddRenderable Error: Unknown resourceId ${resourceId} for eid ${eid}`);
-    return;
-  }
-
-  if (resourceInfo.state === ResourceState.Loaded) {
-    const object = resourceInfo.resource as Object3D;
-
-    if (renderableIndex !== undefined) {
-      // Replace an existing renderable on an entity if it changed
-      const removed = renderables.splice(renderableIndex, 1, { object, eid, resourceId });
-
-      if (removed.length > 0 && removed[0].object) {
-        // Remove the renderable object3D only if it exists
-        scene.remove(removed[0].object);
-      }
-    } else {
-      renderableIndex = renderables.length;
-      renderableIndices.set(eid, renderables.length);
-      renderables.push({ object, eid, resourceId });
-      objectToEntityMap.set(object, eid);
-    }
-
-    scene.add(object);
-
-    return;
-  }
-
-  if (resourceInfo.state === ResourceState.Loading) {
-    if (renderableIndex !== undefined) {
-      // Update the renderable with the new resource id and remove the old object
-      const removed = renderables.splice(renderableIndex, 1, { object: undefined, eid, resourceId });
-
-      if (removed.length > 0 && removed[0].object) {
-        // Remove the previous renderable object from the scene if it exists
-        scene.remove(removed[0].object);
-      }
-    } else {
-      renderableIndex = renderables.length;
-      renderableIndices.set(eid, renderables.length);
-      renderables.push({ object: undefined, eid, resourceId });
-    }
-
-    // Resources that are still loading should be re-queued when they finish loading.
-    resourceInfo.promise.finally(() => {
-      const index = renderableIndices.get(eid);
-
-      if (index === undefined || renderables[index].resourceId !== message.resourceId) {
-        // The resource was changed since it finished loading so avoid queueing it again
-        return;
-      }
-
-      renderableMessageQueue.push(message);
-    });
-
-    return;
-  }
-
-  console.warn(
-    `AddRenderable Error: resourceId ${resourceId} for eid ${eid} could not be loaded: ${resourceInfo.error}`
-  );
-}
-
-function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRenderableMessage) {
-  const { renderableIndices, renderables, objectToEntityMap, scene } = getModule(state, RendererModule);
-
-  const index = renderableIndices.get(eid);
-
-  if (index !== undefined) {
-    const removed = renderables.splice(index, 1);
-    renderableIndices.delete(eid);
-
-    if (removed.length > 0) {
-      const { object, helper } = removed[0];
-
-      if (object) {
-        scene.remove(object);
-        objectToEntityMap.delete(object);
-      }
-
-      if (helper) {
-        scene.remove(helper);
-        objectToEntityMap.delete(helper);
-      }
-    }
-  }
-}
-
-function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: SetActiveSceneMessage) {
-  const rendererState = getModule(state, RendererModule);
-  const resourceInfo = rendererState.resourceManager.store.get(resourceId);
-
-  if (!resourceInfo) {
-    console.error(`SetActiveScene Error: Couldn't find resource ${resourceId} for scene ${eid}`);
-    return;
-  }
-
-  const setScene = (newScene: Scene) => {
-    for (const child of rendererState.scene.children) {
-      newScene.add(child);
-    }
-
-    rendererState.scene = newScene;
-  };
-
-  if (resourceInfo.resource) {
-    const newScene = resourceInfo.resource as Scene;
-    setScene(newScene);
-  } else {
-    resourceInfo.promise.then(({ resource }) => {
-      setScene(resource as Scene);
-    });
-  }
-}
-
-function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMessage) {
-  const renderModule = getModule(state, RendererModule);
-  const { renderableIndices, renderables } = renderModule;
-  const index = renderableIndices.get(eid);
-
-  if (index !== undefined && renderables[index]) {
-    const camera = renderables[index].object as Camera;
-
-    const perspectiveCamera = camera as PerspectiveCamera;
-
-    if (perspectiveCamera.isPerspectiveCamera) {
-      perspectiveCamera.aspect = renderModule.canvasWidth / renderModule.canvasHeight;
-      perspectiveCamera.updateProjectionMatrix();
-    }
-
-    renderModule.camera = camera;
   }
 }

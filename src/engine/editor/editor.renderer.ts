@@ -1,6 +1,7 @@
 import { exportSceneAsGLTF } from "../gltf/GLTFExporter";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { postToMainThread, RenderThreadState, IInitialRenderThreadState } from "../RenderWorker";
+import { RenderThreadState, IInitialRenderThreadState } from "../renderer/renderer.render";
+import { postToMainThread } from "../RenderWorker";
 import { ExportGLTFMessage, SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 
 export interface EditorRendererState {

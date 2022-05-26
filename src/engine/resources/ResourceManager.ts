@@ -1,5 +1,4 @@
 import { getModule } from "../module/module.common";
-import { RenderThreadState } from "../RenderWorker";
 import {
   AddResourceRefMessage,
   LoadResourceMessage,
@@ -7,7 +6,7 @@ import {
   PostMessageTarget,
   WorkerMessageType,
 } from "../WorkerMessage";
-import { RendererModule } from "../renderer/renderer.render";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;

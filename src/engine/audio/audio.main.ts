@@ -3,10 +3,10 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config.common";
 import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { TransformView } from "../RenderWorker";
 import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
+import { TransformView } from "../renderer/renderer.render";
 
 /*********
  * Types *
