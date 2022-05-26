@@ -6,8 +6,6 @@ import { maxEntities } from "../config.common";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
 import { traverse } from "./transform";
 import { GameState, World } from "../GameTypes";
-import { RendererModule } from "../renderer/renderer.game";
-import { getModule } from "../module/module.common";
 
 export interface Renderable extends IComponent {
   resourceId: Uint32Array;
