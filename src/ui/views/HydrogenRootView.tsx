@@ -179,19 +179,15 @@ export function HydrogenRootView() {
     };
   }, [client, containerEl]);
 
-  const {
-    loading: loadingInitialSession,
-    error: initialSessionLoadError,
-    value: initialSession,
-  } = useAsync(async () => {
+  const { loading: loadingInitialSession, error: initialSessionLoadError } = useAsync(async () => {
     const availableSessions = await platform.sessionInfoStorage.getAll();
 
     if (availableSessions.length === 0) {
+      setSession(undefined);
       return;
     }
 
     const sessionId = availableSessions[0].id;
-
     await client.startWithExistingSession(sessionId);
 
     if (client.session) {
@@ -199,11 +195,10 @@ export function HydrogenRootView() {
         await loadSession(client, client.session);
       } catch (error) {
         console.error("Error loading initial session", error);
-        return undefined;
       }
     }
 
-    return client.session;
+    setSession(client.session);
   }, [platform, client]);
 
   const {
@@ -235,11 +230,10 @@ export function HydrogenRootView() {
   } = useAsyncCallback<() => Promise<void>, void>(async () => {
     if (client && client.session) {
       await client.startLogout(client.session.sessionInfo.id);
+      client.loadStatus.set(LoadStatus.NotLoading);
       setSession(undefined);
     }
   }, [client, session]);
-
-  const currentSession = session || initialSession;
 
   const context = useMemo<HydrogenContext>(
     () => ({
@@ -249,11 +243,11 @@ export function HydrogenRootView() {
       containerEl,
       urlRouter,
       logger,
-      session: currentSession,
+      session,
       login,
       logout,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, login, logout]
+    [client, platform, navigation, containerEl, urlRouter, logger, session, login, logout]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
@@ -262,7 +256,6 @@ export function HydrogenRootView() {
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
 
   let content;
-
   if (loading) {
     content = (
       <LoadingScreen>
@@ -278,14 +271,15 @@ export function HydrogenRootView() {
       <LoadingScreen>
         <Text variant="b1" weight="semi-bold">
           {error.message}
+          {/* TODO: add refresh button */}
         </Text>
       </LoadingScreen>
     );
   }
 
-  if (!currentSession && !loginPathMatch) {
+  if (!session && !loginPathMatch) {
     return <Navigate to="/login" />;
-  } else if (currentSession && loginPathMatch) {
+  } else if (session && loginPathMatch) {
     return <Navigate to="/" />;
   }
 
