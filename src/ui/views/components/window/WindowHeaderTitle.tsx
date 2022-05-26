@@ -12,7 +12,7 @@ export function WindowHeaderTitle({ icon, children }: WindowHeaderTitleProps) {
   return (
     <div className="WindowHeaderTitle flex items-center">
       {icon}
-      <Text className="truncate" weight="bold">
+      <Text variant="b2" className="truncate" weight="bold">
         {children}
       </Text>
     </div>
