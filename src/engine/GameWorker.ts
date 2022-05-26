@@ -19,7 +19,7 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { registerDefaultPrefabs } from "./prefab";
 import { registerModules } from "./module/module.common";
 import gameConfig from "./config.game";
-import { GameState, RenderState, World } from "./GameTypes";
+import { GameState, IInitialGameThreadState, RenderState, World } from "./GameTypes";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -105,10 +105,10 @@ const onMessage =
   };
 
 async function onInit({
-  resourceManagerBuffer,
   renderWorkerMessagePort,
-  renderableTripleBuffer,
+  initialGameWorkerState,
 }: InitializeGameWorkerMessage): Promise<GameState> {
+  const { resourceManagerBuffer, renderableTripleBuffer } = initialGameWorkerState as IInitialGameThreadState;
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);

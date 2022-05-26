@@ -110,6 +110,8 @@ type RenderThreadSystem = (state: RenderThreadState) => void;
 
 export interface IInitialRenderThreadState {
   statsBuffer: StatsBuffer;
+  resourceManagerBuffer: SharedArrayBuffer;
+  renderableTripleBuffer: TripleBuffer;
 }
 
 export interface RenderThreadState extends BaseThreadContext {
@@ -202,13 +204,10 @@ async function onInit({
   gameWorkerMessageTarget,
   initialCanvasWidth,
   initialCanvasHeight,
-  resourceManagerBuffer,
-  renderableTripleBuffer,
   initialRenderWorkerState,
 }: InitializeRenderWorkerMessage): Promise<RenderThreadState> {
-  const { statsBuffer } = initialRenderWorkerState as {
-    statsBuffer: StatsBuffer;
-  };
+  const { statsBuffer, resourceManagerBuffer, renderableTripleBuffer } =
+    initialRenderWorkerState as IInitialRenderThreadState;
 
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 

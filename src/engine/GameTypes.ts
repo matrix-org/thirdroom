@@ -35,4 +35,6 @@ export interface IInitialGameThreadState {
   audioTripleBuffer: TripleBuffer;
   hierarchyTripleBuffer: TripleBuffer;
   statsBuffer: StatsBuffer;
+  resourceManagerBuffer: SharedArrayBuffer;
+  renderableTripleBuffer: TripleBuffer;
 }

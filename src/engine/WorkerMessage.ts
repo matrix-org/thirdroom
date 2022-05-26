@@ -62,9 +62,7 @@ export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> 
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
-  renderableTripleBuffer: TripleBuffer;
   renderWorkerMessagePort?: MessagePort;
-  resourceManagerBuffer: SharedArrayBuffer;
   initialGameWorkerState: { [key: string]: any };
 }
 
@@ -83,12 +81,10 @@ export interface GameWorkerErrorMessage extends WorkerMessage {
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
-  gameWorkerMessageTarget: PostMessageTarget;
   canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  renderableTripleBuffer: TripleBuffer;
-  resourceManagerBuffer: SharedArrayBuffer;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+  gameWorkerMessageTarget: PostMessageTarget;
   initialRenderWorkerState: { [key: string]: any };
 }
 
