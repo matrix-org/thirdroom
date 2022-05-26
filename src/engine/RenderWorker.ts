@@ -4,7 +4,6 @@ import {
   Object3D,
   PerspectiveCamera,
   Quaternion,
-  Clock,
   Vector3,
   Matrix4,
   Camera,
@@ -13,7 +12,7 @@ import {
   PCFSoftShadowMap,
 } from "three";
 
-import { createCursorBuffer, addView, addViewMatrix4, CursorBuffer } from "./allocator/CursorBuffer";
+import { createCursorBuffer, addView, addViewMatrix4 } from "./allocator/CursorBuffer";
 import { swapReadBuffer, getReadBufferIndex } from "./allocator/TripleBuffer";
 import { maxEntities, tickRate } from "./config.common";
 import {
@@ -50,9 +49,9 @@ import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
 import { StatsBuffer } from "./stats/stats.common";
-import { writeRenderWorkerStats } from "./stats/stats.render";
-import { BaseThreadContext, registerModules } from "./module/module.common";
+import { BaseThreadContext, getModule, registerModules } from "./module/module.common";
 import renderConfig from "./config.render";
+import { StatsModule } from "./stats/stats.render";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -109,16 +108,19 @@ export interface Renderable {
 
 type RenderThreadSystem = (state: RenderThreadState) => void;
 
-export type IInitialRenderThreadState = {};
+export interface IInitialRenderThreadState {
+  statsBuffer: StatsBuffer;
+}
 
 export interface RenderThreadState extends BaseThreadContext {
+  elapsed: number;
+  dt: number;
   needsResize: boolean;
   canvasWidth: number;
   canvasHeight: number;
   scene: Object3D;
   camera: Camera;
   renderer: WebGLRenderer;
-  clock: Clock;
   resourceManager: ResourceManager;
   renderableMessageQueue: RenderableMessages[];
   renderables: Renderable[];
@@ -128,7 +130,6 @@ export interface RenderThreadState extends BaseThreadContext {
   transformViews: TransformView[];
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;
-  statsBuffer: StatsBuffer;
   preSystems: RenderThreadSystem[];
   postSystems: RenderThreadSystem[];
 }
@@ -208,6 +209,7 @@ async function onInit({
   const { statsBuffer } = initialRenderWorkerState as {
     statsBuffer: StatsBuffer;
   };
+
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 
   if (gameWorkerMessageTarget instanceof MessagePort) {
@@ -238,8 +240,6 @@ async function onInit({
   renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-  const clock = new Clock();
-
   const cursorBuffers = renderableTripleBuffer.buffers.map((b) => createCursorBuffer(b));
 
   const transformViews = cursorBuffers.map(
@@ -255,18 +255,19 @@ async function onInit({
   const renderableViews = cursorBuffers.map(
     (buffer) =>
       ({
-        resourceId: addView(buffer as unknown as CursorBuffer, Uint32Array, maxEntities),
-        interpolate: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
-        visible: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+        resourceId: addView(buffer, Uint32Array, maxEntities),
+        interpolate: addView(buffer, Uint8Array, maxEntities),
+        visible: addView(buffer, Uint8Array, maxEntities),
       } as RenderableView)
   );
 
   const state: RenderThreadState = {
+    elapsed: performance.now(),
+    dt: 0,
     needsResize: true,
     camera,
     scene,
     renderer,
-    clock,
     resourceManager,
     canvasWidth: initialCanvasWidth,
     canvasHeight: initialCanvasHeight,
@@ -278,7 +279,6 @@ async function onInit({
     transformViews,
     renderableViews,
     gameWorkerMessageTarget,
-    statsBuffer,
     messageHandlers: new Map(),
     preSystems: [],
     postSystems: [],
@@ -286,7 +286,7 @@ async function onInit({
     modules: new Map(),
   };
 
-  await registerModules({}, state, renderConfig.modules);
+  await registerModules({ statsBuffer }, state, renderConfig.modules);
 
   console.log("RenderWorker initialized");
 
@@ -302,12 +302,8 @@ const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
-let staleFrameCounter = 0;
-let staleTripleBufferCounter = 0;
-
 function onUpdate(state: RenderThreadState) {
   const {
-    clock,
     needsResize,
     renderer,
     canvasWidth,
@@ -316,14 +312,13 @@ function onUpdate(state: RenderThreadState) {
     transformViews,
     renderableViews,
     renderables,
-    statsBuffer,
   } = state;
-
-  const start = performance.now();
 
   processRenderableMessages(state);
 
-  const dt = clock.getDelta();
+  const now = performance.now();
+  const dt = (state.dt = now - state.elapsed);
+  state.elapsed = now;
   const frameRate = 1 / dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
 
@@ -385,25 +380,25 @@ function onUpdate(state: RenderThreadState) {
 
   renderer.render(state.scene, state.camera);
 
+  for (let i = 0; i < renderConfig.systems.length; i++) {
+    renderConfig.systems[i](state);
+  }
+
   for (let i = 0; i < state.postSystems.length; i++) {
     state.postSystems[i](state);
   }
 
-  const end = performance.now();
-
-  const frameDuration = (end - start) / 1000;
+  const stats = getModule(state, StatsModule);
 
   if (bufferSwapped) {
-    if (staleTripleBufferCounter > 1) {
-      staleFrameCounter++;
+    if (stats.staleTripleBufferCounter > 1) {
+      stats.staleFrameCounter++;
     }
 
-    staleTripleBufferCounter = 0;
+    stats.staleTripleBufferCounter = 0;
   } else {
-    staleTripleBufferCounter++;
+    stats.staleTripleBufferCounter++;
   }
-
-  writeRenderWorkerStats(statsBuffer, dt, frameDuration, renderer, staleFrameCounter);
 }
 
 function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
