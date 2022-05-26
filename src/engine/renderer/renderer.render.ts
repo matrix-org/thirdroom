@@ -12,11 +12,10 @@ import {
   WebGLRenderer,
 } from "three";
 
-import { swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import { createTripleBufferView, getReadView, TripleBufferView } from "../allocator/TripleBufferView";
-import { createRenderView, RenderableView } from "../component/renderable";
-import { clamp, createTransformView, TransformView } from "../component/transform";
-import { tickRate } from "../config.common";
+import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import { RenderableView } from "../component/renderable";
+import { clamp, TransformView } from "../component/transform";
+import { maxEntities, tickRate } from "../config.common";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { RenderThreadState } from "../RenderWorker";
 import {
@@ -49,6 +48,7 @@ import { CameraResourceLoader } from "../resources/CameraResourceLoader";
 import { LightResourceLoader } from "../resources/LightResourceLoader";
 import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
 import { PostMessageTarget } from "../WorkerMessage";
+import { createCursorBuffer, addViewMatrix4, addView, CursorBuffer } from "../allocator/CursorBuffer";
 
 export interface Renderable {
   object?: Object3D;
@@ -65,8 +65,8 @@ interface RendererModuleState {
   camera: Camera;
   renderer: WebGLRenderer;
   renderableMessageQueue: RenderableMessages[];
-  transformView: TripleBufferView<TransformView>;
-  renderableView: TripleBufferView<RenderableView>;
+  transformViews: TransformView[];
+  renderableViews: RenderableView[];
   renderableTripleBuffer: TripleBuffer;
   renderables: Renderable[];
   renderableIndices: Map<number, number>;
@@ -100,8 +100,26 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
 
     const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
 
-    const transformView = createTripleBufferView(createTransformView, renderableTripleBuffer);
-    const renderableView = createTripleBufferView(createRenderView, renderableTripleBuffer);
+    const cursorBuffers = renderableTripleBuffer.buffers.map((b) => createCursorBuffer(b));
+
+    const transformViews = cursorBuffers.map(
+      (buffer) =>
+        ({
+          // note: needs synced with renderableBuffer properties in game worker
+          // todo: abstract the need to sync structure with renderableBuffer properties
+          worldMatrix: addViewMatrix4(buffer, maxEntities),
+          worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
+        } as TransformView)
+    );
+
+    const renderableViews = cursorBuffers.map(
+      (buffer) =>
+        ({
+          resourceId: addView(buffer as unknown as CursorBuffer, Uint32Array, maxEntities),
+          interpolate: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+          visible: addView(buffer as unknown as CursorBuffer, Uint8Array, maxEntities),
+        } as RenderableView)
+    );
 
     return {
       needsResize: true,
@@ -111,8 +129,8 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
       camera,
       renderer,
       renderableMessageQueue: [],
-      transformView,
-      renderableView,
+      transformViews,
+      renderableViews,
       renderableTripleBuffer,
       renderableIndices: new Map(),
       renderables: [],
@@ -160,7 +178,7 @@ const tempScale = new Vector3();
 
 export function RendererSystem(state: RenderThreadState) {
   const rendererState = getModule(state, RendererModule);
-  const { renderableTripleBuffer, transformView, renderableView, renderables } = rendererState;
+  const { renderableTripleBuffer, transformViews, renderableViews, renderables } = rendererState;
   const stats = getModule(state, StatsModule);
 
   const frameRate = 1 / state.dt;
@@ -170,8 +188,9 @@ export function RendererSystem(state: RenderThreadState) {
 
   const bufferSwapped = swapReadBuffer(renderableTripleBuffer);
 
-  const Transform = getReadView(transformView);
-  const Renderable = getReadView(renderableView);
+  const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
+  const Transform = transformViews[bufferIndex];
+  const Renderable = renderableViews[bufferIndex];
 
   for (let i = 0; i < renderables.length; i++) {
     const { object, helper, eid } = renderables[i];
