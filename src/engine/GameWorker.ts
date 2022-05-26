@@ -13,7 +13,7 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { registerDefaultPrefabs } from "./prefab";
 import { registerModules } from "./module/module.common";
 import gameConfig from "./config.game";
-import { GameState, IInitialGameThreadState, RenderState, World } from "./GameTypes";
+import { GameState, World } from "./GameTypes";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -82,7 +82,6 @@ async function onInit({
     renderWorkerMessagePort.start();
   }
 
-  const { renderableTripleBuffer } = initialGameWorkerState as IInitialGameThreadState;
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);
@@ -97,12 +96,8 @@ async function onInit({
   addTransformComponent(world, camera);
   addChild(scene, camera);
 
-  const renderer: RenderState = {
-    tripleBuffer: renderableTripleBuffer,
-    port: renderPort,
-  };
-
   const state: GameState = {
+    renderPort,
     elapsed: performance.now(),
     dt: 0,
     world,
@@ -110,7 +105,6 @@ async function onInit({
     camera,
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
-    renderer,
     systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),

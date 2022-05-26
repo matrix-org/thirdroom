@@ -11,20 +11,15 @@ export type World = IWorld;
 
 export type RenderPort = MessagePort | (typeof globalThis & Worker);
 
-export interface RenderState {
-  tripleBuffer: TripleBuffer;
-  port: RenderPort;
-}
-
 export interface GameState extends BaseThreadContext {
   elapsed: number;
   dt: number;
   world: World;
-  renderer: RenderState;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
   scene: number;
   camera: number;
+  renderPort: RenderPort;
 }
 
 export interface IInitialGameThreadState {
