@@ -3,7 +3,7 @@ import { ok, strictEqual } from "assert";
 import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
 
 import { Transform } from "../../../src/engine/component/transform";
-import { GameState } from "../../../src/engine/GameWorker";
+import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
   deserializeCreates,

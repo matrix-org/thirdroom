@@ -17,15 +17,11 @@ export interface RenderState {
   port: RenderPort;
 }
 
-export interface TimeState {
+export interface GameState extends BaseThreadContext {
   elapsed: number;
   dt: number;
-}
-
-export interface GameState extends BaseThreadContext {
   world: World;
   renderer: RenderState;
-  time: TimeState;
   resourceManager: RemoteResourceManager;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;

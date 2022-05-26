@@ -5,8 +5,8 @@ import { GameState } from "./GameTypes";
 
 export function TimeSystem(state: GameState) {
   const now = performance.now();
-  state.time.dt = (now - state.time.elapsed) / 1000;
-  state.time.elapsed = now;
+  state.dt = (now - state.elapsed) / 1000;
+  state.elapsed = now;
 }
 
 export const UpdateWorldMatrixSystem = (state: GameState) => {

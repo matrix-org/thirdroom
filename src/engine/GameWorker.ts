@@ -19,7 +19,7 @@ import { exportGLTF } from "./gltf/exportGLTF";
 import { registerDefaultPrefabs } from "./prefab";
 import { registerModules } from "./module/module.common";
 import gameConfig from "./config.game";
-import { GameState, RenderState, TimeState, World } from "./GameTypes";
+import { GameState, RenderState, World } from "./GameTypes";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -130,12 +130,9 @@ async function onInit({
     port: renderPort,
   };
 
-  const time: TimeState = {
+  const state: GameState = {
     elapsed: performance.now(),
     dt: 0,
-  };
-
-  const state: GameState = {
     world,
     scene,
     camera,
@@ -143,7 +140,6 @@ async function onInit({
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     renderer,
-    time,
     systems: new Map(),
     messageHandlers: new Map(),
     modules: new Map(),
@@ -169,7 +165,7 @@ function update(state: GameState) {
     gameConfig.systems[i](state);
   }
 
-  const frameDuration = performance.now() - state.time.elapsed;
+  const frameDuration = performance.now() - state.elapsed;
   const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
   setTimeout(() => update(state), remainder);
 }
