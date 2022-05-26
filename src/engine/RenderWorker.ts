@@ -53,12 +53,9 @@ import { LightResourceLoader } from "./resources/LightResourceLoader";
 import { exportSceneAsGLTF } from "./gltf/GLTFExporter";
 import { StatsBuffer } from "./stats/stats.common";
 import { writeRenderWorkerStats } from "./stats/stats.render";
-import {
-  initRendererRaycaster,
-  initRendererRaycasterState,
-  RendererRaycasterState,
-} from "./raycaster/raycaster.renderer";
 import { EditorRendererState, initEditorRendererState } from "./editor/editor.renderer";
+import { BaseThreadContext, registerModules } from "./module/module.common";
+import renderConfig from "./config.render";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -115,7 +112,9 @@ export interface Renderable {
 
 type RenderThreadSystem = (state: RenderThreadState) => void;
 
-export interface RenderThreadState {
+export type IInitialRenderThreadState = {};
+
+export interface RenderThreadState extends BaseThreadContext {
   needsResize: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -133,11 +132,9 @@ export interface RenderThreadState {
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;
   statsBuffer: StatsBuffer;
-  raycaster: RendererRaycasterState;
   editor: EditorRendererState;
   preSystems: RenderThreadSystem[];
   postSystems: RenderThreadSystem[];
-  messageHandlers: Partial<{ [T in WorkerMessages as T["type"]]: (gameState: RenderThreadState, message: T) => void }>;
 }
 
 let _state: RenderThreadState;
@@ -167,10 +164,12 @@ function onMessage({ data }: any) {
     return;
   }
 
-  const handler = _state.messageHandlers[message.type];
+  const handlers = _state.messageHandlers.get(message.type);
 
-  if (handler) {
-    handler(_state, message as any);
+  if (handlers) {
+    for (const handler of handlers) {
+      handler(_state, message as any);
+    }
     return;
   }
 
@@ -288,13 +287,14 @@ async function onInit({
     gameWorkerMessageTarget,
     statsBuffer,
     editor: initEditorRendererState(),
-    raycaster: initRendererRaycasterState(),
-    messageHandlers: {},
+    messageHandlers: new Map(),
     preSystems: [],
     postSystems: [],
+    systems: new Map(),
+    modules: new Map(),
   };
 
-  initRendererRaycaster(state);
+  await registerModules({}, state, renderConfig.modules);
 
   console.log("RenderWorker initialized");
 

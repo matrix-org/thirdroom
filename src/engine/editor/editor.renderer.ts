@@ -1,3 +1,4 @@
+import { registerMessageHandler } from "../module/module.common";
 import { RenderThreadState } from "../RenderWorker";
 import { SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 
@@ -16,9 +17,9 @@ export function initEditorRendererState(): EditorRendererState {
 }
 
 export function initEditorRenderer(state: RenderThreadState) {
-  state.messageHandlers[WorkerMessageType.LoadEditor] = onLoadEditor;
-  state.messageHandlers[WorkerMessageType.DisposeEditor] = onDisposeEditor;
-  state.messageHandlers[WorkerMessageType.SelectionChanged] = onSelectionChanged;
+  registerMessageHandler(state, WorkerMessageType.LoadEditor, onLoadEditor);
+  registerMessageHandler(state, WorkerMessageType.DisposeEditor, onDisposeEditor);
+  registerMessageHandler(state, WorkerMessageType.SelectionChanged, onSelectionChanged);
   //state.preSystems.push(EditorRendererSystem);
 }
 
