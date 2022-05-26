@@ -1,4 +1,3 @@
-import { onAddResourceRef, onLoadResource, onRemoveResourceRef } from "./resources/ResourceManager";
 import {
   InitializeRenderWorkerMessage,
   WorkerMessages,
@@ -8,7 +7,7 @@ import {
 } from "./WorkerMessage";
 import { registerModules } from "./module/module.common";
 import renderConfig from "./config.render";
-import { onRenderableMessage, onResize, onStart, RenderThreadState } from "./renderer/renderer.render";
+import { RenderThreadState } from "./renderer/renderer.render";
 
 let localEventTarget: EventTarget | undefined;
 
@@ -79,30 +78,6 @@ function onMessage({ data }: any) {
       handler(_state, message as any);
     }
     return;
-  }
-
-  switch (message.type) {
-    case WorkerMessageType.StartRenderWorker:
-      onStart(_state, message);
-      break;
-    case WorkerMessageType.RenderWorkerResize:
-      onResize(_state, message);
-      break;
-    case WorkerMessageType.AddRenderable:
-    case WorkerMessageType.RemoveRenderable:
-    case WorkerMessageType.SetActiveCamera:
-    case WorkerMessageType.SetActiveScene:
-      onRenderableMessage(_state, message);
-      break;
-    case WorkerMessageType.LoadResource:
-      onLoadResource(_state, message);
-      break;
-    case WorkerMessageType.AddResourceRef:
-      onAddResourceRef(_state, message);
-      break;
-    case WorkerMessageType.RemoveResourceRef:
-      onRemoveResourceRef(_state, message);
-      break;
   }
 }
 

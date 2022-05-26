@@ -17,7 +17,7 @@ import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/T
 import { clamp } from "../component/transform";
 import { maxEntities, tickRate } from "../config.common";
 import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
-import { BaseThreadContext, defineModule, getModule } from "../module/module.common";
+import { BaseThreadContext, defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { CameraResourceLoader } from "../resources/CameraResourceLoader";
 import { GeometryResourceLoader } from "../resources/GeometryResourceLoader";
 import { LightResourceLoader } from "../resources/LightResourceLoader";
@@ -25,6 +25,9 @@ import { MaterialResourceLoader } from "../resources/MaterialResourceLoader";
 import { MeshResourceLoader } from "../resources/MeshResourceLoader";
 import {
   createResourceManager,
+  onAddResourceRef,
+  onLoadResource,
+  onRemoveResourceRef,
   registerResourceLoader,
   ResourceManager,
   ResourceState,
@@ -171,10 +174,20 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
       renderableViews,
     };
   },
-  init(ctx) {},
+  init(ctx) {
+    registerMessageHandler(ctx, WorkerMessageType.StartRenderWorker, onStart);
+    registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize);
+    registerMessageHandler(ctx, WorkerMessageType.AddRenderable, onRenderableMessage);
+    registerMessageHandler(ctx, WorkerMessageType.RemoveRenderable, onRenderableMessage);
+    registerMessageHandler(ctx, WorkerMessageType.SetActiveCamera, onRenderableMessage);
+    registerMessageHandler(ctx, WorkerMessageType.SetActiveScene, onRenderableMessage);
+    registerMessageHandler(ctx, WorkerMessageType.LoadResource, onLoadResource as any);
+    registerMessageHandler(ctx, WorkerMessageType.AddResourceRef, onAddResourceRef);
+    registerMessageHandler(ctx, WorkerMessageType.RemoveResourceRef, onRemoveResourceRef);
+  },
 });
 
-export function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
+function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
   const { renderer } = getModule(state, RendererModule);
   renderer.setAnimationLoop(() => onUpdate(state));
 }
@@ -286,19 +299,19 @@ function onUpdate(state: RenderThreadState) {
   }
 }
 
-export function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }
 
-export function onRenderableMessage(state: RenderThreadState, message: RenderableMessages) {
+function onRenderableMessage(state: RenderThreadState, message: any) {
   const { renderableMessageQueue } = getModule(state, RendererModule);
   renderableMessageQueue.push(message);
 }
 
-export function processRenderableMessages(state: RenderThreadState) {
+function processRenderableMessages(state: RenderThreadState) {
   const { renderableMessageQueue } = getModule(state, RendererModule);
   while (renderableMessageQueue.length) {
     const message = renderableMessageQueue.shift() as RenderableMessages;
@@ -320,7 +333,7 @@ export function processRenderableMessages(state: RenderThreadState) {
   }
 }
 
-export function onAddRenderable(state: RenderThreadState, message: AddRenderableMessage) {
+function onAddRenderable(state: RenderThreadState, message: AddRenderableMessage) {
   const { resourceId, eid } = message;
   const { renderableMessageQueue, renderableIndices, renderables, objectToEntityMap, scene, resourceManager } =
     getModule(state, RendererModule);
@@ -390,7 +403,7 @@ export function onAddRenderable(state: RenderThreadState, message: AddRenderable
   );
 }
 
-export function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRenderableMessage) {
+function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRenderableMessage) {
   const { renderableIndices, renderables, objectToEntityMap, scene } = getModule(state, RendererModule);
 
   const index = renderableIndices.get(eid);
@@ -415,7 +428,7 @@ export function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRend
   }
 }
 
-export function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: SetActiveSceneMessage) {
+function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: SetActiveSceneMessage) {
   const rendererState = getModule(state, RendererModule);
   const resourceInfo = rendererState.resourceManager.store.get(resourceId);
 
@@ -442,7 +455,7 @@ export function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: 
   }
 }
 
-export function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMessage) {
+function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMessage) {
   const renderModule = getModule(state, RendererModule);
   const { renderableIndices, renderables } = renderModule;
   const index = renderableIndices.get(eid);

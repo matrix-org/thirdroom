@@ -1,6 +1,5 @@
 import { defineModule, getModule } from "../module/module.common";
-import { RendererModule } from "../renderer/renderer.render";
-import { RenderThreadState, IInitialRenderThreadState } from "../RenderWorker";
+import { IInitialRenderThreadState, RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { Stats, StatsBuffer } from "./stats.common";
 
 interface StatsModuleState {
