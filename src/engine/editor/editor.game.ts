@@ -34,7 +34,7 @@ import {
   enableActionMap,
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import { hierarchyBuffer } from "../component/buffers";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { InputModule } from "../input/input.game";
@@ -59,7 +59,7 @@ export interface EditorModuleState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
-  hierarchyTripleBuffer: TripleBufferState;
+  hierarchyTripleBuffer: TripleBuffer;
 }
 
 /******************
@@ -253,7 +253,7 @@ function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   const activeEntity = editor.activeEntity;
 
   let activeEntityComponents: number[] | undefined;
-  let activeEntityTripleBuffer: TripleBufferState | undefined;
+  let activeEntityTripleBuffer: TripleBuffer | undefined;
 
   if (editor.activeEntityChanged) {
     // TODO: collect active entity components and construct activeEntityTripleBuffer

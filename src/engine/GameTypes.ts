@@ -1,6 +1,6 @@
 import { IWorld } from "bitecs";
 
-import { TripleBufferState } from "./allocator/TripleBuffer";
+import { TripleBuffer } from "./allocator/TripleBuffer";
 import { TripleBufferView } from "./allocator/TripleBufferView";
 import { InputState } from "./input/input.common";
 import { BaseThreadContext, ThreadSystem } from "./module/module.common";
@@ -13,7 +13,7 @@ export type World = IWorld;
 export type RenderPort = MessagePort | (typeof globalThis & Worker);
 
 export interface RenderState {
-  tripleBuffer: TripleBufferState;
+  tripleBuffer: TripleBuffer;
   port: RenderPort;
 }
 
@@ -36,7 +36,7 @@ export interface GameState extends BaseThreadContext {
 
 export interface IInitialGameThreadState {
   inputStateTripleBufferView: TripleBufferView<InputState>;
-  audioTripleBuffer: TripleBufferState;
-  hierarchyTripleBuffer: TripleBufferState;
+  audioTripleBuffer: TripleBuffer;
+  hierarchyTripleBuffer: TripleBuffer;
   statsBuffer: StatsBuffer;
 }

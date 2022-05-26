@@ -3,13 +3,13 @@ import { pipe } from "bitecs";
 import { renderableBuffer } from "../component/buffers";
 import { NOOP } from "../config.common";
 import { GameState, IInitialGameThreadState } from "../GameTypes";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import { WorkerMessageType } from "../WorkerMessage";
 import { defineModule, getModule } from "../module/module.common";
 import { enteredOwnedPlayerQuery } from "../network/network.game";
 
 interface GameAudioState {
-  tripleBuffer: TripleBufferState;
+  tripleBuffer: TripleBuffer;
 }
 
 export const AudioModule = defineModule<GameState, IInitialGameThreadState, GameAudioState>({

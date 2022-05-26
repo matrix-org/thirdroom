@@ -44,7 +44,7 @@ import {
   SetActiveSceneMessage,
   PostMessageTarget,
 } from "./WorkerMessage";
-import { TripleBufferState } from "./allocator/TripleBuffer";
+import { TripleBuffer } from "./allocator/TripleBuffer";
 import { SceneResourceLoader } from "./resources/SceneResourceLoader";
 import { TextureResourceLoader } from "./resources/TextureResourceLoader";
 import { LightResourceLoader } from "./resources/LightResourceLoader";
@@ -126,7 +126,7 @@ export interface RenderThreadState extends BaseThreadContext {
   renderables: Renderable[];
   objectToEntityMap: Map<Object3D, number>;
   renderableIndices: Map<number, number>;
-  renderableTripleBuffer: TripleBufferState;
+  renderableTripleBuffer: TripleBuffer;
   transformViews: TransformView[];
   renderableViews: RenderableView[];
   gameWorkerMessageTarget: PostMessageTarget;

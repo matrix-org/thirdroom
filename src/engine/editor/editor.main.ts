@@ -2,7 +2,7 @@ import EventEmitter from "events";
 
 import { ComponentInfo } from "../component/types";
 import { ActiveEntityView, createActiveEntityViews, EditorEventType, Selection } from "./editor.common";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBufferState } from "../allocator/TripleBuffer";
+import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import {
   ComponentInfoChangedMessage,
   ComponentPropertyChangedMessage,
@@ -36,10 +36,10 @@ export interface EditorModuleState extends EventEmitter {
   activeEntityComponents?: number[];
   componentInfoMap: Map<number, ComponentInfo>;
   componentProperties: Map<number, any>;
-  hierarchyTripleBuffer: TripleBufferState;
+  hierarchyTripleBuffer: TripleBuffer;
   hierarchyViews: HierarchyView[];
   activeHierarchyView: HierarchyView;
-  activeEntityTripleBuffer?: TripleBufferState;
+  activeEntityTripleBuffer?: TripleBuffer;
   activeEntityViews?: ActiveEntityView[];
   activeEntityView?: ActiveEntityView;
 }

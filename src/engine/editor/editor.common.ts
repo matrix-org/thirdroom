@@ -2,7 +2,7 @@ import { addViewByComponentPropertyType, createCursorBuffer } from "../allocator
 import { TypedArray } from "../allocator/types";
 import { ComponentInfo } from "../component/types";
 import { maxEntities } from "../config.common";
-import { TripleBufferState } from "../allocator/TripleBuffer";
+import { TripleBuffer } from "../allocator/TripleBuffer";
 
 export interface Selection {
   activeEntity?: number;
@@ -22,7 +22,7 @@ export interface ActiveEntityView {
 }
 
 export function createActiveEntityViews(
-  activeEntityTripleBuffer: TripleBufferState,
+  activeEntityTripleBuffer: TripleBuffer,
   activeEntityComponents: number[],
   componentInfoMap: Map<number, ComponentInfo>
 ): ActiveEntityView[] {

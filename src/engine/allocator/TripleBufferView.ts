@@ -1,10 +1,10 @@
 import { clearCursorBuffer, createCursorBuffer, CursorBuffer } from "./CursorBuffer";
-import { createTripleBuffer, getReadBufferIndex, getWriteBufferIndex, TripleBufferState } from "./TripleBuffer";
+import { createTripleBuffer, getReadBufferIndex, getWriteBufferIndex, TripleBuffer } from "./TripleBuffer";
 
 const $cursorBuffers = Symbol("cursorBuffers");
 
 export interface TripleBufferView<T> {
-  tripleBuffer: TripleBufferState;
+  tripleBuffer: TripleBuffer;
   views: T[];
   [$cursorBuffers]: CursorBuffer[];
 }
