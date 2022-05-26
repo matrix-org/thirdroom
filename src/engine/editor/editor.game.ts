@@ -5,6 +5,7 @@ import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
 import {
   AddComponentMessage,
+  //ExportGLTFMessage,
   RemoveComponentMessage,
   SelectionChangedMessage,
   SetComponentPropertyMessage,
@@ -38,6 +39,10 @@ import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/T
 import { hierarchyBuffer } from "../component/buffers";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { InputModule } from "../input/input.game";
+
+// TODO: Importing this module changes the order of Renderable / Transform imports
+// Which in turn changes the cursor buffer view order and breaks transforms.
+//import { exportGLTF } from "../gltf/exportGLTF";
 
 /*********
  * Types *
@@ -94,6 +99,7 @@ export const EditorModule = defineModule<GameState, IInitialGameThreadState, Edi
       registerMessageHandler(ctx, WorkerMessageType.AddComponent, onEditorMessage),
       registerMessageHandler(ctx, WorkerMessageType.RemoveComponent, onEditorMessage),
       registerMessageHandler(ctx, WorkerMessageType.SetComponentProperty, onEditorMessage),
+      //registerMessageHandler(ctx, WorkerMessageType.ExportGLTF, onExportGLTF),
     ];
 
     registerTransformComponent(ctx);
@@ -180,6 +186,10 @@ function onSetComponentProperty(state: GameState, message: SetComponentPropertyM
     setter(state, message.entities[i], message.value);
   }
 }
+
+// function onExportGLTF(state: GameState, message: ExportGLTFMessage) {
+//   exportGLTF(state, state.scene);
+// }
 
 /***********
  * Systems *

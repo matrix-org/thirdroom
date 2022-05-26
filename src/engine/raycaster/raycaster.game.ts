@@ -68,7 +68,7 @@ export function createRay(): RayId {
 
 export function raycast(state: GameState, rayId: RayId, origin: vec3, direction: vec3): void {
   // TODO: Improve raycast perf by using a SharedArrayBuffer
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.Raycast,
     rayId,
     origin,

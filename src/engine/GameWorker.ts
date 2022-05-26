@@ -9,9 +9,8 @@ import {
   GameWorkerInitializedMessage,
   GameWorkerErrorMessage,
 } from "./WorkerMessage";
-import { exportGLTF } from "./gltf/exportGLTF";
 import { registerDefaultPrefabs } from "./prefab";
-import { registerModules } from "./module/module.common";
+import { registerMessageHandler, registerModules } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
 
@@ -44,40 +43,7 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
 
 workerScope.addEventListener("message", onInitMessage);
 
-const onMessage =
-  (state: GameState) =>
-  ({ data }: any) => {
-    if (typeof data !== "object") {
-      return;
-    }
-
-    const message = data as WorkerMessages;
-
-    const handlers = state.messageHandlers.get(message.type);
-
-    if (handlers) {
-      for (let i = 0; i < handlers.length; i++) {
-        handlers[i](state, message);
-      }
-      return;
-    }
-
-    // TODO: This switch statement is doing a lot of heavy lifting. Move to the message handler map above.
-    switch (message.type) {
-      case WorkerMessageType.StartGameWorker:
-        onStart(state);
-        break;
-
-      case WorkerMessageType.ExportScene:
-        exportGLTF(state, state.scene);
-        break;
-    }
-  };
-
-async function onInit({
-  renderWorkerMessagePort,
-  initialGameWorkerState,
-}: InitializeGameWorkerMessage): Promise<GameState> {
+async function onInit({ renderWorkerMessagePort, initialGameWorkerState }: InitializeGameWorkerMessage) {
   if (renderWorkerMessagePort) {
     renderWorkerMessagePort.start();
   }
@@ -110,10 +76,26 @@ async function onInit({
     modules: new Map(),
   };
 
-  workerScope.addEventListener("message", onMessage(state));
+  const onMessage = ({ data }: MessageEvent) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    const handlers = state.messageHandlers.get(message.type);
+
+    if (handlers) {
+      for (let i = 0; i < handlers.length; i++) {
+        handlers[i](state, message);
+      }
+    }
+  };
+
+  workerScope.addEventListener("message", onMessage);
 
   if (renderWorkerMessagePort) {
-    renderWorkerMessagePort.addEventListener("message", onMessage(state));
+    renderWorkerMessagePort.addEventListener("message", onMessage);
   }
 
   await registerModules(
@@ -127,7 +109,7 @@ async function onInit({
 
   registerDefaultPrefabs(state);
 
-  return state;
+  registerMessageHandler(state, WorkerMessageType.StartGameWorker, onStart);
 }
 
 function onStart(state: GameState) {

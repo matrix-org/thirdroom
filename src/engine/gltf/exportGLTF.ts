@@ -36,7 +36,7 @@ function serializeEntity(state: GameState, eid: number): GLTFEntityDescription {
 }
 
 export function exportGLTF(state: GameState, rootEid: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.ExportGLTF,
     scene: serializeEntity(state, rootEid),
   } as ExportGLTFMessage);
