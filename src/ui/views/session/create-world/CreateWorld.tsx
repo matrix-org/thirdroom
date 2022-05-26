@@ -28,12 +28,12 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { WindowFooter } from "../../components/window/WindowFooter";
 import { Content } from "../../../atoms/content/Content";
-import { CreateWorldPreview } from "./CreateWorldPreview";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import { SceneUpload } from "./SceneUpload";
 import "./CreateWorld.css";
 import { ScenePreviewUpload } from "./ScenePreviewUpload";
+import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -274,9 +274,14 @@ export function CreateWorld() {
           }
           aside={
             <WindowAside className="flex">
-              <CreateWorldPreview
+              <ScenePreview
                 className="grow"
                 src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+                fallback={
+                  <Text variant="b3" color="surface-low" weight="medium">
+                    Your uploaded scene preview will appear here.
+                  </Text>
+                }
               />
             </WindowAside>
           }
