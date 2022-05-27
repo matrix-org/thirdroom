@@ -1,4 +1,4 @@
-.UserProfile__content {
+.UserProfileOverview__content {
   padding: var(--sp-xs) var(--sp-md);
 
   & > * {

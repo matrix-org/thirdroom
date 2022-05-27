@@ -1,7 +1,7 @@
 .SegmentControlItem {
   padding: var(--sp-xxs) var(--sp-xs);
   cursor: pointer;
-  border-radius: var(--br-xxs);
+  border-radius: var(--br-xs);
 
   &:hover,
   &:focus {

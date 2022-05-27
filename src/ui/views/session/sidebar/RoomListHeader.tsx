@@ -4,7 +4,6 @@ import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { RoomListTab } from "../../components/room-list-tab/RoomListTab";
 import { useStore, RoomListTabs, OverlayWindow } from "../../../hooks/useStore";
-import { useUserProfile } from "../../../hooks/useUserProfile";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import HomeIC from "../../../../../res/ic/home.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
@@ -19,8 +18,8 @@ interface IRoomListHeader {
 }
 
 export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
-  const { session, logout } = useHydrogen(true);
-  const { userId, displayName, avatarUrl } = useUserProfile(session);
+  const { logout } = useHydrogen(true);
+  const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
   return (
@@ -38,7 +37,7 @@ export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
         <Avatar
           onClick={() => false /* used for keyboard focus */}
           shape="circle"
-          name={displayName ?? userId}
+          name={displayName}
           bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
           imageSrc={avatarUrl}
         />

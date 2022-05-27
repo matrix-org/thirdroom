@@ -1807,6 +1807,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     createDehydratedDevice(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
     claimDehydratedDevice(deviceId: string, options?: BaseRequestOptions): IHomeServerRequest;
     profile(userId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    setProfileDisplayName(userId: string, displayName: string, options: BaseRequestOptions): IHomeServerRequest;
+    setProfileAvatarUrl(userId: string, avatarUrl: string, options: BaseRequestOptions): IHomeServerRequest;
     createRoom(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
     setAccountData(
       ownUserId: string,

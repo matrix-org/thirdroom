@@ -24,6 +24,15 @@ export enum WorldLoadState {
   Error = "error",
 }
 
+export interface UserProfileState {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+  setUserId: (id: string) => void;
+  setDisplayName: (name: string) => void;
+  setAvatarUrl: (url?: string) => void;
+}
+
 export interface OverlayState {
   isOpen: boolean;
   openOverlay(): void;
@@ -79,6 +88,7 @@ export interface PointerLockState {
 }
 
 export interface StoreState {
+  userProfile: UserProfileState;
   overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
@@ -91,6 +101,26 @@ export interface StoreState {
 
 export const useStore = create<StoreState>()(
   immer((set, get) => ({
+    userProfile: {
+      userId: "@dummy:server.xyz",
+      displayName: "dummy",
+      avatarUrl: undefined,
+      setUserId: (id) => {
+        set((state) => {
+          state.userProfile.userId = id;
+        });
+      },
+      setDisplayName: (name) => {
+        set((state) => {
+          state.userProfile.displayName = name;
+        });
+      },
+      setAvatarUrl: (url) => {
+        set((state) => {
+          state.userProfile.avatarUrl = url;
+        });
+      },
+    },
     overlay: {
       isOpen: true,
       openOverlay() {
