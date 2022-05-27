@@ -1,7 +1,14 @@
-import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import { updateMatrixWorld } from "../component/transform";
-import { GameState, IInitialGameThreadState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import {
+  commitToTripleBufferView,
+  createTripleBufferBackedObjectBufferView,
+  TripleBufferBackedObjectBufferView,
+} from "../allocator/ObjectBufferView";
+import { renderableObjectBufferView } from "../component/renderable";
+import { renderableSchema } from "../component/renderable.common";
+import { updateMatrixWorld, worldMatrixObjectBuffer } from "../component/transform";
+import { worldMatrixObjectBufferSchema } from "../component/transform.common";
+import { GameState } from "../GameTypes";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   remoteResourceLoaded,
   remoteResourceLoadError,
@@ -15,16 +22,43 @@ import {
   LoadErrorResourceMessage,
   WorkerMessageType,
 } from "../WorkerMessage";
+import { InitializeRendererTripleBuffersMessage, RendererMessageType, rendererModuleName } from "./renderer.common";
 
 interface GameRendererModuleState {
-  renderableTripleBuffer: TripleBuffer;
+  worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
+  renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
   resourceManager: RemoteResourceManager;
 }
 
-export const RendererModule = defineModule<GameState, IInitialGameThreadState, GameRendererModuleState>({
-  create({ renderableTripleBuffer, resourceManagerBuffer, renderPort }) {
+export const RendererModule = defineModule<GameState, GameRendererModuleState>({
+  name: rendererModuleName,
+  async create({ gameToRenderTripleBufferFlags, renderPort }, { sendMessage, waitForMessage }) {
+    const worldMatrixObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
+      worldMatrixObjectBufferSchema,
+      worldMatrixObjectBuffer,
+      gameToRenderTripleBufferFlags
+    );
+
+    const renderableObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
+      renderableSchema,
+      renderableObjectBufferView,
+      gameToRenderTripleBufferFlags
+    );
+
+    sendMessage<InitializeRendererTripleBuffersMessage>(
+      Thread.Render,
+      RendererMessageType.InitializeRendererTripleBuffers,
+      {
+        renderableObjectTripleBuffer,
+        worldMatrixObjectTripleBuffer,
+      }
+    );
+
+    const { resourceManagerBuffer } = await waitForMessage(RendererMessageType.InitializeResourceManager);
+
     return {
-      renderableTripleBuffer,
+      worldMatrixObjectTripleBuffer,
+      renderableObjectTripleBuffer,
       resourceManager: createRemoteResourceManager(resourceManagerBuffer, renderPort),
     };
   },
@@ -61,6 +95,6 @@ function onResourceDisposed(state: GameState, message: DisposedResourceMessage) 
 export const RenderableSystem = (state: GameState) => {
   const renderer = getModule(state, RendererModule);
   updateMatrixWorld(state.scene);
-  copyToWriteBuffer(renderer.renderableTripleBuffer, renderableBuffer);
-  swapWriteBuffer(renderer.renderableTripleBuffer);
+  commitToTripleBufferView(renderer.worldMatrixObjectTripleBuffer);
+  commitToTripleBufferView(renderer.renderableObjectTripleBuffer);
 };

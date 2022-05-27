@@ -1,6 +1,6 @@
 import { vec3 } from "gl-matrix";
 
-import { GameState, IInitialGameThreadState } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult, RayId } from "./raycaster.common";
@@ -18,7 +18,8 @@ export interface RaycasterModuleState {
  * Initialization *
  *****************/
 
-export const RaycasterModule = defineModule<GameState, IInitialGameThreadState, RaycasterModuleState>({
+export const RaycasterModule = defineModule<GameState, RaycasterModuleState>({
+  name: "raycaster",
   create() {
     return {
       messages: [],

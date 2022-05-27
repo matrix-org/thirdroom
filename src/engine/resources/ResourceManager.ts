@@ -1,9 +1,8 @@
-import { getModule } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
 import {
   AddResourceRefMessage,
   LoadResourceMessage,
   RemoveResourceRefMessage,
-  PostMessageTarget,
   WorkerMessageType,
 } from "../WorkerMessage";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
@@ -13,7 +12,6 @@ export interface ResourceManager {
   view: Uint32Array;
   store: Map<number, ResourceInfo<any, any>>;
   resourceLoaders: Map<string, ResourceLoader<any, any, any>>;
-  workerMessageTarget: PostMessageTarget;
 }
 
 export type ResourceLoaderFactory<Def extends ResourceDefinition, Resource, RemoteResource = undefined> = (
@@ -61,16 +59,12 @@ export function createResourceManagerBuffer() {
   return new SharedArrayBuffer(4);
 }
 
-export function createResourceManager(
-  buffer: SharedArrayBuffer,
-  workerMessageTarget: PostMessageTarget
-): ResourceManager {
+export function createResourceManager(buffer: SharedArrayBuffer): ResourceManager {
   return {
     buffer,
     view: new Uint32Array(buffer),
     store: new Map(),
     resourceLoaders: new Map(),
-    workerMessageTarget,
   };
 }
 
@@ -117,7 +111,8 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
       resourceInfo.resource = response.resource;
       resourceInfo.state = ResourceState.Loaded;
 
-      resourceManager.workerMessageTarget.postMessage(
+      state.sendMessage(
+        Thread.Game,
         {
           type: WorkerMessageType.ResourceLoaded,
           resourceId,
@@ -130,7 +125,7 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
       console.error(error);
       resourceInfo.state = ResourceState.Error;
       resourceInfo.error = error;
-      resourceManager.workerMessageTarget.postMessage({
+      state.sendMessage(Thread.Game, {
         type: WorkerMessageType.ResourceLoadError,
         resourceId,
         error,
@@ -172,7 +167,7 @@ export function onRemoveResourceRef(state: RenderThreadState, { resourceId }: Re
 
     resourceManager.store.delete(resourceId);
 
-    resourceManager.workerMessageTarget.postMessage({
+    state.sendMessage(Thread.Game, {
       type: WorkerMessageType.ResourceDisposed,
       resourceId,
     });

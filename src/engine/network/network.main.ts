@@ -1,5 +1,5 @@
 import { NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
-import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
+import { IMainThreadContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 
@@ -19,7 +19,8 @@ export interface NetworkModuleState {
  * Initialization *
  *****************/
 
-export const NetworkModule = defineModule<IMainThreadContext, IInitialMainThreadState, NetworkModuleState>({
+export const NetworkModule = defineModule<IMainThreadContext, NetworkModuleState>({
+  name: "network",
   create() {
     return {
       reliableChannels: new Map<string, RTCDataChannel>(),

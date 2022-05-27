@@ -1,28 +1,29 @@
-import { defineModule } from "../module/module.common";
-import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { createTripleBuffer } from "../allocator/TripleBuffer";
+import { defineModule, Thread } from "../module/module.common";
+import { IMainThreadContext } from "../MainThread";
 import { WorkerMessageType } from "../WorkerMessage";
-import { createResourceManagerBuffer } from "../resources/ResourceManager";
+import { RendererMessageType, rendererModuleName } from "./renderer.common";
 
 type MainRendererModuleState = {};
 
-export const RendererModule = defineModule<IMainThreadContext, IInitialMainThreadState, MainRendererModuleState>({
-  create() {
+export const RendererModule = defineModule<IMainThreadContext, MainRendererModuleState>({
+  name: rendererModuleName,
+  async create({ canvas }, { sendMessage }) {
+    const canvasTarget = window.OffscreenCanvas ? canvas.transferControlToOffscreen() : canvas;
+
+    sendMessage(
+      Thread.Render,
+      RendererMessageType.InitializeCanvas,
+      {
+        canvasTarget,
+        initialCanvasWidth: canvas.clientWidth,
+        initialCanvasHeight: canvas.clientHeight,
+      },
+      window.OffscreenCanvas && canvasTarget instanceof OffscreenCanvas ? [canvasTarget] : undefined
+    );
+
     return {};
   },
   init(ctx) {
-    const resourceManagerBuffer = createResourceManagerBuffer();
-
-    const renderableTripleBuffer = createTripleBuffer();
-
-    // GameWorker
-    ctx.initialGameWorkerState.renderableTripleBuffer = renderableTripleBuffer;
-    ctx.initialGameWorkerState.resourceManagerBuffer = resourceManagerBuffer;
-
-    // RenderWorker
-    ctx.initialRenderWorkerState.renderableTripleBuffer = renderableTripleBuffer;
-    ctx.initialRenderWorkerState.resourceManagerBuffer = resourceManagerBuffer;
-
     function onResize() {
       ctx.renderWorker.postMessage({
         type: WorkerMessageType.RenderWorkerResize,

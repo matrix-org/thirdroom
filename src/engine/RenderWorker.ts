@@ -2,14 +2,26 @@ import {
   InitializeRenderWorkerMessage,
   WorkerMessages,
   WorkerMessageType,
-  RenderWorkerErrorMessage,
   RenderWorkerInitializedMessage,
 } from "./WorkerMessage";
-import { registerModules } from "./module/module.common";
+import { Message, registerModules, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState } from "./renderer/renderer.render";
 
 let localEventTarget: EventTarget | undefined;
+
+let onMessage = ({ data }: any) => {
+  if (typeof data !== "object") {
+    return;
+  }
+
+  const message = data as WorkerMessages;
+
+  if (message.type === WorkerMessageType.InitializeRenderWorker) {
+    postToMainThread({ type: WorkerMessageType.RenderWorkerInitialized } as RenderWorkerInitializedMessage);
+    onInit(message);
+  }
+};
 
 const isWorker = typeof (window as any) === "undefined";
 
@@ -44,78 +56,54 @@ export default {
   ): void => localEventTarget!.removeEventListener(type, callback, options),
 };
 
-let _state: RenderThreadState;
-
-function onMessage({ data }: any) {
-  if (typeof data !== "object") {
-    return;
-  }
-
-  const message = data as WorkerMessages;
-
-  if (message.type === WorkerMessageType.InitializeRenderWorker) {
-    onInit(message)
-      .then((s) => {
-        _state = s;
-        postToMainThread({ type: WorkerMessageType.RenderWorkerInitialized } as RenderWorkerInitializedMessage);
-      })
-      .catch((error) => {
-        console.error(error);
-        postToMainThread({ type: WorkerMessageType.RenderWorkerError, error } as RenderWorkerErrorMessage);
-      });
-    return;
-  }
-
-  if (!_state) {
-    console.warn(`Render worker not initialized before processing ${message.type}`);
-    return;
-  }
-
-  const handlers = _state.messageHandlers.get(message.type);
-
-  if (handlers) {
-    for (const handler of handlers) {
-      handler(_state, message as any);
-    }
-    return;
-  }
-}
-
 async function onInit({
-  canvasTarget,
   gameWorkerMessageTarget,
-  initialCanvasWidth,
-  initialCanvasHeight,
-  initialRenderWorkerState,
+  gameToRenderTripleBufferFlags,
 }: InitializeRenderWorkerMessage): Promise<RenderThreadState> {
+  function renderWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
+    if (thread === Thread.Game) {
+      gameWorkerMessageTarget.postMessage(message, transferList);
+    } else if (thread === Thread.Main) {
+      postToMainThread(message, transferList);
+    }
+  }
+
+  const state: RenderThreadState = {
+    gameToRenderTripleBufferFlags,
+    elapsed: performance.now(),
+    dt: 0,
+    gameWorkerMessageTarget,
+    messageHandlers: new Map(),
+    systems: [],
+    modules: new Map(),
+    sendMessage: renderWorkerSendMessage,
+  };
+
+  onMessage = ({ data }: any) => {
+    if (typeof data !== "object") {
+      return;
+    }
+
+    const message = data as WorkerMessages;
+
+    const handlers = state.messageHandlers.get(message.type);
+
+    if (handlers) {
+      for (const handler of handlers) {
+        handler(state, message as any);
+      }
+    }
+  };
+
   gameWorkerMessageTarget.addEventListener("message", onMessage);
 
   if (gameWorkerMessageTarget instanceof MessagePort) {
     gameWorkerMessageTarget.start();
   }
 
-  const state: RenderThreadState = {
-    elapsed: performance.now(),
-    dt: 0,
-    gameWorkerMessageTarget,
-    messageHandlers: new Map(),
-    preSystems: [],
-    postSystems: [],
-    systems: [],
-    modules: new Map(),
-  };
+  await registerModules(state, renderConfig.modules);
 
-  await registerModules(
-    {
-      canvasTarget,
-      gameWorkerMessageTarget,
-      initialCanvasWidth,
-      initialCanvasHeight,
-      ...initialRenderWorkerState,
-    },
-    state,
-    renderConfig.modules
-  );
+  state.sendMessage(Thread.Main, { type: "render-worker-modules-registered" });
 
   console.log("RenderWorker initialized");
 

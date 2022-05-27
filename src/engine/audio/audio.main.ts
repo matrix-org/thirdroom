@@ -1,12 +1,17 @@
 import { Matrix4, Quaternion, Vector3 } from "three";
 
-import { addView, addViewMatrix4, createCursorBuffer } from "../allocator/CursorBuffer";
-import { maxEntities, NOOP } from "../config.common";
-import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import { NOOP } from "../config.common";
+import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { AudioMessageType, PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "./audio.common";
-import { TransformView } from "../renderer/renderer.render";
+import {
+  AudioMessageType,
+  InitializeAudioTransformsMessage,
+  PlayAudioMessage,
+  SetAudioListenerMessage,
+  SetAudioPeerEntityMessage,
+  SharedAudioTransforms,
+} from "./audio.common";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 
 /*********
  * Types *
@@ -14,8 +19,7 @@ import { TransformView } from "../renderer/renderer.render";
 
 export interface AudioModuleState {
   context: AudioContext;
-  tripleBuffer: TripleBuffer;
-  transformViews: TransformView[];
+  sharedAudioTransforms: SharedAudioTransforms;
   entityPanners: Map<number, PannerNode>;
   listenerEntity: number;
   peerEntities: Map<string, number>;
@@ -52,8 +56,9 @@ export interface AudioModuleState {
 └─L────R─┘
  */
 
-export const AudioModule = defineModule<IMainThreadContext, IInitialMainThreadState, AudioModuleState>({
-  create() {
+export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
+  name: "audio",
+  async create(ctx, { waitForMessage }) {
     const audioCtx = new AudioContext();
 
     const mainGain = new GainNode(audioCtx);
@@ -64,26 +69,17 @@ export const AudioModule = defineModule<IMainThreadContext, IInitialMainThreadSt
 
     const sampleCache = new Map<string, AudioBuffer>();
 
-    const tripleBuffer = createTripleBuffer();
-    const cursorBuffers = tripleBuffer.buffers.map((b) => createCursorBuffer(b));
-    const transformViews = cursorBuffers.map(
-      (buffer) =>
-        ({
-          // note: needs synced with renderableBuffer properties in game worker
-          // todo: abstract the need to sync structure with renderableBuffer properties
-          worldMatrix: addViewMatrix4(buffer, maxEntities),
-          worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
-        } as TransformView)
-    );
-
     const entityPanners = new Map<number, PannerNode>();
 
     const sampleQueue: [string, number][] = [];
 
+    const { sharedAudioTransforms } = await waitForMessage<InitializeAudioTransformsMessage>(
+      AudioMessageType.InitializeAudioTransforms
+    );
+
     return {
       context: audioCtx,
-      tripleBuffer,
-      transformViews,
+      sharedAudioTransforms,
       entityPanners,
       listenerEntity: NOOP,
       peerEntities: new Map(),
@@ -100,8 +96,6 @@ export const AudioModule = defineModule<IMainThreadContext, IInitialMainThreadSt
   },
   async init(ctx) {
     const audio = getModule(ctx, AudioModule);
-
-    ctx.initialGameWorkerState.audioTripleBuffer = audio.tripleBuffer;
 
     preloadDefaultAudio(audio);
 
@@ -280,8 +274,7 @@ export function MainThreadAudioSystem(mainThread: IMainThreadContext) {
     return audioModule;
   }
 
-  swapReadBuffer(audioModule.tripleBuffer);
-  const Transform = audioModule.transformViews[getReadBufferIndex(audioModule.tripleBuffer)];
+  const Transform = getReadObjectBufferView(audioModule.sharedAudioTransforms);
 
   tempMatrix4
     .fromArray(Transform.worldMatrix[audioModule.listenerEntity])

@@ -10,7 +10,7 @@ import {
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState, IInitialGameThreadState, World } from "../GameTypes";
+import { GameState, World } from "../GameTypes";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
@@ -23,7 +23,8 @@ interface PhysicsModuleState {
   handleMap: Map<number, number>;
 }
 
-export const PhysicsModule = defineModule<GameState, IInitialGameThreadState, PhysicsModuleState>({
+export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
+  name: "physics",
   async create() {
     await RAPIER.init();
 

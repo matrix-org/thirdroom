@@ -1,13 +1,16 @@
-import { GameState, IInitialGameThreadState } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
-import { Stats, StatsBuffer } from "./stats.common";
+import { InitializeStatsBufferMessage, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 interface StatsModuleState {
   statsBuffer: StatsBuffer;
 }
 
-export const StatsModule = defineModule<GameState, IInitialGameThreadState, StatsModuleState>({
-  create({ statsBuffer }) {
+export const StatsModule = defineModule<GameState, StatsModuleState>({
+  name: "stats",
+  async create(ctx, { waitForMessage }) {
+    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(StatsMessageType.InitializeStatsBuffer);
+
     return {
       statsBuffer,
     };

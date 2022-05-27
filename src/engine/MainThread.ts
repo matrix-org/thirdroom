@@ -1,19 +1,19 @@
 import GameWorker from "./GameWorker?worker";
 import {
-  GameWorkerInitializedMessage,
-  RenderWorkerInitializedMessage,
-  WorkerMessages,
   WorkerMessageType,
   PostMessageTarget,
   InitializeGameWorkerMessage,
   InitializeRenderWorkerMessage,
 } from "./WorkerMessage";
-import { BaseThreadContext, Message, registerModules } from "./module/module.common";
+import { BaseThreadContext, Message, registerMessageHandler, registerModules, Thread } from "./module/module.common";
 import mainThreadConfig from "./config.main";
+import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
 export interface IMainThreadContext extends BaseThreadContext {
+  mainToGameTripleBufferFlags: Uint8Array;
+  gameToMainTripleBufferFlags: Uint8Array;
   canvas: HTMLCanvasElement;
   animationFrameId?: number;
   gameWorker: Worker;
@@ -22,20 +22,31 @@ export interface IMainThreadContext extends BaseThreadContext {
   initialRenderWorkerState: { [key: string]: any };
 }
 
-export type IInitialMainThreadState = {};
-
 export async function MainThread(canvas: HTMLCanvasElement) {
   const gameWorker = new GameWorker();
 
   const {
     renderWorker,
-    canvasTarget,
     renderWorkerMessageTarget,
     gameWorkerMessageTarget,
     dispose: disposeRenderWorker,
   } = await initRenderWorker(canvas, gameWorker);
 
+  function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
+    if (thread === Thread.Game) {
+      gameWorker.postMessage(message, transferList);
+    } else if (thread === Thread.Render) {
+      renderWorker.postMessage(message, transferList);
+    }
+  }
+
+  const mainToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+
   const context: IMainThreadContext = {
+    mainToGameTripleBufferFlags,
+    gameToMainTripleBufferFlags,
     systems: mainThreadConfig.systems,
     modules: new Map(),
     canvas,
@@ -44,73 +55,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     messageHandlers: new Map(),
     initialGameWorkerState: {},
     initialRenderWorkerState: {},
+    sendMessage: mainThreadSendMessage,
   };
 
   const renderWorkerMessagePort =
     renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
-
-  /* Initialize all modules and retrieve data needed to send to workers */
-
-  const disposeModules = await registerModules(
-    {
-      canvas,
-    },
-    context,
-    mainThreadConfig.modules
-  );
-
-  /* Wait for workers to be ready */
-
-  await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
-    renderWorker.postMessage(
-      {
-        type: WorkerMessageType.InitializeRenderWorker,
-        gameWorkerMessageTarget,
-        canvasTarget,
-        initialCanvasWidth: canvas.clientWidth,
-        initialCanvasHeight: canvas.clientHeight,
-        initialRenderWorkerState: context.initialRenderWorkerState,
-      } as InitializeRenderWorkerMessage,
-      gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
-        ? [gameWorkerMessageTarget, canvasTarget]
-        : undefined
-    );
-
-    const onMessage = ({ data }: any): void => {
-      if (data.type === WorkerMessageType.RenderWorkerInitialized) {
-        resolve(data);
-        renderWorker.removeEventListener("message", onMessage);
-      } else if (data.type === WorkerMessageType.RenderWorkerError) {
-        reject(data.error);
-        renderWorker.removeEventListener("message", onMessage);
-      }
-    };
-
-    renderWorker.addEventListener("message", onMessage);
-  });
-
-  await new Promise<GameWorkerInitializedMessage>((resolve, reject) => {
-    context.gameWorker.postMessage(
-      {
-        type: WorkerMessageType.InitializeGameWorker,
-        renderWorkerMessagePort,
-        initialGameWorkerState: context.initialGameWorkerState,
-      } as InitializeGameWorkerMessage,
-      renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
-    );
-
-    const onMessage = ({ data }: { data: WorkerMessages }): void => {
-      if (data.type === WorkerMessageType.GameWorkerInitialized) {
-        resolve(data);
-        context.gameWorker.removeEventListener("message", onMessage);
-      } else if (data.type === WorkerMessageType.GameWorkerError) {
-        reject(data.error);
-        context.gameWorker.removeEventListener("message", onMessage);
-      }
-    };
-
-    context.gameWorker.addEventListener("message", onMessage);
-  });
 
   function onWorkerMessage(event: MessageEvent<Message<any>>) {
     const handlers = context.messageHandlers.get(event.data.type);
@@ -125,22 +74,94 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   context.gameWorker.addEventListener("message", onWorkerMessage);
   renderWorker.addEventListener("message", onWorkerMessage);
 
+  /* Initialize workers */
+
+  let onGameWorkerInitialized: (...args: any[]) => void;
+  let onRenderWorkerInitialized: (...args: any[]) => void;
+
+  const gameWorkerInitialized = new Promise((resolve) => {
+    onGameWorkerInitialized = resolve;
+  });
+  const renderWorkerInitialized = new Promise((resolve) => {
+    onRenderWorkerInitialized = resolve;
+  });
+
+  registerMessageHandler(context, WorkerMessageType.GameWorkerInitialized, () => {
+    onGameWorkerInitialized();
+  });
+  registerMessageHandler(context, WorkerMessageType.RenderWorkerInitialized, () => {
+    onRenderWorkerInitialized();
+  });
+
+  context.sendMessage(
+    Thread.Game,
+    {
+      type: WorkerMessageType.InitializeGameWorker,
+      renderWorkerMessagePort,
+      mainToGameTripleBufferFlags,
+      gameToMainTripleBufferFlags,
+      gameToRenderTripleBufferFlags,
+    } as InitializeGameWorkerMessage,
+    renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
+  );
+
+  context.sendMessage(
+    Thread.Render,
+    {
+      type: WorkerMessageType.InitializeRenderWorker,
+      gameWorkerMessageTarget,
+      gameToRenderTripleBufferFlags,
+    } as InitializeRenderWorkerMessage,
+    gameWorkerMessageTarget instanceof MessagePort ? [gameWorkerMessageTarget] : undefined
+  );
+
+  await Promise.all([gameWorkerInitialized, renderWorkerInitialized]);
+
+  /* Initialize all modules and retrieve data needed to send to workers */
+
+  const disposeModules = await registerModules(context, mainThreadConfig.modules);
+
+  /* Wait for other threads to have registered their modules */
+
+  let onGameWorkerModulesRegistered: (...args: any[]) => void;
+  let onRenderWorkerModulesRegistered: (...args: any[]) => void;
+
+  const gameWorkerModulesRegistered = new Promise((resolve) => {
+    onGameWorkerModulesRegistered = resolve;
+  });
+  const renderWorkerModulesRegistered = new Promise((resolve) => {
+    onRenderWorkerModulesRegistered = resolve;
+  });
+
+  registerMessageHandler(context, "game-worker-modules-registered", () => {
+    onGameWorkerModulesRegistered();
+  });
+  registerMessageHandler(context, "render-worker-modules-registered", () => {
+    onRenderWorkerModulesRegistered();
+  });
+
+  await Promise.all([gameWorkerModulesRegistered, renderWorkerModulesRegistered]);
+
   /* Start Workers */
 
-  renderWorker.postMessage({
+  context.sendMessage(Thread.Render, {
     type: WorkerMessageType.StartRenderWorker,
   });
 
-  context.gameWorker.postMessage({
+  context.sendMessage(Thread.Render, {
     type: WorkerMessageType.StartGameWorker,
   });
 
   /* Update loop */
 
   function update() {
+    swapReadBufferFlags(context.gameToMainTripleBufferFlags);
+
     for (let i = 0; i < context.systems.length; i++) {
       context.systems[i](context);
     }
+
+    swapWriteBufferFlags(context.mainToGameTripleBufferFlags);
 
     context.animationFrameId = requestAnimationFrame(update);
   }
@@ -169,7 +190,6 @@ async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
 
   let renderWorker: Worker;
-  let canvasTarget: HTMLCanvasElement | OffscreenCanvas;
   let renderWorkerMessageTarget: PostMessageTarget;
   let gameWorkerMessageTarget: PostMessageTarget;
 
@@ -177,7 +197,6 @@ async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
     const { default: RenderWorker } = await import("./RenderWorker?worker");
     renderWorker = new RenderWorker();
-    canvasTarget = canvas.transferControlToOffscreen();
     const interWorkerChannel = new MessageChannel();
     renderWorkerMessageTarget = interWorkerChannel.port1;
     gameWorkerMessageTarget = interWorkerChannel.port2;
@@ -187,12 +206,10 @@ async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
     renderWorker = result.default as Worker;
     renderWorkerMessageTarget = result.default;
     gameWorkerMessageTarget = gameWorker;
-    canvasTarget = canvas;
   }
 
   return {
     renderWorker,
-    canvasTarget,
     renderWorkerMessageTarget,
     gameWorkerMessageTarget,
     dispose() {

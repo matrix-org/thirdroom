@@ -1,7 +1,7 @@
 import { Event, Intersection, Object3D, Raycaster } from "three";
 
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { IInitialRenderThreadState, RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
 
@@ -10,7 +10,8 @@ export interface RendererRaycasterState {
   messages: RaycastMessage[];
 }
 
-export const RaycasterModule = defineModule<RenderThreadState, IInitialRenderThreadState, RendererRaycasterState>({
+export const RaycasterModule = defineModule<RenderThreadState, RendererRaycasterState>({
+  name: "raycaster",
   create() {
     return {
       raycaster: new Raycaster(),

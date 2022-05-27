@@ -3,6 +3,8 @@ import { TypedArray } from "../allocator/types";
 import { ComponentInfo } from "../component/types";
 import { maxEntities } from "../config.common";
 import { TripleBuffer } from "../allocator/TripleBuffer";
+import { TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { hierarchyObjectBufferSchema } from "../component/transform.common";
 
 export interface Selection {
   activeEntity?: number;
@@ -42,3 +44,15 @@ export function createActiveEntityViews(
     return activeEntityView;
   });
 }
+
+export type SharedHierarchyState = TripleBufferBackedObjectBufferView<typeof hierarchyObjectBufferSchema, ArrayBuffer>;
+
+export enum EditorMessageType {
+  InitializeEditorState = "InitializeEditorState",
+}
+
+export interface InitializeEditorStateMessage {
+  sharedHierarchyState: SharedHierarchyState;
+}
+
+export const editorModuleName = "editor";

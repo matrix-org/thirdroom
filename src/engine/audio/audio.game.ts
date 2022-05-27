@@ -1,20 +1,38 @@
 import { pipe } from "bitecs";
 
 import { NOOP } from "../config.common";
-import { GameState, IInitialGameThreadState } from "../GameTypes";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import { GameState } from "../GameTypes";
 import { WorkerMessageType } from "../WorkerMessage";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { enteredOwnedPlayerQuery } from "../network/network.game";
+import { AudioMessageType } from "./audio.common";
+import {
+  commitToTripleBufferView,
+  createTripleBufferBackedObjectBufferView,
+  TripleBufferBackedObjectBufferView,
+} from "../allocator/ObjectBufferView";
+import { worldMatrixObjectBufferSchema } from "../component/transform.common";
+import { worldMatrixObjectBuffer } from "../component/transform";
 
 interface GameAudioState {
-  tripleBuffer: TripleBuffer;
+  sharedAudioTransforms: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
 }
 
-export const AudioModule = defineModule<GameState, IInitialGameThreadState, GameAudioState>({
-  create: ({ audioTripleBuffer }) => ({
-    tripleBuffer: audioTripleBuffer,
-  }),
+export const AudioModule = defineModule<GameState, GameAudioState>({
+  name: "audio",
+  create(ctx, { sendMessage }) {
+    const sharedAudioTransforms = createTripleBufferBackedObjectBufferView(
+      worldMatrixObjectBufferSchema,
+      worldMatrixObjectBuffer,
+      ctx.gameToMainTripleBufferFlags
+    );
+
+    sendMessage(Thread.Main, AudioMessageType.InitializeAudioTransforms, {
+      sharedAudioTransforms,
+    });
+
+    return { sharedAudioTransforms };
+  },
   init() {},
 });
 
@@ -41,9 +59,8 @@ export const sendAudioPeerEntityMessage = (peerId: string, eid: number) =>
  */
 
 export const AudioTripleBufferSystem = (ctx: GameState) => {
-  const { tripleBuffer } = getModule(ctx, AudioModule);
-  copyToWriteBuffer(tripleBuffer, renderableBuffer);
-  swapWriteBuffer(tripleBuffer);
+  const { sharedAudioTransforms } = getModule(ctx, AudioModule);
+  commitToTripleBufferView(sharedAudioTransforms);
   return ctx;
 };
 

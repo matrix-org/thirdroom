@@ -7,12 +7,12 @@ import {
   WorkerMessages,
   WorkerMessageType,
   GameWorkerInitializedMessage,
-  GameWorkerErrorMessage,
 } from "./WorkerMessage";
 import { registerDefaultPrefabs } from "./prefab";
-import { registerMessageHandler, registerModules } from "./module/module.common";
+import { Message, registerMessageHandler, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
+import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -26,24 +26,22 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
   if (message.type === WorkerMessageType.InitializeGameWorker) {
     workerScope.removeEventListener("message", onInitMessage);
 
-    try {
-      await onInit(message);
+    postMessage({
+      type: WorkerMessageType.GameWorkerInitialized,
+    } as GameWorkerInitializedMessage);
 
-      postMessage({
-        type: WorkerMessageType.GameWorkerInitialized,
-      } as GameWorkerInitializedMessage);
-    } catch (error) {
-      postMessage({
-        type: WorkerMessageType.GameWorkerError,
-        error,
-      } as GameWorkerErrorMessage);
-    }
+    onInit(message);
   }
 }
 
 workerScope.addEventListener("message", onInitMessage);
 
-async function onInit({ renderWorkerMessagePort, initialGameWorkerState }: InitializeGameWorkerMessage) {
+async function onInit({
+  renderWorkerMessagePort,
+  mainToGameTripleBufferFlags,
+  gameToMainTripleBufferFlags,
+  gameToRenderTripleBufferFlags,
+}: InitializeGameWorkerMessage) {
   if (renderWorkerMessagePort) {
     renderWorkerMessagePort.start();
   }
@@ -62,7 +60,18 @@ async function onInit({ renderWorkerMessagePort, initialGameWorkerState }: Initi
   addTransformComponent(world, camera);
   addChild(scene, camera);
 
+  function gameWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
+    if (thread === Thread.Main) {
+      workerScope.postMessage(message, transferList);
+    } else if (thread === Thread.Render) {
+      renderPort.postMessage(message, transferList);
+    }
+  }
+
   const state: GameState = {
+    mainToGameTripleBufferFlags,
+    gameToMainTripleBufferFlags,
+    gameToRenderTripleBufferFlags,
     renderPort,
     elapsed: performance.now(),
     dt: 0,
@@ -74,6 +83,7 @@ async function onInit({ renderWorkerMessagePort, initialGameWorkerState }: Initi
     systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),
+    sendMessage: gameWorkerSendMessage,
   };
 
   const onMessage = ({ data }: MessageEvent) => {
@@ -98,18 +108,13 @@ async function onInit({ renderWorkerMessagePort, initialGameWorkerState }: Initi
     renderWorkerMessagePort.addEventListener("message", onMessage);
   }
 
-  await registerModules(
-    {
-      renderPort,
-      ...initialGameWorkerState,
-    },
-    state,
-    gameConfig.modules
-  );
+  await registerModules(state, gameConfig.modules);
 
   registerDefaultPrefabs(state);
 
   registerMessageHandler(state, WorkerMessageType.StartGameWorker, onStart);
+
+  state.sendMessage(Thread.Main, { type: "game-worker-modules-registered" });
 }
 
 function onStart(state: GameState) {
@@ -127,9 +132,14 @@ function update(state: GameState) {
   state.dt = (now - state.elapsed) / 1000;
   state.elapsed = now;
 
+  swapReadBufferFlags(state.mainToGameTripleBufferFlags);
+
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
   }
+
+  swapWriteBufferFlags(state.gameToMainTripleBufferFlags);
+  swapWriteBufferFlags(state.gameToRenderTripleBufferFlags);
 
   const frameDuration = performance.now() - state.elapsed;
   const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);

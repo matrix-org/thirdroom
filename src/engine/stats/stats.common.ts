@@ -22,3 +22,11 @@ export interface StatsBuffer {
 }
 
 export const StatNames = Object.keys(Stats).filter((v) => isNaN(+v));
+
+export enum StatsMessageType {
+  InitializeStatsBuffer = "initialize-stats-buffer",
+}
+
+export interface InitializeStatsBufferMessage {
+  statsBuffer: StatsBuffer;
+}

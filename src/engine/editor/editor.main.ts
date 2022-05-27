@@ -1,8 +1,17 @@
 import EventEmitter from "events";
 
 import { ComponentInfo } from "../component/types";
-import { ActiveEntityView, createActiveEntityViews, EditorEventType, Selection } from "./editor.common";
-import { createTripleBuffer, getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import {
+  ActiveEntityView,
+  createActiveEntityViews,
+  EditorEventType,
+  EditorMessageType,
+  editorModuleName,
+  InitializeEditorStateMessage,
+  Selection,
+  SharedHierarchyState,
+} from "./editor.common";
+import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import {
   ComponentInfoChangedMessage,
   ComponentPropertyChangedMessage,
@@ -11,9 +20,7 @@ import {
   SelectionChangedMessage,
   WorkerMessageType,
 } from "../WorkerMessage";
-import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
-import { maxEntities } from "../config.common";
-import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
+import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
 import { downloadFile } from "../utils/downloadFile";
@@ -22,26 +29,16 @@ import { downloadFile } from "../utils/downloadFile";
  * Types *
  ********/
 
-interface HierarchyView {
-  parent: Uint32Array;
-  firstChild: Uint32Array;
-  prevSibling: Uint32Array;
-  nextSibling: Uint32Array;
-  hierarchyUpdated: Uint8Array;
-}
-
 export interface EditorModuleState extends EventEmitter {
   selectedEntities: number[];
   activeEntity?: number;
   activeEntityComponents?: number[];
   componentInfoMap: Map<number, ComponentInfo>;
   componentProperties: Map<number, any>;
-  hierarchyTripleBuffer: TripleBuffer;
-  hierarchyViews: HierarchyView[];
-  activeHierarchyView: HierarchyView;
   activeEntityTripleBuffer?: TripleBuffer;
   activeEntityViews?: ActiveEntityView[];
   activeEntityView?: ActiveEntityView;
+  sharedHierarchyState: SharedHierarchyState;
 }
 
 /******************
@@ -49,22 +46,11 @@ export interface EditorModuleState extends EventEmitter {
  *****************/
 
 // Access module-specific state by importing this context in your systems, modules, or React components
-export const EditorModule = defineModule<IMainThreadContext, IInitialMainThreadState, EditorModuleState>({
-  create() {
-    const hierarchyTripleBuffer = createTripleBuffer();
-    const cursorBuffers = hierarchyTripleBuffer.buffers.map((b) => createCursorBuffer(b));
-
-    const hierarchyViews = cursorBuffers.map(
-      (buffer) =>
-        ({
-          // note: needs synced with sceneHierarchyBuffer properties in game worker
-          // todo: abstract the need to sync structure with sceneHierarchyBuffer properties
-          parent: addView(buffer, Uint32Array, maxEntities),
-          firstChild: addView(buffer, Uint32Array, maxEntities),
-          prevSibling: addView(buffer, Uint32Array, maxEntities),
-          nextSibling: addView(buffer, Uint32Array, maxEntities),
-          hierarchyUpdated: addView(buffer, Uint8Array, maxEntities),
-        } as HierarchyView)
+export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>({
+  name: editorModuleName,
+  async create(ctx, { waitForMessage }) {
+    const { sharedHierarchyState } = await waitForMessage<InitializeEditorStateMessage>(
+      EditorMessageType.InitializeEditorState
     );
 
     return Object.assign(new EventEmitter(), {
@@ -73,16 +59,10 @@ export const EditorModule = defineModule<IMainThreadContext, IInitialMainThreadS
       activeEntityComponents: [],
       componentInfoMap: new Map(),
       componentProperties: new Map(),
-      hierarchyTripleBuffer,
-      hierarchyViews,
-      activeHierarchyView: hierarchyViews[getReadBufferIndex(hierarchyTripleBuffer)],
+      sharedHierarchyState,
     });
   },
   init(ctx) {
-    const editor = getModule(ctx, EditorModule);
-
-    ctx.initialGameWorkerState.hierarchyTripleBuffer = editor.hierarchyTripleBuffer;
-
     const disposables = [
       registerMessageHandler(ctx, WorkerMessageType.EditorLoaded, onEditorLoaded),
       registerMessageHandler(ctx, WorkerMessageType.SelectionChanged, onSelectionChanged),
@@ -113,8 +93,7 @@ export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
   const editor = getModule(mainThread, EditorModule);
 
   // Set activeHierarchyView to point to the latest updated triple buffer view containing scene hierarchy info
-  swapReadBuffer(editor.hierarchyTripleBuffer);
-  editor.activeHierarchyView = editor.hierarchyViews[getReadBufferIndex(editor.hierarchyTripleBuffer)];
+  // getReadObjectBufferView(editor.sharedHierarchyState);
 
   if (editor.activeEntityTripleBuffer && editor.activeEntityViews) {
     swapReadBuffer(editor.activeEntityTripleBuffer);

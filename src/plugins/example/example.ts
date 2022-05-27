@@ -1,10 +1,10 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, removeEntity, defineQuery } from "bitecs";
+import { addComponent, defineQuery } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, setEulerFromQuaternion, Transform } from "../../engine/component/transform";
-import { GameState, IInitialGameThreadState } from "../../engine/GameTypes";
+import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/GLTFLoader";
 import { ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
@@ -18,7 +18,8 @@ import { createPlayerRig, PhysicsCharacterControllerActions } from "../PhysicsCh
 
 type ExampleModuleState = {};
 
-export const ExampleModule = defineModule<GameState, IInitialGameThreadState, ExampleModuleState>({
+export const ExampleModule = defineModule<GameState, ExampleModuleState>({
+  name: "example",
   create() {
     return {};
   },
@@ -190,9 +191,5 @@ export const CubeSpawnSystem = (state: GameState) => {
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
     addChild(state.scene, cube);
-
-    setTimeout(() => {
-      removeEntity(state.world, cube);
-    }, 3000);
   }
 };

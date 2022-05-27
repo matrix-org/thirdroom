@@ -9,17 +9,6 @@ export type TripleBuffer = {
 };
 
 export const createTripleBuffer = (
-  // default: 10MB per buffer * 3 buffers = 30MB total
-  byteLength = 1e7,
-
-  buffers: SharedArrayBuffer[] = [
-    new SharedArrayBuffer(byteLength),
-    new SharedArrayBuffer(byteLength),
-    new SharedArrayBuffer(byteLength),
-  ],
-
-  byteViews: Uint8Array[] = [new Uint8Array(buffers[0]), new Uint8Array(buffers[1]), new Uint8Array(buffers[2])],
-
   /**
    * template:
    * readBufferChanged: 0b0x000000
@@ -33,7 +22,18 @@ export const createTripleBuffer = (
    * writeBufferIndex:  1
    * readBufferIndex:   2
    */
-  flags: Uint8Array = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6)
+  flags: Uint8Array = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6),
+
+  // default: 10MB per buffer * 3 buffers = 30MB total
+  byteLength = 1e7,
+
+  buffers: SharedArrayBuffer[] = [
+    new SharedArrayBuffer(byteLength),
+    new SharedArrayBuffer(byteLength),
+    new SharedArrayBuffer(byteLength),
+  ],
+
+  byteViews: Uint8Array[] = [new Uint8Array(buffers[0]), new Uint8Array(buffers[1]), new Uint8Array(buffers[2])]
 ): TripleBuffer => ({ byteLength, buffers, byteViews, flags });
 
 const readyToRead = (flags: number) => {
@@ -69,8 +69,24 @@ export const swapReadBuffer = (tb: TripleBuffer) => {
   return true;
 };
 
+export const swapReadBufferFlags = (flags: Uint8Array) => {
+  const f = Atomics.load(flags, 0);
+
+  do {
+    if (!readyToRead(f)) {
+      return false;
+    }
+  } while (Atomics.compareExchange(flags, 0, f, swapReadWithTemp(f)) === f);
+
+  return true;
+};
+
 export const swapWriteBuffer = (tb: TripleBuffer) => {
   const flags = Atomics.load(tb.flags, 0);
-
   while (Atomics.compareExchange(tb.flags, 0, flags, swapWriteWithTempAndMarkChanged(flags)) === flags);
+};
+
+export const swapWriteBufferFlags = (flags: Uint8Array) => {
+  const f = Atomics.load(flags, 0);
+  while (Atomics.compareExchange(flags, 0, f, swapWriteWithTempAndMarkChanged(f)) === f);
 };

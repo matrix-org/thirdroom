@@ -6,6 +6,7 @@ import { GameState, World } from "../GameTypes";
 import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
+import { hierarchyObjectBufferSchema, worldMatrixObjectBufferSchema } from "./transform.common";
 
 export interface Transform extends IComponent {
   position: Float32Array[];
@@ -37,24 +38,9 @@ export const gameObjectBuffer = createObjectBufferView(
   ArrayBuffer
 );
 
-export const worldMatrixObjectBuffer = createObjectBufferView(
-  {
-    worldMatrix: [Float32Array, maxEntities, 16],
-    worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
-  },
-  ArrayBuffer
-);
+export const worldMatrixObjectBuffer = createObjectBufferView(worldMatrixObjectBufferSchema, ArrayBuffer);
 
-export const hierarchyObjectBuffer = createObjectBufferView(
-  {
-    parent: [Uint32Array, maxEntities],
-    firstChild: [Uint32Array, maxEntities],
-    prevSibling: [Uint32Array, maxEntities],
-    nextSibling: [Uint32Array, maxEntities],
-    hierarchyUpdated: [Uint8Array, maxEntities],
-  },
-  ArrayBuffer
-);
+export const hierarchyObjectBuffer = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
 
 export const Transform: Transform = {
   position: gameObjectBuffer.position,

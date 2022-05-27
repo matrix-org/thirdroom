@@ -1,6 +1,6 @@
 import { defineModule, getModule } from "../module/module.common";
-import { IInitialRenderThreadState, RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { Stats, StatsBuffer } from "./stats.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { InitializeStatsBufferMessage, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 interface StatsModuleState {
   statsBuffer: StatsBuffer;
@@ -8,8 +8,11 @@ interface StatsModuleState {
   staleTripleBufferCounter: number;
 }
 
-export const StatsModule = defineModule<RenderThreadState, IInitialRenderThreadState, StatsModuleState>({
-  create({ statsBuffer }) {
+export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
+  name: "stats",
+  async create(ctx, { waitForMessage }) {
+    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(StatsMessageType.InitializeStatsBuffer);
+
     return {
       statsBuffer,
       staleFrameCounter: 0,

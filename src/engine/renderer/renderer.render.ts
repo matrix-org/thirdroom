@@ -12,12 +12,14 @@ import {
   WebGLRenderer,
 } from "three";
 
-import { createCursorBuffer, addViewMatrix4, addView } from "../allocator/CursorBuffer";
-import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
+import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { swapReadBufferFlags, TripleBuffer } from "../allocator/TripleBuffer";
+import { renderableSchema } from "../component/renderable.common";
 import { clamp } from "../component/transform";
-import { maxEntities, tickRate } from "../config.common";
+import { worldMatrixObjectBufferSchema } from "../component/transform.common";
+import { tickRate } from "../config.common";
 import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
-import { BaseThreadContext, defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { CameraResourceLoader } from "../resources/CameraResourceLoader";
 import { GeometryResourceLoader } from "../resources/GeometryResourceLoader";
 import { LightResourceLoader } from "../resources/LightResourceLoader";
@@ -25,6 +27,7 @@ import { MaterialResourceLoader } from "../resources/MaterialResourceLoader";
 import { MeshResourceLoader } from "../resources/MeshResourceLoader";
 import {
   createResourceManager,
+  createResourceManagerBuffer,
   onAddResourceRef,
   onLoadResource,
   onRemoveResourceRef,
@@ -47,6 +50,12 @@ import {
   StartRenderWorkerMessage,
   WorkerMessageType,
 } from "../WorkerMessage";
+import {
+  InitializeCanvasMessage,
+  InitializeRendererTripleBuffersMessage,
+  RendererMessageType,
+  rendererModuleName,
+} from "./renderer.common";
 
 export interface TransformView {
   worldMatrix: Float32Array[];
@@ -82,8 +91,7 @@ export interface RenderThreadState extends BaseThreadContext {
   elapsed: number;
   dt: number;
   gameWorkerMessageTarget: PostMessageTarget;
-  preSystems: RenderThreadSystem[];
-  postSystems: RenderThreadSystem[];
+  gameToRenderTripleBufferFlags: Uint8Array;
 }
 
 interface RendererModuleState {
@@ -98,27 +106,30 @@ interface RendererModuleState {
   renderables: Renderable[];
   objectToEntityMap: Map<Object3D, number>;
   renderableIndices: Map<number, number>;
-  renderableTripleBuffer: TripleBuffer;
-  transformViews: TransformView[];
-  renderableViews: RenderableView[];
+  renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
+  worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
 }
 
-export const RendererModule = defineModule<RenderThreadState, IInitialRenderThreadState, RendererModuleState>({
-  create({
-    resourceManagerBuffer,
-    gameWorkerMessageTarget,
-    initialCanvasWidth,
-    initialCanvasHeight,
-    canvasTarget,
-    renderableTripleBuffer,
-  }) {
+export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
+  name: rendererModuleName,
+  async create(ctx, { sendMessage, waitForMessage }) {
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
+      RendererMessageType.InitializeCanvas
+    );
+
     const scene = new Scene();
 
     // TODO: initialize playerRig from GameWorker
     const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
     camera.position.y = 1.6;
 
-    const resourceManager = createResourceManager(resourceManagerBuffer, gameWorkerMessageTarget);
+    const resourceManagerBuffer = createResourceManagerBuffer();
+
+    sendMessage(Thread.Game, RendererMessageType.InitializeResourceManager, {
+      resourceManagerBuffer,
+    });
+
+    const resourceManager = createResourceManager(resourceManagerBuffer);
     registerResourceLoader(resourceManager, SceneResourceLoader);
     registerResourceLoader(resourceManager, GeometryResourceLoader);
     registerResourceLoader(resourceManager, TextureResourceLoader);
@@ -136,26 +147,8 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-    const cursorBuffers = renderableTripleBuffer.buffers.map((b) => createCursorBuffer(b));
-
-    const transformViews = cursorBuffers.map(
-      (buffer) =>
-        ({
-          // note: needs synced with renderableBuffer properties in game worker
-          // todo: abstract the need to sync structure with renderableBuffer properties
-          worldMatrix: addViewMatrix4(buffer, maxEntities),
-          worldMatrixNeedsUpdate: addView(buffer, Uint8Array, maxEntities),
-        } as TransformView)
-    );
-
-    const renderableViews = cursorBuffers.map(
-      (buffer) =>
-        ({
-          resourceId: addView(buffer, Uint32Array, maxEntities),
-          interpolate: addView(buffer, Uint8Array, maxEntities),
-          visible: addView(buffer, Uint8Array, maxEntities),
-        } as RenderableView)
-    );
+    const { renderableObjectTripleBuffer, worldMatrixObjectTripleBuffer } =
+      await waitForMessage<InitializeRendererTripleBuffersMessage>(RendererMessageType.InitializeRendererTripleBuffers);
 
     return {
       scene,
@@ -169,9 +162,8 @@ export const RendererModule = defineModule<RenderThreadState, IInitialRenderThre
       objectToEntityMap: new Map(),
       renderables: [],
       renderableIndices: new Map<number, number>(),
-      renderableTripleBuffer,
-      transformViews,
-      renderableViews,
+      renderableObjectTripleBuffer,
+      worldMatrixObjectTripleBuffer,
     };
   },
   init(ctx) {
@@ -198,18 +190,19 @@ const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
 function onUpdate(state: RenderThreadState) {
+  const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
+
   const renderModule = getModule(state, RendererModule);
   const {
     needsResize,
     renderer,
     canvasWidth,
     canvasHeight,
-    renderableTripleBuffer,
-    transformViews,
-    renderableViews,
     renderables,
     scene,
     camera,
+    renderableObjectTripleBuffer,
+    worldMatrixObjectTripleBuffer,
   } = renderModule;
 
   processRenderableMessages(state);
@@ -220,11 +213,10 @@ function onUpdate(state: RenderThreadState) {
   const frameRate = 1 / dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
 
-  const bufferSwapped = swapReadBuffer(renderableTripleBuffer);
+  const Transform = getReadObjectBufferView(worldMatrixObjectTripleBuffer);
+  const Renderable = getReadObjectBufferView(renderableObjectTripleBuffer);
 
-  const bufferIndex = getReadBufferIndex(renderableTripleBuffer);
-  const Transform = transformViews[bufferIndex];
-  const Renderable = renderableViews[bufferIndex];
+  renderableObjectTripleBuffer.views;
 
   for (let i = 0; i < renderables.length; i++) {
     const { object, helper, eid } = renderables[i];
@@ -272,18 +264,10 @@ function onUpdate(state: RenderThreadState) {
     renderModule.needsResize = false;
   }
 
-  for (let i = 0; i < state.preSystems.length; i++) {
-    state.preSystems[i](state);
-  }
-
   renderer.render(scene, camera);
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
-  }
-
-  for (let i = 0; i < state.postSystems.length; i++) {
-    state.postSystems[i](state);
   }
 
   const stats = getModule(state, StatsModule);

@@ -1,6 +1,6 @@
-import { IInitialMainThreadState, IMainThreadContext } from "../MainThread";
-import { defineModule, getModule } from "../module/module.common";
-import { StatNames, Stats, StatsBuffer } from "./stats.common";
+import { IMainThreadContext } from "../MainThread";
+import { defineModule, getModule, Thread } from "../module/module.common";
+import { InitializeStatsBufferMessage, StatNames, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 /*********
  * Types *
@@ -17,10 +17,16 @@ export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: n
  * Initialization *
  *****************/
 
-export const StatsModule = defineModule<IMainThreadContext, IInitialMainThreadState, StatsModuleState>({
-  create() {
+export const StatsModule = defineModule<IMainThreadContext, StatsModuleState>({
+  name: "stats",
+  create(ctx, { sendMessage }) {
+    const statsBuffer = createStatsBuffer();
+
+    sendMessage<InitializeStatsBufferMessage>(Thread.Game, StatsMessageType.InitializeStatsBuffer, { statsBuffer });
+    sendMessage<InitializeStatsBufferMessage>(Thread.Render, StatsMessageType.InitializeStatsBuffer, { statsBuffer });
+
     return {
-      buffer: createStatsBuffer(),
+      buffer: statsBuffer,
       stats: Object.fromEntries(StatNames.map((key) => [key, 0])) as StatsObject,
     };
   },

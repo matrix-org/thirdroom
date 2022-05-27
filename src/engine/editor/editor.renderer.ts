@@ -1,8 +1,9 @@
 import { exportSceneAsGLTF } from "../gltf/GLTFExporter";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { RenderThreadState, IInitialRenderThreadState } from "../renderer/renderer.render";
+import { RenderThreadState } from "../renderer/renderer.render";
 import { postToMainThread } from "../RenderWorker";
 import { ExportGLTFMessage, SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
+import { editorModuleName } from "./editor.common";
 
 export interface EditorRendererState {
   editorLoaded: boolean;
@@ -10,8 +11,9 @@ export interface EditorRendererState {
   prevSelectedEntities: number[];
 }
 
-export const EditorModule = defineModule<RenderThreadState, IInitialRenderThreadState, EditorRendererState>({
-  create() {
+export const EditorModule = defineModule<RenderThreadState, EditorRendererState>({
+  name: editorModuleName,
+  create(ctx, { sendMessage }) {
     return {
       editorLoaded: false,
       selectedEntities: [],

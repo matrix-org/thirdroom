@@ -33,7 +33,7 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { addChild, Transform } from "../component/transform";
-import { GameState, IInitialGameThreadState } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
 import { sendAudioPeerEntityMessage } from "../audio/audio.game";
@@ -93,7 +93,8 @@ type NetPipeData = [GameState, CursorView];
  * Initialization *
  *****************/
 
-export const NetworkModule = defineModule<GameState, IInitialGameThreadState, GameNetworkState>({
+export const NetworkModule = defineModule<GameState, GameNetworkState>({
+  name: "network",
   create: (ctx): GameNetworkState => ({
     hosting: false,
     incoming: [],

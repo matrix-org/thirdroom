@@ -1,7 +1,7 @@
 import { addComponent, Component, defineComponent, defineQuery, removeComponent } from "bitecs";
 import { vec3, mat4 } from "gl-matrix";
 
-import { GameState, IInitialGameThreadState } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
 import {
   AddComponentMessage,
@@ -25,7 +25,7 @@ import {
   ComponentPropertyType,
   ComponentPropertyStore,
 } from "../component/types";
-import { getDirection, registerTransformComponent, Transform } from "../component/transform";
+import { getDirection, hierarchyObjectBuffer, registerTransformComponent, Transform } from "../component/transform";
 import {
   ActionMap,
   ActionType,
@@ -35,9 +35,17 @@ import {
   enableActionMap,
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
-import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { TripleBuffer } from "../allocator/TripleBuffer";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { InputModule } from "../input/input.game";
+import {
+  EditorMessageType,
+  editorModuleName,
+  InitializeEditorStateMessage,
+  SharedHierarchyState,
+} from "./editor.common";
+import { hierarchyObjectBufferSchema } from "../component/transform.common";
+import { commitToTripleBufferView, createTripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
 
 // TODO: Importing this module changes the order of Renderable / Transform imports
 // Which in turn changes the cursor buffer view order and breaks transforms.
@@ -63,15 +71,26 @@ export interface EditorModuleState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
-  hierarchyTripleBuffer: TripleBuffer;
+  sharedHierarchyState: SharedHierarchyState;
 }
 
 /******************
  * Initialization *
  *****************/
 
-export const EditorModule = defineModule<GameState, IInitialGameThreadState, EditorModuleState>({
-  create({ hierarchyTripleBuffer }) {
+export const EditorModule = defineModule<GameState, EditorModuleState>({
+  name: editorModuleName,
+  async create(ctx, { sendMessage }) {
+    const sharedHierarchyState = createTripleBufferBackedObjectBufferView(
+      hierarchyObjectBufferSchema,
+      hierarchyObjectBuffer,
+      ctx.mainToGameTripleBufferFlags
+    );
+
+    sendMessage<InitializeEditorStateMessage>(Thread.Game, EditorMessageType.InitializeEditorState, {
+      sharedHierarchyState,
+    });
+
     return {
       rayId: createRay(),
       editorLoaded: false,
@@ -88,7 +107,7 @@ export const EditorModule = defineModule<GameState, IInitialGameThreadState, Edi
       propertyIdMap: new Map(),
       propertyGetterMap: new Map(),
       propertySetterMap: new Map(),
-      hierarchyTripleBuffer,
+      sharedHierarchyState,
     };
   },
   init(ctx) {
@@ -237,8 +256,7 @@ export function EditorStateSystem(state: GameState) {
     updateSelectedEntities(state, selectedEntities.slice());
   }
 
-  copyToWriteBuffer(editor.hierarchyTripleBuffer, hierarchyBuffer);
-  swapWriteBuffer(editor.hierarchyTripleBuffer);
+  commitToTripleBufferView(editor.sharedHierarchyState);
 }
 
 function processEditorMessage(state: GameState, message: WorkerMessages) {

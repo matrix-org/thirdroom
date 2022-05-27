@@ -1,34 +1,19 @@
-import { addView, CursorBuffer } from "../allocator/CursorBuffer";
-import { createCursorBufferView } from "../allocator/CursorBufferView";
-import { createTripleBufferView } from "../allocator/TripleBufferView";
+import {
+  defineObjectBufferSchema,
+  ObjectBufferView,
+  TripleBufferBackedObjectBufferView,
+} from "../allocator/ObjectBufferView";
 import { flagGet } from "./Bitmask";
 import { Keys } from "./KeyCodes";
 
-export interface InputState {
-  keyboard: Uint32Array;
-  mouse: {
-    movement: Float32Array;
-    buttons: Uint32Array;
-  };
-}
+export const inputStateSchema = defineObjectBufferSchema({
+  keyboard: [Uint32Array, Math.ceil(Keys.length / 32)],
+  mouseMovement: [Uint32Array, 2],
+  mouseButtons: [Uint32Array, 1],
+});
 
-function createInputState(buffer: CursorBuffer): InputState {
-  return {
-    keyboard: addView(buffer, Uint32Array, Math.ceil(Keys.length / 32)),
-    mouse: {
-      movement: addView(buffer, Float32Array, 2),
-      buttons: addView(buffer, Uint32Array, 1),
-    },
-  };
-}
-
-export function createInputStateView() {
-  return createCursorBufferView(createInputState);
-}
-
-export function createInputStateTripleBufferView() {
-  return createTripleBufferView(createInputState);
-}
+export type InputState = ObjectBufferView<typeof inputStateSchema, ArrayBuffer>;
+export type SharedInputState = TripleBufferBackedObjectBufferView<typeof inputStateSchema, ArrayBuffer>;
 
 type InputStateGetter = (input: InputState) => number;
 
@@ -40,12 +25,12 @@ const keyIndexToInputState =
 const mouseMovementIndexToInputState =
   (index: number): InputStateGetter =>
   (input: InputState) =>
-    input.mouse.movement[index];
+    input.mouseMovement[index];
 
 const mouseButtonIndexToInputState =
   (index: number): InputStateGetter =>
   (input: InputState) =>
-    flagGet(input.mouse.buttons, index);
+    flagGet(input.mouseButtons, index);
 
 export const InputStateGetters: { [path: string]: InputStateGetter } = Object.fromEntries([
   ...Keys.map((key, i) => [`Keyboard/${key}`, keyIndexToInputState(i)]),
@@ -55,3 +40,11 @@ export const InputStateGetters: { [path: string]: InputStateGetter } = Object.fr
     .fill(0)
     .map((_, i) => [`Mouse/button${i}`, mouseButtonIndexToInputState(i)]),
 ]);
+
+export enum InputMessageType {
+  InitializeInputState = "initialize-input-state",
+}
+
+export interface InitializeInputStateMessage {
+  sharedInputState: SharedInputState;
+}

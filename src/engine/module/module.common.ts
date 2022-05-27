@@ -2,37 +2,121 @@ export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: Thread
 
 export interface BaseThreadContext {
   systems: ThreadSystem<any>[];
-  modules: Map<Module<any, any, any>, any>;
+  modules: Map<Module<any, any>, any>;
+  sendMessage<M extends Message<any>>(
+    thread: Thread,
+    message: M,
+    transferList?: (Transferable | OffscreenCanvas)[]
+  ): void;
   messageHandlers: Map<string, MessageHandler<any, string, Message<any>>[]>;
 }
 
-export function getModule<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}>(
+export function getModule<ThreadContext extends BaseThreadContext, ModuleState extends {}>(
   threadContext: ThreadContext,
-  module: Module<ThreadContext, InitialState, ModuleState>
+  module: Module<ThreadContext, ModuleState>
 ): ModuleState {
   return threadContext.modules.get(module);
 }
 
-export interface Module<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}> {
-  create: ((initialState: InitialState) => ModuleState) | ((initialState: InitialState) => Promise<ModuleState>);
+export enum Thread {
+  Main = "main",
+  Game = "game",
+  Render = "render",
+}
+
+export interface ModuleLoader {
+  sendMessage<Message>(
+    thread: Thread,
+    type: string,
+    message: Message,
+    transferList?: (Transferable | OffscreenCanvas)[]
+  ): void;
+  waitForMessage<Message>(type: string): Promise<Message>;
+}
+
+export interface Module<ThreadContext extends BaseThreadContext, ModuleState extends {}> {
+  name: string;
+  create:
+    | ((ctx: ThreadContext, loader: ModuleLoader) => ModuleState)
+    | ((ctx: ThreadContext, loader: ModuleLoader) => Promise<ModuleState>);
   init: (ctx: ThreadContext) => void | (() => void) | Promise<void> | Promise<() => void>;
 }
 
-export function defineModule<ThreadContext extends BaseThreadContext, InitialState extends {}, ModuleState extends {}>(
-  moduleDef: Module<ThreadContext, InitialState, ModuleState>
+export function defineModule<ThreadContext extends BaseThreadContext, ModuleState extends {}>(
+  moduleDef: Module<ThreadContext, ModuleState>
 ) {
   return moduleDef;
 }
 
+interface ModuleLoaderMessage<Message> {
+  type: "module-loader";
+  loaderMessageType: string;
+  moduleName: string;
+  message: Message;
+}
+
 export async function registerModules<ThreadContext extends BaseThreadContext>(
-  initialState: any,
   context: ThreadContext,
-  modules: Module<ThreadContext, {}, {}>[]
+  modules: Module<ThreadContext, {}>[]
 ) {
+  const deferreds: {
+    type: string;
+    moduleName: string;
+    resolve: (message: any) => void;
+    reject: (error: Error) => void;
+  }[] = [];
+
+  const moduleLoaderMessageQueue: ModuleLoaderMessage<any>[] = [];
+
+  // TODO: waitForMessage might not be called by the time we receive the message it's waiting for,
+  // queue messages as they come in and check for the message immediately in waitForMessage
+  const disposeModuleLoaderMessageHandler = registerMessageHandler(
+    context,
+    "module-loader",
+    (_context, message: ModuleLoaderMessage<any>) => {
+      const deferred = deferreds.find((d) => d.type === message.type && d.moduleName === message.moduleName);
+
+      if (deferred) {
+        deferred.resolve(message.message);
+      } else {
+        moduleLoaderMessageQueue.push(message);
+      }
+    }
+  );
+
+  const createLoaderContext = (moduleName: string): ModuleLoader => ({
+    sendMessage: <Message>(
+      thread: Thread,
+      type: string,
+      message: Message,
+      transferList?: (Transferable | OffscreenCanvas)[]
+    ) => {
+      context.sendMessage(
+        thread,
+        { type: "module-loader", loaderMessageType: type, moduleName, message },
+        transferList
+      );
+    },
+    waitForMessage: <Message>(type: string): Promise<Message> => {
+      const index = moduleLoaderMessageQueue.findIndex((d) => d.type === type && d.moduleName === moduleName);
+
+      if (index !== -1) {
+        const message = moduleLoaderMessageQueue[index];
+        moduleLoaderMessageQueue.splice(index, 1);
+        return Promise.resolve(message.message);
+      }
+
+      // TODO: Add timeout and error message indicating what the module was waiting on
+      return new Promise((resolve, reject) => {
+        deferreds.push({ type, moduleName, resolve, reject });
+      });
+    },
+  });
+
   const moduleDisposeFunctions: (() => void)[] = [];
 
   const createPromises = modules.map((module) => {
-    const result = module.create(initialState);
+    const result = module.create(context, createLoaderContext(module.name));
 
     if (result.hasOwnProperty("then")) {
       return result;
@@ -42,6 +126,8 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
   });
 
   const moduleStates = await Promise.all(createPromises);
+
+  disposeModuleLoaderMessageHandler();
 
   for (let i = 0; i < moduleStates.length; i++) {
     const module = modules[i];
@@ -111,7 +197,7 @@ export function registerMessageHandler<ThreadContext extends BaseThreadContext, 
 type RegisterComponentFunction<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
 export interface Config<ThreadContext extends BaseThreadContext> {
-  modules: Module<ThreadContext, any, any>[];
+  modules: Module<ThreadContext, any>[];
   systems: ThreadSystem<ThreadContext>[];
   components?: RegisterComponentFunction<ThreadContext>[];
 }

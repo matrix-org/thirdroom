@@ -1,6 +1,6 @@
 import { defineConfig } from "./module/module.common";
 import { AudioModule, AudioSystem } from "./audio/audio.game";
-import { InputModule, InputReadSystem } from "./input/input.game";
+import { InputModule } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { InboundNetworkSystem, NetworkModule, OutboundNetworkSystem } from "./network/network.game";
 import { GLTFLoaderSystem } from "./gltf/GLTFLoaderSystem";
@@ -28,7 +28,6 @@ export default defineConfig<GameState>({
     ExampleModule,
   ],
   systems: [
-    InputReadSystem,
     ActionMappingSystem,
     RaycasterSystem,
     AudioSystem,
