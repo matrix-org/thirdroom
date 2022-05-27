@@ -36,7 +36,6 @@ import {
 } from "../input/ActionMappingSystem";
 import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
 import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import { hierarchyBuffer } from "../component/buffers";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { InputModule } from "../input/input.game";
 

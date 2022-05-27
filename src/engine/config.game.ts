@@ -12,7 +12,6 @@ import { CubeSpawnSystem, ExampleModule } from "../plugins/example/example";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 import { EditorModule, EditorSelectionSystem, EditorStateSystem } from "./editor/editor.game";
-import { RenderableTripleBufferSystem, UpdateWorldMatrixSystem, TimeSystem } from "./GameSystems";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
 
@@ -29,7 +28,6 @@ export default defineConfig<GameState>({
     ExampleModule,
   ],
   systems: [
-    TimeSystem,
     InputReadSystem,
     ActionMappingSystem,
     RaycasterSystem,
@@ -49,8 +47,6 @@ export default defineConfig<GameState>({
 
     OutboundNetworkSystem,
 
-    UpdateWorldMatrixSystem,
-    RenderableTripleBufferSystem,
     GameWorkerStatsSystem,
 
     RenderableSystem,

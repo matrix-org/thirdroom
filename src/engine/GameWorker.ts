@@ -123,6 +123,10 @@ function onStart(state: GameState) {
 const timeoutOffset = 4;
 
 function update(state: GameState) {
+  const now = performance.now();
+  state.dt = (now - state.elapsed) / 1000;
+  state.elapsed = now;
+
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
   }

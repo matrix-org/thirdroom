@@ -1,5 +1,4 @@
 import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import { renderableBuffer } from "../component/buffers";
 import { updateMatrixWorld } from "../component/transform";
 import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";

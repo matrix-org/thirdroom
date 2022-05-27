@@ -1,11 +1,10 @@
 import { addComponent, hasComponent, IComponent } from "bitecs";
 
-import { renderableBuffer } from "./buffers";
-import { addView } from "../allocator/CursorBuffer";
 import { maxEntities } from "../config.common";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
 import { traverse } from "./transform";
 import { GameState, World } from "../GameTypes";
+import { createObjectBufferView } from "../allocator/ObjectBufferView";
 
 export interface Renderable extends IComponent {
   resourceId: Uint32Array;
@@ -13,11 +12,14 @@ export interface Renderable extends IComponent {
   visible: Uint8Array;
 }
 
-export const Renderable: Renderable = {
-  resourceId: addView(renderableBuffer, Uint32Array, maxEntities),
-  interpolate: addView(renderableBuffer, Uint8Array, maxEntities),
-  visible: addView(renderableBuffer, Uint8Array, maxEntities),
-};
+export const Renderable: Renderable = createObjectBufferView(
+  {
+    resourceId: [Uint32Array, maxEntities],
+    interpolate: [Uint8Array, maxEntities],
+    visible: [Uint8Array, maxEntities],
+  },
+  ArrayBuffer
+);
 
 export function addRenderableComponent({ world, renderPort }: GameState, eid: number, resourceId: number) {
   addComponent(world, Renderable, eid);

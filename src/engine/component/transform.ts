@@ -1,12 +1,11 @@
 import { addComponent, addEntity, IComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { gameBuffer, renderableBuffer, hierarchyBuffer } from "./buffers";
-import { addView, addViewVector3, addViewMatrix4, addViewVector4 } from "../allocator/CursorBuffer";
 import { maxEntities, NOOP } from "../config.common";
 import { GameState, World } from "../GameTypes";
 import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
+import { createObjectBufferView } from "../allocator/ObjectBufferView";
 
 export interface Transform extends IComponent {
   position: Float32Array[];
@@ -26,22 +25,53 @@ export interface Transform extends IComponent {
   hierarchyUpdated: Uint8Array;
 }
 
+export const gameObjectBuffer = createObjectBufferView(
+  {
+    position: [Float32Array, maxEntities, 3],
+    scale: [Float32Array, maxEntities, 3],
+    rotation: [Float32Array, maxEntities, 3],
+    quaternion: [Float32Array, maxEntities, 4],
+    localMatrix: [Float32Array, maxEntities, 16],
+    static: [Uint8Array, maxEntities],
+  },
+  ArrayBuffer
+);
+
+export const worldMatrixObjectBuffer = createObjectBufferView(
+  {
+    worldMatrix: [Float32Array, maxEntities, 16],
+    worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
+  },
+  ArrayBuffer
+);
+
+export const hierarchyObjectBuffer = createObjectBufferView(
+  {
+    parent: [Uint32Array, maxEntities],
+    firstChild: [Uint32Array, maxEntities],
+    prevSibling: [Uint32Array, maxEntities],
+    nextSibling: [Uint32Array, maxEntities],
+    hierarchyUpdated: [Uint8Array, maxEntities],
+  },
+  ArrayBuffer
+);
+
 export const Transform: Transform = {
-  position: addViewVector3(gameBuffer, maxEntities),
-  scale: addViewVector3(gameBuffer, maxEntities),
-  rotation: addViewVector3(gameBuffer, maxEntities),
-  quaternion: addViewVector4(gameBuffer, maxEntities),
+  position: gameObjectBuffer.position,
+  scale: gameObjectBuffer.scale,
+  rotation: gameObjectBuffer.rotation,
+  quaternion: gameObjectBuffer.quaternion,
+  localMatrix: gameObjectBuffer.localMatrix,
+  static: gameObjectBuffer.static,
 
-  localMatrix: addViewMatrix4(gameBuffer, maxEntities),
-  worldMatrix: addViewMatrix4(renderableBuffer, maxEntities),
-  static: addView(gameBuffer, Uint8Array, maxEntities),
-  worldMatrixNeedsUpdate: addView(renderableBuffer, Uint8Array, maxEntities),
+  worldMatrix: worldMatrixObjectBuffer.worldMatrix,
+  worldMatrixNeedsUpdate: worldMatrixObjectBuffer.worldMatrixNeedsUpdate,
 
-  parent: addView(hierarchyBuffer, Uint32Array, maxEntities),
-  firstChild: addView(hierarchyBuffer, Uint32Array, maxEntities),
-  prevSibling: addView(hierarchyBuffer, Uint32Array, maxEntities),
-  nextSibling: addView(hierarchyBuffer, Uint32Array, maxEntities),
-  hierarchyUpdated: addView(hierarchyBuffer, Uint8Array, maxEntities),
+  parent: hierarchyObjectBuffer.parent,
+  firstChild: hierarchyObjectBuffer.firstChild,
+  prevSibling: hierarchyObjectBuffer.prevSibling,
+  nextSibling: hierarchyObjectBuffer.nextSibling,
+  hierarchyUpdated: hierarchyObjectBuffer.hierarchyUpdated,
 };
 
 export function registerTransformComponent(state: GameState) {

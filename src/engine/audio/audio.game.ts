@@ -1,6 +1,5 @@
 import { pipe } from "bitecs";
 
-import { renderableBuffer } from "../component/buffers";
 import { NOOP } from "../config.common";
 import { GameState, IInitialGameThreadState } from "../GameTypes";
 import { copyToWriteBuffer, swapWriteBuffer, TripleBuffer } from "../allocator/TripleBuffer";
