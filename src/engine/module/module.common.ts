@@ -60,7 +60,7 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
   modules: Module<ThreadContext, {}>[]
 ) {
   const deferreds: {
-    type: string;
+    loaderMessageType: string;
     moduleName: string;
     resolve: (message: any) => void;
     reject: (error: Error) => void;
@@ -74,11 +74,15 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
     context,
     "module-loader",
     (_context, message: ModuleLoaderMessage<any>) => {
-      const deferred = deferreds.find((d) => d.type === message.type && d.moduleName === message.moduleName);
+      const deferred = deferreds.find(
+        (d) => d.loaderMessageType === message.loaderMessageType && d.moduleName === message.moduleName
+      );
 
       if (deferred) {
+        console.log(`waitForMessage: ${message.moduleName} ${message.loaderMessageType} found`);
         deferred.resolve(message.message);
       } else {
+        console.log(`waitForMessage: ${message.moduleName} ${message.loaderMessageType} queued`);
         moduleLoaderMessageQueue.push(message);
       }
     }
@@ -91,6 +95,7 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
       message: Message,
       transferList?: (Transferable | OffscreenCanvas)[]
     ) => {
+      console.log(`sendMessage to ${thread}: ${moduleName} ${type}`, message);
       context.sendMessage(
         thread,
         { type: "module-loader", loaderMessageType: type, moduleName, message },
@@ -98,17 +103,21 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
       );
     },
     waitForMessage: <Message>(type: string): Promise<Message> => {
-      const index = moduleLoaderMessageQueue.findIndex((d) => d.type === type && d.moduleName === moduleName);
+      console.log(`waitForMessage: ${moduleName} ${type}`);
+      const index = moduleLoaderMessageQueue.findIndex(
+        (d) => d.loaderMessageType === type && d.moduleName === moduleName
+      );
 
       if (index !== -1) {
         const message = moduleLoaderMessageQueue[index];
         moduleLoaderMessageQueue.splice(index, 1);
+        console.log(`waitForMessage: ${moduleName} ${type} found`);
         return Promise.resolve(message.message);
       }
 
       // TODO: Add timeout and error message indicating what the module was waiting on
       return new Promise((resolve, reject) => {
-        deferreds.push({ type, moduleName, resolve, reject });
+        deferreds.push({ loaderMessageType: type, moduleName, resolve, reject });
       });
     },
   });
