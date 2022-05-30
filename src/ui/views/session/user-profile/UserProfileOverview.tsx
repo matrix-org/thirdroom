@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+import React, { useState, useCallback, ChangeEvent, FormEvent } from "react";
+import { AttachmentUpload, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -16,59 +16,123 @@ import { WindowAside } from "../../components/window/WindowAside";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
+import { getAvatarHttpUrl } from "../../../utils/avatar";
+import { WindowFooter } from "../../components/window/WindowFooter";
+import { Button } from "../../../atoms/button/Button";
+import { useDebounce } from "../../../hooks/useDebounce";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import "./UserProfileOverview.css";
 
 export function UserProfileOverview() {
-  const { platform } = useHydrogen(true);
-  const { displayName } = useStore((state) => state.userProfile);
-  const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
+  const { session, platform } = useHydrogen(true);
+  const { displayName, avatarUrl } = useStore((state) => state.userProfile);
+  const { selectWindow } = useStore((state) => state.overlayWindow);
+
+  const [newDisplayName, setNewDisplayName] = useState(displayName);
+  const [newAvatar, setNewAvatar] = useState<IBlobHandle | string | undefined>(avatarUrl);
+
+  const avatarHttpUrl: string | null | undefined = !newAvatar
+    ? undefined
+    : typeof newAvatar === "string"
+    ? getAvatarHttpUrl(newAvatar, 150, platform, session.mediaRepository)
+    : URL.createObjectURL(newAvatar.nativeBlob);
 
   const handleAvatarSelect = useCallback(async () => {
     const data = await platform.openFile("image/*");
     if (!data) return;
-    setAvatarBlob(data.blob);
-  }, [setAvatarBlob, platform]);
+    setNewAvatar(data.blob);
+  }, [platform]);
+
+  const handleAvatarRemove = () => setNewAvatar(undefined);
+
+  const debounceDisplayNameChange = useDebounce(setNewDisplayName, { wait: 200 });
+  const onDisplayNameChange = (evt: ChangeEvent<HTMLInputElement>) => {
+    const name = evt.currentTarget.value.trim();
+    debounceDisplayNameChange(name);
+  };
+
+  const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
+    evt.preventDefault();
+    selectWindow();
+    const name = evt.currentTarget.displayName.value.trim() as string;
+    if (name !== displayName && name !== "") {
+      session.hsApi.setProfileDisplayName(session.userId, name);
+    }
+    if (newAvatar !== avatarUrl) {
+      let url = "";
+      if (typeof newAvatar === "object") {
+        const nativeBlob = newAvatar.nativeBlob;
+
+        const attachment = new AttachmentUpload({ filename: nativeBlob.name, blob: newAvatar, platform });
+        await attachment.upload(session.hsApi, () => undefined);
+        const content = {} as { url?: string };
+        attachment.applyToContent("url", content);
+        url = content.url ?? "";
+      }
+      session.hsApi.setProfileAvatarUrl(session.userId, url);
+    }
+  };
+  const handleReset = () => {
+    setNewDisplayName(displayName);
+    setNewAvatar(avatarUrl);
+    selectWindow();
+  };
 
   return (
     <WindowContent
       children={
-        <Content>
-          <Scroll>
-            <div className="UserProfileOverview__content">
-              <SettingTile label={<Label>Avatar</Label>}>
-                <ThumbnailHover
-                  content={
-                    !avatarBlob ? undefined : (
-                      <IconButton
-                        variant="world"
-                        onClick={() => setAvatarBlob(undefined)}
-                        size="xl"
-                        iconSrc={CrossCircleIC}
-                        label="Remove world avatar"
-                      />
-                    )
-                  }
-                >
-                  <Thumbnail size="sm" className="flex">
-                    {avatarBlob ? (
-                      <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
-                    ) : (
-                      <IconButton onClick={handleAvatarSelect} size="xl" iconSrc={AddIC} label="Add world avatar" />
-                    )}
-                  </Thumbnail>
-                </ThumbnailHover>
-              </SettingTile>
-              <div className="flex gap-lg">
-                <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
-                  <Input defaultValue={displayName} />
+        <Content
+          onSubmit={handleSubmit}
+          onReset={handleReset}
+          children={
+            <Scroll>
+              <div className="UserProfileOverview__content">
+                <SettingTile label={<Label>Avatar</Label>}>
+                  <ThumbnailHover
+                    content={
+                      !avatarHttpUrl ? undefined : (
+                        <IconButton
+                          variant="world"
+                          onClick={handleAvatarRemove}
+                          size="xl"
+                          iconSrc={CrossCircleIC}
+                          label="Remove avatar"
+                        />
+                      )
+                    }
+                  >
+                    <Thumbnail size="sm" className="flex">
+                      {avatarHttpUrl ? (
+                        <ThumbnailImg src={avatarHttpUrl} />
+                      ) : (
+                        <IconButton onClick={handleAvatarSelect} size="xl" iconSrc={AddIC} label="Add world avatar" />
+                      )}
+                    </Thumbnail>
+                  </ThumbnailHover>
                 </SettingTile>
-                <span className="grow basis-0" />
+                <div className="flex gap-lg">
+                  <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
+                    <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
               </div>
-            </div>
-          </Scroll>
-        </Content>
+            </Scroll>
+          }
+          bottom={
+            (displayName !== newDisplayName || avatarUrl !== newAvatar) && (
+              <WindowFooter
+                left={
+                  <Button fill="outline" type="reset">
+                    Cancel
+                  </Button>
+                }
+                right={<Button type="submit">Save</Button>}
+              />
+            )
+          }
+        />
       }
       aside={
         <WindowAside className="flex">

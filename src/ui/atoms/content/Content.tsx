@@ -8,9 +8,10 @@ interface ContentProps {
   children?: ReactNode;
   bottom?: ReactNode;
   onSubmit?: FormEventHandler;
+  onReset?: FormEventHandler;
 }
 
-export function Content({ className, top, children, bottom, onSubmit }: ContentProps) {
+export function Content({ className, top, children, bottom, onSubmit, onReset }: ContentProps) {
   const sectionClass = classNames("Content", className);
 
   const content = (
@@ -21,9 +22,9 @@ export function Content({ className, top, children, bottom, onSubmit }: ContentP
     </>
   );
 
-  if (onSubmit)
+  if (onSubmit || onReset)
     return (
-      <form onSubmit={onSubmit} className={sectionClass}>
+      <form onSubmit={onSubmit} onReset={onReset} className={sectionClass}>
         {content}
       </form>
     );

@@ -4,7 +4,7 @@ import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { RoomListTab } from "../../components/room-list-tab/RoomListTab";
 import { useStore, RoomListTabs, OverlayWindow } from "../../../hooks/useStore";
-import { getIdentifierColorNumber } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import HomeIC from "../../../../../res/ic/home.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import ChatIC from "../../../../../res/ic/chat.svg";
@@ -18,7 +18,7 @@ interface IRoomListHeader {
 }
 
 export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
-  const { logout } = useHydrogen(true);
+  const { session, platform, logout } = useHydrogen(true);
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
@@ -39,7 +39,7 @@ export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
           shape="circle"
           name={displayName}
           bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
-          imageSrc={avatarUrl}
+          imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
         />
       </DropdownMenu>
       <RoomListTab

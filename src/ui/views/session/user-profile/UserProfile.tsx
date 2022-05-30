@@ -8,9 +8,10 @@ import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
 import { SegmentControl } from "../../../atoms/segment-control/SegmentControl";
 import { SegmentControlItem } from "../../../atoms/segment-control/SegmentControlItem";
 import { useStore } from "../../../hooks/useStore";
-import { getIdentifierColorNumber } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { UserProfileOverview } from "./UserProfileOverview";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 
 enum UserProfileSegment {
   Overview = "Overview",
@@ -18,6 +19,7 @@ enum UserProfileSegment {
 }
 
 export function UserProfile() {
+  const { session, platform } = useHydrogen(true);
   const { selectWindow } = useStore((state) => state.overlayWindow);
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const [selectedSegment, setSelectedSegment] = useState(UserProfileSegment.Overview);
@@ -31,7 +33,7 @@ export function UserProfile() {
               <Avatar
                 name={displayName}
                 bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
-                imageSrc={avatarUrl}
+                imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 20, platform, session.mediaRepository) : undefined}
                 shape="circle"
                 size="xxs"
               />
