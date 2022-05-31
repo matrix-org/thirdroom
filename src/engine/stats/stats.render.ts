@@ -1,4 +1,4 @@
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { InitializeStatsBufferMessage, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
@@ -11,7 +11,10 @@ interface StatsModuleState {
 export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
   name: "stats",
   async create(ctx, { waitForMessage }) {
-    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(StatsMessageType.InitializeStatsBuffer);
+    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(
+      Thread.Main,
+      StatsMessageType.InitializeStatsBuffer
+    );
 
     return {
       statsBuffer,

@@ -47,7 +47,6 @@ import {
   RenderWorkerResizeMessage,
   SetActiveCameraMessage,
   SetActiveSceneMessage,
-  StartRenderWorkerMessage,
   WorkerMessageType,
 } from "../WorkerMessage";
 import {
@@ -114,6 +113,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
   name: rendererModuleName,
   async create(ctx, { sendMessage, waitForMessage }) {
     const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
+      Thread.Main,
       RendererMessageType.InitializeCanvas
     );
 
@@ -148,7 +148,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
     const { renderableObjectTripleBuffer, worldMatrixObjectTripleBuffer } =
-      await waitForMessage<InitializeRendererTripleBuffersMessage>(RendererMessageType.InitializeRendererTripleBuffers);
+      await waitForMessage<InitializeRendererTripleBuffersMessage>(
+        Thread.Game,
+        RendererMessageType.InitializeRendererTripleBuffers
+      );
 
     return {
       scene,
@@ -167,7 +170,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     };
   },
   init(ctx) {
-    registerMessageHandler(ctx, WorkerMessageType.StartRenderWorker, onStart);
     registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize);
     registerMessageHandler(ctx, WorkerMessageType.AddRenderable, onRenderableMessage);
     registerMessageHandler(ctx, WorkerMessageType.RemoveRenderable, onRenderableMessage);
@@ -179,7 +181,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
   },
 });
 
-function onStart(state: RenderThreadState, message: StartRenderWorkerMessage) {
+export function startRenderLoop(state: RenderThreadState) {
   const { renderer } = getModule(state, RendererModule);
   renderer.setAnimationLoop(() => onUpdate(state));
 }

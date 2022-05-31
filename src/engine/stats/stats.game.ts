@@ -1,5 +1,5 @@
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { InitializeStatsBufferMessage, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 interface StatsModuleState {
@@ -9,7 +9,10 @@ interface StatsModuleState {
 export const StatsModule = defineModule<GameState, StatsModuleState>({
   name: "stats",
   async create(ctx, { waitForMessage }) {
-    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(StatsMessageType.InitializeStatsBuffer);
+    const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(
+      Thread.Main,
+      StatsMessageType.InitializeStatsBuffer
+    );
 
     return {
       statsBuffer,

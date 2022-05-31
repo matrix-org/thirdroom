@@ -83,7 +83,7 @@ export interface GameWorkerErrorMessage extends WorkerMessage {
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
-  gameWorkerMessageTarget: PostMessageTarget;
+  gameWorkerMessageTarget: MessagePort;
   gameToRenderTripleBufferFlags: Uint8Array;
 }
 

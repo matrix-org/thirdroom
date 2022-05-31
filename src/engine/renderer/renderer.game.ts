@@ -54,7 +54,10 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       }
     );
 
-    const { resourceManagerBuffer } = await waitForMessage(RendererMessageType.InitializeResourceManager);
+    const { resourceManagerBuffer } = await waitForMessage(
+      Thread.Render,
+      RendererMessageType.InitializeResourceManager
+    );
 
     return {
       worldMatrixObjectTripleBuffer,

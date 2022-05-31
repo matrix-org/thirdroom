@@ -21,7 +21,7 @@ import {
   WorkerMessageType,
 } from "../WorkerMessage";
 import { IMainThreadContext } from "../MainThread";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
 import { downloadFile } from "../utils/downloadFile";
 
@@ -50,6 +50,7 @@ export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>(
   name: editorModuleName,
   async create(ctx, { waitForMessage }) {
     const { sharedHierarchyState } = await waitForMessage<InitializeEditorStateMessage>(
+      Thread.Game,
       EditorMessageType.InitializeEditorState
     );
 

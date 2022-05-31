@@ -1,7 +1,6 @@
 import { exportSceneAsGLTF } from "../gltf/GLTFExporter";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { postToMainThread } from "../RenderWorker";
 import { ExportGLTFMessage, SelectionChangedMessage, WorkerMessageType } from "../WorkerMessage";
 import { editorModuleName } from "./editor.common";
 
@@ -55,7 +54,7 @@ function onSelectionChanged(state: RenderThreadState, message: SelectionChangedM
 async function onExportGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
   const buffer = await exportSceneAsGLTF(state, message);
 
-  postToMainThread({
+  state.sendMessage(Thread.Main, {
     type: WorkerMessageType.SaveGLTF,
     buffer,
   });

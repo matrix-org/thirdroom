@@ -2,7 +2,7 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AudioMessageType,
   InitializeAudioTransformsMessage,
@@ -74,6 +74,7 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
     const sampleQueue: [string, number][] = [];
 
     const { sharedAudioTransforms } = await waitForMessage<InitializeAudioTransformsMessage>(
+      Thread.Game,
       AudioMessageType.InitializeAudioTransforms
     );
 

@@ -25,13 +25,17 @@ export enum Thread {
 }
 
 export interface ModuleLoader {
-  sendMessage<Message>(
-    thread: Thread,
-    type: string,
-    message: Message,
-    transferList?: (Transferable | OffscreenCanvas)[]
-  ): void;
-  waitForMessage<Message>(type: string): Promise<Message>;
+  sendMessage<Data>(thread: Thread, key: string, data: Data, transferList?: (Transferable | OffscreenCanvas)[]): void;
+  waitForMessage<Data>(thread: Thread, key: string): Promise<Data>;
+}
+
+enum ModuleLoaderMessage {
+  ModuleList = "ModuleList",
+  CreateModule = "CreateModule",
+  ModuleCreated = "ModuleCreated",
+  ModuleCreationFinished = "ModuleCreationFinished",
+  ModulesInitialized = "ModulesInitialized",
+  Complete = "Complete",
 }
 
 export interface Module<ThreadContext extends BaseThreadContext, ModuleState extends {}> {
@@ -48,101 +52,96 @@ export function defineModule<ThreadContext extends BaseThreadContext, ModuleStat
   return moduleDef;
 }
 
-interface ModuleLoaderMessage<Message> {
-  type: "module-loader";
-  loaderMessageType: string;
-  moduleName: string;
-  message: Message;
-}
-
 export async function registerModules<ThreadContext extends BaseThreadContext>(
+  thread: Thread,
   context: ThreadContext,
   modules: Module<ThreadContext, {}>[]
 ) {
-  const deferreds: {
-    loaderMessageType: string;
-    moduleName: string;
-    resolve: (message: any) => void;
-    reject: (error: Error) => void;
-  }[] = [];
-
-  const moduleLoaderMessageQueue: ModuleLoaderMessage<any>[] = [];
-
-  // TODO: waitForMessage might not be called by the time we receive the message it's waiting for,
-  // queue messages as they come in and check for the message immediately in waitForMessage
-  const disposeModuleLoaderMessageHandler = registerMessageHandler(
+  const { dispose, sendQueuedMessage, waitForQueuedMessage, handleQueuedMessages } = registerQueuedMessageHandler(
+    thread,
     context,
-    "module-loader",
-    (_context, message: ModuleLoaderMessage<any>) => {
-      const deferred = deferreds.find(
-        (d) => d.loaderMessageType === message.loaderMessageType && d.moduleName === message.moduleName
-      );
-
-      if (deferred) {
-        console.log(`waitForMessage: ${message.moduleName} ${message.loaderMessageType} found`);
-        deferred.resolve(message.message);
-      } else {
-        console.log(`waitForMessage: ${message.moduleName} ${message.loaderMessageType} queued`);
-        moduleLoaderMessageQueue.push(message);
-      }
-    }
+    "module-loader"
   );
 
   const createLoaderContext = (moduleName: string): ModuleLoader => ({
-    sendMessage: <Message>(
-      thread: Thread,
-      type: string,
-      message: Message,
-      transferList?: (Transferable | OffscreenCanvas)[]
-    ) => {
-      console.log(`sendMessage to ${thread}: ${moduleName} ${type}`, message);
-      context.sendMessage(
-        thread,
-        { type: "module-loader", loaderMessageType: type, moduleName, message },
-        transferList
-      );
-    },
-    waitForMessage: <Message>(type: string): Promise<Message> => {
-      console.log(`waitForMessage: ${moduleName} ${type}`);
-      const index = moduleLoaderMessageQueue.findIndex(
-        (d) => d.loaderMessageType === type && d.moduleName === moduleName
-      );
-
-      if (index !== -1) {
-        const message = moduleLoaderMessageQueue[index];
-        moduleLoaderMessageQueue.splice(index, 1);
-        console.log(`waitForMessage: ${moduleName} ${type} found`);
-        return Promise.resolve(message.message);
-      }
-
-      // TODO: Add timeout and error message indicating what the module was waiting on
-      return new Promise((resolve, reject) => {
-        deferreds.push({ loaderMessageType: type, moduleName, resolve, reject });
-      });
-    },
+    sendMessage: sendQueuedMessage,
+    waitForMessage: waitForQueuedMessage,
   });
 
-  const moduleDisposeFunctions: (() => void)[] = [];
-
-  const createPromises = modules.map((module) => {
+  async function loadModule(module: Module<ThreadContext, any>) {
     const result = module.create(context, createLoaderContext(module.name));
-
-    if (result.hasOwnProperty("then")) {
-      return result;
-    } else {
-      return Promise.resolve(result);
-    }
-  });
-
-  const moduleStates = await Promise.all(createPromises);
-
-  disposeModuleLoaderMessageHandler();
-
-  for (let i = 0; i < moduleStates.length; i++) {
-    const module = modules[i];
-    const moduleState = moduleStates[i];
+    const moduleState = result instanceof Promise ? await result : result;
     context.modules.set(module, moduleState);
   }
+
+  if (thread === Thread.Main) {
+    // Wait for module list from each thread
+    const mainThreadModules = modules.map((module) => module.name);
+
+    const [renderThreadModules, gameThreadModules] = await Promise.all([
+      waitForQueuedMessage<string[]>(Thread.Render, ModuleLoaderMessage.ModuleList),
+      waitForQueuedMessage<string[]>(Thread.Game, ModuleLoaderMessage.ModuleList),
+    ]);
+
+    const sortedModules = Array.from(
+      new Set([...mainThreadModules, ...renderThreadModules, ...gameThreadModules])
+    ).sort();
+
+    for (const moduleName of sortedModules) {
+      const promises: Promise<void>[] = [];
+
+      const mainThreadModule = modules.find((m) => m.name === moduleName);
+
+      if (mainThreadModule) {
+        promises.push(loadModule(mainThreadModule));
+      }
+
+      if (renderThreadModules.includes(moduleName)) {
+        sendQueuedMessage(Thread.Render, ModuleLoaderMessage.CreateModule, moduleName);
+        promises.push(waitForQueuedMessage(Thread.Render, ModuleLoaderMessage.ModuleCreated));
+      }
+
+      if (gameThreadModules.includes(moduleName)) {
+        sendQueuedMessage(Thread.Game, ModuleLoaderMessage.CreateModule, moduleName);
+        promises.push(waitForQueuedMessage(Thread.Game, ModuleLoaderMessage.ModuleCreated));
+      }
+
+      await Promise.all(promises);
+    }
+
+    sendQueuedMessage(Thread.Render, ModuleLoaderMessage.ModuleCreationFinished);
+    sendQueuedMessage(Thread.Game, ModuleLoaderMessage.ModuleCreationFinished);
+  } else {
+    // Send module list to main thread and wait for response
+
+    const disposeHandler = handleQueuedMessages<string>(
+      Thread.Main,
+      ModuleLoaderMessage.CreateModule,
+      async (moduleName) => {
+        const module = modules.find((module) => module.name === moduleName);
+
+        if (!module) {
+          throw new Error(`Module ${moduleName} not found on thread ${thread}`);
+        }
+
+        await loadModule(module);
+
+        sendQueuedMessage(Thread.Main, ModuleLoaderMessage.ModuleCreated);
+      }
+    );
+
+    sendQueuedMessage(
+      Thread.Main,
+      ModuleLoaderMessage.ModuleList,
+      modules.map((module) => module.name)
+    );
+
+    await waitForQueuedMessage(Thread.Main, ModuleLoaderMessage.ModuleCreationFinished);
+
+    disposeHandler();
+  }
+
+  const moduleDisposeFunctions: (() => void)[] = [];
 
   for (const module of modules) {
     const result = module.init(context);
@@ -159,6 +158,22 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
       moduleDisposeFunctions.push(dispose);
     }
   }
+
+  if (thread === Thread.Main) {
+    await Promise.all([
+      waitForQueuedMessage(Thread.Render, ModuleLoaderMessage.ModulesInitialized),
+      waitForQueuedMessage(Thread.Game, ModuleLoaderMessage.ModulesInitialized),
+    ]);
+
+    sendQueuedMessage(Thread.Render, ModuleLoaderMessage.Complete);
+    sendQueuedMessage(Thread.Game, ModuleLoaderMessage.Complete);
+  } else {
+    sendQueuedMessage(Thread.Main, ModuleLoaderMessage.ModulesInitialized);
+
+    await waitForQueuedMessage(Thread.Main, ModuleLoaderMessage.Complete);
+  }
+
+  dispose();
 
   return () => {
     for (const dispose of moduleDisposeFunctions) {
@@ -200,6 +215,137 @@ export function registerMessageHandler<ThreadContext extends BaseThreadContext, 
         handlers.splice(index, 1);
       }
     }
+  };
+}
+
+interface QueuedMessage<MessageType extends string = string, Key extends string = string, Data = unknown>
+  extends Message<MessageType> {
+  fromThread: Thread;
+  key: Key;
+  data?: Data;
+}
+
+interface DeferredMessage<Key extends string = string> {
+  fromThread: Thread;
+  key: Key;
+  resolve: (data: any) => void;
+  reject: (error: Error) => void;
+  timeoutId: number;
+}
+
+interface QueuedMessageHandler {
+  fromThread: Thread;
+  key: string;
+  callback: (data?: any) => void;
+}
+
+function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, MessageType extends string>(
+  localThread: Thread,
+  context: ThreadContext,
+  type: MessageType
+) {
+  const deferredMessages: DeferredMessage[] = [];
+  const messageQueue: QueuedMessage<MessageType, string, any>[] = [];
+  const messageHandlers: QueuedMessageHandler[] = [];
+
+  const dispose = registerMessageHandler<ThreadContext, MessageType, QueuedMessage<MessageType, string, unknown>>(
+    context,
+    type,
+    (_, message) => {
+      const deferredIndex = deferredMessages.findIndex(
+        (deferredMessage) => deferredMessage.key === message.key && deferredMessage.fromThread === message.fromThread
+      );
+
+      const deferred = deferredMessages[deferredIndex];
+
+      if (deferred) {
+        clearTimeout(deferred.timeoutId);
+        deferredMessages.splice(deferredIndex, 1);
+        deferred.resolve(message.data);
+        return;
+      }
+
+      const messageHandler = messageHandlers.find(
+        (handler) => handler.key === message.key && handler.fromThread === message.fromThread
+      );
+
+      if (messageHandler) {
+        messageHandler.callback(message.data);
+        return;
+      }
+
+      messageQueue.push(message);
+    }
+  );
+
+  function sendQueuedMessage(
+    toThread: Thread,
+    key: string,
+    data?: unknown,
+    transferList?: (Transferable | OffscreenCanvas)[]
+  ) {
+    context.sendMessage<QueuedMessage<MessageType, string, unknown>>(
+      toThread,
+      { type, fromThread: localThread, key, data },
+      transferList
+    );
+  }
+
+  function waitForQueuedMessage<Data = unknown>(fromThread: Thread, key: string): Promise<Data> {
+    const index = messageQueue.findIndex((message) => message.key === key && message.fromThread === fromThread);
+
+    if (index !== -1) {
+      const message = messageQueue[index];
+      messageQueue.splice(index, 1);
+      return Promise.resolve(message.data as Data);
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = self.setTimeout(() => {
+        reject(
+          new Error(
+            `timeout reached while waiting on message ${key} from thread ${fromThread} on thread ${localThread}`
+          )
+        );
+      }, 5000);
+      const msg = { fromThread, key, resolve, reject, timeoutId };
+      deferredMessages.push(msg);
+    });
+  }
+
+  function handleQueuedMessages<Data = unknown>(
+    fromThread: Thread,
+    key: string,
+    callback: (data: Data) => void
+  ): () => void {
+    const initialMessages = messageQueue.filter((message) => message.fromThread === fromThread && message.key === key);
+
+    for (const message of initialMessages) {
+      callback(message.data);
+    }
+
+    const messageHandler = {
+      fromThread,
+      key,
+      callback,
+    };
+
+    messageHandlers.push(messageHandler);
+
+    return () => {
+      const index = messageHandlers.indexOf(messageHandler);
+
+      if (index !== -1) {
+        messageHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  return {
+    dispose,
+    waitForQueuedMessage,
+    sendQueuedMessage,
+    handleQueuedMessages,
   };
 }
 

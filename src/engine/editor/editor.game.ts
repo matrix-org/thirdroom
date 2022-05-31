@@ -87,7 +87,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       ctx.mainToGameTripleBufferFlags
     );
 
-    sendMessage<InitializeEditorStateMessage>(Thread.Game, EditorMessageType.InitializeEditorState, {
+    sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
       sharedHierarchyState,
     });
 

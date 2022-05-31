@@ -2,14 +2,9 @@ import { addEntity, createWorld } from "bitecs";
 
 import { addChild, addTransformComponent } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
-import {
-  InitializeGameWorkerMessage,
-  WorkerMessages,
-  WorkerMessageType,
-  GameWorkerInitializedMessage,
-} from "./WorkerMessage";
+import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 import { registerDefaultPrefabs } from "./prefab";
-import { Message, registerMessageHandler, registerModules, Thread } from "./module/module.common";
+import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
@@ -25,11 +20,6 @@ async function onInitMessage({ data }: { data: WorkerMessages }) {
 
   if (message.type === WorkerMessageType.InitializeGameWorker) {
     workerScope.removeEventListener("message", onInitMessage);
-
-    postMessage({
-      type: WorkerMessageType.GameWorkerInitialized,
-    } as GameWorkerInitializedMessage);
-
     onInit(message);
   }
 }
@@ -42,10 +32,6 @@ async function onInit({
   gameToMainTripleBufferFlags,
   gameToRenderTripleBufferFlags,
 }: InitializeGameWorkerMessage) {
-  if (renderWorkerMessagePort) {
-    renderWorkerMessagePort.start();
-  }
-
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);
@@ -108,16 +94,22 @@ async function onInit({
     renderWorkerMessagePort.addEventListener("message", onMessage);
   }
 
-  await registerModules(state, gameConfig.modules);
+  // Sends message to main thread saying we're ready to register modules (send modules in message)
+  // Initially blocks until main thread tells game thread to register modules
+  // Register all modules
+  // Then wait for main thread to start this worker and we call update()
+  const modulePromise = registerModules(Thread.Game, state, gameConfig.modules);
+
+  if (renderWorkerMessagePort) {
+    renderWorkerMessagePort.start();
+  }
+
+  await modulePromise;
 
   registerDefaultPrefabs(state);
 
-  registerMessageHandler(state, WorkerMessageType.StartGameWorker, onStart);
+  console.log("GameWorker initialized");
 
-  state.sendMessage(Thread.Main, { type: "game-worker-modules-registered" });
-}
-
-function onStart(state: GameState) {
   update(state);
 }
 
