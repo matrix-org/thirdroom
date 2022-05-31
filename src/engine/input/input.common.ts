@@ -8,7 +8,7 @@ import { Keys } from "./KeyCodes";
 
 export const inputStateSchema = defineObjectBufferSchema({
   keyboard: [Uint32Array, Math.ceil(Keys.length / 32)],
-  mouseMovement: [Uint32Array, 2],
+  mouseMovement: [Float32Array, 2],
   mouseButtons: [Uint32Array, 1],
 });
 
