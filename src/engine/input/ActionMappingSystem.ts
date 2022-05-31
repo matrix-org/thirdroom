@@ -1,6 +1,8 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState, GameInputState } from "../GameWorker";
+import { GameState } from "../GameTypes";
+import { getModule } from "../module/module.common";
+import { InputModule, GameInputModuleState } from "./input.game";
 
 export enum ActionType {
   Vector2 = "Vector2",
@@ -62,14 +64,14 @@ const ActionTypesToBindings: {
   [key: string]: {
     create: () => any;
     bindings: {
-      [key: string]: (input: GameInputState, path: string, bindingDef: ActionBinding) => void;
+      [key: string]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => void;
     };
   };
 } = {
   [ActionType.Button]: {
     create: () => ({ pressed: false, released: false, held: false }),
     bindings: {
-      [BindingType.Button]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.Button]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const down = input.raw[(bindingDef as any).path];
         const value = input.actions.get(path) as ButtonActionState;
 
@@ -82,13 +84,13 @@ const ActionTypesToBindings: {
   [ActionType.Vector2]: {
     create: () => vec2.create(),
     bindings: {
-      [BindingType.Axes]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.Axes]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const { x, y } = bindingDef as AxesBinding;
         const value = input.actions.get(path) as vec2;
         value[0] = input.raw[x] || 0;
         value[1] = input.raw[y] || 0;
       },
-      [BindingType.DirectionalButtons]: (input: GameInputState, path: string, bindingDef: ActionBinding) => {
+      [BindingType.DirectionalButtons]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
         const { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
 
         let x = 0;
@@ -119,32 +121,38 @@ const ActionTypesToBindings: {
 };
 
 export function ActionMappingSystem(state: GameState) {
+  const input = getModule(state, InputModule);
+
   // Note not optimized at all
-  for (const actionMap of state.input.actionMaps) {
+  for (const actionMap of input.actionMaps) {
     for (const action of actionMap.actions) {
-      if (!state.input.actions.has(action.path)) {
-        state.input.actions.set(action.path, ActionTypesToBindings[action.type].create());
+      if (!input.actions.has(action.path)) {
+        input.actions.set(action.path, ActionTypesToBindings[action.type].create());
       }
 
       for (const binding of action.bindings) {
-        ActionTypesToBindings[action.type].bindings[binding.type](state.input, action.path, binding);
+        ActionTypesToBindings[action.type].bindings[binding.type](input, action.path, binding);
       }
     }
   }
 }
 
 export function enableActionMap(state: GameState, actionMap: ActionMap) {
-  const index = state.input.actionMaps.indexOf(actionMap);
+  const input = getModule(state, InputModule);
+
+  const index = input.actionMaps.indexOf(actionMap);
 
   if (index === -1) {
-    state.input.actionMaps.push(actionMap);
+    input.actionMaps.push(actionMap);
   }
 }
 
 export function disableActionMap(state: GameState, actionMap: ActionMap) {
-  const index = state.input.actionMaps.indexOf(actionMap);
+  const input = getModule(state, InputModule);
+
+  const index = input.actionMaps.indexOf(actionMap);
 
   if (index !== -1) {
-    state.input.actionMaps.splice(index, 1);
+    input.actionMaps.splice(index, 1);
   }
 }

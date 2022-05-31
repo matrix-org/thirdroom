@@ -1,4 +1,4 @@
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { ComponentPropertyType, ComponentPropertyStore, ComponentPropertyValue } from "./types";
 
 export type ComponentPropertyGetter<T extends ComponentPropertyType = ComponentPropertyType> = (

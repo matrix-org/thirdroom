@@ -1,17 +1,17 @@
+import { getModule, Thread } from "../module/module.common";
 import {
   AddResourceRefMessage,
   LoadResourceMessage,
   RemoveResourceRefMessage,
-  PostMessageTarget,
   WorkerMessageType,
 } from "../WorkerMessage";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 
 export interface ResourceManager {
   buffer: SharedArrayBuffer;
   view: Uint32Array;
   store: Map<number, ResourceInfo<any, any>>;
   resourceLoaders: Map<string, ResourceLoader<any, any, any>>;
-  workerMessageTarget: PostMessageTarget;
 }
 
 export type ResourceLoaderFactory<Def extends ResourceDefinition, Resource, RemoteResource = undefined> = (
@@ -59,16 +59,12 @@ export function createResourceManagerBuffer() {
   return new SharedArrayBuffer(4);
 }
 
-export function createResourceManager(
-  buffer: SharedArrayBuffer,
-  workerMessageTarget: PostMessageTarget
-): ResourceManager {
+export function createResourceManager(buffer: SharedArrayBuffer): ResourceManager {
   return {
     buffer,
     view: new Uint32Array(buffer),
     store: new Map(),
     resourceLoaders: new Map(),
-    workerMessageTarget,
   };
 }
 
@@ -81,11 +77,12 @@ export function registerResourceLoader(
 }
 
 export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteResource = undefined>(
-  manager: ResourceManager,
+  state: RenderThreadState,
   { resourceDef, resourceId }: LoadResourceMessage<Def>
 ): void {
+  const { resourceManager } = getModule(state, RendererModule);
   const { type } = resourceDef;
-  const loader: ResourceLoader<Def, Resource, RemoteResource> = manager.resourceLoaders.get(type)!;
+  const loader: ResourceLoader<Def, Resource, RemoteResource> = resourceManager.resourceLoaders.get(type)!;
 
   if (!loader) {
     throw new Error(`Resource loader ${type} not registered.`);
@@ -103,7 +100,7 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
     promise: loader.load({ ...resourceDef, name }),
   };
 
-  manager.store.set(resourceId, resourceInfo);
+  resourceManager.store.set(resourceId, resourceInfo);
 
   resourceInfo.promise
     .then((response) => {
@@ -114,7 +111,8 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
       resourceInfo.resource = response.resource;
       resourceInfo.state = ResourceState.Loaded;
 
-      manager.workerMessageTarget.postMessage(
+      state.sendMessage(
+        Thread.Game,
         {
           type: WorkerMessageType.ResourceLoaded,
           resourceId,
@@ -127,7 +125,7 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
       console.error(error);
       resourceInfo.state = ResourceState.Error;
       resourceInfo.error = error;
-      manager.workerMessageTarget.postMessage({
+      state.sendMessage(Thread.Game, {
         type: WorkerMessageType.ResourceLoadError,
         resourceId,
         error,
@@ -135,14 +133,15 @@ export function onLoadResource<Def extends ResourceDefinition, Resource, RemoteR
     });
 }
 
-export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddResourceRefMessage) {
-  const resourceInfo = manager.store.get(resourceId);
+export function onAddResourceRef(state: RenderThreadState, { resourceId }: AddResourceRefMessage) {
+  const { resourceManager } = getModule(state, RendererModule);
+  const resourceInfo = resourceManager.store.get(resourceId);
 
   if (!resourceInfo) {
     return;
   }
 
-  const loader = manager.resourceLoaders.get(resourceInfo.type)!;
+  const loader = resourceManager.resourceLoaders.get(resourceInfo.type)!;
 
   if (loader.addRef) {
     loader.addRef(resourceId);
@@ -151,23 +150,24 @@ export function onAddResourceRef(manager: ResourceManager, { resourceId }: AddRe
   resourceInfo.refCount++;
 }
 
-export function onRemoveResourceRef(manager: ResourceManager, { resourceId }: RemoveResourceRefMessage) {
-  const resourceInfo = manager.store.get(resourceId);
+export function onRemoveResourceRef(state: RenderThreadState, { resourceId }: RemoveResourceRefMessage) {
+  const { resourceManager } = getModule(state, RendererModule);
+  const resourceInfo = resourceManager.store.get(resourceId);
 
   if (!resourceInfo) {
     return;
   }
 
-  const loader = manager.resourceLoaders.get(resourceInfo.type)!;
+  const loader = resourceManager.resourceLoaders.get(resourceInfo.type)!;
 
   if (resourceInfo.refCount === 1) {
     if (loader.dispose) {
       loader.dispose(resourceId);
     }
 
-    manager.store.delete(resourceId);
+    resourceManager.store.delete(resourceId);
 
-    manager.workerMessageTarget.postMessage({
+    state.sendMessage(Thread.Game, {
       type: WorkerMessageType.ResourceDisposed,
       resourceId,
     });

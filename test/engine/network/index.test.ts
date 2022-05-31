@@ -3,7 +3,7 @@ import { ok, strictEqual } from "assert";
 import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
 
 import { Transform } from "../../../src/engine/component/transform";
-import { GameState } from "../../../src/engine/GameWorker";
+import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
   deserializeCreates,
@@ -24,15 +24,17 @@ import {
   deserializeTransformSnapshot,
   serializeUpdatesSnapshot,
   deserializeUpdatesSnapshot,
-} from "../../../src/engine/network";
+  NetworkModule,
+} from "../../../src/engine/network/network.game";
 import {
   createCursorView,
   readFloat32,
   readString,
   readUint32,
   readUint8,
-} from "../../../src/engine/network/CursorView";
+} from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
+import { getModule } from "../../../src/engine/module/module.common";
 
 describe("Network Tests", () => {
   describe("networkId", () => {
@@ -283,7 +285,8 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesSnapshot()", () => {
-      const state = { world: createWorld(), network: { networkIdToEntityId: new Map() } } as unknown as GameState;
+      const state = mockGameState();
+      const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -298,7 +301,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.networkIdToEntityId.set(eid, eid);
+        network.networkIdToEntityId.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -372,7 +375,8 @@ describe("Network Tests", () => {
       });
     });
     it("should #deserializeUpdatesChanged()", () => {
-      const state = { world: createWorld(), network: { networkIdToEntityId: new Map() } } as unknown as GameState;
+      const state = mockGameState();
+      const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
       const ents = Array(3)
@@ -387,7 +391,7 @@ describe("Network Tests", () => {
         quaternion.set([4, 5, 6]);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        state.network.networkIdToEntityId.set(eid, eid);
+        network.networkIdToEntityId.set(eid, eid);
         addComponent(state.world, Owned, eid);
       });
 
@@ -447,6 +451,7 @@ describe("Network Tests", () => {
     });
     it("should #deserializeCreates()", () => {
       const state = mockGameState();
+      const network = getModule(state, NetworkModule);
 
       const writer = createCursorView();
 
@@ -479,7 +484,7 @@ describe("Network Tests", () => {
         ok(incomingEid !== outgoingEid);
 
         strictEqual(Networked.networkId[incomingEid], outgoingEid);
-        strictEqual(state.network.networkIdToEntityId.get(outgoingEid), incomingEid);
+        strictEqual(network.networkIdToEntityId.get(outgoingEid), incomingEid);
       }
     });
   });

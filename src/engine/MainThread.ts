@@ -1,71 +1,138 @@
-import { EditorEventType, Selection } from "./editor/editor.common";
-import { ComponentInfo, ComponentPropertyType, ComponentPropertyValue } from "./component/types";
-import { mainAudioSystem, disposeAudioState, initAudioState, setPeerMediaStream } from "./audio";
 import GameWorker from "./GameWorker?worker";
-import { createInputManager } from "./input/InputManager";
-import { createResourceManagerBuffer } from "./resources/ResourceManager";
-import { createStatsBuffer, getStats, StatsObject } from "./stats";
-import { createTripleBuffer } from "./TripleBuffer";
-import {
-  GameWorkerInitializedMessage,
-  RenderWorkerInitializedMessage,
-  WorkerMessages,
-  WorkerMessageType,
-  PostMessageTarget,
-  InitializeGameWorkerMessage,
-} from "./WorkerMessage";
-import {
-  createMainThreadEditorState,
-  disposeEditor,
-  initEditorMainThread,
-  loadEditor,
-  mainEditorSystem,
-  removeComponent,
-  setComponentProperty,
-} from "./editor/editor.main";
+import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
+import { BaseThreadContext, Message, registerModules, Thread } from "./module/module.common";
+import mainThreadConfig from "./config.main";
+import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 
-export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Worker) {
-  const supportsOffscreenCanvas = !!window.OffscreenCanvas;
+export type MainThreadSystem = (state: IMainThreadContext) => void;
 
-  let renderWorker: Worker;
-  let canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  let renderWorkerMessageTarget: PostMessageTarget;
-  let gameWorkerMessageTarget: PostMessageTarget;
+export interface IMainThreadContext extends BaseThreadContext {
+  mainToGameTripleBufferFlags: Uint8Array;
+  gameToMainTripleBufferFlags: Uint8Array;
+  canvas: HTMLCanvasElement;
+  animationFrameId?: number;
+  gameWorker: Worker;
+  renderWorker: Worker | MessagePort;
+  initialGameWorkerState: { [key: string]: any };
+  initialRenderWorkerState: { [key: string]: any };
+}
 
-  if (supportsOffscreenCanvas) {
-    console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
-    const { default: RenderWorker } = await import("./RenderWorker?worker");
-    renderWorker = new RenderWorker();
-    canvasTarget = canvas.transferControlToOffscreen();
-    const interWorkerChannel = new MessageChannel();
-    renderWorkerMessageTarget = interWorkerChannel.port1;
-    gameWorkerMessageTarget = interWorkerChannel.port2;
-  } else {
-    console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
-    const result = await import("./RenderWorker");
-    renderWorker = result.default as Worker;
-    renderWorkerMessageTarget = result.default;
-    gameWorkerMessageTarget = gameWorker;
-    canvasTarget = canvas;
+export async function MainThread(canvas: HTMLCanvasElement) {
+  const gameWorker = new GameWorker();
+  const renderWorker = await initRenderWorker();
+  const interWorkerMessageChannel = new MessageChannel();
+
+  function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
+    if (thread === Thread.Game) {
+      gameWorker.postMessage(message, transferList);
+    } else if (thread === Thread.Render) {
+      renderWorker.postMessage(message, transferList);
+    }
   }
 
-  function onResize() {
-    renderWorker.postMessage({
-      type: WorkerMessageType.RenderWorkerResize,
-      canvasWidth: canvas.clientWidth,
-      canvasHeight: canvas.clientHeight,
-    });
+  const mainToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+
+  const context: IMainThreadContext = {
+    mainToGameTripleBufferFlags,
+    gameToMainTripleBufferFlags,
+    systems: mainThreadConfig.systems,
+    modules: new Map(),
+    canvas,
+    gameWorker,
+    renderWorker,
+    messageHandlers: new Map(),
+    initialGameWorkerState: {},
+    initialRenderWorkerState: {},
+    sendMessage: mainThreadSendMessage,
+  };
+
+  function onWorkerMessage(event: MessageEvent<Message<any>>) {
+    const handlers = context.messageHandlers.get(event.data.type);
+
+    if (handlers) {
+      for (let i = 0; i < handlers.length; i++) {
+        handlers[i](context, event.data);
+      }
+    }
   }
 
-  window.addEventListener("resize", onResize);
+  context.gameWorker.addEventListener("message", onWorkerMessage);
+  renderWorker.addEventListener("message", onWorkerMessage as any);
+
+  /* Register module loader event handlers before we send the message (sendMessage synchronous to RenderThread when RenderThread is running on MainThread)*/
+  const moduleLoaderPromise = registerModules(Thread.Main, context, mainThreadConfig.modules);
+
+  /* Initialize workers */
+
+  context.sendMessage(
+    Thread.Game,
+    {
+      type: WorkerMessageType.InitializeGameWorker,
+      renderWorkerMessagePort: interWorkerMessageChannel.port1,
+      mainToGameTripleBufferFlags,
+      gameToMainTripleBufferFlags,
+      gameToRenderTripleBufferFlags,
+    } as InitializeGameWorkerMessage,
+    [interWorkerMessageChannel.port1]
+  );
+
+  context.sendMessage(
+    Thread.Render,
+    {
+      type: WorkerMessageType.InitializeRenderWorker,
+      gameWorkerMessageTarget: interWorkerMessageChannel.port2,
+      gameToRenderTripleBufferFlags,
+    } as InitializeRenderWorkerMessage,
+    [interWorkerMessageChannel.port2]
+  );
+
+  /* Initialize all modules and retrieve data needed to send to workers */
+
+  const disposeModules = await moduleLoaderPromise;
+
+  /* Start Workers */
+
+  context.sendMessage(Thread.Render, {
+    type: WorkerMessageType.StartRenderWorker,
+  });
+
+  context.sendMessage(Thread.Render, {
+    type: WorkerMessageType.StartGameWorker,
+  });
+
+  /* Update loop */
+
+  function update() {
+    swapReadBufferFlags(context.gameToMainTripleBufferFlags);
+
+    for (let i = 0; i < context.systems.length; i++) {
+      context.systems[i](context);
+    }
+
+    swapWriteBufferFlags(context.mainToGameTripleBufferFlags);
+
+    context.animationFrameId = requestAnimationFrame(update);
+  }
+
+  console.log("MainThread initialized");
+
+  update();
 
   return {
-    renderWorker,
-    canvasTarget,
-    renderWorkerMessageTarget,
-    gameWorkerMessageTarget,
+    context,
     dispose() {
-      window.removeEventListener("resize", onResize);
+      if (context.animationFrameId !== undefined) {
+        cancelAnimationFrame(context.animationFrameId);
+      }
+
+      disposeModules();
+
+      context.gameWorker.removeEventListener("message", onWorkerMessage);
+      renderWorker.removeEventListener("message", onWorkerMessage as any);
+
+      context.gameWorker.terminate();
 
       if (renderWorker instanceof Worker) {
         renderWorker.terminate();
@@ -74,443 +141,25 @@ export async function initRenderWorker(canvas: HTMLCanvasElement, gameWorker: Wo
   };
 }
 
-export interface Engine {
-  connectToTestNet(): void;
-  setHost(value: boolean): void;
-  setState(state: any): void;
-  setPeerId(peerId: string): void;
-  hasPeer(peerId: string): boolean;
-  addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream): void;
-  removePeer(peerId: string): void;
-  disconnect(): void;
-  getStats(): StatsObject;
-  exportScene(): void;
-  loadEditor(): void;
-  disposeEditor(): void;
-  getSelection(): Selection;
-  getComponentInfo(componentId: number): ComponentInfo | undefined;
-  removeComponent(componentId: number): void;
-  getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined;
-  setComponentProperty<T>(propertyId: number, value: T): void;
-  addListener(type: EditorEventType.SelectionChanged, listener: (selection: Selection) => void): void;
-  addListener(
-    type: EditorEventType.ComponentInfoChanged,
-    listener: (componentId: number, componentInfo: ComponentInfo) => void
-  ): void;
-  addListener<T extends ComponentPropertyType>(
-    type: EditorEventType.ComponentPropertyChanged,
-    listener: (propertyId: number, value: ComponentPropertyValue<T>) => void
-  ): void;
-  addListener(type: EditorEventType, listener: (...args: any[]) => void): void;
-  removeListener(type: EditorEventType, listener: (...args: any[]) => void): void;
-  dispose(): void;
+async function initRenderWorker(): Promise<Worker | MessagePort> {
+  const supportsOffscreenCanvas = !!window.OffscreenCanvas;
+
+  if (supportsOffscreenCanvas) {
+    console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
+    const { default: RenderWorker } = await import("./RenderWorker?worker");
+    return new RenderWorker();
+  } else {
+    console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
+    const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
+    return initRenderWorkerOnMainThread();
+  }
 }
 
-export async function initEngine(canvas: HTMLCanvasElement): Promise<Engine> {
-  const inputManager = createInputManager(canvas);
-  const gameWorker = new GameWorker();
-  const {
-    renderWorker,
-    canvasTarget,
-    renderWorkerMessageTarget,
-    gameWorkerMessageTarget,
-    dispose: disposeRenderWorker,
-  } = await initRenderWorker(canvas, gameWorker);
-
-  const renderableTripleBuffer = createTripleBuffer();
-
-  const resourceManagerBuffer = createResourceManagerBuffer();
-
-  const renderWorkerMessagePort =
-    renderWorkerMessageTarget instanceof MessagePort ? renderWorkerMessageTarget : undefined;
-
-  const statsBuffer = createStatsBuffer();
-
-  const audioState = initAudioState(gameWorker);
-
-  const editorState = createMainThreadEditorState();
-
-  /* Wait for workers to be ready */
-
-  await new Promise<RenderWorkerInitializedMessage>((resolve, reject) => {
-    renderWorker.postMessage(
-      {
-        type: WorkerMessageType.InitializeRenderWorker,
-        renderableTripleBuffer,
-        gameWorkerMessageTarget,
-        canvasTarget,
-        initialCanvasWidth: canvas.clientWidth,
-        initialCanvasHeight: canvas.clientHeight,
-        resourceManagerBuffer,
-        statsSharedArrayBuffer: statsBuffer.buffer,
-      },
-      gameWorkerMessageTarget instanceof MessagePort && canvasTarget instanceof OffscreenCanvas
-        ? [gameWorkerMessageTarget, canvasTarget]
-        : undefined
-    );
-
-    const onMessage = ({ data }: any): void => {
-      if (data.type === WorkerMessageType.RenderWorkerInitialized) {
-        resolve(data);
-        renderWorker.removeEventListener("message", onMessage);
-      } else if (data.type === WorkerMessageType.RenderWorkerError) {
-        reject(data.error);
-        renderWorker.removeEventListener("message", onMessage);
-      }
-    };
-
-    renderWorker.addEventListener("message", onMessage);
+export function sendWorldJoinedMessage(state: IMainThreadContext, joined: boolean) {
+  state.gameWorker.postMessage({
+    type: WorkerMessageType.StateChanged,
+    state: {
+      joined,
+    },
   });
-
-  await new Promise<GameWorkerInitializedMessage>((resolve, reject) => {
-    gameWorker.postMessage(
-      {
-        type: WorkerMessageType.InitializeGameWorker,
-        renderableTripleBuffer,
-        inputTripleBuffer: inputManager.tripleBuffer,
-        audioTripleBuffer: audioState.tripleBuffer,
-        renderWorkerMessagePort,
-        resourceManagerBuffer,
-        statsSharedArrayBuffer: statsBuffer.buffer,
-        hierarchyTripleBuffer: editorState.hierarchyTripleBuffer,
-      } as InitializeGameWorkerMessage,
-      renderWorkerMessagePort ? [renderWorkerMessagePort] : undefined
-    );
-
-    const onMessage = ({ data }: { data: WorkerMessages }): void => {
-      if (data.type === WorkerMessageType.GameWorkerInitialized) {
-        resolve(data);
-        gameWorker.removeEventListener("message", onMessage);
-      } else if (data.type === WorkerMessageType.GameWorkerError) {
-        reject(data.error);
-        gameWorker.removeEventListener("message", onMessage);
-      }
-    };
-
-    gameWorker.addEventListener("message", onMessage);
-  });
-
-  /* Start Workers */
-
-  renderWorker.postMessage({
-    type: WorkerMessageType.StartRenderWorker,
-  });
-
-  gameWorker.postMessage({
-    type: WorkerMessageType.StartGameWorker,
-  });
-
-  /* Render Worker Messages */
-
-  const onRenderWorkerMessage = ({ data }: MessageEvent) => {
-    if (typeof data !== "object") {
-      return;
-    }
-
-    const message = data as WorkerMessages;
-
-    switch (message.type) {
-      case WorkerMessageType.SaveGLTF:
-        downloadFile(message.buffer, "scene.glb");
-        break;
-    }
-  };
-
-  renderWorker.addEventListener("message", onRenderWorkerMessage);
-
-  /* Game Worker Messages */
-
-  initEditorMainThread(editorState, gameWorker);
-
-  const onPeerMessage = ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: WorkerMessageType.ReliableNetworkMessage, packet: data }, [data]);
-  };
-
-  let ws: WebSocket | undefined;
-
-  const reliableChannels: Map<string, RTCDataChannel> = new Map();
-  const unreliableChannels: Map<string, RTCDataChannel> = new Map();
-
-  const sendReliable = (peerId: string, packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      const peer = reliableChannels.get(peerId);
-      if (peer) peer.send(packet);
-    }
-  };
-
-  const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      const peer = unreliableChannels.get(peerId);
-      if (peer) peer.send(packet);
-    }
-  };
-
-  const broadcastReliable = (packet: ArrayBuffer) => {
-    if (ws) {
-      ws.send(packet);
-    } else {
-      reliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(packet);
-        }
-      });
-    }
-  };
-
-  const broadcastUnreliable = (packet: ArrayBuffer) => {
-    if (ws) {
-      ws?.send(packet);
-    } else {
-      unreliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(packet);
-        }
-      });
-    }
-  };
-
-  const onGameWorkerMessage = ({ data }: MessageEvent) => {
-    if (typeof data !== "object") {
-      return;
-    }
-
-    const message = data as WorkerMessages;
-
-    switch (message.type) {
-      case WorkerMessageType.ReliableNetworkMessage:
-        sendReliable(message.peerId, message.packet);
-        break;
-      case WorkerMessageType.UnreliableNetworkMessage:
-        sendUnreliable(message.peerId, message.packet);
-        break;
-      case WorkerMessageType.ReliableNetworkBroadcast:
-        broadcastReliable(message.packet);
-        break;
-      case WorkerMessageType.UnreliableNetworkBroadcast:
-        broadcastUnreliable(message.packet);
-        break;
-    }
-  };
-
-  gameWorker.addEventListener("message", onGameWorkerMessage);
-
-  /* Update loop for input manager */
-
-  let animationFrameId: number;
-
-  function update() {
-    inputManager.update();
-    mainAudioSystem(audioState);
-    mainEditorSystem(editorState);
-    animationFrameId = requestAnimationFrame(update);
-  }
-
-  update();
-
-  function onPeerLeft(peerId: string) {
-    const reliableChannel = reliableChannels.get(peerId);
-    const unreliableChannel = reliableChannels.get(peerId);
-    reliableChannel?.removeEventListener("message", onPeerMessage);
-    unreliableChannel?.removeEventListener("message", onPeerMessage);
-
-    reliableChannels.delete(peerId);
-    unreliableChannels.delete(peerId);
-
-    gameWorker.postMessage({
-      type: WorkerMessageType.RemovePeerId,
-      peerId,
-    });
-  }
-
-  return {
-    connectToTestNet() {
-      ws = new WebSocket("ws://localhost:9090");
-      ws.binaryType = "arraybuffer";
-
-      ws.addEventListener("open", (data) => {
-        console.log("connected to websocket server");
-      });
-
-      ws.addEventListener("close", (data) => {});
-
-      const setHostFn = (data: { data: any }) => {
-        if (data.data === "setHost") {
-          console.log("ws - setHost");
-          gameWorker.postMessage({
-            type: WorkerMessageType.SetHost,
-            value: true,
-          });
-          ws?.removeEventListener("message", setHostFn);
-        }
-      };
-      ws.addEventListener("message", setHostFn);
-
-      const setPeerIdFn = (data: { data: any }) => {
-        try {
-          const d: any = JSON.parse(data.data);
-          if (d.setPeerId) {
-            console.log("ws - setPeerId", d.setPeerId);
-            gameWorker.postMessage({
-              type: WorkerMessageType.SetPeerId,
-              peerId: d.setPeerId,
-            });
-            gameWorker.postMessage({
-              type: WorkerMessageType.StateChanged,
-              state: { joined: true },
-            });
-
-            ws?.addEventListener("message", onPeerMessage);
-
-            ws?.removeEventListener("message", setPeerIdFn);
-          }
-        } catch {}
-      };
-      ws.addEventListener("message", setPeerIdFn);
-
-      const addPeerId = (data: { data: any }) => {
-        try {
-          const d: any = JSON.parse(data.data);
-          if (d.addPeerId) {
-            console.log("ws - addPeerId", d.addPeerId);
-            gameWorker.postMessage({
-              type: WorkerMessageType.AddPeerId,
-              peerId: d.addPeerId,
-            });
-          }
-        } catch {}
-      };
-      ws.addEventListener("message", addPeerId);
-    },
-    setHost(value: boolean) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.SetHost,
-        value,
-      });
-    },
-    setState(state: any) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.StateChanged,
-        state,
-      });
-    },
-    hasPeer(peerId: string): boolean {
-      return reliableChannels.has(peerId);
-    },
-    addPeer(peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
-      if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
-      else unreliableChannels.set(peerId, dataChannel);
-
-      const onOpen = () => {
-        const onClose = () => {
-          onPeerLeft(peerId);
-        };
-
-        dataChannel.addEventListener("message", onPeerMessage);
-        dataChannel.addEventListener("close", onClose);
-
-        gameWorker.postMessage({
-          type: WorkerMessageType.AddPeerId,
-          peerId,
-        });
-      };
-
-      dataChannel.binaryType = "arraybuffer";
-      dataChannel.addEventListener("open", onOpen);
-
-      if (mediaStream) {
-        setPeerMediaStream(audioState, peerId, mediaStream);
-      }
-    },
-    removePeer(peerId: string) {
-      onPeerLeft(peerId);
-    },
-    disconnect() {
-      for (const [peerId] of reliableChannels) {
-        onPeerLeft(peerId);
-      }
-    },
-    setPeerId(peerId: string) {
-      gameWorker.postMessage({
-        type: WorkerMessageType.SetPeerId,
-        peerId,
-      });
-    },
-    loadEditor() {
-      loadEditor(gameWorker);
-    },
-    disposeEditor() {
-      disposeEditor(editorState, gameWorker);
-    },
-    getSelection(): Selection {
-      return {
-        activeEntity: editorState.activeEntity,
-        activeEntityComponents: editorState.activeEntityComponents,
-        selectedEntities: editorState.selectedEntities,
-      };
-    },
-    getComponentInfo(componentId: number): ComponentInfo | undefined {
-      return editorState.componentInfoMap.get(componentId);
-    },
-    removeComponent(componentId: number): void {
-      removeComponent(editorState, gameWorker, componentId);
-    },
-    getComponentProperty<T extends ComponentPropertyType>(propertyId: number): ComponentPropertyValue<T> | undefined {
-      return editorState.componentProperties.get(propertyId);
-    },
-    setComponentProperty<T>(propertyId: number, value: T): void {
-      setComponentProperty(editorState, gameWorker, propertyId, value);
-    },
-    addListener(type: EditorEventType, listener: (...args: any[]) => void): void {
-      const listeners = editorState.eventListeners.get(type) || [];
-      listeners.push(listener);
-      editorState.eventListeners.set(type, listeners);
-    },
-    removeListener(type: EditorEventType, listener: (...args: any[]) => void): void {
-      const listeners = editorState.eventListeners.get(type);
-
-      if (listeners) {
-        const index = listeners.indexOf(listener);
-
-        if (index === -1) {
-          return;
-        }
-
-        listeners.splice(index, 1);
-
-        if (listeners.length === 0) {
-          editorState.eventListeners.delete(type);
-        }
-      }
-    },
-    getStats() {
-      return getStats(statsBuffer);
-    },
-    exportScene() {
-      gameWorker.postMessage({
-        type: WorkerMessageType.ExportScene,
-      });
-    },
-    dispose() {
-      cancelAnimationFrame(animationFrameId);
-      inputManager.dispose();
-      gameWorker.terminate();
-      disposeRenderWorker();
-      disposeAudioState(audioState);
-    },
-  };
-}
-
-function downloadFile(buffer: ArrayBuffer, fileName: string) {
-  const blob = new Blob([buffer], { type: "application/octet-stream" });
-  const el = document.createElement("a");
-  el.style.display = "none";
-  document.body.appendChild(el);
-  el.href = URL.createObjectURL(blob);
-  el.download = fileName;
-  el.click();
-  document.body.removeChild(el);
 }

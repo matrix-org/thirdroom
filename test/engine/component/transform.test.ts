@@ -8,7 +8,7 @@ import {
   removeChild,
   traverse,
 } from "../../../src/engine/component/transform";
-import { NOOP } from "../../../src/engine/config";
+import { NOOP } from "../../../src/engine/config.common";
 
 describe("Transform Unit Tests", function () {
   describe("scene graph hierarchy", function () {

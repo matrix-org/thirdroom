@@ -2,7 +2,9 @@ import { useState, useCallback, useEffect } from "react";
 
 import { ComponentPropertyType, ComponentPropertyValue } from "../../engine/component/types";
 import { EditorEventType } from "../../engine/editor/editor.common";
-import { useEngine } from "./useEngine";
+import { EditorModule, sendSetComponentPropertyMessage } from "../../engine/editor/editor.main";
+import { getModule } from "../../engine/module/module.common";
+import { useMainThreadContext } from "./useMainThread";
 
 interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
   value: ComponentPropertyValue<T> | undefined;
@@ -10,15 +12,18 @@ interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
 }
 
 export function useComponentProperty<T extends ComponentPropertyType>(propId: number): ComponentPropertyInputProps<T> {
-  const engine = useEngine();
-  const [value, setValue] = useState(() => engine.getComponentProperty<T>(propId));
+  const mainThread = useMainThreadContext();
+  const editor = getModule(mainThread, EditorModule);
+  const [value, setValue] = useState<ComponentPropertyValue<T> | undefined>(() =>
+    editor.componentProperties.get(propId)
+  );
 
   const onChange = useCallback(
     (value: ComponentPropertyValue<T>) => {
-      engine.setComponentProperty(propId, value);
+      sendSetComponentPropertyMessage(mainThread, propId, value);
       setValue(value);
     },
-    [engine, propId]
+    [mainThread, propId]
   );
 
   useEffect(() => {
@@ -28,14 +33,14 @@ export function useComponentProperty<T extends ComponentPropertyType>(propId: nu
       }
     }
 
-    engine.addListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
+    editor.addListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
 
-    setValue(engine.getComponentProperty(propId));
+    setValue(editor.componentProperties.get(propId));
 
     return () => {
-      engine.removeListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
+      editor.removeListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
     };
-  }, [engine, propId]);
+  }, [editor, propId]);
 
   return { value, onChange };
 }
