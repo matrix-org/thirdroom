@@ -151,7 +151,7 @@ export const preloadDefaultAudio = async (
   defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
 };
 
-const isChrome = !!window.chrome;
+const isChrome = /Chrome/.test(navigator.userAgent);
 
 export const setPeerMediaStream = (audioState: AudioModuleState, peerId: string, mediaStream: MediaStream) => {
   // https://bugs.chromium.org/p/chromium/issues/detail?id=933677

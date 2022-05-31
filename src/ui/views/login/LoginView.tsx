@@ -80,7 +80,7 @@ export function LoginView() {
           >
             <Input name="password" type="password" disabled={authenticating} required />
           </SettingTile>
-          <Button variant="primary" type="submit" disabled={authenticating}>
+          <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
             {authenticating ? "Login in progress..." : "Login"}
           </Button>
         </form>

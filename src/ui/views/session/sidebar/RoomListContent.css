@@ -1,12 +1,7 @@
 .RoomListViewContent {
   min-height: 100%;
-  position: relative;
 
-  & .CategoryHeader {
-    background-color: var(--bg-surface);
-
-    position: sticky;
-    top: 0;
-    z-index: 99;
+  & .Category {
+    padding-bottom: var(--sp-lg);
   }
 }

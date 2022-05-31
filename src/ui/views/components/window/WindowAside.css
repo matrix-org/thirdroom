@@ -1,0 +1,4 @@
+.WindowAside {
+  height: 100%;
+  padding: 0 var(--sp-xs) var(--sp-xs) 0;
+}
