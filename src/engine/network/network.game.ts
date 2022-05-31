@@ -122,6 +122,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
     registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
+    registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
@@ -683,9 +684,9 @@ const setMessageType = (type: NetworkAction) => (input: NetPipeData) => {
 // playerNetIdMsg + createMsg + deleteMsg
 export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   setMessageType(NetworkAction.NewPeerSnapshot),
-  serializePlayerNetworkId,
   serializeCreatesSnapshot,
   serializeUpdatesSnapshot,
+  serializePlayerNetworkId,
   ([_, v]) => sliceCursorView(v)
 );
 
@@ -894,6 +895,7 @@ export function OutboundNetworkSystem(state: GameState) {
 
 /* Inbound */
 
+const deserializeNewPeerSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot, deserializePlayerNetworkId);
 const deserializeSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
 const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
 

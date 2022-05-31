@@ -95,7 +95,7 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
       },
     };
   },
-  async init(ctx) {
+  init(ctx) {
     const audio = getModule(ctx, AudioModule);
 
     preloadDefaultAudio(audio);
@@ -141,6 +141,7 @@ export const addEntityPanner = (
   panner.panningModel = "HRTF";
   panner.connect(audioState.sample.gain);
   audioState.entityPanners.set(eid, panner);
+  return panner;
 };
 
 export const preloadDefaultAudio = async (
@@ -202,8 +203,8 @@ export const playAudioBuffer = (
 export const playAudioAtEntity = async (audioState: AudioModuleState, filepath: string, eid: number) => {
   const audioBuffer = await getAudioBuffer(audioState, filepath);
   if (audioBuffer) {
-    if (!audioState.entityPanners.has(eid)) addEntityPanner(audioState, eid);
-    const panner = audioState.entityPanners.get(eid);
+    let panner = audioState.entityPanners.get(eid);
+    if (!panner) panner = addEntityPanner(audioState, eid);
     playAudioBuffer(audioState, audioBuffer, panner);
   } else console.error(`error: could not play audio ${filepath} - audio buffer not found`);
 };
@@ -254,8 +255,8 @@ export const onSetAudioPeerEntity = (mainThread: IMainThreadContext, message: Se
   if (!mediaStreamSource)
     return console.error("could not setAudioPeerEntity - mediaStreamSource not found for peer", peerId);
 
-  const panner = audioModule.entityPanners.get(eid);
-  if (!panner) return console.error("could not setAudioPeerEntity - panner not found for eid", eid, "peerId", peerId);
+  let panner = audioModule.entityPanners.get(eid);
+  if (!panner) panner = addEntityPanner(audioModule, eid);
 
   mediaStreamSource.connect(panner);
 };
