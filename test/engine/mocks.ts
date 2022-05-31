@@ -3,9 +3,43 @@ import { createWorld } from "bitecs";
 
 import { RemoteResourceInfo, RemoteResourceManager } from "../../src/engine/resources/RemoteResourceManager";
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
-import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
-import { registerDefaultPrefabs } from "../../src/engine/prefab";
+import { registerPrefab } from "../../src/engine/prefab";
 import { GameState } from "../../src/engine/GameTypes";
+import { NetworkModule } from "../../src/engine/network/network.game";
+import { RendererModule } from "../../src/engine/renderer/renderer.game";
+import { worldMatrixObjectBufferSchema } from "../../src/engine/component/transform.common";
+import { worldMatrixObjectBuffer } from "../../src/engine/component/transform";
+import { createTripleBufferBackedObjectBufferView } from "../../src/engine/allocator/ObjectBufferView";
+import { renderableSchema } from "../../src/engine/component/renderable.common";
+import { renderableObjectBufferView } from "../../src/engine/component/renderable";
+import { PhysicsModule } from "../../src/engine/physics/physics.game";
+
+export function registerDefaultPrefabs(state: GameState) {
+  registerPrefab(state, {
+    name: "random-cube",
+    create: () => {},
+  });
+  registerPrefab(state, {
+    name: "red-cube",
+    create: () => {},
+  });
+  registerPrefab(state, {
+    name: "musical-cube",
+    create: () => {},
+  });
+  registerPrefab(state, {
+    name: "green-cube",
+    create: () => {},
+  });
+  registerPrefab(state, {
+    name: "blue-cube",
+    create: () => {},
+  });
+  registerPrefab(state, {
+    name: "player-cube",
+    create: () => {},
+  });
+}
 
 export const mockPostMessageTarget = () =>
   ({
@@ -30,40 +64,61 @@ export const mockRemoteResourceManager = (buffer = new SharedArrayBuffer(4)) =>
     store: new Map<number, RemoteResourceInfo<any>>(),
   } as RemoteResourceManager);
 
-export const mockPhysicsWorld = () => ({
-  createRigidBody: (body: RAPIER.RigidBodyDesc) => ({
-    handle: 0,
-    lockTranslations: () => {},
-    lockRotations: () => {},
-  }),
-  createCollider: (desc: RAPIER.ColliderDesc, parentHandle?: number | undefined) => {},
+export const mockPhysicsState = () => ({
+  physicsWorld: {
+    createRigidBody: (body: RAPIER.RigidBodyDesc) => ({
+      handle: 0,
+      lockTranslations: () => {},
+      lockRotations: () => {},
+    }),
+    createCollider: (desc: RAPIER.ColliderDesc, parentHandle?: number | undefined) => {},
+  } as unknown as RAPIER.World,
 });
 
-export const mockRenderState = () => ({
-  tripleBuffer: createTripleBuffer(),
-  port: mockPostMessageTarget(),
-});
+export const mockRenderState = () => {
+  const worldMatrixObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
+    worldMatrixObjectBufferSchema,
+    worldMatrixObjectBuffer,
+    new Uint8Array()
+  );
+
+  const renderableObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
+    renderableSchema,
+    renderableObjectBufferView,
+    new Uint8Array()
+  );
+
+  return {
+    worldMatrixObjectTripleBuffer,
+    renderableObjectTripleBuffer,
+    resourceManager: mockRemoteResourceManager(),
+  };
+};
 
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
 });
 
 export const mockGameState = () => {
-  const gameState = {
+  const ctx = {
     world: createWorld(),
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
-    resourceManager: mockRemoteResourceManager(),
-    physicsWorld: mockPhysicsWorld(),
     renderer: mockRenderState(),
+    renderPort: mockPostMessageTarget(),
     systemGraphChanged: true,
     systemGraph: [],
     systems: [],
     messageHandlers: new Map(),
     scopes: new Map(),
+    modules: new Map(),
   } as unknown as GameState;
 
-  registerDefaultPrefabs(gameState);
+  ctx.modules.set(PhysicsModule, mockPhysicsState());
+  ctx.modules.set(NetworkModule, mockNetworkState());
+  ctx.modules.set(RendererModule, mockRenderState());
 
-  return gameState;
+  registerDefaultPrefabs(ctx);
+
+  return ctx;
 };
