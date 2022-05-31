@@ -87,6 +87,7 @@ export interface IInitialRenderThreadState {
 }
 
 export interface RenderThreadState extends BaseThreadContext {
+  canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
   gameWorkerMessageTarget: PostMessageTarget;
@@ -139,7 +140,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     registerResourceLoader(resourceManager, LightResourceLoader);
     registerResourceLoader(resourceManager, GLTFResourceLoader);
 
-    const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget });
+    const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget || ctx.canvas });
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.outputEncoding = sRGBEncoding;

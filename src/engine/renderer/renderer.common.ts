@@ -12,7 +12,7 @@ export enum RendererMessageType {
 }
 
 export interface InitializeCanvasMessage {
-  canvasTarget: HTMLCanvasElement | OffscreenCanvas;
+  canvasTarget?: OffscreenCanvas;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
 }

@@ -19,7 +19,7 @@ export interface IMainThreadContext extends BaseThreadContext {
 
 export async function MainThread(canvas: HTMLCanvasElement) {
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker();
+  const renderWorker = await initRenderWorker(canvas);
   const interWorkerMessageChannel = new MessageChannel();
 
   function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
@@ -141,7 +141,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   };
 }
 
-async function initRenderWorker(): Promise<Worker | MessagePort> {
+async function initRenderWorker(canvas: HTMLCanvasElement): Promise<Worker | MessagePort> {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
 
   if (supportsOffscreenCanvas) {
@@ -151,7 +151,7 @@ async function initRenderWorker(): Promise<Worker | MessagePort> {
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
     const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
-    return initRenderWorkerOnMainThread();
+    return initRenderWorkerOnMainThread(canvas);
   }
 }
 

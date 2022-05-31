@@ -6,10 +6,11 @@ import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;
 
-export default function initRenderWorkerOnMainThread() {
+export default function initRenderWorkerOnMainThread(canvas: HTMLCanvasElement) {
   const messageChannel = new MessageChannel();
-  startRenderWorker(messageChannel.port1);
+  startRenderWorker(messageChannel.port1, canvas);
   messageChannel.port1.start();
+  messageChannel.port2.start();
   return messageChannel.port2;
 }
 
@@ -19,7 +20,7 @@ if (isWorker) {
   startRenderWorker(self as DedicatedWorkerGlobalScope);
 }
 
-function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort) {
+function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort, canvas?: HTMLCanvasElement) {
   const onInitMessage = (event: MessageEvent<WorkerMessages>) => {
     if (typeof event.data !== "object") {
       return;
@@ -29,7 +30,7 @@ function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort
 
     if (message.type === WorkerMessageType.InitializeRenderWorker) {
       workerScope.removeEventListener("message", onInitMessage as any);
-      onInit(workerScope, message);
+      onInit(workerScope, message, canvas);
     }
   };
 
@@ -38,7 +39,8 @@ function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort
 
 async function onInit(
   workerScope: DedicatedWorkerGlobalScope | MessagePort,
-  { gameWorkerMessageTarget, gameToRenderTripleBufferFlags }: InitializeRenderWorkerMessage
+  { gameWorkerMessageTarget, gameToRenderTripleBufferFlags }: InitializeRenderWorkerMessage,
+  canvas?: HTMLCanvasElement
 ) {
   function renderWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
     if (thread === Thread.Game) {
@@ -49,6 +51,7 @@ async function onInit(
   }
 
   const state: RenderThreadState = {
+    canvas,
     gameToRenderTripleBufferFlags,
     elapsed: performance.now(),
     dt: 0,
