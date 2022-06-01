@@ -117,7 +117,7 @@ async function onInit({
 // ex. Our game loop should be called every 16.666ms, it took 3ms this frame.
 // We could schedule the timeout for 13.666ms, but it would likely be scheduled about  3ms later.
 // So subtract 3-4ms from that timeout to make sure it always swaps the buffers in under 16.666ms.
-const timeoutOffset = 0;
+const timeoutOffset = 4;
 
 function update(state: GameState) {
   const now = performance.now();
