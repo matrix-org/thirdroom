@@ -1,58 +1,75 @@
+import { RingBuffer } from "ringbuf.js";
+
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { flagSet } from "./Bitmask";
-import { codeToKeyCode } from "./KeyCodes";
-import {
-  InitializeInputStateMessage,
-  InputMessageType,
-  InputState,
-  inputStateSchema,
-  SharedInputState,
-} from "./input.common";
-import {
-  clearObjectBufferView,
-  commitToTripleBufferView,
-  createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
-} from "../allocator/ObjectBufferView";
+import { codeToKeyCode, KeyCodes } from "./KeyCodes";
+import { InitializeInputStateMessage, InputMessageType } from "./input.common";
+import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
 
 /*********
  * Types *
  ********/
 
 export interface InputModuleState {
-  sharedInputState: SharedInputState;
-  inputState: InputState;
+  inputRingBuffer: InputRingBuffer;
 }
 
 /******************
  * Initialization *
  *****************/
 
+// max ringbuffer items
+const MAX_ITEMS = 100;
+
 export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
   name: "input",
   create(ctx, { sendMessage }) {
-    const inputState = createObjectBufferView(inputStateSchema, ArrayBuffer);
-    const sharedInputState = createTripleBufferBackedObjectBufferView(
-      inputStateSchema,
-      inputState,
-      ctx.gameToMainTripleBufferFlags
-    );
+    const inputRingBufferSab = RingBuffer.getStorageForCapacity(MAX_ITEMS, Float32Array);
+    const inputRingBuffer = createInputRingBuffer(new RingBuffer(inputRingBufferSab, Float32Array as any));
 
-    sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, { sharedInputState });
+    sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, {
+      inputRingBufferSab,
+    });
 
     return {
-      sharedInputState,
-      inputState,
+      inputRingBuffer,
     };
   },
   init(ctx) {
-    const { inputState } = getModule(ctx, InputModule);
+    const { inputRingBuffer } = getModule(ctx, InputModule);
     const { canvas } = ctx;
+
+    const last: { [key: string]: boolean } = {};
 
     function onMouseDown({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        inputState.mouseButtons[0] = buttons;
+        switch (buttons) {
+          case 1:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse1, 1)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 2:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse2, 1)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 4:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse3, 1)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 8:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse4, 1)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 16:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse5, 1)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+        }
       } else {
         canvas.requestPointerLock();
       }
@@ -60,32 +77,67 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
 
     function onMouseUp({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        inputState.mouseButtons[0] = buttons;
+        switch (buttons) {
+          case 1:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse1, 0)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 2:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse2, 0)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 4:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse3, 0)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 8:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse4, 0)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+          case 16:
+            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse5, 0)) {
+              console.warn("input ring buffer full");
+            }
+            break;
+        }
       }
     }
 
     function onKeyDown({ code }: KeyboardEvent) {
+      if (last[code]) return;
+      last[code] = true;
       if (document.pointerLockElement === canvas) {
-        flagSet(inputState.keyboard, codeToKeyCode(code), 1);
+        if (!enqueueInputRingBuffer(inputRingBuffer, codeToKeyCode(code), 1)) {
+          console.warn("input ring buffer full");
+        }
       }
     }
 
     function onKeyUp({ code }: KeyboardEvent) {
+      last[code] = false;
       if (document.pointerLockElement === canvas) {
-        flagSet(inputState.keyboard, codeToKeyCode(code), 0);
+        if (!enqueueInputRingBuffer(inputRingBuffer, codeToKeyCode(code), 0)) {
+          console.warn("input ring buffer full");
+        }
       }
     }
 
     function onMouseMove({ movementX, movementY }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        inputState.mouseMovement[0] += movementX;
-        inputState.mouseMovement[1] += movementY;
+        if (
+          !enqueueInputRingBuffer(inputRingBuffer, KeyCodes.movementX, movementX) ||
+          !enqueueInputRingBuffer(inputRingBuffer, KeyCodes.movementY, movementY)
+        ) {
+          console.warn("input ring buffer full");
+        }
       }
     }
 
-    function onBlur() {
-      clearObjectBufferView(inputState);
-    }
+    function onBlur() {}
 
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseup", onMouseUp);
@@ -104,16 +156,3 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
     };
   },
 });
-
-/***********
- * Systems *
- **********/
-
-export function MainThreadInputSystem(ctx: IMainThreadContext) {
-  const input = getModule(ctx, InputModule);
-
-  commitToTripleBufferView(input.sharedInputState);
-
-  input.inputState.mouseMovement[0] = 0;
-  input.inputState.mouseMovement[1] = 0;
-}

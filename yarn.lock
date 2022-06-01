@@ -4090,6 +4090,11 @@ rimraf@^3.0.0, rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
+ringbuf.js@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/ringbuf.js/-/ringbuf.js-0.3.2.tgz#81e9dfb3754b5be02eb3ce8a40d3ecdea19e1d07"
+  integrity sha512-wcNCB0xEq6to2EPq7uvB7XWl56rEZ41kaUcy2VNPzW0qPUEJorcJCNe3gNKj77N3zMQwaXY/wvYfVQAE8lrMww==
+
 rollup@^2.59.0:
   version "2.70.1"
   resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.70.1.tgz#824b1f1f879ea396db30b0fc3ae8d2fead93523e"

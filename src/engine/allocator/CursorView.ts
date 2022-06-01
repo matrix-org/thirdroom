@@ -1,14 +1,4 @@
-export type TypedArray =
-  | Float32Array
-  | Float64Array
-  | Uint8Array
-  | Int8Array
-  | Uint16Array
-  | Int16Array
-  | Uint32Array
-  | Int32Array
-  | BigUint64Array
-  | BigInt64Array;
+import { TypedArray } from "./types";
 
 export type CursorView = DataView & { cursor: number; shadowMap: Map<TypedArray, TypedArray> } & {
   [K: string]: Function;

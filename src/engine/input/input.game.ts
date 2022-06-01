@@ -1,15 +1,18 @@
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { RingBuffer } from "ringbuf.js";
+
 import { GameState } from "../GameTypes";
-import { defineModule, Thread } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
-import { InitializeInputStateMessage, InputMessageType, InputStateGetters, SharedInputState } from "./input.common";
+import { InitializeInputStateMessage, InputMessageType } from "./input.common";
+import { Keys } from "./KeyCodes";
+import { createInputRingBuffer, dequeueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
 
 /*********
  * Types *
  ********/
 
 export interface GameInputModuleState {
-  sharedInputState: SharedInputState;
+  inputRingBuffer: InputRingBuffer;
   actions: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
@@ -19,30 +22,36 @@ export interface GameInputModuleState {
  * Initialization *
  *****************/
 
-const generateInputGetters = (sharedInputState: SharedInputState): { [path: string]: number } =>
-  Object.defineProperties(
-    {},
-    Object.fromEntries(
-      Object.entries(InputStateGetters).map(([path, getter]) => [
-        path,
-        { enumerable: true, get: () => getter(getReadObjectBufferView(sharedInputState)) },
-      ])
-    )
-  );
-
 export const InputModule = defineModule<GameState, GameInputModuleState>({
   name: "input",
   async create(ctx, { waitForMessage }) {
-    const { sharedInputState } = await waitForMessage<InitializeInputStateMessage>(
+    const { inputRingBufferSab } = await waitForMessage<InitializeInputStateMessage>(
       Thread.Main,
       InputMessageType.InitializeInputState
     );
+    const ringbuf = new RingBuffer(inputRingBufferSab, Float32Array as any);
+    const inputRingBuffer = createInputRingBuffer(ringbuf);
     return {
-      sharedInputState,
+      inputRingBuffer,
       actions: new Map(),
       actionMaps: [],
-      raw: generateInputGetters(sharedInputState),
+      raw: {},
     };
   },
   init(ctx) {},
 });
+
+const out = { keyCode: 0, value: 0 };
+export function ApplyInputSystem(ctx: GameState) {
+  const { inputRingBuffer, raw } = getModule(ctx, InputModule);
+  while (inputRingBuffer.ringbuf.available_read()) {
+    dequeueInputRingBuffer(inputRingBuffer, out);
+    raw[Keys[out.keyCode]] = out.value;
+  }
+}
+
+export function ResetInputSystem(ctx: GameState) {
+  const { raw } = getModule(ctx, InputModule);
+  raw["movementX"] = 0;
+  raw["movementY"] = 0;
+}

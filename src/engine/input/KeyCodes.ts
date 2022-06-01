@@ -64,6 +64,13 @@ export const Keys = [
   "ArrowUp",
   "ArrowRight",
   "ArrowDown",
+  "Mouse1",
+  "Mouse2",
+  "Mouse3",
+  "Mouse4",
+  "Mouse5",
+  "movementX",
+  "movementY",
 ] as const;
 
 export type KeyCode = typeof Keys[number];
