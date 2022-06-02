@@ -1,4 +1,13 @@
 import {
+  availableWrite,
+  createRingBuffer,
+  isRingBufferEmpty,
+  popRingBuffer,
+  pushRingBuffer,
+  RingBuffer,
+} from "@thirdroom/ringbuffer";
+
+import {
   createCursorView,
   CursorView,
   moveCursorView,
@@ -8,14 +17,6 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { TypedArrayConstructor } from "../allocator/types";
-import {
-  availableWrite,
-  createRingBuffer,
-  isRingBufferEmpty,
-  popRingBuffer,
-  pushRingBuffer,
-  RingBuffer,
-} from "../ringbuffer/RingBuffer";
 
 export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
   buffer: ArrayBuffer;

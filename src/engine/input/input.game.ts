@@ -1,6 +1,7 @@
+import { availableRead } from "@thirdroom/ringbuffer";
+
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { availableRead } from "../ringbuffer/RingBuffer";
 import { checkBitflag } from "../utils/checkBitflag";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
