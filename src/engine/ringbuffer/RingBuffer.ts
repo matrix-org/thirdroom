@@ -56,11 +56,7 @@ function _storageCapacity<T extends TypedArrayConstructor>(rb: RingBuffer<T>): n
  * @private
  */
 function _copy<T extends TypedArray>(input: T, offsetInput: number, output: T, offsetOutput: number, size: number) {
-  // TODO: optimize
-  // output.set(input.subarray(offsetInput, size), offsetOutput);
-  for (let i = 0; i < size; i++) {
-    output[offsetOutput + i] = input[offsetInput + i];
-  }
+  (output as any).set(input.subarray(offsetInput, offsetInput + size), offsetOutput);
 }
 
 /**
@@ -157,7 +153,7 @@ export function availableWrite<T extends TypedArrayConstructor>(rb: RingBuffer<T
 export function pushRingBuffer<T extends TypedArrayConstructor>(
   rb: RingBuffer<T>,
   elements: TypedArray,
-  length: number | undefined,
+  length = elements.length,
   offset = 0
 ): number {
   const rd = Atomics.load(rb._readPtr, 0);
@@ -168,9 +164,7 @@ export function pushRingBuffer<T extends TypedArrayConstructor>(
     return 0;
   }
 
-  const len = length !== undefined ? length : elements.length;
-
-  const toWrite = Math.min(_availableWrite(rb, rd, wr), len);
+  const toWrite = Math.min(_availableWrite(rb, rd, wr), length);
   const firstPart = Math.min(_storageCapacity(rb) - wr, toWrite);
   const secondPart = toWrite - firstPart;
 
@@ -200,7 +194,7 @@ export function pushRingBuffer<T extends TypedArrayConstructor>(
 export function popRingBuffer<T extends TypedArrayConstructor>(
   rb: RingBuffer<T>,
   elements: TypedArray,
-  length: number | undefined,
+  length = elements.length,
   offset = 0
 ) {
   const rd = Atomics.load(rb._readPtr, 0);
@@ -210,8 +204,7 @@ export function popRingBuffer<T extends TypedArrayConstructor>(
     return 0;
   }
 
-  const len = length !== undefined ? length : elements.length;
-  const toRead = Math.min(_availableRead(rb, rd, wr), len);
+  const toRead = Math.min(_availableRead(rb, rd, wr), length);
 
   const firstPart = Math.min(_storageCapacity(rb) - rd, toRead);
   const secondPart = toRead - firstPart;

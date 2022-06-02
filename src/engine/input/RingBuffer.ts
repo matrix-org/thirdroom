@@ -1,4 +1,12 @@
-import { createCursorView, readFloat32, readUint8, writeFloat32, writeUint8 } from "../allocator/CursorView";
+import {
+  createCursorView,
+  CursorView,
+  moveCursorView,
+  readFloat32,
+  readUint8,
+  writeFloat32,
+  writeUint8,
+} from "../allocator/CursorView";
 import { TypedArrayConstructor } from "../allocator/types";
 import {
   availableWrite,
@@ -12,7 +20,7 @@ import {
 export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
   buffer: ArrayBuffer;
   array: Uint8Array;
-  view: DataView;
+  view: CursorView;
 }
 
 const BYTE_LENGTH = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
@@ -21,7 +29,7 @@ export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, 
   const ringBuffer = createRingBuffer(type, capacity);
   const buffer = new ArrayBuffer(BYTE_LENGTH);
   const array = new Uint8Array(buffer);
-  const view = new DataView(buffer);
+  const view = createCursorView(buffer);
   return Object.assign(ringBuffer, {
     buffer,
     array,
@@ -34,14 +42,18 @@ export function enqueueInputRingBuffer<T extends TypedArrayConstructor>(
   keyCode: number,
   ...values: number[]
 ) {
-  const cv = createCursorView(irb.buffer);
-  writeUint8(cv, keyCode);
-  writeFloat32(cv, values[0]);
-  writeFloat32(cv, values[1]);
+  const { view } = irb;
+
+  moveCursorView(view, 0);
+  writeUint8(view, keyCode);
+  writeFloat32(view, values[0] || 0);
+  writeFloat32(view, values[1] || 0);
+
   if (availableWrite(irb) < BYTE_LENGTH) {
     return false;
   }
-  return pushRingBuffer(irb, irb.array, irb.array.length) === BYTE_LENGTH;
+
+  return pushRingBuffer(irb, irb.array) === BYTE_LENGTH;
 }
 
 export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
@@ -51,11 +63,14 @@ export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
   if (isRingBufferEmpty(irb)) {
     return false;
   }
-  const rv = popRingBuffer(irb, irb.array, irb.array.length);
-  const cv = createCursorView(irb.buffer);
-  out.keyCode = readUint8(cv);
-  out.values[0] = readFloat32(cv);
-  out.values[1] = readFloat32(cv);
+  const rv = popRingBuffer(irb, irb.array);
+
+  const { view } = irb;
+  moveCursorView(view, 0);
+
+  out.keyCode = readUint8(view);
+  out.values[0] = readFloat32(view);
+  out.values[1] = readFloat32(view);
 
   return rv === irb.array.length;
 }
