@@ -1,17 +1,16 @@
-import { RingBuffer } from "ringbuf.js";
-
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode, KeyCodes } from "./KeyCodes";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { createRingBuffer } from "../ringbuffer/RingBuffer";
 
 /*********
  * Types *
  ********/
 
 export interface InputModuleState {
-  inputRingBuffer: InputRingBuffer;
+  inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
 }
 
 /******************
@@ -19,16 +18,20 @@ export interface InputModuleState {
  *****************/
 
 // max ringbuffer items
-const MAX_ITEMS = 100;
+const RING_BUFFER_MAX = 100;
 
 export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
   name: "input",
   create(ctx, { sendMessage }) {
-    const inputRingBufferSab = RingBuffer.getStorageForCapacity(MAX_ITEMS, Float32Array);
-    const inputRingBuffer = createInputRingBuffer(new RingBuffer(inputRingBufferSab, Float32Array as any));
+    // const inputRingBufferSab = RingBuffer.getStorageForCapacity(MAX_ITEMS, Float32Array);
+    // const inputRingBuffer = createInputRingBuffer(new RingBuffer(inputRingBufferSab, Float32Array as any));
+    const ringBuffer = createRingBuffer(Float32Array, RING_BUFFER_MAX);
+    const inputRingBuffer = createInputRingBuffer(ringBuffer);
+
+    console.log(ringBuffer);
 
     sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, {
-      inputRingBufferSab,
+      ringBuffer,
     });
 
     return {

@@ -1,7 +1,9 @@
+import { RingBuffer } from "../ringbuffer/RingBuffer";
+
 export enum InputMessageType {
   InitializeInputState = "initialize-input-state",
 }
 
 export interface InitializeInputStateMessage {
-  inputRingBufferSab: SharedArrayBuffer;
+  ringBuffer: RingBuffer<Float32ArrayConstructor>;
 }
