@@ -4,7 +4,7 @@ import { availableRead } from "../ringbuffer/RingBuffer";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
 import { Keys } from "./KeyCodes";
-import { createInputRingBuffer, dequeueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { dequeueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
 
 /*********
  * Types *
@@ -24,11 +24,10 @@ export interface GameInputModuleState {
 export const InputModule = defineModule<GameState, GameInputModuleState>({
   name: "input",
   async create(ctx, { waitForMessage }) {
-    const { ringBuffer } = await waitForMessage<InitializeInputStateMessage>(
+    const { inputRingBuffer } = await waitForMessage<InitializeInputStateMessage>(
       Thread.Main,
       InputMessageType.InitializeInputState
     );
-    const inputRingBuffer = createInputRingBuffer(ringBuffer);
     return {
       inputRingBuffer,
       actions: new Map(),
@@ -42,7 +41,7 @@ export const InputModule = defineModule<GameState, GameInputModuleState>({
 const out = { keyCode: 0, value: 0 };
 export function ApplyInputSystem(ctx: GameState) {
   const { inputRingBuffer, raw } = getModule(ctx, InputModule);
-  while (availableRead(inputRingBuffer.ringbuf)) {
+  while (availableRead(inputRingBuffer)) {
     dequeueInputRingBuffer(inputRingBuffer, out);
     raw[Keys[out.keyCode]] = out.value;
   }

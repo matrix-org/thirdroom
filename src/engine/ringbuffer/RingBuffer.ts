@@ -8,10 +8,10 @@ import { TypedArray, TypedArrayConstructor } from "../allocator/types";
 
 export interface RingBuffer<T extends TypedArrayConstructor> {
   _capacity: number;
-  buf: SharedArrayBuffer;
-  writePtr: Uint32Array;
-  readPtr: Uint32Array;
-  storage: InstanceType<T>;
+  _buffer: SharedArrayBuffer;
+  _writePtr: Uint32Array;
+  _readPtr: Uint32Array;
+  _storage: InstanceType<T>;
 }
 
 /**
@@ -82,11 +82,11 @@ export function createRingBuffer<T extends TypedArrayConstructor>(type: T, capac
   // -4 for the read ptr (uint32_t offsets)
   // capacity counts the empty slot to distinguish between full and empty.
   return {
-    buf,
+    _buffer: buf,
     _capacity: cap,
-    writePtr: new Uint32Array(buf, 0, 1),
-    readPtr: new Uint32Array(buf, 4, 1),
-    storage: new type(buf, 8, cap) as InstanceType<T>,
+    _writePtr: new Uint32Array(buf, 0, 1),
+    _readPtr: new Uint32Array(buf, 4, 1),
+    _storage: new type(buf, 8, cap) as InstanceType<T>,
   };
 }
 
@@ -96,8 +96,8 @@ export function createRingBuffer<T extends TypedArrayConstructor>(type: T, capac
  * pushed.
  */
 export function isRingBufferEmpty<T extends TypedArrayConstructor>(rb: RingBuffer<T>) {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
 
   return wr === rd;
 }
@@ -107,8 +107,8 @@ export function isRingBufferEmpty<T extends TypedArrayConstructor>(rb: RingBuffe
  * on the write side: it can return true when something has just been popped.
  */
 export function isRingBufferFull<T extends TypedArrayConstructor>(rb: RingBuffer<T>) {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
 
   return (wr + 1) % _storageCapacity(rb) === rd;
 }
@@ -127,8 +127,8 @@ export function getRingBufferCapacity<T extends TypedArrayConstructor>(rb: RingB
  * been enqueued.
  */
 export function availableRead<T extends TypedArrayConstructor>(rb: RingBuffer<T>) {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
   return _availableRead(rb, rd, wr);
 }
 
@@ -138,8 +138,8 @@ export function availableRead<T extends TypedArrayConstructor>(rb: RingBuffer<T>
  * has just been dequeued.
  */
 export function availableWrite<T extends TypedArrayConstructor>(rb: RingBuffer<T>) {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
   return _availableWrite(rb, rd, wr);
 }
 
@@ -158,8 +158,8 @@ export function pushRingBuffer<T extends TypedArrayConstructor>(
   length: number | undefined,
   offset = 0
 ): number {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
 
   if ((wr + 1) % _storageCapacity(rb) === rd) {
     // full
@@ -172,11 +172,11 @@ export function pushRingBuffer<T extends TypedArrayConstructor>(
   const firstPart = Math.min(_storageCapacity(rb) - wr, toWrite);
   const secondPart = toWrite - firstPart;
 
-  _copy(elements, offset, rb.storage, wr, firstPart);
-  _copy(elements, offset + firstPart, rb.storage, 0, secondPart);
+  _copy(elements, offset, rb._storage, wr, firstPart);
+  _copy(elements, offset + firstPart, rb._storage, 0, secondPart);
 
   // publish the enqueued data to the other side
-  Atomics.store(rb.writePtr, 0, (wr + toWrite) % _storageCapacity(rb));
+  Atomics.store(rb._writePtr, 0, (wr + toWrite) % _storageCapacity(rb));
 
   return toWrite;
 }
@@ -201,8 +201,8 @@ export function popRingBuffer<T extends TypedArrayConstructor>(
   length: number | undefined,
   offset = 0
 ) {
-  const rd = Atomics.load(rb.readPtr, 0);
-  const wr = Atomics.load(rb.writePtr, 0);
+  const rd = Atomics.load(rb._readPtr, 0);
+  const wr = Atomics.load(rb._writePtr, 0);
 
   if (wr === rd) {
     return 0;
@@ -214,10 +214,10 @@ export function popRingBuffer<T extends TypedArrayConstructor>(
   const firstPart = Math.min(_storageCapacity(rb) - rd, toRead);
   const secondPart = toRead - firstPart;
 
-  _copy(rb.storage, rd, elements, offset, firstPart);
-  _copy(rb.storage, 0, elements, offset + firstPart, secondPart);
+  _copy(rb._storage, rd, elements, offset, firstPart);
+  _copy(rb._storage, 0, elements, offset + firstPart, secondPart);
 
-  Atomics.store(rb.readPtr, 0, (rd + toRead) % _storageCapacity(rb));
+  Atomics.store(rb._readPtr, 0, (rd + toRead) % _storageCapacity(rb));
 
   return toRead;
 }
