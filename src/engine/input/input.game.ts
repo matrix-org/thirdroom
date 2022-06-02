@@ -50,31 +50,11 @@ enum MouseButton {
 const out = { keyCode: 0, values: [] };
 function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   const buttons = o.values[0];
-  if (checkBitflag(buttons, MouseButton.Left)) {
-    raw["Mouse/Left"] = 1;
-  } else {
-    raw["Mouse/Left"] = 0;
-  }
-  if (checkBitflag(buttons, MouseButton.Right)) {
-    raw["Mouse/Right"] = 1;
-  } else {
-    raw["Mouse/Right"] = 0;
-  }
-  if (checkBitflag(buttons, MouseButton.Middle)) {
-    raw["Mouse/Middle"] = 1;
-  } else {
-    raw["Mouse/Middle"] = 0;
-  }
-  if (checkBitflag(buttons, MouseButton.Four)) {
-    raw["Mouse/Four"] = 1;
-  } else {
-    raw["Mouse/Four"] = 0;
-  }
-  if (checkBitflag(buttons, MouseButton.Five)) {
-    raw["Mouse/Five"] = 1;
-  } else {
-    raw["Mouse/Five"] = 0;
-  }
+  raw["Mouse/Left"] = checkBitflag(buttons, MouseButton.Left) ? 1 : 0;
+  raw["Mouse/Right"] = checkBitflag(buttons, MouseButton.Right) ? 1 : 0;
+  raw["Mouse/Middle"] = checkBitflag(buttons, MouseButton.Middle) ? 1 : 0;
+  raw["Mouse/Four"] = checkBitflag(buttons, MouseButton.Four) ? 1 : 0;
+  raw["Mouse/Five"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
 }
 
 function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
