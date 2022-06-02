@@ -22,6 +22,7 @@ const RING_BUFFER_MAX = 100;
 export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
   name: "input",
   create(ctx, { sendMessage }) {
+    // TODO: optimize memory
     const inputRingBuffer = createInputRingBuffer(Float32Array, RING_BUFFER_MAX);
 
     sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, {
@@ -40,32 +41,8 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
 
     function onMouseDown({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        switch (buttons) {
-          case 1:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse1, 1)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 2:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse2, 1)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 4:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse3, 1)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 8:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse4, 1)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 16:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse5, 1)) {
-              console.warn("input ring buffer full");
-            }
-            break;
+        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseButtons, buttons)) {
+          console.warn("input ring buffer full");
         }
       } else {
         canvas.requestPointerLock();
@@ -74,32 +51,8 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
 
     function onMouseUp({ buttons }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        switch (buttons) {
-          case 1:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse1, 0)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 2:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse2, 0)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 4:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse3, 0)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 8:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse4, 0)) {
-              console.warn("input ring buffer full");
-            }
-            break;
-          case 16:
-            if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.Mouse5, 0)) {
-              console.warn("input ring buffer full");
-            }
-            break;
+        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseButtons, buttons)) {
+          console.warn("input ring buffer full");
         }
       }
     }
@@ -125,10 +78,7 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
 
     function onMouseMove({ movementX, movementY }: MouseEvent) {
       if (document.pointerLockElement === canvas) {
-        if (
-          !enqueueInputRingBuffer(inputRingBuffer, KeyCodes.movementX, movementX) ||
-          !enqueueInputRingBuffer(inputRingBuffer, KeyCodes.movementY, movementY)
-        ) {
+        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseMovement, movementX, movementY)) {
           console.warn("input ring buffer full");
         }
       }

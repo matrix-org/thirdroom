@@ -55,7 +55,9 @@ function _storageCapacity<T extends TypedArrayConstructor>(rb: RingBuffer<T>): n
  * @param {Number} size The number of elements to copy
  * @private
  */
-function _copy(input: TypedArray, offsetInput: number, output: TypedArray, offsetOutput: number, size: number) {
+function _copy<T extends TypedArray>(input: T, offsetInput: number, output: T, offsetOutput: number, size: number) {
+  // TODO: optimize
+  // output.set(input.subarray(offsetInput, size), offsetOutput);
   for (let i = 0; i < size; i++) {
     output[offsetOutput + i] = input[offsetInput + i];
   }

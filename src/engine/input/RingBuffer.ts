@@ -1,3 +1,4 @@
+import { createCursorView, readFloat32, readUint8, writeFloat32, writeUint8 } from "../allocator/CursorView";
 import { TypedArrayConstructor } from "../allocator/types";
 import {
   availableWrite,
@@ -9,13 +10,12 @@ import {
 } from "../ringbuffer/RingBuffer";
 
 export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
-  // ringbuf: RingBuffer<T>;
   buffer: ArrayBuffer;
   array: Uint8Array;
   view: DataView;
 }
 
-const BYTE_LENGTH = 5;
+const BYTE_LENGTH = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
 export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, capacity?: number): InputRingBuffer<T> {
   const ringBuffer = createRingBuffer(type, capacity);
@@ -32,10 +32,12 @@ export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, 
 export function enqueueInputRingBuffer<T extends TypedArrayConstructor>(
   irb: InputRingBuffer<T>,
   keyCode: number,
-  value: number
+  ...values: number[]
 ) {
-  irb.view.setUint8(0, keyCode);
-  irb.view.setFloat32(1, value);
+  const cv = createCursorView(irb.buffer);
+  writeUint8(cv, keyCode);
+  writeFloat32(cv, values[0]);
+  writeFloat32(cv, values[1]);
   if (availableWrite(irb) < BYTE_LENGTH) {
     return false;
   }
@@ -44,14 +46,16 @@ export function enqueueInputRingBuffer<T extends TypedArrayConstructor>(
 
 export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
   irb: InputRingBuffer<T>,
-  out: { keyCode: number; value: number }
+  out: { keyCode: number; values: number[] }
 ) {
   if (isRingBufferEmpty(irb)) {
     return false;
   }
   const rv = popRingBuffer(irb, irb.array, irb.array.length);
-  out.keyCode = irb.view.getUint8(0);
-  out.value = irb.view.getFloat32(1);
+  const cv = createCursorView(irb.buffer);
+  out.keyCode = readUint8(cv);
+  out.values[0] = readFloat32(cv);
+  out.values[1] = readFloat32(cv);
 
   return rv === irb.array.length;
 }

@@ -72,7 +72,7 @@ const ActionTypesToBindings: {
     create: () => ({ pressed: false, released: false, held: false }),
     bindings: {
       [BindingType.Button]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
-        const down = input.raw[(bindingDef as any).path.split("/")[1]];
+        const down = input.raw[(bindingDef as any).path];
         const value = input.actions.get(path) as ButtonActionState;
 
         value.pressed = !value.held && !!down;
@@ -85,20 +85,13 @@ const ActionTypesToBindings: {
     create: () => vec2.create(),
     bindings: {
       [BindingType.Axes]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
-        let { x, y } = bindingDef as AxesBinding;
-        x = x.split("/")[1];
-        y = y.split("/")[1];
+        const { x, y } = bindingDef as AxesBinding;
         const value = input.actions.get(path) as vec2;
         value[0] = input.raw[x] || 0;
         value[1] = input.raw[y] || 0;
       },
       [BindingType.DirectionalButtons]: (input: GameInputModuleState, path: string, bindingDef: ActionBinding) => {
-        let { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
-
-        up = up.split("/")[1];
-        down = down.split("/")[1];
-        left = left.split("/")[1];
-        right = right.split("/")[1];
+        const { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
 
         let x = 0;
         let y = 0;
