@@ -733,6 +733,11 @@
   resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.1.tgz#faa8c389db1ee694ef75937eb11d577dbc9fa0b3"
   integrity sha512-wUY0yKCacG78OFrv34SPUsavQUNJWi2jTGwA9x6KRZ+opQhhCsdD/5R7C2KSdtkoYn2HK4xZZtyGcjymfkE2FA==
 
+"@thirdroom/ringbuffer@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@thirdroom/ringbuffer/-/ringbuffer-0.0.1.tgz#9239f60ae79295b74b3baafa7aebcd0ed0cd96c5"
+  integrity sha512-M7hkXsVMtkNkZzUc0arn8nUlHkg0sYBwaSYzzk471L7ycc3dOCVAv79IJCEd03Ko2KIruyok6iEvKI2L5eR/Sg==
+
 "@tootallnate/once@2":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-2.0.0.tgz#f544a148d3ab35801c1f633a7441fd87c2e484bf"

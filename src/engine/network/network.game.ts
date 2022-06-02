@@ -47,6 +47,7 @@ import {
   SetPeerIdMessage,
 } from "./network.common";
 import { createPrefabEntity } from "../prefab";
+import { checkBitflag } from "../utils/checkBitflag";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -349,8 +350,6 @@ export const serializeTransformChanged = defineChangedSerializer(
 
 //   return changeMask > 0;
 // };
-
-const checkBitflag = (mask: number, flag: number) => (mask & flag) === flag;
 
 export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
   const readChangeMask = fns.length <= 8 ? readUint8 : fns.length <= 16 ? readUint16 : readUint32;
