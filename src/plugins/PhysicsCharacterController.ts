@@ -124,12 +124,9 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  state.entityPrefabMap.set(playerRig, "player-cube");
+  state.entityPrefabMap.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
   network.peerIdToEntityId.set(network.peerId, playerRig);
-
-  const lowerCube = createRawCube(state);
-  addChild(playerRig, lowerCube);
 
   addComponent(world, PlayerRig, playerRig);
   Transform.position[playerRig][2] = 50;

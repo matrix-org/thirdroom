@@ -177,7 +177,7 @@ export function createMatrixNetworkInterface(
       .sort(memberComparator)
       .filter((member) => member.isConnected && member.dataChannel);
 
-    if (sortedConnectedMembers.length === 0 || !isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
+    if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
       setHost(ctx, true);
     } else {
       setHost(ctx, false);

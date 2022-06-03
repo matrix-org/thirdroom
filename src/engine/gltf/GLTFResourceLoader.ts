@@ -11,12 +11,12 @@ interface GLTFDef extends ResourceDefinition {
 
 const renderableObject3DTypes: string[] = [
   "Mesh",
-  // "SkinnedMesh",
+  "SkinnedMesh",
   // "Points",
   // "LineSegments",
   // "LineLoop",
   // "Line",
-  // "Bone",
+  "Bone",
   "PerspectiveCamera",
   "OrthographicCamera",
   "DirectionalLight",
@@ -46,7 +46,7 @@ function serializeGLTF(
     scale: object.scale.toArray(),
   });
 
-  if (renderableObject3DTypes.includes(object.type)) {
+  if (renderableObject3DTypes.includes(object.type) || object.animations.length) {
     const resourceType = object3DTypeToResourceType[object.type];
     const resourceId = addResource(manager, resourceType, object, object.name);
 
@@ -68,7 +68,7 @@ function serializeGLTF(
     });
   }
 
-  if (object.type === "Mesh") {
+  if (object.type === "Mesh" || object.type === "SkinnedMesh") {
     object.castShadow = true;
     object.receiveShadow = true;
 
