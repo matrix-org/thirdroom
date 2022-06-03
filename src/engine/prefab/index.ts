@@ -2,54 +2,17 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
-import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
+import { addChild, addTransformComponent } from "../component/transform";
+import { setActiveCamera, addRenderableComponent } from "../component/renderable";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MaterialType } from "../resources/MaterialResourceLoader";
-import { SceneDefinition, SCENE_RESOURCE } from "../resources/SceneResourceLoader";
 import { CameraType } from "../resources/CameraResourceLoader";
 import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
-import { TextureType } from "../resources/TextureResourceLoader";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudio } from "../audio/audio.game";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
-
-/* Prefab Factories */
-
-interface SceneProps {
-  setActive?: boolean;
-  environmentMapUrl?: string;
-}
-
-export function createScene(state: GameState, props: SceneProps = {}): number {
-  const { resourceManager } = getModule(state, RendererModule);
-  const eid = createTransformEntity(state.world);
-
-  const sceneDef: SceneDefinition = {
-    type: SCENE_RESOURCE,
-  };
-
-  if (props.environmentMapUrl) {
-    const environmentMap = loadRemoteResource(resourceManager, {
-      type: "texture",
-      textureType: TextureType.RGBE,
-      url: props.environmentMapUrl,
-    });
-
-    sceneDef.environmentTextureResourceId = environmentMap;
-    sceneDef.backgroundTextureResourceId = environmentMap;
-  }
-
-  const sceneResourceId = loadRemoteResource(resourceManager, sceneDef);
-
-  if (props.setActive === undefined || props.setActive) {
-    setActiveScene(state, eid, sceneResourceId);
-  }
-
-  return eid;
-}
 
 export const createCube = (state: GameState, geometryResourceId?: number, materialResourceId?: number) => {
   const { resourceManager } = getModule(state, RendererModule);

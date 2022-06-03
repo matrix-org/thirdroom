@@ -140,10 +140,6 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
           type: NetworkMessageType.SetPeerId,
           peerId: d.setPeerId,
         });
-        gameWorker.postMessage({
-          type: NetworkMessageType.StateChanged,
-          state: { joined: true },
-        });
 
         ws?.addEventListener("message", onPeerMessage(gameWorker));
 
@@ -173,14 +169,6 @@ export function setHost(mainThread: IMainThreadContext, value: boolean) {
   gameWorker.postMessage({
     type: NetworkMessageType.SetHost,
     value,
-  });
-}
-
-export function setState(mainThread: IMainThreadContext, state: any) {
-  const { gameWorker } = mainThread;
-  gameWorker.postMessage({
-    type: NetworkMessageType.StateChanged,
-    state,
   });
 }
 

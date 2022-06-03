@@ -6,9 +6,15 @@ import { Player } from "../engine/component/Player";
 import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
-import { ButtonActionState } from "../engine/input/ActionMappingSystem";
+import {
+  ActionMap,
+  ActionType,
+  BindingType,
+  ButtonActionState,
+  enableActionMap,
+} from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getModule } from "../engine/module/module.common";
+import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
@@ -18,6 +24,82 @@ import { GeometryType } from "../engine/resources/GeometryResourceLoader";
 import { MaterialType } from "../engine/resources/MaterialResourceLoader";
 import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
+
+function physicsCharacterControllerAction(key: string) {
+  return "PhysicsCharacterController/" + key;
+}
+
+export const PhysicsCharacterControllerActions = {
+  Move: physicsCharacterControllerAction("Move"),
+  Jump: physicsCharacterControllerAction("Jump"),
+  Sprint: physicsCharacterControllerAction("Sprint"),
+  Crouch: physicsCharacterControllerAction("Crouch"),
+};
+
+export const PhysicsCharacterControllerActionMap: ActionMap = {
+  id: "physics-character-controller",
+  actions: [
+    {
+      id: "move",
+      path: PhysicsCharacterControllerActions.Move,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.DirectionalButtons,
+          up: "Keyboard/KeyW",
+          down: "Keyboard/KeyS",
+          left: "Keyboard/KeyA",
+          right: "Keyboard/KeyD",
+        },
+      ],
+    },
+    {
+      id: "jump",
+      path: PhysicsCharacterControllerActions.Jump,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/Space",
+        },
+      ],
+    },
+    {
+      id: "crouch",
+      path: PhysicsCharacterControllerActions.Crouch,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyC",
+        },
+      ],
+    },
+    {
+      id: "sprint",
+      path: PhysicsCharacterControllerActions.Sprint,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/ShiftLeft",
+        },
+      ],
+    },
+  ],
+};
+
+type PhysicsCharacterControllerModuleState = {};
+
+export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsCharacterControllerModuleState>({
+  name: "physics-character-controller",
+  create() {
+    return {};
+  },
+  init(state) {
+    enableActionMap(state, PhysicsCharacterControllerActionMap);
+  },
+});
 
 export enum PhysicsGroups {
   None = 0,
@@ -37,17 +119,6 @@ export const PhysicsCharacterControllerGroup = 0x0000_0001;
 export const CharacterPhysicsGroup = 0b1;
 export const CharacterInteractionGroup = createInteractionGroup(CharacterPhysicsGroup, PhysicsGroups.All);
 export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~CharacterPhysicsGroup);
-
-function physicsCharacterControllerAction(key: string) {
-  return "PhysicsCharacterController/" + key;
-}
-
-export const PhysicsCharacterControllerActions = {
-  Move: physicsCharacterControllerAction("Move"),
-  Jump: physicsCharacterControllerAction("Jump"),
-  Sprint: physicsCharacterControllerAction("Sprint"),
-  Crouch: physicsCharacterControllerAction("Crouch"),
-};
 
 const obj = new Object3D();
 

@@ -154,12 +154,3 @@ async function initRenderWorker(canvas: HTMLCanvasElement): Promise<Worker | Mes
     return initRenderWorkerOnMainThread(canvas);
   }
 }
-
-export function sendWorldJoinedMessage(state: IMainThreadContext, joined: boolean) {
-  state.gameWorker.postMessage({
-    type: WorkerMessageType.StateChanged,
-    state: {
-      joined,
-    },
-  });
-}

@@ -5,18 +5,23 @@ import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { InboundNetworkSystem, NetworkModule, OutboundNetworkSystem } from "./network/network.game";
 import { GLTFLoaderSystem } from "./gltf/GLTFLoaderSystem";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
-import { FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
-import { PlayerControllerSystem } from "../plugins/PhysicsCharacterController";
+import { FirstPersonCameraModule, FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
+import { PhysicsCharacterControllerModule, PlayerControllerSystem } from "../plugins/PhysicsCharacterController";
 import { RenderableVisibilitySystem } from "./component/renderable";
-import { CubeSpawnSystem, ExampleModule } from "../plugins/example/example";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 import { EditorModule, EditorSelectionSystem, EditorStateSystem } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
+import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
+import { SceneModule, SceneUpdateSystem } from "./scene/scene.game";
+import { ResourceModule } from "./resource/resource.game";
+import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 
 export default defineConfig<GameState>({
   modules: [
+    ResourceModule,
+    SceneModule,
     AudioModule,
     InputModule,
     PhysicsModule,
@@ -25,7 +30,10 @@ export default defineConfig<GameState>({
     StatsModule,
     EditorModule,
     RendererModule,
-    ExampleModule,
+    FirstPersonCameraModule,
+    PhysicsCharacterControllerModule,
+    CubeSpawnerModule,
+    ThirdRoomModule,
   ],
   systems: [
     ActionMappingSystem,
@@ -39,7 +47,7 @@ export default defineConfig<GameState>({
     PlayerControllerSystem,
     PhysicsSystem,
     RenderableVisibilitySystem,
-    CubeSpawnSystem,
+    CubeSpawnerSystem,
 
     EditorStateSystem,
     EditorSelectionSystem,
@@ -48,6 +56,7 @@ export default defineConfig<GameState>({
 
     GameWorkerStatsSystem,
 
+    SceneUpdateSystem,
     RenderableSystem,
   ],
 });

@@ -1,7 +1,8 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 
-import { IMainThreadContext, sendWorldJoinedMessage } from "../MainThread";
-import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId, setState } from "./network.main";
+import { enterWorld, exitWorld } from "../../plugins/thirdroom/thirdroom.main";
+import { IMainThreadContext } from "../MainThread";
+import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId } from "./network.main";
 
 function memberComparator(a: Member, b: Member): number {
   if (a.eventTimestamp === b.eventTimestamp) {
@@ -138,7 +139,7 @@ export function createMatrixNetworkInterface(
   function joinWorld(userId: string, isHost: boolean) {
     setHost(ctx, isHost);
     setPeerId(ctx, userId);
-    setState(ctx, { joined: true });
+    enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
@@ -187,7 +188,7 @@ export function createMatrixNetworkInterface(
   return () => {
     disconnect(ctx);
 
-    sendWorldJoinedMessage(ctx, false);
+    exitWorld(ctx);
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();
