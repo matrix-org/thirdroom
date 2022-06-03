@@ -2,7 +2,13 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { addChild, addTransformComponent, createTransformEntity } from "../component/transform";
+import {
+  addChild,
+  addTransformComponent,
+  createTransformEntity,
+  setQuaternionFromEuler,
+  Transform,
+} from "../component/transform";
 import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MaterialType } from "../resources/MaterialResourceLoader";
@@ -15,6 +21,7 @@ import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudio } from "../audio/audio.game";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
+import { createGLTFEntity } from "../gltf/GLTFLoader";
 
 /* Prefab Factories */
 
@@ -261,6 +268,42 @@ export function registerDefaultPrefabs(state: GameState) {
         })
       ),
   });
+  registerPrefab(state, {
+    name: "mixamo-x",
+    create: () => {
+      return createRotatedAvatar(state, "/gltf/mixamo-x.glb");
+    },
+  });
+  registerPrefab(state, {
+    name: "mixamo-y",
+    create: () => {
+      return createRotatedAvatar(state, "/gltf/mixamo-y.glb");
+    },
+  });
+}
+
+function createRotatedAvatar(state: GameState, path: string) {
+  const { physicsWorld } = getModule(state, PhysicsModule);
+
+  const container = addEntity(state.world);
+  addTransformComponent(state.world, container);
+
+  const eid = createGLTFEntity(state, path);
+
+  Transform.position[eid].set([0, -0.5, 0]);
+  Transform.rotation[eid].set([0, Math.PI, 0]);
+  Transform.scale[eid].set([1.3, 1.3, 1.3]);
+  setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+
+  addChild(container, eid);
+
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(state.world, container, rigidBody);
+
+  return container;
 }
 
 // TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
