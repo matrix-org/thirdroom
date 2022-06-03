@@ -290,7 +290,9 @@ function createRotatedAvatar(state: GameState, path: string) {
 
   const eid = createGLTFEntity(state, path);
 
-  Transform.rotation[eid][1] = Math.PI;
+  Transform.position[eid].set([0, -0.5, 0]);
+  Transform.rotation[eid].set([0, Math.PI, 0]);
+  Transform.scale[eid].set([1.3, 1.3, 1.3]);
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
   addChild(container, eid);
