@@ -283,6 +283,8 @@ export function registerDefaultPrefabs(state: GameState) {
 }
 
 function createRotatedAvatar(state: GameState, path: string) {
+  const { physicsWorld } = getModule(state, PhysicsModule);
+
   const container = addEntity(state.world);
   addTransformComponent(state.world, container);
 
@@ -292,6 +294,12 @@ function createRotatedAvatar(state: GameState, path: string) {
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
   addChild(container, eid);
+
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(state.world, container, rigidBody);
 
   return container;
 }
