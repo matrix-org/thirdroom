@@ -31,6 +31,10 @@ export const ImageModule = defineModule<RenderThreadState, ImageModuleState>({
 async function onLoadImage(ctx: RenderThreadState, id: ResourceId, props: ImageResourceProps): Promise<ImageBitmap> {
   const { imageBitmapLoader } = getModule(ctx, ImageModule);
 
+  if (props.image) {
+    return props.image;
+  }
+
   const image = await imageBitmapLoader.loadAsync(props.uri);
 
   return image;

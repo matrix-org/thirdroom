@@ -99,7 +99,13 @@ export function registerResourceResponseHandler(
   };
 }
 
-export function createResource<Props>(ctx: GameState, resourceType: string, props: Props, cacheKey?: any): number {
+export function createResource<Props>(
+  ctx: GameState,
+  resourceType: string,
+  props: Props,
+  transferList?: Transferable[],
+  cacheKey?: any
+): number {
   const resourceModule = getModule(ctx, ResourceModule);
 
   let resourceCache = resourceModule.resourceIdMap.get(resourceType);
@@ -134,12 +140,16 @@ export function createResource<Props>(ctx: GameState, resourceType: string, prop
 
   resourceModule.deferredResources.set(id, deferred);
 
-  ctx.sendMessage<LoadResourceMessage<Props>>(Thread.Render, {
-    type: ResourceMessageType.LoadResource,
-    resourceType,
-    id,
-    props,
-  });
+  ctx.sendMessage<LoadResourceMessage<Props>>(
+    Thread.Render,
+    {
+      type: ResourceMessageType.LoadResource,
+      resourceType,
+      id,
+      props,
+    },
+    transferList
+  );
 
   return id;
 }

@@ -2,8 +2,16 @@ import { GameState } from "../GameTypes";
 import { ImageResourceProps, ImageResourceType } from "./image.common";
 import { createResource } from "../resource/resource.game";
 
-export type ImageResourceId = number;
+export interface RemoteImage {
+  resourceId: number;
+  uri?: string;
+}
 
-export function createImage(ctx: GameState, props: ImageResourceProps): ImageResourceId {
-  return createResource(ctx, ImageResourceType, props, props.uri);
+export function createImage(ctx: GameState, props: ImageResourceProps): RemoteImage {
+  const resourceId = createResource(ctx, ImageResourceType, props, props.image ? [props.image] : undefined);
+
+  return {
+    resourceId,
+    uri: props.uri,
+  };
 }
