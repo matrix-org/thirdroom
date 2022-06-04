@@ -1,6 +1,7 @@
 import { CameraModule, CameraUpdateSystem } from "./camera/camera.render";
 import { EditorModule } from "./editor/editor.renderer";
 import { ImageModule } from "./image/image.render";
+import { LightModule, LightUpdateSystem } from "./light/light.render";
 import { defineConfig } from "./module/module.common";
 import { RaycasterModule, RendererRaycasterSystem } from "./raycaster/raycaster.renderer";
 import { RendererModule } from "./renderer/renderer.render";
@@ -15,11 +16,12 @@ export default defineConfig({
     SceneModule,
     CameraModule,
     ImageModule,
+    LightModule,
     TextureModule,
     RendererModule,
     RaycasterModule,
     EditorModule,
     StatsModule,
   ],
-  systems: [RendererRaycasterSystem, RenderThreadStatsSystem, SceneUpdateSystem, CameraUpdateSystem],
+  systems: [RendererRaycasterSystem, RenderThreadStatsSystem, SceneUpdateSystem, CameraUpdateSystem, LightUpdateSystem],
 });
