@@ -13,15 +13,15 @@ import { GameState } from "../GameTypes";
 import { addRenderableComponent } from "../component/renderable";
 import { GLTFEntityDescription, RemoteGLTF } from ".";
 import { GLTFLoader } from "./GLTFLoader";
-import { loadRemoteResource, RemoteResourceInfo } from "../resources/RemoteResourceManager";
+import { RemoteResourceInfo } from "../resources/RemoteResourceManager";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { PhysicsModule } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { RendererModule, setActiveCamera } from "../renderer/renderer.game";
+import { addDirectionalLightResource } from "../light/light.game";
+import { addPerspectiveCameraResource } from "../camera/camera.game";
 
 function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?: number) {
-  const { resourceManager } = getModule(state, RendererModule);
   const { physicsWorld } = getModule(state, PhysicsModule);
   const { world } = state;
   const eid = addEntity(world);
@@ -55,16 +55,15 @@ function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?
         addComponent(world, SpawnPoint, eid);
         break;
       case "camera":
-        // TODO
+        addPerspectiveCameraResource(state, eid, {
+          yfov: 70,
+          znear: 0.1,
+        });
+        // TODO: figure out a better way to determine the active camera
         setActiveCamera(state, eid);
         break;
       case "directional-light": {
-        const lightResourceId = loadRemoteResource(resourceManager, {
-          type: LIGHT_RESOURCE,
-          lightType: LightType.Directional,
-          intensity: 0.5,
-        });
-        addRenderableComponent(state, eid, lightResourceId);
+        addDirectionalLightResource(state, eid);
         break;
       }
     }

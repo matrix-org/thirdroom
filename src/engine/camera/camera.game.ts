@@ -22,7 +22,7 @@ import {
 
 export interface RemotePerspectiveCamera {
   resourceId: ResourceId;
-  cameraType: CameraType.Perspective;
+  type: CameraType.Perspective;
   sharedCamera: TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
   get layers(): number;
   set layers(value: number);
@@ -38,7 +38,7 @@ export interface RemotePerspectiveCamera {
 
 export interface RemoteOrthographicCamera {
   resourceId: ResourceId;
-  cameraType: CameraType.Orthographic;
+  type: CameraType.Orthographic;
   sharedCamera: TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
   get layers(): number;
   set layers(value: number);
@@ -74,11 +74,11 @@ export function CameraUpdateSystem(ctx: GameState) {
   for (const [, remoteCamera] of cameraResources) {
     commitToTripleBufferView(remoteCamera.sharedCamera as any);
 
-    if (remoteCamera.cameraType === CameraType.Perspective) {
+    if (remoteCamera.type === CameraType.Perspective) {
       remoteCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
     }
 
-    remoteCamera.sharedCamera.needsUpdate[0];
+    remoteCamera.sharedCamera.needsUpdate[0] = 0;
   }
 }
 
@@ -122,7 +122,7 @@ export function addPerspectiveCameraResource(
   const remoteCamera: RemotePerspectiveCamera = {
     resourceId,
     sharedCamera,
-    cameraType: CameraType.Perspective,
+    type: CameraType.Perspective,
     get layers(): number {
       return camera.layers[0];
     },
@@ -203,7 +203,7 @@ export function addOrthographicCameraResource(
   const remoteCamera: RemoteOrthographicCamera = {
     resourceId,
     sharedCamera,
-    cameraType: CameraType.Orthographic,
+    type: CameraType.Orthographic,
     get layers(): number {
       return camera.layers[0];
     },

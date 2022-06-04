@@ -6,7 +6,6 @@ import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } fr
 import { addRenderableComponent } from "../component/renderable";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MaterialType } from "../resources/MaterialResourceLoader";
-import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudio } from "../audio/audio.game";
@@ -14,6 +13,7 @@ import { getModule } from "../module/module.common";
 import { RendererModule, setActiveCamera } from "../renderer/renderer.game";
 import { addPerspectiveCameraResource } from "../camera/camera.game";
 import { createGLTFEntity } from "../gltf/GLTFLoader";
+import { addDirectionalLightResource } from "../light/light.game";
 
 export const createCube = (state: GameState, geometryResourceId?: number, materialResourceId?: number) => {
   const { resourceManager } = getModule(state, RendererModule);
@@ -73,15 +73,9 @@ export function createCamera(state: GameState, setActive = true): number {
 }
 
 export function createDirectionalLight(state: GameState, parentEid?: number) {
-  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const lightResourceId = loadRemoteResource(resourceManager, {
-    type: LIGHT_RESOURCE,
-    lightType: LightType.Directional,
-    intensity: 0.5,
-  });
-  addRenderableComponent(state, eid, lightResourceId);
+  addDirectionalLightResource(state, eid);
 
   if (parentEid !== undefined) {
     addChild(parentEid, eid);

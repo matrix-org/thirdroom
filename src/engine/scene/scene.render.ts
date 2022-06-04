@@ -78,6 +78,14 @@ async function onLoadScene(
   return scene;
 }
 
+export function getLocalSceneResource<S extends LocalSceneResource = LocalSceneResource>(
+  ctx: RenderThreadState,
+  eid: number
+): S | undefined {
+  const sceneModule = getModule(ctx, SceneModule);
+  return sceneModule.sceneResources.get(eid) as S | undefined;
+}
+
 export function SceneUpdateSystem(ctx: RenderThreadState) {
   const { sceneResources } = getModule(ctx, SceneModule);
 

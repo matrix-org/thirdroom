@@ -1,10 +1,12 @@
 import {
   ACESFilmicToneMapping,
+  Camera,
   Matrix4,
   Object3D,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Quaternion,
+  Scene,
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
@@ -13,16 +15,14 @@ import {
 import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags, TripleBuffer } from "../allocator/TripleBuffer";
 import { CameraType } from "../camera/camera.common";
-import { CameraModule } from "../camera/camera.render";
+import { getLocalCameraResource } from "../camera/camera.render";
 import { renderableSchema } from "../component/renderable.common";
 import { clamp } from "../component/transform";
 import { worldMatrixObjectBufferSchema } from "../component/transform.common";
 import { tickRate } from "../config.common";
 import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { CameraResourceLoader } from "../resources/CameraResourceLoader";
 import { GeometryResourceLoader } from "../resources/GeometryResourceLoader";
-import { LightResourceLoader } from "../resources/LightResourceLoader";
 import { MaterialResourceLoader } from "../resources/MaterialResourceLoader";
 import { MeshResourceLoader } from "../resources/MeshResourceLoader";
 import {
@@ -35,9 +35,7 @@ import {
   ResourceManager,
   ResourceState,
 } from "../resources/ResourceManager";
-import { SceneResourceLoader } from "../resources/SceneResourceLoader";
-import { TextureResourceLoader } from "../resources/TextureResourceLoader";
-import { SceneModule } from "../scene/scene.render";
+import { getLocalSceneResource, SceneModule } from "../scene/scene.render";
 import { StatsBuffer } from "../stats/stats.common";
 import { StatsModule } from "../stats/stats.render";
 import {
@@ -124,13 +122,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     });
 
     const resourceManager = createResourceManager(resourceManagerBuffer);
-    registerResourceLoader(resourceManager, SceneResourceLoader);
     registerResourceLoader(resourceManager, GeometryResourceLoader);
-    registerResourceLoader(resourceManager, TextureResourceLoader);
     registerResourceLoader(resourceManager, MaterialResourceLoader);
     registerResourceLoader(resourceManager, MeshResourceLoader);
-    registerResourceLoader(resourceManager, CameraResourceLoader);
-    registerResourceLoader(resourceManager, LightResourceLoader);
     registerResourceLoader(resourceManager, GLTFResourceLoader);
 
     const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget || ctx.canvas });
@@ -249,12 +243,10 @@ function onUpdate(state: RenderThreadState) {
   }
 
   const sceneEid = sharedRendererState.scene[0];
-  const sceneModule = getModule(state, SceneModule);
-  const sceneResource = sceneModule.sceneResources.get(sceneEid);
+  const sceneResource = getLocalSceneResource(state, sceneEid);
 
   const cameraEid = sharedRendererState.camera[0];
-  const cameraModule = getModule(state, CameraModule);
-  const cameraResource = cameraModule.cameraResources.get(cameraEid);
+  const cameraResource = getLocalCameraResource(state, cameraEid);
 
   if (cameraResource && needsResize) {
     const perspectiveCamera = cameraResource.camera as PerspectiveCamera;
@@ -436,4 +428,26 @@ function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRenderableM
       }
     }
   }
+}
+
+export function getRendererActiveSceneEntity(ctx: RenderThreadState): number {
+  const rendererModule = getModule(ctx, RendererModule);
+  return rendererModule.sharedRendererState.scene[0];
+}
+
+export function getRendererActiveScene(ctx: RenderThreadState): Scene | undefined {
+  const eid = getRendererActiveSceneEntity(ctx);
+  const sceneResource = getLocalSceneResource(ctx, eid);
+  return sceneResource?.scene;
+}
+
+export function getRendererActiveCameraEntity(ctx: RenderThreadState): number {
+  const rendererModule = getModule(ctx, RendererModule);
+  return rendererModule.sharedRendererState.camera[0];
+}
+
+export function getRendererActiveCamera(ctx: RenderThreadState): Camera | undefined {
+  const eid = getRendererActiveCameraEntity(ctx);
+  const sceneResource = getLocalCameraResource(ctx, eid);
+  return sceneResource?.camera;
 }
