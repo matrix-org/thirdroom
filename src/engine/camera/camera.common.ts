@@ -25,6 +25,9 @@ export const perspectiveCameraSchema = defineObjectBufferSchema({
   needsUpdate: [Uint8Array, 1],
 });
 
+export type SharedPerspectiveCamera = TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
+export type SharedOrthographicCamera = TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
+
 export enum CameraType {
   Perspective = "perspective",
   Orthographic = "orthographic",

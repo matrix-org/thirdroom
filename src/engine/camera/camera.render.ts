@@ -1,6 +1,6 @@
 import { OrthographicCamera, PerspectiveCamera } from "three";
 
-import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { defineModule, getModule } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -8,23 +8,23 @@ import { registerResourceLoader } from "../resource/resource.render";
 import {
   CameraType,
   OrthographicCameraResourceType,
-  orthographicCameraSchema,
   PerspectiveCameraResourceType,
-  perspectiveCameraSchema,
+  SharedOrthographicCamera,
   SharedOrthographicCameraResource,
+  SharedPerspectiveCamera,
   SharedPerspectiveCameraResource,
 } from "./camera.common";
 
 export interface LocalPerspectiveCameraResource {
   type: CameraType.Perspective;
   camera: PerspectiveCamera;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
+  sharedCamera: SharedPerspectiveCamera;
 }
 
 export interface LocalOrthographicCameraResource {
   type: CameraType.Orthographic;
   camera: OrthographicCamera;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
+  sharedCamera: SharedOrthographicCamera;
 }
 
 export type LocalCameraResource = LocalOrthographicCameraResource | LocalPerspectiveCameraResource;

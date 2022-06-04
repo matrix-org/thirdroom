@@ -2,7 +2,6 @@ import {
   commitToTripleBufferView,
   createObjectBufferView,
   createTripleBufferBackedObjectBufferView,
-  TripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
@@ -18,12 +17,14 @@ import {
   OrthographicCameraResourceProps,
   OrthographicCameraResourceType,
   SharedOrthographicCameraResource,
+  SharedPerspectiveCamera,
+  SharedOrthographicCamera,
 } from "./camera.common";
 
 export interface RemotePerspectiveCamera {
   resourceId: ResourceId;
   type: CameraType.Perspective;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
+  sharedCamera: SharedPerspectiveCamera;
   get layers(): number;
   set layers(value: number);
   get aspectRatio(): number;
@@ -39,7 +40,7 @@ export interface RemotePerspectiveCamera {
 export interface RemoteOrthographicCamera {
   resourceId: ResourceId;
   type: CameraType.Orthographic;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
+  sharedCamera: SharedOrthographicCamera;
   get layers(): number;
   set layers(value: number);
   get xmag(): number;
@@ -128,12 +129,14 @@ export function addPerspectiveCameraResource(
     },
     set layers(value: number) {
       camera.layers[0] = value;
+      camera.needsUpdate[0] = 1;
     },
     get aspectRatio(): number {
       return camera.aspectRatio[0];
     },
     set aspectRatio(value: number) {
       camera.aspectRatio[0] = value;
+      camera.needsUpdate[0] = 1;
       camera.projectionMatrixNeedsUpdate[0] = 1;
     },
     get yfov(): number {
@@ -141,6 +144,7 @@ export function addPerspectiveCameraResource(
     },
     set yfov(value: number) {
       camera.yfov[0] = value;
+      camera.needsUpdate[0] = 1;
       camera.projectionMatrixNeedsUpdate[0] = 1;
     },
     get zfar(): number {
@@ -148,6 +152,7 @@ export function addPerspectiveCameraResource(
     },
     set zfar(value: number) {
       camera.zfar[0] = value;
+      camera.needsUpdate[0] = 1;
       camera.projectionMatrixNeedsUpdate[0] = 1;
     },
     get znear(): number {
@@ -155,6 +160,7 @@ export function addPerspectiveCameraResource(
     },
     set znear(value: number) {
       camera.znear[0] = value;
+      camera.needsUpdate[0] = 1;
       camera.projectionMatrixNeedsUpdate[0] = 1;
     },
   };

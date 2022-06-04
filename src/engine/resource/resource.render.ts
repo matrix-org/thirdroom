@@ -137,3 +137,11 @@ export function waitForLocalResource<Resource>(ctx: RenderThreadState, resourceI
 
   return Promise.reject(new Error(`Resource ${resourceId} not found.`));
 }
+
+export function getLocalResource<Resource>(
+  ctx: RenderThreadState,
+  resourceId: ResourceId
+): LocalResource<Resource> | undefined {
+  const resourceModule = getModule(ctx, ResourceModule);
+  return resourceModule.resources.get(resourceId) as LocalResource<Resource>;
+}

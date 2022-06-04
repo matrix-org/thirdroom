@@ -19,6 +19,7 @@ import { ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { CameraModule, CameraUpdateSystem } from "./camera/camera.game";
 import { LightModule, LightUpdateSystem } from "./light/light.game";
+import { MaterialModule, MaterialUpdateSystem } from "./material/material.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -26,6 +27,7 @@ export default defineConfig<GameState>({
     SceneModule,
     CameraModule,
     LightModule,
+    MaterialModule,
     AudioModule,
     InputModule,
     PhysicsModule,
@@ -64,6 +66,7 @@ export default defineConfig<GameState>({
     SceneUpdateSystem,
     CameraUpdateSystem,
     LightUpdateSystem,
+    MaterialUpdateSystem,
     RenderableSystem,
     ResetInputSystem,
   ],

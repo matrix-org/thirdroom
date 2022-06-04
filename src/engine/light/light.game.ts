@@ -141,18 +141,21 @@ export function addDirectionalLightResource(
     },
     set color(value: vec3) {
       light.color.set(value);
+      light.needsUpdate[0] = 1;
     },
     get intensity(): number {
       return light.intensity[0];
     },
     set intensity(value: number) {
       light.intensity[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get castShadow(): boolean {
       return !!light.castShadow[0];
     },
     set castShadow(value: boolean) {
       light.castShadow[0] = value ? 1 : 0;
+      light.needsUpdate[0] = 1;
     },
   };
 
@@ -203,24 +206,28 @@ export function addPointLightResource(ctx: GameState, eid: number, props?: Point
     },
     set color(value: vec3) {
       light.color.set(value);
+      light.needsUpdate[0] = 1;
     },
     get intensity(): number {
       return light.intensity[0];
     },
     set intensity(value: number) {
       light.intensity[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get range(): number {
       return light.range[0];
     },
     set range(value: number) {
       light.range[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get castShadow(): boolean {
       return !!light.castShadow[0];
     },
     set castShadow(value: boolean) {
       light.castShadow[0] = value ? 1 : 0;
+      light.needsUpdate[0] = 1;
     },
   };
 
@@ -272,36 +279,42 @@ export function addSpotLightResource(ctx: GameState, eid: number, props?: SpotLi
     },
     set color(value: vec3) {
       light.color.set(value);
+      light.needsUpdate[0] = 1;
     },
     get intensity(): number {
       return light.intensity[0];
     },
     set intensity(value: number) {
       light.intensity[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get range(): number {
       return light.range[0];
     },
     set range(value: number) {
       light.range[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get innerConeAngle(): number {
       return light.innerConeAngle[0];
     },
     set innerConeAngle(value: number) {
       light.innerConeAngle[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get outerConeAngle(): number {
       return light.outerConeAngle[0];
     },
     set outerConeAngle(value: number) {
       light.outerConeAngle[0] = value;
+      light.needsUpdate[0] = 1;
     },
     get castShadow(): boolean {
       return !!light.castShadow[0];
     },
     set castShadow(value: boolean) {
       light.castShadow[0] = value ? 1 : 0;
+      light.needsUpdate[0] = 1;
     },
   };
 
