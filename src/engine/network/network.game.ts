@@ -47,6 +47,7 @@ import {
   SetPeerIdMessage,
 } from "./network.common";
 import { createPrefabEntity } from "../prefab";
+import { getActiveScene } from "../renderer/renderer.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -457,7 +458,8 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  addChild(state.scene, eid);
+  const scene = getActiveScene(state);
+  addChild(scene, eid);
 
   return eid;
 }

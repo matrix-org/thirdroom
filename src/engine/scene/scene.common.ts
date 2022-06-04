@@ -15,6 +15,7 @@ export interface SceneResourceProps {
 }
 
 export type SharedSceneResource = {
+  eid: number;
   initialProps?: SceneResourceProps;
   sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
 };

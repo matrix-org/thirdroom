@@ -9,29 +9,39 @@ import { NetworkModule } from "../../engine/network/network.game";
 import { createRGBETexture } from "../../engine/texture/texture.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
-import { createScene } from "../../engine/scene/scene.game";
+import { getSceneResource } from "../../engine/scene/scene.game";
 import { createGLTFEntity } from "../../engine/gltf/GLTFLoader";
+import { getActiveScene } from "../../engine/renderer/renderer.game";
+import { waitForRemoteResource } from "../../engine/resource/resource.game";
 
 interface ThirdRoomModuleState {
   environment?: number;
 }
-
-let sceneResource: any;
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
     return {};
   },
-  init(ctx) {
+  async init(ctx) {
     const disposables = [
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadEnvironment, onLoadEnvironment),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
     ];
 
-    // TODO: Create initial scene resource on thread context
-    sceneResource = createScene(ctx, {});
+    const scene = getActiveScene(ctx);
+    const sceneResource = getSceneResource(ctx, scene)!;
+
+    const environmentMapTexture = createRGBETexture(ctx, {
+      name: "Environment Map",
+      uri: "/cubemap/venice_sunset_1k.hdr",
+    });
+
+    sceneResource.background = environmentMapTexture;
+    sceneResource.environment = environmentMapTexture;
+
+    await waitForRemoteResource(ctx, environmentMapTexture);
 
     return () => {
       for (const dispose of disposables) {
@@ -48,7 +58,8 @@ function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
     // removeEntity(ctx.world, thirdroom.environment);
   }
 
-  createGLTFEntity(ctx, message.url, ctx.scene);
+  const scene = getActiveScene(ctx);
+  createGLTFEntity(ctx, message.url, scene);
 }
 
 let playerRig: number;
@@ -56,7 +67,7 @@ let playerRig: number;
 const spawnPointQuery = defineQuery([SpawnPoint]);
 
 async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
-  const { scene, world } = state;
+  const { world } = state;
 
   const network = getModule(state, NetworkModule);
 
@@ -68,15 +79,9 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
   vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
   setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
+
+  const scene = getActiveScene(state);
   addChild(scene, playerRig);
-
-  const environmentMapTexture = createRGBETexture(state, {
-    name: "Environment Map",
-    uri: "/cubemap/venice_sunset_1k.hdr",
-  });
-
-  sceneResource.background = environmentMapTexture;
-  sceneResource.environment = environmentMapTexture;
 }
 
 function onExitWorld(state: GameState, message: ExitWorldMessage) {}

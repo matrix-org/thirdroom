@@ -46,6 +46,7 @@ import {
 } from "./editor.common";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
 import { commitToTripleBufferView, createTripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { getActiveCamera } from "../renderer/renderer.game";
 
 // TODO: Importing this module changes the order of Renderable / Transform imports
 // Which in turn changes the cursor buffer view order and breaks transforms.
@@ -142,7 +143,8 @@ export function onLoadEditor(state: GameState) {
     componentInfos: editor.componentInfoMap,
   });
 
-  addComponent(state.world, Selected, state.camera);
+  const camera = getActiveCamera(state);
+  addComponent(state.world, Selected, camera);
 }
 
 export function onDisposeEditor(state: GameState) {
@@ -328,9 +330,10 @@ export function EditorSelectionSystem(state: GameState) {
   const select = input.actions.get(EditorActions.select) as ButtonActionState;
 
   if (select.pressed) {
-    const direction = getDirection(vec3.create(), Transform.worldMatrix[state.camera]);
+    const camera = getActiveCamera(state);
+    const direction = getDirection(vec3.create(), Transform.worldMatrix[camera]);
     vec3.negate(direction, direction);
-    raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[state.camera]), direction);
+    raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[camera]), direction);
   }
 }
 

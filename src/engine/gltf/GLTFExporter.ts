@@ -4,6 +4,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 import { GLTFEntityDescription } from ".";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { SceneModule } from "../scene/scene.render";
 import { ExportGLTFMessage } from "../WorkerMessage";
 
 function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription): Object3D {
@@ -37,6 +38,15 @@ function inflateObject3D(state: RenderThreadState, entity: GLTFEntityDescription
 
 export async function exportSceneAsGLTF(state: RenderThreadState, message: ExportGLTFMessage) {
   const renderModule = getModule(state, RendererModule);
+  const sceneEid = renderModule.sharedRendererState.scene[0];
+  const sceneModule = getModule(state, SceneModule);
+  const sceneResource = sceneModule.sceneResources.get(sceneEid);
+
+  if (!sceneResource) {
+    console.warn("exportSceneAsGLTF Error: scene not loaded");
+    return;
+  }
+
   const scene = inflateObject3D(state, message.scene);
 
   const gltfExporter = new GLTFExporter();
@@ -49,7 +59,7 @@ export async function exportSceneAsGLTF(state: RenderThreadState, message: Expor
 
   for (const renderable of renderModule.renderables) {
     if (renderable.object) {
-      renderModule.scene.add(renderable.object);
+      sceneResource.scene.add(renderable.object);
     }
   }
 

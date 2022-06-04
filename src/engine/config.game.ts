@@ -17,11 +17,13 @@ import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
 import { SceneModule, SceneUpdateSystem } from "./scene/scene.game";
 import { ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
+import { CameraModule, CameraUpdateSystem } from "./camera/camera.game";
 
 export default defineConfig<GameState>({
   modules: [
     ResourceModule,
     SceneModule,
+    CameraModule,
     AudioModule,
     InputModule,
     PhysicsModule,
@@ -57,6 +59,7 @@ export default defineConfig<GameState>({
     GameWorkerStatsSystem,
 
     SceneUpdateSystem,
+    CameraUpdateSystem,
     RenderableSystem,
   ],
 });

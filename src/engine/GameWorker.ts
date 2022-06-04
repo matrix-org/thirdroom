@@ -62,8 +62,6 @@ async function onInit({
     elapsed: performance.now(),
     dt: 0,
     world,
-    scene,
-    camera,
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     systems: gameConfig.systems,

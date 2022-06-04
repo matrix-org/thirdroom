@@ -3,16 +3,16 @@ import { addEntity } from "bitecs";
 
 import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent } from "../component/transform";
-import { setActiveCamera, addRenderableComponent } from "../component/renderable";
+import { addRenderableComponent } from "../component/renderable";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MaterialType } from "../resources/MaterialResourceLoader";
-import { CameraType } from "../resources/CameraResourceLoader";
 import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { loadRemoteResource } from "../resources/RemoteResourceManager";
 import { GeometryType } from "../resources/GeometryResourceLoader";
 import { playAudio } from "../audio/audio.game";
 import { getModule } from "../module/module.common";
-import { RendererModule } from "../renderer/renderer.game";
+import { RendererModule, setActiveCamera } from "../renderer/renderer.game";
+import { addPerspectiveCameraResource } from "../camera/camera.game";
 
 export const createCube = (state: GameState, geometryResourceId?: number, materialResourceId?: number) => {
   const { resourceManager } = getModule(state, RendererModule);
@@ -57,16 +57,12 @@ export const createCube = (state: GameState, geometryResourceId?: number, materi
 };
 
 export function createCamera(state: GameState, setActive = true): number {
-  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const cameraResource = loadRemoteResource(resourceManager, {
-    type: "camera",
-    cameraType: CameraType.Perspective,
+  addPerspectiveCameraResource(state, eid, {
     yfov: 75,
     znear: 0.1,
   });
-  addRenderableComponent(state, eid, cameraResource);
 
   if (setActive) {
     setActiveCamera(state, eid);

@@ -1,3 +1,4 @@
+import { CameraModule, CameraUpdateSystem } from "./camera/camera.render";
 import { EditorModule } from "./editor/editor.renderer";
 import { ImageModule } from "./image/image.render";
 import { defineConfig } from "./module/module.common";
@@ -12,6 +13,7 @@ export default defineConfig({
   modules: [
     ResourceModule,
     SceneModule,
+    CameraModule,
     ImageModule,
     TextureModule,
     RendererModule,
@@ -19,5 +21,5 @@ export default defineConfig({
     EditorModule,
     StatsModule,
   ],
-  systems: [RendererRaycasterSystem, RenderThreadStatsSystem, SceneUpdateSystem],
+  systems: [RendererRaycasterSystem, RenderThreadStatsSystem, SceneUpdateSystem, CameraUpdateSystem],
 });

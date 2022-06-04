@@ -1,4 +1,4 @@
-import { TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
 import { renderableSchema } from "../component/renderable.common";
 import { worldMatrixObjectBufferSchema } from "../component/transform.common";
 import { ResourceManager } from "../resources/ResourceManager";
@@ -21,7 +21,13 @@ export interface InitializeResourceManagerMessage {
   resourceManagerBuffer: ResourceManager;
 }
 
+export const rendererSchema = defineObjectBufferSchema({
+  scene: [Uint32Array, 1],
+  camera: [Uint32Array, 1],
+});
+
 export interface InitializeRendererTripleBuffersMessage {
+  sharedRendererState: TripleBufferBackedObjectBufferView<typeof rendererSchema, ArrayBuffer>;
   renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
   worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
 }

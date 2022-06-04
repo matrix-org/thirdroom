@@ -2,6 +2,7 @@ import { Event, Intersection, Object3D, Raycaster } from "three";
 
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { SceneModule } from "../scene/scene.render";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
 
@@ -32,8 +33,16 @@ const intersections: Intersection<Object3D<Event>>[] = [];
 
 export function RendererRaycasterSystem(state: RenderThreadState) {
   const renderModule = getModule(state, RendererModule);
-  const { scene, objectToEntityMap } = renderModule;
+  const { objectToEntityMap } = renderModule;
   const raycasterState = getModule(state, RaycasterModule);
+
+  const sceneEid = renderModule.sharedRendererState.scene[0];
+  const sceneModule = getModule(state, SceneModule);
+  const sceneResource = sceneModule.sceneResources.get(sceneEid);
+
+  if (!sceneResource) {
+    return;
+  }
 
   while (raycasterState.messages.length) {
     const msg = raycasterState.messages.pop();
@@ -41,7 +50,7 @@ export function RendererRaycasterSystem(state: RenderThreadState) {
     if (msg) {
       raycasterState.raycaster.ray.origin.fromArray(msg.origin);
       raycasterState.raycaster.ray.direction.fromArray(msg.direction);
-      raycasterState.raycaster.intersectObject(scene, true, intersections);
+      raycasterState.raycaster.intersectObject(sceneResource.scene, true, intersections);
 
       const results: RaycastResult[] = [];
 

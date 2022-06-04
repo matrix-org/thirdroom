@@ -10,7 +10,7 @@ import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { SceneResourceProps, SceneResourceType, sceneSchema, SharedSceneResource } from "./scene.common";
 
-interface RemoteScene {
+export interface RemoteScene {
   resourceId: ResourceId;
   sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
   get background(): ResourceId;
@@ -19,30 +19,30 @@ interface RemoteScene {
   set environment(texture: ResourceId);
 }
 
-interface SceneModuleState {
-  scenes: RemoteScene[];
+export interface SceneModuleState {
+  sceneResources: Map<number, RemoteScene>;
 }
 
 export const SceneModule = defineModule<GameState, SceneModuleState>({
   name: "scene",
   create() {
     return {
-      scenes: [],
+      sceneResources: new Map(),
     };
   },
   init() {},
 });
 
 export function SceneUpdateSystem(ctx: GameState) {
-  const { scenes } = getModule(ctx, SceneModule);
+  const { sceneResources } = getModule(ctx, SceneModule);
 
-  for (let i = 0; i < scenes.length; i++) {
-    commitToTripleBufferView(scenes[i].sharedScene);
-    scenes[i].sharedScene.needsUpdate[0] = 0;
+  for (const [, remoteScene] of sceneResources) {
+    commitToTripleBufferView(remoteScene.sharedScene);
+    remoteScene.sharedScene.needsUpdate[0] = 0;
   }
 }
 
-export function createScene(ctx: GameState, props?: SceneResourceProps): RemoteScene {
+export function addSceneResource(ctx: GameState, eid: number, props?: SceneResourceProps): RemoteScene {
   const sceneModule = getModule(ctx, SceneModule);
 
   const scene = createObjectBufferView(sceneSchema, ArrayBuffer);
@@ -55,7 +55,11 @@ export function createScene(ctx: GameState, props?: SceneResourceProps): RemoteS
 
   const sharedScene = createTripleBufferBackedObjectBufferView(sceneSchema, scene, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedSceneResource>(ctx, SceneResourceType, { initialProps: props, sharedScene });
+  const resourceId = createResource<SharedSceneResource>(ctx, SceneResourceType, {
+    eid,
+    initialProps: props,
+    sharedScene,
+  });
 
   const remoteScene: RemoteScene = {
     resourceId,
@@ -76,7 +80,12 @@ export function createScene(ctx: GameState, props?: SceneResourceProps): RemoteS
     },
   };
 
-  sceneModule.scenes.push(remoteScene);
+  sceneModule.sceneResources.set(eid, remoteScene);
 
   return remoteScene;
+}
+
+export function getSceneResource(ctx: GameState, eid: number): RemoteScene | undefined {
+  const sceneModule = getModule(ctx, SceneModule);
+  return sceneModule.sceneResources.get(eid);
 }

@@ -2,7 +2,7 @@ import { EquirectangularReflectionMapping, Scene, Texture } from "three";
 
 import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
 import { defineModule, getModule } from "../module/module.common";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
 import { SceneResourceType, sceneSchema, SharedSceneResource } from "./scene.common";
@@ -13,14 +13,14 @@ interface LocalSceneResource {
 }
 
 type SceneModuleState = {
-  sceneResources: LocalSceneResource[];
+  sceneResources: Map<number, LocalSceneResource>;
 };
 
 export const SceneModule = defineModule<RenderThreadState, SceneModuleState>({
   name: "scene",
   create() {
     return {
-      sceneResources: [],
+      sceneResources: new Map(),
     };
   },
   init(ctx) {
@@ -37,16 +37,13 @@ export const SceneModule = defineModule<RenderThreadState, SceneModuleState>({
 async function onLoadScene(
   ctx: RenderThreadState,
   id: ResourceId,
-  { initialProps, sharedScene }: SharedSceneResource
+  { eid, initialProps, sharedScene }: SharedSceneResource
 ): Promise<Scene> {
   const sceneModule = getModule(ctx, SceneModule);
 
-  // const scene = new Scene();
-  const renderModule = getModule(ctx, RendererModule);
+  const scene = new Scene();
 
-  const scene = renderModule.scene as Scene;
-
-  sceneModule.sceneResources.push({
+  sceneModule.sceneResources.set(eid, {
     scene,
     sharedScene,
   });
@@ -57,7 +54,6 @@ async function onLoadScene(
     if (initialProps.background) {
       promises.push(
         waitForLocalResource<Texture>(ctx, initialProps.background).then((texture) => {
-          console.log(texture);
           scene.background = texture;
         })
       );
@@ -85,16 +81,12 @@ async function onLoadScene(
 export function SceneUpdateSystem(ctx: RenderThreadState) {
   const { sceneResources } = getModule(ctx, SceneModule);
 
-  for (let i = 0; i < sceneResources.length; i++) {
-    const { scene, sharedScene } = sceneResources[i];
-
+  for (const [, { scene, sharedScene }] of sceneResources) {
     const props = getReadObjectBufferView(sharedScene);
 
     if (!props.needsUpdate[0]) {
       continue;
     }
-
-    console.log("update");
 
     // TODO: Handle this better than this racy way
     if (props.background[0] !== 0) {

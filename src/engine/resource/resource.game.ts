@@ -148,8 +148,6 @@ export function waitForRemoteResource<Resource>(ctx: GameState, resourceId: Reso
   const resourceModule = getModule(ctx, ResourceModule);
   const deferred = resourceModule.deferredResources.get(resourceId);
 
-  console.log(deferred);
-
   if (deferred) {
     return deferred.promise as Promise<Resource>;
   }

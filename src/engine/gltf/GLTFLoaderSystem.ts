@@ -10,7 +10,7 @@ import {
   updateMatrix,
 } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRenderableComponent, setActiveCamera } from "../component/renderable";
+import { addRenderableComponent } from "../component/renderable";
 import { GLTFEntityDescription, RemoteGLTF } from ".";
 import { GLTFLoader } from "./GLTFLoader";
 import { loadRemoteResource, RemoteResourceInfo } from "../resources/RemoteResourceManager";
@@ -18,7 +18,7 @@ import { SpawnPoint } from "../component/SpawnPoint";
 import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
 import { PhysicsModule } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
-import { RendererModule } from "../renderer/renderer.game";
+import { RendererModule, setActiveCamera } from "../renderer/renderer.game";
 
 function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?: number) {
   const { resourceManager } = getModule(state, RendererModule);
@@ -55,6 +55,7 @@ function inflateGLTF(state: GameState, entity: GLTFEntityDescription, parentEid?
         addComponent(world, SpawnPoint, eid);
         break;
       case "camera":
+        // TODO
         setActiveCamera(state, eid);
         break;
       case "directional-light": {
