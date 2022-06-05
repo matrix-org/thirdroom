@@ -7,20 +7,22 @@ import {
 import { GameState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
-import { createResource } from "../resource/resource.game";
+import { createResource, getRemoteResource } from "../resource/resource.game";
+import { RemoteTexture } from "../texture/texture.game";
 import { SceneResourceProps, SceneResourceType, sceneSchema, SharedSceneResource } from "./scene.common";
 
 export interface RemoteScene {
   resourceId: ResourceId;
   sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
-  get background(): ResourceId;
-  set background(texture: ResourceId);
-  get environment(): ResourceId;
-  set environment(texture: ResourceId);
+  get background(): RemoteTexture | undefined;
+  set background(texture: RemoteTexture | undefined);
+  get environment(): RemoteTexture | undefined;
+  set environment(texture: RemoteTexture | undefined);
 }
 
 export interface SceneModuleState {
   sceneResources: Map<number, RemoteScene>;
+  scenes: RemoteScene[];
 }
 
 export const SceneModule = defineModule<GameState, SceneModuleState>({
@@ -28,17 +30,19 @@ export const SceneModule = defineModule<GameState, SceneModuleState>({
   create() {
     return {
       sceneResources: new Map(),
+      scenes: [],
     };
   },
   init() {},
 });
 
 export function SceneUpdateSystem(ctx: GameState) {
-  const { sceneResources } = getModule(ctx, SceneModule);
+  const { scenes } = getModule(ctx, SceneModule);
 
-  for (const [, remoteScene] of sceneResources) {
-    commitToTripleBufferView(remoteScene.sharedScene);
-    remoteScene.sharedScene.needsUpdate[0] = 0;
+  for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
+    commitToTripleBufferView(scene.sharedScene);
+    scene.sharedScene.needsUpdate[0] = 0;
   }
 }
 
@@ -64,23 +68,26 @@ export function addSceneResource(ctx: GameState, eid: number, props?: SceneResou
   const remoteScene: RemoteScene = {
     resourceId,
     sharedScene,
-    get background(): ResourceId {
-      return scene.background[0];
+    get background(): RemoteTexture | undefined {
+      const remoteTextureResource = getRemoteResource<RemoteTexture>(ctx, scene.background[0]);
+      return remoteTextureResource?.response;
     },
-    set background(texture: ResourceId) {
-      scene.background[0] = texture;
+    set background(texture: RemoteTexture | undefined) {
+      scene.background[0] = texture ? texture.resourceId : 0;
       scene.needsUpdate[0] = 1;
     },
-    get environment(): ResourceId {
-      return scene.environment[0];
+    get environment(): RemoteTexture | undefined {
+      const remoteTextureResource = getRemoteResource<RemoteTexture>(ctx, scene.environment[0]);
+      return remoteTextureResource?.response;
     },
-    set environment(texture: ResourceId) {
-      scene.environment[0] = texture;
+    set environment(texture: RemoteTexture | undefined) {
+      scene.environment[0] = texture ? texture.resourceId : 0;
       scene.needsUpdate[0] = 1;
     },
   };
 
   sceneModule.sceneResources.set(eid, remoteScene);
+  sceneModule.scenes.push(remoteScene);
 
   return remoteScene;
 }

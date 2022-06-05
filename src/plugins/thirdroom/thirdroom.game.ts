@@ -34,14 +34,13 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     const sceneResource = getSceneResource(ctx, scene)!;
 
     const environmentMapTexture = createRGBETexture(ctx, {
-      name: "Environment Map",
       uri: "/cubemap/venice_sunset_1k.hdr",
     });
 
     sceneResource.background = environmentMapTexture;
     sceneResource.environment = environmentMapTexture;
 
-    await waitForRemoteResource(ctx, environmentMapTexture);
+    await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
 
     return () => {
       for (const dispose of disposables) {

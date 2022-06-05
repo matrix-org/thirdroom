@@ -164,3 +164,11 @@ export function waitForRemoteResource<Resource>(ctx: GameState, resourceId: Reso
 
   return Promise.reject(new Error(`Resource ${resourceId} not found.`));
 }
+
+export function getRemoteResource<Response = unknown>(
+  ctx: GameState,
+  resourceId: ResourceId
+): RemoteResource<Response> | undefined {
+  const resourceModule = getModule(ctx, ResourceModule);
+  return resourceModule.resources.get(resourceId) as RemoteResource<Response>;
+}

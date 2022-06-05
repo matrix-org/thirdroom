@@ -9,7 +9,7 @@ import { RendererModule } from "./renderer/renderer.render";
 import { ResourceModule } from "./resource/resource.render";
 import { SceneModule, SceneUpdateSystem } from "./scene/scene.render";
 import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
-import { TextureModule } from "./texture/texture.render";
+import { TextureModule, TextureUpdateSystem } from "./texture/texture.render";
 
 export default defineConfig({
   modules: [
@@ -32,5 +32,6 @@ export default defineConfig({
     CameraUpdateSystem,
     LightUpdateSystem,
     MaterialUpdateSystem,
+    TextureUpdateSystem,
   ],
 });

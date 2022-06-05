@@ -9,6 +9,8 @@ export const sceneSchema = defineObjectBufferSchema({
   needsUpdate: [Uint8Array, 1],
 });
 
+export type SharedScene = TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
+
 export interface SceneResourceProps {
   background?: ResourceId;
   environment?: ResourceId;
@@ -17,5 +19,5 @@ export interface SceneResourceProps {
 export type SharedSceneResource = {
   eid: number;
   initialProps?: SceneResourceProps;
-  sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
+  sharedScene: SharedScene;
 };

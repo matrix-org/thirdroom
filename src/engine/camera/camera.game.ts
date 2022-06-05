@@ -57,6 +57,8 @@ export type RemoteCamera = RemotePerspectiveCamera | RemoteOrthographicCamera;
 
 export interface CameraModuleState {
   cameraResources: Map<number, RemoteCamera>;
+  perspectiveCameras: RemotePerspectiveCamera[];
+  orthographicCameras: RemoteOrthographicCamera[];
 }
 
 export const CameraModule = defineModule<GameState, CameraModuleState>({
@@ -64,22 +66,28 @@ export const CameraModule = defineModule<GameState, CameraModuleState>({
   create() {
     return {
       cameraResources: new Map(),
+      perspectiveCameras: [],
+      orthographicCameras: [],
     };
   },
   init() {},
 });
 
 export function CameraUpdateSystem(ctx: GameState) {
-  const { cameraResources } = getModule(ctx, CameraModule);
+  const { perspectiveCameras, orthographicCameras } = getModule(ctx, CameraModule);
 
-  for (const [, remoteCamera] of cameraResources) {
-    commitToTripleBufferView(remoteCamera.sharedCamera as any);
+  for (let i = 0; i < perspectiveCameras.length; i++) {
+    const perspectiveCamera = perspectiveCameras[i];
+    commitToTripleBufferView(perspectiveCamera.sharedCamera);
+    perspectiveCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
+    perspectiveCamera.sharedCamera.needsUpdate[0] = 0;
+  }
 
-    if (remoteCamera.type === CameraType.Perspective) {
-      remoteCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
-    }
-
-    remoteCamera.sharedCamera.needsUpdate[0] = 0;
+  for (let i = 0; i < orthographicCameras.length; i++) {
+    const orthographicCamera = perspectiveCameras[i];
+    commitToTripleBufferView(orthographicCamera.sharedCamera);
+    orthographicCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
+    orthographicCamera.sharedCamera.needsUpdate[0] = 0;
   }
 }
 

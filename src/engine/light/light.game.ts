@@ -76,6 +76,9 @@ export type RemoteLight = RemoteDirectionalLight | RemotePointLight | RemoteSpot
 
 export interface LightModuleState {
   lightResources: Map<number, RemoteLight>;
+  directionalLights: RemoteDirectionalLight[];
+  pointLights: RemotePointLight[];
+  spotLights: RemoteSpotLight[];
 }
 
 export const LightModule = defineModule<GameState, LightModuleState>({
@@ -83,17 +86,33 @@ export const LightModule = defineModule<GameState, LightModuleState>({
   create() {
     return {
       lightResources: new Map(),
+      directionalLights: [],
+      pointLights: [],
+      spotLights: [],
     };
   },
   init() {},
 });
 
 export function LightUpdateSystem(ctx: GameState) {
-  const { lightResources } = getModule(ctx, LightModule);
+  const { directionalLights, pointLights, spotLights } = getModule(ctx, LightModule);
 
-  for (const [, remoteLight] of lightResources) {
-    commitToTripleBufferView(remoteLight.sharedLight as any);
-    remoteLight.sharedLight.needsUpdate[0] = 0;
+  for (let i = 0; i < directionalLights.length; i++) {
+    const directionalLight = directionalLights[i];
+    commitToTripleBufferView(directionalLight.sharedLight);
+    directionalLight.sharedLight.needsUpdate[0] = 0;
+  }
+
+  for (let i = 0; i < pointLights.length; i++) {
+    const pointLight = pointLights[i];
+    commitToTripleBufferView(pointLight.sharedLight);
+    pointLight.sharedLight.needsUpdate[0] = 0;
+  }
+
+  for (let i = 0; i < spotLights.length; i++) {
+    const spotLight = spotLights[i];
+    commitToTripleBufferView(spotLight.sharedLight);
+    spotLight.sharedLight.needsUpdate[0] = 0;
   }
 }
 
@@ -159,6 +178,7 @@ export function addDirectionalLightResource(
     },
   };
 
+  lightModule.directionalLights.push(remoteLight);
   lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
@@ -231,6 +251,7 @@ export function addPointLightResource(ctx: GameState, eid: number, props?: Point
     },
   };
 
+  lightModule.pointLights.push(remoteLight);
   lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
@@ -318,6 +339,7 @@ export function addSpotLightResource(ctx: GameState, eid: number, props?: SpotLi
     },
   };
 
+  lightModule.spotLights.push(remoteLight);
   lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
