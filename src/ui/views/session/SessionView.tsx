@@ -15,6 +15,7 @@ import { useStore } from "../../hooks/useStore";
 import { useRoomIdFromAlias } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
+import { useUserProfile } from "../../hooks/useUserProfile";
 
 export interface SessionOutletContext {
   world?: Room;
@@ -25,6 +26,8 @@ export interface SessionOutletContext {
 
 export function SessionView() {
   const { client, session, platform } = useHydrogen(true);
+  useUserProfile(client, session);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useInitEngine(canvasRef);
   const networkInterfaceRef = useRef<() => void>();

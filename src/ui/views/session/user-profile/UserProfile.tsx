@@ -10,6 +10,7 @@ import { SegmentControlItem } from "../../../atoms/segment-control/SegmentContro
 import { useStore } from "../../../hooks/useStore";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { UserProfileOverview } from "./UserProfileOverview";
+import { UserProfileInventory } from "./UserProfileInventory";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 
@@ -63,6 +64,7 @@ export function UserProfile() {
         right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
       />
       {selectedSegment === UserProfileSegment.Overview && <UserProfileOverview />}
+      {selectedSegment === UserProfileSegment.Inventory && <UserProfileInventory />}
     </Window>
   );
 }

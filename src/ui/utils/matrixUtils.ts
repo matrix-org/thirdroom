@@ -52,9 +52,15 @@ export async function isRoomAliasAvailable(homeserver: string, alias: string): P
 
 export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: string): Room | void {
   if (alias.startsWith("#") === false) return;
-  const items = rooms.values();
 
-  for (const room of items) {
+  for (const room of rooms.values()) {
     if (room.canonicalAlias === alias) return room;
+  }
+}
+
+export function getProfileRoom(rooms: ObservableMap<string, Room>) {
+  const type = "org.matrix.msc3815.profile";
+  for (const room of rooms.values()) {
+    if (room.type === type) return room;
   }
 }

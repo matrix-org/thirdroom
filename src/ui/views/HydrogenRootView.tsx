@@ -25,7 +25,6 @@ import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
-import { useUserProfile } from "../hooks/useUserProfile";
 
 const defaultHomeServer = "matrix.org";
 
@@ -187,8 +186,6 @@ export function HydrogenRootView() {
       containerEl.remove();
     };
   }, [client, containerEl]);
-
-  useUserProfile(session);
 
   const { loading: loadingInitialSession, error: initialSessionLoadError } = useAsync(async () => {
     const availableSessions = await platform.sessionInfoStorage.getAll();

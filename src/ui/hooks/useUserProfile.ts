@@ -1,11 +1,11 @@
 import { useCallback, useEffect } from "react";
-import { Session } from "@thirdroom/hydrogen-view-sdk";
+import { Session, Client, SyncStatus, Room, RoomVisibility, RoomType } from "@thirdroom/hydrogen-view-sdk";
 
-import { getMxIdUsername } from "../utils/matrixUtils";
+import { getMxIdUsername, getProfileRoom } from "../utils/matrixUtils";
 import { useStore } from "./useStore";
 import { useIsMounted } from "./useIsMounted";
 
-export function useUserProfile(session?: Session) {
+export function useUserProfile(client: Client, session: Session) {
   const isMounted = useIsMounted();
 
   const updateProfile = useCallback((userId: string, displayName?: string, avatarUrl?: string) => {
@@ -28,31 +28,84 @@ export function useUserProfile(session?: Session) {
     [isMounted, updateProfile]
   );
 
-  useEffect(() => {
-    if (session) {
-      updateProfile(session.userId);
-      updateFromServer(session);
-    }
-    return () => {
-      updateProfile("@dummy:server.xyz");
-    };
-  }, [session, updateFromServer, updateProfile]);
+  const listenProfileChange = useCallback(
+    async (profileRoom: Room) => {
+      const memberObserver = await profileRoom.observeMember(session.userId);
 
-  useEffect(() => {
-    const unSubs = session?.observeRoomState({
-      handleRoomState: (room, stateEvent) => {
-        if (stateEvent.state_key !== session.userId) return;
+      const unSubs = memberObserver?.subscribe((member) => {
+        if (member.membership !== "join") unSubs?.();
 
         const { displayName, avatarUrl } = useStore.getState().userProfile;
-        const { avatar_url: url, displayname: name } = stateEvent.content;
+        const { avatarUrl: url, displayName: name } = member;
         if (avatarUrl === url && displayName === name) return;
 
         updateProfile(session.userId, name, url);
-      },
-      updateRoomMembers: () => {},
-    });
+      });
+    },
+    [session, updateProfile]
+  );
+
+  const initProfileRoom = useCallback(() => {
+    const profileRoom = getProfileRoom(session.rooms);
+
+    if (profileRoom) {
+      listenProfileChange(profileRoom);
+    } else {
+      const roomBeingCreated = session.createRoom({
+        type: RoomType.Profile,
+        visibility: RoomVisibility.Private,
+        name: "Profile Room",
+        isEncrypted: false,
+        isFederationDisabled: false,
+        powerLevelContentOverride: {
+          invite: 100,
+          kick: 100,
+          ban: 100,
+          redact: 100,
+          state_default: 100,
+          events_default: 100,
+          users_default: 0,
+          users: {
+            [session.userId]: 100,
+          },
+        },
+      });
+
+      const unSubs = roomBeingCreated.disposableOn("change", () => {
+        if (!roomBeingCreated.roomId) return;
+        const profileRoom = session.rooms.get(roomBeingCreated.roomId);
+        if (!profileRoom) return;
+        unSubs();
+        listenProfileChange(profileRoom);
+      });
+    }
+  }, [session, listenProfileChange]);
+
+  useEffect(() => {
+    let unSubs: () => void;
+    const { sync } = client;
+
+    updateProfile(session.userId);
+    updateFromServer(session);
+
+    // Make sure catchup sync has completed
+    // so we don't create redundant profile room.
+    if (sync.status.get() === "Syncing") {
+      initProfileRoom();
+    } else {
+      let prevStatus: SyncStatus = sync.status.get();
+      unSubs = sync.status.subscribe((syncStatus) => {
+        if (prevStatus === syncStatus) return;
+        prevStatus = syncStatus;
+        if (syncStatus === "Syncing") {
+          initProfileRoom();
+          unSubs?.();
+        }
+      });
+    }
     return () => {
       unSubs?.();
+      updateProfile("@dummy:server.xyz");
     };
-  }, [session, updateProfile]);
+  }, [client, session, updateProfile, updateFromServer, initProfileRoom]);
 }

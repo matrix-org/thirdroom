@@ -361,6 +361,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export enum RoomType {
     World,
+    Profile,
   }
 
   export class RoomBeingCreated extends EventEmitter<any> {
@@ -472,7 +473,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export class Timeline {}
 
-  export class RoomMember {}
+  export class RoomMember {
+    get roomId(): string;
+    get userId(): string;
+    get name(): string;
+    get displayName(): string | undefined;
+    get avatarUrl(): string | undefined;
+    get membership(): string;
+  }
 
   export class MemberList {}
 
