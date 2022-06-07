@@ -28,14 +28,14 @@ jobs:
         with:
           workflow: ci.yml
           run_id: ${{ github.event.workflow_run.id }}
-          name: previewbuild
-          path: webapp
+          name: build
+          path: app
 
       - name: Deploy to Netlify
         id: netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
-          publish-dir: webapp
+          publish-dir: app
           deploy-message: "Deploy from GitHub Actions"
           netlify-config-path: ./netlify.toml
           # These don't work because we're in workflow_run
