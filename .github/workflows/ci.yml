@@ -91,7 +91,6 @@ jobs:
           retention-days: 1
 
   deploy:
-    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       # fetch repo for access to netlify.toml during Deploy to Netlify step
