@@ -1,0 +1,5 @@
+.ModalAside {
+  height: 100%;
+  padding: var(--sp-xs);
+  padding-left: 0;
+}
