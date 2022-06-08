@@ -92,14 +92,15 @@ jobs:
           owner: ${{ github.event.workflow_run.head_repository.owner.login }}
           branch: ${{ github.event.workflow_run.head_branch }}
 
-      - name: Deploy to Netlify
+      - name: Deploy Preview to Netlify
         id: netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
           publish-dir: dist
-          deploy-message: "Deploy from GitHub Actions"
+          deploy-message: "Preview Deploy from GitHub Actions"
           netlify-config-path: ./netlify.toml
           alias: deploy-preview-${{ github.event.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           enable-pull-request-comment: true
           enable-commit-comment: true
           overwrites-pull-request-comment: true
