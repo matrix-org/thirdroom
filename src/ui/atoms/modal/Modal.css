@@ -37,6 +37,9 @@
   box-shadow: var(--bs-modal);
   outline: none;
   overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
 }
 .Modal[data-state="open"] {
   animation-name: modal-anime;
