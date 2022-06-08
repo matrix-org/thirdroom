@@ -1,0 +1,11 @@
+.HeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+
+  & > .Text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
