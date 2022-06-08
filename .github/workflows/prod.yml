@@ -41,8 +41,9 @@ jobs:
         uses: nwtgck/actions-netlify@v1.2
         with:
           publish-dir: app
-          deploy-message: "Deploy from GitHub Actions"
+          deploy-message: "Production Deploy from GitHub Actions"
           netlify-config-path: ./netlify.toml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           production-deploy: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
