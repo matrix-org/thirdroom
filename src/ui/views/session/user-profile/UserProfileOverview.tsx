@@ -17,12 +17,13 @@ import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { getAvatarHttpUrl } from "../../../utils/avatar";
-import { WindowFooter } from "../../components/window/WindowFooter";
+import { Footer } from "../../../atoms/footer/Footer";
 import { Button } from "../../../atoms/button/Button";
 import { useDebounce } from "../../../hooks/useDebounce";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import "./UserProfileOverview.css";
+import { Edit3DAvatar } from "./Edit3DAvatar";
 
 export function UserProfileOverview() {
   const { session, platform } = useHydrogen(true);
@@ -88,29 +89,45 @@ export function UserProfileOverview() {
           children={
             <Scroll>
               <div className="UserProfileOverview__content">
-                <SettingTile label={<Label>Avatar</Label>}>
-                  <ThumbnailHover
-                    content={
-                      !avatarHttpUrl ? undefined : (
-                        <IconButton
-                          variant="world"
-                          onClick={handleAvatarRemove}
-                          size="xl"
-                          iconSrc={CrossCircleIC}
-                          label="Remove avatar"
-                        />
-                      )
-                    }
-                  >
-                    <Thumbnail size="sm" className="flex">
-                      {avatarHttpUrl ? (
-                        <ThumbnailImg src={avatarHttpUrl} />
-                      ) : (
-                        <IconButton onClick={handleAvatarSelect} size="xl" iconSrc={AddIC} label="Add world avatar" />
+                <div className="flex gap-lg">
+                  <SettingTile label={<Label>Profile Picture</Label>}>
+                    <ThumbnailHover
+                      content={
+                        !avatarHttpUrl ? undefined : (
+                          <IconButton
+                            variant="world"
+                            onClick={handleAvatarRemove}
+                            size="xl"
+                            iconSrc={CrossCircleIC}
+                            label="Remove Profile Picture"
+                          />
+                        )
+                      }
+                    >
+                      <Thumbnail size="sm" className="flex">
+                        {avatarHttpUrl ? (
+                          <ThumbnailImg src={avatarHttpUrl} />
+                        ) : (
+                          <IconButton
+                            onClick={handleAvatarSelect}
+                            size="xl"
+                            iconSrc={AddIC}
+                            label="Upload Profile Picture"
+                          />
+                        )}
+                      </Thumbnail>
+                    </ThumbnailHover>
+                  </SettingTile>
+                  <SettingTile className="grow basis-0" label={<Label>3D Avatar</Label>}>
+                    <Edit3DAvatar
+                      renderTrigger={(openModal) => (
+                        <Thumbnail size="sm" className="flex">
+                          <IconButton onClick={openModal} size="xl" iconSrc={AddIC} label="Add world avatar" />
+                        </Thumbnail>
                       )}
-                    </Thumbnail>
-                  </ThumbnailHover>
-                </SettingTile>
+                    />
+                  </SettingTile>
+                </div>
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
                     <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
@@ -122,7 +139,7 @@ export function UserProfileOverview() {
           }
           bottom={
             (displayName !== newDisplayName || avatarUrl !== newAvatar) && (
-              <WindowFooter
+              <Footer
                 left={
                   <Button fill="outline" type="reset">
                     Cancel
@@ -140,7 +157,7 @@ export function UserProfileOverview() {
             className="grow"
             fallback={
               <Text variant="b3" color="surface-low" weight="medium">
-                Your default avatar preview will appear here.
+                Your 3D avatar preview will appear here.
               </Text>
             }
           />

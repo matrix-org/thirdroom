@@ -3,10 +3,8 @@ import { useState } from "react";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Window } from "../../components/window/Window";
-import { WindowHeader } from "../../components/window/WindowHeader";
-import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
-import { SegmentControl } from "../../../atoms/segment-control/SegmentControl";
-import { SegmentControlItem } from "../../../atoms/segment-control/SegmentControlItem";
+import { Header } from "../../../atoms/header/Header";
+import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { useStore } from "../../../hooks/useStore";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { UserProfileOverview } from "./UserProfileOverview";
@@ -23,13 +21,13 @@ export function UserProfile() {
   const { session, platform } = useHydrogen(true);
   const { selectWindow } = useStore((state) => state.overlayWindow);
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const [selectedSegment, setSelectedSegment] = useState(UserProfileSegment.Overview);
+  const [selectedSegment] = useState(UserProfileSegment.Overview);
 
   return (
     <Window>
-      <WindowHeader
+      <Header
         left={
-          <WindowHeaderTitle
+          <HeaderTitle
             icon={
               <Avatar
                 name={displayName}
@@ -41,25 +39,7 @@ export function UserProfile() {
             }
           >
             Profile
-          </WindowHeaderTitle>
-        }
-        center={
-          <SegmentControl>
-            <SegmentControlItem
-              value={UserProfileSegment.Overview}
-              isSelected={selectedSegment === UserProfileSegment.Overview}
-              onSelect={setSelectedSegment}
-            >
-              Overview
-            </SegmentControlItem>
-            <SegmentControlItem
-              value={UserProfileSegment.Inventory}
-              isSelected={selectedSegment === UserProfileSegment.Inventory}
-              onSelect={setSelectedSegment}
-            >
-              Inventory
-            </SegmentControlItem>
-          </SegmentControl>
+          </HeaderTitle>
         }
         right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
       />
