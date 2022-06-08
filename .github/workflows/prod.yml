@@ -1,69 +1,9 @@
-name: CI
-
+name: Production CI
 on:
   push:
     branches:
       - main
-
-  pull_request:
-    branches:
-      - main
-
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: yarn
-
-      - name: Install
-        run: yarn install
-
-      - name: Lint
-        run: yarn lint
-
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: yarn
-
-      - name: Install
-        run: yarn install
-
-      - name: Typecheck
-        run: yarn typecheck
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: yarn
-
-      - name: Install
-        run: yarn install
-
-      - name: Test
-        run: yarn test
-
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -100,10 +40,10 @@ jobs:
         id: netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
-          publish-dir: dist
+          publish-dir: app
           deploy-message: "Deploy from GitHub Actions"
           netlify-config-path: ./netlify.toml
-          alias: pr${{ steps.prdetails.outputs.pr_id }}
+          production-deploy: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
