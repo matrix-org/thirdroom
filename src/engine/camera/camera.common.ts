@@ -52,14 +52,12 @@ export interface OrthographicCameraResourceProps {
 export type CameraResourceProps = PerspectiveCameraResourceProps | OrthographicCameraResourceProps;
 
 export interface SharedPerspectiveCameraResource {
-  eid: number;
   type: CameraType.Perspective;
   initialProps: Required<PerspectiveCameraResourceProps>;
   sharedCamera: TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
 }
 
 export interface SharedOrthographicCameraResource {
-  eid: number;
   type: CameraType.Orthographic;
   initialProps: Required<OrthographicCameraResourceProps>;
   sharedCamera: TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;

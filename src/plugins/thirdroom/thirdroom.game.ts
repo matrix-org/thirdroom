@@ -1,4 +1,4 @@
-import { defineQuery } from "bitecs";
+import { addEntity, defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -6,13 +6,14 @@ import { addChild, setEulerFromQuaternion, Transform } from "../../engine/compon
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
-import { createRGBETexture } from "../../engine/texture/texture.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
-import { getSceneResource } from "../../engine/scene/scene.game";
-import { createGLTFEntity } from "../../engine/gltf/GLTFLoader";
 import { getActiveScene } from "../../engine/renderer/renderer.game";
 import { waitForRemoteResource } from "../../engine/resource/resource.game";
+import { createRemoteImage } from "../../engine/image/image.game";
+import { createRemoteTexture } from "../../engine/texture/texture.game";
+import { RemoteSceneComponent } from "../../engine/scene/scene.game";
+import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 
 interface ThirdRoomModuleState {
   environment?: number;
@@ -31,11 +32,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     ];
 
     const scene = getActiveScene(ctx);
-    const sceneResource = getSceneResource(ctx, scene)!;
+    const sceneResource = RemoteSceneComponent.get(scene)!;
 
-    const environmentMapTexture = createRGBETexture(ctx, {
-      uri: "/cubemap/venice_sunset_1k.hdr",
-    });
+    const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
+    const environmentMapTexture = createRemoteTexture(ctx, environmentMap);
 
     sceneResource.background = environmentMapTexture;
     sceneResource.environment = environmentMapTexture;
@@ -58,7 +58,9 @@ function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
   }
 
   const scene = getActiveScene(ctx);
-  createGLTFEntity(ctx, message.url, scene);
+  const environment = addEntity(ctx.world);
+  addChild(scene, environment);
+  addGLTFLoaderComponent(ctx, environment, message.url);
 }
 
 let playerRig: number;

@@ -3,7 +3,6 @@ import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
 import { Player } from "../engine/component/Player";
-import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
@@ -14,15 +13,12 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
+import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCamera } from "../engine/prefab";
-import { RendererModule } from "../engine/renderer/renderer.game";
-import { GeometryType } from "../engine/resources/GeometryResourceLoader";
-import { MaterialType } from "../engine/resources/MaterialResourceLoader";
-import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
+import { addCubeMesh, createCamera } from "../engine/prefab";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
@@ -154,34 +150,20 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (state: GameState, geometryResourceId?: number) => {
-  const { resourceManager } = getModule(state, RendererModule);
+export const createRawCube = (state: GameState) => {
   const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  if (!geometryResourceId) {
-    geometryResourceId = loadRemoteResource(resourceManager, {
-      type: "geometry",
-      geometryType: GeometryType.Box,
-    });
-  }
-
-  const materialResourceId = loadRemoteResource(resourceManager, {
-    type: "material",
-    materialType: MaterialType.Physical,
-    baseColorFactor: [1, 1, 1, 1.0],
-    roughnessFactor: 0.1,
-    metallicFactor: 0.9,
-  });
-
-  const resourceId = loadRemoteResource(resourceManager, {
-    type: "mesh",
-    geometryResourceId,
-    materialResourceId,
-  });
-
-  addRenderableComponent(state, eid, resourceId);
+  addCubeMesh(
+    state,
+    eid,
+    createRemoteStandardMaterial(state, {
+      baseColorFactor: [1, 1, 1, 1.0],
+      roughnessFactor: 0.1,
+      metallicFactor: 0.9,
+    })
+  );
 
   return eid;
 };

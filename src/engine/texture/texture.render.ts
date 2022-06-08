@@ -1,73 +1,33 @@
-import {
-  ClampToEdgeWrapping,
-  DataTexture,
-  LinearFilter,
-  LinearMipmapLinearFilter,
-  LinearMipmapNearestFilter,
-  MirroredRepeatWrapping,
-  NearestFilter,
-  NearestMipmapLinearFilter,
-  NearestMipmapNearestFilter,
-  RepeatWrapping,
-  Texture,
-  TextureEncoding,
-} from "three";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, TextureEncoding } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { ImageFormat, LocalImageResource } from "../image/image.render";
 import { defineModule, getModule } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
-import {
-  RGBATextureResourceType,
-  RGBETextureResourceType,
-  SharedRGBATextureResource,
-  SharedRGBETextureResource,
-  SharedTexture,
-  TextureType,
-} from "./texture.common";
+import { LocalSamplerResource } from "../sampler/sampler.render";
+import { SharedTexture, SharedTextureResource, TextureResourceType } from "./texture.common";
 
 interface LocalTextureResource {
-  type: TextureType;
   forceUpdate: boolean;
   texture: Texture;
   sharedTexture: SharedTexture;
 }
 
 interface TextureModuleState {
-  rgbeLoader: RGBELoader;
   textures: LocalTextureResource[];
 }
-
-const ThreeFilters = {
-  9728: NearestFilter,
-  9729: LinearFilter,
-  9984: NearestMipmapNearestFilter,
-  9985: LinearMipmapNearestFilter,
-  9986: NearestMipmapLinearFilter,
-  9987: LinearMipmapLinearFilter,
-};
-
-const ThreeWrappings = {
-  33071: ClampToEdgeWrapping,
-  33648: MirroredRepeatWrapping,
-  10497: RepeatWrapping,
-};
 
 export const TextureModule = defineModule<RenderThreadState, TextureModuleState>({
   name: "texture",
   create() {
     return {
-      rgbeLoader: new RGBELoader(),
       textures: [],
     };
   },
   init(ctx) {
-    const disposables = [
-      registerResourceLoader(ctx, RGBATextureResourceType, onLoadTexture),
-      registerResourceLoader(ctx, RGBETextureResourceType, onLoadRGBETexture),
-    ];
+    const disposables = [registerResourceLoader(ctx, TextureResourceType, onLoadTexture)];
 
     return () => {
       for (const dispose of disposables) {
@@ -80,43 +40,35 @@ export const TextureModule = defineModule<RenderThreadState, TextureModuleState>
 async function onLoadTexture(
   ctx: RenderThreadState,
   id: ResourceId,
-  { type, initialProps, sharedTexture }: SharedRGBATextureResource
+  { initialProps, sharedTexture }: SharedTextureResource
 ): Promise<Texture> {
   const textureModule = getModule(ctx, TextureModule);
 
-  const image = await waitForLocalResource<ImageBitmap>(ctx, initialProps.image);
+  const [image, sampler] = await Promise.all([
+    waitForLocalResource<LocalImageResource>(ctx, initialProps.image),
+    initialProps.sampler ? waitForLocalResource<LocalSamplerResource>(ctx, initialProps.sampler) : undefined,
+  ]);
 
   // TODO: Add ImageBitmap to Texture types
-  const texture = new Texture(image as any);
-  texture.flipY = false;
-  texture.magFilter = ThreeFilters[initialProps.magFilter];
-  texture.minFilter = ThreeFilters[initialProps.minFilter];
-  texture.wrapS = ThreeWrappings[initialProps.wrapS];
-  texture.wrapT = ThreeWrappings[initialProps.wrapT];
-  texture.encoding = initialProps.encoding as unknown as TextureEncoding;
-  texture.offset.fromArray(initialProps.offset);
-  texture.rotation = initialProps.rotation;
-  texture.repeat.fromArray(initialProps.scale);
-  texture.needsUpdate = true;
+  const texture = image.format === ImageFormat.RGBA ? new Texture(image as any) : image.texture;
 
-  textureModule.textures.push({
-    type,
-    texture,
-    sharedTexture,
-    forceUpdate: true, // TODO: Is this uploading the texture twice?
-  });
+  if (sampler) {
+    texture.magFilter = sampler.magFilter;
+    texture.minFilter = sampler.minFilter;
+    texture.wrapS = sampler.wrapS;
+    texture.wrapT = sampler.wrapT;
+  } else {
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearMipmapLinearFilter;
+    texture.wrapS = RepeatWrapping;
+    texture.wrapT = RepeatWrapping;
+  }
 
-  return texture;
-}
-
-async function onLoadRGBETexture(
-  ctx: RenderThreadState,
-  id: ResourceId,
-  { type, initialProps, sharedTexture }: SharedRGBETextureResource
-): Promise<DataTexture> {
-  const textureModule = getModule(ctx, TextureModule);
-
-  const texture = await textureModule.rgbeLoader.loadAsync(initialProps.uri);
+  if (image.format === ImageFormat.RGBA) {
+    texture.flipY = false;
+    // TODO: Can we determine texture encoding when applying to the material?
+    texture.encoding = initialProps.encoding as unknown as TextureEncoding;
+  }
 
   texture.offset.fromArray(initialProps.offset);
   texture.rotation = initialProps.rotation;
@@ -124,7 +76,6 @@ async function onLoadRGBETexture(
   texture.needsUpdate = true;
 
   textureModule.textures.push({
-    type,
     texture,
     sharedTexture,
     forceUpdate: true, // TODO: Is this uploading the texture twice?

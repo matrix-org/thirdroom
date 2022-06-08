@@ -1,11 +1,10 @@
+import { ResourceId } from "../resource/resource.common";
+
 export const ImageResourceType = "image";
 
 export type ImageResourceProps =
   | {
-      image: undefined;
-      uri: string;
+      bufferView: ResourceId;
+      mimeType: string;
     }
-  | {
-      uri: undefined;
-      image: ImageBitmap;
-    };
+  | { uri: string };

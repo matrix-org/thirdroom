@@ -48,41 +48,41 @@ export enum MaterialType {
 }
 
 export interface UnlitMaterialResourceProps {
-  doubleSided?: boolean; // default false
-  alphaCutoff?: number; // default 0.5
-  alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
-  baseColorFactor?: vec4; // default [1, 1, 1, 1]
-  baseColorTexture?: ResourceId;
+  doubleSided: boolean; // default false
+  alphaCutoff: number; // default 0.5
+  alphaMode: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
+  baseColorFactor: vec4; // default [1, 1, 1, 1]
+  baseColorTexture: ResourceId;
 }
 
 export interface StandardMaterialResourceProps {
-  doubleSided?: boolean; // default false
-  alphaCutoff?: number; // default 0.5
-  alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
-  baseColorFactor?: vec4; // default [1, 1, 1, 1]
-  baseColorTexture?: ResourceId;
-  metallicFactor?: number; // default 1
-  roughnessFactor?: number; // default 1
-  metallicRoughnessTexture?: ResourceId;
-  normalTextureScale?: number; // default 1
-  normalTexture?: ResourceId;
-  occlusionTextureStrength?: number; // default 1
-  occlusionTexture?: ResourceId;
-  emissiveFactor?: vec3; // default [0, 0, 0]
-  emissiveTexture?: ResourceId;
+  doubleSided: boolean; // default false
+  alphaCutoff: number; // default 0.5
+  alphaMode: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
+  baseColorFactor: vec4; // default [1, 1, 1, 1]
+  baseColorTexture: ResourceId;
+  metallicFactor: number; // default 1
+  roughnessFactor: number; // default 1
+  metallicRoughnessTexture: ResourceId;
+  normalTextureScale: number; // default 1
+  normalTexture: ResourceId;
+  occlusionTextureStrength: number; // default 1
+  occlusionTexture: ResourceId;
+  emissiveFactor: vec3; // default [0, 0, 0]
+  emissiveTexture: ResourceId;
 }
 
 export type MaterialResourceProps = UnlitMaterialResourceProps | StandardMaterialResourceProps;
 
 export interface SharedUnlitMaterialResource {
   type: MaterialType.Unlit;
-  initialProps: Required<UnlitMaterialResourceProps>;
+  initialProps: UnlitMaterialResourceProps;
   sharedMaterial: SharedUnlitMaterial;
 }
 
 export interface SharedStandardMaterialResource {
   type: MaterialType.Standard;
-  initialProps: Required<StandardMaterialResourceProps>;
+  initialProps: StandardMaterialResourceProps;
   sharedMaterial: SharedStandardMaterial;
 }
 

@@ -1,3 +1,4 @@
+import { defineComponent, addComponent, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import {
@@ -6,7 +7,7 @@ import {
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import {
@@ -75,7 +76,6 @@ export interface RemoteSpotLight {
 export type RemoteLight = RemoteDirectionalLight | RemotePointLight | RemoteSpotLight;
 
 export interface LightModuleState {
-  lightResources: Map<number, RemoteLight>;
   directionalLights: RemoteDirectionalLight[];
   pointLights: RemotePointLight[];
   spotLights: RemoteSpotLight[];
@@ -85,7 +85,6 @@ export const LightModule = defineModule<GameState, LightModuleState>({
   name: "light",
   create() {
     return {
-      lightResources: new Map(),
       directionalLights: [],
       pointLights: [],
       spotLights: [],
@@ -144,8 +143,7 @@ export function addDirectionalLightResource(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedDirectionalLightResource>(ctx, DirectionalLightResourceType, {
-    eid,
+  const resourceId = createResource<SharedDirectionalLightResource>(ctx, Thread.Render, DirectionalLightResourceType, {
     type: LightType.Directional,
     initialProps,
     sharedLight,
@@ -179,7 +177,6 @@ export function addDirectionalLightResource(
   };
 
   lightModule.directionalLights.push(remoteLight);
-  lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
 }
@@ -210,8 +207,7 @@ export function addPointLightResource(ctx: GameState, eid: number, props?: Point
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedPointLightResource>(ctx, PointLightResourceType, {
-    eid,
+  const resourceId = createResource<SharedPointLightResource>(ctx, Thread.Render, PointLightResourceType, {
     type: LightType.Point,
     initialProps,
     sharedLight,
@@ -252,12 +248,11 @@ export function addPointLightResource(ctx: GameState, eid: number, props?: Point
   };
 
   lightModule.pointLights.push(remoteLight);
-  lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
 }
 
-export function addSpotLightResource(ctx: GameState, eid: number, props?: SpotLightResourceProps): RemoteSpotLight {
+export function createSpotLightResource(ctx: GameState, props?: SpotLightResourceProps): RemoteSpotLight {
   const lightModule = getModule(ctx, LightModule);
 
   const light = createObjectBufferView(spotLightSchema, ArrayBuffer);
@@ -284,8 +279,7 @@ export function addSpotLightResource(ctx: GameState, eid: number, props?: SpotLi
 
   const sharedLight = createTripleBufferBackedObjectBufferView(spotLightSchema, light, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedSpotLightResource>(ctx, SpotLightResourceType, {
-    eid,
+  const resourceId = createResource<SharedSpotLightResource>(ctx, Thread.Render, SpotLightResourceType, {
     type: LightType.Spot,
     initialProps,
     sharedLight,
@@ -340,7 +334,18 @@ export function addSpotLightResource(ctx: GameState, eid: number, props?: SpotLi
   };
 
   lightModule.spotLights.push(remoteLight);
-  lightModule.lightResources.set(eid, remoteLight);
 
   return remoteLight;
+}
+
+export const RemoteLightComponent = defineComponent<Map<number, RemoteLight>>(new Map());
+
+export function addRemoteLightComponent(ctx: GameState, eid: number, light: RemoteLight) {
+  addComponent(ctx.world, RemoteLightComponent, eid);
+  RemoteLightComponent.set(eid, light);
+}
+
+export function removeRemoteLightComponent(ctx: GameState, eid: number) {
+  removeComponent(ctx.world, RemoteLightComponent, eid);
+  RemoteLightComponent.delete(eid);
 }

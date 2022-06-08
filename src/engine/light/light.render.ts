@@ -3,7 +3,11 @@ import { CSM } from "three/examples/jsm/csm/CSM";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { defineModule, getModule } from "../module/module.common";
-import { getRendererActiveCamera, getRendererActiveScene, RenderThreadState } from "../renderer/renderer.render";
+import {
+  getActiveLocalCameraResource,
+  getActiveLocalSceneResource,
+  RenderThreadState,
+} from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { registerResourceLoader } from "../resource/resource.render";
 import {
@@ -37,7 +41,7 @@ interface LocalSpotLightResource {
   sharedLight: SharedSpotLight;
 }
 
-type LocalLightResource = LocalDirectionalLightResource | LocalPointLightResource | LocalSpotLightResource;
+export type LocalLightResource = LocalDirectionalLightResource | LocalPointLightResource | LocalSpotLightResource;
 
 type LightModuleState = {
   sun?: DirectionalLight;
@@ -45,7 +49,6 @@ type LightModuleState = {
   directionalLightResources: LocalDirectionalLightResource[];
   pointLightResources: LocalPointLightResource[];
   spotLightResources: LocalSpotLightResource[];
-  lightResources: Map<number, LocalLightResource>;
 };
 
 // TODO: Add light helpers
@@ -53,7 +56,6 @@ export const LightModule = defineModule<RenderThreadState, LightModuleState>({
   name: "light",
   create() {
     return {
-      lightResources: new Map(),
       directionalLightResources: [],
       pointLightResources: [],
       spotLightResources: [],
@@ -81,11 +83,11 @@ export const LightModule = defineModule<RenderThreadState, LightModuleState>({
 async function onLoadDirectionalLight(
   ctx: RenderThreadState,
   id: ResourceId,
-  { eid, type, initialProps, sharedLight }: SharedDirectionalLightResource
+  { type, initialProps, sharedLight }: SharedDirectionalLightResource
 ): Promise<DirectionalLight> {
   const lightModule = getModule(ctx, LightModule);
-  const scene = getRendererActiveScene(ctx);
-  const camera = getRendererActiveCamera(ctx);
+  const sceneResource = getActiveLocalSceneResource(ctx);
+  const cameraResource = getActiveLocalCameraResource(ctx);
 
   const light = new DirectionalLight();
   light.intensity = initialProps.intensity;
@@ -97,14 +99,14 @@ async function onLoadDirectionalLight(
   light.add(light.target);
 
   // If this is the first shadow casting directional light, use it as the sun light
-  if (light.castShadow && !lightModule.csm && !lightModule.sun && camera && scene) {
+  if (light.castShadow && !lightModule.csm && !lightModule.sun && cameraResource && sceneResource) {
     lightModule.csm = new CSM({
-      parent: scene,
-      camera,
+      parent: sceneResource.scene,
+      camera: cameraResource.camera,
     });
 
     // The CSM object is going to use this light as a proxy
-    light.visible = true;
+    light.visible = false;
     lightModule.sun = light;
 
     updateCSMFromDirectionalLight(lightModule.csm, light);
@@ -116,7 +118,6 @@ async function onLoadDirectionalLight(
     sharedLight,
   };
 
-  lightModule.lightResources.set(eid, directionalLightResource);
   lightModule.directionalLightResources.push(directionalLightResource);
 
   return light;
@@ -137,7 +138,7 @@ function updateCSMFromDirectionalLight(csm: CSM, directionalLight: DirectionalLi
 async function onLoadPointLight(
   ctx: RenderThreadState,
   id: ResourceId,
-  { eid, type, initialProps, sharedLight }: SharedPointLightResource
+  { type, initialProps, sharedLight }: SharedPointLightResource
 ): Promise<PointLight> {
   const lightModule = getModule(ctx, LightModule);
 
@@ -154,7 +155,6 @@ async function onLoadPointLight(
     sharedLight,
   };
 
-  lightModule.lightResources.set(eid, pointLightResource);
   lightModule.pointLightResources.push(pointLightResource);
 
   return light;
@@ -163,7 +163,7 @@ async function onLoadPointLight(
 async function onLoadSpotLight(
   ctx: RenderThreadState,
   id: ResourceId,
-  { eid, type, initialProps, sharedLight }: SharedSpotLightResource
+  { type, initialProps, sharedLight }: SharedSpotLightResource
 ): Promise<PointLight> {
   const lightModule = getModule(ctx, LightModule);
 
@@ -182,7 +182,6 @@ async function onLoadSpotLight(
     sharedLight,
   };
 
-  lightModule.lightResources.set(eid, spotLightResource);
   lightModule.spotLightResources.push(spotLightResource);
 
   return light;
@@ -196,10 +195,10 @@ export function LightUpdateSystem(ctx: RenderThreadState) {
 }
 
 function updateDirectionalLights(ctx: RenderThreadState, lightModule: LightModuleState) {
-  const scene = getRendererActiveScene(ctx);
-  const camera = getRendererActiveCamera(ctx);
+  const sceneResource = getActiveLocalSceneResource(ctx);
+  const cameraResource = getActiveLocalCameraResource(ctx);
 
-  if (!scene || !camera) {
+  if (!sceneResource || !cameraResource) {
     return;
   }
 
@@ -218,8 +217,8 @@ function updateDirectionalLights(ctx: RenderThreadState, lightModule: LightModul
     if (light.castShadow && !lightModule.sun) {
       if (!lightModule.csm) {
         lightModule.csm = new CSM({
-          parent: scene,
-          camera,
+          parent: sceneResource.scene,
+          camera: cameraResource.camera,
         });
       }
 
@@ -229,8 +228,8 @@ function updateDirectionalLights(ctx: RenderThreadState, lightModule: LightModul
 
     // Update CSM state if the directional light is the current sun light
     if (lightModule.csm && lightModule.sun && lightModule.sun === light) {
-      lightModule.csm.parent = scene;
-      lightModule.csm.camera = camera;
+      lightModule.csm.parent = sceneResource.scene;
+      lightModule.csm.camera = cameraResource.camera;
 
       updateCSMFromDirectionalLight(lightModule.csm, light);
 

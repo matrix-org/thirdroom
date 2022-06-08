@@ -1,53 +1,39 @@
-import { AtomicCounter, incrementCounter } from "../allocator/AtomicCounter";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
   LoadResourceMessage,
-  InitResourcesMessage,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
   ResourceProps,
+  ResourceStatus,
 } from "./resource.common";
 
-interface RemoteResource<Response = unknown> {
+interface RemoteResource {
   id: ResourceId;
   resourceType: string;
   props: ResourceProps;
   loaded: boolean;
   error?: string;
-  response?: Response;
+  statusView: Uint8Array;
 }
 
-export type ResourceResponseHandler = <Response, Resource>(
-  ctx: GameState,
-  resourceId: ResourceId,
-  response: Response
-) => Resource;
-
 interface ResourceModuleState {
-  resourceIdCounter: AtomicCounter;
+  resourceIdCounter: number;
   resources: Map<ResourceId, RemoteResource>;
   resourceIdMap: Map<string, Map<any, ResourceId>>;
-  deferredResources: Map<ResourceId, Deferred<unknown>>;
-  resourceResponseHandlers: Map<string, ResourceResponseHandler>;
+  deferredResources: Map<ResourceId, Deferred<undefined>>;
 }
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
-  async create(ctx, { waitForMessage }) {
-    const { resourceIdCounter } = await waitForMessage<InitResourcesMessage>(
-      Thread.Render,
-      ResourceMessageType.InitResources
-    );
-
+  create() {
     return {
-      resourceIdCounter,
+      resourceIdCounter: 0,
       resources: new Map(),
       resourceIdMap: new Map(),
       deferredResources: new Map(),
-      resourceResponseHandlers: new Map(),
     };
   },
   init(ctx) {
@@ -55,7 +41,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
 });
 
-function onResourceLoaded(ctx: GameState, { id, loaded, response, error }: ResourceLoadedMessage) {
+function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resource = resourceModule.resources.get(id);
@@ -76,31 +62,13 @@ function onResourceLoaded(ctx: GameState, { id, loaded, response, error }: Resou
   if (error) {
     deferred.reject(error);
   } else {
-    const responseHandler = resourceModule.resourceResponseHandlers.get(resource.resourceType);
-
-    if (responseHandler) {
-      deferred.resolve(responseHandler(ctx, id, response));
-    } else {
-      deferred.resolve(undefined);
-    }
+    deferred.resolve(undefined);
   }
-}
-
-export function registerResourceResponseHandler(
-  ctx: GameState,
-  resourceType: string,
-  responseHandler: ResourceResponseHandler
-) {
-  const resourceModule = getModule(ctx, ResourceModule);
-  resourceModule.resourceResponseHandlers.set(resourceType, responseHandler);
-
-  return () => {
-    resourceModule.resourceResponseHandlers.delete(resourceType);
-  };
 }
 
 export function createResource<Props>(
   ctx: GameState,
+  thread: Thread,
   resourceType: string,
   props: Props,
   transferList?: Transferable[],
@@ -123,30 +91,36 @@ export function createResource<Props>(
     resourceModule.resourceIdMap.set(resourceType, resourceCache);
   }
 
-  const id = incrementCounter(resourceModule.resourceIdCounter);
+  const id = resourceModule.resourceIdCounter++;
+
+  const statusBuffer = new SharedArrayBuffer(1);
+  const statusView = new Uint8Array(statusBuffer);
+  statusView[0] = ResourceStatus.Loading;
 
   resourceModule.resources.set(id, {
     id,
     resourceType,
     props,
     loaded: false,
+    statusView,
   });
 
   if (cacheKey !== undefined) {
     resourceCache.set(cacheKey, id);
   }
 
-  const deferred = createDeferred<unknown>();
+  const deferred = createDeferred<undefined>();
 
   resourceModule.deferredResources.set(id, deferred);
 
   ctx.sendMessage<LoadResourceMessage<Props>>(
-    Thread.Render,
+    thread,
     {
       type: ResourceMessageType.LoadResource,
       resourceType,
       id,
       props,
+      statusView,
     },
     transferList
   );
@@ -154,21 +128,19 @@ export function createResource<Props>(
   return id;
 }
 
-export function waitForRemoteResource<Resource>(ctx: GameState, resourceId: ResourceId): Promise<Resource> {
+export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {
   const resourceModule = getModule(ctx, ResourceModule);
   const deferred = resourceModule.deferredResources.get(resourceId);
 
   if (deferred) {
-    return deferred.promise as Promise<Resource>;
+    return deferred.promise;
   }
 
   return Promise.reject(new Error(`Resource ${resourceId} not found.`));
 }
 
-export function getRemoteResource<Response = unknown>(
-  ctx: GameState,
-  resourceId: ResourceId
-): RemoteResource<Response> | undefined {
+export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
   const resourceModule = getModule(ctx, ResourceModule);
-  return resourceModule.resources.get(resourceId) as RemoteResource<Response>;
+  const resource = resourceModule.resources.get(resourceId);
+  return resource ? resource.statusView[0] : ResourceStatus.None;
 }

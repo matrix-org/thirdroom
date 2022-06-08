@@ -6,29 +6,23 @@ import {
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { RemoteImage } from "../image/image.game";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
+import { RemoteSampler } from "../sampler/sampler.game";
 import {
-  RGBATextureResourceProps,
-  RGBATextureResourceType,
-  RGBETextureResourceProps,
-  RGBETextureResourceType,
   SharedTexture,
-  TextureMagFilter,
-  TextureMinFilter,
   textureSchema,
-  TextureType,
-  TextureWrap,
   TextureEncoding,
-  TextureResourceProps,
   SharedTextureResource,
+  TextureResourceType,
 } from "./texture.common";
 
 export interface RemoteTexture {
   resourceId: ResourceId;
-  type: TextureType;
   sharedTexture: SharedTexture;
+  image: RemoteImage;
   get offset(): vec2;
   set offset(value: vec2);
   get rotation(): number;
@@ -61,41 +55,31 @@ export function TextureUpdateSystem(ctx: GameState) {
   }
 }
 
-export function createRGBATexture(ctx: GameState, props: RGBATextureResourceProps): RemoteTexture {
-  return createTexture<RGBATextureResourceProps>(ctx, TextureType.RGBA, RGBATextureResourceType, props);
+export interface TextureProps {
+  sampler?: RemoteSampler;
+  encoding?: TextureEncoding;
+  offset?: vec2;
+  rotation?: number;
+  scale?: vec2;
 }
 
-export function createRGBETexture(ctx: GameState, props: RGBETextureResourceProps): RemoteTexture {
-  return createTexture<RGBETextureResourceProps>(ctx, TextureType.RGBE, RGBETextureResourceType, props);
-}
-
-function createTexture<Props extends TextureResourceProps>(
-  ctx: GameState,
-  type: TextureType,
-  resourceType: string,
-  props: Props
-): RemoteTexture {
+export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: TextureProps): RemoteTexture {
   const textureModule = getModule(ctx, TextureModule);
 
   const texture = createObjectBufferView(textureSchema, ArrayBuffer);
 
-  const initialProps = Object.assign(
-    {
-      magFilter: TextureMagFilter.LINEAR,
-      minFilter: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-      wrapS: TextureWrap.REPEAT,
-      wrapT: TextureWrap.REPEAT,
-      encoding: TextureEncoding.Linear,
-      offset: [0, 0],
-      rotation: 0,
-      scale: [1, 1],
-    },
-    props
-  ) as Required<Props>;
+  const initialProps = {
+    encoding: props?.encoding || TextureEncoding.Linear,
+    offset: props?.offset || [0, 0],
+    rotation: props?.rotation || 0,
+    scale: props?.scale || [1, 1],
+    image: image.resourceId,
+    sampler: props?.sampler ? props.sampler.resourceId : undefined,
+  };
 
-  texture.offset.set(initialProps.offset!);
-  texture.rotation[0] = initialProps.rotation!;
-  texture.scale.set(initialProps.scale!);
+  texture.offset.set(initialProps.offset);
+  texture.rotation[0] = initialProps.rotation;
+  texture.scale.set(initialProps.scale);
 
   const sharedTexture = createTripleBufferBackedObjectBufferView(
     textureSchema,
@@ -103,16 +87,15 @@ function createTexture<Props extends TextureResourceProps>(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedTextureResource>(ctx, resourceType, {
-    type,
-    initialProps: initialProps as any,
+  const resourceId = createResource<SharedTextureResource>(ctx, Thread.Render, TextureResourceType, {
+    initialProps,
     sharedTexture,
   });
 
   const remoteTexture: RemoteTexture = {
     resourceId,
-    type,
     sharedTexture,
+    image,
     get offset(): vec2 {
       return texture.offset;
     },

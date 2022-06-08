@@ -1,5 +1,11 @@
-import { addComponent, Component, defineComponent, defineQuery, removeComponent } from "bitecs";
-import { vec3, mat4 } from "gl-matrix";
+import {
+  addComponent,
+  Component,
+  defineComponent,
+  defineQuery,
+  // removeComponent
+} from "bitecs";
+// import { vec3, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
@@ -25,19 +31,23 @@ import {
   ComponentPropertyType,
   ComponentPropertyStore,
 } from "../component/types";
-import { getDirection, hierarchyObjectBuffer, registerTransformComponent, Transform } from "../component/transform";
+import {
+  //getDirection,
+  hierarchyObjectBuffer,
+  registerTransformComponent,
+  //Transform
+} from "../component/transform";
 import {
   ActionMap,
   ActionType,
   BindingType,
-  ButtonActionState,
+  //ButtonActionState,
   disableActionMap,
   enableActionMap,
 } from "../input/ActionMappingSystem";
-import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { InputModule } from "../input/input.game";
+//import { InputModule } from "../input/input.game";
 import {
   EditorMessageType,
   editorModuleName,
@@ -57,7 +67,6 @@ import { getActiveCamera } from "../renderer/renderer.game";
  ********/
 
 export interface EditorModuleState {
-  rayId: number;
   editorLoaded: boolean;
   messages: WorkerMessages[];
   selectedEntities: number[];
@@ -93,7 +102,6 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
     });
 
     return {
-      rayId: createRay(),
       editorLoaded: false,
       messages: [],
       selectedEntities: [],
@@ -297,45 +305,45 @@ function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   } as SelectionChangedMessage);
 }
 
-const editorRayId = 0;
+// const editorRayId = 0;
 
-export function EditorSelectionSystem(state: GameState) {
-  const editor = getModule(state, EditorModule);
+// export function EditorSelectionSystem(state: GameState) {
+//   const editor = getModule(state, EditorModule);
 
-  if (!editor.editorLoaded) {
-    return;
-  }
+//   if (!editor.editorLoaded) {
+//     return;
+//   }
 
-  const raycastResults = getRaycastResults(state, editorRayId);
+//   const raycastResults = getRaycastResults(state, editorRayId);
 
-  if (raycastResults && raycastResults.length > 0) {
-    const intersection = raycastResults[raycastResults.length - 1];
+//   if (raycastResults && raycastResults.length > 0) {
+//     const intersection = raycastResults[raycastResults.length - 1];
 
-    const selectedEntities = editor.selectedEntities;
+//     const selectedEntities = editor.selectedEntities;
 
-    for (let i = 0; i < selectedEntities.length; i++) {
-      removeComponent(state.world, Selected, selectedEntities[i]);
-    }
+//     for (let i = 0; i < selectedEntities.length; i++) {
+//       removeComponent(state.world, Selected, selectedEntities[i]);
+//     }
 
-    addComponent(state.world, Selected, intersection.entity);
+//     addComponent(state.world, Selected, intersection.entity);
 
-    if (intersection.entity !== editor.activeEntity) {
-      editor.activeEntity = intersection.entity;
-      editor.activeEntityChanged = true;
-    }
-  }
+//     if (intersection.entity !== editor.activeEntity) {
+//       editor.activeEntity = intersection.entity;
+//       editor.activeEntityChanged = true;
+//     }
+//   }
 
-  const input = getModule(state, InputModule);
+//   const input = getModule(state, InputModule);
 
-  const select = input.actions.get(EditorActions.select) as ButtonActionState;
+//   const select = input.actions.get(EditorActions.select) as ButtonActionState;
 
-  if (select.pressed) {
-    const camera = getActiveCamera(state);
-    const direction = getDirection(vec3.create(), Transform.worldMatrix[camera]);
-    vec3.negate(direction, direction);
-    raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[camera]), direction);
-  }
-}
+//   if (select.pressed) {
+//     const camera = getActiveCamera(state);
+//     const direction = getDirection(vec3.create(), Transform.worldMatrix[camera]);
+//     vec3.negate(direction, direction);
+//     raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[camera]), direction);
+//   }
+// }
 
 /**
  * Component definitions (for editor, serialization/deserialization, and networking)

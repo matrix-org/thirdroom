@@ -1,3 +1,5 @@
+import { addComponent, defineComponent, removeComponent } from "bitecs";
+
 import {
   commitToTripleBufferView,
   createObjectBufferView,
@@ -5,9 +7,9 @@ import {
   TripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
-import { createResource, getRemoteResource } from "../resource/resource.game";
+import { createResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
 import { SceneResourceProps, SceneResourceType, sceneSchema, SharedSceneResource } from "./scene.common";
 
@@ -21,7 +23,7 @@ export interface RemoteScene {
 }
 
 export interface SceneModuleState {
-  sceneResources: Map<number, RemoteScene>;
+  componentStore: Map<number, RemoteScene>;
   scenes: RemoteScene[];
 }
 
@@ -29,7 +31,7 @@ export const SceneModule = defineModule<GameState, SceneModuleState>({
   name: "scene",
   create() {
     return {
-      sceneResources: new Map(),
+      componentStore: new Map(),
       scenes: [],
     };
   },
@@ -46,7 +48,7 @@ export function SceneUpdateSystem(ctx: GameState) {
   }
 }
 
-export function addSceneResource(ctx: GameState, eid: number, props?: SceneResourceProps): RemoteScene {
+export function createRemoteSceneResource(ctx: GameState, props?: SceneResourceProps): RemoteScene {
   const sceneModule = getModule(ctx, SceneModule);
 
   const scene = createObjectBufferView(sceneSchema, ArrayBuffer);
@@ -59,40 +61,48 @@ export function addSceneResource(ctx: GameState, eid: number, props?: SceneResou
 
   const sharedScene = createTripleBufferBackedObjectBufferView(sceneSchema, scene, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedSceneResource>(ctx, SceneResourceType, {
-    eid,
+  const resourceId = createResource<SharedSceneResource>(ctx, Thread.Render, SceneResourceType, {
     initialProps: props,
     sharedScene,
   });
+
+  let _background: RemoteTexture | undefined;
+  let _environment: RemoteTexture | undefined;
 
   const remoteScene: RemoteScene = {
     resourceId,
     sharedScene,
     get background(): RemoteTexture | undefined {
-      const remoteTextureResource = getRemoteResource<RemoteTexture>(ctx, scene.background[0]);
-      return remoteTextureResource?.response;
+      return _background;
     },
     set background(texture: RemoteTexture | undefined) {
+      _background = texture;
       scene.background[0] = texture ? texture.resourceId : 0;
       scene.needsUpdate[0] = 1;
     },
     get environment(): RemoteTexture | undefined {
-      const remoteTextureResource = getRemoteResource<RemoteTexture>(ctx, scene.environment[0]);
-      return remoteTextureResource?.response;
+      return _environment;
     },
     set environment(texture: RemoteTexture | undefined) {
+      _environment = texture;
       scene.environment[0] = texture ? texture.resourceId : 0;
       scene.needsUpdate[0] = 1;
     },
   };
 
-  sceneModule.sceneResources.set(eid, remoteScene);
   sceneModule.scenes.push(remoteScene);
 
   return remoteScene;
 }
 
-export function getSceneResource(ctx: GameState, eid: number): RemoteScene | undefined {
-  const sceneModule = getModule(ctx, SceneModule);
-  return sceneModule.sceneResources.get(eid);
+export const RemoteSceneComponent = defineComponent<Map<number, RemoteScene>>(new Map());
+
+export function addRemoteSceneComponent(ctx: GameState, eid: number, scene: RemoteScene) {
+  addComponent(ctx.world, RemoteSceneComponent, eid);
+  RemoteSceneComponent.set(eid, scene);
+}
+
+export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
+  removeComponent(ctx.world, RemoteSceneComponent, eid);
+  RemoteSceneComponent.delete(eid);
 }

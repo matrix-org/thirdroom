@@ -49,6 +49,7 @@ import {
 import { createPrefabEntity } from "../prefab";
 import { getActiveScene } from "../renderer/renderer.game";
 import { checkBitflag } from "../utils/checkBitflag";
+import { RemoteNodeComponent } from "../node/node.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -659,7 +660,16 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
   if (peid !== undefined) {
     network.peerIdToEntityId.set(peerId, peid);
     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
-    sendAudioPeerEntityMessage(peerId, peid);
+
+    const remoteNode = RemoteNodeComponent.get(peid);
+
+    if (!remoteNode) {
+      throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
+    }
+
+    remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+      sources: [createRemoteNetworkedAudioSource(state, peerNid)],
+    });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
   }

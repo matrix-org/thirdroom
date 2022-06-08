@@ -1,10 +1,12 @@
+import { addComponent, defineComponent, removeComponent } from "bitecs";
+
 import {
   commitToTripleBufferView,
   createObjectBufferView,
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import {
@@ -56,7 +58,6 @@ export interface RemoteOrthographicCamera {
 export type RemoteCamera = RemotePerspectiveCamera | RemoteOrthographicCamera;
 
 export interface CameraModuleState {
-  cameraResources: Map<number, RemoteCamera>;
   perspectiveCameras: RemotePerspectiveCamera[];
   orthographicCameras: RemoteOrthographicCamera[];
 }
@@ -65,7 +66,6 @@ export const CameraModule = defineModule<GameState, CameraModuleState>({
   name: "camera",
   create() {
     return {
-      cameraResources: new Map(),
       perspectiveCameras: [],
       orthographicCameras: [],
     };
@@ -91,9 +91,8 @@ export function CameraUpdateSystem(ctx: GameState) {
   }
 }
 
-export function addPerspectiveCameraResource(
+export function createRemotePerspectiveCamera(
   ctx: GameState,
-  eid: number,
   props: PerspectiveCameraResourceProps
 ): RemotePerspectiveCamera {
   const cameraModule = getModule(ctx, CameraModule);
@@ -121,12 +120,16 @@ export function addPerspectiveCameraResource(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedPerspectiveCameraResource>(ctx, PerspectiveCameraResourceType, {
-    eid,
-    type: CameraType.Perspective,
-    initialProps,
-    sharedCamera,
-  });
+  const resourceId = createResource<SharedPerspectiveCameraResource>(
+    ctx,
+    Thread.Render,
+    PerspectiveCameraResourceType,
+    {
+      type: CameraType.Perspective,
+      initialProps,
+      sharedCamera,
+    }
+  );
 
   const remoteCamera: RemotePerspectiveCamera = {
     resourceId,
@@ -173,7 +176,7 @@ export function addPerspectiveCameraResource(
     },
   };
 
-  cameraModule.cameraResources.set(eid, remoteCamera);
+  cameraModule.perspectiveCameras.push(remoteCamera);
 
   return remoteCamera;
 }
@@ -207,12 +210,16 @@ export function addOrthographicCameraResource(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedOrthographicCameraResource>(ctx, OrthographicCameraResourceType, {
-    eid,
-    type: CameraType.Orthographic,
-    initialProps,
-    sharedCamera,
-  });
+  const resourceId = createResource<SharedOrthographicCameraResource>(
+    ctx,
+    Thread.Render,
+    OrthographicCameraResourceType,
+    {
+      type: CameraType.Orthographic,
+      initialProps,
+      sharedCamera,
+    }
+  );
 
   const remoteCamera: RemoteOrthographicCamera = {
     resourceId,
@@ -259,7 +266,19 @@ export function addOrthographicCameraResource(
     },
   };
 
-  cameraModule.cameraResources.set(eid, remoteCamera);
+  cameraModule.orthographicCameras.push(remoteCamera);
 
   return remoteCamera;
+}
+
+export const RemoteCameraComponent = defineComponent<Map<number, RemoteCamera>>(new Map());
+
+export function addRemoteCameraComponent(ctx: GameState, eid: number, camera: RemoteCamera) {
+  addComponent(ctx.world, RemoteCameraComponent, eid);
+  RemoteCameraComponent.set(eid, camera);
+}
+
+export function removeRemoteCameraComponent(ctx: GameState, eid: number) {
+  removeComponent(ctx.world, RemoteCameraComponent, eid);
+  RemoteCameraComponent.delete(eid);
 }

@@ -1,7 +1,7 @@
-import { RenderThreadState } from "../renderer/renderer.render";
+import { IMainThreadContext } from "../MainThread";
 import { createLocalResourceModule } from "./resource.common";
 
 const { ResourceModule, getLocalResource, waitForLocalResource, registerResourceLoader } =
-  createLocalResourceModule<RenderThreadState>();
+  createLocalResourceModule<IMainThreadContext>();
 
 export { ResourceModule, getLocalResource, waitForLocalResource, registerResourceLoader };

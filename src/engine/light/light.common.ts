@@ -66,21 +66,18 @@ export type SharedPointLight = TripleBufferBackedObjectBufferView<typeof pointLi
 export type SharedSpotLight = TripleBufferBackedObjectBufferView<typeof spotLightSchema, ArrayBuffer>;
 
 export interface SharedDirectionalLightResource {
-  eid: number;
   type: LightType.Directional;
   initialProps: Required<DirectionalLightResourceProps>;
   sharedLight: SharedDirectionalLight;
 }
 
 export interface SharedPointLightResource {
-  eid: number;
   type: LightType.Point;
   initialProps: Required<PointLightResourceProps>;
   sharedLight: SharedPointLight;
 }
 
 export interface SharedSpotLightResource {
-  eid: number;
   type: LightType.Spot;
   initialProps: Required<SpotLightResourceProps>;
   sharedLight: SharedSpotLight;

@@ -6,9 +6,10 @@ import {
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
+import { RemoteTexture } from "../texture/texture.game";
 import {
   MaterialAlphaMode,
   SharedUnlitMaterial,
@@ -23,6 +24,31 @@ import {
   StandardMaterialResourceType,
 } from "./material.common";
 
+export interface UnlitMaterialProps {
+  doubleSided?: boolean; // default false
+  alphaCutoff?: number; // default 0.5
+  alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
+  baseColorFactor?: vec4; // default [1, 1, 1, 1]
+  baseColorTexture?: RemoteTexture;
+}
+
+export interface StandardMaterialProps {
+  doubleSided?: boolean; // default false
+  alphaCutoff?: number; // default 0.5
+  alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
+  baseColorFactor?: vec4; // default [1, 1, 1, 1]
+  baseColorTexture?: RemoteTexture;
+  metallicFactor?: number; // default 1
+  roughnessFactor?: number; // default 1
+  metallicRoughnessTexture?: RemoteTexture;
+  normalTextureScale?: number; // default 1
+  normalTexture?: RemoteTexture;
+  occlusionTextureStrength?: number; // default 1
+  occlusionTexture?: RemoteTexture;
+  emissiveFactor?: vec3; // default [0, 0, 0]
+  emissiveTexture?: RemoteTexture;
+}
+
 export interface RemoteUnlitMaterial {
   resourceId: ResourceId;
   type: MaterialType.Unlit;
@@ -33,8 +59,8 @@ export interface RemoteUnlitMaterial {
   set alphaCutoff(value: number);
   get baseColorFactor(): vec4;
   set baseColorFactor(value: vec4);
-  get baseColorTexture(): ResourceId;
-  set baseColorTexture(value: ResourceId);
+  get baseColorTexture(): RemoteTexture | undefined;
+  set baseColorTexture(value: RemoteTexture | undefined);
 }
 
 export interface RemoteStandardMaterial {
@@ -47,26 +73,26 @@ export interface RemoteStandardMaterial {
   set alphaCutoff(value: number);
   get baseColorFactor(): vec4;
   set baseColorFactor(value: vec4);
-  get baseColorTexture(): ResourceId;
-  set baseColorTexture(value: ResourceId);
+  get baseColorTexture(): RemoteTexture | undefined;
+  set baseColorTexture(texture: RemoteTexture | undefined);
   get metallicFactor(): number;
   set metallicFactor(value: number);
   get roughnessFactor(): number;
   set roughnessFactor(value: number);
-  get metallicRoughnessTexture(): ResourceId;
-  set metallicRoughnessTexture(value: ResourceId);
+  get metallicRoughnessTexture(): RemoteTexture | undefined;
+  set metallicRoughnessTexture(texture: RemoteTexture | undefined);
   get normalTextureScale(): number;
   set normalTextureScale(value: number);
-  get normalTexture(): ResourceId;
-  set normalTexture(value: ResourceId);
+  get normalTexture(): RemoteTexture | undefined;
+  set normalTexture(texture: RemoteTexture | undefined);
   get occlusionTextureStrength(): number;
   set occlusionTextureStrength(value: number);
-  get occlusionTexture(): ResourceId;
-  set occlusionTexture(value: ResourceId);
+  get occlusionTexture(): RemoteTexture | undefined;
+  set occlusionTexture(texture: RemoteTexture | undefined);
   get emissiveFactor(): vec3;
   set emissiveFactor(value: vec3);
-  get emissiveTexture(): ResourceId;
-  set emissiveTexture(value: ResourceId);
+  get emissiveTexture(): RemoteTexture | undefined;
+  set emissiveTexture(texture: RemoteTexture | undefined);
 }
 
 export type RemoteMaterial = RemoteUnlitMaterial | RemoteStandardMaterial;
@@ -109,17 +135,17 @@ export function MaterialUpdateSystem(ctx: GameState) {
   }
 }
 
-export function createUnlitMaterialResource(ctx: GameState, props: UnlitMaterialResourceProps): RemoteUnlitMaterial {
+export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialProps): RemoteUnlitMaterial {
   const materialModule = getModule(ctx, MaterialModule);
 
   const material = createObjectBufferView(unlitMaterialSchema, ArrayBuffer);
 
-  const initialProps: Required<UnlitMaterialResourceProps> = {
+  const initialProps: UnlitMaterialResourceProps = {
     doubleSided: props.doubleSided || false,
     alphaCutoff: props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff,
     alphaMode: props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode,
     baseColorFactor: props.baseColorFactor || [1, 1, 1, 1],
-    baseColorTexture: props.baseColorTexture || 0,
+    baseColorTexture: props.baseColorTexture ? props.baseColorTexture.resourceId : 0,
   };
 
   material.doubleSided[0] = initialProps.doubleSided ? 1 : 0;
@@ -134,11 +160,13 @@ export function createUnlitMaterialResource(ctx: GameState, props: UnlitMaterial
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedUnlitMaterialResource>(ctx, UnlitMaterialResourceType, {
+  const resourceId = createResource<SharedUnlitMaterialResource>(ctx, Thread.Render, UnlitMaterialResourceType, {
     type: MaterialType.Unlit,
     initialProps,
     sharedMaterial,
   });
+
+  let _baseColorTexture: RemoteTexture | undefined;
 
   const remoteMaterial: RemoteUnlitMaterial = {
     resourceId,
@@ -165,11 +193,12 @@ export function createUnlitMaterialResource(ctx: GameState, props: UnlitMaterial
       material.baseColorFactor.set(value);
       material.needsUpdate[0] = 1;
     },
-    get baseColorTexture(): ResourceId {
-      return material.baseColorTexture[0];
+    get baseColorTexture(): RemoteTexture | undefined {
+      return _baseColorTexture;
     },
-    set baseColorTexture(value: ResourceId) {
-      material.baseColorTexture[0] = value;
+    set baseColorTexture(texture: RemoteTexture | undefined) {
+      _baseColorTexture = texture;
+      material.baseColorTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
   };
@@ -179,29 +208,26 @@ export function createUnlitMaterialResource(ctx: GameState, props: UnlitMaterial
   return remoteMaterial;
 }
 
-export function createStandardMaterialResource(
-  ctx: GameState,
-  props: StandardMaterialResourceProps
-): RemoteStandardMaterial {
+export function createRemoteStandardMaterial(ctx: GameState, props: StandardMaterialProps): RemoteStandardMaterial {
   const materialModule = getModule(ctx, MaterialModule);
 
   const material = createObjectBufferView(standardMaterialSchema, ArrayBuffer);
 
-  const initialProps: Required<StandardMaterialResourceProps> = {
+  const initialProps: StandardMaterialResourceProps = {
     doubleSided: props.doubleSided || false,
     alphaCutoff: props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff,
     alphaMode: props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode,
     baseColorFactor: props.baseColorFactor || [1, 1, 1, 1],
-    baseColorTexture: props.baseColorTexture || 0,
+    baseColorTexture: props.baseColorTexture ? props.baseColorTexture.resourceId : 0,
     metallicFactor: props.metallicFactor === undefined ? 1 : props.metallicFactor,
     roughnessFactor: props.roughnessFactor === undefined ? 1 : props.roughnessFactor,
-    metallicRoughnessTexture: props.metallicRoughnessTexture || 0,
+    metallicRoughnessTexture: props.metallicRoughnessTexture ? props.metallicRoughnessTexture.resourceId : 0,
     normalTextureScale: props.normalTextureScale === undefined ? 1 : props.normalTextureScale,
-    normalTexture: props.normalTexture || 0,
+    normalTexture: props.normalTexture ? props.normalTexture.resourceId : 0,
     occlusionTextureStrength: props.occlusionTextureStrength === undefined ? 1 : props.occlusionTextureStrength,
-    occlusionTexture: props.occlusionTexture || 0,
+    occlusionTexture: props.occlusionTexture ? props.occlusionTexture.resourceId : 0,
     emissiveFactor: props.emissiveFactor || [0, 0, 0],
-    emissiveTexture: props.emissiveTexture || 0,
+    emissiveTexture: props.emissiveTexture ? props.emissiveTexture.resourceId : 0,
   };
 
   material.doubleSided[0] = initialProps.doubleSided ? 1 : 0;
@@ -225,11 +251,17 @@ export function createStandardMaterialResource(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedStandardMaterialResource>(ctx, StandardMaterialResourceType, {
+  const resourceId = createResource<SharedStandardMaterialResource>(ctx, Thread.Render, StandardMaterialResourceType, {
     type: MaterialType.Standard,
     initialProps,
     sharedMaterial,
   });
+
+  let _baseColorTexture: RemoteTexture | undefined;
+  let _metallicRoughnessTexture: RemoteTexture | undefined;
+  let _normalTexture: RemoteTexture | undefined;
+  let _occlusionTexture: RemoteTexture | undefined;
+  let _emissiveTexture: RemoteTexture | undefined;
 
   const remoteMaterial: RemoteStandardMaterial = {
     resourceId,
@@ -256,11 +288,12 @@ export function createStandardMaterialResource(
       material.baseColorFactor.set(value);
       material.needsUpdate[0] = 1;
     },
-    get baseColorTexture(): ResourceId {
-      return material.baseColorTexture[0];
+    get baseColorTexture(): RemoteTexture | undefined {
+      return _baseColorTexture;
     },
-    set baseColorTexture(value: ResourceId) {
-      material.baseColorTexture[0] = value;
+    set baseColorTexture(texture: RemoteTexture | undefined) {
+      _baseColorTexture = texture;
+      material.baseColorTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
     get metallicFactor(): number {
@@ -277,11 +310,12 @@ export function createStandardMaterialResource(
       material.roughnessFactor[0] = value;
       material.needsUpdate[0] = 1;
     },
-    get metallicRoughnessTexture(): ResourceId {
-      return material.metallicRoughnessTexture[0];
+    get metallicRoughnessTexture(): RemoteTexture | undefined {
+      return _metallicRoughnessTexture;
     },
-    set metallicRoughnessTexture(value: ResourceId) {
-      material.metallicRoughnessTexture[0] = value;
+    set metallicRoughnessTexture(texture: RemoteTexture | undefined) {
+      _metallicRoughnessTexture = texture;
+      material.metallicRoughnessTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
     get normalTextureScale(): number {
@@ -291,11 +325,12 @@ export function createStandardMaterialResource(
       material.normalTextureScale[0] = value;
       material.needsUpdate[0] = 1;
     },
-    get normalTexture(): ResourceId {
-      return material.normalTexture[0];
+    get normalTexture(): RemoteTexture | undefined {
+      return _normalTexture;
     },
-    set normalTexture(value: ResourceId) {
-      material.normalTexture[0] = value;
+    set normalTexture(texture: RemoteTexture | undefined) {
+      _normalTexture = texture;
+      material.normalTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
     get occlusionTextureStrength(): number {
@@ -305,11 +340,12 @@ export function createStandardMaterialResource(
       material.occlusionTextureStrength[0] = value;
       material.needsUpdate[0] = 1;
     },
-    get occlusionTexture(): ResourceId {
-      return material.occlusionTexture[0];
+    get occlusionTexture(): RemoteTexture | undefined {
+      return _occlusionTexture;
     },
-    set occlusionTexture(value: ResourceId) {
-      material.occlusionTexture[0] = value;
+    set occlusionTexture(texture: RemoteTexture | undefined) {
+      _occlusionTexture = texture;
+      material.occlusionTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
     get emissiveFactor(): vec3 {
@@ -319,11 +355,12 @@ export function createStandardMaterialResource(
       material.emissiveFactor.set(value);
       material.needsUpdate[0] = 1;
     },
-    get emissiveTexture(): ResourceId {
-      return material.emissiveTexture[0];
+    get emissiveTexture(): RemoteTexture | undefined {
+      return _emissiveTexture;
     },
-    set emissiveTexture(value: ResourceId) {
-      material.emissiveTexture[0] = value;
+    set emissiveTexture(texture: RemoteTexture | undefined) {
+      _emissiveTexture = texture;
+      material.emissiveTexture[0] = texture ? texture.resourceId : 0;
       material.needsUpdate[0] = 1;
     },
   };

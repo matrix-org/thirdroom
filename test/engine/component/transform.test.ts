@@ -188,6 +188,56 @@ describe("Transform Unit Tests", function () {
 
         expect(result).toStrictEqual([1, 2, 6, 7, 3, 4, 5]);
       });
+
+      test("should skip children if you return false", () => {
+        /**
+         *       root(1)
+         *         / \
+         *      A(2) B(3)
+         *      /     / \
+         *    E(6)  C(4) D(5)
+         *    /
+         *   F(7)
+         */
+
+        const root = 1;
+        const childA = 2;
+        const childB = 3;
+        const childC = 4;
+        const childD = 5;
+        const childE = 6;
+        const childF = 7;
+        addChild(root, childA);
+        addChild(root, childB);
+        addChild(childB, childC);
+        addChild(childB, childD);
+        addChild(childA, childE);
+        addChild(childE, childF);
+
+        const results1: number[] = [];
+
+        traverse(1, (eid) => {
+          if (eid === childA) {
+            return false;
+          }
+
+          results1.push(eid);
+        });
+
+        expect(results1).toStrictEqual([1, 3, 4, 5]);
+
+        const results2: number[] = [];
+
+        traverse(1, (eid) => {
+          if (eid === childB) {
+            return false;
+          }
+
+          results2.push(eid);
+        });
+
+        expect(results2).toStrictEqual([1, 2, 6, 7]);
+      });
     });
   });
 });

@@ -4,34 +4,36 @@ import { NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
+  AudioEmitterDistanceModelMap,
   AudioMessageType,
-  InitializeAudioTransformsMessage,
-  PlayAudioMessage,
-  SetAudioListenerMessage,
-  SetAudioPeerEntityMessage,
-  SharedAudioTransforms,
+  AudioResourceProps,
+  AudioSourceResourceProps,
+  AudioSourceResourceType,
+  PositionalAudioEmitterResourceProps,
+  SharedAudioState,
+  SharedPositionalAudioEmitter,
 } from "./audio.common";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { registerResourceLoader, waitForLocalResource } from "../resource/resource.main";
+import { ResourceId } from "../resource/resource.common";
+import { RemoteBufferView } from "../bufferView/bufferView.game";
+import { LocalBufferView } from "../bufferView/bufferView.common";
+import { NetworkModule } from "../network/network.main";
+import { mat4, quat, vec3 } from "gl-matrix";
 
 /*********
  * Types *
  ********/
 
 export interface AudioModuleState {
+  sharedAudioState: SharedAudioState;
   context: AudioContext;
-  sharedAudioTransforms: SharedAudioTransforms;
-  entityPanners: Map<number, PannerNode>;
-  listenerEntity: number;
-  peerEntities: Map<string, number>;
-  peerMediaStreamSourceMap: Map<string, MediaStreamAudioSourceNode>;
-  main: {
-    gain: GainNode;
-  };
-  sample: {
-    gain: GainNode;
-    cache: Map<string, AudioBuffer>;
-    queue: [string, number?][];
-  };
+  mainGain: GainNode;
+  streamMap: Map<number, MediaStream>;
+  audio: LocalAudio[];
+  sources: LocalAudioSource[];
+  globalEmitters: LocalGlobalAudioEmitter[];
+  positionalEmitters: LocalPositionalAudioEmitter[];
 }
 
 /******************
@@ -67,32 +69,26 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
     const sampleGain = new GainNode(audioCtx);
     sampleGain.connect(mainGain);
 
-    const sampleCache = new Map<string, AudioBuffer>();
+    const { sharedAudioState } = await waitForMessage(Thread.Game, AudioMessageType.InitializeAudioState);
 
-    const entityPanners = new Map<number, PannerNode>();
-
-    const sampleQueue: [string, number][] = [];
-
-    const { sharedAudioTransforms } = await waitForMessage<InitializeAudioTransformsMessage>(
-      Thread.Game,
-      AudioMessageType.InitializeAudioTransforms
-    );
+    audioCtx.listener
 
     return {
+      sharedAudioState,
       context: audioCtx,
-      sharedAudioTransforms,
-      entityPanners,
-      listenerEntity: NOOP,
-      peerEntities: new Map(),
       peerMediaStreamSourceMap: new Map(),
       main: {
         gain: mainGain,
       },
       sample: {
         gain: sampleGain,
-        cache: sampleCache,
-        queue: sampleQueue,
       },
+
+      streamMap: new Map(),
+      audio: LocalAudio[];
+      sources: LocalAudioSource[];
+      globalEmitters: LocalGlobalAudioEmitter[];
+      positionalEmitters: LocalPositionalAudioEmitter[];
     };
   },
   init(ctx) {
@@ -104,6 +100,7 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
       registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
       registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
       registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
+      registerResourceLoader(ctx, AudioSourceResourceType, onLoadAudioSource),
     ];
 
     return () => {
@@ -161,9 +158,7 @@ export const setPeerMediaStream = (audioState: AudioModuleState, peerId: string,
     audioEl.setAttribute("autoplay", "autoplay");
     audioEl.muted = true;
   }
-
-  const mediaStreamSource = audioState.context.createMediaStreamSource(mediaStream);
-  audioState.peerMediaStreamSourceMap.set(peerId, mediaStreamSource);
+  audioState.peerMediaStreamMap.set(peerId, mediaStream);
 };
 
 export const fetchAudioBuffer = async (ctx: AudioContext, filepath: string) => {
@@ -232,6 +227,232 @@ export const onSetAudioListener = (mainThread: IMainThreadContext, message: SetA
   audio.listenerEntity = message.eid;
 };
 
+interface LocalAudio {
+  resourceId: ResourceId;
+  audio: AudioBuffer | HTMLAudioElement;
+}
+
+const MAX_AUDIO_BUFFER_SIZE = 640_000;
+
+const audioExtensionToMimeType: { [key: string]: string } = {
+  mp3: "audio/mpeg",
+  aac: "audio/mpeg",
+  opus: "audio/ogg",
+  ogg: "audio/ogg",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  mp4: "audio/mp4",
+  webm: "audio/webm",
+};
+
+// TODO: Read fetch response headers
+function getAudioMimeType(uri: string) {
+  const extension = uri.split(".").pop() || "";
+  return audioExtensionToMimeType[extension] || "audio/mpeg";
+}
+
+export const onLoadAudio = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: AudioResourceProps
+): Promise<LocalAudio> => {
+  const audioModule = getModule(ctx, AudioModule);
+
+  let buffer: ArrayBuffer;
+  let mimeType: string;
+
+  // TODO: Add support for loading audio with HTMLAudioElement for longer clips
+  if ("bufferView" in props) {
+    const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
+    buffer = bufferView.buffer;
+    mimeType = props.mimeType;
+  } else {
+    const response = await fetch(props.uri);
+
+    const contentType = response.headers.get("Content-Type");
+
+    if (contentType) {
+      mimeType = contentType;
+    } else {
+      mimeType = getAudioMimeType(props.uri);
+    }
+
+    buffer = await response.arrayBuffer();
+  }
+
+  let audio: AudioBuffer | HTMLAudioElement;
+
+  if (buffer.byteLength > MAX_AUDIO_BUFFER_SIZE) {
+    const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
+
+    const audioEl = new Audio();
+
+    await new Promise((resolve, reject) => {
+      audioEl.onload = resolve;
+      audioEl.onerror = reject;
+      audioEl.src = objectUrl;
+    });
+
+    audio = audioEl;
+  } else {
+    audio = await audioModule.context.decodeAudioData(buffer);
+  }
+
+  audioModule.sample.cache.set(resourceId, audio);
+
+  return {
+    resourceId,
+    audio,
+  };
+};
+
+export const onLoadAudioStream = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  { streamId }: AudioStreamProps
+): Promise<LocalAudio> => {
+  const audioModule = getModule(ctx, AudioModule);
+
+  const mediaStream = audioModule.streamMap.get(streamId);
+
+  if (!mediaStream) {
+    throw new Error(`Media stream not found for streamId: ${streamId}`);
+  }
+
+  const audioStream: LocalAudioStream = {
+    resourceId,
+    streamId,
+    mediaStream,
+  };
+
+  audioModule.
+
+  return audioModule;
+};
+
+interface LocalAudioSource {
+  resourceId: ResourceId;
+  audio: LocalAudio;
+  sourceNode: AudioBufferSourceNode | MediaElementAudioSourceNode;
+  gainNode: GainNode;
+  autoPlay: boolean;
+  playing: boolean;
+  loop: boolean;
+  currentTime: number;
+}
+
+export const onLoadAudioSource = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: AudioSourceResourceProps
+): Promise<LocalAudioSource> => {
+  const audioModule = getModule(ctx, AudioModule);
+
+  const localAudio = await waitForLocalResource<LocalAudio>(ctx, props.audio);
+
+  let sourceNode: AudioBufferSourceNode | MediaElementAudioSourceNode;
+
+  if (localAudio.audio instanceof AudioBuffer) {
+    const bufferSourceNode = audioModule.context.createBufferSource();
+    bufferSourceNode.buffer = localAudio.audio;
+    sourceNode = bufferSourceNode;
+  } else {
+    const el = localAudio.audio.cloneNode() as HTMLAudioElement;
+    sourceNode = audioModule.context.createMediaElementSource(el);
+  }
+
+  const gainNode = audioModule.context.createGain();
+  gainNode.gain.value = props.gain;
+  sourceNode.connect(gainNode);
+
+  return {
+    resourceId,
+    audio: localAudio,
+    sourceNode,
+    gainNode,
+    autoPlay: props.autoPlay,
+    loop: props.loop,
+    playing: false,
+    currentTime: 0,
+  };
+};
+
+interface LocalPositionalAudioEmitter {
+  resourceId: ResourceId;
+  audioSources: LocalAudioSource[];
+  pannerNode: PannerNode;
+  gainNode: GainNode;
+  sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
+}
+
+export const onLoadPositionalAudioEmitter = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: PositionalAudioEmitterResourceProps
+): Promise<LocalPositionalAudioEmitter> => {
+  const audio = getModule(ctx, AudioModule);
+
+  const audioSources = await Promise.all(
+    props.sources.map((sourceId) => waitForLocalResource<LocalAudioSource>(ctx, sourceId))
+  );
+
+  const pannerNode = audio.context.createPanner();
+
+  const gainNode = audio.context.createGain();
+  gainNode.gain.value = props.gain;
+  pannerNode.connect(gainNode);
+
+  for (const source of audioSources) {
+    source.gainNode.connect(pannerNode);
+  }
+
+  gainNode.connect(audio.main.gain);
+
+  pannerNode.coneInnerAngle = props.coneInnerAngle;
+  pannerNode.coneOuterAngle = props.coneOuterAngle;
+  pannerNode.coneOuterGain = props.coneOuterGain;
+  pannerNode.distanceModel = AudioEmitterDistanceModelMap[props.distanceModel];
+  pannerNode.maxDistance = props.maxDistance;
+  pannerNode.refDistance = props.refDistance;
+  pannerNode.rolloffFactor = props.rolloffFactor;
+  pannerNode.panningModel = "HRTF";
+
+  return {
+    resourceId,
+    audioSources,
+    pannerNode,
+    gainNode,
+  };
+};
+
+interface LocalGlobalAudioEmitter {
+  resourceId: ResourceId;
+  audioSources: LocalAudioSource[];
+  gainNode: GainNode;
+}
+
+export const onLoadGlobalAudioEmitter = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: PositionalAudioEmitterResourceProps
+): Promise<LocalGlobalAudioEmitter> => {
+  const audio = getModule(ctx, AudioModule);
+
+  const audioSources = await Promise.all(
+    props.sources.map((sourceId) => waitForLocalResource<LocalAudioSource>(ctx, sourceId))
+  );
+
+  const gainNode = audio.context.createGain();
+  gainNode.gain.value = props.gain;
+  gainNode.connect(audio.main.gain);
+
+  return {
+    resourceId,
+    audioSources,
+    gainNode,
+  };
+};
+
 /*
 Connects a MediaStream to an entity's PannerNode to enable spatial VoIP
 
@@ -265,28 +486,48 @@ export const onSetAudioPeerEntity = (mainThread: IMainThreadContext, message: Se
  * Systems *
  **********/
 
-const tempMatrix4 = new Matrix4();
-const tempPosition = new Vector3();
-const tempQuaternion = new Quaternion();
-const tempScale = new Vector3();
+const tempPosition = vec3.create();
+const tempQuaternion = quat.create();
+const tempScale = vec3.create();
+
 export function MainThreadAudioSystem(mainThread: IMainThreadContext) {
   const audioModule = getModule(mainThread, AudioModule);
 
-  if (audioModule.listenerEntity === NOOP) {
-    return audioModule;
+  if (audioModule.sharedAudioState.activeListenerResourceId[0] !== NOOP) {
+    setAudioListenerTransform(audioModule.context.listener, audioModule.sharedAudioState.activeListenerWorldMatrix);
   }
 
-  const Transform = getReadObjectBufferView(audioModule.sharedAudioTransforms);
+  const { currentTime } = audioModule.context;
 
-  tempMatrix4
-    .fromArray(Transform.worldMatrix[audioModule.listenerEntity])
-    .decompose(tempPosition, tempQuaternion, tempScale);
+  for (let i = 0; i < audioModule.positionalEmitters.length; i++) {
+    const positionalEmitter = audioModule.positionalEmitters[i];
+    const { pannerNode, sharedPositionalAudioEmitter } = positionalEmitter;
 
-  if (isNaN(tempQuaternion.x)) {
-    return audioModule;
+    mat4.getTranslation(tempPosition, sharedPositionalAudioEmitter.worldMatrix);
+    pannerNode.positionX.setValueAtTime(tempPosition[0], currentTime);
+    pannerNode.positionY.setValueAtTime(tempPosition[1], currentTime);
+    pannerNode.positionZ.setValueAtTime(tempPosition[2], currentTime);
+
+    // TODO: Set other panner node props
+
+    pannerNode.coneInnerAngle = sharedPositionalAudioEmitter.coneInnerAngle[0];
+    pannerNode.coneOuterAngle = sharedPositionalAudioEmitter.coneOuterAngle[0];
+    pannerNode.coneOuterGain = sharedPositionalAudioEmitter.coneOuterGain[0];
+    pannerNode.distanceModel = AudioEmitterDistanceModelMap[sharedPositionalAudioEmitter.distanceModel[0]];
+    pannerNode.maxDistance = sharedPositionalAudioEmitter.maxDistance[0];
+    pannerNode.refDistance = sharedPositionalAudioEmitter.refDistance[0];
+    pannerNode.rolloffFactor = sharedPositionalAudioEmitter.rolloffFactor[0];
   }
+}
 
-  const { listener } = audioModule.context;
+function setAudioListenerTransform(listener: AudioListener, worldMatrix: Float32Array) {
+  mat4.getTranslation(tempPosition, worldMatrix);
+  mat4.getRotation(tempQuaternion, worldMatrix);
+  mat4.getScaling(tempScale, worldMatrix);
+
+  if (isNaN(tempQuaternion[0])) {
+    return;
+  }
 
   if (listener.upX) {
     listener.upX.value = 0;
@@ -295,30 +536,26 @@ export function MainThreadAudioSystem(mainThread: IMainThreadContext) {
   }
 
   if (listener.positionX) {
-    listener.positionX.value = tempPosition.x;
-    listener.positionY.value = tempPosition.y;
-    listener.positionZ.value = tempPosition.z;
+    listener.positionX.value = tempPosition[0];
+    listener.positionY.value = tempPosition[1];
+    listener.positionZ.value = tempPosition[2]
   } else {
-    listener.setPosition(tempPosition.x, tempPosition.y, tempPosition.z);
+    listener.setPosition(tempPosition[0], tempPosition[1], tempPosition[2]);
   }
 
-  const e = tempMatrix4.elements;
-  const v = tempPosition.set(-e[8], -e[9], -e[10]).normalize();
+  
+
+  tempPosition[0] = -worldMatrix[8];
+  tempPosition[1] = -worldMatrix[9];
+  tempPosition[2] = -worldMatrix[10];
+
+  vec3.normalize(tempPosition, tempPosition);
+
   if (listener.forwardX) {
-    listener.forwardX.value = v.x;
-    listener.forwardY.value = v.y;
-    listener.forwardZ.value = v.z;
+    listener.forwardX.value = tempPosition[0];
+    listener.forwardY.value = tempPosition[1];
+    listener.forwardZ.value = tempPosition[2];
   } else {
-    listener.setOrientation(v.x, v.y, v.z, 0, 1, 0);
+    listener.setOrientation(tempPosition[0], tempPosition[1], tempPosition[2], 0, 1, 0);
   }
-
-  audioModule.entityPanners.forEach((panner, eid) => {
-    const { currentTime } = audioModule.context;
-
-    tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
-
-    panner.positionX.setValueAtTime(tempPosition.x, currentTime);
-    panner.positionY.setValueAtTime(tempPosition.y, currentTime);
-    panner.positionZ.setValueAtTime(tempPosition.z, currentTime);
-  });
 }

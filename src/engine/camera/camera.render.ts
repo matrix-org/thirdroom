@@ -30,7 +30,6 @@ export interface LocalOrthographicCameraResource {
 export type LocalCameraResource = LocalOrthographicCameraResource | LocalPerspectiveCameraResource;
 
 export type CameraModuleState = {
-  cameraResources: Map<number, LocalCameraResource>;
   perspectiveCameraResources: LocalPerspectiveCameraResource[];
   orthographicCameraResources: LocalOrthographicCameraResource[];
 };
@@ -39,7 +38,6 @@ export const CameraModule = defineModule<RenderThreadState, CameraModuleState>({
   name: "camera",
   create() {
     return {
-      cameraResources: new Map(),
       perspectiveCameraResources: [],
       orthographicCameraResources: [],
     };
@@ -61,7 +59,7 @@ export const CameraModule = defineModule<RenderThreadState, CameraModuleState>({
 async function onLoadPerspectiveCamera(
   ctx: RenderThreadState,
   id: ResourceId,
-  { eid, type, initialProps, sharedCamera }: SharedPerspectiveCameraResource
+  { type, initialProps, sharedCamera }: SharedPerspectiveCameraResource
 ): Promise<PerspectiveCamera> {
   const cameraModule = getModule(ctx, CameraModule);
 
@@ -80,7 +78,6 @@ async function onLoadPerspectiveCamera(
     sharedCamera,
   };
 
-  cameraModule.cameraResources.set(eid, perspectiveCameraResource);
   cameraModule.perspectiveCameraResources.push(perspectiveCameraResource);
 
   return camera;
@@ -89,7 +86,7 @@ async function onLoadPerspectiveCamera(
 async function onLoadOrthographicCamera(
   ctx: RenderThreadState,
   id: ResourceId,
-  { eid, type, initialProps, sharedCamera }: SharedOrthographicCameraResource
+  { type, initialProps, sharedCamera }: SharedOrthographicCameraResource
 ): Promise<OrthographicCamera> {
   const cameraModule = getModule(ctx, CameraModule);
 
@@ -110,18 +107,9 @@ async function onLoadOrthographicCamera(
     sharedCamera,
   };
 
-  cameraModule.cameraResources.set(eid, orthographicCameraResource);
   cameraModule.orthographicCameraResources.push(orthographicCameraResource);
 
   return camera;
-}
-
-export function getLocalCameraResource<C extends LocalCameraResource>(
-  ctx: RenderThreadState,
-  eid: number
-): C | undefined {
-  const cameraModule = getModule(ctx, CameraModule);
-  return cameraModule.cameraResources.get(eid) as C | undefined;
 }
 
 export function CameraUpdateSystem(ctx: RenderThreadState) {
