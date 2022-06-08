@@ -15,8 +15,8 @@ import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
-import { WindowHeader } from "../../components/window/WindowHeader";
-import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
+import { Header } from "../../../atoms/header/Header";
+import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
@@ -26,7 +26,7 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
-import { WindowFooter } from "../../components/window/WindowFooter";
+import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
@@ -171,11 +171,11 @@ export function CreateWorld() {
       <Content
         onSubmit={handleSubmit}
         top={
-          <WindowHeader
+          <Header
             left={
-              <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
+              <HeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
                 Create World
-              </WindowHeaderTitle>
+              </HeaderTitle>
             }
             right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
           />
@@ -257,7 +257,7 @@ export function CreateWorld() {
                 </Scroll>
               }
               bottom={
-                <WindowFooter
+                <Footer
                   left={
                     <Button size="lg" fill="outline" onClick={() => selectWindow()}>
                       Cancel
