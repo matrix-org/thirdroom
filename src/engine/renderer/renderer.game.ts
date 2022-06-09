@@ -23,7 +23,7 @@ import {
   createRemoteSceneResource,
   RemoteScene,
   RemoteSceneComponent,
-  updateRemoteScenes,
+  updateRendererRemoteScenes,
 } from "../scene/scene.game";
 import { RemoteTexture, updateRemoteTextures } from "../texture/texture.game";
 import {
@@ -95,7 +95,7 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
     const scene = getActiveScene(state);
     const remoteScene = createRemoteSceneResource(state);
     addRemoteSceneComponent(state, scene, remoteScene);
-    await waitForRemoteResource(state, remoteScene.resourceId);
+    await waitForRemoteResource(state, remoteScene.rendererResourceId);
 
     const camera = getActiveCamera(state);
     const remoteCamera = createRemotePerspectiveCamera(state, {
@@ -115,7 +115,7 @@ export const RenderableSystem = (state: GameState) => {
 
   commitToTripleBufferView(renderer.sharedRendererState);
 
-  updateRemoteScenes(renderer.scenes);
+  updateRendererRemoteScenes(renderer.scenes);
   updateRemoteTextures(renderer.textures);
   updateRemoteMaterials(state);
   updateRemoteCameras(state);
@@ -132,7 +132,7 @@ export function setActiveScene(ctx: GameState, eid: number) {
 
   if (remoteScene) {
     renderer.activeScene = eid;
-    renderer.sharedRendererState.activeSceneResourceId[0] = remoteScene.resourceId;
+    renderer.sharedRendererState.activeSceneResourceId[0] = remoteScene.rendererResourceId;
   }
 }
 

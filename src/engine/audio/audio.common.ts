@@ -118,7 +118,8 @@ export interface SharedPositionalAudioEmitterResource {
 }
 
 export const audioStateSchema = defineObjectBufferSchema({
-  activeListenerResourceId: [Uint32Array, 1],
+  activeAudioListenerResourceId: [Uint32Array, 1],
+  activeSceneResourceId: [Uint32Array, 1],
 });
 
 export type SharedAudioState = TripleBufferBackedObjectBufferView<typeof audioStateSchema, ArrayBuffer>;

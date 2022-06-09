@@ -1,24 +1,24 @@
 import { EquirectangularReflectionMapping, Scene, Texture } from "three";
 
-import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
-import { sceneSchema, SharedSceneResource } from "./scene.common";
+import { RendererSharedScene, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   scene: Scene;
   backgroundTextureResourceId?: ResourceId;
   environmentTextureResourceId?: ResourceId;
-  sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
+  sharedScene: RendererSharedScene;
 }
 
 export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
   id: ResourceId,
-  { initialProps, sharedScene }: SharedSceneResource
+  { initialProps, sharedScene }: RendererSharedSceneResource
 ): Promise<Scene> {
   const sceneModule = getModule(ctx, RendererModule);
 

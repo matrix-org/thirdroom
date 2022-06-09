@@ -1,4 +1,3 @@
-import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
@@ -37,15 +36,18 @@ import {
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteBufferView } from "../bufferView/bufferView.game";
+import { RemoteScene, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
 
 interface GameAudioModuleState {
-  activeAudioListenerEntity: number;
+  activeScene?: RemoteScene;
+  activeAudioListener?: RemoteNode;
   sharedAudioState: SharedAudioState;
   audioSources: RemoteAudioSource[];
   mediaStreamSources: RemoteMediaStreamSource[];
   globalAudioEmitters: RemoteGlobalAudioEmitter[];
   positionalAudioEmitters: RemotePositionalAudioEmitter[];
+  scenes: RemoteScene[];
 }
 
 export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
@@ -64,12 +66,12 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
     });
 
     return {
-      activeAudioListenerEntity: NOOP,
       sharedAudioState,
       audioSources: [],
       mediaStreamSources: [],
       globalAudioEmitters: [],
       positionalAudioEmitters: [],
+      scenes: [],
     };
   },
   init() {},
@@ -107,7 +109,7 @@ export function createRemoteAudio(ctx: GameState, uri: string): RemoteAudio {
   };
 }
 
-interface RemoteAudioSource {
+export interface RemoteAudioSource {
   resourceId: number;
   sharedAudioSource: SharedAudioSource;
   get audio(): RemoteAudio | undefined;
@@ -122,7 +124,7 @@ interface RemoteAudioSource {
   set loop(value: boolean);
 }
 
-interface AudioSourceProps {
+export interface AudioSourceProps {
   audio?: RemoteAudio;
   gain?: number;
   currentTime?: number;
@@ -203,7 +205,7 @@ export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps
   return remoteAudioSource;
 }
 
-interface RemoteMediaStreamSource {
+export interface RemoteMediaStreamSource {
   resourceId: number;
   sharedMediaStreamSource: SharedMediaStreamSource;
   get streamId(): number | undefined;
@@ -212,7 +214,7 @@ interface RemoteMediaStreamSource {
   set gain(value: number);
 }
 
-interface MediaStreamProps {
+export interface MediaStreamProps {
   streamId?: number;
   gain?: number;
 }
@@ -263,9 +265,9 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
   return remoteMediaStreamSource;
 }
 
-type RemoteEmitterSource = RemoteAudioSource | RemoteMediaStreamSource;
+export type RemoteEmitterSource = RemoteAudioSource | RemoteMediaStreamSource;
 
-interface RemoteGlobalAudioEmitter {
+export interface RemoteGlobalAudioEmitter {
   resourceId: ResourceId;
   sharedGlobalAudioEmitter: SharedGlobalAudioEmitter;
   get sources(): RemoteEmitterSource[];
@@ -274,7 +276,7 @@ interface RemoteGlobalAudioEmitter {
   set gain(value: number);
 }
 
-interface GlobalAudioEmitterProps {
+export interface GlobalAudioEmitterProps {
   sources?: RemoteEmitterSource[];
   gain?: number;
 }
@@ -334,7 +336,7 @@ export function createGlobalAudioEmitter(ctx: GameState, props?: GlobalAudioEmit
   return remoteGlobalAudioEmitter;
 }
 
-interface RemotePositionalAudioEmitter {
+export interface RemotePositionalAudioEmitter {
   resourceId: ResourceId;
   sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
   get sources(): RemoteEmitterSource[];
@@ -355,7 +357,7 @@ interface RemotePositionalAudioEmitter {
   set rolloffFactor(value: number);
 }
 
-interface PositionalAudioEmitterProps {
+export interface PositionalAudioEmitterProps {
   sources?: RemoteEmitterSource[];
   gain?: number;
   coneInnerAngle?: number;
@@ -477,7 +479,7 @@ export function createRemotePositionalAudioEmitter(
   return remotePositionalAudioEmitter;
 }
 
-interface PlayAudioOptions {
+export interface PlayAudioOptions {
   gain?: number;
   startTime?: number;
   loop?: boolean;
@@ -509,7 +511,8 @@ export function playAudio(audioSource: RemoteAudioSource, audio?: RemoteAudio, o
 
 export function setActiveAudioListener(ctx: GameState, eid: number) {
   const audioModule = getModule(ctx, GameAudioModule);
-  audioModule.activeAudioListenerEntity = eid;
+  const remoteNode = RemoteNodeComponent.get(eid);
+  audioModule.activeAudioListener = remoteNode;
 }
 
 /**
@@ -519,15 +522,8 @@ export function setActiveAudioListener(ctx: GameState, eid: number) {
 export function AudioSystem(ctx: GameState) {
   const audioModule = getModule(ctx, GameAudioModule);
 
-  const listenerEid = audioModule.activeAudioListenerEntity;
-
-  const remoteNode = RemoteNodeComponent.get(listenerEid);
-
-  if (remoteNode) {
-    audioModule.sharedAudioState.activeListenerResourceId[0] = remoteNode.resourceId;
-  } else {
-    audioModule.sharedAudioState.activeListenerResourceId[0] = 0;
-  }
+  audioModule.sharedAudioState.activeAudioListenerResourceId[0] = audioModule.activeAudioListener?.resourceId || 0;
+  audioModule.sharedAudioState.activeSceneResourceId[0] = audioModule.activeScene?.audioResourceId || 0;
 
   commitToTripleBufferView(audioModule.sharedAudioState);
 
@@ -554,4 +550,6 @@ export function AudioSystem(ctx: GameState) {
 
     commitToTripleBufferView(positionalAudioEmitter.sharedPositionalAudioEmitter);
   }
+
+  updateAudioRemoteScenes(audioModule.scenes);
 }
