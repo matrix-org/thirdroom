@@ -10,6 +10,7 @@ import { LocalSamplerResource } from "../sampler/sampler.render";
 import { SharedTexture, SharedTextureResource } from "./texture.common";
 
 export interface LocalTextureResource {
+  resourceId: ResourceId;
   forceUpdate: boolean;
   texture: Texture;
   sharedTexture: SharedTexture;
@@ -17,9 +18,9 @@ export interface LocalTextureResource {
 
 export async function onLoadLocalTextureResource(
   ctx: RenderThreadState,
-  id: ResourceId,
+  resourceId: ResourceId,
   { initialProps, sharedTexture }: SharedTextureResource
-): Promise<Texture> {
+): Promise<LocalTextureResource> {
   const rendererModule = getModule(ctx, RendererModule);
 
   const [image, sampler] = await Promise.all([
@@ -53,13 +54,16 @@ export async function onLoadLocalTextureResource(
   texture.repeat.fromArray(initialProps.scale);
   texture.needsUpdate = true;
 
-  rendererModule.textures.push({
+  const localTexture: LocalTextureResource = {
+    resourceId,
     texture,
     sharedTexture,
     forceUpdate: true, // TODO: Is this uploading the texture twice?
-  });
+  };
 
-  return texture;
+  rendererModule.textures.push(localTexture);
+
+  return localTexture;
 }
 
 export function updateLocalTextureResources(textures: LocalTextureResource[]) {

@@ -15,6 +15,23 @@ export interface MeshResourceProps {
   weights?: number[] | Float32Array;
 }
 
+export enum MeshMode {
+  POINTS,
+  LINES,
+  LINE_LOOP,
+  LINE_STRIP,
+  TRIANGLES,
+  TRIANGLE_STRIP,
+  TRIANGLE_FAN,
+}
+
 export enum MeshAttribute {
   POSITION = "POSITION",
+  NORMAL = "NORMAL",
+  TANGENT = "TANGENT",
+  TEXCOORD_0 = "TEXCOORD_0",
+  TEXCOORD_1 = "TEXCOORD_1",
+  COLOR_0 = "COLOR_0",
+  JOINTS_0 = "JOINTS_0",
+  WEIGHTS_0 = "WEIGHTS_0",
 }

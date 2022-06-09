@@ -13,7 +13,7 @@ import {
   AccessorTypeToItemSize,
 } from "./accessor.common";
 
-interface LocalAccessor {
+export interface LocalAccessor {
   bufferView?: LocalBufferView;
   min?: number;
   max?: number;

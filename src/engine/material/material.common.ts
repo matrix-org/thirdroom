@@ -18,7 +18,6 @@ export const unlitMaterialSchema = defineObjectBufferSchema({
   alphaMode: [Uint8Array, 1], // MaterialAlphaMode
   baseColorFactor: [Float32Array, 4], // [r, g, b, a]
   baseColorTexture: [Uint32Array, 1], // TODO: Add support for texCoord
-  needsUpdate: [Uint8Array, 1], // Update material props (does not necessarily recompile shader like three.js)
 });
 
 export const standardMaterialSchema = defineObjectBufferSchema({
@@ -36,7 +35,6 @@ export const standardMaterialSchema = defineObjectBufferSchema({
   occlusionTexture: [Uint32Array, 1], // TODO: Add support for texCoord
   emissiveFactor: [Float32Array, 3], // [r, g, b],
   emissiveTexture: [Uint32Array, 1], // TODO: Add support for texCoord
-  needsUpdate: [Uint8Array, 1], // Update material props (does not necessarily recompile shader like three.js)
 });
 
 export type SharedUnlitMaterial = TripleBufferBackedObjectBufferView<typeof unlitMaterialSchema, ArrayBuffer>;

@@ -377,7 +377,7 @@ export const onLoadAudioSource = async (
   };
 };
 
-interface LocalPositionalAudioEmitter {
+export interface LocalPositionalAudioEmitter {
   resourceId: ResourceId;
   audioSources: LocalAudioSource[];
   pannerNode: PannerNode;
