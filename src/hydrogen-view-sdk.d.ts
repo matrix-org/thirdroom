@@ -351,6 +351,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export class MediaRepository {
     mxcUrlThumbnail(url: string, width: number, height: number, method: "crop" | "scale"): string | null;
+    mxcUrl(url: string): string | undefined;
   }
 
   export enum RoomVisibility {
@@ -412,6 +413,28 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export interface RoomStateHandler {
     handleRoomState(room: Room, stateEvent: StateEvent, syncWriteTxn: Transaction, log: ILogItem): void;
     updateRoomMembers(room: Room, memberChanges: Map<string, MemberChange>): void;
+  }
+
+  export interface StateObserver {
+    handleStateEvent(event: StateEvent): void;
+    load(roomId: string, txn: Transaction): Promise<void>;
+    setRemoveCallback(callback: () => void): void;
+  }
+
+  export class ObservedStateTypeMap extends ObservableMap<string, StateEvent> implements StateObserver {
+    constructor(type: string);
+    load(roomId: string, txn: Transaction): Promise<void>;
+    handleStateEvent(event: StateEvent): void;
+    setRemoveCallback(callback: () => void): void;
+    onUnsubscribeLast(): void;
+  }
+  export class ObservedStateKeyValue extends BaseObservableValue<StateEvent | undefined> implements StateObserver {
+    constructor(type: string, stateKey: string);
+    load(roomId: string, txn: Transaction): Promise<void>;
+    handleStateEvent(event: StateEvent): void;
+    get(): StateEvent | undefined;
+    setRemoveCallback(callback: () => void): void;
+    onUnsubscribeLast(): void;
   }
 
   export class Session {
@@ -540,7 +563,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
   export class BaseRoom extends EventEmitter<any> {
     constructor(roomOptions: RoomOptions);
-    getStateEvent(type: string, key?: string): any;
+    observeStateType(type: string, txn?: string): Promise<ObservedStateTypeMap>;
+    observeStateTypeAndKey(type: string, stateKey: string, txn?: string): Promise<ObservedStateKeyValue>;
+    getStateEvent(type: string, key?: string): Promise<StateEvent | undefined>;
     notifyRoomKey(roomKey: RoomKey, eventIds: string[], log?: any): Promise<void>;
     load(summary: any, txn: any, log: any): Promise<void>;
     observeMember(userId: string): Promise<RetainedObservableValue<RoomMember> | null>;
@@ -1662,7 +1687,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   };
 
   type MemberChange = any;
-  type StateEvent = any;
+  export type Content = { [key: string]: any };
+  export interface TimelineEvent {
+    content: Content;
+    type: string;
+    event_id: string;
+    sender: string;
+    origin_server_ts: number;
+    unsigned?: Content;
+  }
+  export type StateEvent = TimelineEvent & { prev_content?: Content; state_key: string };
 
   export class CallHandler {
     private readonly options;

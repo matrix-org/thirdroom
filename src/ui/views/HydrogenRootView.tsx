@@ -25,6 +25,7 @@ import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
+import { useUserProfile } from "../hooks/useUserProfile";
 
 const defaultHomeServer = "matrix.org";
 
@@ -243,6 +244,8 @@ export function HydrogenRootView() {
     }
   }, [client, session]);
 
+  const profileRoom = useUserProfile(client, session);
+
   const context = useMemo<HydrogenContext>(
     () => ({
       client,
@@ -252,15 +255,17 @@ export function HydrogenRootView() {
       urlRouter,
       logger,
       session,
+      profileRoom,
       login,
       logout,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, session, login, logout]
+    [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
+  const hasProfileRoom = session && profileRoom;
 
-  const loading = loadingInitialSession || loggingIn || loggingOut;
+  const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
 
   let content;
@@ -285,9 +290,9 @@ export function HydrogenRootView() {
     );
   }
 
-  if (!session && !loginPathMatch) {
+  if (!session && !loginPathMatch && !hasProfileRoom) {
     return <Navigate to="/login" />;
-  } else if (session && loginPathMatch) {
+  } else if (session && loginPathMatch && hasProfileRoom) {
     return <Navigate to="/" />;
   }
 

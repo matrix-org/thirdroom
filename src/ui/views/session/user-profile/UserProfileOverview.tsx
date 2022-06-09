@@ -16,22 +16,24 @@ import { WindowAside } from "../../components/window/WindowAside";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
-import { getAvatarHttpUrl } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getHttpUrl } from "../../../utils/avatar";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Button } from "../../../atoms/button/Button";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { use3DAvatar } from "../../../hooks/use3DAvatar";
+import { Edit3DAvatar } from "./Edit3DAvatar";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import "./UserProfileOverview.css";
-import { Edit3DAvatar } from "./Edit3DAvatar";
 
 export function UserProfileOverview() {
-  const { session, platform } = useHydrogen(true);
+  const { session, platform, profileRoom } = useHydrogen(true);
   const { displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
   const [newAvatar, setNewAvatar] = useState<IBlobHandle | string | undefined>(avatarUrl);
+  const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
   const avatarHttpUrl: string | null | undefined = !newAvatar
     ? undefined
@@ -121,9 +123,27 @@ export function UserProfileOverview() {
                   <SettingTile className="grow basis-0" label={<Label>3D Avatar</Label>}>
                     <Edit3DAvatar
                       renderTrigger={(openModal) => (
-                        <Thumbnail size="sm" className="flex">
-                          <IconButton onClick={openModal} size="xl" iconSrc={AddIC} label="Add world avatar" />
-                        </Thumbnail>
+                        <ThumbnailHover
+                          content={
+                            !tDAvatarPreviewUrl ? undefined : (
+                              <IconButton
+                                variant="world"
+                                onClick={openModal}
+                                size="xl"
+                                iconSrc={AddIC}
+                                label="Edit 3D Avatar"
+                              />
+                            )
+                          }
+                        >
+                          <Thumbnail size="sm" className="flex">
+                            {tDAvatarPreviewUrl ? (
+                              <ThumbnailImg src={tDAvatarPreviewUrl} />
+                            ) : (
+                              <IconButton onClick={openModal} size="xl" iconSrc={AddIC} label="Add world avatar" />
+                            )}
+                          </Thumbnail>
+                        </ThumbnailHover>
                       )}
                     />
                   </SettingTile>
@@ -155,6 +175,8 @@ export function UserProfileOverview() {
         <WindowAside className="flex">
           <ScenePreview
             className="grow"
+            src={getHttpUrl(session, tDAvatarPreviewUrl)}
+            alt="3D Avatar preview"
             fallback={
               <Text variant="b3" color="surface-low" weight="medium">
                 Your 3D avatar preview will appear here.
