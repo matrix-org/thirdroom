@@ -26,6 +26,7 @@ import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 
 const defaultHomeServer = "matrix.org";
 
@@ -138,13 +139,7 @@ function initHydrogen() {
     logger: platform.logger,
   };
 
-  const global = window as unknown as any;
-
-  if (!global.thirdroom) {
-    global.thirdroom = {};
-  }
-
-  global.thirdroom.hydrogen = hydrogenInstance;
+  registerThirdroomGlobalVar("hydrogen", hydrogenInstance);
 
   return hydrogenInstance;
 }

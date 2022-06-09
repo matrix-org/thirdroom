@@ -1,6 +1,7 @@
 import { Event, Intersection, Object3D, Raycaster } from "three";
 
-import { RenderWorkerState } from "../RenderWorker";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { RaycastMessage, RaycastResultsMessage, WorkerMessageType } from "../WorkerMessage";
 import { RaycastResult } from "./raycaster.common";
 
@@ -9,32 +10,38 @@ export interface RendererRaycasterState {
   messages: RaycastMessage[];
 }
 
-export function initRendererRaycasterState(): RendererRaycasterState {
-  return {
-    raycaster: new Raycaster(),
-    messages: [],
-  };
-}
+export const RaycasterModule = defineModule<RenderThreadState, RendererRaycasterState>({
+  name: "raycaster",
+  create() {
+    return {
+      raycaster: new Raycaster(),
+      messages: [],
+    };
+  },
+  init(state) {
+    return registerMessageHandler(state, WorkerMessageType.Raycast, onRaycastMessage);
+  },
+});
 
-export function initRendererRaycaster(state: RenderWorkerState) {
-  state.messageHandlers[WorkerMessageType.Raycast] = onRaycastMessage;
-  state.preSystems.push(RendererRaycasterSystem);
-}
-
-function onRaycastMessage(state: RenderWorkerState, message: RaycastMessage) {
-  state.raycaster.messages.push(message);
+function onRaycastMessage(state: RenderThreadState, message: RaycastMessage) {
+  const raycasterState = getModule(state, RaycasterModule);
+  raycasterState.messages.push(message);
 }
 
 const intersections: Intersection<Object3D<Event>>[] = [];
 
-function RendererRaycasterSystem(state: RenderWorkerState) {
-  while (state.raycaster.messages.length) {
-    const msg = state.raycaster.messages.pop();
+export function RendererRaycasterSystem(state: RenderThreadState) {
+  const renderModule = getModule(state, RendererModule);
+  const { scene, objectToEntityMap } = renderModule;
+  const raycasterState = getModule(state, RaycasterModule);
+
+  while (raycasterState.messages.length) {
+    const msg = raycasterState.messages.pop();
 
     if (msg) {
-      state.raycaster.raycaster.ray.origin.fromArray(msg.origin);
-      state.raycaster.raycaster.ray.direction.fromArray(msg.direction);
-      state.raycaster.raycaster.intersectObject(state.scene, true, intersections);
+      raycasterState.raycaster.ray.origin.fromArray(msg.origin);
+      raycasterState.raycaster.ray.direction.fromArray(msg.direction);
+      raycasterState.raycaster.intersectObject(scene, true, intersections);
 
       const results: RaycastResult[] = [];
 
@@ -42,7 +49,7 @@ function RendererRaycasterSystem(state: RenderWorkerState) {
         const intersection = intersections.pop();
 
         if (intersection) {
-          const entity = state.objectToEntityMap.get(intersection.object);
+          const entity = objectToEntityMap.get(intersection.object);
 
           if (entity !== undefined) {
             results.push({

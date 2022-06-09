@@ -2,7 +2,9 @@ import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm } from "gl-matrix";
 
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
-import { GameState, World } from "../engine/GameWorker";
+import { GameState, World } from "../engine/GameTypes";
+import { InputModule } from "../engine/input/input.game";
+import { getModule } from "../engine/module/module.common";
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",
@@ -32,7 +34,10 @@ export function addCameraYawTargetComponent(world: World, eid: number) {
 export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
 export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
 
-export function FirstPersonCameraSystem({ input, world }: GameState) {
+export function FirstPersonCameraSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const { world } = ctx;
+
   const [lookX, lookY] = input.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   const pitchEntities = cameraPitchTargetQuery(world);

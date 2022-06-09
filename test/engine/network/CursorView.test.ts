@@ -18,7 +18,7 @@ import {
   writeUint16,
   writeUint32,
   writeUint8,
-} from "../../../src/engine/network/CursorView";
+} from "../../../src/engine/allocator/CursorView";
 
 describe("CursorView read/write", () => {
   describe("CursorView", () => {

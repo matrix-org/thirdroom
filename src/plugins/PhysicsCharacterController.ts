@@ -5,11 +5,15 @@ import { Object3D, Quaternion, Vector3 } from "three";
 import { Player } from "../engine/component/Player";
 import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
-import { GameState } from "../engine/GameWorker";
+import { GameState } from "../engine/GameTypes";
 import { ButtonActionState } from "../engine/input/ActionMappingSystem";
-import { Networked, NetworkTransform, Owned } from "../engine/network";
-import { addRigidBody, RigidBody } from "../engine/physics";
+import { InputModule } from "../engine/input/input.game";
+import { getModule } from "../engine/module/module.common";
+import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
+import { NetworkModule } from "../engine/network/network.game";
+import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCamera } from "../engine/prefab";
+import { RendererModule } from "../engine/renderer/renderer.game";
 import { GeometryType } from "../engine/resources/GeometryResourceLoader";
 import { MaterialType } from "../engine/resources/MaterialResourceLoader";
 import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
@@ -79,16 +83,18 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (
-  state: GameState,
-  geometryResourceId: number = loadRemoteResource(state.resourceManager, {
-    type: "geometry",
-    geometryType: GeometryType.Box,
-  })
-) => {
-  const { world, resourceManager } = state;
+export const createRawCube = (state: GameState, geometryResourceId?: number) => {
+  const { resourceManager } = getModule(state, RendererModule);
+  const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
+
+  if (!geometryResourceId) {
+    geometryResourceId = loadRemoteResource(resourceManager, {
+      type: "geometry",
+      geometryType: GeometryType.Box,
+    });
+  }
 
   const materialResourceId = loadRemoteResource(resourceManager, {
     type: "material",
@@ -110,18 +116,17 @@ export const createRawCube = (
 };
 
 export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
-  const { world, physicsWorld } = state;
+  const { world } = state;
+  const { physicsWorld } = getModule(state, PhysicsModule);
+  const network = getModule(state, NetworkModule);
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  state.entityPrefabMap.set(playerRig, "player-cube");
+  state.entityPrefabMap.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
-  state.network.peerIdToEntityId.set(state.network.peerId, playerRig);
-
-  const lowerCube = createRawCube(state);
-  addChild(playerRig, lowerCube);
+  network.peerIdToEntityId.set(network.peerId, playerRig);
 
   addComponent(world, PlayerRig, playerRig);
   Transform.position[playerRig][2] = 50;
@@ -150,6 +155,8 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 };
 
 export const PlayerControllerSystem = (state: GameState) => {
+  const { physicsWorld } = getModule(state, PhysicsModule);
+  const input = getModule(state, InputModule);
   const playerRig = playerRigQuery(state.world)[0];
   const body = RigidBody.store.get(playerRig);
   if (body) {
@@ -160,10 +167,10 @@ export const PlayerControllerSystem = (state: GameState) => {
     body.setRotation(obj.quaternion, true);
 
     // Handle Input
-    const moveVec = state.input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-    const jump = state.input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-    const crouch = state.input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-    const sprint = state.input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+    const moveVec = input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+    const jump = input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+    const crouch = input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+    const sprint = input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
     linearVelocity.copy(body.linvel() as Vector3);
 
@@ -171,12 +178,12 @@ export const PlayerControllerSystem = (state: GameState) => {
     shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
 
     // todo: tune interaction groups
-    const shapeCastResult = state.physicsWorld.castShape(
+    const shapeCastResult = physicsWorld.castShape(
       shapeCastPosition,
       shapeCastRotation,
-      state.physicsWorld.gravity,
+      physicsWorld.gravity,
       colliderShape,
-      state.time.dt,
+      state.dt,
       CharacterShapecastInteractionGroup
     );
 
@@ -191,7 +198,7 @@ export const PlayerControllerSystem = (state: GameState) => {
         .set(moveVec[0], 0, -moveVec[1])
         .normalize()
         .applyQuaternion(obj.quaternion)
-        .multiplyScalar(walkSpeed * state.time.dt);
+        .multiplyScalar(walkSpeed * state.dt);
 
       if (!isGrounded) {
         moveForce.multiplyScalar(inAirModifier);
@@ -208,13 +215,13 @@ export const PlayerControllerSystem = (state: GameState) => {
       speed > minSlideSpeed &&
       isGrounded &&
       !isSliding &&
-      state.time.dt > lastSlideTime + slideCooldown
+      state.dt > lastSlideTime + slideCooldown
     ) {
       slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
       moveForce.add(slideForce);
       isSliding = true;
-      lastSlideTime = state.time.elapsed;
-    } else if (crouch.released || state.time.dt > lastSlideTime + slideCooldown) {
+      lastSlideTime = state.elapsed;
+    } else if (crouch.released || state.dt > lastSlideTime + slideCooldown) {
       isSliding = false;
     }
 
@@ -230,7 +237,7 @@ export const PlayerControllerSystem = (state: GameState) => {
       dragForce
         .copy(linearVelocity)
         .negate()
-        .multiplyScalar(dragMultiplier * state.time.dt);
+        .multiplyScalar(dragMultiplier * state.dt);
 
       dragForce.y = 0;
 
@@ -243,6 +250,6 @@ export const PlayerControllerSystem = (state: GameState) => {
     }
 
     body.applyImpulse(moveForce, true);
-    body.applyForce(state.physicsWorld.gravity as Vector3, true);
+    body.applyForce(physicsWorld.gravity as Vector3, true);
   }
 };

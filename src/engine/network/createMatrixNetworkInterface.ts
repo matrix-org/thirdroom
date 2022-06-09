@@ -1,6 +1,7 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 
-import { Engine } from "../MainThread";
+import { IMainThreadContext, sendWorldJoinedMessage } from "../MainThread";
+import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId, setState } from "./network.main";
 
 function memberComparator(a: Member, b: Member): number {
   if (a.eventTimestamp === b.eventTimestamp) {
@@ -19,7 +20,7 @@ function isOlderThanLocalHost(groupCall: GroupCall, member: Member): boolean {
 }
 
 export function createMatrixNetworkInterface(
-  engine: Engine,
+  ctx: IMainThreadContext,
   client: Client,
   powerLevels: PowerLevels,
   groupCall: GroupCall
@@ -135,35 +136,35 @@ export function createMatrixNetworkInterface(
   }
 
   function joinWorld(userId: string, isHost: boolean) {
-    engine.setHost(isHost);
-    engine.setPeerId(userId);
-    engine.setState({ joined: true });
+    setHost(ctx, isHost);
+    setPeerId(ctx, userId);
+    setState(ctx, { joined: true });
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
           updateHost();
-          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
+          addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
         updateHost();
-        engine.removePeer(member.userId);
+        removePeer(ctx, member.userId);
       },
       onReset() {
         throw new Error("Unexpected reset of groupCall.members");
       },
       onUpdate(_key, member) {
-        if (member.isConnected && member.dataChannel && !engine.hasPeer(member.userId)) {
+        if (member.isConnected && member.dataChannel && !hasPeer(ctx, member.userId)) {
           updateHost();
-          engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
+          addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
     });
 
     for (const [, member] of groupCall.members) {
       if (member.isConnected && member.dataChannel) {
-        engine.addPeer(member.userId, member.dataChannel, member.remoteMedia?.userMedia);
+        addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
       }
     }
   }
@@ -176,17 +177,17 @@ export function createMatrixNetworkInterface(
       .sort(memberComparator)
       .filter((member) => member.isConnected && member.dataChannel);
 
-    if (sortedConnectedMembers.length === 0 || !isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-      engine.setHost(true);
+    if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
+      setHost(ctx, true);
     } else {
-      engine.setHost(false);
+      setHost(ctx, false);
     }
   }
 
   return () => {
-    engine.disconnect();
+    disconnect(ctx);
 
-    engine.setState({ joined: false });
+    sendWorldJoinedMessage(ctx, false);
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();

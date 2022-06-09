@@ -2,11 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 
 import { ComponentInfo } from "../../engine/component/types";
 import { EditorEventType } from "../../engine/editor/editor.common";
-import { useEngine } from "./useEngine";
+import { EditorModule, sendRemoveComponentMessage } from "../../engine/editor/editor.main";
+import { getModule } from "../../engine/module/module.common";
+import { useMainThreadContext } from "./useMainThread";
 
 export function useComponent(componentId: number): (ComponentInfo & { removeComponent(): void }) | undefined {
-  const engine = useEngine();
-  const [componentInfo, setComponentInfo] = useState(() => engine.getComponentInfo(componentId));
+  const mainThread = useMainThreadContext();
+  const editor = getModule(mainThread, EditorModule);
+
+  const [componentInfo, setComponentInfo] = useState(() => editor.componentInfoMap.get(componentId));
 
   useEffect(() => {
     function onComponentInfoChanged(componentId: number, componentInfo: ComponentInfo) {
@@ -15,18 +19,18 @@ export function useComponent(componentId: number): (ComponentInfo & { removeComp
       }
     }
 
-    engine.addListener(EditorEventType.ComponentInfoChanged, onComponentInfoChanged);
+    editor.addListener(EditorEventType.ComponentInfoChanged, onComponentInfoChanged);
 
-    setComponentInfo(engine.getComponentInfo(componentId));
+    setComponentInfo(editor.componentInfoMap.get(componentId));
 
     return () => {
-      engine.removeListener(EditorEventType.ComponentInfoChanged, onComponentInfoChanged);
+      editor.removeListener(EditorEventType.ComponentInfoChanged, onComponentInfoChanged);
     };
-  }, [engine, componentId]);
+  }, [editor, componentId]);
 
   const removeComponent = useCallback(() => {
-    engine.removeComponent(componentId);
-  }, [engine, componentId]);
+    sendRemoveComponentMessage(mainThread, componentId);
+  }, [mainThread, componentId]);
 
   if (!componentInfo) {
     return;

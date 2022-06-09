@@ -1,20 +1,26 @@
 import { useState, useEffect } from "react";
 
 import { EditorEventType, Selection } from "../../engine/editor/editor.common";
-import { useEngine } from "./useEngine";
+import { EditorModule } from "../../engine/editor/editor.main";
+import { getModule } from "../../engine/module/module.common";
+import { useMainThreadContext } from "./useMainThread";
 
 export function useEditorSelection(): Selection {
-  const engine = useEngine();
-  const [selection, setSelection] = useState(engine.getSelection());
+  const mainThread = useMainThreadContext();
+  const editor = getModule(mainThread, EditorModule);
+  const [selection, setSelection] = useState({
+    activeEntity: editor.activeEntity,
+    activeEntityComponents: editor.activeEntityComponents,
+    selectedEntities: editor.selectedEntities,
+  });
 
   useEffect(() => {
-    engine.setState(engine.getSelection());
-    engine.addListener(EditorEventType.SelectionChanged, setSelection);
+    editor.addListener(EditorEventType.SelectionChanged, setSelection);
 
     return () => {
-      engine.removeListener(EditorEventType.SelectionChanged, setSelection);
+      editor.removeListener(EditorEventType.SelectionChanged, setSelection);
     };
-  }, [engine]);
+  }, [editor]);
 
   return selection;
 }

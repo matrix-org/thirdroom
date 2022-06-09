@@ -1,11 +1,10 @@
 import { addComponent, hasComponent, IComponent } from "bitecs";
 
-import { renderableBuffer } from "./buffers";
-import { addView } from "../allocator/CursorBuffer";
-import { maxEntities } from "../config";
-import { GameState, World } from "../GameWorker";
 import { SetActiveCameraMessage, SetActiveSceneMessage, WorkerMessageType } from "../WorkerMessage";
 import { traverse } from "./transform";
+import { GameState, World } from "../GameTypes";
+import { createObjectBufferView } from "../allocator/ObjectBufferView";
+import { renderableSchema } from "./renderable.common";
 
 export interface Renderable extends IComponent {
   resourceId: Uint32Array;
@@ -13,21 +12,19 @@ export interface Renderable extends IComponent {
   visible: Uint8Array;
 }
 
-export const Renderable: Renderable = {
-  resourceId: addView(renderableBuffer, Uint32Array, maxEntities),
-  interpolate: addView(renderableBuffer, Uint8Array, maxEntities),
-  visible: addView(renderableBuffer, Uint8Array, maxEntities),
-};
+export const renderableObjectBufferView = createObjectBufferView(renderableSchema, ArrayBuffer);
 
-export function addRenderableComponent({ world, renderer: { port } }: GameState, eid: number, resourceId: number) {
+export const Renderable: Renderable = renderableObjectBufferView;
+
+export function addRenderableComponent({ world, renderPort }: GameState, eid: number, resourceId: number) {
   addComponent(world, Renderable, eid);
   Renderable.interpolate[eid] = 1;
   Renderable.resourceId[eid] = resourceId;
-  port.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
+  renderPort.postMessage({ type: WorkerMessageType.AddRenderable, eid, resourceId });
 }
 
 export function setActiveScene(state: GameState, eid: number, resourceId: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.SetActiveScene,
     eid,
     resourceId,
@@ -36,7 +33,7 @@ export function setActiveScene(state: GameState, eid: number, resourceId: number
 }
 
 export function setActiveCamera(state: GameState, eid: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.SetActiveCamera,
     eid,
   } as SetActiveCameraMessage);

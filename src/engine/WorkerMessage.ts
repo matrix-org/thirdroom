@@ -1,7 +1,7 @@
 import type { OffscreenCanvas } from "three";
 import type { vec3 } from "gl-matrix";
 import { ResourceDefinition } from "./resources/ResourceManager";
-import { TripleBufferState } from "./TripleBuffer";
+import { TripleBuffer } from "./allocator/TripleBuffer";
 import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
@@ -62,13 +62,10 @@ export interface WorkerMessage<T extends WorkerMessageType = WorkerMessageType> 
 
 export interface InitializeGameWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
-  audioTripleBuffer: TripleBufferState;
-  inputTripleBuffer: TripleBufferState;
-  renderableTripleBuffer: TripleBufferState;
   renderWorkerMessagePort?: MessagePort;
-  resourceManagerBuffer: SharedArrayBuffer;
-  statsSharedArrayBuffer: SharedArrayBuffer;
-  hierarchyTripleBuffer: TripleBufferState;
+  mainToGameTripleBufferFlags: Uint8Array;
+  gameToMainTripleBufferFlags: Uint8Array;
+  gameToRenderTripleBufferFlags: Uint8Array;
 }
 
 export interface GameWorkerInitializedMessage extends WorkerMessage {
@@ -86,13 +83,8 @@ export interface GameWorkerErrorMessage extends WorkerMessage {
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
-  gameWorkerMessageTarget: PostMessageTarget;
-  canvasTarget: HTMLCanvasElement | OffscreenCanvas;
-  renderableTripleBuffer: TripleBufferState;
-  resourceManagerBuffer: SharedArrayBuffer;
-  initialCanvasWidth: number;
-  initialCanvasHeight: number;
-  statsSharedArrayBuffer: SharedArrayBuffer;
+  gameWorkerMessageTarget: MessagePort;
+  gameToRenderTripleBufferFlags: Uint8Array;
 }
 
 export interface RenderWorkerInitializedMessage extends WorkerMessage {
@@ -269,7 +261,7 @@ export interface SelectionChangedMessage extends WorkerMessage {
   selectedEntities: number[];
   activeEntity?: number;
   activeEntityComponents?: number[];
-  activeEntityTripleBuffer?: TripleBufferState;
+  activeEntityTripleBuffer?: TripleBuffer;
 }
 
 export interface ComponentInfoChangedMessage extends WorkerMessage {

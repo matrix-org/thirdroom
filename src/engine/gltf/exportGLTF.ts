@@ -3,7 +3,7 @@ import { hasComponent } from "bitecs";
 import { GLTFComponentDescription, GLTFEntityDescription } from ".";
 import { Renderable } from "../component/renderable";
 import { getChildren, Transform } from "../component/transform";
-import { GameState } from "../GameWorker";
+import { GameState } from "../GameTypes";
 import { ExportGLTFMessage, WorkerMessageType } from "../WorkerMessage";
 
 function serializeEntity(state: GameState, eid: number): GLTFEntityDescription {
@@ -36,7 +36,7 @@ function serializeEntity(state: GameState, eid: number): GLTFEntityDescription {
 }
 
 export function exportGLTF(state: GameState, rootEid: number) {
-  state.renderer.port.postMessage({
+  state.renderPort.postMessage({
     type: WorkerMessageType.ExportGLTF,
     scene: serializeEntity(state, rootEid),
   } as ExportGLTFMessage);

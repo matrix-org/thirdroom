@@ -5,7 +5,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
 import "./SessionView.css";
-import { useInitEngine, EngineContextProvider } from "../../hooks/useEngine";
+import { useInitMainThreadContext, MainThreadContextProvider } from "../../hooks/useMainThread";
 import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useRoom } from "../../hooks/useRoom";
@@ -15,6 +15,7 @@ import { useStore } from "../../hooks/useStore";
 import { useRoomIdFromAlias } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
+import { connectToTestNet } from "../../../engine/network/network.main";
 
 export interface SessionOutletContext {
   world?: Room;
@@ -27,7 +28,7 @@ export function SessionView() {
   const { client, session, platform } = useHydrogen(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engine = useInitEngine(canvasRef);
+  const mainThread = useInitMainThreadContext(canvasRef);
   const networkInterfaceRef = useRef<() => void>();
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
@@ -76,16 +77,16 @@ export function SessionView() {
       enteredWorld();
       canvasRef.current?.requestPointerLock();
 
-      if (import.meta.env.VITE_USE_TESTNET) {
-        engine?.connectToTestNet();
+      if (import.meta.env.VITE_USE_TESTNET && mainThread) {
+        connectToTestNet(mainThread);
         return;
       }
 
-      if (engine && powerLevels) {
-        networkInterfaceRef.current = createMatrixNetworkInterface(engine, client, powerLevels, call);
+      if (mainThread && powerLevels) {
+        networkInterfaceRef.current = createMatrixNetworkInterface(mainThread, client, powerLevels, call);
       }
     },
-    [client, engine, powerLevels, enteredWorld]
+    [client, mainThread, powerLevels, enteredWorld]
   );
 
   const onLoadWorld = useCallback(
@@ -137,12 +138,12 @@ export function SessionView() {
     <DndProvider backend={HTML5Backend}>
       <div className="SessionView">
         <canvas className="SessionView__viewport" ref={canvasRef} />
-        {engine ? (
-          <EngineContextProvider value={engine}>
+        {mainThread ? (
+          <MainThreadContextProvider value={mainThread}>
             <Outlet context={outletContext} />
             {isOverlayOpen && <Overlay onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
             <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
-          </EngineContextProvider>
+          </MainThreadContextProvider>
         ) : (
           <div>Initializing engine...</div>
         )}
