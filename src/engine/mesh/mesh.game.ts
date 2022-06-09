@@ -7,7 +7,7 @@ import { Thread } from "../module/module.common";
 import { createResource } from "../resource/resource.game";
 import { MeshResourceProps, MeshResourceType } from "./mesh.common";
 
-interface RemoteMesh {
+export interface RemoteMesh {
   resourceId: number;
 }
 

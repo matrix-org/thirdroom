@@ -7,18 +7,8 @@ import { StatsModule } from "./stats/stats.main";
 import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
 import { ResourceModule } from "./resource/resource.main";
-import { BufferViewModule } from "./bufferView/bufferView.main";
 
 export default defineConfig<IMainThreadContext>({
-  modules: [
-    ResourceModule,
-    EditorModule,
-    BufferViewModule,
-    AudioModule,
-    NetworkModule,
-    InputModule,
-    StatsModule,
-    RendererModule,
-  ],
+  modules: [ResourceModule, EditorModule, AudioModule, NetworkModule, InputModule, StatsModule, RendererModule],
   systems: [MainThreadAudioSystem, MainThreadEditorSystem],
 });

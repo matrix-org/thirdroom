@@ -1,4 +1,4 @@
-import { addComponent, addEntity, IComponent, removeComponent } from "bitecs";
+import { addComponent, addEntity, defineComponent, IComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -7,6 +7,8 @@ import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "./transform.common";
+
+export const Hidden = defineComponent();
 
 export interface Transform extends IComponent {
   position: Float32Array[];

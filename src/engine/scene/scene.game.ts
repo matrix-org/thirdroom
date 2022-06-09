@@ -9,6 +9,7 @@ import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
+import { RemoteNode } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
@@ -68,14 +69,14 @@ export function createRemoteSceneResource(ctx: GameState, props?: SceneProps): R
     initialRendererProps.background = props.background ? props.background.resourceId : 0;
     initialRendererProps.environment = props.environment ? props.environment.resourceId : 0;
 
-    initialAudioProps.audioListener = props.audioListener ? props.audioListener.resourceId : 0;
+    initialAudioProps.audioListener = props.audioListener ? props.audioListener.audioResourceId : 0;
     initialAudioProps.audioEmitters = props.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : [];
 
     rendererScene.background[0] = initialRendererProps.background;
     rendererScene.environment[0] = initialRendererProps.environment;
     rendererScene.needsUpdate[0] = 0;
 
-    audioScene.audioListener[0] = props.audioListener ? props.audioListener.resourceId : 0;
+    audioScene.audioListener[0] = props.audioListener ? props.audioListener.audioResourceId : 0;
     audioScene.audioEmitters.set(initialAudioProps.audioEmitters);
 
     if (props.audioEmitters) {
@@ -136,7 +137,7 @@ export function createRemoteSceneResource(ctx: GameState, props?: SceneProps): R
     },
     set audioListener(node: RemoteNode | undefined) {
       _audioListener = node;
-      audioScene.audioListener[0] = node.resourceId;
+      audioScene.audioListener[0] = node?.audioResourceId || 0;
     },
     get audioEmitters(): RemoteGlobalAudioEmitter[] {
       return _audioEmitters;

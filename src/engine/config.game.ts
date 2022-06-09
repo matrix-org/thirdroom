@@ -17,6 +17,7 @@ import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
 import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
 import { ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
+import { RemoteNodeSystem } from "./node/node.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -36,7 +37,6 @@ export default defineConfig<GameState>({
   systems: [
     ApplyInputSystem,
     ActionMappingSystem,
-    AudioSystem,
 
     InboundNetworkSystem,
 
@@ -50,9 +50,11 @@ export default defineConfig<GameState>({
 
     OutboundNetworkSystem,
 
-    GameWorkerStatsSystem,
-
+    AudioSystem,
     RenderableSystem,
+    RemoteNodeSystem,
+
     ResetInputSystem,
+    GameWorkerStatsSystem,
   ],
 });
