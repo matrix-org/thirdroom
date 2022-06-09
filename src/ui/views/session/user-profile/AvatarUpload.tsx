@@ -50,7 +50,7 @@ export function AvatarUpload({ onMxcChange }: { onMxcChange: (Url?: string) => v
               {!mxc && `Uploading: ${bytesToSize(sentBytes)} / ${bytesToSize(avatarBlob.size)}`}
             </Text>
             <Button onClick={() => setAvatarBlob(undefined)} fill="outline">
-              Clear Scene
+              Clear Avatar
             </Button>
           </>
         ) : (

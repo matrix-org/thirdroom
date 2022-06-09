@@ -52,10 +52,8 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
                 children={
                   <Scroll>
                     <div className="Edit3DAvatar__content">
-                      <div className="flex sp-lg">
-                        <AvatarUpload onMxcChange={setAvatarUrl} />
-                        <AvatarPreviewUpload onMxcChange={setAvatarPrevUrl} onBlobChange={setAvatarPrevBlob} />
-                      </div>
+                      <AvatarUpload onMxcChange={setAvatarUrl} />
+                      <AvatarPreviewUpload onMxcChange={setAvatarPrevUrl} onBlobChange={setAvatarPrevBlob} />
                     </div>
                   </Scroll>
                 }

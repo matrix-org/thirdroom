@@ -11,6 +11,7 @@ import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Input } from "../../../atoms/input/Input";
 import { Label } from "../../../atoms/text/Label";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
+import { ScenePreviewOverlay } from "../../components/scene-preview/ScenePreviewOverlay";
 import { Text } from "../../../atoms/text/Text";
 import { WindowAside } from "../../components/window/WindowAside";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
@@ -91,63 +92,34 @@ export function UserProfileOverview() {
           children={
             <Scroll>
               <div className="UserProfileOverview__content">
-                <div className="flex gap-lg">
-                  <SettingTile label={<Label>Profile Picture</Label>}>
-                    <ThumbnailHover
-                      content={
-                        !avatarHttpUrl ? undefined : (
-                          <IconButton
-                            variant="world"
-                            onClick={handleAvatarRemove}
-                            size="xl"
-                            iconSrc={CrossCircleIC}
-                            label="Remove Profile Picture"
-                          />
-                        )
-                      }
-                    >
-                      <Thumbnail size="sm" className="flex">
-                        {avatarHttpUrl ? (
-                          <ThumbnailImg src={avatarHttpUrl} />
-                        ) : (
-                          <IconButton
-                            onClick={handleAvatarSelect}
-                            size="xl"
-                            iconSrc={AddIC}
-                            label="Upload Profile Picture"
-                          />
-                        )}
-                      </Thumbnail>
-                    </ThumbnailHover>
-                  </SettingTile>
-                  <SettingTile className="grow basis-0" label={<Label>3D Avatar</Label>}>
-                    <Edit3DAvatar
-                      renderTrigger={(openModal) => (
-                        <ThumbnailHover
-                          content={
-                            !tDAvatarPreviewUrl ? undefined : (
-                              <IconButton
-                                variant="world"
-                                onClick={openModal}
-                                size="xl"
-                                iconSrc={AddIC}
-                                label="Edit 3D Avatar"
-                              />
-                            )
-                          }
-                        >
-                          <Thumbnail size="sm" className="flex">
-                            {tDAvatarPreviewUrl ? (
-                              <ThumbnailImg src={tDAvatarPreviewUrl} />
-                            ) : (
-                              <IconButton onClick={openModal} size="xl" iconSrc={AddIC} label="Add world avatar" />
-                            )}
-                          </Thumbnail>
-                        </ThumbnailHover>
+                <SettingTile label={<Label>Profile Picture</Label>}>
+                  <ThumbnailHover
+                    content={
+                      !avatarHttpUrl ? undefined : (
+                        <IconButton
+                          variant="world"
+                          onClick={handleAvatarRemove}
+                          size="xl"
+                          iconSrc={CrossCircleIC}
+                          label="Remove Profile Picture"
+                        />
+                      )
+                    }
+                  >
+                    <Thumbnail size="sm" className="flex">
+                      {avatarHttpUrl ? (
+                        <ThumbnailImg src={avatarHttpUrl} />
+                      ) : (
+                        <IconButton
+                          onClick={handleAvatarSelect}
+                          size="xl"
+                          iconSrc={AddIC}
+                          label="Upload Profile Picture"
+                        />
                       )}
-                    />
-                  </SettingTile>
-                </div>
+                    </Thumbnail>
+                  </ThumbnailHover>
+                </SettingTile>
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
                     <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
@@ -173,16 +145,39 @@ export function UserProfileOverview() {
       }
       aside={
         <WindowAside className="flex">
-          <ScenePreview
-            className="grow"
-            src={getHttpUrl(session, tDAvatarPreviewUrl)}
-            alt="3D Avatar preview"
-            fallback={
-              <Text variant="b3" color="surface-low" weight="medium">
-                Your 3D avatar preview will appear here.
-              </Text>
+          <ScenePreviewOverlay
+            className="grow flex"
+            overlay={
+              <Content
+                className="grow"
+                children=" "
+                bottom={
+                  <Footer
+                    center={
+                      <Edit3DAvatar
+                        renderTrigger={(openModal) => (
+                          <Button onClick={openModal}>
+                            {tDAvatarPreviewUrl ? "Edit 3D Avatar" : "Upload 3D Avatar"}
+                          </Button>
+                        )}
+                      />
+                    }
+                  />
+                }
+              />
             }
-          />
+          >
+            <ScenePreview
+              className="grow"
+              src={getHttpUrl(session, tDAvatarPreviewUrl)}
+              alt="3D Avatar preview"
+              fallback={
+                <Text variant="b3" color="surface-low" weight="medium">
+                  Your 3D avatar preview will appear here.
+                </Text>
+              }
+            />
+          </ScenePreviewOverlay>
         </WindowAside>
       }
     />
