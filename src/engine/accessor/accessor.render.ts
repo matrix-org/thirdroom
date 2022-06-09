@@ -1,21 +1,17 @@
 import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "three";
 
 import { LocalBufferView } from "../bufferView/bufferView.common";
-import { defineModule } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
+import { waitForLocalResource } from "../resource/resource.render";
 import {
   AccessorComponentTypeToTypedArray,
   AccessorResourceProps,
-  AccessorResourceType,
   AccessorSparseIndicesArrayConstructor,
   AccessorTypedArray,
   AccessorTypedArrayConstructor,
   AccessorTypeToItemSize,
 } from "./accessor.common";
-
-type AccessorModuleState = {};
 
 interface LocalAccessor {
   bufferView?: LocalBufferView;
@@ -24,24 +20,8 @@ interface LocalAccessor {
   attribute: BufferAttribute | InterleavedBufferAttribute;
 }
 
-export const AccessorModule = defineModule<RenderThreadState, AccessorModuleState>({
-  name: "accessor",
-  create() {
-    return {};
-  },
-  init(ctx) {
-    const disposables = [registerResourceLoader(ctx, AccessorResourceType, onLoadAccessor)];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
 // Ported from https://github.com/mrdoob/three.js/blob/dev/examples/js/loaders/GLTFLoader.js#L2572
-async function onLoadAccessor(
+export async function onLoadLocalAccessorResource(
   ctx: RenderThreadState,
   id: ResourceId,
   props: AccessorResourceProps

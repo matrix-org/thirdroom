@@ -7,7 +7,8 @@ import {
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
 import { RemoteImage } from "../image/image.game";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteSampler } from "../sampler/sampler.game";
@@ -31,30 +32,6 @@ export interface RemoteTexture {
   set scale(value: vec2);
 }
 
-export interface TextureModuleState {
-  textures: RemoteTexture[];
-}
-
-export const TextureModule = defineModule<GameState, TextureModuleState>({
-  name: "texture",
-  create() {
-    return {
-      textures: [],
-    };
-  },
-  init() {},
-});
-
-export function TextureUpdateSystem(ctx: GameState) {
-  const { textures } = getModule(ctx, TextureModule);
-
-  for (let i = 0; i < textures.length; i++) {
-    const texture = textures[i];
-    commitToTripleBufferView(texture.sharedTexture);
-    texture.sharedTexture.needsUpdate[0] = 0;
-  }
-}
-
 export interface TextureProps {
   sampler?: RemoteSampler;
   encoding?: TextureEncoding;
@@ -64,7 +41,7 @@ export interface TextureProps {
 }
 
 export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: TextureProps): RemoteTexture {
-  const textureModule = getModule(ctx, TextureModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const texture = createObjectBufferView(textureSchema, ArrayBuffer);
 
@@ -119,7 +96,15 @@ export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: 
     },
   };
 
-  textureModule.textures.push(remoteTexture);
+  rendererModule.textures.push(remoteTexture);
 
   return remoteTexture;
+}
+
+export function updateRemoteTextures(textures: RemoteTexture[]) {
+  for (let i = 0; i < textures.length; i++) {
+    const texture = textures[i];
+    commitToTripleBufferView(texture.sharedTexture);
+    texture.sharedTexture.needsUpdate[0] = 0;
+  }
 }

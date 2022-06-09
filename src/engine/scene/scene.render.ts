@@ -1,11 +1,12 @@
 import { EquirectangularReflectionMapping, Scene, Texture } from "three";
 
 import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
-import { defineModule, getModule } from "../module/module.common";
+import { getModule } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
-import { SceneResourceType, sceneSchema, SharedSceneResource } from "./scene.common";
+import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { sceneSchema, SharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   scene: Scene;
@@ -14,34 +15,12 @@ export interface LocalSceneResource {
   sharedScene: TripleBufferBackedObjectBufferView<typeof sceneSchema, ArrayBuffer>;
 }
 
-interface SceneModuleState {
-  scenes: LocalSceneResource[];
-}
-
-export const SceneModule = defineModule<RenderThreadState, SceneModuleState>({
-  name: "scene",
-  create() {
-    return {
-      scenes: [],
-    };
-  },
-  init(ctx) {
-    const disposables = [registerResourceLoader(ctx, SceneResourceType, onLoadScene)];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
-async function onLoadScene(
+export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
   id: ResourceId,
   { initialProps, sharedScene }: SharedSceneResource
 ): Promise<Scene> {
-  const sceneModule = getModule(ctx, SceneModule);
+  const sceneModule = getModule(ctx, RendererModule);
 
   const scene = new Scene();
 
@@ -82,9 +61,7 @@ async function onLoadScene(
   return scene;
 }
 
-export function SceneUpdateSystem(ctx: RenderThreadState) {
-  const { scenes } = getModule(ctx, SceneModule);
-
+export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
   for (let i = 0; i < scenes.length; i++) {
     const sceneResource = scenes[i];
     const { scene, sharedScene, backgroundTextureResourceId, environmentTextureResourceId } = sceneResource;

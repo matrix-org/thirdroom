@@ -1,14 +1,11 @@
 import { OrthographicCamera, PerspectiveCamera } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { defineModule, getModule } from "../module/module.common";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { getModule } from "../module/module.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { registerResourceLoader } from "../resource/resource.render";
 import {
   CameraType,
-  OrthographicCameraResourceType,
-  PerspectiveCameraResourceType,
   SharedOrthographicCamera,
   SharedOrthographicCameraResource,
   SharedPerspectiveCamera,
@@ -29,39 +26,12 @@ export interface LocalOrthographicCameraResource {
 
 export type LocalCameraResource = LocalOrthographicCameraResource | LocalPerspectiveCameraResource;
 
-export type CameraModuleState = {
-  perspectiveCameraResources: LocalPerspectiveCameraResource[];
-  orthographicCameraResources: LocalOrthographicCameraResource[];
-};
-
-export const CameraModule = defineModule<RenderThreadState, CameraModuleState>({
-  name: "camera",
-  create() {
-    return {
-      perspectiveCameraResources: [],
-      orthographicCameraResources: [],
-    };
-  },
-  init(ctx) {
-    const disposables = [
-      registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
-      registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
-    ];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
-async function onLoadPerspectiveCamera(
+export async function onLoadPerspectiveCamera(
   ctx: RenderThreadState,
   id: ResourceId,
   { type, initialProps, sharedCamera }: SharedPerspectiveCameraResource
 ): Promise<PerspectiveCamera> {
-  const cameraModule = getModule(ctx, CameraModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const camera = new PerspectiveCamera(
     initialProps.yfov,
@@ -78,17 +48,17 @@ async function onLoadPerspectiveCamera(
     sharedCamera,
   };
 
-  cameraModule.perspectiveCameraResources.push(perspectiveCameraResource);
+  rendererModule.perspectiveCameraResources.push(perspectiveCameraResource);
 
   return camera;
 }
 
-async function onLoadOrthographicCamera(
+export async function onLoadOrthographicCamera(
   ctx: RenderThreadState,
   id: ResourceId,
   { type, initialProps, sharedCamera }: SharedOrthographicCameraResource
 ): Promise<OrthographicCamera> {
-  const cameraModule = getModule(ctx, CameraModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const camera = new OrthographicCamera(
     -initialProps.xmag,
@@ -107,20 +77,14 @@ async function onLoadOrthographicCamera(
     sharedCamera,
   };
 
-  cameraModule.orthographicCameraResources.push(orthographicCameraResource);
+  rendererModule.orthographicCameraResources.push(orthographicCameraResource);
 
   return camera;
 }
 
-export function CameraUpdateSystem(ctx: RenderThreadState) {
-  const cameraModule = getModule(ctx, CameraModule);
-  updatePerspectiveCameras(cameraModule);
-  updateOrthographicCameras(cameraModule);
-}
-
-function updatePerspectiveCameras(cameraModule: CameraModuleState) {
-  for (let i = 0; i < cameraModule.perspectiveCameraResources.length; i++) {
-    const { camera, sharedCamera } = cameraModule.perspectiveCameraResources[i];
+export function updateLocalPerspectiveCameraResources(perspectiveCameraResources: LocalPerspectiveCameraResource[]) {
+  for (let i = 0; i < perspectiveCameraResources.length; i++) {
+    const { camera, sharedCamera } = perspectiveCameraResources[i];
 
     const props = getReadObjectBufferView(sharedCamera);
 
@@ -144,9 +108,9 @@ function updatePerspectiveCameras(cameraModule: CameraModuleState) {
   }
 }
 
-function updateOrthographicCameras(cameraModule: CameraModuleState) {
-  for (let i = 0; i < cameraModule.orthographicCameraResources.length; i++) {
-    const { camera, sharedCamera } = cameraModule.orthographicCameraResources[i];
+export function updateLocalOrthographicCameraResources(orthographicCameraResources: LocalOrthographicCameraResource[]) {
+  for (let i = 0; i < orthographicCameraResources.length; i++) {
+    const { camera, sharedCamera } = orthographicCameraResources[i];
 
     const props = getReadObjectBufferView(sharedCamera);
 

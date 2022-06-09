@@ -7,7 +7,8 @@ import {
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import {
@@ -75,39 +76,23 @@ export interface RemoteSpotLight {
 
 export type RemoteLight = RemoteDirectionalLight | RemotePointLight | RemoteSpotLight;
 
-export interface LightModuleState {
-  directionalLights: RemoteDirectionalLight[];
-  pointLights: RemotePointLight[];
-  spotLights: RemoteSpotLight[];
-}
-
-export const LightModule = defineModule<GameState, LightModuleState>({
-  name: "light",
-  create() {
-    return {
-      directionalLights: [],
-      pointLights: [],
-      spotLights: [],
-    };
-  },
-  init() {},
-});
-
-export function LightUpdateSystem(ctx: GameState) {
-  const { directionalLights, pointLights, spotLights } = getModule(ctx, LightModule);
-
+export function updateRemoteDirectionalLights(directionalLights: RemoteDirectionalLight[]) {
   for (let i = 0; i < directionalLights.length; i++) {
     const directionalLight = directionalLights[i];
     commitToTripleBufferView(directionalLight.sharedLight);
     directionalLight.sharedLight.needsUpdate[0] = 0;
   }
+}
 
+export function updateRemotePointLights(pointLights: RemotePointLight[]) {
   for (let i = 0; i < pointLights.length; i++) {
     const pointLight = pointLights[i];
     commitToTripleBufferView(pointLight.sharedLight);
     pointLight.sharedLight.needsUpdate[0] = 0;
   }
+}
 
+export function updateRemoteRemoteSpotLights(spotLights: RemoteSpotLight[]) {
   for (let i = 0; i < spotLights.length; i++) {
     const spotLight = spotLights[i];
     commitToTripleBufferView(spotLight.sharedLight);
@@ -115,12 +100,11 @@ export function LightUpdateSystem(ctx: GameState) {
   }
 }
 
-export function addDirectionalLightResource(
+export function createDirectionalLightResource(
   ctx: GameState,
-  eid: number,
   props?: DirectionalLightResourceProps
 ): RemoteDirectionalLight {
-  const lightModule = getModule(ctx, LightModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const light = createObjectBufferView(directionalLightSchema, ArrayBuffer);
 
@@ -176,13 +160,13 @@ export function addDirectionalLightResource(
     },
   };
 
-  lightModule.directionalLights.push(remoteLight);
+  rendererModule.directionalLights.push(remoteLight);
 
   return remoteLight;
 }
 
-export function addPointLightResource(ctx: GameState, eid: number, props?: PointLightResourceProps): RemotePointLight {
-  const lightModule = getModule(ctx, LightModule);
+export function createPointLightResource(ctx: GameState, props?: PointLightResourceProps): RemotePointLight {
+  const rendererModule = getModule(ctx, RendererModule);
 
   const light = createObjectBufferView(pointLightSchema, ArrayBuffer);
 
@@ -247,13 +231,13 @@ export function addPointLightResource(ctx: GameState, eid: number, props?: Point
     },
   };
 
-  lightModule.pointLights.push(remoteLight);
+  rendererModule.pointLights.push(remoteLight);
 
   return remoteLight;
 }
 
 export function createSpotLightResource(ctx: GameState, props?: SpotLightResourceProps): RemoteSpotLight {
-  const lightModule = getModule(ctx, LightModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const light = createObjectBufferView(spotLightSchema, ArrayBuffer);
 
@@ -333,7 +317,7 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightResourc
     },
   };
 
-  lightModule.spotLights.push(remoteLight);
+  rendererModule.spotLights.push(remoteLight);
 
   return remoteLight;
 }

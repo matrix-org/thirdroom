@@ -6,7 +6,8 @@ import {
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
@@ -97,24 +98,8 @@ export interface RemoteStandardMaterial {
 
 export type RemoteMaterial = RemoteUnlitMaterial | RemoteStandardMaterial;
 
-export interface MaterialModuleState {
-  unlitMaterials: RemoteUnlitMaterial[];
-  standardMaterials: RemoteStandardMaterial[];
-}
-
-export const MaterialModule = defineModule<GameState, MaterialModuleState>({
-  name: "material",
-  create() {
-    return {
-      unlitMaterials: [],
-      standardMaterials: [],
-    };
-  },
-  init() {},
-});
-
-export function MaterialUpdateSystem(ctx: GameState) {
-  const { unlitMaterials, standardMaterials } = getModule(ctx, MaterialModule);
+export function updateRemoteMaterials(ctx: GameState) {
+  const { unlitMaterials, standardMaterials } = getModule(ctx, RendererModule);
 
   for (let i = 0; i < unlitMaterials.length; i++) {
     const unlitMaterial = unlitMaterials[i];
@@ -136,7 +121,7 @@ export function MaterialUpdateSystem(ctx: GameState) {
 }
 
 export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialProps): RemoteUnlitMaterial {
-  const materialModule = getModule(ctx, MaterialModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const material = createObjectBufferView(unlitMaterialSchema, ArrayBuffer);
 
@@ -203,13 +188,13 @@ export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialPr
     },
   };
 
-  materialModule.unlitMaterials.push(remoteMaterial);
+  rendererModule.unlitMaterials.push(remoteMaterial);
 
   return remoteMaterial;
 }
 
 export function createRemoteStandardMaterial(ctx: GameState, props: StandardMaterialProps): RemoteStandardMaterial {
-  const materialModule = getModule(ctx, MaterialModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const material = createObjectBufferView(standardMaterialSchema, ArrayBuffer);
 
@@ -365,7 +350,7 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
     },
   };
 
-  materialModule.standardMaterials.push(remoteMaterial);
+  rendererModule.standardMaterials.push(remoteMaterial);
 
   return remoteMaterial;
 }

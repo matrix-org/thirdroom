@@ -6,23 +6,48 @@ import {
   createTripleBufferBackedObjectBufferView,
   TripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { addRemoteCameraComponent, createRemotePerspectiveCamera, RemoteCameraComponent } from "../camera/camera.game";
+import {
+  addRemoteCameraComponent,
+  createRemotePerspectiveCamera,
+  RemoteCameraComponent,
+  RemoteOrthographicCamera,
+  RemotePerspectiveCamera,
+  updateRemoteCameras,
+} from "../camera/camera.game";
 import { addChild, addTransformComponent, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { waitForRemoteResource } from "../resource/resource.game";
-import { addRemoteSceneComponent, createRemoteSceneResource, RemoteSceneComponent } from "../scene/scene.game";
+import {
+  addRemoteSceneComponent,
+  createRemoteSceneResource,
+  RemoteScene,
+  RemoteSceneComponent,
+  updateRemoteScenes,
+} from "../scene/scene.game";
+import { RemoteTexture, updateRemoteTextures } from "../texture/texture.game";
 import {
   InitializeRendererTripleBuffersMessage,
   RendererMessageType,
   rendererModuleName,
   rendererSchema,
 } from "./renderer.common";
+import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
+import { RemoteDirectionalLight, RemotePointLight, RemoteSpotLight } from "../light/light.game";
 
-interface GameRendererModuleState {
+export interface GameRendererModuleState {
   activeScene: number;
   activeCamera: number;
   sharedRendererState: TripleBufferBackedObjectBufferView<typeof rendererSchema, ArrayBuffer>;
+  scenes: RemoteScene[];
+  textures: RemoteTexture[];
+  unlitMaterials: RemoteUnlitMaterial[];
+  standardMaterials: RemoteStandardMaterial[];
+  directionalLights: RemoteDirectionalLight[];
+  pointLights: RemotePointLight[];
+  spotLights: RemoteSpotLight[];
+  perspectiveCameras: RemotePerspectiveCamera[];
+  orthographicCameras: RemoteOrthographicCamera[];
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
@@ -55,6 +80,15 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       activeScene,
       activeCamera,
       sharedRendererState,
+      scenes: [],
+      textures: [],
+      unlitMaterials: [],
+      standardMaterials: [],
+      directionalLights: [],
+      pointLights: [],
+      spotLights: [],
+      perspectiveCameras: [],
+      orthographicCameras: [],
     };
   },
   async init(state) {
@@ -76,8 +110,15 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
 export const RenderableSystem = (state: GameState) => {
   const renderer = getModule(state, RendererModule);
   const scene = getActiveScene(state);
+
   updateMatrixWorld(scene);
+
   commitToTripleBufferView(renderer.sharedRendererState);
+
+  updateRemoteScenes(renderer.scenes);
+  updateRemoteTextures(renderer.textures);
+  updateRemoteMaterials(state);
+  updateRemoteCameras(state);
 };
 
 export function getActiveScene(ctx: GameState) {

@@ -7,7 +7,8 @@ import {
   TripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
+import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
@@ -22,34 +23,8 @@ export interface RemoteScene {
   set environment(texture: RemoteTexture | undefined);
 }
 
-export interface SceneModuleState {
-  componentStore: Map<number, RemoteScene>;
-  scenes: RemoteScene[];
-}
-
-export const SceneModule = defineModule<GameState, SceneModuleState>({
-  name: "scene",
-  create() {
-    return {
-      componentStore: new Map(),
-      scenes: [],
-    };
-  },
-  init() {},
-});
-
-export function SceneUpdateSystem(ctx: GameState) {
-  const { scenes } = getModule(ctx, SceneModule);
-
-  for (let i = 0; i < scenes.length; i++) {
-    const scene = scenes[i];
-    commitToTripleBufferView(scene.sharedScene);
-    scene.sharedScene.needsUpdate[0] = 0;
-  }
-}
-
 export function createRemoteSceneResource(ctx: GameState, props?: SceneResourceProps): RemoteScene {
-  const sceneModule = getModule(ctx, SceneModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const scene = createObjectBufferView(sceneSchema, ArrayBuffer);
 
@@ -90,7 +65,7 @@ export function createRemoteSceneResource(ctx: GameState, props?: SceneResourceP
     },
   };
 
-  sceneModule.scenes.push(remoteScene);
+  rendererModule.scenes.push(remoteScene);
 
   return remoteScene;
 }
@@ -105,4 +80,12 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, scene: Remo
 export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
   removeComponent(ctx.world, RemoteSceneComponent, eid);
   RemoteSceneComponent.delete(eid);
+}
+
+export function updateRemoteScenes(scenes: RemoteScene[]) {
+  for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
+    commitToTripleBufferView(scene.sharedScene);
+    scene.sharedScene.needsUpdate[0] = 0;
+  }
 }

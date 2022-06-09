@@ -1,12 +1,11 @@
-import { DataTexture, ImageBitmapLoader } from "three";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { DataTexture } from "three";
 
 import { LocalBufferView } from "../bufferView/bufferView.common";
-import { defineModule, getModule } from "../module/module.common";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { getModule } from "../module/module.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
-import { ImageResourceProps, ImageResourceType } from "./image.common";
+import { waitForLocalResource } from "../resource/resource.render";
+import { ImageResourceProps } from "./image.common";
 
 const HDRMimeType = "image/vnd.radiance";
 const HDRExtension = ".hdr";
@@ -28,36 +27,12 @@ export interface RGBALocalImageResource {
 
 export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource;
 
-interface ImageModuleState {
-  imageBitmapLoader: ImageBitmapLoader;
-  rgbeLoader: RGBELoader;
-}
-
-export const ImageModule = defineModule<RenderThreadState, ImageModuleState>({
-  name: "image",
-  create() {
-    return {
-      imageBitmapLoader: new ImageBitmapLoader(),
-      rgbeLoader: new RGBELoader(),
-    };
-  },
-  init(ctx) {
-    const disposables = [registerResourceLoader(ctx, ImageResourceType, onLoadImage)];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
-async function onLoadImage(
+export async function onLoadLocalImageResource(
   ctx: RenderThreadState,
   id: ResourceId,
   props: ImageResourceProps
 ): Promise<LocalImageResource> {
-  const { rgbeLoader, imageBitmapLoader } = getModule(ctx, ImageModule);
+  const { rgbeLoader, imageBitmapLoader } = getModule(ctx, RendererModule);
 
   let uri: string;
 

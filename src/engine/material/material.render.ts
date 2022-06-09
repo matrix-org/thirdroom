@@ -11,16 +11,14 @@ import {
 } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { defineModule, getModule } from "../module/module.common";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { getModule } from "../module/module.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
 import {
   SharedUnlitMaterial,
   MaterialType,
   SharedStandardMaterial,
-  UnlitMaterialResourceType,
-  StandardMaterialResourceType,
   SharedUnlitMaterialResource,
   MaterialAlphaMode,
   SharedStandardMaterialResource,
@@ -48,39 +46,12 @@ export interface LocalStandardMaterialResource {
 
 export type LocalMaterialResource = LocalUnlitMaterialResource | LocalStandardMaterialResource;
 
-export type MaterialModuleState = {
-  unlitMaterials: LocalUnlitMaterialResource[];
-  standardMaterials: LocalStandardMaterialResource[];
-};
-
-export const MaterialModule = defineModule<RenderThreadState, MaterialModuleState>({
-  name: "material",
-  create() {
-    return {
-      unlitMaterials: [],
-      standardMaterials: [],
-    };
-  },
-  init(ctx) {
-    const disposables = [
-      registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadUnlitMaterial),
-      registerResourceLoader(ctx, StandardMaterialResourceType, onLoadStandardMaterial),
-    ];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
-async function onLoadUnlitMaterial(
+export async function onLoadLocalUnlitMaterialResource(
   ctx: RenderThreadState,
   id: ResourceId,
   { type, initialProps, sharedMaterial }: SharedUnlitMaterialResource
 ): Promise<MeshBasicMaterial> {
-  const materialModule = getModule(ctx, MaterialModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const params: MeshBasicMaterialParameters = {
     color: new Color().fromArray(initialProps.baseColorFactor),
@@ -97,7 +68,7 @@ async function onLoadUnlitMaterial(
 
   const material = new MeshBasicMaterial(params);
 
-  materialModule.unlitMaterials.push({
+  rendererModule.unlitMaterials.push({
     type,
     baseColorTextureResourceId: initialProps.baseColorTexture,
     material,
@@ -108,12 +79,12 @@ async function onLoadUnlitMaterial(
   return material;
 }
 
-async function onLoadStandardMaterial(
+export async function onLoadLocalStandardMaterialResource(
   ctx: RenderThreadState,
   id: ResourceId,
   { type, initialProps, sharedMaterial }: SharedStandardMaterialResource
 ): Promise<MeshStandardMaterial> {
-  const materialModule = getModule(ctx, MaterialModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const params: MeshStandardMaterialParameters = {
     color: new Color().fromArray(initialProps.baseColorFactor),
@@ -176,7 +147,7 @@ async function onLoadStandardMaterial(
 
   const material = new MeshStandardMaterial(params);
 
-  materialModule.standardMaterials.push({
+  rendererModule.standardMaterials.push({
     type,
     baseColorTextureResourceId: initialProps.baseColorTexture,
     metallicRoughnessTextureResourceId: initialProps.metallicRoughnessTexture,
@@ -191,15 +162,12 @@ async function onLoadStandardMaterial(
   return material;
 }
 
-export function MaterialUpdateSystem(ctx: RenderThreadState) {
-  const materialModule = getModule(ctx, MaterialModule);
-  updateUnlitMaterials(ctx, materialModule);
-  updateStandardMaterials(ctx, materialModule);
-}
-
-function updateUnlitMaterials(ctx: RenderThreadState, materialModule: MaterialModuleState) {
-  for (let i = 0; i < materialModule.unlitMaterials.length; i++) {
-    const unlitMaterial = materialModule.unlitMaterials[i];
+export function updateLocalUnlitMaterialResources(
+  ctx: RenderThreadState,
+  unlitMaterials: LocalUnlitMaterialResource[]
+) {
+  for (let i = 0; i < unlitMaterials.length; i++) {
+    const unlitMaterial = unlitMaterials[i];
 
     const { baseColorTextureResourceId, material, sharedMaterial, forceUpdate } = unlitMaterial;
 
@@ -235,9 +203,12 @@ function updateUnlitMaterials(ctx: RenderThreadState, materialModule: MaterialMo
   }
 }
 
-function updateStandardMaterials(ctx: RenderThreadState, materialModule: MaterialModuleState) {
-  for (let i = 0; i < materialModule.standardMaterials.length; i++) {
-    const standardMaterial = materialModule.standardMaterials[i];
+export function updateLocalStandardMaterialResources(
+  ctx: RenderThreadState,
+  standardMaterials: LocalStandardMaterialResource[]
+) {
+  for (let i = 0; i < standardMaterials.length; i++) {
+    const standardMaterial = standardMaterials[i];
 
     const {
       baseColorTextureResourceId,

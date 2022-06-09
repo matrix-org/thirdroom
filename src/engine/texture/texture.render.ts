@@ -2,47 +2,25 @@ import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, Textur
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { ImageFormat, LocalImageResource } from "../image/image.render";
-import { defineModule, getModule } from "../module/module.common";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { getModule } from "../module/module.common";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { registerResourceLoader, waitForLocalResource } from "../resource/resource.render";
+import { waitForLocalResource } from "../resource/resource.render";
 import { LocalSamplerResource } from "../sampler/sampler.render";
-import { SharedTexture, SharedTextureResource, TextureResourceType } from "./texture.common";
+import { SharedTexture, SharedTextureResource } from "./texture.common";
 
-interface LocalTextureResource {
+export interface LocalTextureResource {
   forceUpdate: boolean;
   texture: Texture;
   sharedTexture: SharedTexture;
 }
 
-interface TextureModuleState {
-  textures: LocalTextureResource[];
-}
-
-export const TextureModule = defineModule<RenderThreadState, TextureModuleState>({
-  name: "texture",
-  create() {
-    return {
-      textures: [],
-    };
-  },
-  init(ctx) {
-    const disposables = [registerResourceLoader(ctx, TextureResourceType, onLoadTexture)];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
-  },
-});
-
-async function onLoadTexture(
+export async function onLoadLocalTextureResource(
   ctx: RenderThreadState,
   id: ResourceId,
   { initialProps, sharedTexture }: SharedTextureResource
 ): Promise<Texture> {
-  const textureModule = getModule(ctx, TextureModule);
+  const rendererModule = getModule(ctx, RendererModule);
 
   const [image, sampler] = await Promise.all([
     waitForLocalResource<LocalImageResource>(ctx, initialProps.image),
@@ -75,7 +53,7 @@ async function onLoadTexture(
   texture.repeat.fromArray(initialProps.scale);
   texture.needsUpdate = true;
 
-  textureModule.textures.push({
+  rendererModule.textures.push({
     texture,
     sharedTexture,
     forceUpdate: true, // TODO: Is this uploading the texture twice?
@@ -84,11 +62,9 @@ async function onLoadTexture(
   return texture;
 }
 
-export function TextureUpdateSystem(ctx: RenderThreadState) {
-  const textureModule = getModule(ctx, TextureModule);
-
-  for (let i = 0; i < textureModule.textures.length; i++) {
-    const { texture, sharedTexture, forceUpdate } = textureModule.textures[i];
+export function updateLocalTextureResources(textures: LocalTextureResource[]) {
+  for (let i = 0; i < textures.length; i++) {
+    const { texture, sharedTexture, forceUpdate } = textures[i];
     const props = getReadObjectBufferView(sharedTexture);
 
     if (props.needsUpdate[0] || forceUpdate) {
