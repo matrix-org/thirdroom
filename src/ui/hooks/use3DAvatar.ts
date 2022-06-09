@@ -8,7 +8,6 @@ export function use3DAvatar(profileRoom: Room) {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState();
 
   const callback = useCallback((stateEvent?: StateEvent) => {
-    console.log(stateEvent);
     if (stateEvent) {
       const { content } = stateEvent;
       setAvatarUrl(content.avatar_url);
