@@ -14,3 +14,6 @@
   display: flex;
   justify-content: flex-end;
 }
+.Footer__center {
+  margin: auto;
+}
