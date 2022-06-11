@@ -1,4 +1,4 @@
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 
 export const rendererModuleName = "renderer";
 
@@ -20,5 +20,5 @@ export const rendererSchema = defineObjectBufferSchema({
 });
 
 export interface InitializeRendererTripleBuffersMessage {
-  sharedRendererState: TripleBufferBackedObjectBufferView<typeof rendererSchema, ArrayBuffer>;
+  rendererStateTripleBuffer: ObjectTripleBuffer<typeof rendererSchema>;
 }

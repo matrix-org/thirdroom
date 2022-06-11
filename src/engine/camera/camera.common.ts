@@ -1,4 +1,4 @@
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 
 export const PerspectiveCameraResourceType = "perspective-camera";
 export const OrthographicCameraResourceType = "orthographic-camera";
@@ -11,7 +11,6 @@ export const orthographicCameraSchema = defineObjectBufferSchema({
   xmag: [Float32Array, 1],
   ymag: [Float32Array, 1],
   projectionMatrixNeedsUpdate: [Uint8Array, 1],
-  needsUpdate: [Uint8Array, 1],
 });
 
 export const perspectiveCameraSchema = defineObjectBufferSchema({
@@ -22,45 +21,24 @@ export const perspectiveCameraSchema = defineObjectBufferSchema({
   aspectRatio: [Float32Array, 1],
   yfov: [Float32Array, 1],
   projectionMatrixNeedsUpdate: [Uint8Array, 1],
-  needsUpdate: [Uint8Array, 1],
 });
 
-export type SharedPerspectiveCamera = TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
-export type SharedOrthographicCamera = TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
+export type PerspectiveCameraTripleBuffer = ObjectTripleBuffer<typeof perspectiveCameraSchema>;
+export type OrthographicCameraTripleBuffer = ObjectTripleBuffer<typeof orthographicCameraSchema>;
 
 export enum CameraType {
   Perspective = "perspective",
   Orthographic = "orthographic",
 }
 
-export interface PerspectiveCameraResourceProps {
-  layers?: number;
-  aspectRatio?: number;
-  yfov: number;
-  zfar?: number;
-  znear: number;
-}
-
-export interface OrthographicCameraResourceProps {
-  layers?: number;
-  xmag: number;
-  ymag: number;
-  zfar: number;
-  znear: number;
-}
-
-export type CameraResourceProps = PerspectiveCameraResourceProps | OrthographicCameraResourceProps;
-
 export interface SharedPerspectiveCameraResource {
   type: CameraType.Perspective;
-  initialProps: Required<PerspectiveCameraResourceProps>;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
+  cameraTripleBuffer: PerspectiveCameraTripleBuffer;
 }
 
 export interface SharedOrthographicCameraResource {
   type: CameraType.Orthographic;
-  initialProps: Required<OrthographicCameraResourceProps>;
-  sharedCamera: TripleBufferBackedObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
+  cameraTripleBuffer: OrthographicCameraTripleBuffer;
 }
 
 export type SharedCameraResource = SharedPerspectiveCameraResource | SharedOrthographicCameraResource;

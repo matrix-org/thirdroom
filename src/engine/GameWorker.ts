@@ -1,6 +1,6 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent } from "./component/transform";
+import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 import { registerDefaultPrefabs } from "./prefab";
@@ -62,6 +62,8 @@ async function onInit({
     elapsed: performance.now(),
     dt: 0,
     world,
+    activeScene: scene,
+    activeCamera: camera,
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     systems: gameConfig.systems,
@@ -134,4 +136,8 @@ function update(state: GameState) {
   const frameDuration = performance.now() - state.elapsed;
   const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
   setTimeout(() => update(state), remainder);
+}
+
+export function UpdateMatrixWorldSystem(ctx: GameState) {
+  updateMatrixWorld(ctx.activeScene);
 }

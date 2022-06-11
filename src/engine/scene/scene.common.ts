@@ -1,4 +1,4 @@
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
 export const SceneResourceType = "scene";
@@ -14,9 +14,9 @@ export const audioSceneSchema = defineObjectBufferSchema({
   audioEmitters: [Uint32Array, 16],
 });
 
-export type RendererSharedScene = TripleBufferBackedObjectBufferView<typeof rendererSceneSchema, ArrayBuffer>;
+export type RendererSharedScene = ObjectTripleBuffer<typeof rendererSceneSchema>;
 
-export type AudioSharedScene = TripleBufferBackedObjectBufferView<typeof audioSceneSchema, ArrayBuffer>;
+export type AudioSharedScene = ObjectTripleBuffer<typeof audioSceneSchema>;
 
 export interface RendererSceneResourceProps {
   background: ResourceId;

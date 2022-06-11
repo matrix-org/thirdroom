@@ -1,46 +1,52 @@
-import { Matrix4, Quaternion, Vector3 } from "three";
+import { vec3, quat, mat4 } from "gl-matrix";
 
 import { NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import {
+  AudioResourceType,
   AudioEmitterDistanceModelMap,
   AudioMessageType,
   AudioResourceProps,
   AudioSourceResourceProps,
-  AudioSourceResourceType,
-  PositionalAudioEmitterResourceProps,
   SharedAudioState,
   SharedPositionalAudioEmitter,
+  SharedGlobalAudioEmitter,
+  InitializeAudioStateMessage,
+  SharedMediaStreamSource,
 } from "./audio.common";
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { registerResourceLoader, waitForLocalResource } from "../resource/resource.main";
+import { getLocalResource, registerResourceLoader, waitForLocalResource } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
-import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { LocalBufferView } from "../bufferView/bufferView.common";
-import { NetworkModule } from "../network/network.main";
-import { mat4, quat, vec3 } from "gl-matrix";
+import { PlayAudioMessage, SetAudioListenerMessage, SetAudioPeerEntityMessage } from "../WorkerMessage";
+import { AudioNodeTripleBuffer } from "../node/node.common";
+import { MainNode } from "../node/node.main";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 
 /*********
  * Types *
  ********/
 
-export interface AudioModuleState {
+export interface MainAudioModule {
   sharedAudioState: SharedAudioState;
   context: AudioContext;
+  // todo: MixerTrack/MixerInsert interface
   mainGain: GainNode;
+  sampleGain: GainNode;
+  // ambientGain: GainNode;
   streamMap: Map<number, MediaStream>;
-  audio: LocalAudio[];
+  datum: LocalAudioData[];
   sources: LocalAudioSource[];
   globalEmitters: LocalGlobalAudioEmitter[];
   positionalEmitters: LocalPositionalAudioEmitter[];
+  emitters: (LocalGlobalAudioEmitter | LocalPositionalAudioEmitter)[];
+  nodes: MainNode[];
 }
 
 /******************
  * Initialization *
  *****************/
 
-// todo: MixerTrack/MixerInsert interface
 /*
 ┌────────┐
 │  out   │ audio context destination
@@ -58,7 +64,7 @@ export interface AudioModuleState {
 └─L────R─┘
  */
 
-export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
+export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   name: "audio",
   async create(ctx, { waitForMessage }) {
     const audioCtx = new AudioContext();
@@ -69,26 +75,25 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
     const sampleGain = new GainNode(audioCtx);
     sampleGain.connect(mainGain);
 
-    const { sharedAudioState } = await waitForMessage(Thread.Game, AudioMessageType.InitializeAudioState);
+    const { sharedAudioState } = await waitForMessage<InitializeAudioStateMessage>(
+      Thread.Game,
+      AudioMessageType.InitializeAudioState
+    );
 
-    audioCtx.listener
+    audioCtx.listener;
 
     return {
       sharedAudioState,
       context: audioCtx,
       peerMediaStreamSourceMap: new Map(),
-      main: {
-        gain: mainGain,
-      },
-      sample: {
-        gain: sampleGain,
-      },
-
+      mainGain,
+      sampleGain,
       streamMap: new Map(),
-      audio: LocalAudio[];
-      sources: LocalAudioSource[];
-      globalEmitters: LocalGlobalAudioEmitter[];
-      positionalEmitters: LocalPositionalAudioEmitter[];
+      datum: [],
+      sources: [],
+      globalEmitters: [],
+      positionalEmitters: [],
+      nodes: [],
     };
   },
   init(ctx) {
@@ -97,10 +102,14 @@ export const AudioModule = defineModule<IMainThreadContext, AudioModuleState>({
     preloadDefaultAudio(audio);
 
     const disposables = [
-      registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
-      registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
-      registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
-      registerResourceLoader(ctx, AudioSourceResourceType, onLoadAudioSource),
+      // registerMessageHandler(ctx, AudioMessageType.PlayAudio, onPlayAudio),
+      // registerMessageHandler(ctx, AudioMessageType.SetAudioListener, onSetAudioListener),
+      // registerMessageHandler(ctx, AudioMessageType.SetAudioPeerEntity, onSetAudioPeerEntity),
+      registerResourceLoader(ctx, AudioResourceType.AudioData, onLoadAudioData),
+      registerResourceLoader(ctx, AudioResourceType.AudioSource, onLoadAudioSource),
+      registerResourceLoader(ctx, AudioResourceType.MediaStreamSource, onLoadMediaStream),
+      registerResourceLoader(ctx, AudioResourceType.GlobalAudioEmitter, onLoadGlobalAudioEmitter),
+      registerResourceLoader(ctx, AudioResourceType.PositionalAudioEmitter, onLoadPositionalAudioEmitter),
     ];
 
     return () => {
@@ -131,18 +140,18 @@ Adds a new PannerNode for an entity to enable audio emissions from that particul
 └─L────R─┘
  */
 export const addEntityPanner = (
-  audioState: AudioModuleState,
+  audioState: MainAudioModule,
   eid: number,
   panner: PannerNode = new PannerNode(audioState.context)
 ) => {
   panner.panningModel = "HRTF";
-  panner.connect(audioState.sample.gain);
+  panner.connect(audioState.sampleGain);
   audioState.entityPanners.set(eid, panner);
   return panner;
 };
 
 export const preloadDefaultAudio = async (
-  audioState: AudioModuleState,
+  audioState: MainAudioModule,
   defaultAudioFiles: string[] = ["/audio/bach.mp3", "/audio/hit.wav"]
 ) => {
   defaultAudioFiles.forEach(async (file) => await getAudioBuffer(audioState, file));
@@ -150,7 +159,7 @@ export const preloadDefaultAudio = async (
 
 const isChrome = /Chrome/.test(navigator.userAgent);
 
-export const setPeerMediaStream = (audioState: AudioModuleState, peerId: string, mediaStream: MediaStream) => {
+export const setPeerMediaStream = (audioState: MainAudioModule, peerId: string, mediaStream: MediaStream) => {
   // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
   if (isChrome) {
     const audioEl = new Audio();
@@ -169,7 +178,7 @@ export const fetchAudioBuffer = async (ctx: AudioContext, filepath: string) => {
 };
 
 export const getAudioBuffer = async (
-  { context, sample: { cache } }: AudioModuleState,
+  { context, sample: { cache } }: MainAudioModule,
   filepath: string
 ): Promise<AudioBuffer> => {
   if (cache.has(filepath)) return cache.get(filepath) as AudioBuffer;
@@ -183,9 +192,9 @@ export const getAudioBuffer = async (
 const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
 export const playAudioBuffer = (
-  { context, sample: { gain } }: AudioModuleState,
+  { context, sampleGain }: MainAudioModule,
   audioBuffer: AudioBuffer,
-  out: AudioNode = gain
+  out: AudioNode = sampleGain
 ) => {
   const sampleSource = context.createBufferSource();
   sampleSource.buffer = audioBuffer;
@@ -195,7 +204,20 @@ export const playAudioBuffer = (
   return sampleSource;
 };
 
-export const playAudioAtEntity = async (audioState: AudioModuleState, filepath: string, eid: number) => {
+export const playAudioElement = (
+  { context, sampleGain }: MainAudioModule,
+  audioElement: AudioBuffer,
+  out: AudioNode = sampleGain
+) => {
+  const sampleSource = context.createBufferSource();
+  sampleSource.buffer = audioBuffer;
+  sampleSource.playbackRate.value = rndRange(0.25, 0.75);
+  sampleSource.connect(out);
+  sampleSource.start();
+  return sampleSource;
+};
+
+export const playAudioAtEntity = async (audioState: MainAudioModule, filepath: string, eid: number) => {
   const audioBuffer = await getAudioBuffer(audioState, filepath);
   if (audioBuffer) {
     let panner = audioState.entityPanners.get(eid);
@@ -227,232 +249,6 @@ export const onSetAudioListener = (mainThread: IMainThreadContext, message: SetA
   audio.listenerEntity = message.eid;
 };
 
-interface LocalAudio {
-  resourceId: ResourceId;
-  audio: AudioBuffer | HTMLAudioElement;
-}
-
-const MAX_AUDIO_BUFFER_SIZE = 640_000;
-
-const audioExtensionToMimeType: { [key: string]: string } = {
-  mp3: "audio/mpeg",
-  aac: "audio/mpeg",
-  opus: "audio/ogg",
-  ogg: "audio/ogg",
-  wav: "audio/wav",
-  flac: "audio/flac",
-  mp4: "audio/mp4",
-  webm: "audio/webm",
-};
-
-// TODO: Read fetch response headers
-function getAudioMimeType(uri: string) {
-  const extension = uri.split(".").pop() || "";
-  return audioExtensionToMimeType[extension] || "audio/mpeg";
-}
-
-export const onLoadAudio = async (
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  props: AudioResourceProps
-): Promise<LocalAudio> => {
-  const audioModule = getModule(ctx, AudioModule);
-
-  let buffer: ArrayBuffer;
-  let mimeType: string;
-
-  // TODO: Add support for loading audio with HTMLAudioElement for longer clips
-  if ("bufferView" in props) {
-    const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
-    buffer = bufferView.buffer;
-    mimeType = props.mimeType;
-  } else {
-    const response = await fetch(props.uri);
-
-    const contentType = response.headers.get("Content-Type");
-
-    if (contentType) {
-      mimeType = contentType;
-    } else {
-      mimeType = getAudioMimeType(props.uri);
-    }
-
-    buffer = await response.arrayBuffer();
-  }
-
-  let audio: AudioBuffer | HTMLAudioElement;
-
-  if (buffer.byteLength > MAX_AUDIO_BUFFER_SIZE) {
-    const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
-
-    const audioEl = new Audio();
-
-    await new Promise((resolve, reject) => {
-      audioEl.onload = resolve;
-      audioEl.onerror = reject;
-      audioEl.src = objectUrl;
-    });
-
-    audio = audioEl;
-  } else {
-    audio = await audioModule.context.decodeAudioData(buffer);
-  }
-
-  audioModule.sample.cache.set(resourceId, audio);
-
-  return {
-    resourceId,
-    audio,
-  };
-};
-
-export const onLoadAudioStream = async (
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  { streamId }: AudioStreamProps
-): Promise<LocalAudio> => {
-  const audioModule = getModule(ctx, AudioModule);
-
-  const mediaStream = audioModule.streamMap.get(streamId);
-
-  if (!mediaStream) {
-    throw new Error(`Media stream not found for streamId: ${streamId}`);
-  }
-
-  const audioStream: LocalAudioStream = {
-    resourceId,
-    streamId,
-    mediaStream,
-  };
-
-  audioModule.
-
-  return audioModule;
-};
-
-interface LocalAudioSource {
-  resourceId: ResourceId;
-  audio: LocalAudio;
-  sourceNode: AudioBufferSourceNode | MediaElementAudioSourceNode;
-  gainNode: GainNode;
-  autoPlay: boolean;
-  playing: boolean;
-  loop: boolean;
-  currentTime: number;
-}
-
-export const onLoadAudioSource = async (
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  props: AudioSourceResourceProps
-): Promise<LocalAudioSource> => {
-  const audioModule = getModule(ctx, AudioModule);
-
-  const localAudio = await waitForLocalResource<LocalAudio>(ctx, props.audio);
-
-  let sourceNode: AudioBufferSourceNode | MediaElementAudioSourceNode;
-
-  if (localAudio.audio instanceof AudioBuffer) {
-    const bufferSourceNode = audioModule.context.createBufferSource();
-    bufferSourceNode.buffer = localAudio.audio;
-    sourceNode = bufferSourceNode;
-  } else {
-    const el = localAudio.audio.cloneNode() as HTMLAudioElement;
-    sourceNode = audioModule.context.createMediaElementSource(el);
-  }
-
-  const gainNode = audioModule.context.createGain();
-  gainNode.gain.value = props.gain;
-  sourceNode.connect(gainNode);
-
-  return {
-    resourceId,
-    audio: localAudio,
-    sourceNode,
-    gainNode,
-    autoPlay: props.autoPlay,
-    loop: props.loop,
-    playing: false,
-    currentTime: 0,
-  };
-};
-
-export interface LocalPositionalAudioEmitter {
-  resourceId: ResourceId;
-  audioSources: LocalAudioSource[];
-  pannerNode: PannerNode;
-  gainNode: GainNode;
-  sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
-}
-
-export const onLoadPositionalAudioEmitter = async (
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  props: PositionalAudioEmitterResourceProps
-): Promise<LocalPositionalAudioEmitter> => {
-  const audio = getModule(ctx, AudioModule);
-
-  const audioSources = await Promise.all(
-    props.sources.map((sourceId) => waitForLocalResource<LocalAudioSource>(ctx, sourceId))
-  );
-
-  const pannerNode = audio.context.createPanner();
-
-  const gainNode = audio.context.createGain();
-  gainNode.gain.value = props.gain;
-  pannerNode.connect(gainNode);
-
-  for (const source of audioSources) {
-    source.gainNode.connect(pannerNode);
-  }
-
-  gainNode.connect(audio.main.gain);
-
-  pannerNode.coneInnerAngle = props.coneInnerAngle;
-  pannerNode.coneOuterAngle = props.coneOuterAngle;
-  pannerNode.coneOuterGain = props.coneOuterGain;
-  pannerNode.distanceModel = AudioEmitterDistanceModelMap[props.distanceModel];
-  pannerNode.maxDistance = props.maxDistance;
-  pannerNode.refDistance = props.refDistance;
-  pannerNode.rolloffFactor = props.rolloffFactor;
-  pannerNode.panningModel = "HRTF";
-
-  return {
-    resourceId,
-    audioSources,
-    pannerNode,
-    gainNode,
-  };
-};
-
-interface LocalGlobalAudioEmitter {
-  resourceId: ResourceId;
-  audioSources: LocalAudioSource[];
-  gainNode: GainNode;
-}
-
-export const onLoadGlobalAudioEmitter = async (
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  props: PositionalAudioEmitterResourceProps
-): Promise<LocalGlobalAudioEmitter> => {
-  const audio = getModule(ctx, AudioModule);
-
-  const audioSources = await Promise.all(
-    props.sources.map((sourceId) => waitForLocalResource<LocalAudioSource>(ctx, sourceId))
-  );
-
-  const gainNode = audio.context.createGain();
-  gainNode.gain.value = props.gain;
-  gainNode.connect(audio.main.gain);
-
-  return {
-    resourceId,
-    audioSources,
-    gainNode,
-  };
-};
-
 /*
 Connects a MediaStream to an entity's PannerNode to enable spatial VoIP
 
@@ -482,6 +278,238 @@ export const onSetAudioPeerEntity = (mainThread: IMainThreadContext, message: Se
   mediaStreamSource.connect(panner);
 };
 
+/////////////////////////////
+/////////////////////////////
+//////////// NEW ////////////
+/////////////////////////////
+/////////////////////////////
+
+interface LocalAudioData {
+  resourceId: ResourceId;
+  data: AudioBuffer | HTMLAudioElement;
+}
+
+const MAX_AUDIO_BYTES = 640_000;
+
+const audioExtensionToMimeType: { [key: string]: string } = {
+  mp3: "audio/mpeg",
+  aac: "audio/mpeg",
+  opus: "audio/ogg",
+  ogg: "audio/ogg",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  mp4: "audio/mp4",
+  webm: "audio/webm",
+};
+
+// TODO: Read fetch response headers
+function getAudioMimeType(uri: string) {
+  const extension = uri.split(".").pop() || "";
+  return audioExtensionToMimeType[extension] || "audio/mpeg";
+}
+
+export const onLoadAudioData = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: AudioResourceProps
+): Promise<LocalAudioData> => {
+  const audio = getModule(ctx, AudioModule);
+
+  let buffer: ArrayBuffer;
+  let mimeType: string;
+
+  // TODO: Add support for loading audio with HTMLAudioElement for longer clips
+  if ("bufferView" in props) {
+    const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
+    buffer = bufferView.buffer;
+    mimeType = props.mimeType;
+  } else {
+    const response = await fetch(props.uri);
+
+    const contentType = response.headers.get("Content-Type");
+
+    if (contentType) {
+      mimeType = contentType;
+    } else {
+      mimeType = getAudioMimeType(props.uri);
+    }
+
+    buffer = await response.arrayBuffer();
+  }
+
+  let data: AudioBuffer | HTMLAudioElement;
+
+  if (buffer.byteLength > MAX_AUDIO_BYTES) {
+    const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
+
+    const audioEl = new Audio();
+
+    await new Promise((resolve, reject) => {
+      audioEl.oncanplaythrough = resolve;
+      audioEl.onerror = reject;
+      audioEl.src = objectUrl;
+    });
+
+    data = audioEl;
+  } else {
+    data = await audio.context.decodeAudioData(buffer);
+  }
+
+  return {
+    resourceId,
+    data,
+  };
+};
+
+interface LocalMediaStream {
+  resourceId: ResourceId;
+  streamId: number;
+  mediaStream: MediaStream;
+}
+
+export const onLoadMediaStream = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  sharedMediaStreamSource: SharedMediaStreamSource
+): Promise<LocalMediaStream> => {
+  const audio = getModule(ctx, AudioModule);
+
+  const sharedMedia = getReadObjectBufferView(sharedMediaStreamSource);
+
+  const streamId = sharedMedia.streamId[0];
+
+  const mediaStream = audio.streamMap.get(streamId);
+
+  if (!mediaStream) {
+    throw new Error(`Media stream not found for streamId: ${streamId}`);
+  }
+
+  return {
+    resourceId,
+    streamId,
+    mediaStream,
+  };
+};
+
+interface LocalAudioSource {
+  resourceId: ResourceId;
+  data: LocalAudioData;
+  mediaElementSourceNode?: MediaElementAudioSourceNode;
+  autoPlay: boolean;
+  playing: boolean;
+  loop: boolean;
+  currentTime: number;
+  gainNode: GainNode;
+}
+
+export const onLoadAudioSource = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  props: AudioSourceResourceProps
+): Promise<LocalAudioSource> => {
+  const audio = getModule(ctx, AudioModule);
+
+  const localAudio = await waitForLocalResource<LocalAudioData>(ctx, props.resourceId);
+
+  const mediaElementSourceNode =
+    localAudio.data instanceof HTMLAudioElement
+      ? audio.context.createMediaElementSource(localAudio.data.cloneNode() as HTMLAudioElement)
+      : undefined;
+
+  const gainNode = audio.context.createGain();
+
+  if (mediaElementSourceNode) mediaElementSourceNode.connect(gainNode);
+
+  return {
+    resourceId,
+    data: localAudio,
+    mediaElementSourceNode,
+    autoPlay: props.autoPlay,
+    loop: props.loop,
+    playing: false,
+    currentTime: 0,
+    gainNode,
+  };
+};
+
+export interface LocalPositionalAudioEmitter {
+  resourceId: ResourceId;
+  sources: LocalAudioSource[];
+  lastSources: LocalAudioSource[];
+  gainNode: GainNode;
+  sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
+}
+
+export const onLoadPositionalAudioEmitter = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  sharedPositionalAudioEmitter: SharedPositionalAudioEmitter
+): Promise<LocalPositionalAudioEmitter> => {
+  const audioModule = getModule(ctx, AudioModule);
+
+  const sharedEmitter = getReadObjectBufferView(sharedPositionalAudioEmitter);
+
+  const sourcePromises: Promise<LocalAudioSource>[] = Array.from(sharedEmitter.sources)
+    .filter((rid) => rid !== 0)
+    .map((rid) => waitForLocalResource<LocalAudioSource>(ctx, rid as number));
+
+  const sources = await Promise.all(sourcePromises);
+
+  const gainNode = audioModule.context.createGain();
+  gainNode.connect(audioModule.mainGain);
+
+  for (const source of sources) {
+    source.gainNode.connect(gainNode);
+  }
+
+  return {
+    resourceId,
+    sources,
+    lastSources: sources,
+    gainNode,
+    sharedPositionalAudioEmitter,
+  };
+};
+
+interface LocalGlobalAudioEmitter {
+  resourceId: ResourceId;
+  sources: LocalAudioSource[];
+  lastSources: LocalAudioSource[];
+  gainNode: GainNode;
+  sharedGlobalAudioEmitter: SharedGlobalAudioEmitter;
+}
+
+export const onLoadGlobalAudioEmitter = async (
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  sharedGlobalAudioEmitter: SharedGlobalAudioEmitter
+): Promise<LocalGlobalAudioEmitter> => {
+  const audioModule = getModule(ctx, AudioModule);
+
+  const sharedGlobalAudioEmitterView = getReadObjectBufferView(sharedGlobalAudioEmitter);
+
+  const sourcePromises: Promise<LocalAudioSource>[] = Array.from(sharedGlobalAudioEmitterView.sources)
+    .filter((rid) => rid !== 0)
+    .map((rid) => waitForLocalResource<LocalAudioSource>(ctx, rid as number));
+
+  const sources = await Promise.all(sourcePromises);
+
+  const gainNode = audioModule.context.createGain();
+  gainNode.connect(audioModule.mainGain);
+
+  for (const source of sources) {
+    source.gainNode.connect(gainNode);
+  }
+
+  return {
+    resourceId,
+    sources,
+    lastSources: sources,
+    gainNode,
+    sharedGlobalAudioEmitter,
+  };
+};
+
 /***********
  * Systems *
  **********/
@@ -490,34 +518,38 @@ const tempPosition = vec3.create();
 const tempQuaternion = quat.create();
 const tempScale = vec3.create();
 
-export function MainThreadAudioSystem(mainThread: IMainThreadContext) {
-  const audioModule = getModule(mainThread, AudioModule);
+export function updateLocalPositionalAudioEmitter(audio: MainAudioModule, node: MainNode) {
+  const { currentTime } = audio.context;
+  const { audioEmitterPannerNode: pannerNode, audioEmitter, audioSharedNode } = node;
 
-  if (audioModule.sharedAudioState.activeListenerResourceId[0] !== NOOP) {
-    setAudioListenerTransform(audioModule.context.listener, audioModule.sharedAudioState.activeListenerWorldMatrix);
+  const sharedAudio = getReadObjectBufferView(audioSharedNode);
+
+  const sharedEmitter = audioEmitter ? getReadObjectBufferView(audioEmitter.sharedPositionalAudioEmitter) : undefined;
+
+  if (!pannerNode) {
+    console.error("no panner node found for local resource id", node.resourceId);
+    return;
   }
 
-  const { currentTime } = audioModule.context;
-
-  for (let i = 0; i < audioModule.positionalEmitters.length; i++) {
-    const positionalEmitter = audioModule.positionalEmitters[i];
-    const { pannerNode, sharedPositionalAudioEmitter } = positionalEmitter;
-
-    mat4.getTranslation(tempPosition, sharedPositionalAudioEmitter.worldMatrix);
-    pannerNode.positionX.setValueAtTime(tempPosition[0], currentTime);
-    pannerNode.positionY.setValueAtTime(tempPosition[1], currentTime);
-    pannerNode.positionZ.setValueAtTime(tempPosition[2], currentTime);
-
-    // TODO: Set other panner node props
-
-    pannerNode.coneInnerAngle = sharedPositionalAudioEmitter.coneInnerAngle[0];
-    pannerNode.coneOuterAngle = sharedPositionalAudioEmitter.coneOuterAngle[0];
-    pannerNode.coneOuterGain = sharedPositionalAudioEmitter.coneOuterGain[0];
-    pannerNode.distanceModel = AudioEmitterDistanceModelMap[sharedPositionalAudioEmitter.distanceModel[0]];
-    pannerNode.maxDistance = sharedPositionalAudioEmitter.maxDistance[0];
-    pannerNode.refDistance = sharedPositionalAudioEmitter.refDistance[0];
-    pannerNode.rolloffFactor = sharedPositionalAudioEmitter.rolloffFactor[0];
+  if (!sharedEmitter) {
+    console.error("no audio emitter found for local resource id", node.resourceId);
+    return;
   }
+
+  // set position using worldMatrix from AudioSharedNode
+  mat4.getTranslation(tempPosition, sharedAudio.worldMatrix);
+  pannerNode.positionX.setValueAtTime(tempPosition[0], currentTime);
+  pannerNode.positionY.setValueAtTime(tempPosition[1], currentTime);
+  pannerNode.positionZ.setValueAtTime(tempPosition[2], currentTime);
+
+  // set panner node properties from local positional emitter's shared data
+  pannerNode.coneInnerAngle = sharedEmitter.coneInnerAngle[0];
+  pannerNode.coneOuterAngle = sharedEmitter.coneOuterAngle[0];
+  pannerNode.coneOuterGain = sharedEmitter.coneOuterGain[0];
+  pannerNode.distanceModel = AudioEmitterDistanceModelMap[sharedEmitter.distanceModel[0]];
+  pannerNode.maxDistance = sharedEmitter.maxDistance[0];
+  pannerNode.refDistance = sharedEmitter.refDistance[0];
+  pannerNode.rolloffFactor = sharedEmitter.rolloffFactor[0];
 }
 
 function setAudioListenerTransform(listener: AudioListener, worldMatrix: Float32Array) {
@@ -538,12 +570,10 @@ function setAudioListenerTransform(listener: AudioListener, worldMatrix: Float32
   if (listener.positionX) {
     listener.positionX.value = tempPosition[0];
     listener.positionY.value = tempPosition[1];
-    listener.positionZ.value = tempPosition[2]
+    listener.positionZ.value = tempPosition[2];
   } else {
     listener.setPosition(tempPosition[0], tempPosition[1], tempPosition[2]);
   }
-
-  
 
   tempPosition[0] = -worldMatrix[8];
   tempPosition[1] = -worldMatrix[9];
@@ -558,4 +588,75 @@ function setAudioListenerTransform(listener: AudioListener, worldMatrix: Float32
   } else {
     listener.setOrientation(tempPosition[0], tempPosition[1], tempPosition[2], 0, 1, 0);
   }
+}
+
+export function updateLocalPositionalAudioEmitters(
+  audioModule: MainAudioModule,
+  audioEmitter: LocalGlobalAudioEmitter | LocalPositionalAudioEmitter
+) {
+  for (let i = 0; i < audioModule.nodes.length; i++) {
+    const node = audioModule.nodes[i];
+    updateLocalPositionalAudioEmitter(audioModule, node);
+  }
+}
+
+export function updateAudioEmitter(
+  audioModule: MainAudioModule,
+  audioEmitter: LocalGlobalAudioEmitter | LocalPositionalAudioEmitter
+) {
+  // todo: synchronize and load audioEmitter.sources
+
+  for (const source of audioEmitter.sources) {
+    // todo:
+    // if this source wasn't here last frame and now is
+    const isNewSource = false;
+    // if this source was here last frame and now isn't
+    const isDeadSource = false;
+
+    const { data } = source.data;
+    if (data instanceof AudioBuffer) {
+      if (source.playing) playAudioBuffer(audioModule, data as AudioBuffer, audioEmitter.gainNode);
+      source.playing = false;
+      // todo: persist playing state back to game thread
+    } else if (data instanceof HTMLAudioElement) {
+      if (isNewSource) source.mediaElementSourceNode?.connect(audioEmitter.gainNode);
+      if (isDeadSource) source.mediaElementSourceNode?.disconnect(audioEmitter.gainNode);
+      if (source.playing) data.play();
+      else data.pause();
+    }
+  }
+
+  audioEmitter.lastSources = audioEmitter.sources;
+}
+
+export function updateAudioEmitters(
+  audioModule: MainAudioModule,
+  audioEmitters: (LocalGlobalAudioEmitter | LocalPositionalAudioEmitter)[]
+) {
+  for (let i = 0; i < audioEmitters.length; i++) {
+    const audioEmitter = audioEmitters[i];
+    updateAudioEmitter(audioModule, audioEmitter);
+  }
+}
+
+function updateAudioListener(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+  const sharedAudio = getReadObjectBufferView(audioModule.sharedAudioState);
+
+  if (sharedAudio.activeAudioListenerResourceId[0] !== NOOP) {
+    const audioListenerNode = getLocalResource<AudioNodeTripleBuffer>(
+      ctx,
+      sharedAudio.activeAudioListenerResourceId[0]
+    )?.resource;
+
+    if (audioListenerNode) {
+      setAudioListenerTransform(audioModule.context.listener, audioListenerNode.worldMatrix);
+    }
+  }
+}
+
+export function MainThreadAudioSystem(ctx: IMainThreadContext) {
+  const audioModule = getModule(ctx, AudioModule);
+
+  updateAudioListener(ctx, audioModule);
+  updateAudioEmitters(audioModule, audioModule.emitters);
 }

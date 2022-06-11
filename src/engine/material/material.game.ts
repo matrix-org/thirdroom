@@ -1,9 +1,10 @@
 import { vec3, vec4 } from "gl-matrix";
 
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
@@ -13,13 +14,11 @@ import { createResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
 import {
   MaterialAlphaMode,
-  SharedUnlitMaterial,
+  UnlitMaterialTripleBuffer,
   SharedUnlitMaterialResource,
-  UnlitMaterialResourceProps,
   UnlitMaterialResourceType,
   unlitMaterialSchema,
   MaterialType,
-  StandardMaterialResourceProps,
   standardMaterialSchema,
   SharedStandardMaterialResource,
   StandardMaterialResourceType,
@@ -50,10 +49,14 @@ export interface StandardMaterialProps {
   emissiveTexture?: RemoteTexture;
 }
 
+export type UnlitMaterialBufferView = ObjectBufferView<typeof unlitMaterialSchema, ArrayBuffer>;
+export type StandardMaterialBufferView = ObjectBufferView<typeof standardMaterialSchema, ArrayBuffer>;
+
 export interface RemoteUnlitMaterial {
   resourceId: ResourceId;
   type: MaterialType.Unlit;
-  sharedMaterial: SharedUnlitMaterial;
+  materialBufferView: UnlitMaterialBufferView;
+  materialTripleBuffer: UnlitMaterialTripleBuffer;
   get doubleSided(): boolean;
   set doubleSided(value: boolean);
   get alphaCutoff(): number;
@@ -67,7 +70,8 @@ export interface RemoteUnlitMaterial {
 export interface RemoteStandardMaterial {
   resourceId: ResourceId;
   type: MaterialType.Unlit;
-  sharedMaterial: SharedUnlitMaterial;
+  materialBufferView: StandardMaterialBufferView;
+  materialTripleBuffer: UnlitMaterialTripleBuffer;
   get doubleSided(): boolean;
   set doubleSided(value: boolean);
   get alphaCutoff(): number;
@@ -103,88 +107,64 @@ export function updateRemoteMaterials(ctx: GameState) {
 
   for (let i = 0; i < unlitMaterials.length; i++) {
     const unlitMaterial = unlitMaterials[i];
-
-    if (unlitMaterial.sharedMaterial.needsUpdate[0]) {
-      commitToTripleBufferView(unlitMaterial.sharedMaterial);
-      unlitMaterial.sharedMaterial.needsUpdate[0] = 0;
-    }
+    commitToObjectTripleBuffer(unlitMaterial.materialTripleBuffer, unlitMaterial.materialBufferView);
   }
 
   for (let i = 0; i < standardMaterials.length; i++) {
     const standardMaterial = standardMaterials[i];
-
-    if (standardMaterial.sharedMaterial.needsUpdate[0]) {
-      commitToTripleBufferView(standardMaterial.sharedMaterial);
-      standardMaterial.sharedMaterial.needsUpdate[0] = 0;
-    }
+    commitToObjectTripleBuffer(standardMaterial.materialTripleBuffer, standardMaterial.materialBufferView);
   }
 }
 
 export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialProps): RemoteUnlitMaterial {
   const rendererModule = getModule(ctx, RendererModule);
 
-  const material = createObjectBufferView(unlitMaterialSchema, ArrayBuffer);
+  const materialBufferView = createObjectBufferView(unlitMaterialSchema, ArrayBuffer);
 
-  const initialProps: UnlitMaterialResourceProps = {
-    doubleSided: props.doubleSided || false,
-    alphaCutoff: props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff,
-    alphaMode: props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode,
-    baseColorFactor: props.baseColorFactor || [1, 1, 1, 1],
-    baseColorTexture: props.baseColorTexture ? props.baseColorTexture.resourceId : 0,
-  };
+  materialBufferView.doubleSided[0] = props.doubleSided ? 1 : 0;
+  materialBufferView.alphaCutoff[0] = props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff;
+  materialBufferView.alphaMode[0] = props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode;
+  materialBufferView.baseColorFactor.set(props.baseColorFactor || [1, 1, 1, 1]);
+  materialBufferView.baseColorTexture[0] = props.baseColorTexture ? props.baseColorTexture.resourceId : 0;
 
-  material.doubleSided[0] = initialProps.doubleSided ? 1 : 0;
-  material.alphaCutoff[0] = initialProps.alphaCutoff;
-  material.alphaMode[0] = initialProps.alphaMode;
-  material.baseColorFactor.set(initialProps.baseColorFactor);
-  material.baseColorTexture[0] = initialProps.baseColorTexture;
-
-  const sharedMaterial = createTripleBufferBackedObjectBufferView(
-    unlitMaterialSchema,
-    material,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const materialTripleBuffer = createObjectTripleBuffer(unlitMaterialSchema, ctx.gameToMainTripleBufferFlags);
 
   const resourceId = createResource<SharedUnlitMaterialResource>(ctx, Thread.Render, UnlitMaterialResourceType, {
     type: MaterialType.Unlit,
-    initialProps,
-    sharedMaterial,
+    materialTripleBuffer,
   });
 
   let _baseColorTexture: RemoteTexture | undefined;
 
   const remoteMaterial: RemoteUnlitMaterial = {
     resourceId,
-    sharedMaterial,
+    materialBufferView,
+    materialTripleBuffer,
     type: MaterialType.Unlit,
     get doubleSided(): boolean {
-      return !!material.doubleSided[0];
+      return !!materialBufferView.doubleSided[0];
     },
     set doubleSided(value: boolean) {
-      material.doubleSided[0] = value ? 1 : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.doubleSided[0] = value ? 1 : 0;
     },
     get alphaCutoff(): number {
-      return material.alphaCutoff[0];
+      return materialBufferView.alphaCutoff[0];
     },
     set alphaCutoff(value: number) {
-      material.alphaCutoff[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.alphaCutoff[0] = value;
     },
     get baseColorFactor(): vec4 {
-      return material.baseColorFactor;
+      return materialBufferView.baseColorFactor;
     },
     set baseColorFactor(value: vec4) {
-      material.baseColorFactor.set(value);
-      material.needsUpdate[0] = 1;
+      materialBufferView.baseColorFactor.set(value);
     },
     get baseColorTexture(): RemoteTexture | undefined {
       return _baseColorTexture;
     },
     set baseColorTexture(texture: RemoteTexture | undefined) {
       _baseColorTexture = texture;
-      material.baseColorTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.baseColorTexture[0] = texture ? texture.resourceId : 0;
     },
   };
 
@@ -196,50 +176,31 @@ export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialPr
 export function createRemoteStandardMaterial(ctx: GameState, props: StandardMaterialProps): RemoteStandardMaterial {
   const rendererModule = getModule(ctx, RendererModule);
 
-  const material = createObjectBufferView(standardMaterialSchema, ArrayBuffer);
+  const materialBufferView = createObjectBufferView(standardMaterialSchema, ArrayBuffer);
 
-  const initialProps: StandardMaterialResourceProps = {
-    doubleSided: props.doubleSided || false,
-    alphaCutoff: props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff,
-    alphaMode: props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode,
-    baseColorFactor: props.baseColorFactor || [1, 1, 1, 1],
-    baseColorTexture: props.baseColorTexture ? props.baseColorTexture.resourceId : 0,
-    metallicFactor: props.metallicFactor === undefined ? 1 : props.metallicFactor,
-    roughnessFactor: props.roughnessFactor === undefined ? 1 : props.roughnessFactor,
-    metallicRoughnessTexture: props.metallicRoughnessTexture ? props.metallicRoughnessTexture.resourceId : 0,
-    normalTextureScale: props.normalTextureScale === undefined ? 1 : props.normalTextureScale,
-    normalTexture: props.normalTexture ? props.normalTexture.resourceId : 0,
-    occlusionTextureStrength: props.occlusionTextureStrength === undefined ? 1 : props.occlusionTextureStrength,
-    occlusionTexture: props.occlusionTexture ? props.occlusionTexture.resourceId : 0,
-    emissiveFactor: props.emissiveFactor || [0, 0, 0],
-    emissiveTexture: props.emissiveTexture ? props.emissiveTexture.resourceId : 0,
-  };
+  materialBufferView.doubleSided[0] = props.doubleSided ? 1 : 0;
+  materialBufferView.alphaCutoff[0] = props.alphaCutoff === undefined ? 0.5 : props.alphaCutoff;
+  materialBufferView.alphaMode[0] = props.alphaMode === undefined ? MaterialAlphaMode.OPAQUE : props.alphaMode;
+  materialBufferView.baseColorFactor.set(props.baseColorFactor || [1, 1, 1, 1]);
+  materialBufferView.baseColorTexture[0] = props.baseColorTexture ? props.baseColorTexture.resourceId : 0;
+  materialBufferView.metallicFactor[0] = props.metallicFactor === undefined ? 1 : props.metallicFactor;
+  materialBufferView.roughnessFactor[0] = props.roughnessFactor === undefined ? 1 : props.roughnessFactor;
+  materialBufferView.metallicRoughnessTexture[0] = props.metallicRoughnessTexture
+    ? props.metallicRoughnessTexture.resourceId
+    : 0;
+  materialBufferView.normalTextureScale[0] = props.normalTextureScale === undefined ? 1 : props.normalTextureScale;
+  materialBufferView.normalTexture[0] = props.normalTexture ? props.normalTexture.resourceId : 0;
+  materialBufferView.occlusionTextureStrength[0] =
+    props.occlusionTextureStrength === undefined ? 1 : props.occlusionTextureStrength;
+  materialBufferView.occlusionTexture[0] = props.occlusionTexture ? props.occlusionTexture.resourceId : 0;
+  materialBufferView.emissiveFactor.set(props.emissiveFactor || [0, 0, 0]);
+  materialBufferView.emissiveTexture[0] = props.emissiveTexture ? props.emissiveTexture.resourceId : 0;
 
-  material.doubleSided[0] = initialProps.doubleSided ? 1 : 0;
-  material.alphaCutoff[0] = initialProps.alphaCutoff;
-  material.alphaMode[0] = initialProps.alphaMode;
-  material.baseColorFactor.set(initialProps.baseColorFactor);
-  material.baseColorTexture[0] = initialProps.baseColorTexture;
-  material.metallicFactor[0] = initialProps.metallicFactor;
-  material.roughnessFactor[0] = initialProps.roughnessFactor;
-  material.metallicRoughnessTexture[0] = initialProps.metallicRoughnessTexture;
-  material.normalTextureScale[0] = initialProps.normalTextureScale;
-  material.normalTexture[0] = initialProps.normalTexture;
-  material.occlusionTextureStrength[0] = initialProps.occlusionTextureStrength;
-  material.occlusionTexture[0] = initialProps.occlusionTexture;
-  material.emissiveFactor.set(initialProps.emissiveFactor);
-  material.emissiveTexture[0] = initialProps.emissiveTexture;
-
-  const sharedMaterial = createTripleBufferBackedObjectBufferView(
-    standardMaterialSchema,
-    material,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const materialTripleBuffer = createObjectTripleBuffer(standardMaterialSchema, ctx.gameToMainTripleBufferFlags);
 
   const resourceId = createResource<SharedStandardMaterialResource>(ctx, Thread.Render, StandardMaterialResourceType, {
     type: MaterialType.Standard,
-    initialProps,
-    sharedMaterial,
+    materialTripleBuffer,
   });
 
   let _baseColorTexture: RemoteTexture | undefined;
@@ -250,103 +211,91 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
 
   const remoteMaterial: RemoteStandardMaterial = {
     resourceId,
-    sharedMaterial,
+    materialBufferView,
+    materialTripleBuffer,
     type: MaterialType.Unlit,
     get doubleSided(): boolean {
-      return !!material.doubleSided[0];
+      return !!materialBufferView.doubleSided[0];
     },
     set doubleSided(value: boolean) {
-      material.doubleSided[0] = value ? 1 : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.doubleSided[0] = value ? 1 : 0;
     },
     get alphaCutoff(): number {
-      return material.alphaCutoff[0];
+      return materialBufferView.alphaCutoff[0];
     },
     set alphaCutoff(value: number) {
-      material.alphaCutoff[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.alphaCutoff[0] = value;
     },
     get baseColorFactor(): vec4 {
-      return material.baseColorFactor;
+      return materialBufferView.baseColorFactor;
     },
     set baseColorFactor(value: vec4) {
-      material.baseColorFactor.set(value);
-      material.needsUpdate[0] = 1;
+      materialBufferView.baseColorFactor.set(value);
     },
     get baseColorTexture(): RemoteTexture | undefined {
       return _baseColorTexture;
     },
     set baseColorTexture(texture: RemoteTexture | undefined) {
       _baseColorTexture = texture;
-      material.baseColorTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.baseColorTexture[0] = texture ? texture.resourceId : 0;
     },
     get metallicFactor(): number {
-      return material.metallicFactor[0];
+      return materialBufferView.metallicFactor[0];
     },
     set metallicFactor(value: number) {
-      material.metallicFactor[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.metallicFactor[0] = value;
     },
     get roughnessFactor(): number {
-      return material.roughnessFactor[0];
+      return materialBufferView.roughnessFactor[0];
     },
     set roughnessFactor(value: number) {
-      material.roughnessFactor[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.roughnessFactor[0] = value;
     },
     get metallicRoughnessTexture(): RemoteTexture | undefined {
       return _metallicRoughnessTexture;
     },
     set metallicRoughnessTexture(texture: RemoteTexture | undefined) {
       _metallicRoughnessTexture = texture;
-      material.metallicRoughnessTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.metallicRoughnessTexture[0] = texture ? texture.resourceId : 0;
     },
     get normalTextureScale(): number {
-      return material.normalTextureScale[0];
+      return materialBufferView.normalTextureScale[0];
     },
     set normalTextureScale(value: number) {
-      material.normalTextureScale[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.normalTextureScale[0] = value;
     },
     get normalTexture(): RemoteTexture | undefined {
       return _normalTexture;
     },
     set normalTexture(texture: RemoteTexture | undefined) {
       _normalTexture = texture;
-      material.normalTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.normalTexture[0] = texture ? texture.resourceId : 0;
     },
     get occlusionTextureStrength(): number {
-      return material.occlusionTextureStrength[0];
+      return materialBufferView.occlusionTextureStrength[0];
     },
     set occlusionTextureStrength(value: number) {
-      material.occlusionTextureStrength[0] = value;
-      material.needsUpdate[0] = 1;
+      materialBufferView.occlusionTextureStrength[0] = value;
     },
     get occlusionTexture(): RemoteTexture | undefined {
       return _occlusionTexture;
     },
     set occlusionTexture(texture: RemoteTexture | undefined) {
       _occlusionTexture = texture;
-      material.occlusionTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.occlusionTexture[0] = texture ? texture.resourceId : 0;
     },
     get emissiveFactor(): vec3 {
-      return material.emissiveFactor;
+      return materialBufferView.emissiveFactor;
     },
     set emissiveFactor(value: vec3) {
-      material.emissiveFactor.set(value);
-      material.needsUpdate[0] = 1;
+      materialBufferView.emissiveFactor.set(value);
     },
     get emissiveTexture(): RemoteTexture | undefined {
       return _emissiveTexture;
     },
     set emissiveTexture(texture: RemoteTexture | undefined) {
       _emissiveTexture = texture;
-      material.emissiveTexture[0] = texture ? texture.resourceId : 0;
-      material.needsUpdate[0] = 1;
+      materialBufferView.emissiveTexture[0] = texture ? texture.resourceId : 0;
     },
   };
 

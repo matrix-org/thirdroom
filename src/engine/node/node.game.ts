@@ -1,7 +1,7 @@
 import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs";
 
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
@@ -18,12 +18,12 @@ import { createResource } from "../resource/resource.game";
 import {
   AudioNodeResourceProps,
   audioNodeSchema,
-  AudioSharedNode,
+  AudioNodeTripleBuffer,
   AudioSharedNodeResource,
   NodeResourceType,
   RendererNodeResourceProps,
   rendererNodeSchema,
-  RendererSharedNode,
+  RendererNodeTripleBuffer,
   RendererSharedNodeResource,
 } from "./node.common";
 
@@ -31,8 +31,8 @@ export interface RemoteNode {
   eid: number;
   audioResourceId: ResourceId;
   rendererResourceId: ResourceId;
-  audioSharedNode: AudioSharedNode;
-  rendererSharedNode: RendererSharedNode;
+  audioSharedNode: AudioNodeTripleBuffer;
+  rendererSharedNode: RendererNodeTripleBuffer;
   get mesh(): RemoteMesh | undefined;
   set mesh(mesh: RemoteMesh | undefined);
   get light(): RemoteLight | undefined;
@@ -216,7 +216,7 @@ export function RemoteNodeSystem(ctx: GameState) {
       remoteNode.rendererSharedNode.worldMatrix.set(Transform.worldMatrix[eid]);
     }
 
-    commitToTripleBufferView(remoteNode.audioSharedNode);
-    commitToTripleBufferView(remoteNode.rendererSharedNode);
+    commitToObjectTripleBuffer(remoteNode.audioSharedNode);
+    commitToObjectTripleBuffer(remoteNode.rendererSharedNode);
   }
 }

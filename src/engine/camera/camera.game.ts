@@ -1,9 +1,8 @@
-import { addComponent, defineComponent, removeComponent } from "bitecs";
-
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
@@ -14,20 +13,22 @@ import {
   CameraType,
   orthographicCameraSchema,
   perspectiveCameraSchema,
-  PerspectiveCameraResourceProps,
   PerspectiveCameraResourceType,
   SharedPerspectiveCameraResource,
-  OrthographicCameraResourceProps,
   OrthographicCameraResourceType,
   SharedOrthographicCameraResource,
-  SharedPerspectiveCamera,
-  SharedOrthographicCamera,
+  PerspectiveCameraTripleBuffer,
+  OrthographicCameraTripleBuffer,
 } from "./camera.common";
+
+export type PerspectiveCameraBufferView = ObjectBufferView<typeof perspectiveCameraSchema, ArrayBuffer>;
+export type OrthographicCameraBufferView = ObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
 
 export interface RemotePerspectiveCamera {
   resourceId: ResourceId;
   type: CameraType.Perspective;
-  sharedCamera: SharedPerspectiveCamera;
+  cameraBufferView: PerspectiveCameraBufferView;
+  cameraTripleBuffer: PerspectiveCameraTripleBuffer;
   get layers(): number;
   set layers(value: number);
   get aspectRatio(): number;
@@ -43,7 +44,8 @@ export interface RemotePerspectiveCamera {
 export interface RemoteOrthographicCamera {
   resourceId: ResourceId;
   type: CameraType.Orthographic;
-  sharedCamera: SharedOrthographicCamera;
+  cameraBufferView: OrthographicCameraBufferView;
+  cameraTripleBuffer: OrthographicCameraTripleBuffer;
   get layers(): number;
   set layers(value: number);
   get xmag(): number;
@@ -58,34 +60,27 @@ export interface RemoteOrthographicCamera {
 
 export type RemoteCamera = RemotePerspectiveCamera | RemoteOrthographicCamera;
 
-export function createRemotePerspectiveCamera(
-  ctx: GameState,
-  props: PerspectiveCameraResourceProps
-): RemotePerspectiveCamera {
+export interface PerspectiveCameraProps {
+  layers?: number;
+  aspectRatio?: number;
+  yfov: number;
+  zfar?: number;
+  znear: number;
+}
+
+export function createRemotePerspectiveCamera(ctx: GameState, props?: PerspectiveCameraProps): RemotePerspectiveCamera {
   const rendererModule = getModule(ctx, RendererModule);
 
-  const camera = createObjectBufferView(perspectiveCameraSchema, ArrayBuffer);
+  const cameraBufferView = createObjectBufferView(perspectiveCameraSchema, ArrayBuffer);
 
-  const initialProps: Required<PerspectiveCameraResourceProps> = {
-    layers: props.layers === undefined ? 1 : props.layers,
-    zfar: props.zfar || 2000,
-    znear: props.znear,
-    aspectRatio: props.aspectRatio || 0, // 0 for automatic aspect ratio defined by canvas
-    yfov: props.yfov,
-  };
+  cameraBufferView.layers[0] = props?.layers === undefined ? 1 : props.layers;
+  cameraBufferView.zfar[0] = props?.zfar || 2000;
+  cameraBufferView.znear[0] = props?.znear === undefined ? 0.1 : props.znear;
+  cameraBufferView.aspectRatio[0] = props?.aspectRatio || 0; // 0 for automatic aspect ratio defined by canvas
+  cameraBufferView.yfov[0] = props?.yfov === undefined ? 50 : props.yfov;
+  cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
 
-  camera.layers[0] = initialProps.layers;
-  camera.zfar[0] = initialProps.zfar;
-  camera.znear[0] = initialProps.znear;
-  camera.aspectRatio[0] = initialProps.aspectRatio;
-  camera.yfov[0] = initialProps.yfov;
-  camera.projectionMatrixNeedsUpdate[0] = 1;
-
-  const sharedCamera = createTripleBufferBackedObjectBufferView(
-    perspectiveCameraSchema,
-    camera,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const cameraTripleBuffer = createObjectTripleBuffer(perspectiveCameraSchema, ctx.gameToMainTripleBufferFlags);
 
   const resourceId = createResource<SharedPerspectiveCameraResource>(
     ctx,
@@ -93,53 +88,48 @@ export function createRemotePerspectiveCamera(
     PerspectiveCameraResourceType,
     {
       type: CameraType.Perspective,
-      initialProps,
-      sharedCamera,
+      cameraTripleBuffer,
     }
   );
 
   const remoteCamera: RemotePerspectiveCamera = {
     resourceId,
-    sharedCamera,
+    cameraBufferView,
+    cameraTripleBuffer,
     type: CameraType.Perspective,
     get layers(): number {
-      return camera.layers[0];
+      return cameraBufferView.layers[0];
     },
     set layers(value: number) {
-      camera.layers[0] = value;
-      camera.needsUpdate[0] = 1;
+      cameraBufferView.layers[0] = value;
     },
     get aspectRatio(): number {
-      return camera.aspectRatio[0];
+      return cameraBufferView.aspectRatio[0];
     },
     set aspectRatio(value: number) {
-      camera.aspectRatio[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.aspectRatio[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get yfov(): number {
-      return camera.yfov[0];
+      return cameraBufferView.yfov[0];
     },
     set yfov(value: number) {
-      camera.yfov[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.yfov[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get zfar(): number {
-      return camera.zfar[0];
+      return cameraBufferView.zfar[0];
     },
     set zfar(value: number) {
-      camera.zfar[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.zfar[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get znear(): number {
-      return camera.znear[0];
+      return cameraBufferView.znear[0];
     },
     set znear(value: number) {
-      camera.znear[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.znear[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
   };
 
@@ -148,34 +138,29 @@ export function createRemotePerspectiveCamera(
   return remoteCamera;
 }
 
-export function addOrthographicCameraResource(
+export interface OrthographicCameraProps {
+  layers?: number;
+  xmag: number;
+  ymag: number;
+  zfar: number;
+  znear: number;
+}
+
+export function createRemoteOrthographicCamera(
   ctx: GameState,
-  eid: number,
-  props: OrthographicCameraResourceProps
+  props: OrthographicCameraProps
 ): RemoteOrthographicCamera {
   const rendererModule = getModule(ctx, RendererModule);
 
-  const camera = createObjectBufferView(orthographicCameraSchema, ArrayBuffer);
+  const cameraBufferView = createObjectBufferView(orthographicCameraSchema, ArrayBuffer);
 
-  const initialProps: Required<OrthographicCameraResourceProps> = {
-    layers: props.layers === undefined ? 1 : props.layers,
-    zfar: props.zfar,
-    znear: props.znear,
-    xmag: props.xmag,
-    ymag: props.ymag,
-  };
+  cameraBufferView.layers[0] = props.layers === undefined ? 1 : props.layers;
+  cameraBufferView.zfar[0] = props.zfar;
+  cameraBufferView.znear[0] = props.znear;
+  cameraBufferView.xmag[0] = props.xmag;
+  cameraBufferView.ymag[0] = props.ymag;
 
-  camera.layers[0] = initialProps.layers;
-  camera.zfar[0] = initialProps.zfar;
-  camera.znear[0] = initialProps.znear;
-  camera.xmag[0] = initialProps.xmag;
-  camera.ymag[0] = initialProps.ymag;
-
-  const sharedCamera = createTripleBufferBackedObjectBufferView(
-    orthographicCameraSchema,
-    camera,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const cameraTripleBuffer = createObjectTripleBuffer(orthographicCameraSchema, ctx.gameToMainTripleBufferFlags);
 
   const resourceId = createResource<SharedOrthographicCameraResource>(
     ctx,
@@ -183,53 +168,48 @@ export function addOrthographicCameraResource(
     OrthographicCameraResourceType,
     {
       type: CameraType.Orthographic,
-      initialProps,
-      sharedCamera,
+      cameraTripleBuffer,
     }
   );
 
   const remoteCamera: RemoteOrthographicCamera = {
     resourceId,
-    sharedCamera,
+    cameraBufferView,
+    cameraTripleBuffer,
     type: CameraType.Orthographic,
     get layers(): number {
-      return camera.layers[0];
+      return cameraBufferView.layers[0];
     },
     set layers(value: number) {
-      camera.layers[0] = value;
-      camera.needsUpdate[0] = 1;
+      cameraBufferView.layers[0] = value;
     },
     get xmag(): number {
-      return camera.xmag[0];
+      return cameraBufferView.xmag[0];
     },
     set xmag(value: number) {
-      camera.xmag[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.xmag[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get ymag(): number {
-      return camera.ymag[0];
+      return cameraBufferView.ymag[0];
     },
     set ymag(value: number) {
-      camera.ymag[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.ymag[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get zfar(): number {
-      return camera.zfar[0];
+      return cameraBufferView.zfar[0];
     },
     set zfar(value: number) {
-      camera.zfar[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.zfar[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
     get znear(): number {
-      return camera.znear[0];
+      return cameraBufferView.znear[0];
     },
     set znear(value: number) {
-      camera.znear[0] = value;
-      camera.needsUpdate[0] = 1;
-      camera.projectionMatrixNeedsUpdate[0] = 1;
+      cameraBufferView.znear[0] = value;
+      cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
     },
   };
 
@@ -238,32 +218,18 @@ export function addOrthographicCameraResource(
   return remoteCamera;
 }
 
-export const RemoteCameraComponent = defineComponent<Map<number, RemoteCamera>>(new Map());
-
-export function addRemoteCameraComponent(ctx: GameState, eid: number, camera: RemoteCamera) {
-  addComponent(ctx.world, RemoteCameraComponent, eid);
-  RemoteCameraComponent.set(eid, camera);
-}
-
-export function removeRemoteCameraComponent(ctx: GameState, eid: number) {
-  removeComponent(ctx.world, RemoteCameraComponent, eid);
-  RemoteCameraComponent.delete(eid);
-}
-
 export function updateRemoteCameras(ctx: GameState) {
   const { perspectiveCameras, orthographicCameras } = getModule(ctx, RendererModule);
 
   for (let i = 0; i < perspectiveCameras.length; i++) {
     const perspectiveCamera = perspectiveCameras[i];
-    commitToTripleBufferView(perspectiveCamera.sharedCamera);
-    perspectiveCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
-    perspectiveCamera.sharedCamera.needsUpdate[0] = 0;
+    commitToObjectTripleBuffer(perspectiveCamera.cameraTripleBuffer, perspectiveCamera.cameraBufferView);
+    perspectiveCamera.cameraBufferView.projectionMatrixNeedsUpdate[0] = 0;
   }
 
   for (let i = 0; i < orthographicCameras.length; i++) {
     const orthographicCamera = perspectiveCameras[i];
-    commitToTripleBufferView(orthographicCamera.sharedCamera);
-    orthographicCamera.sharedCamera.projectionMatrixNeedsUpdate[0] = 0;
-    orthographicCamera.sharedCamera.needsUpdate[0] = 0;
+    commitToObjectTripleBuffer(orthographicCamera.cameraTripleBuffer, orthographicCamera.cameraBufferView);
+    orthographicCamera.cameraBufferView.projectionMatrixNeedsUpdate[0] = 0;
   }
 }

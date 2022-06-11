@@ -1,26 +1,19 @@
-import { addEntity } from "bitecs";
-
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
-  TripleBufferBackedObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectTripleBuffer,
 } from "../allocator/ObjectBufferView";
 import {
-  addRemoteCameraComponent,
   createRemotePerspectiveCamera,
-  RemoteCameraComponent,
   RemoteOrthographicCamera,
   RemotePerspectiveCamera,
   updateRemoteCameras,
 } from "../camera/camera.game";
-import { addChild, addTransformComponent, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { waitForRemoteResource } from "../resource/resource.game";
 import {
   addRemoteSceneComponent,
-  createRemoteSceneResource,
   RemoteScene,
   RemoteSceneComponent,
   updateRendererRemoteScenes,
@@ -34,11 +27,11 @@ import {
 } from "./renderer.common";
 import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
 import { RemoteDirectionalLight, RemotePointLight, RemoteSpotLight } from "../light/light.game";
+import { RemoteMeshPrimitive } from "../mesh/mesh.game";
+import { addRemoteNodeComponent } from "../node/node.game";
 
 export interface GameRendererModuleState {
-  activeScene: number;
-  activeCamera: number;
-  sharedRendererState: TripleBufferBackedObjectBufferView<typeof rendererSchema, ArrayBuffer>;
+  sharedRendererState: ObjectTripleBuffer<typeof rendererSchema>;
   scenes: RemoteScene[];
   textures: RemoteTexture[];
   unlitMaterials: RemoteUnlitMaterial[];
@@ -48,18 +41,13 @@ export interface GameRendererModuleState {
   spotLights: RemoteSpotLight[];
   perspectiveCameras: RemotePerspectiveCamera[];
   orthographicCameras: RemoteOrthographicCamera[];
+  meshPrimitives: RemoteMeshPrimitive[];
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
   name: rendererModuleName,
-  async create({ world, gameToRenderTripleBufferFlags, renderPort }, { sendMessage, waitForMessage }) {
-    const rendererState = createObjectBufferView(rendererSchema, ArrayBuffer);
-
-    const sharedRendererState = createTripleBufferBackedObjectBufferView(
-      rendererSchema,
-      rendererState,
-      gameToRenderTripleBufferFlags
-    );
+  async create({ gameToRenderTripleBufferFlags }, { sendMessage }) {
+    const sharedRendererState = createObjectTripleBuffer(rendererSchema, gameToRenderTripleBufferFlags);
 
     sendMessage<InitializeRendererTripleBuffersMessage>(
       Thread.Render,
@@ -69,16 +57,7 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       }
     );
 
-    const activeScene = addEntity(world);
-    addTransformComponent(world, activeScene);
-
-    const activeCamera = addEntity(world);
-    addTransformComponent(world, activeCamera);
-    addChild(activeScene, activeCamera);
-
     return {
-      activeScene,
-      activeCamera,
       sharedRendererState,
       scenes: [],
       textures: [],
@@ -89,64 +68,30 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       spotLights: [],
       perspectiveCameras: [],
       orthographicCameras: [],
+      meshPrimitives: [],
     };
   },
-  async init(state) {
-    const scene = getActiveScene(state);
-    const remoteScene = createRemoteSceneResource(state);
-    addRemoteSceneComponent(state, scene, remoteScene);
-    await waitForRemoteResource(state, remoteScene.rendererResourceId);
-
-    const camera = getActiveCamera(state);
-    const remoteCamera = createRemotePerspectiveCamera(state, {
-      znear: 0.1,
-      yfov: 70,
+  async init(ctx) {
+    addRemoteSceneComponent(ctx, ctx.activeScene);
+    addRemoteNodeComponent(ctx, ctx.activeCamera, {
+      camera: createRemotePerspectiveCamera(ctx),
     });
-    addRemoteCameraComponent(state, camera, remoteCamera);
-    await waitForRemoteResource(state, remoteCamera.resourceId);
   },
 });
 
 export const RenderableSystem = (state: GameState) => {
   const renderer = getModule(state, RendererModule);
-  const scene = getActiveScene(state);
 
-  updateMatrixWorld(scene);
+  const activeScene = RemoteSceneComponent.get(state.activeScene);
+  const activeCamera = RemoteSceneComponent.get(state.activeCamera);
 
-  commitToTripleBufferView(renderer.sharedRendererState);
+  renderer.sharedRendererState.activeSceneResourceId[0] = activeScene?.rendererResourceId || 0;
+  renderer.sharedRendererState.activeCameraResourceId[0] = activeCamera?.rendererResourceId || 0;
+
+  commitToObjectTripleBuffer(renderer.sharedRendererState);
 
   updateRendererRemoteScenes(renderer.scenes);
   updateRemoteTextures(renderer.textures);
   updateRemoteMaterials(state);
   updateRemoteCameras(state);
 };
-
-export function getActiveScene(ctx: GameState) {
-  const renderer = getModule(ctx, RendererModule);
-  return renderer.activeScene;
-}
-
-export function setActiveScene(ctx: GameState, eid: number) {
-  const renderer = getModule(ctx, RendererModule);
-  const remoteScene = RemoteSceneComponent.get(eid);
-
-  if (remoteScene) {
-    renderer.activeScene = eid;
-    renderer.sharedRendererState.activeSceneResourceId[0] = remoteScene.rendererResourceId;
-  }
-}
-
-export function getActiveCamera(ctx: GameState) {
-  const renderer = getModule(ctx, RendererModule);
-  return renderer.activeCamera;
-}
-
-export function setActiveCamera(ctx: GameState, eid: number) {
-  const renderer = getModule(ctx, RendererModule);
-  const remoteCamera = RemoteCameraComponent.get(eid);
-
-  if (remoteCamera) {
-    renderer.activeCamera = eid;
-    renderer.sharedRendererState.activeCameraResourceId[0] = remoteCamera.resourceId;
-  }
-}

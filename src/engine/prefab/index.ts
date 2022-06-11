@@ -13,7 +13,7 @@ import { addRemoteMeshComponent, createRemoteMesh } from "../mesh/mesh.game";
 import { createRemoteAccessor } from "../accessor/accessor.game";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { createRemoteBufferView } from "../bufferView/bufferView.game";
-import { MeshAttribute } from "../mesh/mesh.common";
+import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { addRemoteCameraComponent, createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 
@@ -32,7 +32,7 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
       count: indices.length,
     }),
     attributes: {
-      [MeshAttribute.POSITION]: createRemoteAccessor(state, {
+      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
         type: AccessorType.VEC3,
         componentType: AccessorComponentType.Float32,
         bufferView,

@@ -1,21 +1,38 @@
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
 export const MeshResourceType = "mesh";
+export const MeshPrimitiveResourceType = "mesh-primitive";
 
-interface PrimitiveResourceProps {
+export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
   indices?: ResourceId;
   material?: ResourceId;
-  mode?: number;
+  mode: MeshPrimitiveMode;
   targets?: number[] | Float32Array;
 }
 
 export interface MeshResourceProps {
-  primitives: PrimitiveResourceProps[];
+  primitives: ResourceId[];
   weights?: number[] | Float32Array;
 }
 
-export enum MeshMode {
+export interface SharedMeshResource {
+  initialProps: MeshResourceProps;
+}
+
+export const meshPrimitiveSchema = defineObjectBufferSchema({
+  material: [Uint32Array, 1],
+});
+
+export type MeshPrimitiveTripleBuffer = ObjectTripleBuffer<typeof meshPrimitiveSchema>;
+
+export interface SharedMeshPrimitiveResource {
+  initialProps: PrimitiveResourceProps;
+  meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
+}
+
+export enum MeshPrimitiveMode {
   POINTS,
   LINES,
   LINE_LOOP,
@@ -25,7 +42,7 @@ export enum MeshMode {
   TRIANGLE_FAN,
 }
 
-export enum MeshAttribute {
+export enum MeshPrimitiveAttribute {
   POSITION = "POSITION",
   NORMAL = "NORMAL",
   TANGENT = "TANGENT",

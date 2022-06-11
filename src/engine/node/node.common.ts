@@ -1,4 +1,4 @@
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
 export const NodeResourceType = "node";
@@ -19,9 +19,9 @@ export const audioNodeSchema = defineObjectBufferSchema({
   audioEmitter: [Uint32Array, 1],
 });
 
-export type RendererSharedNode = TripleBufferBackedObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
+export type RendererNodeTripleBuffer = ObjectTripleBuffer<typeof rendererNodeSchema>;
 
-export type AudioSharedNode = TripleBufferBackedObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
+export type AudioNodeTripleBuffer = ObjectTripleBuffer<typeof audioNodeSchema>;
 
 export interface RendererNodeResourceProps {
   light: ResourceId;
@@ -32,7 +32,7 @@ export interface RendererNodeResourceProps {
 
 export type RendererSharedNodeResource = {
   initialProps: RendererNodeResourceProps;
-  sharedNode: RendererSharedNode;
+  sharedNode: RendererNodeTripleBuffer;
 };
 
 export interface AudioNodeResourceProps {
@@ -42,5 +42,5 @@ export interface AudioNodeResourceProps {
 
 export type AudioSharedNodeResource = {
   initialProps: AudioNodeResourceProps;
-  sharedNode: AudioSharedNode;
+  sharedNode: AudioNodeTripleBuffer;
 };

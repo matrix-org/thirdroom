@@ -1,7 +1,7 @@
 import { addComponent, defineComponent, removeComponent } from "bitecs";
 
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
@@ -27,6 +27,7 @@ import {
 } from "./scene.common";
 
 export interface RemoteScene {
+  eid: number;
   rendererResourceId: ResourceId;
   audioResourceId: ResourceId;
   rendererSharedScene: RendererSharedScene;
@@ -48,7 +49,7 @@ export interface SceneProps {
   environment?: RemoteTexture;
 }
 
-export function createRemoteSceneResource(ctx: GameState, props?: SceneProps): RemoteScene {
+export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: SceneProps): RemoteScene {
   const rendererModule = getModule(ctx, RendererModule);
   const audioModule = getModule(ctx, GameAudioModule);
 
@@ -112,6 +113,7 @@ export function createRemoteSceneResource(ctx: GameState, props?: SceneProps): R
   let _audioEmitters: RemoteGlobalAudioEmitter[] = props?.audioEmitters || [];
 
   const remoteScene: RemoteScene = {
+    eid,
     rendererResourceId,
     audioResourceId,
     audioSharedScene,
@@ -151,15 +153,13 @@ export function createRemoteSceneResource(ctx: GameState, props?: SceneProps): R
   rendererModule.scenes.push(remoteScene);
   audioModule.scenes.push(remoteScene);
 
+  addComponent(ctx.world, RemoteSceneComponent, eid);
+  RemoteSceneComponent.set(eid, remoteScene);
+
   return remoteScene;
 }
 
 export const RemoteSceneComponent = defineComponent<Map<number, RemoteScene>>(new Map());
-
-export function addRemoteSceneComponent(ctx: GameState, eid: number, scene: RemoteScene) {
-  addComponent(ctx.world, RemoteSceneComponent, eid);
-  RemoteSceneComponent.set(eid, scene);
-}
 
 export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
   removeComponent(ctx.world, RemoteSceneComponent, eid);
@@ -169,7 +169,7 @@ export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
 export function updateRendererRemoteScenes(scenes: RemoteScene[]) {
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
-    commitToTripleBufferView(scene.rendererSharedScene);
+    commitToObjectTripleBuffer(scene.rendererSharedScene);
     scene.rendererSharedScene.needsUpdate[0] = 0;
   }
 }
@@ -177,6 +177,6 @@ export function updateRendererRemoteScenes(scenes: RemoteScene[]) {
 export function updateAudioRemoteScenes(scenes: RemoteScene[]) {
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
-    commitToTripleBufferView(scene.audioSharedScene);
+    commitToObjectTripleBuffer(scene.audioSharedScene);
   }
 }

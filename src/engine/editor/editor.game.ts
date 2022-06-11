@@ -33,7 +33,6 @@ import {
 } from "../component/types";
 import {
   //getDirection,
-  hierarchyObjectBuffer,
   registerTransformComponent,
   //Transform
 } from "../component/transform";
@@ -51,12 +50,16 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import {
   EditorMessageType,
   editorModuleName,
+  HierarchyTripleBuffer,
   InitializeEditorStateMessage,
-  SharedHierarchyState,
 } from "./editor.common";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
-import { commitToTripleBufferView, createTripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
-import { getActiveCamera } from "../renderer/renderer.game";
+import {
+  commitToObjectTripleBuffer,
+  createObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
+} from "../allocator/ObjectBufferView";
 
 // TODO: Importing this module changes the order of Renderable / Transform imports
 // Which in turn changes the cursor buffer view order and breaks transforms.
@@ -81,7 +84,8 @@ export interface EditorModuleState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
-  sharedHierarchyState: SharedHierarchyState;
+  hierarchyBufferView: ObjectBufferView<typeof hierarchyObjectBufferSchema, ArrayBuffer>;
+  hierarchyTripleBuffer: HierarchyTripleBuffer;
 }
 
 /******************
@@ -91,14 +95,14 @@ export interface EditorModuleState {
 export const EditorModule = defineModule<GameState, EditorModuleState>({
   name: editorModuleName,
   async create(ctx, { sendMessage }) {
-    const sharedHierarchyState = createTripleBufferBackedObjectBufferView(
+    const hierarchyBufferView = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
+    const hierarchyTripleBuffer = createObjectTripleBuffer(
       hierarchyObjectBufferSchema,
-      hierarchyObjectBuffer,
       ctx.mainToGameTripleBufferFlags
     );
 
     sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
-      sharedHierarchyState,
+      hierarchyTripleBuffer,
     });
 
     return {
@@ -116,7 +120,8 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       propertyIdMap: new Map(),
       propertyGetterMap: new Map(),
       propertySetterMap: new Map(),
-      sharedHierarchyState,
+      hierarchyBufferView,
+      hierarchyTripleBuffer,
     };
   },
   init(ctx) {
@@ -151,8 +156,7 @@ export function onLoadEditor(state: GameState) {
     componentInfos: editor.componentInfoMap,
   });
 
-  const camera = getActiveCamera(state);
-  addComponent(state.world, Selected, camera);
+  addComponent(state.world, Selected, state.activeCamera);
 }
 
 export function onDisposeEditor(state: GameState) {
@@ -266,7 +270,7 @@ export function EditorStateSystem(state: GameState) {
     updateSelectedEntities(state, selectedEntities.slice());
   }
 
-  commitToTripleBufferView(editor.sharedHierarchyState);
+  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, editor.hierarchyBufferView);
 }
 
 function processEditorMessage(state: GameState, message: WorkerMessages) {

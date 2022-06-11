@@ -1,10 +1,11 @@
 import { RemoteAccessor } from "../engine/accessor/accessor.game";
-import { RemoteAudioSource } from "../engine/audio/audio.game";
+import { RemoteAudioSource, RemoteGlobalAudioEmitter, RemotePositionalAudioEmitter } from "../engine/audio/audio.game";
 import { RemoteBufferView } from "../engine/bufferView/bufferView.game";
 import { RemoteCamera } from "../engine/camera/camera.game";
 import { GameState } from "../engine/GameTypes";
 import { RemoteLight } from "../engine/light/light.game";
 import { RemoteMaterial } from "../engine/material/material.game";
+import { RemoteMesh } from "../engine/mesh/mesh.game";
 import { Thread } from "../engine/module/module.common";
 import { RemoteSampler } from "../engine/sampler/sampler.game";
 import { RemoteScene } from "../engine/scene/scene.game";
@@ -23,7 +24,7 @@ interface GLTFResource {
   samplers: RemoteSampler[];
   materials: RemoteMaterial[];
   audioSources: RemoteAudioSource[];
-  audioEmitters: RemoteAudioEmitters[];
+  audioEmitters: (RemoteGlobalAudioEmitter | RemotePositionalAudioEmitter)[];
 }
 
 export async function loadGLTF(ctx: GameState, uri: string): Promise<GLTFResource> {

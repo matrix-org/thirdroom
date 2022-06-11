@@ -1,7 +1,7 @@
 import { vec2 } from "gl-matrix";
 
 import {
-  commitToTripleBufferView,
+  commitToObjectTripleBuffer,
   createObjectBufferView,
   createTripleBufferBackedObjectBufferView,
 } from "../allocator/ObjectBufferView";
@@ -104,7 +104,7 @@ export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: 
 export function updateRemoteTextures(textures: RemoteTexture[]) {
   for (let i = 0; i < textures.length; i++) {
     const texture = textures[i];
-    commitToTripleBufferView(texture.sharedTexture);
+    commitToObjectTripleBuffer(texture.sharedTexture);
     texture.sharedTexture.needsUpdate[0] = 0;
   }
 }

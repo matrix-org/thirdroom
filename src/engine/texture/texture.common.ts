@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix";
 
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
 export const TextureResourceType = "texture";
@@ -12,7 +12,7 @@ export const textureSchema = defineObjectBufferSchema({
   needsUpdate: [Uint8Array, 1],
 });
 
-export type SharedTexture = TripleBufferBackedObjectBufferView<typeof textureSchema, ArrayBuffer>;
+export type SharedTexture = ObjectTripleBuffer<typeof textureSchema>;
 
 export enum TextureEncoding {
   Linear = 3000,

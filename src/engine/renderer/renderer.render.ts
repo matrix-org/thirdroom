@@ -1,42 +1,23 @@
-import {
-  ACESFilmicToneMapping,
-  ImageBitmapLoader,
-  // Matrix4,
-  PCFSoftShadowMap,
-  PerspectiveCamera,
-  // Quaternion,
-  sRGBEncoding,
-  // Vector3,
-  WebGLRenderer,
-} from "three";
+import { ACESFilmicToneMapping, ImageBitmapLoader, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { getReadObjectBufferView, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { CameraType } from "../camera/camera.common";
 import {
-  LocalCameraResource,
   LocalOrthographicCameraResource,
   LocalPerspectiveCameraResource,
   onLoadOrthographicCamera,
   onLoadPerspectiveCamera,
-  updateLocalOrthographicCameraResources,
-  updateLocalPerspectiveCameraResources,
 } from "../camera/camera.render";
 import { ImageResourceType } from "../image/image.common";
 import { onLoadLocalImageResource } from "../image/image.render";
 import { DirectionalLightResourceType, PointLightResourceType, SpotLightResourceType } from "../light/light.common";
 import {
-  LocalDirectionalLightResource,
-  LocalPointLightResource,
-  LocalSpotLightResource,
   onLoadLocalDirectionalLightResource,
   onLoadLocalPointLightResource,
   onLoadLocalSpotLightResource,
-  updateLocalDirectionalLightResources,
-  updateLocalPointLightResources,
-  updateLocalSpotLightResources,
 } from "../light/light.render";
 import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
 import {
@@ -47,8 +28,6 @@ import {
   updateLocalStandardMaterialResources,
   updateLocalUnlitMaterialResources,
 } from "../material/material.render";
-// import { clamp } from "../component/transform";
-// import { tickRate } from "../config.common";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { getLocalResource, registerResourceLoader } from "../resource/resource.render";
 import { SamplerResourceType } from "../sampler/sampler.common";
@@ -74,6 +53,14 @@ import {
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
+import { MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import {
+  LocalMeshPrimitive,
+  onLoadLocalMeshPrimitiveResource,
+  onLoadLocalMeshResource,
+  updateLocalMeshPrimitiveResources,
+} from "../mesh/mesh.render";
+import { LocalNode } from "../node/node.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -90,16 +77,14 @@ export interface RendererModuleState {
   renderer: WebGLRenderer;
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
-  sharedRendererState: TripleBufferBackedObjectBufferView<typeof rendererSchema, ArrayBuffer>;
+  sharedRendererState: ObjectTripleBuffer<typeof rendererSchema>;
   scenes: LocalSceneResource[];
   unlitMaterials: LocalUnlitMaterialResource[];
   standardMaterials: LocalStandardMaterialResource[];
   textures: LocalTextureResource[];
-  directionalLights: LocalDirectionalLightResource[];
-  pointLights: LocalPointLightResource[];
-  spotLights: LocalSpotLightResource[];
   perspectiveCameraResources: LocalPerspectiveCameraResource[];
   orthographicCameraResources: LocalOrthographicCameraResource[];
+  meshPrimitives: LocalMeshPrimitive[];
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -140,6 +125,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       rgbeLoader: new RGBELoader(),
       perspectiveCameraResources: [],
       orthographicCameraResources: [],
+      meshPrimitives: [],
     };
   },
   init(ctx) {
@@ -158,6 +144,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
       registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
+      registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
+      registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
     ]);
   },
 });
@@ -207,95 +195,44 @@ export function getActiveLocalSceneResource(ctx: RenderThreadState): LocalSceneR
   return localResource?.resource;
 }
 
-export function getActiveLocalCameraResource(ctx: RenderThreadState): LocalCameraResource | undefined {
+export function getActiveLocalCameraResource(ctx: RenderThreadState): LocalNode | undefined {
   const renderModule = getModule(ctx, RendererModule);
   const sharedRendererState = getReadObjectBufferView(renderModule.sharedRendererState);
   const resourceId = sharedRendererState.activeCameraResourceId[0];
-  const localResource = getLocalResource<LocalCameraResource>(ctx, resourceId);
+  const localResource = getLocalResource<LocalNode>(ctx, resourceId);
   return localResource?.resource;
 }
-
-// const tempMatrix4 = new Matrix4();
-// const tempPosition = new Vector3();
-// const tempQuaternion = new Quaternion();
-// const tempScale = new Vector3();
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
 
   const { needsResize, renderer, canvasWidth, canvasHeight } = rendererModule;
 
-  const sceneResource = getActiveLocalSceneResource(ctx);
-  const cameraResource = getActiveLocalCameraResource(ctx);
+  const activeSceneResource = getActiveLocalSceneResource(ctx);
+  const activeCameraNode = getActiveLocalCameraResource(ctx);
 
-  // TODO: Move interpolation to node update function
-  //const frameRate = 1 / dt;
-  //const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
-
-  // const sharedRendererState = getReadObjectBufferView(renderModule.sharedRendererState);
-
-  // for (let i = 0; i < renderables.length; i++) {
-  //   const { object, helper, eid } = renderables[i];
-
-  //   if (!object) {
-  //     continue;
-  //   }
-
-  //   object.visible = !!Renderable.visible[eid];
-
-  //   if (!Transform.worldMatrixNeedsUpdate[eid]) {
-  //     continue;
-  //   }
-
-  //   if (Renderable.interpolate[eid]) {
-  //     tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
-  //     object.position.lerp(tempPosition, lerpAlpha);
-  //     object.quaternion.slerp(tempQuaternion, lerpAlpha);
-  //     object.scale.lerp(tempScale, lerpAlpha);
-
-  //     if (helper) {
-  //       helper.position.copy(object.position);
-  //       helper.quaternion.copy(object.quaternion);
-  //       helper.scale.copy(object.scale);
-  //     }
-  //   } else {
-  //     tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
-  //     object.matrix.fromArray(Transform.worldMatrix[eid]);
-  //     object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
-  //     object.matrixWorldNeedsUpdate = false;
-
-  //     if (helper) {
-  //       helper.position.copy(object.position);
-  //       helper.quaternion.copy(object.quaternion);
-  //       helper.scale.copy(object.scale);
-  //     }
-  //   }
-  // }
-
-  if (cameraResource && needsResize) {
-    const perspectiveCamera = cameraResource.camera as PerspectiveCamera;
-
-    if (cameraResource.type === CameraType.Perspective && cameraResource.sharedCamera.aspectRatio[0] === 0) {
-      perspectiveCamera.aspect = canvasWidth / canvasHeight;
+  if (activeCameraNode && activeCameraNode.cameraObject && activeCameraNode.camera && needsResize) {
+    if (
+      "isPerspectiveCamera" in activeCameraNode.cameraObject &&
+      activeCameraNode.camera.type === CameraType.Perspective &&
+      activeCameraNode.camera.sharedCamera.aspectRatio[0] === 0
+    ) {
+      activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
     }
 
-    perspectiveCamera.updateProjectionMatrix();
+    activeCameraNode.cameraObject.updateProjectionMatrix();
 
     renderer.setSize(canvasWidth, canvasHeight, false);
     rendererModule.needsResize = false;
   }
 
   updateLocalSceneResources(ctx, rendererModule.scenes);
-  updateLocalPerspectiveCameraResources(rendererModule.perspectiveCameraResources);
-  updateLocalOrthographicCameraResources(rendererModule.orthographicCameraResources);
   updateLocalTextureResources(rendererModule.textures);
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
-  updateLocalDirectionalLightResources(rendererModule.directionalLights);
-  updateLocalPointLightResources(rendererModule.pointLights);
-  updateLocalSpotLightResources(rendererModule.spotLights);
+  updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
 
-  if (sceneResource && cameraResource) {
-    rendererModule.renderer.render(sceneResource.scene, cameraResource.camera);
+  if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
+    rendererModule.renderer.render(activeSceneResource.scene, activeCameraNode.cameraObject);
   }
 }

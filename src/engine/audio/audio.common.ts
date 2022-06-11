@@ -1,11 +1,13 @@
-import { defineObjectBufferSchema, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
-export const AudioResourceType = "audio";
-export const AudioSourceResourceType = "audio-source";
-export const MediaStreamSourceResourceType = "media-stream-source";
-export const GlobalAudioEmitterResourceType = "global-audio-emitter";
-export const PositionalAudioEmitterResourceType = "positional-audio-emitter";
+export enum AudioResourceType {
+  AudioData = "audio-data",
+  AudioSource = "audio-source",
+  MediaStreamSource = "media-stream-source",
+  GlobalAudioEmitter = "global-audio-emitter",
+  PositionalAudioEmitter = "positional-audio-emitter",
+}
 
 export type AudioResourceProps =
   | {
@@ -24,22 +26,22 @@ export const mediaStreamSourceSchema = defineObjectBufferSchema({
   gain: [Float32Array, 1],
 });
 
-export type SharedMediaStreamSource = TripleBufferBackedObjectBufferView<typeof mediaStreamSourceSchema, ArrayBuffer>;
+export type SharedMediaStreamSource = ObjectTripleBuffer<typeof mediaStreamSourceSchema>;
 
-export interface SharedMediaStreamSourceResource {
-  initialProps: MediaStreamSourceProps;
-  sharedMediaStreamSource: SharedMediaStreamSource;
-}
+// export interface SharedMediaStreamSourceResource {
+//   initialProps: MediaStreamSourceProps;
+//   sharedMediaStreamSource: SharedMediaStreamSource;
+// }
 
 export interface AudioSourceResourceProps {
-  audio: ResourceId;
+  resourceId: ResourceId;
   gain: number;
   autoPlay: boolean;
   loop: boolean;
   currentTime: number;
 }
 
-export const audioSourceSchema = defineObjectBufferSchema({
+export const audioSourceWriteSchema = defineObjectBufferSchema({
   audio: [Uint32Array, 1],
   gain: [Float32Array, 1],
   currentTime: [Float32Array, 1],
@@ -47,11 +49,18 @@ export const audioSourceSchema = defineObjectBufferSchema({
   loop: [Uint8Array, 1],
 });
 
-export type SharedAudioSource = TripleBufferBackedObjectBufferView<typeof audioSourceSchema, ArrayBuffer>;
+export const audioSourceReadSchema = defineObjectBufferSchema({
+  currentTime: [Float32Array, 1],
+  playing: [Uint8Array, 1],
+  duration: [Float32Array, 1],
+});
 
-export interface SharedAudioSoruceResource {
-  initialProps: AudioSourceResourceProps;
-  sharedAudioSource: SharedAudioSource;
+export type SharedWriteAudioSource = ObjectTripleBuffer<typeof audioSourceWriteSchema>;
+export type SharedReadAudioSource = ObjectTripleBuffer<typeof audioSourceReadSchema>;
+
+export interface SharedAudioSourceResource {
+  sharedWriteAudioSource: SharedWriteAudioSource;
+  sharedReadAudioSource: SharedReadAudioSource;
 }
 
 export interface GlobalAudioEmitterResourceProps {
@@ -64,12 +73,12 @@ export const globalAudioEmitterSchema = defineObjectBufferSchema({
   gain: [Float32Array, 1],
 });
 
-export type SharedGlobalAudioEmitter = TripleBufferBackedObjectBufferView<typeof globalAudioEmitterSchema, ArrayBuffer>;
+export type SharedGlobalAudioEmitter = ObjectTripleBuffer<typeof globalAudioEmitterSchema>;
 
-export interface SharedGlobalAudioEmitterResource {
-  initialProps: GlobalAudioEmitterResourceProps;
-  sharedGlobalAudioEmitter: SharedGlobalAudioEmitter;
-}
+// export interface SharedGlobalAudioEmitterResource {
+//   initialProps: GlobalAudioEmitterResourceProps;
+//   sharedGlobalAudioEmitter: SharedGlobalAudioEmitter;
+// }
 
 export enum AudioEmitterDistanceModel {
   Linear,
@@ -83,17 +92,17 @@ export const AudioEmitterDistanceModelMap: { [key: number]: DistanceModelType } 
   [AudioEmitterDistanceModel.Exponential]: "exponential",
 };
 
-export interface PositionalAudioEmitterResourceProps {
-  sources: ResourceId[];
-  gain: number;
-  coneInnerAngle: number;
-  coneOuterAngle: number;
-  coneOuterGain: number;
-  distanceModel: AudioEmitterDistanceModel;
-  maxDistance: number;
-  refDistance: number;
-  rolloffFactor: number;
-}
+// export interface PositionalAudioEmitterResourceProps {
+//   sources: ResourceId[];
+//   gain: number;
+//   coneInnerAngle: number;
+//   coneOuterAngle: number;
+//   coneOuterGain: number;
+//   distanceModel: AudioEmitterDistanceModel;
+//   maxDistance: number;
+//   refDistance: number;
+//   rolloffFactor: number;
+// }
 
 export const positionalAudioEmitterSchema = defineObjectBufferSchema({
   sources: [Uint32Array, 16], // Note there can be a maximum 16 sources assigned to an emitter at any one time
@@ -107,22 +116,18 @@ export const positionalAudioEmitterSchema = defineObjectBufferSchema({
   rolloffFactor: [Float32Array, 1],
 });
 
-export type SharedPositionalAudioEmitter = TripleBufferBackedObjectBufferView<
-  typeof positionalAudioEmitterSchema,
-  ArrayBuffer
->;
+export type SharedPositionalAudioEmitter = ObjectTripleBuffer<typeof positionalAudioEmitterSchema>;
 
-export interface SharedPositionalAudioEmitterResource {
-  initialProps: PositionalAudioEmitterResourceProps;
-  sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
-}
+// export interface SharedPositionalAudioEmitterResource {
+//   sharedPositionalAudioEmitter: SharedPositionalAudioEmitter;
+// }
 
 export const audioStateSchema = defineObjectBufferSchema({
   activeAudioListenerResourceId: [Uint32Array, 1],
   activeSceneResourceId: [Uint32Array, 1],
 });
 
-export type SharedAudioState = TripleBufferBackedObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
+export type SharedAudioState = ObjectTripleBuffer<typeof audioStateSchema>;
 
 export enum AudioMessageType {
   InitializeAudioState = "initialize-audio-state",
