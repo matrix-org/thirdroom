@@ -1,7 +1,7 @@
 import { ACESFilmicToneMapping, ImageBitmapLoader, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-import { getReadObjectBufferView, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { CameraType } from "../camera/camera.common";
@@ -48,7 +48,7 @@ import {
   InitializeRendererTripleBuffersMessage,
   RendererMessageType,
   rendererModuleName,
-  rendererSchema,
+  RendererStateTripleBuffer,
 } from "./renderer.common";
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
@@ -77,7 +77,7 @@ export interface RendererModuleState {
   renderer: WebGLRenderer;
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
-  sharedRendererState: ObjectTripleBuffer<typeof rendererSchema>;
+  rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[];
   unlitMaterials: LocalUnlitMaterialResource[];
   standardMaterials: LocalStandardMaterialResource[];
@@ -103,7 +103,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-    const { sharedRendererState } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
+    const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
       Thread.Game,
       RendererMessageType.InitializeRendererTripleBuffers
     );
@@ -113,7 +113,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       renderer,
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
-      sharedRendererState,
+      rendererStateTripleBuffer,
       scenes: [],
       textures: [],
       unlitMaterials: [],
@@ -189,16 +189,16 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
 
 export function getActiveLocalSceneResource(ctx: RenderThreadState): LocalSceneResource | undefined {
   const renderModule = getModule(ctx, RendererModule);
-  const sharedRendererState = getReadObjectBufferView(renderModule.sharedRendererState);
-  const resourceId = sharedRendererState.activeSceneResourceId[0];
+  const rendererStateView = getReadObjectBufferView(renderModule.rendererStateTripleBuffer);
+  const resourceId = rendererStateView.activeSceneResourceId[0];
   const localResource = getLocalResource<LocalSceneResource>(ctx, resourceId);
   return localResource?.resource;
 }
 
 export function getActiveLocalCameraResource(ctx: RenderThreadState): LocalNode | undefined {
   const renderModule = getModule(ctx, RendererModule);
-  const sharedRendererState = getReadObjectBufferView(renderModule.sharedRendererState);
-  const resourceId = sharedRendererState.activeCameraResourceId[0];
+  const rendererStateView = getReadObjectBufferView(renderModule.rendererStateTripleBuffer);
+  const resourceId = rendererStateView.activeCameraResourceId[0];
   const localResource = getLocalResource<LocalNode>(ctx, resourceId);
   return localResource?.resource;
 }
@@ -214,10 +214,13 @@ export function RendererSystem(ctx: RenderThreadState) {
   if (activeCameraNode && activeCameraNode.cameraObject && activeCameraNode.camera && needsResize) {
     if (
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
-      activeCameraNode.camera.type === CameraType.Perspective &&
-      activeCameraNode.camera.sharedCamera.aspectRatio[0] === 0
+      activeCameraNode.camera.type === CameraType.Perspective
     ) {
-      activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
+      const cameraStateView = getReadObjectBufferView(activeCameraNode.camera.cameraTripleBuffer);
+
+      if (cameraStateView.aspectRatio[0] === 0) {
+        activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
+      }
     }
 
     activeCameraNode.cameraObject.updateProjectionMatrix();

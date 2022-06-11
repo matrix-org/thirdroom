@@ -6,16 +6,16 @@ import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } fr
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { playAudio } from "../audio/audio.game";
 import { getModule, Thread } from "../module/module.common";
-import { setActiveCamera } from "../renderer/renderer.game";
-import { addDirectionalLightResource } from "../light/light.game";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
-import { addRemoteMeshComponent, createRemoteMesh } from "../mesh/mesh.game";
+import { createRemoteMesh } from "../mesh/mesh.game";
 import { createRemoteAccessor } from "../accessor/accessor.game";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { createRemoteBufferView } from "../bufferView/bufferView.game";
 import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
-import { addRemoteCameraComponent, createRemotePerspectiveCamera } from "../camera/camera.game";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
+import { addRemoteNodeComponent } from "../node/node.game";
+import { createDirectionalLightResource } from "../light/light.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
   const buffer = new ArrayBuffer(32);
@@ -49,7 +49,9 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
       }),
   });
 
-  addRemoteMeshComponent(state, eid, remoteMesh);
+  addRemoteNodeComponent(state, eid, {
+    mesh: remoteMesh,
+  });
 };
 
 export const createCube = (state: GameState, material?: RemoteMaterial) => {
@@ -89,10 +91,12 @@ export function createCamera(state: GameState, setActive = true): number {
     znear: 0.1,
   });
 
-  addRemoteCameraComponent(state, eid, remoteCamera);
+  addRemoteNodeComponent(state, eid, {
+    camera: remoteCamera,
+  });
 
   if (setActive) {
-    setActiveCamera(state, eid);
+    state.activeCamera = eid;
   }
 
   return eid;
@@ -101,7 +105,10 @@ export function createCamera(state: GameState, setActive = true): number {
 export function createDirectionalLight(state: GameState, parentEid?: number) {
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  addDirectionalLightResource(state, eid);
+
+  addRemoteNodeComponent(state, eid, {
+    light: createDirectionalLightResource(state),
+  });
 
   if (parentEid !== undefined) {
     addChild(parentEid, eid);

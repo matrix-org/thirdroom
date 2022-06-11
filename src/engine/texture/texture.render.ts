@@ -7,19 +7,18 @@ import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { waitForLocalResource } from "../resource/resource.render";
 import { LocalSamplerResource } from "../sampler/sampler.render";
-import { SharedTexture, SharedTextureResource } from "./texture.common";
+import { TextureTripleBuffer, SharedTextureResource } from "./texture.common";
 
 export interface LocalTextureResource {
   resourceId: ResourceId;
-  forceUpdate: boolean;
   texture: Texture;
-  sharedTexture: SharedTexture;
+  textureTripleBuffer: TextureTripleBuffer;
 }
 
 export async function onLoadLocalTextureResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
-  { initialProps, sharedTexture }: SharedTextureResource
+  { initialProps, textureTripleBuffer }: SharedTextureResource
 ): Promise<LocalTextureResource> {
   const rendererModule = getModule(ctx, RendererModule);
 
@@ -49,16 +48,10 @@ export async function onLoadLocalTextureResource(
     texture.encoding = initialProps.encoding as unknown as TextureEncoding;
   }
 
-  texture.offset.fromArray(initialProps.offset);
-  texture.rotation = initialProps.rotation;
-  texture.repeat.fromArray(initialProps.scale);
-  texture.needsUpdate = true;
-
   const localTexture: LocalTextureResource = {
     resourceId,
     texture,
-    sharedTexture,
-    forceUpdate: true, // TODO: Is this uploading the texture twice?
+    textureTripleBuffer,
   };
 
   rendererModule.textures.push(localTexture);
@@ -68,14 +61,12 @@ export async function onLoadLocalTextureResource(
 
 export function updateLocalTextureResources(textures: LocalTextureResource[]) {
   for (let i = 0; i < textures.length; i++) {
-    const { texture, sharedTexture, forceUpdate } = textures[i];
-    const props = getReadObjectBufferView(sharedTexture);
+    const { texture, textureTripleBuffer } = textures[i];
+    const textureBufferView = getReadObjectBufferView(textureTripleBuffer);
 
-    if (props.needsUpdate[0] || forceUpdate) {
-      texture.offset.fromArray(props.offset);
-      texture.rotation = props.rotation[0];
-      texture.repeat.fromArray(props.scale);
-      texture.needsUpdate = true;
-    }
+    texture.offset.fromArray(textureBufferView.offset);
+    texture.rotation = textureBufferView.rotation[0];
+    texture.repeat.fromArray(textureBufferView.scale);
+    texture.needsUpdate = true;
   }
 }

@@ -32,7 +32,7 @@ export interface RendererNodeResourceProps {
 
 export type RendererSharedNodeResource = {
   initialProps: RendererNodeResourceProps;
-  sharedNode: RendererNodeTripleBuffer;
+  rendererNodeTripleBuffer: RendererNodeTripleBuffer;
 };
 
 export interface AudioNodeResourceProps {
@@ -42,5 +42,5 @@ export interface AudioNodeResourceProps {
 
 export type AudioSharedNodeResource = {
   initialProps: AudioNodeResourceProps;
-  sharedNode: AudioNodeTripleBuffer;
+  audioNodeTripleBuffer: AudioNodeTripleBuffer;
 };

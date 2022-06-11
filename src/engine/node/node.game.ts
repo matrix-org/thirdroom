@@ -3,7 +3,8 @@ import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { RemoteCamera } from "../camera/camera.game";
@@ -12,7 +13,6 @@ import { GameState } from "../GameTypes";
 import { RemoteLight } from "../light/light.game";
 import { RemoteMesh } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
-import { getActiveScene } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import {
@@ -27,12 +27,17 @@ import {
   RendererSharedNodeResource,
 } from "./node.common";
 
+export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
+export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
+
 export interface RemoteNode {
   eid: number;
   audioResourceId: ResourceId;
   rendererResourceId: ResourceId;
-  audioSharedNode: AudioNodeTripleBuffer;
-  rendererSharedNode: RendererNodeTripleBuffer;
+  rendererNodeBufferView: RendererNodeBufferView;
+  audioNodeBufferView: AudioNodeBufferView;
+  audioNodeTripleBuffer: AudioNodeTripleBuffer;
+  rendererNodeTripleBuffer: RendererNodeTripleBuffer;
   get mesh(): RemoteMesh | undefined;
   set mesh(mesh: RemoteMesh | undefined);
   get light(): RemoteLight | undefined;
@@ -56,8 +61,8 @@ interface NodeProps {
 export const RemoteNodeComponent = defineComponent<Map<number, RemoteNode>>(new Map());
 
 export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: NodeProps): RemoteNode {
-  const rendererNode = createObjectBufferView(rendererNodeSchema, ArrayBuffer);
-  const audioNode = createObjectBufferView(audioNodeSchema, ArrayBuffer);
+  const rendererNodeBufferView = createObjectBufferView(rendererNodeSchema, ArrayBuffer);
+  const audioNodeBufferView = createObjectBufferView(audioNodeSchema, ArrayBuffer);
 
   const initialRendererProps: RendererNodeResourceProps = {
     mesh: props?.mesh?.resourceId || 0,
@@ -71,34 +76,26 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     static: props?.static || false,
   };
 
-  rendererNode.mesh[0] = initialRendererProps.mesh;
-  rendererNode.light[0] = initialRendererProps.light;
-  rendererNode.camera[0] = initialRendererProps.camera;
-  rendererNode.static[0] = initialRendererProps.static ? 1 : 0;
+  rendererNodeBufferView.mesh[0] = initialRendererProps.mesh;
+  rendererNodeBufferView.light[0] = initialRendererProps.light;
+  rendererNodeBufferView.camera[0] = initialRendererProps.camera;
+  rendererNodeBufferView.static[0] = initialRendererProps.static ? 1 : 0;
 
-  audioNode.audioEmitter[0] = initialAudioProps.audioEmitter;
-  audioNode.static[0] = initialAudioProps.static ? 1 : 0;
+  audioNodeBufferView.audioEmitter[0] = initialAudioProps.audioEmitter;
+  audioNodeBufferView.static[0] = initialAudioProps.static ? 1 : 0;
 
-  const audioSharedNode = createTripleBufferBackedObjectBufferView(
-    audioNodeSchema,
-    audioNode,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const audioNodeTripleBuffer = createObjectTripleBuffer(audioNodeSchema, ctx.gameToMainTripleBufferFlags);
 
-  const rendererSharedNode = createTripleBufferBackedObjectBufferView(
-    rendererNodeSchema,
-    rendererNode,
-    ctx.gameToRenderTripleBufferFlags
-  );
+  const rendererNodeTripleBuffer = createObjectTripleBuffer(rendererNodeSchema, ctx.gameToRenderTripleBufferFlags);
 
   const rendererResourceId = createResource<RendererSharedNodeResource>(ctx, Thread.Render, NodeResourceType, {
     initialProps: initialRendererProps,
-    sharedNode: rendererSharedNode,
+    rendererNodeTripleBuffer,
   });
 
   const audioResourceId = createResource<AudioSharedNodeResource>(ctx, Thread.Main, NodeResourceType, {
     initialProps: initialAudioProps,
-    sharedNode: audioSharedNode,
+    audioNodeTripleBuffer,
   });
 
   let _mesh: RemoteMesh | undefined;
@@ -110,42 +107,44 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     eid,
     audioResourceId,
     rendererResourceId,
-    audioSharedNode,
-    rendererSharedNode,
+    rendererNodeBufferView,
+    audioNodeBufferView,
+    audioNodeTripleBuffer,
+    rendererNodeTripleBuffer,
     get mesh() {
       return _mesh;
     },
     set mesh(mesh: RemoteMesh | undefined) {
       _mesh = mesh;
-      rendererNode.mesh[0] = mesh?.resourceId || 0;
+      rendererNodeBufferView.mesh[0] = mesh?.resourceId || 0;
     },
     get light() {
       return _light;
     },
     set light(light: RemoteLight | undefined) {
       _light = light;
-      rendererNode.light[0] = light?.resourceId || 0;
+      rendererNodeBufferView.light[0] = light?.resourceId || 0;
     },
     get camera() {
       return _camera;
     },
     set camera(camera: RemoteCamera | undefined) {
       _camera = camera;
-      rendererNode.camera[0] = camera?.resourceId || 0;
+      rendererNodeBufferView.camera[0] = camera?.resourceId || 0;
     },
     get audioEmitter() {
       return _audioEmitter;
     },
     set audioEmitter(audioEmitter: RemotePositionalAudioEmitter | undefined) {
       _audioEmitter = audioEmitter;
-      audioNode.audioEmitter[0] = audioEmitter?.resourceId || 0;
+      audioNodeBufferView.audioEmitter[0] = audioEmitter?.resourceId || 0;
     },
     get static() {
-      return !!rendererNode.static[0];
+      return !!rendererNodeBufferView.static[0];
     },
     set static(value: boolean) {
-      rendererNode.static[0] = value ? 1 : 0;
-      audioNode.static[0] = value ? 1 : 0;
+      rendererNodeBufferView.static[0] = value ? 1 : 0;
+      audioNodeBufferView.static[0] = value ? 1 : 0;
     },
   };
 
@@ -170,14 +169,14 @@ export function RemoteNodeSystem(ctx: GameState) {
       continue;
     }
 
-    remoteNode.rendererSharedNode.visible[0] = 0;
+    remoteNode.rendererNodeBufferView.visible[0] = 0;
 
     if (remoteNode.audioEmitter) {
-      remoteNode.audioSharedNode.enabled[0] = 0;
+      remoteNode.audioNodeBufferView.enabled[0] = 0;
     }
   }
 
-  const scene = getActiveScene(ctx);
+  const scene = ctx.activeScene;
 
   traverse(scene, (eid) => {
     if (hasComponent(ctx.world, Hidden, eid)) {
@@ -188,7 +187,7 @@ export function RemoteNodeSystem(ctx: GameState) {
       const remoteNode = RemoteNodeComponent.get(eid);
 
       if (remoteNode) {
-        remoteNode.rendererSharedNode.visible[0] = 1;
+        remoteNode.rendererNodeBufferView.visible[0] = 1;
       }
     }
   });
@@ -198,7 +197,7 @@ export function RemoteNodeSystem(ctx: GameState) {
       const remoteNode = RemoteNodeComponent.get(eid);
 
       if (remoteNode && remoteNode.audioEmitter) {
-        remoteNode.audioSharedNode.enabled[0] = 1;
+        remoteNode.audioNodeBufferView.enabled[0] = 1;
       }
     }
   });
@@ -212,11 +211,11 @@ export function RemoteNodeSystem(ctx: GameState) {
     }
 
     if (hasComponent(ctx.world, Transform, eid)) {
-      remoteNode.audioSharedNode.worldMatrix.set(Transform.worldMatrix[eid]);
-      remoteNode.rendererSharedNode.worldMatrix.set(Transform.worldMatrix[eid]);
+      remoteNode.audioNodeBufferView.worldMatrix.set(Transform.worldMatrix[eid]);
+      remoteNode.rendererNodeBufferView.worldMatrix.set(Transform.worldMatrix[eid]);
     }
 
-    commitToObjectTripleBuffer(remoteNode.audioSharedNode);
-    commitToObjectTripleBuffer(remoteNode.rendererSharedNode);
+    commitToObjectTripleBuffer(remoteNode.audioNodeTripleBuffer, remoteNode.audioNodeBufferView);
+    commitToObjectTripleBuffer(remoteNode.rendererNodeTripleBuffer, remoteNode.rendererNodeBufferView);
   }
 }

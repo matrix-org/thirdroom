@@ -14,11 +14,13 @@ export interface InitializeCanvasMessage {
   initialCanvasHeight: number;
 }
 
-export const rendererSchema = defineObjectBufferSchema({
+export const rendererStateSchema = defineObjectBufferSchema({
   activeSceneResourceId: [Uint32Array, 1],
   activeCameraResourceId: [Uint32Array, 1],
 });
 
+export type RendererStateTripleBuffer = ObjectTripleBuffer<typeof rendererStateSchema>;
+
 export interface InitializeRendererTripleBuffersMessage {
-  rendererStateTripleBuffer: ObjectTripleBuffer<typeof rendererSchema>;
+  rendererStateTripleBuffer: RendererStateTripleBuffer;
 }

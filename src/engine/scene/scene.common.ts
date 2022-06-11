@@ -6,7 +6,6 @@ export const SceneResourceType = "scene";
 export const rendererSceneSchema = defineObjectBufferSchema({
   background: [Uint32Array, 1],
   environment: [Uint32Array, 1],
-  needsUpdate: [Uint8Array, 1],
 });
 
 export const audioSceneSchema = defineObjectBufferSchema({
@@ -14,9 +13,9 @@ export const audioSceneSchema = defineObjectBufferSchema({
   audioEmitters: [Uint32Array, 16],
 });
 
-export type RendererSharedScene = ObjectTripleBuffer<typeof rendererSceneSchema>;
+export type RendererSceneTripleBuffer = ObjectTripleBuffer<typeof rendererSceneSchema>;
 
-export type AudioSharedScene = ObjectTripleBuffer<typeof audioSceneSchema>;
+export type AudioSceneTripleBuffer = ObjectTripleBuffer<typeof audioSceneSchema>;
 
 export interface RendererSceneResourceProps {
   background: ResourceId;
@@ -25,7 +24,7 @@ export interface RendererSceneResourceProps {
 
 export type RendererSharedSceneResource = {
   initialProps: RendererSceneResourceProps;
-  sharedScene: RendererSharedScene;
+  rendererSceneTripleBuffer: RendererSceneTripleBuffer;
 };
 
 export interface AudioSceneResourceProps {
@@ -35,5 +34,5 @@ export interface AudioSceneResourceProps {
 
 export type AudioSharedSceneResource = {
   initialProps: AudioSceneResourceProps;
-  sharedScene: AudioSharedScene;
+  audioSceneTripleBuffer: AudioSceneTripleBuffer;
 };

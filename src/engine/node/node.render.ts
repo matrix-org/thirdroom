@@ -15,7 +15,7 @@ import {
   Vector3,
 } from "three";
 
-import { SharedObjectView } from "../allocator/ObjectBufferView";
+import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { LocalCameraResource } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
@@ -44,7 +44,7 @@ const tempScale = new Vector3();
 
 export function updateTransformFromNode(
   ctx: RenderThreadState,
-  nodeReadView: SharedObjectView<RendererNodeTripleBuffer>,
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
   object3D: Object3D
 ) {
   const frameRate = 1 / ctx.dt;

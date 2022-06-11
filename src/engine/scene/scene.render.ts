@@ -6,19 +6,19 @@ import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
-import { RendererSharedScene, RendererSharedSceneResource } from "./scene.common";
+import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   scene: Scene;
   backgroundTextureResourceId?: ResourceId;
   environmentTextureResourceId?: ResourceId;
-  sharedScene: RendererSharedScene;
+  sharedScene: RendererSceneTripleBuffer;
 }
 
 export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
   id: ResourceId,
-  { initialProps, sharedScene }: RendererSharedSceneResource
+  { initialProps, rendererSceneTripleBuffer: sharedScene }: RendererSharedSceneResource
 ): Promise<Scene> {
   const sceneModule = getModule(ctx, RendererModule);
 
@@ -66,10 +66,6 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
     const sceneResource = scenes[i];
     const { scene, sharedScene, backgroundTextureResourceId, environmentTextureResourceId } = sceneResource;
     const props = getReadObjectBufferView(sharedScene);
-
-    if (!props.needsUpdate[0]) {
-      continue;
-    }
 
     if (props.background[0] !== backgroundTextureResourceId) {
       const resourceId = props.background[0];

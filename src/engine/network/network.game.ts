@@ -36,7 +36,6 @@ import { addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
-import { sendAudioPeerEntityMessage } from "../audio/audio.game";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import {
   AddPeerIdMessage,
@@ -47,9 +46,9 @@ import {
   SetPeerIdMessage,
 } from "./network.common";
 import { createPrefabEntity } from "../prefab";
-import { getActiveScene } from "../renderer/renderer.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { RemoteNodeComponent } from "../node/node.game";
+import { createRemoteMediaStreamSource, createRemotePositionalAudioEmitter } from "../audio/audio.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -458,8 +457,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  const scene = getActiveScene(state);
-  addChild(scene, eid);
+  addChild(state.activeScene, eid);
 
   return eid;
 }
@@ -668,7 +666,11 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     }
 
     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
-      sources: [createRemoteNetworkedAudioSource(state, peerNid)],
+      sources: [
+        createRemoteMediaStreamSource(state, {
+          streamId: peid,
+        }),
+      ],
     });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");

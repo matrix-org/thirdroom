@@ -16,7 +16,6 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { RigidBody } from "../engine/physics/physics.game";
 import { getPrefabTemplate } from "../engine/prefab";
-import { getActiveCamera, getActiveScene } from "../engine/renderer/renderer.game";
 
 type CubeSpawnerModuleState = {};
 
@@ -57,18 +56,15 @@ export const CubeSpawnerSystem = (state: GameState) => {
     // addComponent(state.world, NetworkTransform, cube);
     addComponent(state.world, Owned, cube);
 
-    const camera = getActiveCamera(state);
-
-    mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[camera]);
+    mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[state.activeCamera]);
 
     const worldQuat = quat.create();
-    mat4.getRotation(worldQuat, Transform.worldMatrix[camera]);
+    mat4.getRotation(worldQuat, Transform.worldMatrix[state.activeCamera]);
     const direction = vec3.set(vec3.create(), 0, 0, -1);
     vec3.transformQuat(direction, direction, worldQuat);
     vec3.scale(direction, direction, 10);
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
-    const scene = getActiveScene(state);
-    addChild(scene, cube);
+    addChild(state.activeScene, cube);
   }
 };

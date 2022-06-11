@@ -8,7 +8,6 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
-import { getActiveScene } from "../../engine/renderer/renderer.game";
 import { waitForRemoteResource } from "../../engine/resource/resource.game";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
@@ -31,8 +30,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
     ];
 
-    const scene = getActiveScene(ctx);
-    const sceneResource = RemoteSceneComponent.get(scene)!;
+    const sceneResource = RemoteSceneComponent.get(ctx.activeScene)!;
 
     const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
     const environmentMapTexture = createRemoteTexture(ctx, environmentMap);
@@ -57,9 +55,8 @@ function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
     // removeEntity(ctx.world, thirdroom.environment);
   }
 
-  const scene = getActiveScene(ctx);
   const environment = addEntity(ctx.world);
-  addChild(scene, environment);
+  addChild(ctx.activeScene, environment);
   addGLTFLoaderComponent(ctx, environment, message.url);
 }
 
@@ -81,8 +78,7 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
   setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
 
-  const scene = getActiveScene(state);
-  addChild(scene, playerRig);
+  addChild(state.activeScene, playerRig);
 }
 
 function onExitWorld(state: GameState, message: ExitWorldMessage) {}

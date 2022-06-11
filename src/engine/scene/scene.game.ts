@@ -3,7 +3,8 @@ import { addComponent, defineComponent, removeComponent } from "bitecs";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
-  createTripleBufferBackedObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
 import { NOOP } from "../config.common";
@@ -17,21 +18,26 @@ import { RemoteTexture } from "../texture/texture.game";
 import {
   AudioSceneResourceProps,
   audioSceneSchema,
-  AudioSharedScene,
+  AudioSceneTripleBuffer,
   AudioSharedSceneResource,
   RendererSceneResourceProps,
   rendererSceneSchema,
-  RendererSharedScene,
+  RendererSceneTripleBuffer,
   RendererSharedSceneResource,
   SceneResourceType,
 } from "./scene.common";
+
+export type RendererSceneBufferView = ObjectBufferView<typeof rendererSceneSchema, ArrayBuffer>;
+export type AudioSceneBufferView = ObjectBufferView<typeof audioSceneSchema, ArrayBuffer>;
 
 export interface RemoteScene {
   eid: number;
   rendererResourceId: ResourceId;
   audioResourceId: ResourceId;
-  rendererSharedScene: RendererSharedScene;
-  audioSharedScene: AudioSharedScene;
+  audioSceneBufferView: AudioSceneBufferView;
+  rendererSceneBufferView: RendererSceneBufferView;
+  audioSceneTripleBuffer: AudioSceneTripleBuffer;
+  rendererSceneTripleBuffer: RendererSceneTripleBuffer;
   get background(): RemoteTexture | undefined;
   set background(texture: RemoteTexture | undefined);
   get environment(): RemoteTexture | undefined;
@@ -53,8 +59,8 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
   const rendererModule = getModule(ctx, RendererModule);
   const audioModule = getModule(ctx, GameAudioModule);
 
-  const rendererScene = createObjectBufferView(rendererSceneSchema, ArrayBuffer);
-  const audioScene = createObjectBufferView(audioSceneSchema, ArrayBuffer);
+  const rendererSceneBufferView = createObjectBufferView(rendererSceneSchema, ArrayBuffer);
+  const audioSceneBufferView = createObjectBufferView(audioSceneSchema, ArrayBuffer);
 
   const initialRendererProps: RendererSceneResourceProps = {
     background: 0,
@@ -73,38 +79,29 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
     initialAudioProps.audioListener = props.audioListener ? props.audioListener.audioResourceId : 0;
     initialAudioProps.audioEmitters = props.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : [];
 
-    rendererScene.background[0] = initialRendererProps.background;
-    rendererScene.environment[0] = initialRendererProps.environment;
-    rendererScene.needsUpdate[0] = 0;
+    rendererSceneBufferView.background[0] = initialRendererProps.background;
+    rendererSceneBufferView.environment[0] = initialRendererProps.environment;
 
-    audioScene.audioListener[0] = props.audioListener ? props.audioListener.audioResourceId : 0;
-    audioScene.audioEmitters.set(initialAudioProps.audioEmitters);
+    audioSceneBufferView.audioListener[0] = props.audioListener ? props.audioListener.audioResourceId : 0;
+    audioSceneBufferView.audioEmitters.set(initialAudioProps.audioEmitters);
 
     if (props.audioEmitters) {
-      audioScene.audioEmitters.set(props.audioEmitters.map((e) => e.resourceId));
+      audioSceneBufferView.audioEmitters.set(props.audioEmitters.map((e) => e.resourceId));
     }
   }
 
-  const audioSharedScene = createTripleBufferBackedObjectBufferView(
-    audioSceneSchema,
-    audioScene,
-    ctx.gameToMainTripleBufferFlags
-  );
+  const audioSceneTripleBuffer = createObjectTripleBuffer(audioSceneSchema, ctx.gameToMainTripleBufferFlags);
 
-  const rendererSharedScene = createTripleBufferBackedObjectBufferView(
-    rendererSceneSchema,
-    rendererScene,
-    ctx.gameToRenderTripleBufferFlags
-  );
+  const rendererSceneTripleBuffer = createObjectTripleBuffer(rendererSceneSchema, ctx.gameToRenderTripleBufferFlags);
 
   const rendererResourceId = createResource<RendererSharedSceneResource>(ctx, Thread.Render, SceneResourceType, {
     initialProps: initialRendererProps,
-    sharedScene: rendererSharedScene,
+    rendererSceneTripleBuffer,
   });
 
   const audioResourceId = createResource<AudioSharedSceneResource>(ctx, Thread.Main, SceneResourceType, {
     initialProps: initialAudioProps,
-    sharedScene: audioSharedScene,
+    audioSceneTripleBuffer,
   });
 
   let _background: RemoteTexture | undefined = props?.background;
@@ -116,37 +113,37 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
     eid,
     rendererResourceId,
     audioResourceId,
-    audioSharedScene,
-    rendererSharedScene,
+    audioSceneBufferView,
+    rendererSceneBufferView,
+    audioSceneTripleBuffer,
+    rendererSceneTripleBuffer,
     get background(): RemoteTexture | undefined {
       return _background;
     },
     set background(texture: RemoteTexture | undefined) {
       _background = texture;
-      rendererScene.background[0] = texture ? texture.resourceId : 0;
-      rendererScene.needsUpdate[0] = 1;
+      rendererSceneBufferView.background[0] = texture ? texture.resourceId : 0;
     },
     get environment(): RemoteTexture | undefined {
       return _environment;
     },
     set environment(texture: RemoteTexture | undefined) {
       _environment = texture;
-      rendererScene.environment[0] = texture ? texture.resourceId : 0;
-      rendererScene.needsUpdate[0] = 1;
+      rendererSceneBufferView.environment[0] = texture ? texture.resourceId : 0;
     },
     get audioListener(): RemoteNode | undefined {
       return _audioListener;
     },
     set audioListener(node: RemoteNode | undefined) {
       _audioListener = node;
-      audioScene.audioListener[0] = node?.audioResourceId || 0;
+      audioSceneBufferView.audioListener[0] = node?.audioResourceId || 0;
     },
     get audioEmitters(): RemoteGlobalAudioEmitter[] {
       return _audioEmitters;
     },
     set audioEmitters(emitters: RemoteGlobalAudioEmitter[]) {
       _audioEmitters = emitters;
-      audioScene.audioEmitters.set(emitters.map((e) => e.resourceId));
+      audioSceneBufferView.audioEmitters.set(emitters.map((e) => e.resourceId));
     },
   };
 
@@ -169,14 +166,13 @@ export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
 export function updateRendererRemoteScenes(scenes: RemoteScene[]) {
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
-    commitToObjectTripleBuffer(scene.rendererSharedScene);
-    scene.rendererSharedScene.needsUpdate[0] = 0;
+    commitToObjectTripleBuffer(scene.rendererSceneTripleBuffer, scene.rendererSceneBufferView);
   }
 }
 
 export function updateAudioRemoteScenes(scenes: RemoteScene[]) {
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
-    commitToObjectTripleBuffer(scene.audioSharedScene);
+    commitToObjectTripleBuffer(scene.audioSceneTripleBuffer, scene.audioSceneBufferView);
   }
 }
