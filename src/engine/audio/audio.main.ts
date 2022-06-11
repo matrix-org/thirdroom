@@ -604,7 +604,7 @@ export function updateAudioEmitter(
   audioModule: MainAudioModule,
   audioEmitter: LocalGlobalAudioEmitter | LocalPositionalAudioEmitter
 ) {
-  // todo: synchronize and load audioEmitter.sources
+  // todo: synchronize and load audioEmitter.sources with shared state sources
 
   for (const source of audioEmitter.sources) {
     // todo:
