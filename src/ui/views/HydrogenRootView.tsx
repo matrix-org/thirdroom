@@ -263,9 +263,8 @@ export function HydrogenRootView() {
   const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
 
-  let content;
   if (loading) {
-    content = (
+    return (
       <LoadingScreen>
         <Text variant="b1" weight="semi-bold">
           Loading...
@@ -275,7 +274,7 @@ export function HydrogenRootView() {
   }
 
   if (error) {
-    content = (
+    return (
       <LoadingScreen className="gap-md">
         <Text variant="b1" weight="semi-bold">
           {errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error.message}
@@ -294,7 +293,6 @@ export function HydrogenRootView() {
   return (
     <HydrogenContextProvider value={context}>
       <Outlet />
-      {content}
     </HydrogenContextProvider>
   );
 }
