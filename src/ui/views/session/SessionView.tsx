@@ -25,7 +25,7 @@ export interface SessionOutletContext {
 }
 
 export function SessionView() {
-  const { client, session, platform } = useHydrogen(true);
+  const { client, session, platform, profileRoom } = useHydrogen(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
@@ -117,9 +117,16 @@ export function SessionView() {
       const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
       await call.join(localMedia);
 
+      const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
+      if (profileEvent && profileEvent.event.content.avatar_url) {
+        await session.hsApi.sendState(room.id, "org.matrix.msc3815.world.member", session.userId, {
+          avatar_url: profileEvent.event.content.avatar_url,
+        });
+      }
+
       onEnteredWorld(call);
     },
-    [platform, session, calls, onEnteredWorld]
+    [platform, session, calls, profileRoom, onEnteredWorld]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
