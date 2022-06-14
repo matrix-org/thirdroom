@@ -8,8 +8,8 @@ export const title = "Modal";
 export default function ModalStories() {
   return (
     <div>
-      <Modal content={<ModalContent aside={<ModalAside>Hello world</ModalAside>}>Hello, World!</ModalContent>}>
-        <Button>Open modal</Button>
+      <Modal trigger={<Button>Open modal</Button>}>
+        <ModalContent aside={<ModalAside>Hello world</ModalAside>}>Hello, World!</ModalContent>
       </Modal>
     </div>
   );
