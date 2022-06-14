@@ -41,7 +41,7 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       <SidebarView
-        spaces={spacesEnabled && <SpacesView />}
+        spaces={spacesEnabled ? <SpacesView /> : undefined}
         roomList={
           selectedWindow ? undefined : (
             <RoomListView
