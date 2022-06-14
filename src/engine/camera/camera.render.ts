@@ -1,4 +1,4 @@
-import { OrthographicCamera, PerspectiveCamera } from "three";
+import { OrthographicCamera, PerspectiveCamera, Scene } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
@@ -54,14 +54,17 @@ export async function onLoadOrthographicCamera(
 
 export function updateNodeCamera(
   ctx: RenderThreadState,
+  scene: Scene,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
   const currentCameraResourceId = node.camera?.resourceId || 0;
   const nextCameraResourceId = nodeReadView.camera[0];
 
+  // TODO: Handle node.visible
+
   if (currentCameraResourceId !== nextCameraResourceId && node.cameraObject) {
-    node.scene.remove(node.cameraObject);
+    scene.remove(node.cameraObject);
     node.cameraObject = undefined;
   }
 
@@ -80,7 +83,7 @@ export function updateNodeCamera(
 
     if (!perspectiveCamera) {
       perspectiveCamera = new PerspectiveCamera();
-      node.scene.add(perspectiveCamera);
+      scene.add(perspectiveCamera);
     }
 
     const cameraView = getReadObjectBufferView(node.camera.cameraTripleBuffer);
@@ -104,7 +107,7 @@ export function updateNodeCamera(
 
     if (!orthographicCamera) {
       orthographicCamera = new OrthographicCamera();
-      node.scene.add(orthographicCamera);
+      scene.add(orthographicCamera);
     }
 
     const cameraView = getReadObjectBufferView(node.camera.cameraTripleBuffer);

@@ -35,6 +35,7 @@ export async function onLoadLocalTextureResource(
     texture.minFilter = sampler.minFilter;
     texture.wrapS = sampler.wrapS;
     texture.wrapT = sampler.wrapT;
+    texture.mapping = sampler.mapping;
   } else {
     texture.magFilter = LinearFilter;
     texture.minFilter = LinearMipmapLinearFilter;

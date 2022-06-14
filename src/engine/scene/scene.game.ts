@@ -7,7 +7,6 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
-import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { RemoteNode } from "../node/node.game";
@@ -16,11 +15,9 @@ import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
 import {
-  AudioSceneResourceProps,
   audioSceneSchema,
   AudioSceneTripleBuffer,
   AudioSharedSceneResource,
-  RendererSceneResourceProps,
   rendererSceneSchema,
   RendererSceneTripleBuffer,
   RendererSharedSceneResource,
@@ -38,12 +35,10 @@ export interface RemoteScene {
   rendererSceneBufferView: RendererSceneBufferView;
   audioSceneTripleBuffer: AudioSceneTripleBuffer;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
-  get background(): RemoteTexture | undefined;
-  set background(texture: RemoteTexture | undefined);
-  get environment(): RemoteTexture | undefined;
-  set environment(texture: RemoteTexture | undefined);
-  get audioListener(): RemoteNode | undefined;
-  set audioListener(node: RemoteNode | undefined);
+  get backgroundTexture(): RemoteTexture | undefined;
+  set backgroundTexture(texture: RemoteTexture | undefined);
+  get environmentTexture(): RemoteTexture | undefined;
+  set environmentTexture(texture: RemoteTexture | undefined);
   get audioEmitters(): RemoteGlobalAudioEmitter[];
   set audioEmitters(emitters: RemoteGlobalAudioEmitter[]);
 }
@@ -51,8 +46,8 @@ export interface RemoteScene {
 export interface SceneProps {
   audioListener?: RemoteNode;
   audioEmitters?: RemoteGlobalAudioEmitter[];
-  background?: RemoteTexture;
-  environment?: RemoteTexture;
+  backgroundTexture?: RemoteTexture;
+  environmentTexture?: RemoteTexture;
 }
 
 export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: SceneProps): RemoteScene {
@@ -62,51 +57,25 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
   const rendererSceneBufferView = createObjectBufferView(rendererSceneSchema, ArrayBuffer);
   const audioSceneBufferView = createObjectBufferView(audioSceneSchema, ArrayBuffer);
 
-  const initialRendererProps: RendererSceneResourceProps = {
-    background: 0,
-    environment: 0,
-  };
+  rendererSceneBufferView.backgroundTexture[0] = props?.backgroundTexture ? props.backgroundTexture.resourceId : 0;
+  rendererSceneBufferView.environmentTexture[0] = props?.environmentTexture ? props.environmentTexture.resourceId : 0;
 
-  const initialAudioProps: AudioSceneResourceProps = {
-    audioListener: NOOP,
-    audioEmitters: [],
-  };
-
-  if (props) {
-    initialRendererProps.background = props.background ? props.background.resourceId : 0;
-    initialRendererProps.environment = props.environment ? props.environment.resourceId : 0;
-
-    initialAudioProps.audioListener = props.audioListener ? props.audioListener.audioResourceId : 0;
-    initialAudioProps.audioEmitters = props.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : [];
-
-    rendererSceneBufferView.background[0] = initialRendererProps.background;
-    rendererSceneBufferView.environment[0] = initialRendererProps.environment;
-
-    audioSceneBufferView.audioListener[0] = props.audioListener ? props.audioListener.audioResourceId : 0;
-    audioSceneBufferView.audioEmitters.set(initialAudioProps.audioEmitters);
-
-    if (props.audioEmitters) {
-      audioSceneBufferView.audioEmitters.set(props.audioEmitters.map((e) => e.resourceId));
-    }
-  }
+  audioSceneBufferView.audioEmitters.set(props?.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : []);
 
   const audioSceneTripleBuffer = createObjectTripleBuffer(audioSceneSchema, ctx.gameToMainTripleBufferFlags);
 
   const rendererSceneTripleBuffer = createObjectTripleBuffer(rendererSceneSchema, ctx.gameToRenderTripleBufferFlags);
 
   const rendererResourceId = createResource<RendererSharedSceneResource>(ctx, Thread.Render, SceneResourceType, {
-    initialProps: initialRendererProps,
     rendererSceneTripleBuffer,
   });
 
   const audioResourceId = createResource<AudioSharedSceneResource>(ctx, Thread.Main, SceneResourceType, {
-    initialProps: initialAudioProps,
     audioSceneTripleBuffer,
   });
 
-  let _background: RemoteTexture | undefined = props?.background;
-  let _environment: RemoteTexture | undefined = props?.environment;
-  let _audioListener: RemoteNode | undefined = props?.audioListener;
+  let _backgroundTexture: RemoteTexture | undefined = props?.backgroundTexture;
+  let _environmentTexture: RemoteTexture | undefined = props?.environmentTexture;
   let _audioEmitters: RemoteGlobalAudioEmitter[] = props?.audioEmitters || [];
 
   const remoteScene: RemoteScene = {
@@ -117,26 +86,19 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
     rendererSceneBufferView,
     audioSceneTripleBuffer,
     rendererSceneTripleBuffer,
-    get background(): RemoteTexture | undefined {
-      return _background;
+    get backgroundTexture(): RemoteTexture | undefined {
+      return _backgroundTexture;
     },
-    set background(texture: RemoteTexture | undefined) {
-      _background = texture;
-      rendererSceneBufferView.background[0] = texture ? texture.resourceId : 0;
+    set backgroundTexture(texture: RemoteTexture | undefined) {
+      _backgroundTexture = texture;
+      rendererSceneBufferView.backgroundTexture[0] = texture ? texture.resourceId : 0;
     },
-    get environment(): RemoteTexture | undefined {
-      return _environment;
+    get environmentTexture(): RemoteTexture | undefined {
+      return _environmentTexture;
     },
-    set environment(texture: RemoteTexture | undefined) {
-      _environment = texture;
-      rendererSceneBufferView.environment[0] = texture ? texture.resourceId : 0;
-    },
-    get audioListener(): RemoteNode | undefined {
-      return _audioListener;
-    },
-    set audioListener(node: RemoteNode | undefined) {
-      _audioListener = node;
-      audioSceneBufferView.audioListener[0] = node?.audioResourceId || 0;
+    set environmentTexture(texture: RemoteTexture | undefined) {
+      _environmentTexture = texture;
+      rendererSceneBufferView.environmentTexture[0] = texture ? texture.resourceId : 0;
     },
     get audioEmitters(): RemoteGlobalAudioEmitter[] {
       return _audioEmitters;

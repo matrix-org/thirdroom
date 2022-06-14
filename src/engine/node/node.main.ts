@@ -1,32 +1,39 @@
-import { LocalPositionalAudioEmitter } from "../audio/audio.main";
-import { AudioNodeTripleBuffer } from "./node.common";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { AudioModule, LocalPositionalAudioEmitter } from "../audio/audio.main";
+import { IMainThreadContext } from "../MainThread";
+import { getModule } from "../module/module.common";
+import { ResourceId } from "../resource/resource.common";
+import { waitForLocalResource } from "../resource/resource.main";
+import { AudioNodeTripleBuffer, AudioSharedNodeResource } from "./node.common";
 
 export interface MainNode {
   resourceId: number;
-  audioSharedNode: AudioNodeTripleBuffer;
-  audioEmitterPannerNode?: PannerNode;
+  audioNodeTripleBuffer: AudioNodeTripleBuffer;
   audioEmitter?: LocalPositionalAudioEmitter;
+  emitterPannerNode?: PannerNode;
 }
 
-// todo
+export async function onLoadMainNode(
+  ctx: IMainThreadContext,
+  resourceId: ResourceId,
+  { audioNodeTripleBuffer }: AudioSharedNodeResource
+): Promise<MainNode> {
+  const audioModule = getModule(ctx, AudioModule);
+  const nodeView = getReadObjectBufferView(audioNodeTripleBuffer);
 
-// const pannerNode = audio.context.createPanner();
+  let audioEmitter: LocalPositionalAudioEmitter | undefined;
 
-// const gainNode = audio.context.createGain();
-// gainNode.gain.value = props.gain;
-// pannerNode.connect(gainNode);
+  if (nodeView.audioEmitter[0]) {
+    audioEmitter = await waitForLocalResource<LocalPositionalAudioEmitter>(ctx, nodeView.audioEmitter[0]);
+  }
 
-// for (const source of sources) {
-//   source.gainNode.connect(pannerNode);
-// }
+  const mainNode: MainNode = {
+    resourceId,
+    audioNodeTripleBuffer,
+    audioEmitter,
+  };
 
-// gainNode.connect(audio.mainGain);
+  audioModule.nodes.push(mainNode);
 
-// pannerNode.coneInnerAngle = props.coneInnerAngle;
-// pannerNode.coneOuterAngle = props.coneOuterAngle;
-// pannerNode.coneOuterGain = props.coneOuterGain;
-// pannerNode.distanceModel = AudioEmitterDistanceModelMap[props.distanceModel];
-// pannerNode.maxDistance = props.maxDistance;
-// pannerNode.refDistance = props.refDistance;
-// pannerNode.rolloffFactor = props.rolloffFactor;
-// pannerNode.panningModel = "HRTF";
+  return mainNode;
+}

@@ -15,13 +15,12 @@ import { RemoteMesh } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
+import { RemoteSceneComponent } from "../scene/scene.game";
 import {
-  AudioNodeResourceProps,
   audioNodeSchema,
   AudioNodeTripleBuffer,
   AudioSharedNodeResource,
   NodeResourceType,
-  RendererNodeResourceProps,
   rendererNodeSchema,
   RendererNodeTripleBuffer,
   RendererSharedNodeResource,
@@ -64,37 +63,23 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   const rendererNodeBufferView = createObjectBufferView(rendererNodeSchema, ArrayBuffer);
   const audioNodeBufferView = createObjectBufferView(audioNodeSchema, ArrayBuffer);
 
-  const initialRendererProps: RendererNodeResourceProps = {
-    mesh: props?.mesh?.resourceId || 0,
-    light: props?.light?.resourceId || 0,
-    camera: props?.camera?.resourceId || 0,
-    static: props?.static || false,
-  };
+  rendererNodeBufferView.mesh[0] = props?.mesh?.resourceId || 0;
+  rendererNodeBufferView.light[0] = props?.light?.resourceId || 0;
+  rendererNodeBufferView.camera[0] = props?.camera?.resourceId || 0;
+  rendererNodeBufferView.static[0] = props?.static ? 1 : 0;
 
-  const initialAudioProps: AudioNodeResourceProps = {
-    audioEmitter: props?.audioEmitter?.resourceId || 0,
-    static: props?.static || false,
-  };
-
-  rendererNodeBufferView.mesh[0] = initialRendererProps.mesh;
-  rendererNodeBufferView.light[0] = initialRendererProps.light;
-  rendererNodeBufferView.camera[0] = initialRendererProps.camera;
-  rendererNodeBufferView.static[0] = initialRendererProps.static ? 1 : 0;
-
-  audioNodeBufferView.audioEmitter[0] = initialAudioProps.audioEmitter;
-  audioNodeBufferView.static[0] = initialAudioProps.static ? 1 : 0;
+  audioNodeBufferView.audioEmitter[0] = props?.audioEmitter?.resourceId || 0;
+  audioNodeBufferView.static[0] = props?.static ? 1 : 0;
 
   const audioNodeTripleBuffer = createObjectTripleBuffer(audioNodeSchema, ctx.gameToMainTripleBufferFlags);
 
   const rendererNodeTripleBuffer = createObjectTripleBuffer(rendererNodeSchema, ctx.gameToRenderTripleBufferFlags);
 
   const rendererResourceId = createResource<RendererSharedNodeResource>(ctx, Thread.Render, NodeResourceType, {
-    initialProps: initialRendererProps,
     rendererNodeTripleBuffer,
   });
 
   const audioResourceId = createResource<AudioSharedNodeResource>(ctx, Thread.Main, NodeResourceType, {
-    initialProps: initialAudioProps,
     audioNodeTripleBuffer,
   });
 
@@ -177,6 +162,12 @@ export function RemoteNodeSystem(ctx: GameState) {
   }
 
   const scene = ctx.activeScene;
+
+  const sceneResource = RemoteSceneComponent.get(scene);
+
+  if (!sceneResource) {
+    return;
+  }
 
   traverse(scene, (eid) => {
     if (hasComponent(ctx.world, Hidden, eid)) {

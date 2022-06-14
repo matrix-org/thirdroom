@@ -20,9 +20,19 @@ export enum SamplerWrap {
   REPEAT = 10497,
 }
 
+export enum SamplerMapping {
+  UVMapping,
+  CubeReflectionMapping,
+  CubeRefractionMapping,
+  EquirectangularReflectionMapping,
+  EquirectangularRefractionMapping,
+  CubeUVReflectionMapping,
+}
+
 export interface SharedSamplerResource {
   magFilter?: SamplerMagFilter;
   minFilter?: SamplerMinFilter;
   wrapS: SamplerWrap;
   wrapT: SamplerWrap;
+  mapping: SamplerMapping;
 }

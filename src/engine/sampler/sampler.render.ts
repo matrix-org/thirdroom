@@ -1,26 +1,34 @@
 import {
   ClampToEdgeWrapping,
+  CubeReflectionMapping,
+  CubeRefractionMapping,
+  CubeUVReflectionMapping,
+  EquirectangularReflectionMapping,
+  EquirectangularRefractionMapping,
   LinearFilter,
   LinearMipmapLinearFilter,
   LinearMipmapNearestFilter,
+  Mapping,
   MirroredRepeatWrapping,
   NearestFilter,
   NearestMipmapLinearFilter,
   NearestMipmapNearestFilter,
   RepeatWrapping,
   TextureFilter,
+  UVMapping,
   Wrapping,
 } from "three";
 
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { SharedSamplerResource } from "./sampler.common";
+import { SamplerMapping, SharedSamplerResource } from "./sampler.common";
 
 export interface LocalSamplerResource {
   magFilter: TextureFilter;
   minFilter: TextureFilter;
   wrapS: Wrapping;
   wrapT: Wrapping;
+  mapping: Mapping;
 }
 
 const ThreeFilters = {
@@ -38,6 +46,15 @@ const ThreeWrappings = {
   10497: RepeatWrapping,
 };
 
+const ThreeMapping = {
+  [SamplerMapping.UVMapping]: UVMapping,
+  [SamplerMapping.CubeReflectionMapping]: CubeReflectionMapping,
+  [SamplerMapping.CubeRefractionMapping]: CubeRefractionMapping,
+  [SamplerMapping.EquirectangularReflectionMapping]: EquirectangularReflectionMapping,
+  [SamplerMapping.EquirectangularRefractionMapping]: EquirectangularRefractionMapping,
+  [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
+};
+
 export async function onLoadSampler(
   ctx: RenderThreadState,
   id: ResourceId,
@@ -48,5 +65,6 @@ export async function onLoadSampler(
     minFilter: sampler.minFilter ? ThreeFilters[sampler.minFilter] : LinearMipmapLinearFilter,
     wrapS: ThreeWrappings[sampler.wrapS],
     wrapT: ThreeWrappings[sampler.wrapT],
+    mapping: ThreeMapping[sampler.mapping],
   };
 }

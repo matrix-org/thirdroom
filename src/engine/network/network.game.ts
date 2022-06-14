@@ -48,7 +48,12 @@ import {
 import { createPrefabEntity } from "../prefab";
 import { checkBitflag } from "../utils/checkBitflag";
 import { RemoteNodeComponent } from "../node/node.game";
-import { createRemoteMediaStreamSource, createRemotePositionalAudioEmitter } from "../audio/audio.game";
+import {
+  createRemoteMediaStream,
+  createRemoteMediaStreamSource,
+  createRemotePositionalAudioEmitter,
+} from "../audio/audio.game";
+import randomRange from "../utils/randomRange";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -206,8 +211,7 @@ export const getPeerIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
 // hack - could also temporarily send whole peerId string to avoid potential collisions
-const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
-const peerIdIndex = rndRange(0, 0xffff);
+const peerIdIndex = randomRange(0, 0xffff);
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
@@ -668,7 +672,7 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
       sources: [
         createRemoteMediaStreamSource(state, {
-          streamId: peid,
+          stream: createRemoteMediaStream(state, peerId),
         }),
       ],
     });

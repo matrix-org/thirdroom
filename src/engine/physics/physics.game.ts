@@ -14,7 +14,6 @@ import { GameState, World } from "../GameTypes";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
-import { playAudio } from "../audio/audio.game";
 import { defineModule, getModule } from "../module/module.common";
 
 interface PhysicsModuleState {
@@ -122,7 +121,9 @@ export const PhysicsSystem = (state: GameState) => {
   physicsWorld.step(eventQueue);
 
   eventQueue.drainContactEvents((handle1: RAPIER.RigidBodyHandle, handle2: RAPIER.RigidBodyHandle) => {
-    playAudio("/audio/hit.wav", handleMap.get(handle2));
+    console.warn("TODO: make hit sound effects play again");
+    // playbackRate = randomRange(0.25, 0.75)
+    // playAudio("/audio/hit.wav", handleMap.get(handle2));
   });
 };
 

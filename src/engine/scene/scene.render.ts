@@ -1,108 +1,89 @@
-import { EquirectangularReflectionMapping, Scene, Texture } from "three";
+import { Scene } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { waitForLocalResource } from "../resource/resource.render";
+import { LocalTextureResource } from "../texture/texture.render";
+import { promiseObject } from "../utils/promiseObject";
 import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   scene: Scene;
-  backgroundTextureResourceId?: ResourceId;
-  environmentTextureResourceId?: ResourceId;
-  sharedScene: RendererSceneTripleBuffer;
+  backgroundTexture?: LocalTextureResource;
+  environmentTexture?: LocalTextureResource;
+  rendererSceneTripleBuffer: RendererSceneTripleBuffer;
 }
 
 export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
   id: ResourceId,
-  { initialProps, rendererSceneTripleBuffer: sharedScene }: RendererSharedSceneResource
+  { rendererSceneTripleBuffer }: RendererSharedSceneResource
 ): Promise<Scene> {
   const sceneModule = getModule(ctx, RendererModule);
 
+  const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
+
+  const { backgroundTexture, environmentTexture } = await promiseObject({
+    backgroundTexture: sceneView.backgroundTexture[0]
+      ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])
+      : undefined,
+    environmentTexture: sceneView.environmentTexture[0]
+      ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.environmentTexture[0])
+      : undefined,
+  });
+
   const scene = new Scene();
-
-  if (initialProps) {
-    const promises: Promise<void>[] = [];
-
-    if (initialProps.background) {
-      promises.push(
-        waitForLocalResource<Texture>(ctx, initialProps.background).then((texture) => {
-          scene.background = texture;
-        })
-      );
-    }
-
-    if (initialProps.environment) {
-      promises.push(
-        waitForLocalResource<Texture>(ctx, initialProps.environment).then((texture) => {
-          // TODO: Move to texture loader?
-          if (texture) {
-            texture.mapping = EquirectangularReflectionMapping;
-          }
-
-          scene.environment = texture;
-        })
-      );
-    }
-
-    await Promise.all(promises);
-  }
 
   sceneModule.scenes.push({
     scene,
-    backgroundTextureResourceId: initialProps?.background || 0,
-    environmentTextureResourceId: initialProps?.environment || 0,
-    sharedScene,
+    backgroundTexture,
+    environmentTexture,
+    rendererSceneTripleBuffer,
   });
 
   return scene;
 }
 
 export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
-  for (let i = 0; i < scenes.length; i++) {
-    const sceneResource = scenes[i];
-    const { scene, sharedScene, backgroundTextureResourceId, environmentTextureResourceId } = sceneResource;
-    const props = getReadObjectBufferView(sharedScene);
-
-    if (props.background[0] !== backgroundTextureResourceId) {
-      const resourceId = props.background[0];
-      const textureResource = getLocalResource<Texture>(ctx, resourceId);
-
-      if (textureResource && textureResource.resource) {
-        scene.background = textureResource.resource;
-        sceneResource.environmentTextureResourceId = resourceId;
-      } else {
-        waitForLocalResource<Texture>(ctx, props.background[0]).then((texture) => {
-          const currentProps = getReadObjectBufferView(sharedScene);
-
-          if (currentProps.background[0] === resourceId) {
-            scene.background = texture;
-            sceneResource.environmentTextureResourceId = resourceId;
-          }
-        });
-      }
-    }
-
-    if (props.environment[0] !== environmentTextureResourceId) {
-      const resourceId = props.environment[0];
-      const textureResource = getLocalResource<Texture>(ctx, resourceId);
-
-      if (textureResource && textureResource.resource) {
-        scene.environment = textureResource.resource;
-        sceneResource.environmentTextureResourceId = resourceId;
-      } else {
-        waitForLocalResource<Texture>(ctx, props.environment[0]).then((texture) => {
-          const currentProps = getReadObjectBufferView(sharedScene);
-
-          if (currentProps.environment[0] === resourceId) {
-            scene.environment = texture;
-            sceneResource.environmentTextureResourceId = resourceId;
-          }
-        });
-      }
-    }
-  }
+  // TODO: Fix this up
+  // for (let i = 0; i < scenes.length; i++) {
+  //   const sceneResource = scenes[i];
+  //   const { scene, rendererSceneTripleBuffer, backgroundTexture, environmentTexture } = sceneResource;
+  //   const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
+  //   if (sceneView.backgroundTexture[0] !== backgroundTexture?.resourceId) {
+  //     const resourceId = props.background[0];
+  //     const textureResource = getLocalResource<Texture>(ctx, resourceId);
+  //     if (textureResource && textureResource.resource) {
+  //       scene.background = textureResource.resource;
+  //       sceneResource.environmentTextureResourceId = resourceId;
+  //     } else {
+  //       waitForLocalResource<Texture>(ctx, props.background[0]).then((texture) => {
+  //         const currentProps = getReadObjectBufferView(sharedScene);
+  //         if (currentProps.background[0] === resourceId) {
+  //           scene.background = texture;
+  //           sceneResource.environmentTextureResourceId = resourceId;
+  //         }
+  //       });
+  //     }
+  //   }
+  //   if (props.environment[0] !== environmentTextureResourceId) {
+  //     const resourceId = props.environment[0];
+  //     const textureResource = getLocalResource<Texture>(ctx, resourceId);
+  //     if (textureResource && textureResource.resource) {
+  //       scene.environment = textureResource.resource;
+  //       sceneResource.environmentTextureResourceId = resourceId;
+  //     } else {
+  //       waitForLocalResource<Texture>(ctx, props.environment[0]).then((texture) => {
+  //         const currentProps = getReadObjectBufferView(sharedScene);
+  //         if (currentProps.environment[0] === resourceId) {
+  //           scene.environment = texture;
+  //           sceneResource.environmentTextureResourceId = resourceId;
+  //         }
+  //       });
+  //     }
+  //   }
+  // }
 }

@@ -1,4 +1,4 @@
-import { DirectionalLight, Light, PointLight, SpotLight } from "three";
+import { DirectionalLight, Light, PointLight, Scene, SpotLight } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
@@ -74,14 +74,17 @@ export async function onLoadLocalSpotLightResource(
 
 export function updateNodeLight(
   ctx: RenderThreadState,
+  scene: Scene,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
   const currentLightResourceId = node.light?.resourceId || 0;
   const nextLightResourceId = nodeReadView.light[0];
 
+  // TODO: Handle node.visible
+
   if (currentLightResourceId !== nextLightResourceId && node.lightObject) {
-    node.scene.remove(node.lightObject);
+    scene.remove(node.lightObject);
     node.lightObject = undefined;
   }
 
@@ -104,7 +107,7 @@ export function updateNodeLight(
       directionalLight.target.position.set(0, 0, -1);
       directionalLight.add(directionalLight.target);
 
-      node.scene.add(directionalLight);
+      scene.add(directionalLight);
     }
 
     const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);
@@ -121,7 +124,7 @@ export function updateNodeLight(
       pointLight = new PointLight();
       pointLight.decay = 2;
 
-      node.scene.add(pointLight);
+      scene.add(pointLight);
     }
 
     const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);
@@ -139,7 +142,7 @@ export function updateNodeLight(
       spotLight = new SpotLight();
       spotLight.decay = 2;
 
-      node.scene.add(spotLight);
+      scene.add(spotLight);
     }
 
     const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);

@@ -4,6 +4,7 @@ import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import {
   SamplerMagFilter,
+  SamplerMapping,
   SamplerMinFilter,
   SamplerResourceType,
   SamplerWrap,
@@ -19,6 +20,7 @@ export interface SamplerProps {
   minFilter?: SamplerMinFilter;
   wrapS?: SamplerWrap;
   wrapT?: SamplerWrap;
+  mapping?: SamplerMapping;
 }
 
 export function createRemoteSampler(ctx: GameState, props: SamplerProps): RemoteSampler {
@@ -26,6 +28,7 @@ export function createRemoteSampler(ctx: GameState, props: SamplerProps): Remote
     resourceId: createResource<SharedSamplerResource>(ctx, Thread.Render, SamplerResourceType, {
       wrapS: SamplerWrap.REPEAT,
       wrapT: SamplerWrap.REPEAT,
+      mapping: SamplerMapping.UVMapping,
       ...props,
     }),
   };

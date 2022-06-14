@@ -4,7 +4,6 @@ import { addEntity } from "bitecs";
 import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } from "../component/transform";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { playAudio } from "../audio/audio.game";
 import { getModule, Thread } from "../module/module.common";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { createRemoteMesh } from "../mesh/mesh.game";
@@ -145,93 +144,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-export function registerDefaultPrefabs(state: GameState) {
-  registerPrefab(state, {
-    name: "random-cube",
-    create: createCube,
-  });
-  registerPrefab(state, {
-    name: "red-cube",
-    create: () => {
-      const eid = createCube(
-        state,
-        createRemoteStandardMaterial(state, {
-          baseColorFactor: [1, 0, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      );
-      return eid;
-    },
-  });
-  registerPrefab(state, {
-    name: "musical-cube",
-    create: () => {
-      const eid = createCube(
-        state,
-        createRemoteStandardMaterial(state, {
-          baseColorFactor: [1, 0, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      );
-
-      playAudio("/audio/bach.mp3", eid);
-
-      return eid;
-    },
-  });
-  registerPrefab(state, {
-    name: "green-cube",
-    create: () =>
-      createCube(
-        state,
-        createRemoteStandardMaterial(state, {
-          baseColorFactor: [0, 1, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "blue-cube",
-    create: () =>
-      createCube(
-        state,
-        createRemoteStandardMaterial(state, {
-          baseColorFactor: [0, 0, 1, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "player-cube",
-    create: () =>
-      createCube(
-        state,
-        createRemoteStandardMaterial(state, {
-          baseColorFactor: [1, 1, 1, 1.0],
-          roughnessFactor: 0.1,
-          metallicFactor: 0.9,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "mixamo-x",
-    create: () => {
-      return createRotatedAvatar(state, "/gltf/mixamo-x.glb");
-    },
-  });
-  registerPrefab(state, {
-    name: "mixamo-y",
-    create: () => {
-      return createRotatedAvatar(state, "/gltf/mixamo-y.glb");
-    },
-  });
-}
-
-function createRotatedAvatar(state: GameState, path: string) {
+export function createRotatedAvatar(state: GameState, path: string) {
   const { physicsWorld } = getModule(state, PhysicsModule);
 
   const container = addEntity(state.world);
