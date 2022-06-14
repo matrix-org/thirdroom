@@ -9,7 +9,6 @@ import HomeIC from "../../../../../res/ic/home.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import ChatIC from "../../../../../res/ic/chat.svg";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
-import SettingIC from "../../../../../res/ic/setting.svg";
 import "./RoomListHeader.css";
 
 interface IRoomListHeader {
@@ -65,12 +64,6 @@ export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
         iconSrc={PeoplesIC}
         isActive={selectedTab === RoomListTabs.Friends}
         onClick={() => onTabSelect(RoomListTabs.Friends)}
-      />
-      <RoomListTab
-        name="Settings"
-        iconSrc={SettingIC}
-        isActive={selectedTab === RoomListTabs.Settings}
-        onClick={() => onTabSelect(RoomListTabs.Settings)}
       />
     </header>
   );

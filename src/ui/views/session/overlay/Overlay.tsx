@@ -36,11 +36,12 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow } = useStore((state) => state.overlayWindow);
+  const spacesEnabled = false;
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       <SidebarView
-        spaces={<SpacesView />}
+        spaces={spacesEnabled && <SpacesView />}
         roomList={
           selectedWindow ? undefined : (
             <RoomListView
