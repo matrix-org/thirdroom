@@ -565,7 +565,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(roomOptions: RoomOptions);
     observeStateType(type: string, txn?: string): Promise<ObservedStateTypeMap>;
     observeStateTypeAndKey(type: string, stateKey: string, txn?: string): Promise<ObservedStateKeyValue>;
-    getStateEvent(type: string, key?: string): Promise<StateEvent | undefined>;
+    getStateEvent(type: string, key?: string): Promise<RoomStateEntry | undefined>;
     notifyRoomKey(roomKey: RoomKey, eventIds: string[], log?: any): Promise<void>;
     load(summary: any, txn: any, log: any): Promise<void>;
     observeMember(userId: string): Promise<RetainedObservableValue<RoomMember> | null>;
@@ -1697,6 +1697,11 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     unsigned?: Content;
   }
   export type StateEvent = TimelineEvent & { prev_content?: Content; state_key: string };
+  export interface RoomStateEntry {
+    roomId: string;
+    event: StateEvent;
+    key: string;
+  }
 
   export class CallHandler {
     private readonly options;
