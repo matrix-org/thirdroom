@@ -26,6 +26,7 @@ export interface SessionOutletContext {
 
 export function SessionView() {
   const { client, session, platform } = useHydrogen(true);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const networkInterfaceRef = useRef<() => void>();

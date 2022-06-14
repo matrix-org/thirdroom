@@ -6,6 +6,10 @@ export function getMxIdDomain(mxId: string) {
   return mxId.slice(mxId.indexOf(":") + 1);
 }
 
+export function getMxIdUsername(mxId: string) {
+  return mxId.slice(1, mxId.indexOf(":"));
+}
+
 export async function resolveRoomAlias(
   homeserver: string,
   alias: string
@@ -48,9 +52,15 @@ export async function isRoomAliasAvailable(homeserver: string, alias: string): P
 
 export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: string): Room | void {
   if (alias.startsWith("#") === false) return;
-  const items = rooms.values();
 
-  for (const room of items) {
+  for (const room of rooms.values()) {
     if (room.canonicalAlias === alias) return room;
+  }
+}
+
+export function getProfileRoom(rooms: ObservableMap<string, Room>) {
+  const type = "org.matrix.msc3815.profile";
+  for (const room of rooms.values()) {
+    if (room.type === type) return room;
   }
 }

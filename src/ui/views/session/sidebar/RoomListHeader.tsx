@@ -1,19 +1,16 @@
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { Avatar } from "../../../atoms/avatar/Avatar";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { RoomListTab } from "../../components/room-list-tab/RoomListTab";
+import { useStore, RoomListTabs, OverlayWindow } from "../../../hooks/useStore";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import HomeIC from "../../../../../res/ic/home.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import ChatIC from "../../../../../res/ic/chat.svg";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
 import SettingIC from "../../../../../res/ic/setting.svg";
-
 import "./RoomListHeader.css";
-
-export enum RoomListTabs {
-  Home = "Home",
-  Worlds = "Worlds",
-  Chats = "Chats",
-  Friends = "Friends",
-  Settings = "Settings",
-}
 
 interface IRoomListHeader {
   selectedTab: RoomListTabs;
@@ -21,8 +18,30 @@ interface IRoomListHeader {
 }
 
 export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
+  const { session, platform, logout } = useHydrogen(true);
+  const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
+  const { selectWindow } = useStore((state) => state.overlayWindow);
+
   return (
     <header className="RoomListHeader flex items-center justify-around">
+      <DropdownMenu
+        content={
+          <>
+            <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserProfile)}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onSelect={logout} variant="danger">
+              Logout
+            </DropdownMenuItem>
+          </>
+        }
+      >
+        <Avatar
+          onClick={() => false /* used for keyboard focus */}
+          shape="circle"
+          name={displayName}
+          bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
+          imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
+        />
+      </DropdownMenu>
       <RoomListTab
         name="Home"
         iconSrc={HomeIC}

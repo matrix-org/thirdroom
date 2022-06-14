@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import "./ThumbnailBadgeWrapper.css";
 
 interface ThumbnailBadgeWrapperProps {
-  badge: ReactNode;
+  badge?: ReactNode;
   children: ReactNode;
 }
 
@@ -10,7 +10,7 @@ export function ThumbnailBadgeWrapper({ badge, children }: ThumbnailBadgeWrapper
   return (
     <div className="ThumbnailBadgeWrapper">
       {children}
-      <div className="ThumbnailBadgeWrapper__item">{badge}</div>
+      {badge && <div className="ThumbnailBadgeWrapper__item">{badge}</div>}
     </div>
   );
 }

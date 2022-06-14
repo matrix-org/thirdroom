@@ -1,0 +1,23 @@
+.SegmentControlItem {
+  padding: var(--sp-xxs) var(--sp-xs);
+  cursor: pointer;
+  border-radius: var(--br-xs);
+
+  &:hover,
+  &:focus {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.SegmentControlItem--selected {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-primary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-soft-active);
+  }
+}
