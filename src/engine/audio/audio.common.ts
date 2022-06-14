@@ -56,9 +56,16 @@ export enum AudioEmitterType {
   Global,
 }
 
+export enum AudioEmitterOutput {
+  Environment,
+  Music,
+  Voice,
+}
+
 export const globalAudioEmitterSchema = defineObjectBufferSchema({
   sources: [Uint32Array, 16], // Note there can be a maximum 16 sources assigned to an emitter at any one time
   gain: [Float32Array, 1],
+  output: [Uint32Array, 1],
 });
 
 export type GlobalAudioEmitterTripleBuffer = ObjectTripleBuffer<typeof globalAudioEmitterSchema>;
@@ -85,6 +92,7 @@ export const positionalAudioEmitterSchema = defineObjectBufferSchema({
   maxDistance: [Float32Array, 1],
   refDistance: [Float32Array, 1],
   rolloffFactor: [Float32Array, 1],
+  output: [Uint32Array, 1],
 });
 
 export type PositionalAudioEmitterTripleBuffer = ObjectTripleBuffer<typeof positionalAudioEmitterSchema>;

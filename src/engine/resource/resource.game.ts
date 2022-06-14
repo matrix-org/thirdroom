@@ -2,18 +2,17 @@ import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
-  LoadResourceMessage,
+  LoadResourcesMessage,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
-  ResourceProps,
   ResourceStatus,
 } from "./resource.common";
 
 interface RemoteResource {
   id: ResourceId;
   resourceType: string;
-  props: ResourceProps;
+  props: any;
   loaded: boolean;
   error?: string;
   statusView: Uint8Array;
@@ -24,6 +23,10 @@ interface ResourceModuleState {
   resources: Map<ResourceId, RemoteResource>;
   resourceIdMap: Map<string, Map<any, ResourceId>>;
   deferredResources: Map<ResourceId, Deferred<undefined>>;
+  mainThreadMessageQueue: any[];
+  renderThreadMessageQueue: any[];
+  mainThreadTransferList: Transferable[];
+  renderThreadTransferList: Transferable[];
 }
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
@@ -34,6 +37,10 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       resources: new Map(),
       resourceIdMap: new Map(),
       deferredResources: new Map(),
+      mainThreadMessageQueue: [],
+      renderThreadMessageQueue: [],
+      mainThreadTransferList: [],
+      renderThreadTransferList: [],
     };
   },
   init(ctx) {
@@ -113,17 +120,28 @@ export function createResource<Props>(
 
   resourceModule.deferredResources.set(id, deferred);
 
-  ctx.sendMessage<LoadResourceMessage<Props>>(
-    thread,
-    {
-      type: ResourceMessageType.LoadResource,
-      resourceType,
-      id,
-      props,
-      statusView,
-    },
-    transferList
-  );
+  const message = {
+    resourceType,
+    id,
+    props,
+    statusView,
+  };
+
+  if (thread === Thread.Main) {
+    resourceModule.mainThreadMessageQueue.push(message);
+
+    if (transferList) {
+      resourceModule.mainThreadTransferList.push(...transferList);
+    }
+  } else if (thread === Thread.Render) {
+    resourceModule.renderThreadMessageQueue.push(message);
+
+    if (transferList) {
+      resourceModule.renderThreadTransferList.push(...transferList);
+    }
+  } else {
+    throw new Error("Invalid resource thread target");
+  }
 
   return id;
 }
@@ -143,4 +161,42 @@ export function getResourceStatus(ctx: GameState, resourceId: ResourceId): Resou
   const resourceModule = getModule(ctx, ResourceModule);
   const resource = resourceModule.resources.get(resourceId);
   return resource ? resource.statusView[0] : ResourceStatus.None;
+}
+
+export function ResourceLoaderSystem(ctx: GameState) {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  if (resourceModule.mainThreadMessageQueue.length !== 0) {
+    ctx.sendMessage<LoadResourcesMessage>(
+      Thread.Main,
+      {
+        type: ResourceMessageType.LoadResources,
+        resources: resourceModule.mainThreadMessageQueue,
+      },
+      resourceModule.mainThreadTransferList.length > 0 ? resourceModule.mainThreadTransferList : undefined
+    );
+
+    resourceModule.mainThreadMessageQueue = [];
+
+    if (resourceModule.mainThreadTransferList.length > 0) {
+      resourceModule.mainThreadTransferList = [];
+    }
+  }
+
+  if (resourceModule.renderThreadMessageQueue.length !== 0) {
+    ctx.sendMessage<LoadResourcesMessage>(
+      Thread.Main,
+      {
+        type: ResourceMessageType.LoadResources,
+        resources: resourceModule.renderThreadMessageQueue,
+      },
+      resourceModule.renderThreadTransferList.length > 0 ? resourceModule.renderThreadTransferList : undefined
+    );
+
+    resourceModule.renderThreadMessageQueue = [];
+
+    if (resourceModule.renderThreadTransferList.length > 0) {
+      resourceModule.renderThreadTransferList = [];
+    }
+  }
 }

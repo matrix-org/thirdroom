@@ -83,12 +83,18 @@ export function updateNodeLight(
 
   // TODO: Handle node.visible
 
-  if (currentLightResourceId !== nextLightResourceId && node.lightObject) {
-    scene.remove(node.lightObject);
-    node.lightObject = undefined;
-  }
+  if (currentLightResourceId !== nextLightResourceId) {
+    if (node.lightObject) {
+      scene.remove(node.lightObject);
+      node.lightObject = undefined;
+    }
 
-  node.light = getLocalResource<LocalLightResource>(ctx, nextLightResourceId)?.resource;
+    if (nextLightResourceId) {
+      node.light = getLocalResource<LocalLightResource>(ctx, nextLightResourceId)?.resource;
+    } else {
+      node.light = undefined;
+    }
+  }
 
   if (!node.light) {
     return;

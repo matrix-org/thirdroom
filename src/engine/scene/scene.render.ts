@@ -5,7 +5,7 @@ import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
@@ -48,42 +48,46 @@ export async function onLoadLocalSceneResource(
 }
 
 export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
-  // TODO: Fix this up
-  // for (let i = 0; i < scenes.length; i++) {
-  //   const sceneResource = scenes[i];
-  //   const { scene, rendererSceneTripleBuffer, backgroundTexture, environmentTexture } = sceneResource;
-  //   const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
-  //   if (sceneView.backgroundTexture[0] !== backgroundTexture?.resourceId) {
-  //     const resourceId = props.background[0];
-  //     const textureResource = getLocalResource<Texture>(ctx, resourceId);
-  //     if (textureResource && textureResource.resource) {
-  //       scene.background = textureResource.resource;
-  //       sceneResource.environmentTextureResourceId = resourceId;
-  //     } else {
-  //       waitForLocalResource<Texture>(ctx, props.background[0]).then((texture) => {
-  //         const currentProps = getReadObjectBufferView(sharedScene);
-  //         if (currentProps.background[0] === resourceId) {
-  //           scene.background = texture;
-  //           sceneResource.environmentTextureResourceId = resourceId;
-  //         }
-  //       });
-  //     }
-  //   }
-  //   if (props.environment[0] !== environmentTextureResourceId) {
-  //     const resourceId = props.environment[0];
-  //     const textureResource = getLocalResource<Texture>(ctx, resourceId);
-  //     if (textureResource && textureResource.resource) {
-  //       scene.environment = textureResource.resource;
-  //       sceneResource.environmentTextureResourceId = resourceId;
-  //     } else {
-  //       waitForLocalResource<Texture>(ctx, props.environment[0]).then((texture) => {
-  //         const currentProps = getReadObjectBufferView(sharedScene);
-  //         if (currentProps.environment[0] === resourceId) {
-  //           scene.environment = texture;
-  //           sceneResource.environmentTextureResourceId = resourceId;
-  //         }
-  //       });
-  //     }
-  //   }
-  // }
+  for (let i = 0; i < scenes.length; i++) {
+    const sceneResource = scenes[i];
+    const { scene, rendererSceneTripleBuffer, backgroundTexture, environmentTexture } = sceneResource;
+
+    const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
+
+    const currentBackgroundTextureResourceId = backgroundTexture?.resourceId || 0;
+    const currentEnvironmentTextureResourceId = environmentTexture?.resourceId || 0;
+
+    if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
+      if (sceneView.backgroundTexture[0]) {
+        const backgroundTexture = getLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])?.resource;
+
+        if (backgroundTexture) {
+          scene.background = backgroundTexture.texture;
+        }
+
+        sceneResource.backgroundTexture = backgroundTexture;
+      } else {
+        sceneResource.backgroundTexture = undefined;
+        scene.background = null;
+      }
+    }
+
+    if (sceneView.environmentTexture[0] !== currentEnvironmentTextureResourceId) {
+      if (sceneView.environmentTexture[0]) {
+        const environmentTexture = getLocalResource<LocalTextureResource>(
+          ctx,
+          sceneView.environmentTexture[0]
+        )?.resource;
+
+        if (environmentTexture) {
+          scene.environment = environmentTexture.texture;
+        }
+
+        sceneResource.environmentTexture = environmentTexture;
+      } else {
+        sceneResource.environmentTexture = undefined;
+        scene.environment = null;
+      }
+    }
+  }
 }

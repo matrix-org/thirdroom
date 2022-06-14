@@ -19,8 +19,9 @@ import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
-import { LocalMesh } from "../mesh/mesh.render";
-import { RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
+import { LocalMesh, updateNodeMesh } from "../mesh/mesh.render";
+import { getModule } from "../module/module.common";
+import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
@@ -46,6 +47,8 @@ export async function onLoadLocalNode(
   resourceId: ResourceId,
   { rendererNodeTripleBuffer }: RendererSharedNodeResource
 ): Promise<LocalNode> {
+  const rendererModule = getModule(ctx, RendererModule);
+
   const nodeView = getReadObjectBufferView(rendererNodeTripleBuffer);
 
   const resources = await promiseObject({
@@ -54,13 +57,17 @@ export async function onLoadLocalNode(
     light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
   });
 
-  return {
+  const localNode: LocalNode = {
     resourceId,
     rendererNodeTripleBuffer,
     mesh: resources.mesh,
     camera: resources.camera,
     light: resources.light,
   };
+
+  rendererModule.nodes.push(localNode);
+
+  return localNode;
 }
 
 const tempMatrix4 = new Matrix4();
@@ -103,7 +110,6 @@ export function updateLocalNodeResources(
     const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
     updateNodeCamera(ctx, sceneResource.scene, node, nodeView);
     updateNodeLight(ctx, sceneResource.scene, node, nodeView);
-    // TODO: implement this
-    // updateNodeMesh(ctx, sceneResource.scene, node, nodeView);
+    updateNodeMesh(ctx, sceneResource.scene, node, nodeView);
   }
 }

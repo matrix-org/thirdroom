@@ -15,7 +15,7 @@ import {
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
 import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
-import { ResourceModule } from "./resource/resource.game";
+import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./GameWorker";
@@ -56,6 +56,7 @@ export default defineConfig<GameState>({
     GameAudioSystem,
     RenderableSystem,
     RemoteNodeSystem,
+    ResourceLoaderSystem,
 
     ResetInputSystem,
     GameWorkerStatsSystem,

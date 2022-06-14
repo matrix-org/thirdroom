@@ -5,8 +5,8 @@ export type ResourceId = number;
 
 export enum ResourceMessageType {
   InitResources = "init-resources",
-  LoadResource = "load-resource-2",
-  ResourceLoaded = "resource-loaded-2",
+  LoadResources = "load-resources",
+  ResourceLoaded = "resource-loaded",
 }
 
 export enum ResourceStatus {
@@ -16,12 +16,14 @@ export enum ResourceStatus {
   Error,
 }
 
-export interface LoadResourceMessage<Props extends ResourceProps = ResourceProps> {
-  type: ResourceMessageType.LoadResource;
-  resourceType: string;
-  id: ResourceId;
-  props: Props;
-  statusView: Uint8Array;
+export interface LoadResourcesMessage {
+  type: ResourceMessageType.LoadResources;
+  resources: {
+    resourceType: string;
+    id: ResourceId;
+    props: any;
+    statusView: Uint8Array;
+  }[];
 }
 
 export interface ResourceLoadedMessage<Response = unknown> {
@@ -32,16 +34,12 @@ export interface ResourceLoadedMessage<Response = unknown> {
   response?: Response;
 }
 
-export interface ResourceProps {
-  name?: string;
-}
-
 interface LocalResource<Resource = unknown> {
   id: number;
   loaded: boolean;
   error?: string;
   resourceType: string;
-  props: ResourceProps;
+  props: any;
   resource?: Resource;
   statusView: Uint8Array;
 }
@@ -75,7 +73,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       };
     },
     init(ctx) {
-      const dispose = registerMessageHandler(ctx, ResourceMessageType.LoadResource, onLoadResource);
+      const dispose = registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources);
 
       return () => {
         dispose();
@@ -83,8 +81,20 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     },
   });
 
-  async function onLoadResource(ctx: ThreadContext, { id, resourceType, props, statusView }: LoadResourceMessage) {
+  function onLoadResources(ctx: ThreadContext, { resources }: LoadResourcesMessage) {
     const resourceModule = getModule(ctx, ResourceModule);
+
+    for (const resource of resources) {
+      loadResource(ctx, resourceModule, resource);
+    }
+  }
+
+  async function loadResource(
+    ctx: ThreadContext,
+    resourceModule: ResourceModuleState<ThreadContext>,
+    resourceMessage: any
+  ) {
+    const { id, resourceType, props, statusView } = resourceMessage;
 
     const resource: LocalResource = {
       id,

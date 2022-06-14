@@ -1,4 +1,5 @@
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { AudioEmitterOutput } from "../audio/audio.common";
 import { AudioModule, LocalPositionalAudioEmitter } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -11,6 +12,7 @@ export interface MainNode {
   audioNodeTripleBuffer: AudioNodeTripleBuffer;
   audioEmitter?: LocalPositionalAudioEmitter;
   emitterPannerNode?: PannerNode;
+  emitterOutput?: AudioEmitterOutput;
 }
 
 export async function onLoadMainNode(

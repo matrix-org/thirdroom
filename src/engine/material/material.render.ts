@@ -301,7 +301,11 @@ function updateSharedTextureResource<Resource extends LocalMaterialResource>(
 
   if (anyCurrentSharedMaterial[mapName][0] !== (anyMaterialResource[mapName]?.resourceId || 0)) {
     const textureResource = getLocalResource<LocalTextureResource>(ctx, anyCurrentSharedMaterial[mapName][0]);
-    anyMaterialResource[mapName] = textureResource?.resource;
+
+    // Only update if the texture resource is loaded
+    if (textureResource) {
+      anyMaterialResource[mapName] = textureResource?.resource;
+    }
   }
 }
 

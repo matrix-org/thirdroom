@@ -1,7 +1,7 @@
-import { Mesh, BufferGeometry, Material, Line, LineSegments, Points, LineLoop, SkinnedMesh } from "three";
+import { Mesh, BufferGeometry, Material, Line, LineSegments, Points, LineLoop, SkinnedMesh, Scene } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { MaterialType } from "../material/material.common";
 import {
   createDefaultMaterial,
@@ -14,6 +14,8 @@ import {
   updatePrimitiveUnlitMaterial as updateMeshPrimitiveUnlitMaterial,
 } from "../material/material.render";
 import { getModule } from "../module/module.common";
+import { RendererNodeTripleBuffer } from "../node/node.common";
+import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
@@ -34,8 +36,9 @@ export interface LocalMeshPrimitive {
   mode: MeshPrimitiveMode;
   indices?: LocalAccessor;
   material?: LocalMaterialResource;
-  object: PrimitiveObject3D;
   targets?: number[] | Float32Array;
+  geometryObj: BufferGeometry;
+  materialObj: Material;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
 
@@ -80,7 +83,9 @@ export async function onLoadLocalMeshPrimitiveResource(
       : undefined,
   });
 
-  const geometry = new BufferGeometry();
+  const mode = initialProps.mode;
+
+  let geometry = new BufferGeometry();
 
   if (results.indices) {
     if ("isInterleavedBufferAttribute" in results.indices.attribute) {
@@ -94,21 +99,45 @@ export async function onLoadLocalMeshPrimitiveResource(
     geometry.setAttribute(attributeName, results.attributes[attributeName].attribute);
   }
 
-  const mode = initialProps.mode;
+  if (mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
+    geometry = toTrianglesDrawMode(geometry, MeshPrimitiveMode.TRIANGLE_STRIP);
+  } else if (mode === MeshPrimitiveMode.TRIANGLE_FAN) {
+    geometry = toTrianglesDrawMode(geometry, MeshPrimitiveMode.TRIANGLE_FAN);
+  }
 
   let material: Material;
 
   if (!results.material) {
-    material = createDefaultMaterial(initialProps.attributes);
+    material = createDefaultMaterial(results.attributes);
   } else if (results.material.type === MaterialType.Unlit) {
-    material = createPrimitiveUnlitMaterial(mode, initialProps.attributes, results.material);
+    material = createPrimitiveUnlitMaterial(mode, results.attributes, results.material);
   } else if (results.material.type === MaterialType.Standard) {
-    material = createPrimitiveStandardMaterial(mode, initialProps.attributes, results.material);
+    material = createPrimitiveStandardMaterial(mode, results.attributes, results.material);
   } else {
     throw new Error("Unsupported material type");
   }
 
+  const localMeshPrimitive: LocalMeshPrimitive = {
+    resourceId,
+    mode,
+    attributes: results.attributes,
+    indices: results.indices,
+    material: results.material,
+    targets: initialProps.targets,
+    geometryObj: geometry,
+    materialObj: material,
+    meshPrimitiveTripleBuffer,
+  };
+
+  rendererModule.meshPrimitives.push(localMeshPrimitive);
+
+  return localMeshPrimitive;
+}
+
+function createMeshPrimitiveObject(primitive: LocalMeshPrimitive): PrimitiveObject3D {
   let object: PrimitiveObject3D;
+
+  const { mode, geometryObj, materialObj } = primitive;
 
   if (
     mode === MeshPrimitiveMode.TRIANGLES ||
@@ -117,7 +146,7 @@ export async function onLoadLocalMeshPrimitiveResource(
   ) {
     // todo: skinned mesh
     const isSkinnedMesh = false;
-    const mesh = isSkinnedMesh ? new Mesh(geometry, material) : new SkinnedMesh(geometry, material);
+    const mesh = isSkinnedMesh ? new Mesh(geometryObj, materialObj) : new SkinnedMesh(geometryObj, materialObj);
 
     if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
       // we normalize floating point skin weight array to fix malformed assets (see #15319)
@@ -125,39 +154,20 @@ export async function onLoadLocalMeshPrimitiveResource(
       mesh.normalizeSkinWeights();
     }
 
-    if (mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
-      mesh.geometry = toTrianglesDrawMode(mesh.geometry, MeshPrimitiveMode.TRIANGLE_STRIP);
-    } else if (mode === MeshPrimitiveMode.TRIANGLE_FAN) {
-      mesh.geometry = toTrianglesDrawMode(mesh.geometry, MeshPrimitiveMode.TRIANGLE_FAN);
-    }
-
     object = mesh;
   } else if (mode === MeshPrimitiveMode.LINES) {
-    object = new LineSegments(geometry, material);
+    object = new LineSegments(geometryObj, materialObj);
   } else if (mode === MeshPrimitiveMode.LINE_STRIP) {
-    object = new Line(geometry, material);
+    object = new Line(geometryObj, materialObj);
   } else if (mode === MeshPrimitiveMode.LINE_LOOP) {
-    object = new LineLoop(geometry, material);
+    object = new LineLoop(geometryObj, materialObj);
   } else if (mode === MeshPrimitiveMode.POINTS) {
-    object = new Points(geometry, material);
+    object = new Points(geometryObj, materialObj);
   } else {
     throw new Error(`Primitive mode ${mode} unsupported.`);
   }
 
-  const localMeshPrimitive: LocalMeshPrimitive = {
-    resourceId,
-    object,
-    mode,
-    attributes: results.attributes,
-    indices: results.indices,
-    material: results.material,
-    targets: initialProps.targets,
-    meshPrimitiveTripleBuffer,
-  };
-
-  rendererModule.meshPrimitives.push(localMeshPrimitive);
-
-  return localMeshPrimitive;
+  return object;
 }
 
 /* Updates */
@@ -174,15 +184,15 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
 
     if (currentMaterialResourceId !== nextMaterialResourceId) {
       if (!nextMaterialResource) {
-        meshPrimitive.object.material = createDefaultMaterial(meshPrimitive.attributes);
+        meshPrimitive.materialObj = createDefaultMaterial(meshPrimitive.attributes);
       } else if (nextMaterialResource.type === MaterialType.Unlit) {
-        meshPrimitive.object.material = createPrimitiveUnlitMaterial(
+        meshPrimitive.materialObj = createPrimitiveUnlitMaterial(
           meshPrimitive.mode,
           meshPrimitive.attributes,
           nextMaterialResource
         );
       } else if (nextMaterialResource.type === MaterialType.Standard) {
-        meshPrimitive.object.material = createPrimitiveStandardMaterial(
+        meshPrimitive.materialObj = createPrimitiveStandardMaterial(
           meshPrimitive.mode,
           meshPrimitive.attributes,
           nextMaterialResource
@@ -191,12 +201,58 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     }
 
     if (nextMaterialResource && nextMaterialResource.type === MaterialType.Standard) {
-      updateMeshPrimitiveStandardMaterial(
-        meshPrimitive.object.material as PrimitiveStandardMaterial,
-        nextMaterialResource
-      );
+      updateMeshPrimitiveStandardMaterial(meshPrimitive.materialObj as PrimitiveStandardMaterial, nextMaterialResource);
     } else if (nextMaterialResource && nextMaterialResource.type === MaterialType.Unlit) {
-      updateMeshPrimitiveUnlitMaterial(meshPrimitive.object.material as PrimitiveUnlitMaterial, nextMaterialResource);
+      updateMeshPrimitiveUnlitMaterial(meshPrimitive.materialObj as PrimitiveUnlitMaterial, nextMaterialResource);
     }
+  }
+}
+
+export function updateNodeMesh(
+  ctx: RenderThreadState,
+  scene: Scene,
+  node: LocalNode,
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
+) {
+  const currentMeshResourceId = node.mesh?.resourceId || 0;
+  const nextMeshResourceId = nodeReadView.mesh[0];
+
+  if (currentMeshResourceId !== nextMeshResourceId) {
+    if (node.meshPrimitiveObjects) {
+      for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
+        const primitiveObject = node.meshPrimitiveObjects[i];
+        scene.remove(primitiveObject);
+      }
+
+      node.meshPrimitiveObjects = undefined;
+    }
+
+    if (nextMeshResourceId) {
+      node.mesh = getLocalResource<LocalMesh>(ctx, nextMeshResourceId)?.resource;
+    } else {
+      node.mesh = undefined;
+    }
+  }
+
+  // Only apply mesh updates if it's loaded and is set to the same resource as is in the triple buffer
+  if (!node.mesh) {
+    return;
+  }
+
+  if (!node.meshPrimitiveObjects) {
+    node.meshPrimitiveObjects = node.mesh.primitives.map(createMeshPrimitiveObject);
+    scene.add(...node.meshPrimitiveObjects);
+  }
+
+  for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
+    const primitiveObject = node.meshPrimitiveObjects[i];
+
+    const nextMaterial = node.mesh.primitives[i].materialObj;
+
+    if (primitiveObject.material !== nextMaterial) {
+      primitiveObject.material = nextMaterial;
+    }
+
+    updateTransformFromNode(ctx, nodeReadView, primitiveObject);
   }
 }

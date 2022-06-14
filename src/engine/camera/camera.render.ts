@@ -63,12 +63,18 @@ export function updateNodeCamera(
 
   // TODO: Handle node.visible
 
-  if (currentCameraResourceId !== nextCameraResourceId && node.cameraObject) {
-    scene.remove(node.cameraObject);
-    node.cameraObject = undefined;
-  }
+  if (currentCameraResourceId !== nextCameraResourceId) {
+    if (node.cameraObject) {
+      scene.remove(node.cameraObject);
+      node.cameraObject = undefined;
+    }
 
-  node.camera = getLocalResource<LocalCameraResource>(ctx, nextCameraResourceId)?.resource;
+    if (nextCameraResourceId) {
+      node.camera = getLocalResource<LocalCameraResource>(ctx, nextCameraResourceId)?.resource;
+    } else {
+      node.camera = undefined;
+    }
+  }
 
   if (!node.camera) {
     return;

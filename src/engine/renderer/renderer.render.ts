@@ -60,7 +60,7 @@ import {
   onLoadLocalMeshResource,
   updateLocalMeshPrimitiveResources,
 } from "../mesh/mesh.render";
-import { LocalNode } from "../node/node.render";
+import { LocalNode, updateLocalNodeResources } from "../node/node.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -85,6 +85,7 @@ export interface RendererModuleState {
   perspectiveCameraResources: LocalPerspectiveCameraResource[];
   orthographicCameraResources: LocalOrthographicCameraResource[];
   meshPrimitives: LocalMeshPrimitive[];
+  nodes: LocalNode[];
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -126,6 +127,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       perspectiveCameraResources: [],
       orthographicCameraResources: [],
       meshPrimitives: [],
+      nodes: [],
     };
   },
   init(ctx) {
@@ -234,6 +236,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
+  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     rendererModule.renderer.render(activeSceneResource.scene, activeCameraNode.cameraObject);

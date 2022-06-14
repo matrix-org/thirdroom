@@ -22,6 +22,7 @@ import {
   SharedMediaStreamResource,
   SharedAudioEmitterResource,
   AudioEmitterType,
+  AudioEmitterOutput,
 } from "./audio.common";
 import {
   commitToObjectTripleBuffer,
@@ -293,11 +294,14 @@ export interface RemoteGlobalAudioEmitter {
   set sources(sources: RemoteEmitterSource[]);
   get gain(): number;
   set gain(value: number);
+  get output(): AudioEmitterOutput;
+  set output(value: AudioEmitterOutput);
 }
 
 export interface GlobalAudioEmitterProps {
   sources?: RemoteEmitterSource[];
   gain?: number;
+  output?: AudioEmitterOutput;
 }
 
 export function createRemoteGlobalAudioEmitter(
@@ -310,6 +314,7 @@ export function createRemoteGlobalAudioEmitter(
 
   globalAudioEmitterBuffer.sources.set(props?.sources ? props.sources.map((source) => source.resourceId) : []);
   globalAudioEmitterBuffer.gain[0] = props?.gain === undefined ? 1 : props.gain;
+  globalAudioEmitterBuffer.output[0] = props?.output === undefined ? AudioEmitterOutput.Environment : props.output;
 
   const sharedGlobalAudioEmitter = createObjectTripleBuffer(globalAudioEmitterSchema, ctx.gameToMainTripleBufferFlags);
 
@@ -338,6 +343,12 @@ export function createRemoteGlobalAudioEmitter(
     set gain(value: number) {
       globalAudioEmitterBuffer.gain[0] = value;
     },
+    get output(): AudioEmitterOutput {
+      return globalAudioEmitterBuffer.output[0];
+    },
+    set output(value: AudioEmitterOutput) {
+      globalAudioEmitterBuffer.output[0] = value;
+    },
   };
 
   audioModule.globalAudioEmitters.push(remoteGlobalAudioEmitter);
@@ -365,6 +376,8 @@ export interface RemotePositionalAudioEmitter {
   set refDistance(value: number);
   get rolloffFactor(): number;
   set rolloffFactor(value: number);
+  get output(): AudioEmitterOutput;
+  set output(value: AudioEmitterOutput);
 }
 
 export interface PositionalAudioEmitterProps {
@@ -377,6 +390,7 @@ export interface PositionalAudioEmitterProps {
   maxDistance?: number;
   refDistance?: number;
   rolloffFactor?: number;
+  output?: AudioEmitterOutput;
 }
 
 export function createRemotePositionalAudioEmitter(
@@ -399,6 +413,7 @@ export function createRemotePositionalAudioEmitter(
   positionalAudioEmitterBuffer.maxDistance[0] = props?.maxDistance === undefined ? 10000 : props.maxDistance;
   positionalAudioEmitterBuffer.refDistance[0] = props?.refDistance === undefined ? 1 : props.refDistance;
   positionalAudioEmitterBuffer.rolloffFactor[0] = props?.rolloffFactor === undefined ? 1 : props.rolloffFactor;
+  positionalAudioEmitterBuffer.output[0] = props?.output === undefined ? AudioEmitterOutput.Environment : props.output;
 
   // TODO: Initialize world matrix when adding component
 
@@ -467,6 +482,12 @@ export function createRemotePositionalAudioEmitter(
     },
     set rolloffFactor(value: number) {
       positionalAudioEmitterBuffer.rolloffFactor[0] = value;
+    },
+    get output(): AudioEmitterOutput {
+      return positionalAudioEmitterBuffer.output[0];
+    },
+    set output(value: AudioEmitterOutput) {
+      positionalAudioEmitterBuffer.output[0] = value;
     },
   };
 
