@@ -156,8 +156,8 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
         }
 
         if (roomStatus & RoomStatus.BeingCreated) return <WorldPreviewCard title="Creating Room..." />;
-        if (roomStatus & RoomStatus.Invited) <WorldPreviewCard title="Invited To Room" />;
-        if (roomStatus & RoomStatus.Archived) <WorldPreviewCard title="Room Archived" />;
+        if (roomStatus & RoomStatus.Invited) return <WorldPreviewCard title="Invited To Room" />;
+        if (roomStatus & RoomStatus.Archived) return <WorldPreviewCard title="Room Archived" />;
 
         if (roomStatus & RoomStatus.Joined) {
           return (
