@@ -40,10 +40,10 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
-      <SidebarView
-        spaces={spacesEnabled ? <SpacesView /> : undefined}
-        roomList={
-          selectedWindow ? undefined : (
+      {selectedWindow ? undefined : (
+        <SidebarView
+          spaces={spacesEnabled ? <SpacesView /> : undefined}
+          roomList={
             <RoomListView
               header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
               content={
@@ -55,9 +55,9 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
                 </RoomListContent>
               }
             />
-          )
-        }
-      />
+          }
+        />
+      )}
       {selectedWindow ? (
         <div className="Overlay__window grow flex">
           {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}
