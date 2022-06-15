@@ -9,20 +9,10 @@ import { RoomTile } from "../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
 import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
+import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
-import { useObservableMap } from "../../../hooks/useObservableMap";
-
-interface WorldTileMembersProps {
-  groupCall: GroupCall;
-}
-
-export function WorldTileMembers({ groupCall }: WorldTileMembersProps) {
-  const members = useObservableMap(() => groupCall.members, [groupCall]);
-  console.log(members);
-  return <div />;
-}
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -70,15 +60,23 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           />
         }
       >
-        {worlds.map((room) => (
-          <RoomTile
-            key={room.id}
-            isActive={room.id === selectedWorldId}
-            avatar={renderAvatar(room, true)}
-            onClick={() => selectWorld(room.id)}
-            content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
-          />
-        ))}
+        {worlds.map((room) => {
+          const groupCall = groupCalls.get(room.id);
+          return (
+            <RoomTile
+              key={room.id}
+              isActive={room.id === selectedWorldId}
+              avatar={renderAvatar(room, true)}
+              onClick={() => selectWorld(room.id)}
+              content={
+                <>
+                  <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
+                  {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
+                </>
+              }
+            />
+          );
+        })}
       </Category>
       <Category header={<CategoryHeader title="All Messages" />}>
         {rooms.map((room) => (

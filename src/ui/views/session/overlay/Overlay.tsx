@@ -63,7 +63,7 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
               content={
                 <RoomListContent>
                   {selectedRoomListTab === RoomListTabs.Home && <RoomListHome groupCalls={groupCalls} />}
-                  {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld />}
+                  {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld groupCalls={groupCalls} />}
                   {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
                   {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
                 </RoomListContent>
