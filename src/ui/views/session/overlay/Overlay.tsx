@@ -1,10 +1,11 @@
 import classNames from "classnames";
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
-import { getIdentifierColorNumber } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
+import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
 import { RoomListView } from "../sidebar/RoomListView";
@@ -22,21 +23,34 @@ import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListWorld } from "../sidebar/RoomListWorlds";
 import { RoomListChats } from "../sidebar/RoomListChats";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
+import { NowPlaying } from "../../components/now-playing/NowPlaying";
+import { NowPlayingTitle } from "../../components/now-playing/NowPlayingTitle";
+import { NowPlayingStatus } from "../../components/now-playing/NowPlayingStatus";
+import { IconButton } from "../../../atoms/button/IconButton";
+import MicIC from "../../../../../res/ic/mic.svg";
+import HeadphoneIC from "../../../../../res/ic/headphone.svg";
+import LogoutIC from "../../../../../res/ic/logout.svg";
 
 interface OverlayProps {
+  calls: Map<string, GroupCall>;
+  activeCall: GroupCall | undefined;
+  onLeftWorld: () => void;
   onLoadWorld: (room: Room) => Promise<void>;
   onEnterWorld: (room: Room) => Promise<void>;
 }
 
-export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
-  const { session } = useHydrogen(true);
+export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWorld }: OverlayProps) {
+  const { session, platform } = useHydrogen(true);
 
   const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
   const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
-  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
+  const { worldId, isEnteredWorld } = useStore((state) => state.world);
+  const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow } = useStore((state) => state.overlayWindow);
   const spacesEnabled = false;
+  const groupCalls = new Map<string, GroupCall>();
+  Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
@@ -48,11 +62,56 @@ export function Overlay({ onLoadWorld, onEnterWorld }: OverlayProps) {
               header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
               content={
                 <RoomListContent>
-                  {selectedRoomListTab === RoomListTabs.Home && <RoomListHome />}
+                  {selectedRoomListTab === RoomListTabs.Home && <RoomListHome groupCalls={groupCalls} />}
                   {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld />}
                   {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
                   {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
                 </RoomListContent>
+              }
+              footer={
+                world && (
+                  <NowPlaying
+                    avatar={
+                      <AvatarOutline>
+                        <Avatar
+                          shape="circle"
+                          size="lg"
+                          name={world.name || "Unnamed World"}
+                          bgColor={`var(--usercolor${getIdentifierColorNumber(world.id)})`}
+                          imageSrc={getAvatarHttpUrl(world.avatarUrl || "", 70, platform, world.mediaRepository)}
+                        />
+                      </AvatarOutline>
+                    }
+                    content={
+                      <>
+                        <NowPlayingStatus status="connected">Connected</NowPlayingStatus>
+                        <NowPlayingTitle>{world.name || "Unnamed World"}</NowPlayingTitle>
+                      </>
+                    }
+                    leftControls={
+                      <>
+                        <IconButton
+                          variant="surface-low"
+                          label="Mic"
+                          iconSrc={MicIC}
+                          onClick={(a) => console.log("clicked")}
+                        />
+                        <IconButton
+                          variant="surface-low"
+                          label="Headphone"
+                          iconSrc={HeadphoneIC}
+                          onClick={(a) => console.log("clicked")}
+                        />
+                        <IconButton
+                          variant="danger"
+                          label="Left world"
+                          iconSrc={LogoutIC}
+                          onClick={(a) => onLeftWorld()}
+                        />
+                      </>
+                    }
+                  />
+                )
               }
             />
           }

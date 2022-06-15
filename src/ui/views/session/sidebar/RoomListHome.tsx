@@ -1,4 +1,4 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -12,8 +12,23 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import { useObservableMap } from "../../../hooks/useObservableMap";
 
-export function RoomListHome() {
+interface WorldTileMembersProps {
+  groupCall: GroupCall;
+}
+
+export function WorldTileMembers({ groupCall }: WorldTileMembersProps) {
+  const members = useObservableMap(() => groupCall.members, [groupCall]);
+  console.log(members);
+  return <div />;
+}
+
+interface RoomListHomeProps {
+  groupCalls: Map<string, GroupCall>;
+}
+
+export function RoomListHome({ groupCalls }: RoomListHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
