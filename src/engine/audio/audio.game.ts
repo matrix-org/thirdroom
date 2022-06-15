@@ -55,7 +55,7 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
     const audioStateBufferView = createObjectBufferView(audioStateSchema, ArrayBuffer);
     const audioStateTripleBuffer = createObjectTripleBuffer(audioStateSchema, gameToRenderTripleBufferFlags);
 
-    sendMessage<InitializeAudioStateMessage>(Thread.Render, AudioMessageType.InitializeAudioState, {
+    sendMessage<InitializeAudioStateMessage>(Thread.Main, AudioMessageType.InitializeAudioState, {
       audioStateTripleBuffer,
     });
 

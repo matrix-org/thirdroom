@@ -825,6 +825,8 @@ function updateGlobalAudioEmitters(
   const activeSceneView = getReadObjectBufferView(audioModule.activeScene.audioSceneTripleBuffer);
 
   for (const emitterRid of Array.from(activeSceneView.audioEmitters)) {
+    if (emitterRid === NOOP) continue;
+
     const emitter = getLocalResource<LocalGlobalAudioEmitter>(ctx, emitterRid)?.resource;
 
     // if emitter resource exists but has not been added to the scene

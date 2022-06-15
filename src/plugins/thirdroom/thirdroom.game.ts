@@ -1,4 +1,4 @@
-import { addEntity, defineQuery } from "bitecs";
+import { defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -8,21 +8,21 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
-import { waitForRemoteResource } from "../../engine/resource/resource.game";
+//import { waitForRemoteResource } from "../../engine/resource/resource.game";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
-import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
+//import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
-import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
-import { createRemoteStandardMaterial } from "../../engine/material/material.game";
-import {
-  createRemoteAudio,
-  createRemoteAudioSource,
-  createRemotePositionalAudioEmitter,
-} from "../../engine/audio/audio.game";
-import { RemoteNodeComponent } from "../../engine/node/node.game";
+// import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
+// import { createRemoteStandardMaterial } from "../../engine/material/material.game";
+// import {
+//   createRemoteAudio,
+//   createRemoteAudioSource,
+//   createRemotePositionalAudioEmitter,
+// } from "../../engine/audio/audio.game";
+// import { RemoteNodeComponent } from "../../engine/node/node.game";
 
 interface ThirdRoomModuleState {
   environment?: number;
@@ -52,108 +52,108 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     sceneResource.backgroundTexture = environmentMapTexture;
     sceneResource.environmentTexture = environmentMapTexture;
 
-    const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
+    // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
 
-    registerPrefab(ctx, {
-      name: "random-cube",
-      create: createCube,
-    });
+    // registerPrefab(ctx, {
+    //   name: "random-cube",
+    //   create: createCube,
+    // });
 
-    registerPrefab(ctx, {
-      name: "red-cube",
-      create: () => {
-        const eid = createCube(
-          ctx,
-          createRemoteStandardMaterial(ctx, {
-            baseColorFactor: [1, 0, 0, 1.0],
-            roughnessFactor: 0.8,
-            metallicFactor: 0.8,
-          })
-        );
-        return eid;
-      },
-    });
+    // registerPrefab(ctx, {
+    //   name: "red-cube",
+    //   create: () => {
+    //     const eid = createCube(
+    //       ctx,
+    //       createRemoteStandardMaterial(ctx, {
+    //         baseColorFactor: [1, 0, 0, 1.0],
+    //         roughnessFactor: 0.8,
+    //         metallicFactor: 0.8,
+    //       })
+    //     );
+    //     return eid;
+    //   },
+    // });
 
-    registerPrefab(ctx, {
-      name: "musical-cube",
-      create: () => {
-        const eid = createCube(
-          ctx,
-          createRemoteStandardMaterial(ctx, {
-            baseColorFactor: [1, 0, 0, 1.0],
-            roughnessFactor: 0.8,
-            metallicFactor: 0.8,
-          })
-        );
+    // registerPrefab(ctx, {
+    //   name: "musical-cube",
+    //   create: () => {
+    //     const eid = createCube(
+    //       ctx,
+    //       createRemoteStandardMaterial(ctx, {
+    //         baseColorFactor: [1, 0, 0, 1.0],
+    //         roughnessFactor: 0.8,
+    //         metallicFactor: 0.8,
+    //       })
+    //     );
 
-        const remoteNode = RemoteNodeComponent.get(eid)!;
+    //     const remoteNode = RemoteNodeComponent.get(eid)!;
 
-        remoteNode.audioEmitter = createRemotePositionalAudioEmitter(ctx, {
-          sources: [
-            createRemoteAudioSource(ctx, {
-              audio: bachAudio,
-            }),
-          ],
-        });
+    //     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(ctx, {
+    //       sources: [
+    //         createRemoteAudioSource(ctx, {
+    //           audio: bachAudio,
+    //         }),
+    //       ],
+    //     });
 
-        return eid;
-      },
-    });
+    //     return eid;
+    //   },
+    // });
 
-    registerPrefab(ctx, {
-      name: "green-cube",
-      create: () =>
-        createCube(
-          ctx,
-          createRemoteStandardMaterial(ctx, {
-            baseColorFactor: [0, 1, 0, 1.0],
-            roughnessFactor: 0.8,
-            metallicFactor: 0.8,
-          })
-        ),
-    });
+    // registerPrefab(ctx, {
+    //   name: "green-cube",
+    //   create: () =>
+    //     createCube(
+    //       ctx,
+    //       createRemoteStandardMaterial(ctx, {
+    //         baseColorFactor: [0, 1, 0, 1.0],
+    //         roughnessFactor: 0.8,
+    //         metallicFactor: 0.8,
+    //       })
+    //     ),
+    // });
 
-    registerPrefab(ctx, {
-      name: "blue-cube",
-      create: () =>
-        createCube(
-          ctx,
-          createRemoteStandardMaterial(ctx, {
-            baseColorFactor: [0, 0, 1, 1.0],
-            roughnessFactor: 0.8,
-            metallicFactor: 0.8,
-          })
-        ),
-    });
+    // registerPrefab(ctx, {
+    //   name: "blue-cube",
+    //   create: () =>
+    //     createCube(
+    //       ctx,
+    //       createRemoteStandardMaterial(ctx, {
+    //         baseColorFactor: [0, 0, 1, 1.0],
+    //         roughnessFactor: 0.8,
+    //         metallicFactor: 0.8,
+    //       })
+    //     ),
+    // });
 
-    registerPrefab(ctx, {
-      name: "player-cube",
-      create: () =>
-        createCube(
-          ctx,
-          createRemoteStandardMaterial(ctx, {
-            baseColorFactor: [1, 1, 1, 1.0],
-            roughnessFactor: 0.1,
-            metallicFactor: 0.9,
-          })
-        ),
-    });
+    // registerPrefab(ctx, {
+    //   name: "player-cube",
+    //   create: () =>
+    //     createCube(
+    //       ctx,
+    //       createRemoteStandardMaterial(ctx, {
+    //         baseColorFactor: [1, 1, 1, 1.0],
+    //         roughnessFactor: 0.1,
+    //         metallicFactor: 0.9,
+    //       })
+    //     ),
+    // });
 
-    registerPrefab(ctx, {
-      name: "mixamo-x",
-      create: () => {
-        return createRotatedAvatar(ctx, "/gltf/mixamo-x.glb");
-      },
-    });
+    // registerPrefab(ctx, {
+    //   name: "mixamo-x",
+    //   create: () => {
+    //     return createRotatedAvatar(ctx, "/gltf/mixamo-x.glb");
+    //   },
+    // });
 
-    registerPrefab(ctx, {
-      name: "mixamo-y",
-      create: () => {
-        return createRotatedAvatar(ctx, "/gltf/mixamo-y.glb");
-      },
-    });
+    // registerPrefab(ctx, {
+    //   name: "mixamo-y",
+    //   create: () => {
+    //     return createRotatedAvatar(ctx, "/gltf/mixamo-y.glb");
+    //   },
+    // });
 
-    await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
+    // await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
 
     return () => {
       for (const dispose of disposables) {
@@ -170,9 +170,9 @@ function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
     // removeEntity(ctx.world, thirdroom.environment);
   }
 
-  const environment = addEntity(ctx.world);
-  addChild(ctx.activeScene, environment);
-  addGLTFLoaderComponent(ctx, environment, message.url);
+  // const environment = addEntity(ctx.world);
+  // addChild(ctx.activeScene, environment);
+  // addGLTFLoaderComponent(ctx, environment, message.url);
 }
 
 let playerRig: number;

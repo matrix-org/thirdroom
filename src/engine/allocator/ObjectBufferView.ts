@@ -6,6 +6,7 @@ import {
   TripleBuffer,
 } from "./TripleBuffer";
 import { TypedArrayConstructor } from "./types";
+import { roundUpToMultiple4, roundUpToMultiple8 } from "./util";
 
 export type ObjectBufferViewSchema = {
   [key: string]: [TypedArrayConstructor, number] | [TypedArrayConstructor, number, number];
@@ -34,6 +35,12 @@ export function createObjectBufferView<
     const [typedArrayConstructor, length, elements] = schema[key];
 
     byteLength += typedArrayConstructor.BYTES_PER_ELEMENT * length * (elements || 1);
+
+    byteLength = typedArrayConstructor.name.includes("32")
+      ? roundUpToMultiple4(byteLength)
+      : typedArrayConstructor.name.includes("64")
+      ? roundUpToMultiple8(byteLength)
+      : byteLength;
   }
 
   const buffer = new bufferConstructor(byteLength) as InstanceType<Buffer>;
@@ -47,6 +54,12 @@ export function createObjectBufferView<
   for (const key in schema) {
     const [typedArrayConstructor, length, elements] = schema[key];
 
+    byteOffset = typedArrayConstructor.name.includes("32")
+      ? roundUpToMultiple4(byteOffset)
+      : typedArrayConstructor.name.includes("64")
+      ? roundUpToMultiple8(byteOffset)
+      : byteOffset;
+
     if (elements === undefined) {
       const arr = new typedArrayConstructor(buffer, byteOffset, length);
       byteOffset += arr.byteLength;
@@ -55,6 +68,7 @@ export function createObjectBufferView<
       object[key] = Array.from({ length }, () => {
         const arr = new typedArrayConstructor(buffer, byteOffset, elements);
         byteOffset += arr.byteLength;
+
         return arr;
       });
     }
@@ -70,6 +84,7 @@ export function clearObjectBufferView(object: ObjectBufferView<any, any>) {
 export interface ObjectTripleBuffer<Schema extends ObjectBufferViewSchema> {
   views: ObjectBufferView<Schema, SharedArrayBuffer>[];
   tripleBuffer: TripleBuffer;
+  initialized: boolean;
 }
 
 export type ObjectTripleBufferView<O extends ObjectTripleBuffer<any>> = O["views"][number];
@@ -88,6 +103,7 @@ export function createObjectTripleBuffer<Schema extends ObjectBufferViewSchema>(
   return {
     views,
     tripleBuffer,
+    initialized: false,
   };
 }
 
@@ -111,5 +127,12 @@ export function commitToObjectTripleBuffer<Schema extends ObjectBufferViewSchema
   objectTripleBuffer: ObjectTripleBuffer<Schema>,
   objectBufferView: ObjectBufferView<Schema, any>
 ): void {
-  copyToWriteBuffer(objectTripleBuffer.tripleBuffer, objectBufferView.buffer);
+  if (!objectTripleBuffer.initialized) {
+    objectTripleBuffer.tripleBuffer.byteViews[0].set(objectBufferView.byteView);
+    objectTripleBuffer.tripleBuffer.byteViews[1].set(objectBufferView.byteView);
+    objectTripleBuffer.tripleBuffer.byteViews[2].set(objectBufferView.byteView);
+    objectTripleBuffer.initialized = true;
+  } else {
+    copyToWriteBuffer(objectTripleBuffer.tripleBuffer, objectBufferView.buffer);
+  }
 }

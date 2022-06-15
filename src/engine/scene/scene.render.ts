@@ -21,12 +21,12 @@ export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
   id: ResourceId,
   { rendererSceneTripleBuffer }: RendererSharedSceneResource
-): Promise<Scene> {
-  const sceneModule = getModule(ctx, RendererModule);
+): Promise<LocalSceneResource> {
+  const rendererModule = getModule(ctx, RendererModule);
 
   const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
 
-  const { backgroundTexture, environmentTexture } = await promiseObject({
+  await promiseObject({
     backgroundTexture: sceneView.backgroundTexture[0]
       ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])
       : undefined,
@@ -37,14 +37,14 @@ export async function onLoadLocalSceneResource(
 
   const scene = new Scene();
 
-  sceneModule.scenes.push({
+  const localSceneResource = {
     scene,
-    backgroundTexture,
-    environmentTexture,
     rendererSceneTripleBuffer,
-  });
+  };
 
-  return scene;
+  rendererModule.scenes.push(localSceneResource);
+
+  return localSceneResource;
 }
 
 export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
@@ -59,13 +59,16 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
     if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
       if (sceneView.backgroundTexture[0]) {
-        const backgroundTexture = getLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])?.resource;
+        const nextBackgroundTexture = getLocalResource<LocalTextureResource>(
+          ctx,
+          sceneView.backgroundTexture[0]
+        )?.resource;
 
-        if (backgroundTexture) {
-          scene.background = backgroundTexture.texture;
+        if (nextBackgroundTexture) {
+          scene.background = nextBackgroundTexture.texture;
         }
 
-        sceneResource.backgroundTexture = backgroundTexture;
+        sceneResource.backgroundTexture = nextBackgroundTexture;
       } else {
         sceneResource.backgroundTexture = undefined;
         scene.background = null;
@@ -74,16 +77,16 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
     if (sceneView.environmentTexture[0] !== currentEnvironmentTextureResourceId) {
       if (sceneView.environmentTexture[0]) {
-        const environmentTexture = getLocalResource<LocalTextureResource>(
+        const nextEnvironmentTexture = getLocalResource<LocalTextureResource>(
           ctx,
           sceneView.environmentTexture[0]
         )?.resource;
 
-        if (environmentTexture) {
-          scene.environment = environmentTexture.texture;
+        if (nextEnvironmentTexture) {
+          scene.environment = nextEnvironmentTexture.texture;
         }
 
-        sceneResource.environmentTexture = environmentTexture;
+        sceneResource.environmentTexture = nextEnvironmentTexture;
       } else {
         sceneResource.environmentTexture = undefined;
         scene.environment = null;

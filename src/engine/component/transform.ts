@@ -467,3 +467,7 @@ export function getDirection(out: vec3, matrix: mat4): vec3 {
   vec3.set(out, matrix[8], matrix[9], matrix[10]);
   return vec3.normalize(out, out);
 }
+
+export function UpdateMatrixWorldSystem(ctx: GameState) {
+  updateMatrixWorld(ctx.activeScene);
+}

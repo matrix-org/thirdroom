@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs";
+import { addComponent, defineQuery, hasComponent } from "bitecs";
 
 import {
   commitToObjectTripleBuffer,
@@ -57,7 +57,7 @@ interface NodeProps {
   static?: boolean;
 }
 
-export const RemoteNodeComponent = defineComponent<Map<number, RemoteNode>>(new Map());
+export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
 
 export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: NodeProps): RemoteNode {
   const rendererNodeBufferView = createObjectBufferView(rendererNodeSchema, ArrayBuffer);
@@ -83,10 +83,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     audioNodeTripleBuffer,
   });
 
-  let _mesh: RemoteMesh | undefined;
-  let _light: RemoteLight | undefined;
-  let _camera: RemoteCamera | undefined;
-  let _audioEmitter: RemotePositionalAudioEmitter | undefined;
+  let _mesh: RemoteMesh | undefined = props?.mesh;
+  let _light: RemoteLight | undefined = props?.light;
+  let _camera: RemoteCamera | undefined = props?.camera;
+  let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
 
   const remoteNode: RemoteNode = {
     eid,

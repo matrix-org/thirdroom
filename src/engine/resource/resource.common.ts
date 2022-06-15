@@ -1,3 +1,4 @@
+import { NOOP } from "../config.common";
 import { defineModule, Thread, registerMessageHandler, getModule, BaseThreadContext } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 
@@ -106,9 +107,12 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     resourceModule.resources.set(id, resource);
 
-    const deferred = createDeferred<unknown>();
+    let deferred = resourceModule.deferredResources.get(id);
 
-    resourceModule.deferredResources.set(id, deferred);
+    if (!deferred) {
+      deferred = createDeferred<unknown>();
+      resourceModule.deferredResources.set(id, deferred);
+    }
 
     try {
       const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
@@ -152,14 +156,19 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
   }
 
   function waitForLocalResource<Resource>(ctx: ThreadContext, resourceId: ResourceId): Promise<Resource> {
-    const resourceModule = getModule(ctx, ResourceModule);
-    const deferred = resourceModule.deferredResources.get(resourceId);
-
-    if (deferred) {
-      return deferred.promise as Promise<Resource>;
+    if (resourceId === NOOP) {
+      return Promise.reject(new Error(`Cannot load a resourceId of 0.`));
     }
 
-    return Promise.reject(new Error(`Resource ${resourceId} not found.`));
+    const resourceModule = getModule(ctx, ResourceModule);
+    let deferred = resourceModule.deferredResources.get(resourceId);
+
+    if (!deferred) {
+      deferred = createDeferred<unknown>();
+      resourceModule.deferredResources.set(resourceId, deferred);
+    }
+
+    return deferred.promise as Promise<Resource>;
   }
 
   function getLocalResource<Resource>(ctx: ThreadContext, resourceId: ResourceId): LocalResource<Resource> | undefined {

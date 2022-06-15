@@ -18,7 +18,7 @@ import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
-import { UpdateMatrixWorldSystem } from "./GameWorker";
+import { UpdateMatrixWorldSystem } from "./component/transform";
 
 export default defineConfig<GameState>({
   modules: [

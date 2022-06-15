@@ -85,7 +85,7 @@ export function updateNodeCamera(
   let camera: PerspectiveCamera | OrthographicCamera | undefined;
 
   if (cameraType === CameraType.Perspective) {
-    let perspectiveCamera = node.lightObject as PerspectiveCamera | undefined;
+    let perspectiveCamera = node.cameraObject as PerspectiveCamera | undefined;
 
     if (!perspectiveCamera) {
       perspectiveCamera = new PerspectiveCamera();
@@ -109,7 +109,7 @@ export function updateNodeCamera(
 
     camera = perspectiveCamera;
   } else if (cameraType === CameraType.Orthographic) {
-    let orthographicCamera = node.lightObject as OrthographicCamera | undefined;
+    let orthographicCamera = node.cameraObject as OrthographicCamera | undefined;
 
     if (!orthographicCamera) {
       orthographicCamera = new OrthographicCamera();

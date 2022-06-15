@@ -60,7 +60,8 @@ import {
   onLoadLocalMeshResource,
   updateLocalMeshPrimitiveResources,
 } from "../mesh/mesh.render";
-import { LocalNode, updateLocalNodeResources } from "../node/node.render";
+import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
+import { NodeResourceType } from "../node/node.common";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -148,6 +149,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
+      registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
     ]);
   },
 });
@@ -189,29 +191,16 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
   renderer.canvasHeight = canvasHeight;
 }
 
-export function getActiveLocalSceneResource(ctx: RenderThreadState): LocalSceneResource | undefined {
-  const renderModule = getModule(ctx, RendererModule);
-  const rendererStateView = getReadObjectBufferView(renderModule.rendererStateTripleBuffer);
-  const resourceId = rendererStateView.activeSceneResourceId[0];
-  const localResource = getLocalResource<LocalSceneResource>(ctx, resourceId);
-  return localResource?.resource;
-}
-
-export function getActiveLocalCameraResource(ctx: RenderThreadState): LocalNode | undefined {
-  const renderModule = getModule(ctx, RendererModule);
-  const rendererStateView = getReadObjectBufferView(renderModule.rendererStateTripleBuffer);
-  const resourceId = rendererStateView.activeCameraResourceId[0];
-  const localResource = getLocalResource<LocalNode>(ctx, resourceId);
-  return localResource?.resource;
-}
-
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-
   const { needsResize, renderer, canvasWidth, canvasHeight } = rendererModule;
 
-  const activeSceneResource = getActiveLocalSceneResource(ctx);
-  const activeCameraNode = getActiveLocalCameraResource(ctx);
+  const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
+  const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
+  const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
+
+  const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
+  const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
 
   if (activeCameraNode && activeCameraNode.cameraObject && activeCameraNode.camera && needsResize) {
     if (
@@ -231,8 +220,8 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.needsResize = false;
   }
 
-  updateLocalSceneResources(ctx, rendererModule.scenes);
   updateLocalTextureResources(rendererModule.textures);
+  updateLocalSceneResources(ctx, rendererModule.scenes);
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);

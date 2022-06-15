@@ -33,7 +33,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
   create() {
     return {
-      resourceIdCounter: 0,
+      resourceIdCounter: 1,
       resources: new Map(),
       resourceIdMap: new Map(),
       deferredResources: new Map(),
@@ -185,7 +185,7 @@ export function ResourceLoaderSystem(ctx: GameState) {
 
   if (resourceModule.renderThreadMessageQueue.length !== 0) {
     ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Main,
+      Thread.Render,
       {
         type: ResourceMessageType.LoadResources,
         resources: resourceModule.renderThreadMessageQueue,

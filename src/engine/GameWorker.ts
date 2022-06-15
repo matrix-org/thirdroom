@@ -1,6 +1,6 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent, updateMatrixWorld } from "./component/transform";
+import { addChild, addTransformComponent } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
@@ -133,8 +133,4 @@ function update(state: GameState) {
   const frameDuration = performance.now() - state.elapsed;
   const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
   setTimeout(() => update(state), remainder);
-}
-
-export function UpdateMatrixWorldSystem(ctx: GameState) {
-  updateMatrixWorld(ctx.activeScene);
 }

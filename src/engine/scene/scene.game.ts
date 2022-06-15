@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, removeComponent } from "bitecs";
+import { addComponent, removeComponent } from "bitecs";
 
 import {
   commitToObjectTripleBuffer,
@@ -113,12 +113,13 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
   audioModule.scenes.push(remoteScene);
 
   addComponent(ctx.world, RemoteSceneComponent, eid);
+
   RemoteSceneComponent.set(eid, remoteScene);
 
   return remoteScene;
 }
 
-export const RemoteSceneComponent = defineComponent<Map<number, RemoteScene>>(new Map());
+export const RemoteSceneComponent: Map<number, RemoteScene> = new Map();
 
 export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
   removeComponent(ctx.world, RemoteSceneComponent, eid);

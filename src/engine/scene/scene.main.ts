@@ -25,9 +25,9 @@ export async function onLoadMainSceneResource(
     resourceId,
     audioSceneTripleBuffer,
     audioEmitters: await Promise.all(
-      Array.from(sceneView.audioEmitters).map((resourceId) =>
-        waitForLocalResource<LocalGlobalAudioEmitter>(ctx, resourceId)
-      )
+      Array.from(sceneView.audioEmitters)
+        .filter((rid) => rid !== 0)
+        .map((resourceId) => waitForLocalResource<LocalGlobalAudioEmitter>(ctx, resourceId))
     ),
   };
 

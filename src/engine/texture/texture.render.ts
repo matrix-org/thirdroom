@@ -1,4 +1,11 @@
-import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, TextureEncoding } from "three";
+import {
+  EquirectangularReflectionMapping,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  RepeatWrapping,
+  Texture,
+  TextureEncoding,
+} from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { ImageFormat, LocalImageResource } from "../image/image.render";
@@ -28,14 +35,17 @@ export async function onLoadLocalTextureResource(
   ]);
 
   // TODO: Add ImageBitmap to Texture types
-  const texture = image.format === ImageFormat.RGBA ? new Texture(image as any) : image.texture;
+  const texture = image.format === ImageFormat.RGBA ? new Texture(image.image as any) : image.texture;
 
   if (sampler) {
-    texture.magFilter = sampler.magFilter;
-    texture.minFilter = sampler.minFilter;
-    texture.wrapS = sampler.wrapS;
-    texture.wrapT = sampler.wrapT;
-    texture.mapping = sampler.mapping;
+    if (image.format !== ImageFormat.RGBE) {
+      texture.magFilter = sampler.magFilter;
+      texture.minFilter = sampler.minFilter;
+      texture.wrapS = sampler.wrapS;
+      texture.wrapT = sampler.wrapT;
+    }
+
+    texture.mapping = EquirectangularReflectionMapping;
   } else {
     texture.magFilter = LinearFilter;
     texture.minFilter = LinearMipmapLinearFilter;
@@ -68,6 +78,5 @@ export function updateLocalTextureResources(textures: LocalTextureResource[]) {
     texture.offset.fromArray(textureBufferView.offset);
     texture.rotation = textureBufferView.rotation[0];
     texture.repeat.fromArray(textureBufferView.scale);
-    texture.needsUpdate = true;
   }
 }
