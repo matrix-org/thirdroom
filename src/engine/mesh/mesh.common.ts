@@ -7,7 +7,6 @@ export const MeshPrimitiveResourceType = "mesh-primitive";
 export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
   indices?: ResourceId;
-  material?: ResourceId;
   mode: MeshPrimitiveMode;
   targets?: number[] | Float32Array;
 }

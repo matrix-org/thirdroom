@@ -155,7 +155,11 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     };
   }
 
-  function waitForLocalResource<Resource>(ctx: ThreadContext, resourceId: ResourceId): Promise<Resource> {
+  function waitForLocalResource<Resource>(
+    ctx: ThreadContext,
+    resourceId: ResourceId,
+    description?: string
+  ): Promise<Resource> {
     if (resourceId === NOOP) {
       return Promise.reject(new Error(`Cannot load a resourceId of 0.`));
     }
@@ -164,7 +168,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     let deferred = resourceModule.deferredResources.get(resourceId);
 
     if (!deferred) {
-      deferred = createDeferred<unknown>();
+      deferred = createDeferred<unknown>(3000, `Loading resource ${resourceId} ${description} timed out.`);
       resourceModule.deferredResources.set(resourceId, deferred);
     }
 

@@ -22,6 +22,7 @@ import { getLocalResource, waitForLocalResource } from "../resource/resource.ren
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
+  MeshPrimitiveAttribute,
   MeshPrimitiveMode,
   MeshPrimitiveTripleBuffer,
   SharedMeshPrimitiveResource,
@@ -62,6 +63,17 @@ export async function onLoadLocalMeshResource(
   };
 }
 
+const ThreeAttributes: { [key: string]: string } = {
+  [MeshPrimitiveAttribute.POSITION]: "position",
+  [MeshPrimitiveAttribute.NORMAL]: "normal",
+  [MeshPrimitiveAttribute.TANGENT]: "tangent",
+  [MeshPrimitiveAttribute.TEXCOORD_0]: "uv",
+  [MeshPrimitiveAttribute.TEXCOORD_1]: "uv2",
+  [MeshPrimitiveAttribute.COLOR_0]: "color",
+  [MeshPrimitiveAttribute.JOINTS_0]: "skinWeight",
+  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinIndex",
+};
+
 export async function onLoadLocalMeshPrimitiveResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
@@ -69,17 +81,25 @@ export async function onLoadLocalMeshPrimitiveResource(
 ): Promise<LocalMeshPrimitive> {
   const rendererModule = getModule(ctx, RendererModule);
 
+  const meshPrimitiveView = getReadObjectBufferView(meshPrimitiveTripleBuffer);
+
   const attributePromises: { [key: string]: Promise<LocalAccessor> } = {};
 
   for (const attributeName in initialProps.attributes) {
-    attributePromises[attributeName] = waitForLocalResource(ctx, initialProps.attributes[attributeName]);
+    attributePromises[attributeName] = waitForLocalResource(
+      ctx,
+      initialProps.attributes[attributeName],
+      `mesh-primitive.${attributeName} accessor`
+    );
   }
 
   const results = await promiseObject({
-    indices: initialProps.indices ? waitForLocalResource<LocalAccessor>(ctx, initialProps.indices) : undefined,
+    indices: initialProps.indices
+      ? waitForLocalResource<LocalAccessor>(ctx, initialProps.indices, "mesh-primitive.indices accessor")
+      : undefined,
     attributes: promiseObject(attributePromises),
-    material: initialProps.material
-      ? waitForLocalResource<LocalMaterialResource>(ctx, initialProps.material)
+    material: meshPrimitiveView.material[0]
+      ? waitForLocalResource<LocalMaterialResource>(ctx, meshPrimitiveView.material[0], "mesh-primitive material")
       : undefined,
   });
 
@@ -96,7 +116,7 @@ export async function onLoadLocalMeshPrimitiveResource(
   }
 
   for (const attributeName in results.attributes) {
-    geometry.setAttribute(attributeName, results.attributes[attributeName].attribute);
+    geometry.setAttribute(ThreeAttributes[attributeName], results.attributes[attributeName].attribute);
   }
 
   if (mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
@@ -146,7 +166,7 @@ function createMeshPrimitiveObject(primitive: LocalMeshPrimitive): PrimitiveObje
   ) {
     // todo: skinned mesh
     const isSkinnedMesh = false;
-    const mesh = isSkinnedMesh ? new Mesh(geometryObj, materialObj) : new SkinnedMesh(geometryObj, materialObj);
+    const mesh = isSkinnedMesh ? new SkinnedMesh(geometryObj, materialObj) : new Mesh(geometryObj, materialObj);
 
     if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
       // we normalize floating point skin weight array to fix malformed assets (see #15319)

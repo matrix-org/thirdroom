@@ -1,5 +1,6 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
+import { BoxBufferGeometry } from "three";
 
 import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } from "../component/transform";
@@ -17,9 +18,25 @@ import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
-  const buffer = new ArrayBuffer(32);
-  const indices = new Uint16Array(buffer, 0);
-  const position = new Float32Array(buffer, indices.byteLength);
+  const geometry = new BoxBufferGeometry();
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
+
+  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
+  let cursor = 0;
+  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
+  indices.set(indicesArr);
+  cursor += indicesArr.byteLength;
+  const position = new Float32Array(buffer, cursor, posArr.length);
+  position.set(posArr);
+  cursor += posArr.byteLength;
+  const normal = new Float32Array(buffer, cursor, normArr.length);
+  normal.set(normArr);
+  cursor += normArr.byteLength;
+  const uv = new Float32Array(buffer, cursor, uvArr.length);
+  uv.set(uvArr);
 
   const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
 
@@ -35,8 +52,23 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
         type: AccessorType.VEC3,
         componentType: AccessorComponentType.Float32,
         bufferView,
-        byteOffset: indices.byteLength,
+        byteOffset: position.byteOffset,
         count: position.length / 3,
+      }),
+      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: normal.byteOffset,
+        count: normal.length / 3,
+        normalized: true,
+      }),
+      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
+        type: AccessorType.VEC2,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: uv.byteOffset,
+        count: uv.length / 2,
       }),
     },
     material:

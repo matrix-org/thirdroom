@@ -1,8 +1,14 @@
-import { defineQuery } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, setEulerFromQuaternion, Transform } from "../../engine/component/transform";
+import {
+  addChild,
+  addTransformComponent,
+  setEulerFromQuaternion,
+  setQuaternionFromEuler,
+  Transform,
+} from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
@@ -15,6 +21,7 @@ import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 //import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
+import { addCubeMesh } from "../../engine/prefab";
 // import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
 // import { createRemoteStandardMaterial } from "../../engine/material/material.game";
 // import {
@@ -26,6 +33,24 @@ import { SamplerMapping } from "../../engine/sampler/sampler.common";
 
 interface ThirdRoomModuleState {
   environment?: number;
+}
+
+const SpinnyCube = defineComponent();
+
+const spinnyCubeQuery = defineQuery([SpinnyCube]);
+
+export function SpinnyCubeSystem(ctx: GameState) {
+  const entities = spinnyCubeQuery(ctx.world);
+
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
+    const quaternion = Transform.quaternion[eid];
+    const rotation = Transform.rotation[eid];
+
+    rotation[1] += ctx.dt * 0.5;
+
+    setQuaternionFromEuler(quaternion, rotation);
+  }
 }
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
@@ -51,6 +76,13 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
     sceneResource.backgroundTexture = environmentMapTexture;
     sceneResource.environmentTexture = environmentMapTexture;
+
+    const cube = addEntity(ctx.world);
+    addTransformComponent(ctx.world, cube);
+    vec3.set(Transform.position[cube], 0, 0, -5);
+    addCubeMesh(ctx, cube);
+    addChild(ctx.activeScene, cube);
+    addComponent(ctx.world, SpinnyCube, cube);
 
     // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
 

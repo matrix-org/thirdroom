@@ -69,15 +69,17 @@ function createRemoteMeshPrimitive(ctx: GameState, props: MeshPrimitiveProps): R
 
   const initialProps: PrimitiveResourceProps = {
     attributes: Object.fromEntries(
-      Object.entries(props).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [name, accessor.resourceId])
+      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
+        name,
+        accessor.resourceId,
+      ])
     ),
     indices: props.indices ? props.indices.resourceId : undefined,
-    material: props.material ? props.material.resourceId : undefined,
     mode: props.mode === undefined ? MeshPrimitiveMode.TRIANGLES : props.mode,
     targets: props.targets,
   };
 
-  meshPrimitiveBufferView.material[0] = initialProps.material || 0;
+  meshPrimitiveBufferView.material[0] = props.material?.resourceId || 0;
 
   const meshPrimitiveTripleBuffer = createObjectTripleBuffer(meshPrimitiveSchema, ctx.gameToMainTripleBufferFlags);
 
