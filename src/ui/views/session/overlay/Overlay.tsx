@@ -28,8 +28,9 @@ import { NowPlayingTitle } from "../../components/now-playing/NowPlayingTitle";
 import { NowPlayingStatus } from "../../components/now-playing/NowPlayingStatus";
 import { IconButton } from "../../../atoms/button/IconButton";
 import MicIC from "../../../../../res/ic/mic.svg";
-import HeadphoneIC from "../../../../../res/ic/headphone.svg";
+import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
+import { useCallMute } from "../../../hooks/useCallMute";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -49,6 +50,7 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow } = useStore((state) => state.overlayWindow);
   const spacesEnabled = false;
+  const { mute: callMute, toggleMute } = useCallMute(activeCall);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
@@ -93,14 +95,8 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
                         <IconButton
                           variant="surface-low"
                           label="Mic"
-                          iconSrc={MicIC}
-                          onClick={(a) => console.log("clicked")}
-                        />
-                        <IconButton
-                          variant="surface-low"
-                          label="Headphone"
-                          iconSrc={HeadphoneIC}
-                          onClick={(a) => console.log("clicked")}
+                          iconSrc={callMute ? MicOffIC : MicIC}
+                          onClick={toggleMute}
                         />
                         <IconButton
                           variant="danger"
