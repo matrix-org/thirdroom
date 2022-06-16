@@ -200,7 +200,7 @@ async function _inflateGLTFNode(
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const positionsArr = primitive.attributes.POSITION.array as Float32Array;
-        const positionsBuffer = new SharedArrayBuffer(positionsArr.byteLength);
+        const positionsBuffer = new ArrayBuffer(positionsArr.byteLength);
         const positions = new Float32Array(positionsBuffer);
         positions.set(positionsArr);
 
@@ -224,7 +224,7 @@ async function _inflateGLTFNode(
           }
         }
 
-        const indicesBuffer = new SharedArrayBuffer(indicesArr.byteLength);
+        const indicesBuffer = new ArrayBuffer(indicesArr.byteLength);
         const indices = new Uint16Array(indicesBuffer);
         indices.set(indicesArr);
 
@@ -467,7 +467,7 @@ async function _loadGLTFBufferView<T extends Thread>(
   const bufferView = resource.root.bufferViews[index];
   const buffer = await loadGLTFBuffer(resource, bufferView.buffer);
 
-  const bufferViewData = new SharedArrayBuffer(bufferView.byteLength);
+  const bufferViewData = new ArrayBuffer(bufferView.byteLength);
   const readView = new Uint8Array(buffer, bufferView.byteOffset || 0, bufferView.byteLength);
   const writeView = new Uint8Array(bufferViewData);
   writeView.set(readView);
