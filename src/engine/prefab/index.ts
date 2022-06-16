@@ -23,7 +23,9 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
   const normArr = geometry.attributes.normal.array as Float32Array;
   const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
+  const buffer = new SharedArrayBuffer(
+    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
+  );
   let cursor = 0;
   const indices = new Uint16Array(buffer, cursor, indicesArr.length);
   indices.set(indicesArr);

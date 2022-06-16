@@ -1,4 +1,4 @@
-import { addEntity, defineComponent, defineQuery } from "bitecs";
+import { addEntity, defineComponent, defineQuery, removeEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -65,26 +65,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     // addCubeMesh(ctx, cube);
     // addChild(ctx.activeScene, cube);
     // addComponent(ctx.world, SpinnyCube, cube);
-
-    const newScene = addEntity(ctx.world);
-
-    const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
-    const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
-      sampler: createRemoteSampler(ctx, {
-        mapping: SamplerMapping.EquirectangularReflectionMapping,
-      }),
-    });
-
-    await inflateGLTFScene(ctx, newScene, "/gltf/modern_city_block_fixed/modern_city_block.gltf");
-
-    const newSceneResource = RemoteSceneComponent.get(newScene)!;
-
-    newSceneResource.backgroundTexture = environmentMapTexture;
-    newSceneResource.environmentTexture = environmentMapTexture;
-
-    addChild(newScene, ctx.activeCamera);
-
-    ctx.activeScene = newScene;
 
     // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
 
@@ -197,16 +177,31 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
-function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
+async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (thirdroom.environment) {
-    // removeEntity(ctx.world, thirdroom.environment);
+    // TODO: Clean up scene
+    removeEntity(ctx.world, ctx.activeScene);
   }
 
-  // const environment = addEntity(ctx.world);
-  // addChild(ctx.activeScene, environment);
-  // addGLTFLoaderComponent(ctx, environment, message.url);
+  const newScene = addEntity(ctx.world);
+
+  const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
+  const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
+    sampler: createRemoteSampler(ctx, {
+      mapping: SamplerMapping.EquirectangularReflectionMapping,
+    }),
+  });
+
+  await inflateGLTFScene(ctx, newScene, message.url);
+
+  const newSceneResource = RemoteSceneComponent.get(newScene)!;
+
+  newSceneResource.backgroundTexture = environmentMapTexture;
+  newSceneResource.environmentTexture = environmentMapTexture;
+
+  ctx.activeScene = newScene;
 }
 
 let playerRig: number;

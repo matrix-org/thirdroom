@@ -27,7 +27,14 @@ import {
   RendererStateTripleBuffer,
 } from "./renderer.common";
 import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
-import { RemoteDirectionalLight, RemotePointLight, RemoteSpotLight } from "../light/light.game";
+import {
+  RemoteDirectionalLight,
+  RemotePointLight,
+  RemoteSpotLight,
+  updateRemoteDirectionalLights,
+  updateRemotePointLights,
+  updateRemoteRemoteSpotLights,
+} from "../light/light.game";
 import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 
@@ -100,5 +107,8 @@ export const RenderableSystem = (state: GameState) => {
   updateRemoteTextures(renderer.textures);
   updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
+  updateRemotePointLights(renderer.pointLights);
+  updateRemoteDirectionalLights(renderer.directionalLights);
+  updateRemoteRemoteSpotLights(renderer.spotLights);
   updateRemoteCameras(state);
 };

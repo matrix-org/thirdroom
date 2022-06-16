@@ -62,6 +62,7 @@ import {
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
+import { ResourceId } from "../resource/resource.common";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -87,6 +88,7 @@ export interface RendererModuleState {
   orthographicCameraResources: LocalOrthographicCameraResource[];
   meshPrimitives: LocalMeshPrimitive[];
   nodes: LocalNode[];
+  prevCameraResource?: ResourceId;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -202,7 +204,12 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
   const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
 
-  if (activeCameraNode && activeCameraNode.cameraObject && activeCameraNode.camera && needsResize) {
+  if (
+    activeCameraNode &&
+    activeCameraNode.cameraObject &&
+    activeCameraNode.camera &&
+    (needsResize || rendererModule.prevCameraResource !== activeCameraResourceId)
+  ) {
     if (
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
       activeCameraNode.camera.type === CameraType.Perspective
@@ -218,6 +225,7 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     renderer.setSize(canvasWidth, canvasHeight, false);
     rendererModule.needsResize = false;
+    rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
   updateLocalTextureResources(rendererModule.textures);

@@ -425,7 +425,7 @@ export interface GLTFMaterial {
   /**
    * The alpha rendering mode of the material.
    */
-  alphaMode?: any | any | any | string;
+  alphaMode?: string;
   /**
    * The alpha cutoff value of the material.
    */

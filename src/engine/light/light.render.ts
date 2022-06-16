@@ -113,6 +113,17 @@ export function updateNodeLight(
       directionalLight.target.position.set(0, 0, -1);
       directionalLight.add(directionalLight.target);
 
+      // TODO: Move to CSM
+      directionalLight.shadow.camera.top = 100;
+      directionalLight.shadow.camera.bottom = -100;
+      directionalLight.shadow.camera.left = -100;
+      directionalLight.shadow.camera.right = 100;
+      directionalLight.shadow.camera.near = 10;
+      directionalLight.shadow.camera.far = 600;
+      directionalLight.shadow.bias = 0.0001;
+      directionalLight.shadow.normalBias = 0.2;
+      directionalLight.shadow.mapSize.set(2048, 2048);
+
       scene.add(directionalLight);
     }
 

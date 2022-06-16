@@ -1,4 +1,5 @@
-import { addEntity } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { addComponent, addEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -16,7 +17,14 @@ import {
 } from "../audio/audio.game";
 import { createRemoteBufferView, RemoteBufferView } from "../bufferView/bufferView.game";
 import { createRemoteOrthographicCamera, createRemotePerspectiveCamera, RemoteCamera } from "../camera/camera.game";
-import { addChild, addTransformComponent, setEulerFromQuaternion, Transform } from "../component/transform";
+import { SpawnPoint } from "../component/SpawnPoint";
+import {
+  addChild,
+  addTransformComponent,
+  setEulerFromQuaternion,
+  Transform,
+  updateMatrixWorld,
+} from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteImage, createRemoteImageFromBufferView, RemoteImage } from "../image/image.game";
 import {
@@ -25,10 +33,12 @@ import {
   createSpotLightResource,
   RemoteLight,
 } from "../light/light.game";
+import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import { createRemoteMesh, MeshPrimitiveProps, RemoteMesh } from "../mesh/mesh.game";
-import { Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent } from "../node/node.game";
+import { PhysicsModule } from "../physics/physics.game";
 import { createRemoteSampler, RemoteSampler } from "../sampler/sampler.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { TextureEncoding } from "../texture/texture.common";
@@ -89,13 +99,13 @@ export async function inflateGLTFScene(
 
   const scene = resource.root.scenes[sceneIndex];
 
-  const deferredNodes: [number, any][] = [];
+  const nodeInflators: Function[] = [];
 
   let nodePromise: Promise<void[]> | undefined;
 
   if (scene.nodes) {
     nodePromise = Promise.all(
-      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, deferredNodes, nodeIndex, sceneEid))
+      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid))
     );
   }
 
@@ -110,8 +120,10 @@ export async function inflateGLTFScene(
       : undefined,
   });
 
-  for (const [nodeEid, data] of deferredNodes) {
-    addRemoteNodeComponent(ctx, nodeEid, data);
+  updateMatrixWorld(sceneEid);
+
+  for (const inflator of nodeInflators) {
+    inflator();
   }
 
   addRemoteSceneComponent(ctx, sceneEid, {
@@ -119,10 +131,12 @@ export async function inflateGLTFScene(
   });
 }
 
+const tempVec3 = vec3.create();
+
 async function _inflateGLTFNode(
   ctx: GameState,
   resource: GLTFResource,
-  deferredNodes: any[],
+  nodeInflators: Function[],
   nodeIndex: number,
   parentEid?: number
 ) {
@@ -163,14 +177,75 @@ async function _inflateGLTFNode(
   if (node.children && node.children.length) {
     await Promise.all(
       node.children.map((childIndex: number) => {
-        _inflateGLTFNode(ctx, resource, deferredNodes, childIndex, nodeEid);
+        _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid);
       })
     );
   }
 
   const results = await promises;
 
-  deferredNodes.push([nodeEid, results]);
+  nodeInflators.push(() => {
+    if (node.extras && node.extras["directional-light"]) {
+      results.light = createDirectionalLightResource(ctx, {
+        castShadow: true,
+        intensity: 0.8,
+      });
+    }
+
+    if (results.mesh) {
+      const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+      for (const primitive of results.mesh.primitives) {
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+        const positionsArr = primitive.attributes.POSITION.array as Float32Array;
+        const positionsBuffer = new SharedArrayBuffer(positionsArr.byteLength);
+        const positions = new Float32Array(positionsBuffer);
+        positions.set(positionsArr);
+
+        for (let i = 0; i < positions.length / 3; i++) {
+          tempVec3[0] = positions[i * 3];
+          tempVec3[1] = positions[i * 3 + 1];
+          tempVec3[2] = positions[i * 3 + 2];
+          vec3.transformMat4(tempVec3, tempVec3, Transform.worldMatrix[nodeEid]);
+          positions[i * 3] = tempVec3[0];
+          positions[i * 3 + 1] = tempVec3[1];
+          positions[i * 3 + 2] = tempVec3[2];
+        }
+
+        let indicesArr = primitive.indices?.array as Uint16Array;
+
+        if (!indicesArr) {
+          indicesArr = new Uint16Array(positions.length / 3);
+
+          for (let i = 0; i < indicesArr.length; i++) {
+            indicesArr[i] = i;
+          }
+        }
+
+        const indicesBuffer = new SharedArrayBuffer(indicesArr.byteLength);
+        const indices = new Uint16Array(indicesBuffer);
+        indices.set(indicesArr);
+
+        const colliderDesc = RAPIER.ColliderDesc.trimesh(positions, indices as unknown as Uint32Array);
+
+        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+      }
+    }
+
+    if (results.mesh || results.camera || results.light || results.audioEmitter) {
+      addRemoteNodeComponent(ctx, nodeEid, results as any);
+    }
+
+    if (node.camera) {
+      ctx.activeCamera = nodeEid;
+    }
+
+    if (node.extras && node.extras["spawn-point"]) {
+      addComponent(ctx.world, SpawnPoint, nodeEid);
+    }
+  });
 }
 
 const GLB_HEADER_BYTE_LENGTH = 12;
@@ -392,7 +467,10 @@ async function _loadGLTFBufferView<T extends Thread>(
   const bufferView = resource.root.bufferViews[index];
   const buffer = await loadGLTFBuffer(resource, bufferView.buffer);
 
-  const bufferViewData = buffer.slice(bufferView.byteOffset || 0, (bufferView.byteOffset || 0) + bufferView.byteLength);
+  const bufferViewData = new SharedArrayBuffer(bufferView.byteLength);
+  const readView = new Uint8Array(buffer, bufferView.byteOffset || 0, bufferView.byteLength);
+  const writeView = new Uint8Array(bufferViewData);
+  writeView.set(readView);
 
   const remoteBufferView = createRemoteBufferView(ctx, thread, bufferViewData, bufferView.byteStride);
 
@@ -544,6 +622,12 @@ export async function loadGLTFMaterial(ctx: GameState, resource: GLTFResource, i
   return materialPromise;
 }
 
+const GLTFAlphaModes: { [key: string]: MaterialAlphaMode } = {
+  OPAQUE: MaterialAlphaMode.OPAQUE,
+  MASK: MaterialAlphaMode.MASK,
+  BLEND: MaterialAlphaMode.BLEND,
+};
+
 async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteMaterial> {
   if (!resource.root.materials || !resource.root.materials[index]) {
     throw new Error(`Material ${index} not found`);
@@ -572,7 +656,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     });
     remoteMaterial = createRemoteUnlitMaterial(ctx, {
       doubleSided,
-      alphaMode,
+      alphaMode: alphaMode ? GLTFAlphaModes[alphaMode] : undefined,
       alphaCutoff,
       baseColorFactor: pbrMetallicRoughness?.baseColorFactor,
       baseColorTexture,
@@ -587,7 +671,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     } = await promiseObject({
       baseColorTexture:
         pbrMetallicRoughness?.baseColorTexture?.index !== undefined
-          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness?.baseColorTexture?.index)
+          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness?.baseColorTexture?.index, TextureEncoding.sRGB)
           : undefined,
       metallicRoughnessTexture:
         pbrMetallicRoughness?.metallicRoughnessTexture?.index !== undefined
@@ -604,7 +688,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     });
     remoteMaterial = createRemoteStandardMaterial(ctx, {
       doubleSided,
-      alphaMode,
+      alphaMode: alphaMode ? GLTFAlphaModes[alphaMode] : undefined,
       alphaCutoff,
       baseColorFactor: pbrMetallicRoughness?.baseColorFactor,
       baseColorTexture,

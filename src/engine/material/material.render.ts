@@ -262,7 +262,12 @@ function getLocalMaterialBaseParameters(
     side: materialView.doubleSided[0] ? DoubleSide : FrontSide,
     transparent: materialView.alphaMode[0] === MaterialAlphaMode.BLEND,
     depthWrite: materialView.alphaMode[0] !== MaterialAlphaMode.BLEND,
-    alphaTest: materialView.alphaMode[0] === MaterialAlphaMode.MASK ? materialView.alphaCutoff[0] : 0.5,
+    alphaTest:
+      materialView.alphaMode[0] === MaterialAlphaMode.MASK
+        ? materialView.alphaCutoff[0] !== undefined
+          ? materialView.alphaCutoff[0]
+          : 0.5
+        : undefined,
     vertexColors: MeshPrimitiveAttribute.COLOR_0 in attributes,
   };
 

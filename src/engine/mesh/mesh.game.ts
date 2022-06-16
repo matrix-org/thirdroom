@@ -28,6 +28,9 @@ export interface RemoteMeshPrimitive {
   resourceId: number;
   meshPrimitiveBufferView: MeshPrimitiveBufferView;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
+  attributes: { [key: string]: RemoteAccessor<any, any> };
+  indices?: RemoteAccessor<any, any>;
+  mode?: number;
   get material(): RemoteMaterial | undefined;
   set material(value: RemoteMaterial | undefined);
 }
@@ -90,6 +93,9 @@ function createRemoteMeshPrimitive(ctx: GameState, props: MeshPrimitiveProps): R
 
   const remoteMeshPrimitive: RemoteMeshPrimitive = {
     resourceId,
+    attributes: props.attributes,
+    indices: props.indices,
+    mode: props.mode,
     meshPrimitiveBufferView,
     meshPrimitiveTripleBuffer,
     get material(): RemoteMaterial | undefined {

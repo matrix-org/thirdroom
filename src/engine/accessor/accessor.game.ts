@@ -1,17 +1,21 @@
-import { RemoteBufferView, RemoteSharedBufferView } from "../bufferView/bufferView.game";
+import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { createResource } from "../resource/resource.game";
 import {
   AccessorComponentType,
+  AccessorComponentTypeToTypedArray,
   AccessorResourceProps,
   AccessorResourceType,
   AccessorSparseIndicesComponentType,
   AccessorType,
+  AccessorTypedArray,
+  AccessorTypedArrayConstructor,
+  AccessorTypeToItemSize,
 } from "./accessor.common";
 
 export interface RemoteAccessor<
-  B extends RemoteBufferView<Thread.Render> | RemoteSharedBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 > {
   resourceId: number;
@@ -26,16 +30,17 @@ export interface RemoteAccessor<
         };
       }
     : undefined;
+  array: AccessorTypedArray;
 }
 
 interface AccessorSparseIndicesProps {
-  bufferView: RemoteBufferView<Thread.Render> | RemoteSharedBufferView<Thread.Render>;
+  bufferView: RemoteBufferView<Thread.Render>;
   byteOffset?: number;
   componentType: AccessorSparseIndicesComponentType;
 }
 
 interface AccessorSparseValuesProps {
-  bufferView: RemoteBufferView<Thread.Render> | RemoteSharedBufferView<Thread.Render>;
+  bufferView: RemoteBufferView<Thread.Render>;
   byteOffset?: number;
 }
 
@@ -46,7 +51,7 @@ interface AccessorSparseProps {
 }
 
 interface AccessorProps<
-  B extends RemoteBufferView<Thread.Render> | RemoteSharedBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 > {
   type: AccessorType;
@@ -61,7 +66,7 @@ interface AccessorProps<
 }
 
 export function createRemoteAccessor<
-  B extends RemoteBufferView<Thread.Render> | RemoteSharedBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 >(ctx: GameState, props: AccessorProps<B, S>): RemoteAccessor<B, S> {
   const resourceId = createResource<AccessorResourceProps>(ctx, Thread.Render, AccessorResourceType, {
@@ -89,8 +94,28 @@ export function createRemoteAccessor<
       : undefined,
   });
 
+  const itemSize = AccessorTypeToItemSize[props.type];
+  const arrConstructor = AccessorComponentTypeToTypedArray[props.componentType] as AccessorTypedArrayConstructor;
+
+  let array: AccessorTypedArray;
+
+  if (props.bufferView) {
+    if (props.bufferView.byteStride) {
+      console.warn("byteStride not yet implemented for game thread accessors");
+    }
+
+    array = new arrConstructor(props.bufferView.buffer, props.byteOffset, props.count * itemSize);
+  } else {
+    array = new arrConstructor(props.count * itemSize);
+  }
+
+  if (props.sparse) {
+    console.warn("sparse accessors not yet implemented on game thread");
+  }
+
   return {
     resourceId,
+    array,
     bufferView: props.bufferView,
     sparse: props.sparse
       ? {

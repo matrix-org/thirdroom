@@ -6,44 +6,25 @@ import { BufferViewResourceProps, BufferViewResourceType } from "./bufferView.co
 export interface RemoteBufferView<T extends Thread> {
   thread: T;
   resourceId: number;
-}
-
-export interface RemoteSharedBufferView<T extends Thread> extends RemoteBufferView<T> {
   buffer: SharedArrayBuffer;
+  byteStride: number;
 }
 
 export function createRemoteBufferView<T extends Thread>(
   ctx: GameState,
   thread: T,
-  buffer: ArrayBuffer,
-  byteStride?: number
-): RemoteBufferView<T> {
-  return {
-    thread,
-    resourceId: createResource<BufferViewResourceProps>(
-      ctx,
-      thread,
-      BufferViewResourceType,
-      { buffer, byteStride: byteStride || 0 },
-      [buffer]
-    ),
-  };
-}
-
-export function createRemoteSharedBufferView<T extends Thread>(
-  ctx: GameState,
-  thread: T,
   buffer: SharedArrayBuffer,
-  byteStride?: number
-): RemoteSharedBufferView<T> {
+  byteStride = 0
+): RemoteBufferView<T> {
   const resourceId = createResource<BufferViewResourceProps>(ctx, thread, BufferViewResourceType, {
     buffer,
-    byteStride: byteStride || 0,
+    byteStride,
   });
 
   return {
     thread,
     resourceId,
+    byteStride,
     buffer,
   };
 }

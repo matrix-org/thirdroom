@@ -1,11 +1,4 @@
-import {
-  EquirectangularReflectionMapping,
-  LinearFilter,
-  LinearMipmapLinearFilter,
-  RepeatWrapping,
-  Texture,
-  TextureEncoding,
-} from "three";
+import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, TextureEncoding } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { ImageFormat, LocalImageResource } from "../image/image.render";
@@ -45,7 +38,7 @@ export async function onLoadLocalTextureResource(
       texture.wrapT = sampler.wrapT || RepeatWrapping;
     }
 
-    texture.mapping = EquirectangularReflectionMapping;
+    texture.mapping = sampler.mapping;
   } else {
     texture.magFilter = LinearFilter;
     texture.minFilter = LinearMipmapLinearFilter;

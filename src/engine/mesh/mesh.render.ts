@@ -186,6 +186,18 @@ function createMeshPrimitiveObject(primitive: LocalMeshPrimitive): PrimitiveObje
     throw new Error(`Primitive mode ${mode} unsupported.`);
   }
 
+  if (
+    (object.material as any).aoMap &&
+    object.geometry.attributes.uv2 === undefined &&
+    object.geometry.attributes.uv !== undefined
+  ) {
+    object.geometry.setAttribute("uv2", object.geometry.attributes.uv);
+  }
+
+  // TODO: Move to glTF extension
+  object.castShadow = true;
+  object.receiveShadow = true;
+
   return object;
 }
 
@@ -216,6 +228,14 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
           meshPrimitive.attributes,
           nextMaterialResource
         );
+      }
+
+      if (
+        (meshPrimitive.materialObj as any).aoMap &&
+        meshPrimitive.geometryObj.attributes.uv2 === undefined &&
+        meshPrimitive.geometryObj.attributes.uv !== undefined
+      ) {
+        meshPrimitive.geometryObj.setAttribute("uv2", meshPrimitive.geometryObj.attributes.uv);
       }
     }
 
