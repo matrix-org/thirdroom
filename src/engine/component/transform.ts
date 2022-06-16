@@ -129,6 +129,11 @@ export function getChildAt(eid: number, index: number): number {
 }
 
 export function addChild(parent: number, child: number) {
+  const previousParent = Transform.parent[child];
+  if (previousParent !== NOOP) {
+    removeChild(previousParent, child);
+  }
+
   Transform.parent[child] = parent;
 
   const lastChild = getLastChild(parent);

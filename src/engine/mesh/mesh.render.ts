@@ -143,7 +143,6 @@ export async function onLoadLocalMeshPrimitiveResource(
     attributes: results.attributes,
     indices: results.indices,
     material: results.material,
-    targets: initialProps.targets,
     geometryObj: geometry,
     materialObj: material,
     meshPrimitiveTripleBuffer,

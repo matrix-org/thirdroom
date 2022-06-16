@@ -55,8 +55,8 @@ interface AccessorProps<
   count: number;
   byteOffset?: number;
   normalized?: boolean;
-  min?: number;
-  max?: number;
+  min?: number[];
+  max?: number[];
   sparse?: S;
 }
 

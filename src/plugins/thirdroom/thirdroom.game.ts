@@ -1,14 +1,8 @@
-import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
+import { addEntity, defineComponent, defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import {
-  addChild,
-  addTransformComponent,
-  setEulerFromQuaternion,
-  setQuaternionFromEuler,
-  Transform,
-} from "../../engine/component/transform";
+import { addChild, setEulerFromQuaternion, setQuaternionFromEuler, Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
@@ -21,7 +15,7 @@ import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 //import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
-import { addCubeMesh } from "../../engine/prefab";
+import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
 // import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
 // import { createRemoteStandardMaterial } from "../../engine/material/material.game";
 // import {
@@ -65,7 +59,14 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
     ];
 
-    const sceneResource = RemoteSceneComponent.get(ctx.activeScene)!;
+    // const cube = addEntity(ctx.world);
+    // addTransformComponent(ctx.world, cube);
+    // vec3.set(Transform.position[cube], 0, 0, -5);
+    // addCubeMesh(ctx, cube);
+    // addChild(ctx.activeScene, cube);
+    // addComponent(ctx.world, SpinnyCube, cube);
+
+    const newScene = addEntity(ctx.world);
 
     const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
     const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
@@ -74,15 +75,16 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }),
     });
 
-    sceneResource.backgroundTexture = environmentMapTexture;
-    sceneResource.environmentTexture = environmentMapTexture;
+    await inflateGLTFScene(ctx, newScene, "/gltf/modern_city_block_fixed/modern_city_block.gltf");
 
-    const cube = addEntity(ctx.world);
-    addTransformComponent(ctx.world, cube);
-    vec3.set(Transform.position[cube], 0, 0, -5);
-    addCubeMesh(ctx, cube);
-    addChild(ctx.activeScene, cube);
-    addComponent(ctx.world, SpinnyCube, cube);
+    const newSceneResource = RemoteSceneComponent.get(newScene)!;
+
+    newSceneResource.backgroundTexture = environmentMapTexture;
+    newSceneResource.environmentTexture = environmentMapTexture;
+
+    addChild(newScene, ctx.activeCamera);
+
+    ctx.activeScene = newScene;
 
     // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
 

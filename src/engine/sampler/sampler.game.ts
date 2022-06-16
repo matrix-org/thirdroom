@@ -26,10 +26,11 @@ export interface SamplerProps {
 export function createRemoteSampler(ctx: GameState, props: SamplerProps): RemoteSampler {
   return {
     resourceId: createResource<SharedSamplerResource>(ctx, Thread.Render, SamplerResourceType, {
-      wrapS: SamplerWrap.REPEAT,
-      wrapT: SamplerWrap.REPEAT,
-      mapping: SamplerMapping.UVMapping,
-      ...props,
+      wrapS: props.wrapS || SamplerWrap.REPEAT,
+      wrapT: props.wrapT || SamplerWrap.REPEAT,
+      mapping: props.mapping === undefined ? SamplerMapping.UVMapping : props.mapping,
+      magFilter: props.magFilter,
+      minFilter: props.minFilter,
     }),
   };
 }

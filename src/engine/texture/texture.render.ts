@@ -41,8 +41,8 @@ export async function onLoadLocalTextureResource(
     if (image.format !== ImageFormat.RGBE) {
       texture.magFilter = sampler.magFilter;
       texture.minFilter = sampler.minFilter;
-      texture.wrapS = sampler.wrapS;
-      texture.wrapT = sampler.wrapT;
+      texture.wrapS = sampler.wrapS || RepeatWrapping;
+      texture.wrapT = sampler.wrapT || RepeatWrapping;
     }
 
     texture.mapping = EquirectangularReflectionMapping;
@@ -57,6 +57,7 @@ export async function onLoadLocalTextureResource(
     texture.flipY = false;
     // TODO: Can we determine texture encoding when applying to the material?
     texture.encoding = initialProps.encoding as unknown as TextureEncoding;
+    texture.needsUpdate = true;
   }
 
   const localTexture: LocalTextureResource = {

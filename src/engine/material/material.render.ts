@@ -20,6 +20,7 @@ import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
+import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
 import {
   UnlitMaterialTripleBuffer,
   MaterialType,
@@ -166,23 +167,27 @@ export function createPrimitiveUnlitMaterial(
     mode === MeshPrimitiveMode.TRIANGLE_FAN ||
     mode === MeshPrimitiveMode.TRIANGLE_STRIP
   ) {
-    return new MeshBasicMaterial({
-      ...baseParameters,
-      color,
-      map: material.baseColorTexture?.texture,
-    });
+    return new MeshBasicMaterial(
+      removeUndefinedProperties({
+        ...baseParameters,
+        color,
+        map: material.baseColorTexture?.texture,
+      })
+    );
   } else if (
     mode === MeshPrimitiveMode.LINES ||
     mode === MeshPrimitiveMode.LINE_STRIP ||
     mode === MeshPrimitiveMode.LINE_LOOP
   ) {
-    return new LineBasicMaterial({ ...baseParameters, color });
+    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color }));
   } else if (mode === MeshPrimitiveMode.POINTS) {
-    return new PointsMaterial({
-      ...baseParameters,
-      map: material.baseColorTexture?.texture,
-      sizeAttenuation: false,
-    });
+    return new PointsMaterial(
+      removeUndefinedProperties({
+        ...baseParameters,
+        map: material.baseColorTexture?.texture,
+        sizeAttenuation: false,
+      })
+    );
   }
 
   throw new Error(`Unsupported mesh mode ${mode}`);
@@ -210,35 +215,39 @@ export function createPrimitiveStandardMaterial(
     mode === MeshPrimitiveMode.TRIANGLE_FAN ||
     mode === MeshPrimitiveMode.TRIANGLE_STRIP
   ) {
-    return new MeshStandardMaterial({
-      ...baseParameters,
-      color,
-      map: baseColorTexture?.texture,
-      metalnessMap: metallicRoughnessTexture?.texture,
-      roughnessMap: metallicRoughnessTexture?.texture,
-      aoMap: occlusionTexture?.texture,
-      emissiveMap: emissiveTexture?.texture,
-      normalMap: normalTexture?.texture,
-      metalness: materialView.metallicFactor[0], // 🤘
-      roughness: materialView.roughnessFactor[0],
-      normalScale: new Vector2().setScalar(materialView.normalTextureScale[0]),
-      aoMapIntensity: materialView.occlusionTextureStrength[0],
-      emissive: new Color().fromArray(materialView.emissiveFactor),
-      flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
-    });
+    return new MeshStandardMaterial(
+      removeUndefinedProperties({
+        ...baseParameters,
+        color,
+        map: baseColorTexture?.texture,
+        metalnessMap: metallicRoughnessTexture?.texture,
+        roughnessMap: metallicRoughnessTexture?.texture,
+        aoMap: occlusionTexture?.texture,
+        emissiveMap: emissiveTexture?.texture,
+        normalMap: normalTexture?.texture,
+        metalness: materialView.metallicFactor[0], // 🤘
+        roughness: materialView.roughnessFactor[0],
+        normalScale: new Vector2().setScalar(materialView.normalTextureScale[0]),
+        aoMapIntensity: materialView.occlusionTextureStrength[0],
+        emissive: new Color().fromArray(materialView.emissiveFactor),
+        flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
+      })
+    );
   } else if (
     mode === MeshPrimitiveMode.LINES ||
     mode === MeshPrimitiveMode.LINE_STRIP ||
     mode === MeshPrimitiveMode.LINE_LOOP
   ) {
-    return new LineBasicMaterial({ ...baseParameters, color });
+    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color }));
   } else if (mode === MeshPrimitiveMode.POINTS) {
-    return new PointsMaterial({
-      ...baseParameters,
-      color,
-      map: baseColorTexture?.texture,
-      sizeAttenuation: false,
-    });
+    return new PointsMaterial(
+      removeUndefinedProperties({
+        ...baseParameters,
+        color,
+        map: baseColorTexture?.texture,
+        sizeAttenuation: false,
+      })
+    );
   }
 
   throw new Error(`Unsupported mesh mode ${mode}`);
@@ -253,7 +262,7 @@ function getLocalMaterialBaseParameters(
     side: materialView.doubleSided[0] ? DoubleSide : FrontSide,
     transparent: materialView.alphaMode[0] === MaterialAlphaMode.BLEND,
     depthWrite: materialView.alphaMode[0] !== MaterialAlphaMode.BLEND,
-    alphaTest: materialView.alphaMode[0] === MaterialAlphaMode.MASK ? materialView.alphaCutoff[0] : undefined,
+    alphaTest: materialView.alphaMode[0] === MaterialAlphaMode.MASK ? materialView.alphaCutoff[0] : 0.5,
     vertexColors: MeshPrimitiveAttribute.COLOR_0 in attributes,
   };
 

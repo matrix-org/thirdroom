@@ -15,8 +15,8 @@ import {
 
 export interface LocalAccessor {
   bufferView?: LocalBufferView;
-  min?: number;
-  max?: number;
+  min?: number[];
+  max?: number[];
   attribute: BufferAttribute | InterleavedBufferAttribute;
 }
 

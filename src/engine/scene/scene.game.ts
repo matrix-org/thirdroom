@@ -9,7 +9,6 @@ import {
 import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
-import { RemoteNode } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
@@ -44,7 +43,6 @@ export interface RemoteScene {
 }
 
 export interface SceneProps {
-  audioListener?: RemoteNode;
   audioEmitters?: RemoteGlobalAudioEmitter[];
   backgroundTexture?: RemoteTexture;
   environmentTexture?: RemoteTexture;

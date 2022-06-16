@@ -1,5 +1,10 @@
 import { RemoteAccessor } from "../accessor/accessor.game";
-import { createObjectBufferView, createObjectTripleBuffer, ObjectBufferView } from "../allocator/ObjectBufferView";
+import {
+  commitToObjectTripleBuffer,
+  createObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
+} from "../allocator/ObjectBufferView";
 import { GameState } from "../GameTypes";
 import { RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
@@ -32,26 +37,20 @@ export interface RemoteMesh {
   primitives: RemoteMeshPrimitive[];
 }
 
-interface MeshPrimitiveProps {
+export interface MeshPrimitiveProps {
   attributes: { [key: string]: RemoteAccessor<any, any> };
   indices?: RemoteAccessor<any, any>;
   material?: RemoteMaterial;
   mode?: number;
-  targets?: number[] | Float32Array;
 }
 
-export function createRemoteMesh(
-  ctx: GameState,
-  primitives: MeshPrimitiveProps | MeshPrimitiveProps[],
-  weights?: number[] | Float32Array
-): RemoteMesh {
+export function createRemoteMesh(ctx: GameState, primitives: MeshPrimitiveProps | MeshPrimitiveProps[]): RemoteMesh {
   const arr = Array.isArray(primitives) ? primitives : [primitives];
 
   const remoteMeshPrimitives = arr.map((primitive) => createRemoteMeshPrimitive(ctx, primitive));
 
   const initialProps: MeshResourceProps = {
     primitives: remoteMeshPrimitives.map((primitive) => primitive.resourceId),
-    weights,
   };
 
   const resourceId = createResource<SharedMeshResource>(ctx, Thread.Render, MeshResourceType, { initialProps });
@@ -76,7 +75,6 @@ function createRemoteMeshPrimitive(ctx: GameState, props: MeshPrimitiveProps): R
     ),
     indices: props.indices ? props.indices.resourceId : undefined,
     mode: props.mode === undefined ? MeshPrimitiveMode.TRIANGLES : props.mode,
-    targets: props.targets,
   };
 
   meshPrimitiveBufferView.material[0] = props.material?.resourceId || 0;
@@ -106,4 +104,11 @@ function createRemoteMeshPrimitive(ctx: GameState, props: MeshPrimitiveProps): R
   rendererModule.meshPrimitives.push(remoteMeshPrimitive);
 
   return remoteMeshPrimitive;
+}
+
+export function updateRemoteMeshPrimitives(meshPrimitives: RemoteMeshPrimitive[]) {
+  for (let i = 0; i < meshPrimitives.length; i++) {
+    const meshPrimitive = meshPrimitives[i];
+    commitToObjectTripleBuffer(meshPrimitive.meshPrimitiveTripleBuffer, meshPrimitive.meshPrimitiveBufferView);
+  }
 }

@@ -8,12 +8,10 @@ export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
   indices?: ResourceId;
   mode: MeshPrimitiveMode;
-  targets?: number[] | Float32Array;
 }
 
 export interface MeshResourceProps {
   primitives: ResourceId[];
-  weights?: number[] | Float32Array;
 }
 
 export interface SharedMeshResource {

@@ -287,6 +287,7 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
 export type RemoteEmitterSource = RemoteAudioSource | RemoteMediaStreamSource;
 
 export interface RemoteGlobalAudioEmitter {
+  type: AudioEmitterType.Global;
   resourceId: ResourceId;
   globalAudioEmitterBuffer: ObjectBufferView<typeof globalAudioEmitterSchema, ArrayBuffer>;
   sharedGlobalAudioEmitter: GlobalAudioEmitterTripleBuffer;
@@ -326,6 +327,7 @@ export function createRemoteGlobalAudioEmitter(
   let _sources: RemoteEmitterSource[] = props?.sources || [];
 
   const remoteGlobalAudioEmitter: RemoteGlobalAudioEmitter = {
+    type: AudioEmitterType.Global,
     resourceId,
     globalAudioEmitterBuffer,
     sharedGlobalAudioEmitter,
@@ -357,6 +359,7 @@ export function createRemoteGlobalAudioEmitter(
 }
 
 export interface RemotePositionalAudioEmitter {
+  type: AudioEmitterType.Positional;
   resourceId: ResourceId;
   positionalAudioEmitterBuffer: ObjectBufferView<typeof positionalAudioEmitterSchema, ArrayBuffer>;
   sharedPositionalAudioEmitter: PositionalAudioEmitterTripleBuffer;
@@ -392,6 +395,8 @@ export interface PositionalAudioEmitterProps {
   rolloffFactor?: number;
   output?: AudioEmitterOutput;
 }
+
+export type RemoteAudioEmitter = RemoteGlobalAudioEmitter | RemotePositionalAudioEmitter;
 
 export function createRemotePositionalAudioEmitter(
   ctx: GameState,
@@ -430,6 +435,7 @@ export function createRemotePositionalAudioEmitter(
   let _sources: RemoteEmitterSource[] = props?.sources || [];
 
   const remotePositionalAudioEmitter: RemotePositionalAudioEmitter = {
+    type: AudioEmitterType.Positional,
     resourceId,
     positionalAudioEmitterBuffer,
     sharedPositionalAudioEmitter,

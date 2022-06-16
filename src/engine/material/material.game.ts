@@ -28,7 +28,7 @@ export interface UnlitMaterialProps {
   doubleSided?: boolean; // default false
   alphaCutoff?: number; // default 0.5
   alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
-  baseColorFactor?: vec4; // default [1, 1, 1, 1]
+  baseColorFactor?: ArrayLike<number>; // default [1, 1, 1, 1]
   baseColorTexture?: RemoteTexture;
 }
 
@@ -36,7 +36,7 @@ export interface StandardMaterialProps {
   doubleSided?: boolean; // default false
   alphaCutoff?: number; // default 0.5
   alphaMode?: MaterialAlphaMode; // default MaterialAlphaMode.OPAQUE
-  baseColorFactor?: vec4; // default [1, 1, 1, 1]
+  baseColorFactor?: ArrayLike<number>; // default [1, 1, 1, 1]
   baseColorTexture?: RemoteTexture;
   metallicFactor?: number; // default 1
   roughnessFactor?: number; // default 1
@@ -45,7 +45,7 @@ export interface StandardMaterialProps {
   normalTexture?: RemoteTexture;
   occlusionTextureStrength?: number; // default 1
   occlusionTexture?: RemoteTexture;
-  emissiveFactor?: vec3; // default [0, 0, 0]
+  emissiveFactor?: ArrayLike<number>; // default [0, 0, 0]
   emissiveTexture?: RemoteTexture;
 }
 

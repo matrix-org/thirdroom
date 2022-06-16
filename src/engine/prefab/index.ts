@@ -13,7 +13,6 @@ import { AccessorComponentType, AccessorType } from "../accessor/accessor.common
 import { createRemoteBufferView } from "../bufferView/bufferView.game";
 import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
-import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
 
@@ -184,7 +183,8 @@ export function createRotatedAvatar(state: GameState, path: string) {
 
   const eid = addEntity(state.world);
 
-  addGLTFLoaderComponent(state, eid, path);
+  // TODO
+  // addGLTFLoaderComponent(state, eid, path);
 
   Transform.position[eid].set([0, -0.5, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
