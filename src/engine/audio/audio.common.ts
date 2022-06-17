@@ -4,7 +4,7 @@ import { ResourceId } from "../resource/resource.common";
 export enum AudioResourceType {
   AudioData = "audio-data",
   AudioSource = "audio-source",
-  MediaStream = "media-stream",
+  MediaStreamId = "media-stream-id",
   MediaStreamSource = "media-stream-source",
   AudioEmitter = "audio-emitter",
 }

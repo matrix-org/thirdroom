@@ -15,6 +15,7 @@ import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
+// import { inflateGLTFScene, loadGLTFResource } from "../gltf/gltf.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
   const geometry = new BoxBufferGeometry();
@@ -175,16 +176,15 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-export function createContainerizedAvatar(state: GameState, path: string) {
-  const { physicsWorld } = getModule(state, PhysicsModule);
+export function createContainerizedAvatar(ctx: GameState, path: string) {
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
 
-  const container = addEntity(state.world);
-  addTransformComponent(state.world, container);
-
-  const eid = addEntity(state.world);
+  const container = addEntity(ctx.world);
+  addTransformComponent(ctx.world, container);
 
   // TODO
-  // addGLTFLoaderComponent(state, eid, path);
+  const eid = addEntity(ctx.world);
+  // loadGLTFNode();
 
   Transform.position[eid].set([0, -0.5, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
@@ -197,7 +197,7 @@ export function createContainerizedAvatar(state: GameState, path: string) {
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(state.world, container, rigidBody);
+  addRigidBody(ctx.world, container, rigidBody);
 
   return container;
 }

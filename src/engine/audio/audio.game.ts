@@ -218,7 +218,7 @@ interface RemoteMediaStream {
 
 export function createRemoteMediaStream(ctx: GameState, streamId: string): RemoteMediaStream {
   return {
-    resourceId: createResource<SharedMediaStreamResource>(ctx, Thread.Main, AudioResourceType.MediaStreamSource, {
+    resourceId: createResource<SharedMediaStreamResource>(ctx, Thread.Main, AudioResourceType.MediaStreamId, {
       streamId,
     }),
   };
@@ -227,7 +227,7 @@ export function createRemoteMediaStream(ctx: GameState, streamId: string): Remot
 export interface RemoteMediaStreamSource {
   resourceId: number;
   mediaStreamSourceBuffer: ObjectBufferView<typeof mediaStreamSourceSchema, ArrayBuffer>;
-  sharedMediaStreamSource: MediaStreamSourceTripleBuffer;
+  mediaStreamSourceTripleBuffer: MediaStreamSourceTripleBuffer;
   get stream(): RemoteMediaStream | undefined;
   set stream(value: RemoteMediaStream | undefined);
   get gain(): number;
@@ -247,13 +247,16 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
   mediaStreamSourceBuffer.stream[0] = props?.stream?.resourceId || 0;
   mediaStreamSourceBuffer.gain[0] = props?.gain === undefined ? 1 : props.gain;
 
-  const sharedMediaStreamSource = createObjectTripleBuffer(mediaStreamSourceSchema, ctx.gameToMainTripleBufferFlags);
+  const mediaStreamSourceTripleBuffer = createObjectTripleBuffer(
+    mediaStreamSourceSchema,
+    ctx.gameToMainTripleBufferFlags
+  );
 
   const resourceId = createResource<MediaStreamSourceTripleBuffer>(
     ctx,
     Thread.Main,
     AudioResourceType.MediaStreamSource,
-    sharedMediaStreamSource
+    mediaStreamSourceTripleBuffer
   );
 
   let _stream: RemoteMediaStream | undefined = props?.stream || undefined;
@@ -261,7 +264,7 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
   const remoteMediaStreamSource: RemoteMediaStreamSource = {
     resourceId,
     mediaStreamSourceBuffer,
-    sharedMediaStreamSource,
+    mediaStreamSourceTripleBuffer,
     get stream(): RemoteMediaStream | undefined {
       return _stream;
     },
@@ -544,7 +547,10 @@ export function GameAudioSystem(ctx: GameState) {
   for (let i = 0; i < audioModule.mediaStreamSources.length; i++) {
     const mediaStreamSource = audioModule.mediaStreamSources[i];
 
-    commitToObjectTripleBuffer(mediaStreamSource.sharedMediaStreamSource, mediaStreamSource.mediaStreamSourceBuffer);
+    commitToObjectTripleBuffer(
+      mediaStreamSource.mediaStreamSourceTripleBuffer,
+      mediaStreamSource.mediaStreamSourceBuffer
+    );
   }
 
   for (let i = 0; i < audioModule.globalAudioEmitters.length; i++) {
