@@ -125,7 +125,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       registerResourceLoader(ctx, SceneResourceType, onLoadMainSceneResource),
       registerResourceLoader(ctx, AudioResourceType.AudioData, onLoadAudioData),
       registerResourceLoader(ctx, AudioResourceType.AudioSource, onLoadAudioSource),
-      registerResourceLoader(ctx, AudioResourceType.MediaStream, onLoadMediaStream),
+      registerResourceLoader(ctx, AudioResourceType.MediaStreamId, onLoadMediaStreamId),
       registerResourceLoader(ctx, AudioResourceType.MediaStreamSource, onLoadMediaStreamSource),
       registerResourceLoader(ctx, AudioResourceType.AudioEmitter, onLoadAudioEmitter),
     ];
@@ -206,7 +206,7 @@ export interface LocalMediaStream {
   stream: MediaStream;
 }
 
-async function onLoadMediaStream(
+async function onLoadMediaStreamId(
   ctx: IMainThreadContext,
   resourceId: ResourceId,
   { streamId }: SharedMediaStreamResource
@@ -239,6 +239,7 @@ const onLoadMediaStreamSource = async (
   resourceId: ResourceId,
   mediaStreamSourceTripleBuffer: MediaStreamSourceTripleBuffer
 ): Promise<LocalMediaStreamSource> => {
+  console.log("recieved", mediaStreamSourceTripleBuffer);
   const audio = getModule(ctx, AudioModule);
 
   const mediaStreamSourceView = getReadObjectBufferView(mediaStreamSourceTripleBuffer);
@@ -879,6 +880,7 @@ export const setPeerMediaStream = (audioState: MainAudioModule, peerId: string, 
     audioEl.setAttribute("autoplay", "autoplay");
     audioEl.muted = true;
   }
+  console.log("adding mediastream for peer", peerId);
   audioState.mediaStreams.set(peerId, mediaStream);
 };
 

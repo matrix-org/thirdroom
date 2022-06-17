@@ -26,7 +26,7 @@ import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-// import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
+// import { createContainerizedAvatar, registerPrefab } from "../../engine/prefab";
 // import { createRemoteStandardMaterial } from "../../engine/material/material.game";
 // import {
 //   createRemoteAudio,
@@ -164,14 +164,14 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     // registerPrefab(ctx, {
     //   name: "mixamo-x",
     //   create: () => {
-    //     return createRotatedAvatar(ctx, "/gltf/mixamo-x.glb");
+    //     return createContainerizedAvatar(ctx, "/gltf/mixamo-x.glb");
     //   },
     // });
 
     // registerPrefab(ctx, {
     //   name: "mixamo-y",
     //   create: () => {
-    //     return createRotatedAvatar(ctx, "/gltf/mixamo-y.glb");
+    //     return createContainerizedAvatar(ctx, "/gltf/mixamo-y.glb");
     //   },
     // });
 
