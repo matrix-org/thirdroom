@@ -1,20 +1,48 @@
 .AvatarOutline {
   display: inline-flex;
+  position: relative;
 
-  & .Avatar--xl {
+  & ::after {
+    content: "";
+    display: block;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    width: 100%;
+  }
+
+  & .Avatar--xl::after {
+    border-radius: var(--av-xl);
     box-shadow: inset 0 0 0 4px var(--bg-primary);
   }
   & .Avatar--lg {
+    border-radius: var(--av-lg);
     box-shadow: inset 0 0 0 3px var(--bg-primary);
   }
 
-  & .Avatar--md,
-  & .Avatar--sm {
+  & .Avatar--md::after {
+    border-radius: var(--av-md);
+  }
+
+  & .Avatar--sm::after {
+    border-radius: var(--av-sm);
+  }
+
+  & .Avatar--md::after,
+  & .Avatar--sm::after {
     box-shadow: inset 0 0 0 2px var(--bg-primary);
   }
 
-  & .Avatar--xs,
-  & .Avatar--xxs {
+  & .Avatar--xs::after {
+    border-radius: var(--av-xs);
+  }
+
+  & .Avatar--xxs::after {
+    border-radius: var(--av-xxs);
+  }
+
+  & .Avatar--xs::after,
+  & .Avatar--xxs::after {
     box-shadow: inset 0 0 0 1.5px var(--bg-primary);
   }
 }
