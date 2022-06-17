@@ -4,6 +4,7 @@ import { vec3 } from "gl-matrix";
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
+  addTransformComponent,
   setEulerFromQuaternion,
   setQuaternionFromEuler,
   Transform,
@@ -23,6 +24,8 @@ import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 // import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
 // import { createRemoteStandardMaterial } from "../../engine/material/material.game";
 // import {
@@ -189,6 +192,12 @@ function disposeScene(world: World, scene: number) {
 }
 
 async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
+  if (ctx.activeScene) {
+    disposeScene(ctx.world, ctx.activeScene);
+    ctx.activeScene = NOOP;
+    ctx.activeCamera = NOOP;
+  }
+
   const newScene = addEntity(ctx.world);
 
   const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
@@ -205,6 +214,20 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
   newSceneResource.backgroundTexture = environmentMapTexture;
   newSceneResource.environmentTexture = environmentMapTexture;
 
+  if (!ctx.activeCamera) {
+    const defaultCamera = addEntity(ctx.world);
+
+    addTransformComponent(ctx.world, defaultCamera);
+
+    addChild(newScene, defaultCamera);
+
+    addRemoteNodeComponent(ctx, defaultCamera, {
+      camera: createRemotePerspectiveCamera(ctx),
+    });
+
+    ctx.activeCamera = defaultCamera;
+  }
+
   ctx.activeScene = newScene;
 }
 
@@ -218,6 +241,10 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   await waitUntil(() => network.peerIdToIndex.has(network.peerId));
 
   const spawnPoints = spawnPointQuery(world);
+
+  if (state.activeCamera) {
+    removeEntity(world, state.activeCamera);
+  }
 
   const playerRig = createPlayerRig(state);
   vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);

@@ -77,7 +77,13 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
     }
   }, [session, selectedWorldId]);
 
-  const previewingWorld = worldId !== selectedWorldId || (!isEnteredWorld && !(loadState === WorldLoadState.Loaded));
+  const previewingWorld =
+    worldId !== selectedWorldId ||
+    !(
+      loadState === WorldLoadState.Loaded ||
+      loadState === WorldLoadState.Entering ||
+      loadState === WorldLoadState.Entered
+    );
 
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
