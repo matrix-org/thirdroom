@@ -230,6 +230,9 @@ async function _inflateGLTFNode(
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
+        const primitiveEid = addEntity(ctx.world);
+        addTransformComponent(ctx.world, primitiveEid);
+        addChild(nodeEid, primitiveEid);
         addRigidBody(ctx.world, nodeEid, rigidBody);
       }
     }
