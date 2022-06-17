@@ -11,18 +11,20 @@ import { useKeyDown } from "../../../hooks/useKeyDown";
 import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
 import MicIC from "../../../../../res/ic/mic.svg";
-import HeadphoneIC from "../../../../../res/ic/headphone.svg";
+import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
+import { useCallMute } from "../../../hooks/useCallMute";
 
 export function WorldView() {
-  const { canvasRef, world, onLeftWorld } = useOutletContext<SessionOutletContext>();
+  const { canvasRef, world, onLeftWorld, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
+  const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
   useKeyDown(
     (e) => {
@@ -51,6 +53,9 @@ export function WorldView() {
       }
       if (e.altKey && e.code === "KeyL") {
         onLeftWorld();
+      }
+      if (e.code === "KeyM") {
+        toggleMute();
       }
       if (e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
@@ -84,15 +89,9 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
-        <IconButton variant="world" label="Mic" iconSrc={MicIC} onClick={() => console.log("mic")} />
+        <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
         <Text variant="b3" color="world" weight="bold">
           M
-        </Text>
-      </div>
-      <div className="flex flex-column items-center">
-        <IconButton variant="world" label="Settings" iconSrc={HeadphoneIC} onClick={() => console.log("headphone")} />
-        <Text variant="b3" color="world" weight="bold">
-          N
         </Text>
       </div>
       <div className="flex flex-column items-center">

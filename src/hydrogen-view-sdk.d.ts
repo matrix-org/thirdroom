@@ -1605,6 +1605,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     private _createPeerCall;
   }
 
+  export class MuteSettings {
+    public readonly microphone: boolean;
+    public readonly camera: boolean;
+    constructor(microphone: boolean, camera: boolean);
+    toggleCamera(): MuteSettings;
+    toggleMicrophone(): MuteSettings;
+  }
+
   export enum GroupCallState {
     Fledgling = "fledgling",
     Creating = "creating",
@@ -1651,6 +1659,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get deviceIndex(): number | undefined;
     get eventTimestamp(): number | undefined;
     join(localMedia: LocalMedia): Promise<void>;
+    setMuted(muteSettings: MuteSettings): Promise<void>;
+    get muteSettings(): MuteSettings | undefined;
     get hasJoined(): boolean;
     leave(): Promise<void>;
     terminate(): Promise<void>;

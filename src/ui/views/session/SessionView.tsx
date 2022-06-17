@@ -148,7 +148,15 @@ export function SessionView() {
         {mainThread ? (
           <MainThreadContextProvider value={mainThread}>
             <Outlet context={outletContext} />
-            {isOverlayOpen && <Overlay onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />}
+            {isOverlayOpen && (
+              <Overlay
+                calls={calls}
+                activeCall={activeCall}
+                onLeftWorld={onLeftWorld}
+                onLoadWorld={onLoadWorld}
+                onEnterWorld={onEnterWorld}
+              />
+            )}
             <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
           </MainThreadContextProvider>
         ) : (
