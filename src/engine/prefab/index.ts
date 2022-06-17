@@ -23,9 +23,7 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
   const normArr = geometry.attributes.normal.array as Float32Array;
   const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const buffer = new SharedArrayBuffer(
-    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
-  );
+  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
   let cursor = 0;
   const indices = new Uint16Array(buffer, cursor, indicesArr.length);
   indices.set(indicesArr);
@@ -177,7 +175,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-export function createRotatedAvatar(state: GameState, path: string) {
+export function createContainerizedAvatar(state: GameState, path: string) {
   const { physicsWorld } = getModule(state, PhysicsModule);
 
   const container = addEntity(state.world);

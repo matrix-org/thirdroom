@@ -33,14 +33,12 @@ import {
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
 import { RemoteBufferView } from "../bufferView/bufferView.game";
-import { RemoteScene, updateAudioRemoteScenes } from "../scene/scene.game";
-import { RemoteNode, RemoteNodeComponent } from "../node/node.game";
+import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
+import { RemoteNodeComponent } from "../node/node.game";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
   audioStateTripleBuffer: AudioStateTripleBuffer;
-  activeScene?: RemoteScene;
-  activeAudioListener?: RemoteNode;
   audioDatum: RemoteAudioData[];
   audioSources: RemoteAudioSource[];
   mediaStreamSources: RemoteMediaStreamSource[];
@@ -97,9 +95,9 @@ export function createRemoteAudioFromBufferView(
   };
 }
 
-export function createRemoteAudio(ctx: GameState, uri: string): RemoteAudioData {
+export function createRemoteAudioData(ctx: GameState, uri: string): RemoteAudioData {
   return {
-    resourceId: createResource<AudioResourceProps>(ctx, Thread.Main, AudioResourceType.AudioSource, {
+    resourceId: createResource<AudioResourceProps>(ctx, Thread.Main, AudioResourceType.AudioData, {
       uri,
     }),
   };
@@ -509,23 +507,13 @@ export interface PlayAudioOptions {
   playbackRate?: number;
 }
 
-export function playAudio(audioSource: RemoteAudioSource, audioData?: RemoteAudioData, options?: PlayAudioOptions) {
-  if (audioData !== undefined) {
-    audioSource.audio = audioData;
-  }
-
+export function playAudio(audioSource: RemoteAudioSource, options?: PlayAudioOptions) {
   audioSource.audioSourceWriteBuffer.play[0] = 1;
   audioSource.playing = true;
   audioSource.loop = false;
   audioSource.currentTime = 0;
   audioSource.playbackRate = 1;
   Object.assign(audioSource, options);
-}
-
-export function setActiveAudioListener(ctx: GameState, eid: number) {
-  const audioModule = getModule(ctx, GameAudioModule);
-  const remoteNode = RemoteNodeComponent.get(eid);
-  audioModule.activeAudioListener = remoteNode;
 }
 
 /**
@@ -535,9 +523,11 @@ export function setActiveAudioListener(ctx: GameState, eid: number) {
 export function GameAudioSystem(ctx: GameState) {
   const audioModule = getModule(ctx, GameAudioModule);
 
-  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] =
-    audioModule.activeAudioListener?.audioResourceId || 0;
-  audioModule.audioStateBufferView.activeSceneResourceId[0] = audioModule.activeScene?.audioResourceId || 0;
+  const activeScene = RemoteSceneComponent.get(ctx.activeScene);
+  const activeCamera = RemoteNodeComponent.get(ctx.activeCamera);
+
+  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.audioResourceId || 0;
+  audioModule.audioStateBufferView.activeSceneResourceId[0] = activeScene?.audioResourceId || 0;
 
   commitToObjectTripleBuffer(audioModule.audioStateTripleBuffer, audioModule.audioStateBufferView);
 

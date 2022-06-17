@@ -307,8 +307,11 @@ export type LocalEmitterSource = LocalAudioSource | LocalMediaStreamSource;
 export interface BaseAudioEmitter<State> {
   type: AudioEmitterType;
   resourceId: ResourceId;
+  nodeResource?: MainNode;
   sources: LocalEmitterSource[];
-  gainNode: GainNode;
+  // gainNode: GainNode;
+  inputGain: GainNode;
+  outputGain: GainNode;
   emitterTripleBuffer: State;
 }
 
@@ -331,20 +334,28 @@ async function onLoadAudioEmitter(
 
   const sharedGlobalAudioEmitterView = getReadObjectBufferView(emitterTripleBuffer);
 
-  const sourcePromises: Promise<LocalAudioSource>[] = Array.from(sharedGlobalAudioEmitterView.sources)
-    .filter((rid) => rid !== 0)
-    .map((rid) => waitForLocalResource<LocalAudioSource>(ctx, rid));
+  const sources: LocalEmitterSource[] = [];
 
-  const sources = await Promise.all(sourcePromises);
+  const output = sharedGlobalAudioEmitterView.output[0];
+  const destination =
+    output === AudioEmitterOutput.Voice
+      ? audioModule.voiceGain
+      : output === AudioEmitterOutput.Music
+      ? audioModule.musicGain
+      : audioModule.environmentGain;
 
-  const gainNode = audioModule.context.createGain();
-  gainNode.connect(audioModule.mainGain);
+  const inputGain = audioModule.context.createGain();
+  // input gain connected by node update
+
+  const outputGain = audioModule.context.createGain();
+  outputGain.connect(destination);
 
   const emitter: BaseAudioEmitter<any> = {
     type,
     resourceId,
     sources,
-    gainNode,
+    inputGain,
+    outputGain,
     emitterTripleBuffer,
   };
 
@@ -363,12 +374,13 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioStateView = getReadObjectBufferView(audioModule.audioStateTripleBuffer);
 
   const activeAudioListener = audioStateView.activeAudioListenerResourceId[0];
+  // const activeSceneResourceId = audioStateView.activeSceneResourceId[0];
 
   updateMediaStreamSources(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
 
-  updateGlobalAudioEmitters(ctx, audioModule, activeAudioListener);
+  // updateGlobalAudioEmitters(ctx, audioModule, activeSceneResourceId);
 
   for (let i = 0; i < audioModule.nodes.length; i++) {
     const node = audioModule.nodes[i];
@@ -511,6 +523,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 
     // Dispose old sourceNode when changing audio data
     if (currentAudioDataResourceId !== nextAudioDataResourceId && localAudioSource.sourceNode) {
+      console.log("localAudioSource.sourceNode.disconnect();");
       localAudioSource.sourceNode.disconnect();
       localAudioSource.sourceNode = undefined;
     }
@@ -533,18 +546,10 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
         // One-shot audio buffer source
         if (readSourceView.play[0] && !readSourceView.loop[0]) {
           const sampleSource = audioModule.context.createBufferSource();
+          console.log("sampleSource.connect(localAudioSource.gainNode);");
           sampleSource.connect(localAudioSource.gainNode);
           sampleSource.buffer = audioBuffer;
           sampleSource.playbackRate.value = readSourceView.playbackRate[0];
-
-          // Connect the node to the audio emitters
-          for (let i = 0; i < audioModule.emitters.length; i++) {
-            const emitter = audioModule.emitters[i];
-
-            if (emitter.sources.includes(localAudioSource)) {
-              sampleSource.connect(emitter.gainNode);
-            }
-          }
 
           sampleSource.start();
 
@@ -561,6 +566,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
           }
 
           const sampleSource = audioModule.context.createBufferSource();
+          console.log("sampleSource.connect(localAudioSource.gainNode);");
           sampleSource.connect(localAudioSource.gainNode);
           sampleSource.buffer = audioBuffer;
 
@@ -628,21 +634,22 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     const emitterView = getReadObjectBufferView(audioEmitter.emitterTripleBuffer);
 
     const currentSources = audioEmitter.sources;
-    const nextSources = emitterView.sources;
+    const nextSourceIDs = emitterView.sources;
 
     // synchronize disconnections
     for (let j = currentSources.length - 1; j >= 0; j--) {
       const currentSource = currentSources[j];
 
-      if (!nextSources.includes(currentSource.resourceId)) {
-        currentSource.gainNode.disconnect(audioEmitter.gainNode);
+      if (!nextSourceIDs.includes(currentSource.resourceId)) {
+        console.log("currentSource.gainNode.disconnect(audioEmitter.inputGain);");
+        currentSource.gainNode.disconnect(audioEmitter.inputGain);
         currentSources.splice(j, 1);
       }
     }
 
     // synchronize connections
-    for (let j = 0; j < nextSources.length; j++) {
-      const nextSourceRid = nextSources[j];
+    for (let j = 0; j < nextSourceIDs.length; j++) {
+      const nextSourceRid = nextSourceIDs[j];
 
       let source = currentSources.find((s) => s.resourceId === nextSourceRid);
 
@@ -650,12 +657,16 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
         source = getLocalResource<LocalEmitterSource>(ctx, nextSourceRid)?.resource;
 
         if (source) {
-          source.gainNode.connect(audioEmitter.gainNode);
+          // if (!currentSources.includes(source)) {
+          currentSources.push(source);
+          console.log("source.gainNode.connect(audioEmitter.inputGain);");
+          source.gainNode.connect(audioEmitter.inputGain);
+          // }
         }
       }
     }
 
-    audioEmitter.gainNode.gain.value = emitterView.gain[0];
+    audioEmitter.outputGain.gain.value = emitterView.gain[0];
   }
 }
 
@@ -712,21 +723,32 @@ export function updateNodeAudioEmitter(
   // If emitter changed
   if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId) {
     if (node.audioEmitter && node.emitterPannerNode) {
-      node.audioEmitter.gainNode.disconnect(node.emitterPannerNode);
+      console.log("node.audioEmitter.inputGain.disconnect(node.emitterPannerNode);");
+      node.audioEmitter.inputGain.disconnect(node.emitterPannerNode);
     }
 
     node.audioEmitter = undefined;
 
     // if emitter was removed
     if (nextAudioEmitterResourceId === NOOP && node.emitterPannerNode) {
+      console.log("node.emitterPannerNode.disconnect();");
       node.emitterPannerNode.disconnect();
       node.emitterPannerNode = undefined;
 
       // if emitter was created
     } else if (nextAudioEmitterResourceId !== NOOP && !node.emitterPannerNode) {
+      console.log("does this happen?");
       node.audioEmitter = getLocalResource<LocalPositionalAudioEmitter>(ctx, nextAudioEmitterResourceId)?.resource;
       node.emitterPannerNode = audioModule.context.createPanner();
       node.emitterPannerNode.panningModel = "HRTF";
+      // connect node's panner to emitter's gain
+      if (node.audioEmitter) {
+        node.audioEmitter.nodeResource = node;
+        console.log("node.audioEmitter.inputGain.connect(node.emitterPannerNode);");
+        node.audioEmitter.inputGain.connect(node.emitterPannerNode);
+        console.log("node.audioEmitter.inputGain.connect(node.emitterPannerNode);");
+        node.emitterPannerNode.connect(node.audioEmitter.outputGain);
+      }
     }
   }
 
@@ -735,6 +757,7 @@ export function updateNodeAudioEmitter(
   }
 
   const pannerNode = node.emitterPannerNode;
+  const audioEmitter = node.audioEmitter;
 
   // update emitter
 
@@ -744,14 +767,15 @@ export function updateNodeAudioEmitter(
 
   // Output changed
   if (output !== node.emitterOutput) {
-    pannerNode.disconnect();
+    console.log("audioEmitter.outputGain.disconnect();");
+    audioEmitter.outputGain.disconnect();
 
     if (output === AudioEmitterOutput.Voice) {
-      pannerNode.connect(audioModule.voiceGain);
+      audioEmitter.outputGain.connect(audioModule.voiceGain);
     } else if (output === AudioEmitterOutput.Music) {
-      pannerNode.connect(audioModule.musicGain);
+      audioEmitter.outputGain.connect(audioModule.musicGain);
     } else {
-      pannerNode.connect(audioModule.environmentGain);
+      audioEmitter.outputGain.connect(audioModule.environmentGain);
     }
 
     node.emitterOutput = output;
@@ -790,62 +814,67 @@ export function updateNodeAudioEmitter(
   pannerNode.rolloffFactor = audioEmitterView.rolloffFactor[0];
 }
 
-function updateGlobalAudioEmitters(
-  ctx: IMainThreadContext,
-  audioModule: MainAudioModule,
-  nextSceneResourceId: ResourceId
-) {
-  const currentSceneResourceId = audioModule.activeScene?.resourceId || 0;
+// function updateGlobalAudioEmitters(
+//   ctx: IMainThreadContext,
+//   audioModule: MainAudioModule,
+//   nextSceneResourceId: ResourceId
+// ) {
+//   const currentSceneResourceId = audioModule.activeScene?.resourceId || 0;
 
-  // if scene has changed
-  if (nextSceneResourceId !== currentSceneResourceId) {
-    // disconnect emitters
-    if (audioModule.activeScene) {
-      for (const emitter of audioModule.activeScene.audioEmitters) {
-        emitter.gainNode.disconnect();
-      }
-    }
+//   // if scene has changed
+//   if (nextSceneResourceId !== currentSceneResourceId) {
+//     // disconnect emitters
+//     if (audioModule.activeScene) {
+//       for (const emitter of audioModule.activeScene.audioEmitters) {
+//         emitter.outputGain.disconnect();
+//       }
+//     }
 
-    // if scene was added
-    if (nextSceneResourceId !== NOOP) {
-      // Set new scene if it's loaded
-      audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId)?.resource;
-    } else {
-      // unset active scene
-      audioModule.activeScene = undefined;
-    }
-  }
+//     // if scene was added
+//     if (nextSceneResourceId !== NOOP) {
+//       // Set new scene if it's loaded
+//       audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId)?.resource;
+//     } else {
+//       // unset active scene
+//       audioModule.activeScene = undefined;
+//     }
+//   }
 
-  // return if scene hasn't loaded or isn't active
-  if (!audioModule.activeScene) {
-    return;
-  }
+//   // return if scene hasn't loaded or isn't active
+//   if (!audioModule.activeScene) {
+//     return;
+//   }
 
-  // update scene with data from tb view
-  const activeSceneView = getReadObjectBufferView(audioModule.activeScene.audioSceneTripleBuffer);
+//   // update scene with data from tb view
+//   const activeSceneView = getReadObjectBufferView(audioModule.activeScene.audioSceneTripleBuffer);
 
-  for (const emitterRid of Array.from(activeSceneView.audioEmitters)) {
-    if (emitterRid === NOOP) continue;
+//   for (const emitterRid of Array.from(activeSceneView.audioEmitters)) {
+//     if (emitterRid === NOOP) continue;
+//     console.log("updateGlobalAudioEmitters");
 
-    const emitter = getLocalResource<LocalGlobalAudioEmitter>(ctx, emitterRid)?.resource;
+//     const emitter = getLocalResource<LocalGlobalAudioEmitter>(ctx, emitterRid)?.resource;
 
-    // if emitter resource exists but has not been added to the scene
-    if (emitter && !audioModule.activeScene.audioEmitters.includes(emitter)) {
-      const audioEmitterView = getReadObjectBufferView(emitter?.emitterTripleBuffer);
-      const output: AudioEmitterOutput = audioEmitterView.output[0];
-      // connect emitter to appropriate output
-      if (output === AudioEmitterOutput.Voice) {
-        emitter.gainNode.connect(audioModule.voiceGain);
-      } else if (output === AudioEmitterOutput.Music) {
-        emitter.gainNode.connect(audioModule.musicGain);
-      } else {
-        emitter.gainNode.connect(audioModule.environmentGain);
-      }
-      // add emitter to scene
-      audioModule.activeScene.audioEmitters.push(emitter);
-    }
-  }
-}
+//     if (emitter?.type !== AudioEmitterType.Global) {
+//       continue;
+//     }
+
+//     // if emitter resource exists but has not been added to the scene
+//     if (emitter && !audioModule.activeScene.audioEmitters.includes(emitter)) {
+//       const audioEmitterView = getReadObjectBufferView(emitter?.emitterTripleBuffer);
+//       const output: AudioEmitterOutput = audioEmitterView.output[0];
+//       // connect emitter to appropriate output
+//       if (output === AudioEmitterOutput.Voice) {
+//         emitter.outputGain.connect(audioModule.voiceGain);
+//       } else if (output === AudioEmitterOutput.Music) {
+//         emitter.outputGain.connect(audioModule.musicGain);
+//       } else {
+//         emitter.outputGain.connect(audioModule.environmentGain);
+//       }
+//       // add emitter to scene
+//       audioModule.activeScene.audioEmitters.push(emitter);
+//     }
+//   }
+// }
 
 /*********
  * Utils *

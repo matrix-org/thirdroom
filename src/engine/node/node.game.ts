@@ -60,6 +60,18 @@ interface NodeProps {
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
 
 export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: NodeProps): RemoteNode {
+  // if entity already has the component should we apply props and return object?
+  if (hasComponent(ctx.world, RemoteNodeComponent, eid)) {
+    const remoteNode = RemoteNodeComponent.get(eid)!;
+
+    if (props?.mesh) remoteNode.mesh = props.mesh;
+    if (props?.light) remoteNode.light = props.light;
+    if (props?.camera) remoteNode.camera = props.camera;
+    if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
+
+    return remoteNode;
+  }
+
   const rendererNodeBufferView = createObjectBufferView(rendererNodeSchema, ArrayBuffer);
   const audioNodeBufferView = createObjectBufferView(audioNodeSchema, ArrayBuffer);
 

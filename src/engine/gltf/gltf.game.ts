@@ -5,7 +5,7 @@ import { vec3 } from "gl-matrix";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { AudioEmitterOutput } from "../audio/audio.common";
 import {
-  createRemoteAudio,
+  createRemoteAudioData,
   createRemoteAudioFromBufferView,
   createRemoteAudioSource,
   createRemoteGlobalAudioEmitter,
@@ -739,7 +739,7 @@ async function _loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: num
   let remoteAudio: RemoteAudioData;
 
   if (audio.uri) {
-    remoteAudio = createRemoteAudio(ctx, resolveURL(audio.uri, resource.baseUrl));
+    remoteAudio = createRemoteAudioData(ctx, resolveURL(audio.uri, resource.baseUrl));
   } else if (audio.bufferView !== undefined) {
     if (!audio.mimeType) {
       throw new Error(`audio[${index}] has a bufferView but no mimeType`);

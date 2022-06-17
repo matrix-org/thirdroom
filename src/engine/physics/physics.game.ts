@@ -20,6 +20,7 @@ interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleMap: Map<number, number>;
+  drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
 }
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
@@ -32,13 +33,30 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleMap = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
+    const drainContactEvents = (callback: (eid1: number, eid2: number) => void) => {
+      eventQueue.drainContactEvents((handle1, handle2) => {
+        const eid1 = handleMap.get(handle1);
+        if (eid1 === undefined) {
+          console.warn(`Contact with unregistered physics handle ${handle1}`);
+          // return;
+        }
+        const eid2 = handleMap.get(handle2);
+        if (eid2 === undefined) {
+          console.warn(`Contact with unregistered physics handle ${handle2}`);
+          // return;
+        }
+        callback(eid1!, eid2!);
+      });
+    };
+
     return {
       physicsWorld,
       eventQueue,
       handleMap,
+      drainContactEvents,
     };
   },
-  async init() {},
+  init(ctx) {},
 });
 
 const RigidBodySoA = defineComponent({});
@@ -70,8 +88,6 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
   quaternion[2] = rigidRot.z;
   quaternion[3] = rigidRot.w;
 };
-
-// todo: put on physicsstate
 
 export const PhysicsSystem = (state: GameState) => {
   const { world, dt } = state;
@@ -119,12 +135,6 @@ export const PhysicsSystem = (state: GameState) => {
 
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
-
-  eventQueue.drainContactEvents((handle1: RAPIER.RigidBodyHandle, handle2: RAPIER.RigidBodyHandle) => {
-    console.warn("TODO: make hit sound effects play again");
-    // playbackRate = randomRange(0.25, 0.75)
-    // playAudio("/audio/hit.wav", handleMap.get(handle2));
-  });
 };
 
 export function addRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {

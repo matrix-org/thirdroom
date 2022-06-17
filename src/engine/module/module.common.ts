@@ -15,6 +15,7 @@ export function getModule<ThreadContext extends BaseThreadContext, ModuleState e
   threadContext: ThreadContext,
   module: Module<ThreadContext, ModuleState>
 ): ModuleState {
+  // todo: throw if module doesn't exist?
   return threadContext.modules.get(module);
 }
 
