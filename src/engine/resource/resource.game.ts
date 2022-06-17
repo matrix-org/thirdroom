@@ -16,6 +16,7 @@ interface RemoteResource {
   loaded: boolean;
   error?: string;
   statusView: Uint8Array;
+  cacheKey?: string;
 }
 
 interface ResourceModuleState {
@@ -100,7 +101,8 @@ export function createResource<Props>(
 
   const id = resourceModule.resourceIdCounter++;
 
-  const statusBuffer = new SharedArrayBuffer(1);
+  // First byte loading flag, second byte is dispose flag
+  const statusBuffer = new SharedArrayBuffer(2);
   const statusView = new Uint8Array(statusBuffer);
   statusView[0] = ResourceStatus.Loading;
 
@@ -110,6 +112,7 @@ export function createResource<Props>(
     props,
     loaded: false,
     statusView,
+    cacheKey,
   });
 
   if (cacheKey !== undefined) {
@@ -144,6 +147,38 @@ export function createResource<Props>(
   }
 
   return id;
+}
+
+export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  const resource = resourceModule.resources.get(resourceId);
+
+  if (!resource) {
+    return false;
+  }
+
+  if (resource.cacheKey) {
+    const resourceTypeCache = resourceModule.resourceIdMap.get(resource.resourceType);
+
+    if (resourceTypeCache) {
+      resourceTypeCache.delete(resource.cacheKey);
+    }
+  }
+
+  const deferred = resourceModule.deferredResources.get(resourceId);
+
+  if (deferred) {
+    deferred.reject(new Error("Resource disposed"));
+    resourceModule.deferredResources.delete(resourceId);
+  }
+
+  // Set dispose flag
+  resource.statusView[1] = 1;
+
+  resourceModule.resources.delete(resourceId);
+
+  return true;
 }
 
 export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {

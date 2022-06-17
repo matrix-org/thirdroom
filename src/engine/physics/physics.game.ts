@@ -74,6 +74,10 @@ export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) =>
 };
 
 const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
+  if (body.isStatic()) {
+    return;
+  }
+
   const rigidPos = body.translation();
   const rigidRot = body.rotation();
   const position = Transform.position[eid];
@@ -100,6 +104,7 @@ export const PhysicsSystem = (state: GameState) => {
     if (body) {
       handleMap.delete(body.handle);
       physicsWorld.removeRigidBody(body);
+      RigidBody.store.delete(eid);
     }
   }
 
@@ -108,13 +113,16 @@ export const PhysicsSystem = (state: GameState) => {
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
 
-    const rotation = Transform.rotation[eid];
-    const quaternion = Transform.quaternion[eid];
-    setQuaternionFromEuler(quaternion, rotation);
-
     const body = RigidBody.store.get(eid);
+
     if (body) {
-      applyTransformToRigidBody(body, eid);
+      if (!body.isStatic()) {
+        const rotation = Transform.rotation[eid];
+        const quaternion = Transform.quaternion[eid];
+        setQuaternionFromEuler(quaternion, rotation);
+        applyTransformToRigidBody(body, eid);
+      }
+
       handleMap.set(body.handle, eid);
     }
   }
@@ -124,7 +132,8 @@ export const PhysicsSystem = (state: GameState) => {
   for (let i = 0; i < physicsEntities.length; i++) {
     const eid = physicsEntities[i];
     const body = RigidBody.store.get(eid);
-    if (body) {
+
+    if (body && !body.isStatic()) {
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         applyTransformToRigidBody(body, eid);
       } else {

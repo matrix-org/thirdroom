@@ -2,8 +2,14 @@ import { addEntity, defineComponent, defineQuery, removeEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, setEulerFromQuaternion, setQuaternionFromEuler, Transform } from "../../engine/component/transform";
-import { GameState } from "../../engine/GameTypes";
+import {
+  addChild,
+  setEulerFromQuaternion,
+  setQuaternionFromEuler,
+  Transform,
+  traverse,
+} from "../../engine/component/transform";
+import { GameState, World } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
@@ -16,6 +22,7 @@ import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
+import { NOOP } from "../../engine/config.common";
 // import { createCube, createRotatedAvatar, registerPrefab } from "../../engine/prefab";
 // import { createRemoteStandardMaterial } from "../../engine/material/material.game";
 // import {
@@ -25,9 +32,7 @@ import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
 // } from "../../engine/audio/audio.game";
 // import { RemoteNodeComponent } from "../../engine/node/node.game";
 
-interface ThirdRoomModuleState {
-  environment?: number;
-}
+type ThirdRoomModuleState = {};
 
 const SpinnyCube = defineComponent();
 
@@ -177,14 +182,13 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
+function disposeScene(world: World, scene: number) {
+  traverse(scene, (eid) => {
+    removeEntity(world, eid);
+  });
+}
+
 async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
-  const thirdroom = getModule(ctx, ThirdRoomModule);
-
-  if (thirdroom.environment) {
-    // TODO: Clean up scene
-    removeEntity(ctx.world, ctx.activeScene);
-  }
-
   const newScene = addEntity(ctx.world);
 
   const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
@@ -204,8 +208,6 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
   ctx.activeScene = newScene;
 }
 
-let playerRig: number;
-
 const spawnPointQuery = defineQuery([SpawnPoint]);
 
 async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
@@ -217,7 +219,7 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
 
   const spawnPoints = spawnPointQuery(world);
 
-  playerRig = createPlayerRig(state);
+  const playerRig = createPlayerRig(state);
   vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
   vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
   setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
@@ -225,7 +227,11 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   addChild(state.activeScene, playerRig);
 }
 
-function onExitWorld(state: GameState, message: ExitWorldMessage) {}
+function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
+  disposeScene(ctx.world, ctx.activeScene);
+  ctx.activeCamera = NOOP;
+  ctx.activeScene = NOOP;
+}
 
 const waitUntil = (fn: Function) =>
   new Promise<void>((resolve) => {

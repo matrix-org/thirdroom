@@ -19,6 +19,7 @@ import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { SpinnyCubeSystem, ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
+import { RemoteSceneSystem } from "./scene/scene.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -58,6 +59,7 @@ export default defineConfig<GameState>({
     GameAudioSystem,
     RenderableSystem,
     RemoteNodeSystem,
+    RemoteSceneSystem,
     ResourceLoaderSystem,
 
     ResetInputSystem,

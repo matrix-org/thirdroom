@@ -15,6 +15,7 @@ import {
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { CameraType } from "../camera/camera.common";
 import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
@@ -100,6 +101,70 @@ export function updateLocalNodeResources(
   const rendererState = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
   const activeScene = rendererState.activeSceneResourceId[0];
   const sceneResource = getLocalResource<LocalSceneResource>(ctx, activeScene)?.resource;
+
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    const nodeResource = getLocalResource<LocalNode>(ctx, node.resourceId);
+
+    if (nodeResource && nodeResource.statusView[1]) {
+      const node = nodes[i];
+
+      if (node.camera) {
+        if (sceneResource && node.cameraObject) {
+          sceneResource.scene.remove(node.cameraObject);
+        }
+
+        if (node.camera.type === CameraType.Perspective) {
+          const index = rendererModule.perspectiveCameraResources.indexOf(node.camera);
+
+          if (index !== -1) {
+            rendererModule.perspectiveCameraResources.splice(index, 1);
+          }
+        } else if (node.camera.type === CameraType.Orthographic) {
+          const index = rendererModule.orthographicCameraResources.indexOf(node.camera);
+
+          if (index !== -1) {
+            rendererModule.orthographicCameraResources.splice(index, 1);
+          }
+        }
+
+        node.cameraObject = undefined;
+        node.camera = undefined;
+      }
+
+      if (node.mesh) {
+        if (sceneResource && node.meshPrimitiveObjects) {
+          sceneResource.scene.remove(...node.meshPrimitiveObjects);
+        }
+
+        const primitives = node.mesh.primitives;
+
+        for (let j = 0; j < primitives.length; j++) {
+          const primitive = primitives[j];
+
+          const index = rendererModule.meshPrimitives.indexOf(primitive);
+
+          if (index !== -1) {
+            rendererModule.meshPrimitives.splice(index, 1);
+          }
+        }
+
+        node.meshPrimitiveObjects = undefined;
+        node.mesh = undefined;
+      }
+
+      if (node.light) {
+        if (sceneResource && node.lightObject) {
+          sceneResource.scene.remove(node.lightObject);
+        }
+
+        node.lightObject = undefined;
+        node.light = undefined;
+      }
+
+      nodes.splice(i, 1);
+    }
+  }
 
   if (!sceneResource) {
     return;

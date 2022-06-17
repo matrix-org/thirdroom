@@ -1,4 +1,4 @@
-import { addComponent, removeComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery, removeComponent } from "bitecs";
 
 import {
   commitToObjectTripleBuffer,
@@ -11,7 +11,7 @@ import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
-import { createResource } from "../resource/resource.game";
+import { createResource, disposeResource } from "../resource/resource.game";
 import { RemoteTexture } from "../texture/texture.game";
 import {
   audioSceneSchema,
@@ -118,6 +118,40 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
 }
 
 export const RemoteSceneComponent: Map<number, RemoteScene> = new Map();
+
+const remoteSceneQuery = defineQuery([RemoteSceneComponent]);
+const remoteSceneExitQuery = exitQuery(remoteSceneQuery);
+
+export function RemoteSceneSystem(ctx: GameState) {
+  const rendererModule = getModule(ctx, RendererModule);
+  const audioModule = getModule(ctx, GameAudioModule);
+  const entities = remoteSceneExitQuery(ctx.world);
+
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
+
+    const remoteScene = RemoteSceneComponent.get(eid);
+
+    if (remoteScene) {
+      disposeResource(ctx, remoteScene.rendererResourceId);
+      disposeResource(ctx, remoteScene.audioResourceId);
+
+      const rendererIndex = rendererModule.scenes.indexOf(remoteScene);
+
+      if (rendererIndex !== -1) {
+        rendererModule.scenes.splice(rendererIndex, 1);
+      }
+
+      const audioIndex = audioModule.scenes.indexOf(remoteScene);
+
+      if (audioIndex !== -1) {
+        audioModule.scenes.splice(audioIndex, 1);
+      }
+
+      RemoteSceneComponent.delete(eid);
+    }
+  }
+}
 
 export function removeRemoteSceneComponent(ctx: GameState, eid: number) {
   removeComponent(ctx.world, RemoteSceneComponent, eid);

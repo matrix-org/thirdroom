@@ -55,12 +55,15 @@ export function SessionView() {
             content: { scene_url, scene_preview_url },
           },
         }: any) => {
-          console.log(scene_url, scene_preview_url);
-          loadEnvironment(mainThread, "/gltf/modern_city_block_fixed/modern_city_block.gltf");
+          const sceneUrl = session.mediaRepository.mxcUrl(scene_url);
+
+          if (sceneUrl) {
+            loadEnvironment(mainThread, sceneUrl);
+          }
         }
       );
     }
-  }, [mainThread, world]);
+  }, [session, mainThread, world]);
 
   useEffect(() => {
     setInitialWorld(nextWorldId);

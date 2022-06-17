@@ -38,7 +38,7 @@ import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial
 import { createRemoteMesh, MeshPrimitiveProps, RemoteMesh } from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent } from "../node/node.game";
-import { PhysicsModule } from "../physics/physics.game";
+import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { createRemoteSampler, RemoteSampler } from "../sampler/sampler.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { TextureEncoding } from "../texture/texture.common";
@@ -176,9 +176,7 @@ async function _inflateGLTFNode(
 
   if (node.children && node.children.length) {
     await Promise.all(
-      node.children.map((childIndex: number) => {
-        _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid);
-      })
+      node.children.map((childIndex: number) => _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid))
     );
   }
 
@@ -231,6 +229,8 @@ async function _inflateGLTFNode(
         const colliderDesc = RAPIER.ColliderDesc.trimesh(positions, indices as unknown as Uint32Array);
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+        addRigidBody(ctx.world, nodeEid, rigidBody);
       }
     }
 
@@ -319,11 +319,11 @@ async function loadGLB(buffer: ArrayBuffer, baseUrl: string): Promise<GLTFResour
     curOffset += CHUNK_HEADER_BYTE_LENGTH;
 
     if (chunkType === ChunkType.JSON) {
-      const chunkData = buffer.slice(curOffset, chunkLength);
+      const chunkData = buffer.slice(curOffset, curOffset + chunkLength);
       const jsonStr = new TextDecoder().decode(chunkData);
       jsonChunkData = JSON.parse(jsonStr);
     } else if (chunkType === ChunkType.Bin) {
-      const chunkData = buffer.slice(curOffset, chunkLength);
+      const chunkData = buffer.slice(curOffset, curOffset + chunkLength);
       binChunkData = chunkData;
     }
 

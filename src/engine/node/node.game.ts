@@ -1,4 +1,4 @@
-import { addComponent, defineQuery, hasComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery, hasComponent } from "bitecs";
 
 import {
   commitToObjectTripleBuffer,
@@ -14,7 +14,7 @@ import { RemoteLight } from "../light/light.game";
 import { RemoteMesh } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
-import { createResource } from "../resource/resource.game";
+import { createResource, disposeResource } from "../resource/resource.game";
 import { RemoteSceneComponent } from "../scene/scene.game";
 import {
   audioNodeSchema,
@@ -152,6 +152,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 }
 
 const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
+const remoteNodeExitQuery = exitQuery(remoteNodeQuery);
 
 export function RemoteNodeSystem(ctx: GameState) {
   const entities = remoteNodeQuery(ctx.world);
@@ -220,5 +221,19 @@ export function RemoteNodeSystem(ctx: GameState) {
 
     commitToObjectTripleBuffer(remoteNode.audioNodeTripleBuffer, remoteNode.audioNodeBufferView);
     commitToObjectTripleBuffer(remoteNode.rendererNodeTripleBuffer, remoteNode.rendererNodeBufferView);
+  }
+
+  const disposedEntities = remoteNodeExitQuery(ctx.world);
+
+  for (let i = 0; i < disposedEntities.length; i++) {
+    const eid = disposedEntities[i];
+
+    const remoteNode = RemoteNodeComponent.get(eid);
+
+    if (remoteNode) {
+      disposeResource(ctx, remoteNode.rendererResourceId);
+      disposeResource(ctx, remoteNode.audioResourceId);
+      RemoteNodeComponent.delete(eid);
+    }
   }
 }
