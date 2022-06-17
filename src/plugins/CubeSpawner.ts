@@ -5,8 +5,9 @@ import { mat4, vec3, quat } from "gl-matrix";
 import {
   createRemoteAudioData,
   createRemoteAudioSource,
-  createRemoteGlobalAudioEmitter,
-  // createRemotePositionalAudioEmitter,
+  // createRemoteGlobalAudioEmitter,
+  createRemotePositionalAudioEmitter,
+  createRemotePositionalAudioEmitter,
   playAudio,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -60,8 +61,8 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
       create: () => {
         const eid = createCube(ctx, cubeMaterial);
 
-        // const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
-        const audioEmitter = createRemoteGlobalAudioEmitter(ctx, {
+        const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
+          // const audioEmitter = createRemoteGlobalAudioEmitter(ctx, {
           sources: [hitAudioSource],
         });
 
