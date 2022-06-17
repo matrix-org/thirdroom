@@ -11,6 +11,7 @@ import {
   URLRouter,
   CallIntent,
   ILogger,
+  LoginFailure,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -22,6 +23,9 @@ import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
 import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
+import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
+import { Button } from "../atoms/button/Button";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 
 const defaultHomeServer = "matrix.org";
@@ -161,6 +165,12 @@ async function loadSession(client: Client, session: Session) {
   await session.callHandler.loadCalls("m.room" as CallIntent);
 }
 
+function loginFailureToMsg(loginFailure: LoginFailure) {
+  if (loginFailure === LoginFailure.Connection) return "Connection timeout. Please try again.";
+  if (loginFailure === LoginFailure.Credentials) return "Invalid password. Please try again.";
+  if (loginFailure === LoginFailure.Unknown) return "Unknown error. Please try again.";
+}
+
 export function HydrogenRootView() {
   const [session, setSession] = useState<Session>();
 
@@ -173,19 +183,15 @@ export function HydrogenRootView() {
     };
   }, [client, containerEl]);
 
-  const {
-    loading: loadingInitialSession,
-    error: initialSessionLoadError,
-    value: initialSession,
-  } = useAsync(async () => {
+  const { loading: loadingInitialSession, error: initialSessionLoadError } = useAsync(async () => {
     const availableSessions = await platform.sessionInfoStorage.getAll();
 
     if (availableSessions.length === 0) {
+      setSession(undefined);
       return;
     }
 
     const sessionId = availableSessions[0].id;
-
     await client.startWithExistingSession(sessionId);
 
     if (client.session) {
@@ -193,11 +199,10 @@ export function HydrogenRootView() {
         await loadSession(client, client.session);
       } catch (error) {
         console.error("Error loading initial session", error);
-        return undefined;
       }
     }
 
-    return client.session;
+    setSession(client.session);
   }, [platform, client]);
 
   const {
@@ -222,7 +227,19 @@ export function HydrogenRootView() {
     [client]
   );
 
-  const currentSession = session || initialSession;
+  const {
+    loading: loggingOut,
+    error: errorLoggingOut,
+    callback: logout,
+  } = useAsyncCallback<() => Promise<void>, void>(async () => {
+    if (client && client.session) {
+      await client.startLogout(client.session.sessionInfo.id);
+      client.loadStatus.set(LoadStatus.NotLoading);
+      setSession(undefined);
+    }
+  }, [client, session]);
+
+  const profileRoom = useUserProfile(client, session);
 
   const context = useMemo<HydrogenContext>(
     () => ({
@@ -232,40 +249,44 @@ export function HydrogenRootView() {
       containerEl,
       urlRouter,
       logger,
-      session: currentSession,
+      session,
+      profileRoom,
       login,
+      logout,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, currentSession, login]
+    [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
   );
 
   const loginPathMatch = useMatch({ path: "/login" });
+  const hasProfileRoom = session && profileRoom;
 
-  const loading = loadingInitialSession || loggingIn;
-  const error = initialSessionLoadError || errorLoggingIn;
+  const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
+  const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+      <LoadingScreen>
         <Text variant="b1" weight="semi-bold">
           Loading...
         </Text>
-      </div>
+      </LoadingScreen>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center" style={{ height: "100%" }}>
+      <LoadingScreen className="gap-md">
         <Text variant="b1" weight="semi-bold">
-          {error.message}
+          {errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error.message}
         </Text>
-      </div>
+        <Button onClick={() => window.location.reload()}>Refresh</Button>
+      </LoadingScreen>
     );
   }
 
-  if (!currentSession && !loginPathMatch) {
+  if (!session && !loginPathMatch && !hasProfileRoom) {
     return <Navigate to="/login" />;
-  } else if (currentSession && loginPathMatch) {
+  } else if (session && loginPathMatch && hasProfileRoom) {
     return <Navigate to="/" />;
   }
 

@@ -1,8 +1,8 @@
 .RoomListHeader {
-  padding: var(--sp-xs) var(--sp-md);
+  padding: var(--sp-xs) var(--sp-xs);
   gap: var(--sp-sm);
 
-  & > * {
+  & .RoomListTab {
     flex: 1 1 0;
   }
 }

@@ -27,10 +27,8 @@ export function LoginView() {
 
     try {
       await login(form.homeserver.value, form.username.value, form.password.value);
-      setAuthenticating(false);
     } catch (error) {
       console.error(error);
-      setAuthenticating(false);
     }
   };
 

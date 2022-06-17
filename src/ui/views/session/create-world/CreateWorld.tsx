@@ -15,8 +15,8 @@ import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
-import { WindowHeader } from "../../components/window/WindowHeader";
-import { WindowHeaderTitle } from "../../components/window/WindowHeaderTitle";
+import { Header } from "../../../atoms/header/Header";
+import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
@@ -26,14 +26,14 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
-import { WindowFooter } from "../../components/window/WindowFooter";
+import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
-import { CreateWorldPreview } from "./CreateWorldPreview";
 import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import { SceneUpload } from "./SceneUpload";
 import "./CreateWorld.css";
 import { ScenePreviewUpload } from "./ScenePreviewUpload";
+import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -47,7 +47,7 @@ export interface CreateWorldOptions {
 
 export function CreateWorld() {
   const { session, platform } = useHydrogen(true);
-  const { homeserver } = session._sessionInfo;
+  const { homeserver } = session.sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
   const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
 
@@ -100,6 +100,7 @@ export function CreateWorld() {
             "m.room.encrypted": 50,
             "m.sticker": 50,
             "org.matrix.msc3401.call.member": 0,
+            "org.matrix.msc3815.member.world": 0,
           },
           users: {
             [session.userId]: 100,
@@ -171,11 +172,11 @@ export function CreateWorld() {
       <Content
         onSubmit={handleSubmit}
         top={
-          <WindowHeader
+          <Header
             left={
-              <WindowHeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
+              <HeaderTitle icon={<Icon className="shrink-0" src={LanguageIC} color="surface" />}>
                 Create World
-              </WindowHeaderTitle>
+              </HeaderTitle>
             }
             right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
           />
@@ -257,7 +258,7 @@ export function CreateWorld() {
                 </Scroll>
               }
               bottom={
-                <WindowFooter
+                <Footer
                   left={
                     <Button size="lg" fill="outline" onClick={() => selectWindow()}>
                       Cancel
@@ -274,9 +275,14 @@ export function CreateWorld() {
           }
           aside={
             <WindowAside className="flex">
-              <CreateWorldPreview
+              <ScenePreview
                 className="grow"
                 src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+                fallback={
+                  <Text variant="b3" color="surface-low" weight="medium">
+                    Your uploaded scene preview will appear here.
+                  </Text>
+                }
               />
             </WindowAside>
           }

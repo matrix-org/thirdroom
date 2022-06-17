@@ -1,4 +1,4 @@
-import { Platform, Navigation, Client, Session, ILogger, URLRouter } from "@thirdroom/hydrogen-view-sdk";
+import { Platform, Navigation, Client, Session, ILogger, URLRouter, Room } from "@thirdroom/hydrogen-view-sdk";
 import { createContext, useContext } from "react";
 
 export interface HydrogenContext {
@@ -6,13 +6,16 @@ export interface HydrogenContext {
   navigation: Navigation;
   platform: Platform;
   session?: Session;
+  profileRoom?: Room;
   logger: ILogger;
   urlRouter: URLRouter;
   login: (homeserverUrl: string, username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export interface AuthenticatedHydrogenContext extends HydrogenContext {
   session: Session;
+  profileRoom: Room;
 }
 
 const HydrogenContext = createContext<HydrogenContext | undefined>(undefined);

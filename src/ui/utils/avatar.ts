@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Platform, MediaRepository } from "@thirdroom/hydrogen-view-sdk";
+import { Session, Platform, MediaRepository } from "@thirdroom/hydrogen-view-sdk";
 
 export function avatarInitials(name: string): string {
   let firstChar = name.charAt(0);
@@ -61,4 +61,12 @@ export function getAvatarHttpUrl(
     return mediaRepository.mxcUrlThumbnail(avatarUrl, imageSize, imageSize, "crop");
   }
   return null;
+}
+
+export function getHttpUrl(session: Session, avatarUrl: any) {
+  try {
+    return session.mediaRepository.mxcUrl(avatarUrl);
+  } catch {
+    return undefined;
+  }
 }

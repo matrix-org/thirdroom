@@ -1,0 +1,22 @@
+.Header {
+  height: 60px;
+  padding: 0 var(--sp-md);
+
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--sp-md);
+}
+
+.Header__left,
+.Header__right {
+  flex-grow: 1;
+  flex-basis: 0;
+}
+.Header__right {
+  display: flex;
+  justify-content: flex-end;
+}
+.Header__center {
+  margin: auto;
+}

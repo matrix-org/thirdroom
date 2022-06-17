@@ -1,0 +1,50 @@
+.DropdownMenuItem {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-xs) var(--sp-md);
+  cursor: pointer;
+  transition: background-color 100ms ease-in-out;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.DropdownMenuItem--surface {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.DropdownMenuItem--primary {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-primary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-soft-active);
+  }
+}
+.DropdownMenuItem--secondary {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-secondary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-soft-active);
+  }
+}
+.DropdownMenuItem--danger {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-danger-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-soft-active);
+  }
+}

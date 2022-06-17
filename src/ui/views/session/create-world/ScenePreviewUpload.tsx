@@ -27,7 +27,7 @@ export function ScenePreviewUpload({
     mxc,
     upload,
     cancel: cancelUpload,
-  } = useAttachmentUpload(session._hsApi, platform, useDebounce(setProgress, { wait: 200, immediate: true }));
+  } = useAttachmentUpload(session.hsApi, platform, useDebounce(setProgress, { wait: 200, immediate: true }));
 
   useEffect(() => {
     onBlobChange(scenePrevBlob);

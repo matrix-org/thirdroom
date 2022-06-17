@@ -1,0 +1,7 @@
+.ModalContent {
+  height: 100%;
+}
+.ModalContent__aside {
+  max-width: 47%;
+  width: 100%;
+}

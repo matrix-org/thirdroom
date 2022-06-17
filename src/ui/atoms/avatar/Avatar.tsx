@@ -1,4 +1,4 @@
-import { useState, CSSProperties } from "react";
+import { useState, CSSProperties, MouseEvent } from "react";
 import classNames from "classnames";
 import "./Avatar.css";
 
@@ -12,6 +12,7 @@ interface IAvatar {
   shape?: "rounded" | "circle";
   imageSrc?: string | null;
   size?: "xl" | "lg" | "md" | "sm" | "xs" | "xxs";
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function Avatar({
@@ -22,6 +23,7 @@ export function Avatar({
   shape = "rounded",
   imageSrc,
   size = "md",
+  onClick,
 }: IAvatar) {
   const [isFallback, setIsFallback] = useState(true);
 
@@ -41,16 +43,26 @@ export function Avatar({
 
   const style: CSSProperties = {};
   if (isFallback || !imageSrc) style.backgroundColor = bgColor;
+  const props = {
+    className: avatarClass,
+    "aria-label": name,
+    style,
+  };
 
-  return (
-    <div className={avatarClass} aria-label={name} style={style}>
-      {!isFallback && imageSrc ? (
-        <img draggable="false" src={imageSrc} alt="" onLoad={() => setIsFallback(false)} />
-      ) : (
-        <Text style={{ color: fgColor }} variant={textSize} weight="medium" type="span">
-          {[...name][0]}
-        </Text>
-      )}
-    </div>
-  );
+  const content =
+    !isFallback && imageSrc ? (
+      <img draggable="false" src={imageSrc} alt="" onLoad={() => setIsFallback(false)} />
+    ) : (
+      <Text style={{ color: fgColor }} variant={textSize} weight="medium" type="span">
+        {[...name][0]}
+      </Text>
+    );
+
+  if (onClick)
+    return (
+      <button onClick={onClick} {...props}>
+        {content}
+      </button>
+    );
+  return <div {...props}>{content}</div>;
 }
