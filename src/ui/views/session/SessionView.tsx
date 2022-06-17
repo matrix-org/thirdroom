@@ -52,7 +52,7 @@ export function SessionView() {
         ({
           event: {
             // eslint-disable-next-line camelcase
-            content: { scene_url, scene_preview_url },
+            content: { scene_url },
           },
         }: any) => {
           const sceneUrl = session.mediaRepository.mxcUrl(scene_url);
