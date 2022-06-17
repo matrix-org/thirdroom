@@ -14,6 +14,9 @@
     border: none;
   }
 }
+button.Avatar {
+  cursor: pointer;
+}
 
 .Avatar--xl {
   width: var(--av-xl);

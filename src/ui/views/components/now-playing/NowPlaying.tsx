@@ -6,7 +6,7 @@ interface INowPlaying {
   content: ReactNode;
   options?: ReactNode;
   leftControls: ReactNode;
-  rightControls: ReactNode;
+  rightControls?: ReactNode;
 }
 
 export function NowPlaying({ avatar, content, options, leftControls, rightControls }: INowPlaying) {
@@ -15,11 +15,11 @@ export function NowPlaying({ avatar, content, options, leftControls, rightContro
       <div className="NowPlaying__main flex items-center">
         <div className="shrink-0">{avatar}</div>
         <div className="grow">{content}</div>
-        <div className="shrink-0">{options}</div>
+        {options && <div className="shrink-0">{options}</div>}
       </div>
       <div className="NowPlaying__controls flex">
         <div className="grow flex">{leftControls}</div>
-        <div className="flex">{rightControls}</div>
+        {rightControls && <div className="flex">{rightControls}</div>}
       </div>
     </div>
   );

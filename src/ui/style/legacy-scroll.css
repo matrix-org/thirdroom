@@ -1,4 +1,6 @@
 .legacy-scroll {
+  --scrollbar-width: 8px;
+
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -7,20 +9,18 @@
 .legacy-scroll,
 .legacy-scroll--visible {
   scrollbar-width: thin;
-  scrollbar-color: var(--sc-dark-low) transparent;
+  scrollbar-color: var(--bg-surface-scroll-thumb) var(--bg-surface-scroll-track);
 
   &::-webkit-scrollbar {
     width: var(--scrollbar-width);
     height: var(--scrollbar-width);
   }
   &::-webkit-scrollbar-track {
-    background-color: transparent;
+    background-color: var(--bg-surface-scroll-track);
   }
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--sc-dark-low);
-  }
+  &::-webkit-scrollbar-thumb,
   &::-webkit-scrollbar-thumb:hover {
-    background-color: var(--sc-dark-normal);
+    background-color: var(--bg-surface-scroll-thumb);
   }
 }
 

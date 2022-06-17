@@ -1,0 +1,19 @@
+.Footer {
+  padding: var(--sp-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+}
+
+.Footer__left,
+.Footer__right {
+  flex-grow: 1;
+  flex-basis: 0;
+}
+.Footer__right {
+  display: flex;
+  justify-content: flex-end;
+}
+.Footer__center {
+  margin: auto;
+}

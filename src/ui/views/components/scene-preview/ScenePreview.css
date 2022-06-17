@@ -1,4 +1,4 @@
-.CreateWorldPreview {
+.ScenePreview {
   background-color: var(--bg-surface-low);
   border-radius: var(--br-xs);
   overflow: hidden;

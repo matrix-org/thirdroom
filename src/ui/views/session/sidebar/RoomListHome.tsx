@@ -1,4 +1,4 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -9,11 +9,16 @@ import { RoomTile } from "../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
 import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
+import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 
-export function RoomListHome() {
+interface RoomListHomeProps {
+  groupCalls: Map<string, GroupCall>;
+}
+
+export function RoomListHome({ groupCalls }: RoomListHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
@@ -55,15 +60,23 @@ export function RoomListHome() {
           />
         }
       >
-        {worlds.map((room) => (
-          <RoomTile
-            key={room.id}
-            isActive={room.id === selectedWorldId}
-            avatar={renderAvatar(room, true)}
-            onClick={() => selectWorld(room.id)}
-            content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
-          />
-        ))}
+        {worlds.map((room) => {
+          const groupCall = groupCalls.get(room.id);
+          return (
+            <RoomTile
+              key={room.id}
+              isActive={room.id === selectedWorldId}
+              avatar={renderAvatar(room, true)}
+              onClick={() => selectWorld(room.id)}
+              content={
+                <>
+                  <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
+                  {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
+                </>
+              }
+            />
+          );
+        })}
       </Category>
       <Category header={<CategoryHeader title="All Messages" />}>
         {rooms.map((room) => (

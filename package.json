@@ -24,10 +24,12 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.7.6",
+    "@radix-ui/react-dialog": "^0.1.7",
+    "@radix-ui/react-dropdown-menu": "^0.1.6",
     "@radix-ui/react-scroll-area": "^0.1.4",
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
-    "@thirdroom/hydrogen-view-sdk": "0.0.9",
+    "@thirdroom/hydrogen-view-sdk": "0.0.10",
     "@thirdroom/manifold-editor-components": "^0.0.1",
     "@thirdroom/ringbuffer": "^0.0.1",
     "bitecs": "^0.3.38",

@@ -4,12 +4,43 @@ import { useNavigate } from "react-router-dom";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
-import { WorldPreviewCard, IWorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
+import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, WorldLoadState } from "../../../hooks/useStore";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
+
+interface JoinWorldPreviewProps {
+  session: Session;
+  roomId: string;
+}
+function JoinWorldPreview({ session, roomId }: JoinWorldPreviewProps) {
+  const {
+    callback: onJoinWorld,
+    error: joinRoomError,
+    loading: joiningRoom,
+  } = useAsyncCallback(
+    async (roomId: string) => {
+      await session.joinRoom(roomId);
+    },
+    [session]
+  );
+
+  if (joinRoomError) {
+    return <WorldPreviewCard title="Unnamed Room" desc={`Error joining world: ${joinRoomError.message}`} />;
+  }
+  return (
+    <WorldPreviewCard
+      title="Unnamed Room"
+      options={
+        <Button size="lg" variant="primary" disabled={joiningRoom} onClick={() => onJoinWorld(roomId)}>
+          {joiningRoom ? "Joining World..." : "Join World"}
+        </Button>
+      }
+    />
+  );
+}
 
 interface IWorldPreview {
   session: Session;
@@ -45,43 +76,38 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     value: roomStatus,
   } = useRoomStatus(session, previewWorldId);
 
-  const {
-    callback: onJoinWorld,
-    error: joinRoomError,
-    loading: joiningRoom,
-  } = useAsyncCallback(
-    async (roomId: string) => {
-      await session.joinRoom(roomId);
-    },
-    [session]
-  );
-
   const onClickRoomLoadButton = useCallback(
-    (e: MouseEvent) => {
+    async (e: MouseEvent) => {
       e.preventDefault();
+      if (!room) return;
 
-      if ((!isPreviewLoaded || loadState === WorldLoadState.None) && room) {
-        loadingWorld(room.id);
-        onLoadWorld(room)
-          .then(() => {
-            loadedWorld();
-          })
-          .catch((error: Error) => {
-            console.error(error);
-            loadWorldError(error);
-          });
-      } else if (loadState === WorldLoadState.Loaded && room) {
-        enteringWorld();
-        onEnterWorld(room)
-          .then(() => {
+      if (isPreviewLoaded) {
+        if (loadState === WorldLoadState.Entered) {
+          closeOverlay();
+          return;
+        }
+        if (loadState === WorldLoadState.Loaded) {
+          enteringWorld();
+          try {
+            await onEnterWorld(room);
             enteredWorld();
-          })
-          .catch((error: Error) => {
+          } catch (error: any) {
             console.error(error);
             loadWorldError(error);
-          });
-      } else if (loadState === WorldLoadState.Entered) {
-        closeOverlay();
+          }
+        }
+      }
+
+      if (isPreviewLoaded === false || loadState === WorldLoadState.None) {
+        loadingWorld(room.id);
+        try {
+          await onLoadWorld(room);
+          loadedWorld();
+        } catch (error: any) {
+          console.error(error);
+          loadWorldError(error);
+        }
+        return;
       }
     },
     [
@@ -100,12 +126,10 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
   );
 
   useEffect(() => {
-    if (
-      roomBeingCreated &&
-      roomStatus !== undefined &&
-      (roomStatus & RoomStatus.Replaced) !== 0 &&
-      roomStatus & RoomStatus.BeingCreated
-    ) {
+    if (!roomBeingCreated) return;
+    if (roomStatus === undefined) return;
+
+    if ((roomStatus & RoomStatus.Replaced) !== 0 && roomStatus & RoomStatus.BeingCreated) {
       navigate(`/world/${roomBeingCreated.roomId}`);
     }
   }, [navigate, roomStatus, roomBeingCreated]);
@@ -114,68 +138,51 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     return null;
   }
 
-  const renderCard = (props: IWorldPreviewCard) => (
+  return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
-      <WorldPreviewCard {...props} />
+      {(() => {
+        if (roomStatus === undefined) {
+          if (roomStatusLoading) return <WorldPreviewCard title="Loading Room..." />;
+          return (
+            <WorldPreviewCard
+              title="Loading Failed"
+              desc={roomStatusError ? `Error loading world: ${roomStatusError}` : "Unknown error occured"}
+            />
+          );
+        }
+
+        if (roomStatus & RoomStatus.Replaced) {
+          return null;
+        }
+
+        if (roomStatus & RoomStatus.BeingCreated) return <WorldPreviewCard title="Creating Room..." />;
+        if (roomStatus & RoomStatus.Invited) return <WorldPreviewCard title="Invited To Room" />;
+        if (roomStatus & RoomStatus.Archived) return <WorldPreviewCard title="Room Archived" />;
+
+        if (roomStatus & RoomStatus.Joined) {
+          return (
+            <WorldPreviewCard
+              title={room?.name || "Unnamed Room"}
+              memberCount={room?.joinedMemberCount || 0}
+              desc={isPreviewLoaded && loadError ? loadError.message : undefined}
+              options={
+                <Button
+                  size="lg"
+                  variant={isPreviewLoaded && loadState === WorldLoadState.Loaded ? "primary" : "secondary"}
+                  onClick={onClickRoomLoadButton}
+                >
+                  {isPreviewLoaded ? WorldLoadButtonText[loadState] : WorldLoadButtonText[WorldLoadState.None]}
+                </Button>
+              }
+            />
+          );
+        }
+        if (roomStatus === RoomStatus.None && selectedWorldId) {
+          return <JoinWorldPreview session={session} roomId={selectedWorldId} />;
+        }
+
+        return <WorldPreviewCard title="Unknown error occurred" />;
+      })()}
     </div>
   );
-
-  if (roomStatus === undefined) {
-    if (roomStatusLoading) return renderCard({ title: "Loading Room..." });
-    if (roomStatusError)
-      return renderCard({ title: "Loading Failed", desc: `Error loading world: ${roomStatusError}` });
-    return renderCard({ title: "Loading Failed", desc: "Unknown error occurred" });
-  }
-
-  if (joiningRoom) {
-    return renderCard({
-      title: room?.name || "Unnamed Room",
-      options: (
-        <Button size="lg" variant="primary" disabled onClick={() => {}}>
-          Joining World...
-        </Button>
-      ),
-    });
-  }
-
-  if (joinRoomError) {
-    return renderCard({
-      title: room?.name || "Unnamed Room",
-      desc: `Error joining world: ${joinRoomError.message}`,
-    });
-  }
-
-  if (roomStatus & RoomStatus.Replaced) {
-    return null;
-  }
-
-  let title;
-  let memberCount;
-  let options;
-  let desc;
-  if (roomStatus & RoomStatus.BeingCreated) title = "Creating Room...";
-  else if (roomStatus & RoomStatus.Invited) title = "Invited To Room";
-  else if (roomStatus & RoomStatus.Archived) title = "Room Archived";
-  else if (roomStatus & RoomStatus.Joined) {
-    title = room?.name || "Unnamed Room";
-    memberCount = room?.joinedMemberCount || 0;
-    desc = isPreviewLoaded && loadError ? loadError.message : undefined;
-    options = (
-      <Button
-        size="lg"
-        variant={isPreviewLoaded && loadState === WorldLoadState.Loaded ? "primary" : "secondary"}
-        onClick={onClickRoomLoadButton}
-      >
-        {isPreviewLoaded ? WorldLoadButtonText[loadState] : WorldLoadButtonText[WorldLoadState.None]}
-      </Button>
-    );
-  } else if (roomStatus === RoomStatus.None && selectedWorldId) {
-    title = room?.name || "Unnamed Room";
-    options = (
-      <Button size="lg" variant="primary" onClick={() => onJoinWorld(selectedWorldId)}>
-        Join World
-      </Button>
-    );
-  } else title = "Unknown error occurred";
-  return renderCard({ title, memberCount, desc, options });
 }
