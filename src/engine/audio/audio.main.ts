@@ -82,6 +82,15 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   async create(ctx, { waitForMessage }) {
     const audioContext = new AudioContext();
 
+    // hack - must play something thru the audio context for media streams to activate
+    (() => {
+      const osc = audioContext.createOscillator();
+      osc.frequency.value = 0;
+      osc.connect(audioContext.destination);
+      osc.start();
+      osc.stop();
+    })();
+
     const mainGain = new GainNode(audioContext);
     mainGain.connect(audioContext.destination);
 
@@ -239,7 +248,6 @@ const onLoadMediaStreamSource = async (
   resourceId: ResourceId,
   mediaStreamSourceTripleBuffer: MediaStreamSourceTripleBuffer
 ): Promise<LocalMediaStreamSource> => {
-  console.log("recieved", mediaStreamSourceTripleBuffer);
   const audio = getModule(ctx, AudioModule);
 
   const mediaStreamSourceView = getReadObjectBufferView(mediaStreamSourceTripleBuffer);
