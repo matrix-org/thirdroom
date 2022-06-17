@@ -7,7 +7,6 @@ import {
   createRemoteAudioSource,
   // createRemoteGlobalAudioEmitter,
   createRemotePositionalAudioEmitter,
-  createRemotePositionalAudioEmitter,
   playAudio,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -25,6 +24,7 @@ import { InputModule } from "../engine/input/input.game";
 import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
+import { addRemoteNodeComponent } from "../engine/node/node.game";
 // import { addRemoteNodeComponent, RemoteNodeComponent } from "../engine/node/node.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
@@ -66,9 +66,9 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
           sources: [hitAudioSource],
         });
 
-        // addRemoteNodeComponent(ctx, eid, {
-        //   audioEmitter,
-        // });
+        addRemoteNodeComponent(ctx, eid, {
+          audioEmitter,
+        });
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 

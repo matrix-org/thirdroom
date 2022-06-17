@@ -406,10 +406,8 @@ export function createRemotePositionalAudioEmitter(
 
   positionalAudioEmitterBuffer.sources.set(props?.sources ? props.sources.map((source) => source.resourceId) : []);
   positionalAudioEmitterBuffer.gain[0] = props?.gain === undefined ? 1 : props.gain;
-  positionalAudioEmitterBuffer.coneInnerAngle[0] =
-    props?.coneInnerAngle === undefined ? Math.PI * 2 : props.coneInnerAngle;
-  positionalAudioEmitterBuffer.coneOuterAngle[0] =
-    props?.coneOuterAngle === undefined ? Math.PI * 2 : props.coneOuterAngle;
+  positionalAudioEmitterBuffer.coneInnerAngle[0] = props?.coneInnerAngle === undefined ? 360 : props.coneInnerAngle;
+  positionalAudioEmitterBuffer.coneOuterAngle[0] = props?.coneOuterAngle === undefined ? 0 : props.coneOuterAngle;
   positionalAudioEmitterBuffer.coneOuterGain[0] = props?.coneOuterGain === undefined ? 0 : props.coneOuterGain;
   positionalAudioEmitterBuffer.distanceModel[0] =
     props?.distanceModel === undefined ? AudioEmitterDistanceModel.Inverse : props.distanceModel;
