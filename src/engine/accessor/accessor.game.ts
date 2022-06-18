@@ -1,3 +1,5 @@
+import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "three";
+
 import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
@@ -7,6 +9,7 @@ import {
   AccessorComponentTypeToTypedArray,
   AccessorResourceProps,
   AccessorResourceType,
+  AccessorSparseIndicesArrayConstructor,
   AccessorSparseIndicesComponentType,
   AccessorType,
   AccessorTypedArray,
@@ -30,7 +33,7 @@ export interface RemoteAccessor<
         };
       }
     : undefined;
-  array: AccessorTypedArray;
+  attribute: BufferAttribute | InterleavedBufferAttribute;
 }
 
 interface AccessorSparseIndicesProps {
@@ -87,35 +90,83 @@ export function createRemoteAccessor<
             componentType: props.sparse.indices.componentType,
           },
           values: {
-            bufferView: props.sparse.indices.bufferView.resourceId,
-            byteOffset: props.sparse.indices.byteOffset || 0,
+            bufferView: props.sparse.values.bufferView.resourceId,
+            byteOffset: props.sparse.values.byteOffset || 0,
           },
         }
       : undefined,
   });
 
+  const bufferView = props.bufferView;
+
   const itemSize = AccessorTypeToItemSize[props.type];
   const arrConstructor = AccessorComponentTypeToTypedArray[props.componentType] as AccessorTypedArrayConstructor;
+  const itemBytes = itemSize * arrConstructor.BYTES_PER_ELEMENT;
 
+  let attribute: BufferAttribute | InterleavedBufferAttribute;
   let array: AccessorTypedArray;
 
-  if (props.bufferView) {
-    if (props.bufferView.byteStride) {
-      console.warn("byteStride not yet implemented for game thread accessors");
+  if (bufferView && bufferView.byteStride && bufferView.byteStride !== itemBytes) {
+    const interleavedBufferSlice = Math.floor((props.byteOffset || 0) / bufferView.byteStride);
+    array = new arrConstructor(
+      bufferView.buffer,
+      interleavedBufferSlice * bufferView.byteStride,
+      (props.count * bufferView.byteStride) / arrConstructor.BYTES_PER_ELEMENT
+    );
+    // TODO: Should we be caching these? https://github.com/mrdoob/three.js/blob/dev/examples/js/loaders/GLTFLoader.js#L2625
+    const interleavedBuffer = new InterleavedBuffer(array, bufferView.byteStride / arrConstructor.BYTES_PER_ELEMENT);
+    attribute = new InterleavedBufferAttribute(
+      interleavedBuffer,
+      itemSize,
+      ((props.byteOffset || 0) % bufferView.byteStride) / arrConstructor.BYTES_PER_ELEMENT,
+      props.normalized
+    );
+  } else {
+    if (bufferView) {
+      array = new arrConstructor(bufferView.buffer, props.byteOffset, props.count * itemSize);
+    } else {
+      array = new arrConstructor(props.count * itemSize);
     }
 
-    array = new arrConstructor(props.bufferView.buffer, props.byteOffset, props.count * itemSize);
-  } else {
-    array = new arrConstructor(props.count * itemSize);
+    attribute = new BufferAttribute(array, itemSize, props.normalized);
   }
 
   if (props.sparse) {
-    console.warn("sparse accessors not yet implemented on game thread");
+    const indicesBufferView = props.sparse.indices.bufferView;
+    const indicesArrConstructor = AccessorComponentTypeToTypedArray[
+      props.sparse.indices.componentType
+    ] as AccessorSparseIndicesArrayConstructor;
+    const indicesArr = new indicesArrConstructor(
+      indicesBufferView.buffer,
+      props.sparse.indices.byteOffset,
+      props.sparse.count
+    );
+
+    const valuesBufferView = props.sparse.values.bufferView;
+    const valuesArr = new arrConstructor(
+      valuesBufferView.buffer,
+      props.sparse.values.byteOffset,
+      props.sparse.count * itemSize
+    );
+
+    if (bufferView) {
+      // Don't modify the buffer view data. Only reuse the array if we created it above
+      attribute = new BufferAttribute(array.slice(), itemSize, props.normalized);
+    }
+
+    for (let i = 0; i < indicesArr.length; i++) {
+      const index = indicesArr[i];
+      attribute.setX(index, valuesArr[i * itemSize]);
+      if (itemSize >= 2) attribute.setY(index, valuesArr[i * itemSize + 1]);
+      if (itemSize >= 3) attribute.setZ(index, valuesArr[i * itemSize + 2]);
+      if (itemSize >= 4) attribute.setW(index, valuesArr[i * itemSize + 3]);
+      if (itemSize >= 5) throw new Error("Unsupported itemSize in sparse THREE.BufferAttribute.");
+    }
   }
 
   return {
     resourceId,
-    array,
+    attribute,
     bufferView: props.bufferView,
     sparse: props.sparse
       ? {

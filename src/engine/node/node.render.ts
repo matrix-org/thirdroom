@@ -91,6 +91,8 @@ export function updateTransformFromNode(
   object3D.position.lerp(tempPosition, lerpAlpha);
   object3D.quaternion.slerp(tempQuaternion, lerpAlpha);
   object3D.scale.lerp(tempScale, lerpAlpha);
+
+  object3D.visible = !!nodeReadView.visible[0];
 }
 
 export function updateLocalNodeResources(

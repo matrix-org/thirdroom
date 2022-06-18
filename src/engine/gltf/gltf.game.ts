@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
+import { Matrix4 } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { AudioEmitterOutput } from "../audio/audio.common";
@@ -37,7 +38,7 @@ import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import { createRemoteMesh, MeshPrimitiveProps, RemoteMesh } from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { createRemoteSampler, RemoteSampler } from "../sampler/sampler.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -46,8 +47,9 @@ import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType } from "./GLTF";
+import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
 
-interface GLTFResource {
+export interface GLTFResource {
   baseUrl: string;
   root: GLTFRoot;
   binaryChunk?: ArrayBuffer;
@@ -129,9 +131,11 @@ export async function inflateGLTFScene(
   addRemoteSceneComponent(ctx, sceneEid, {
     audioEmitters,
   });
-}
 
-const tempVec3 = vec3.create();
+  if (hasHubsComponentsExtension(resource.root)) {
+    inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
+  }
+}
 
 async function _inflateGLTFNode(
   ctx: GameState,
@@ -183,72 +187,76 @@ async function _inflateGLTFNode(
   const results = await promises;
 
   nodeInflators.push(() => {
-    if (node.extras && node.extras["directional-light"]) {
-      results.light = createDirectionalLightResource(ctx, {
-        castShadow: true,
-        intensity: 0.8,
-      });
-    }
-
-    if (results.mesh) {
-      const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-      for (const primitive of results.mesh.primitives) {
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const positionsArr = primitive.attributes.POSITION.array as Float32Array;
-        const positionsBuffer = new ArrayBuffer(positionsArr.byteLength);
-        const positions = new Float32Array(positionsBuffer);
-        positions.set(positionsArr);
-
-        for (let i = 0; i < positions.length / 3; i++) {
-          tempVec3[0] = positions[i * 3];
-          tempVec3[1] = positions[i * 3 + 1];
-          tempVec3[2] = positions[i * 3 + 2];
-          vec3.transformMat4(tempVec3, tempVec3, Transform.worldMatrix[nodeEid]);
-          positions[i * 3] = tempVec3[0];
-          positions[i * 3 + 1] = tempVec3[1];
-          positions[i * 3 + 2] = tempVec3[2];
-        }
-
-        let indicesArr = primitive.indices?.array as Uint16Array;
-
-        if (!indicesArr) {
-          indicesArr = new Uint16Array(positions.length / 3);
-
-          for (let i = 0; i < indicesArr.length; i++) {
-            indicesArr[i] = i;
-          }
-        }
-
-        const indicesBuffer = new ArrayBuffer(indicesArr.byteLength);
-        const indices = new Uint16Array(indicesBuffer);
-        indices.set(indicesArr);
-
-        const colliderDesc = RAPIER.ColliderDesc.trimesh(positions, indices as unknown as Uint32Array);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-
-        const primitiveEid = addEntity(ctx.world);
-        addTransformComponent(ctx.world, primitiveEid);
-        addChild(nodeEid, primitiveEid);
-        addRigidBody(ctx.world, nodeEid, rigidBody);
-      }
-    }
-
     if (results.mesh || results.camera || results.light || results.audioEmitter) {
       addRemoteNodeComponent(ctx, nodeEid, results as any);
     }
 
-    if (node.camera) {
-      ctx.activeCamera = nodeEid;
-    }
+    if (hasHubsComponentsExtension(resource.root)) {
+      inflateHubsNode(ctx, resource, nodeIndex, nodeEid);
+    } else {
+      if (node.camera) {
+        ctx.activeCamera = nodeEid;
+      }
 
-    if (node.extras && node.extras["spawn-point"]) {
-      addComponent(ctx.world, SpawnPoint, nodeEid);
+      if (node.extras && node.extras["directional-light"]) {
+        results.light = createDirectionalLightResource(ctx, {
+          castShadow: true,
+          intensity: 0.8,
+        });
+      }
+
+      if (results.mesh) {
+        addTrimesh(ctx, nodeEid);
+      }
+
+      if (node.extras && node.extras["spawn-point"]) {
+        addComponent(ctx.world, SpawnPoint, nodeEid);
+      }
     }
   });
+}
+
+export function addTrimesh(ctx: GameState, nodeEid: number) {
+  const remoteNode = RemoteNodeComponent.get(nodeEid);
+
+  if (!remoteNode || !remoteNode.mesh) {
+    return;
+  }
+
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+  for (const primitive of remoteNode.mesh.primitives) {
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+    const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+    const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
+    const worldMatrix = new Matrix4().fromArray(Transform.worldMatrix[nodeEid]);
+    positionsAttribute.applyMatrix4(worldMatrix);
+
+    const indicesAttribute = primitive.indices?.attribute;
+
+    let indicesArr: Uint32Array;
+
+    if (!indicesAttribute) {
+      indicesArr = new Uint32Array(positionsAttribute.count);
+
+      for (let i = 0; i < indicesArr.length; i++) {
+        indicesArr[i] = i;
+      }
+    } else {
+      indicesArr = new Uint32Array(indicesAttribute.count);
+      indicesArr.set(indicesAttribute.array);
+    }
+
+    const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
+
+    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+    const primitiveEid = addEntity(ctx.world);
+    addTransformComponent(ctx.world, primitiveEid);
+    addChild(nodeEid, primitiveEid);
+    addRigidBody(ctx.world, nodeEid, rigidBody);
+  }
 }
 
 const GLB_HEADER_BYTE_LENGTH = 12;
