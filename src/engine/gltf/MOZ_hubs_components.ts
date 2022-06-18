@@ -1,8 +1,10 @@
 import { addComponent } from "bitecs";
 
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
 import { Hidden, setQuaternionFromEuler, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { GLTFRoot } from "./GLTF";
 import { addTrimesh, GLTFResource } from "./gltf.game";
 
@@ -33,5 +35,12 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
 
   if (components.visible?.visible === false) {
     addComponent(ctx.world, Hidden, nodeEid);
+  }
+
+  if (components["scene-preview-camera"]) {
+    addRemoteNodeComponent(ctx, nodeEid, {
+      camera: createRemotePerspectiveCamera(ctx),
+    });
+    ctx.activeCamera = nodeEid;
   }
 }
