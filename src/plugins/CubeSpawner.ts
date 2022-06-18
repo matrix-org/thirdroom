@@ -5,11 +5,10 @@ import { mat4, vec3, quat } from "gl-matrix";
 import {
   createRemoteAudioData,
   createRemoteAudioSource,
-  // createRemoteGlobalAudioEmitter,
-  createRemotePositionalAudioEmitter,
   playAudio,
-  RemoteAudioEmitter,
   RemoteAudioSource,
+  addAudioEmitterComponent,
+  RemoteAudioEmitter,
 } from "../engine/audio/audio.game";
 import { Transform, addChild } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -25,7 +24,6 @@ import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
-// import { addRemoteNodeComponent, RemoteNodeComponent } from "../engine/node/node.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
 import randomRange from "../engine/utils/randomRange";
@@ -51,18 +49,19 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     });
 
     const hitAudioData = createRemoteAudioData(ctx, "/audio/hit.wav");
-    const hitAudioSource = createRemoteAudioSource(ctx, {
-      audio: hitAudioData,
-      loop: false,
-    });
 
     registerPrefab(ctx, {
       name: "blue-cube",
       create: () => {
         const eid = createCube(ctx, cubeMaterial);
 
-        const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
-          // const audioEmitter = createRemoteGlobalAudioEmitter(ctx, {
+        const hitAudioSource = createRemoteAudioSource(ctx, {
+          audio: hitAudioData,
+          loop: false,
+          autoPlay: false,
+        });
+
+        const audioEmitter = addAudioEmitterComponent(ctx, eid, {
           sources: [hitAudioSource],
         });
 
@@ -75,6 +74,14 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
         return eid;
       },
     });
+
+    // TODO: figure out why global emitters don't activate until a positional emitter is created/activated
+    // const audioEmitter = createRemoteGlobalAudioEmitter(ctx, {
+    //   sources: [hitAudioSource],
+    // });
+    // setInterval(() => {
+    //   playAudio(hitAudioSource);
+    // }, 1000);
 
     enableActionMap(ctx, CubeSpawnerActionMap);
   },
@@ -94,10 +101,21 @@ export const CubeSpawnerActionMap: ActionMap = {
         },
       ],
     },
+    {
+      id: "pickUp",
+      path: "PickUp",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Mouse/Left",
+        },
+      ],
+    },
   ],
 };
 
-const worldQuat = quat.create();
+const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
   const module = getModule(ctx, CubeSpawnerModule);
   const input = getModule(ctx, InputModule);
@@ -106,6 +124,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
   if (spawnCube.pressed) {
     const cube = createPrefabEntity(ctx, "blue-cube");
+    // const cube = createPrefabEntity(ctx, "mixamo-test");
 
     addComponent(ctx.world, Networked, cube);
     // addComponent(state.world, NetworkTransform, cube);
@@ -113,13 +132,48 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
-    mat4.getRotation(worldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const direction = vec3.set(vec3.create(), 0, 0, -1);
-    vec3.transformQuat(direction, direction, worldQuat);
+    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    const direction = vec3.fromValues(0, 0, -1);
+    vec3.transformQuat(direction, direction, cameraWorldQuat);
     vec3.scale(direction, direction, 10);
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
     addChild(ctx.activeScene, cube);
+  }
+
+  const pickUp = input.actions.get("PickUp") as ButtonActionState;
+  if (pickUp.pressed) {
+    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+
+    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    const target = vec3.fromValues(0, 0, -1);
+    vec3.transformQuat(target, target, cameraWorldQuat);
+    vec3.scale(target, target, 100);
+
+    const source = mat4.getTranslation(vec3.create(), cameraMatrix);
+
+    const s: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(source);
+    const t: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(target);
+
+    const ray = new RAPIER.Ray(s, t);
+    const maxToi = 4.0;
+    const solid = true;
+    const groups = 0xfffffffff;
+
+    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
+    if (hit != null) {
+      // TODO: Create joint at hitPoint and attach the rigidbody to the joint, move joint around instead of object
+      // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
+      const eid = physics.handleMap.get(hit.colliderHandle);
+      console.log("Entity", eid, "hit by raycast");
+    }
+
+    // query all objects hit by the raycast
+    // physics.physicsWorld.intersectionsWithRay(ray, maxToi, solid, groups, (hit) => {
+    //   const hitPoint = ray.pointAt(hit.toi);
+    //   console.log("Collider", hit.colliderHandle, "hit at point", hitPoint, "with normal", hit.normal);
+    //   return true; // Return `false` instead if we want to stop searching for other hits.
+    // });
   }
 
   physics.drainContactEvents((eid1?: number, eid2?: number) => {

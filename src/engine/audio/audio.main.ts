@@ -378,26 +378,61 @@ async function onLoadAudioEmitter(
 
 export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioModule = getModule(ctx, AudioModule);
+  const { nodes } = audioModule;
 
   const audioStateView = getReadObjectBufferView(audioModule.audioStateTripleBuffer);
 
   const activeAudioListener = audioStateView.activeAudioListenerResourceId[0];
   const activeSceneResourceId = audioStateView.activeSceneResourceId[0];
 
+  disposeAudioEmitters(ctx, audioModule);
+
   updateMediaStreamSources(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
-
   updateGlobalAudioEmitters(ctx, audioModule, activeSceneResourceId);
+  updateNodeAudioEmitters(nodes, ctx, audioModule, activeAudioListener);
+}
 
-  for (let i = 0; i < audioModule.nodes.length; i++) {
-    const node = audioModule.nodes[i];
+function updateNodeAudioEmitters(
+  nodes: MainNode[],
+  ctx: IMainThreadContext,
+  audioModule: MainAudioModule,
+  activeAudioListener: number
+) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
     const nodeView = getReadObjectBufferView(node.audioNodeTripleBuffer);
 
     updateNodeAudioEmitter(ctx, audioModule, node, nodeView);
 
     if (node.resourceId === activeAudioListener) {
       setAudioListenerTransform(audioModule.context.listener, nodeView.worldMatrix);
+    }
+  }
+}
+
+function disposeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+  const { nodes } = audioModule;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    const nodeResource = getLocalResource<MainNode>(ctx, node.resourceId);
+
+    if (nodeResource && nodeResource.statusView[1]) {
+      if (node.audioEmitter) {
+        for (let i = 0; i < node.audioEmitter.sources.length; i++) {
+          const source = node.audioEmitter.sources[i];
+          source.gainNode.disconnect(node.audioEmitter.inputGain);
+          // TODO: add back-refs to emitters that the source is attached to. if emitters on source are empty then remove the source too
+        }
+        node.audioEmitter.sources = [];
+        node.audioEmitter = undefined;
+        node.emitterOutput = undefined;
+        node.emitterPannerNode?.disconnect();
+        node.emitterPannerNode = undefined;
+      }
+
+      nodes.splice(i, 1);
     }
   }
 }

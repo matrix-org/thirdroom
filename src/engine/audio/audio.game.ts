@@ -1,3 +1,5 @@
+import { addComponent, defineQuery, exitQuery, hasComponent } from "bitecs";
+
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
@@ -31,7 +33,7 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
-import { createResource } from "../resource/resource.game";
+import { createResource, disposeResource } from "../resource/resource.game";
 import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
@@ -372,6 +374,8 @@ export interface RemotePositionalAudioEmitter {
   set coneInnerAngle(value: number);
   get coneOuterAngle(): number;
   set coneOuterAngle(value: number);
+  get coneOuterGain(): number;
+  set coneOuterGain(value: number);
   get distanceModel(): AudioEmitterDistanceModel;
   set distanceModel(value: AudioEmitterDistanceModel);
   get maxDistance(): number;
@@ -464,6 +468,12 @@ export function createRemotePositionalAudioEmitter(
     set coneOuterAngle(value: number) {
       positionalAudioEmitterBuffer.coneOuterAngle[0] = value;
     },
+    get coneOuterGain(): number {
+      return positionalAudioEmitterBuffer.coneOuterGain[0];
+    },
+    set coneOuterGain(value: number) {
+      positionalAudioEmitterBuffer.coneOuterGain[0] = value;
+    },
     get distanceModel(): AudioEmitterDistanceModel {
       return positionalAudioEmitterBuffer.distanceModel[0];
     },
@@ -517,9 +527,44 @@ export function playAudio(audioSource: RemoteAudioSource, options?: PlayAudioOpt
   Object.assign(audioSource, options);
 }
 
+export const AudioEmitterComponent: Map<number, RemotePositionalAudioEmitter> = new Map();
+
+export function addAudioEmitterComponent(
+  ctx: GameState,
+  eid: number,
+  props?: PositionalAudioEmitterProps
+): RemotePositionalAudioEmitter {
+  if (hasComponent(ctx.world, AudioEmitterComponent, eid)) {
+    const audioEmitter = AudioEmitterComponent.get(eid)!;
+
+    if (props?.coneInnerAngle) audioEmitter.coneInnerAngle = props.coneInnerAngle;
+    if (props?.coneOuterAngle) audioEmitter.coneOuterAngle = props.coneOuterAngle;
+    if (props?.coneOuterGain) audioEmitter.coneOuterGain = props.coneOuterGain;
+    if (props?.distanceModel) audioEmitter.distanceModel = props.distanceModel;
+    if (props?.gain) audioEmitter.gain = props.gain;
+    if (props?.maxDistance) audioEmitter.maxDistance = props.maxDistance;
+    if (props?.output) audioEmitter.output = props.output;
+    if (props?.refDistance) audioEmitter.refDistance = props.refDistance;
+    if (props?.rolloffFactor) audioEmitter.rolloffFactor = props.rolloffFactor;
+    if (props?.sources) audioEmitter.sources = props.sources;
+
+    return audioEmitter;
+  }
+
+  const audioEmitter = createRemotePositionalAudioEmitter(ctx, props || {});
+
+  addComponent(ctx.world, AudioEmitterComponent, eid);
+  AudioEmitterComponent.set(eid, audioEmitter);
+
+  return audioEmitter;
+}
+
 /**
  * Systems
  */
+
+const remoteAudioEmitterQuery = defineQuery([AudioEmitterComponent]);
+const remoteAudioEmitterExitQuery = exitQuery(remoteAudioEmitterQuery);
 
 export function GameAudioSystem(ctx: GameState) {
   const audioModule = getModule(ctx, GameAudioModule);
@@ -572,4 +617,21 @@ export function GameAudioSystem(ctx: GameState) {
   }
 
   updateAudioRemoteScenes(audioModule.scenes);
+
+  disposeAudioEmitters(ctx);
+}
+
+function disposeAudioEmitters(ctx: GameState) {
+  const disposedEntities = remoteAudioEmitterExitQuery(ctx.world);
+
+  for (let i = 0; i < disposedEntities.length; i++) {
+    const eid = disposedEntities[i];
+
+    const remoteEmitter = RemoteNodeComponent.get(eid);
+
+    if (remoteEmitter) {
+      disposeResource(ctx, remoteEmitter.audioResourceId);
+      AudioEmitterComponent.delete(eid);
+    }
+  }
 }

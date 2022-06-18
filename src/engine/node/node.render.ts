@@ -109,8 +109,6 @@ export function updateLocalNodeResources(
     const nodeResource = getLocalResource<LocalNode>(ctx, node.resourceId);
 
     if (nodeResource && nodeResource.statusView[1]) {
-      const node = nodes[i];
-
       if (node.camera) {
         if (sceneResource && node.cameraObject) {
           sceneResource.scene.remove(node.cameraObject);
