@@ -134,11 +134,14 @@ const GrabComponent = defineComponent({
 const grabQuery = defineQuery([GrabComponent]);
 
 const GRAB_DISTANCE = 3;
+const GRAB_MAX_DISTANCE = 1;
 const GRAB_MOVE_SPEED = 10;
 const CUBE_THROW_FORCE = 10;
 
 const _direction = vec3.create();
 const _target = vec3.create();
+
+const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 export function GrabSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
@@ -159,7 +162,10 @@ export function GrabSystem(ctx: GameState) {
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
     // fire!
-    RigidBody.store.get(heldEntity)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
+    _impulse.x = direction[0];
+    _impulse.y = direction[1];
+    _impulse.z = direction[2];
+    RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
     // if holding an entity and grab is pressed again
   } else if (grabBtn.pressed && heldEntity) {
@@ -174,7 +180,7 @@ export function GrabSystem(ctx: GameState) {
 
     const target = vec3.set(_target, 0, 0, -1);
     vec3.transformQuat(target, target, cameraWorldQuat);
-    vec3.scale(target, target, GRAB_DISTANCE);
+    vec3.scale(target, target, GRAB_MAX_DISTANCE);
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
@@ -220,7 +226,10 @@ export function GrabSystem(ctx: GameState) {
 
     const body = RigidBody.store.get(heldEntity);
     if (body) {
-      body.setLinvel(new RAPIER.Vector3(target[0], target[1], target[2]), true);
+      _impulse.x = target[0];
+      _impulse.y = target[1];
+      _impulse.z = target[2];
+      body.setLinvel(_impulse, true);
     }
   }
 }
@@ -244,7 +253,11 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
-    RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
+
+    _impulse.x = direction[0];
+    _impulse.y = direction[1];
+    _impulse.z = direction[2];
+    RigidBody.store.get(cube)?.applyImpulse(_impulse, true);
 
     addChild(ctx.activeScene, cube);
   }
