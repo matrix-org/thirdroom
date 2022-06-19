@@ -1,13 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import {
-  addComponent,
-  defineComponent,
-  defineQuery,
-  // enterQuery,
-  // exitQuery,
-  removeComponent,
-  Types,
-} from "bitecs";
+import { addComponent, defineComponent, defineQuery, removeComponent, Types } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import {
@@ -32,7 +24,7 @@ import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
-import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
+import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
 import randomRange from "../engine/utils/randomRange";
 
@@ -129,10 +121,8 @@ const GraspComponent = defineComponent({
   joint: [Types.f32, 3],
 });
 const graspQuery = defineQuery([GraspComponent]);
-// const enterGraspQuery = enterQuery(graspQuery);
-// const exitGraspQuery = exitQuery(graspQuery);
 
-const MAX_GRASP_DIST = 10;
+const MAX_GRASP_DIST = 1;
 export function GraspSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
@@ -181,44 +171,33 @@ export function GraspSystem(ctx: GameState) {
     // });
   }
 
-  // TODO: joint grasping
-
-  // const enteredGraspedEntitites = enterGraspQuery(ctx.world);
-  // for (let i = 0; i < enteredGraspedEntitites.length; i++) {
-  //   const eid = enteredGraspedEntitites[i];
-  // const [x, y, z] = GraspComponent.joint[eid];
-  // const params = RAPIER.JointParams.ball({ x, y, z }, { x, y, z });
-  // const rb1 = physics.physicsWorld.getRigidBody(GraspComponent.handle1[eid]);
-  // const rb2 = physics.physicsWorld.getRigidBody(GraspComponent.handle2[eid]);
-  // const joint = physics.physicsWorld.createJoint(params, rb1, rb2);
-  // }
-
   for (let i = 0; i < graspedEntitites.length; i++) {
     const eid = graspedEntitites[i];
 
-    // const difference = vec3.create();
-    // vec3.sub(difference, Transform.position[eid], Transform.position[ctx.activeCamera]);
+    const graspedPosition = Transform.position[eid];
 
-    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[ctx.activeCamera]);
+    const target = vec3.create();
+    mat4.getTranslation(target, Transform.worldMatrix[ctx.activeCamera]);
 
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.fromValues(0, 0, 1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
     vec3.scale(direction, direction, 3);
 
-    vec3.sub(Transform.position[eid], Transform.position[eid], direction);
+    vec3.sub(target, target, direction);
+
+    vec3.sub(target, target, graspedPosition);
+
+    vec3.scale(target, target, 10);
 
     const body = RigidBody.store.get(eid);
     if (body) {
-      applyTransformToRigidBody(body, eid);
+      body.setLinvel(new RAPIER.Vector3(target[0], target[1], target[2]), true);
     }
   }
-
-  // const exitedGraspedEntitites = exitGraspQuery(ctx.world);
-  // for (let i = 0; i < exitedGraspedEntitites.length; i++) {
-  //   const eid = exitedGraspedEntitites[i];
-  // }
 }
+
+const CUBE_THROW_FORCE = 10;
 
 const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
@@ -240,7 +219,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.fromValues(0, 0, -1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
-    vec3.scale(direction, direction, 10);
+    vec3.scale(direction, direction, CUBE_THROW_FORCE);
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
     addChild(ctx.activeScene, cube);
