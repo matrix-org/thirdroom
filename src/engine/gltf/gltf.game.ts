@@ -12,6 +12,7 @@ import {
   createRemoteGlobalAudioEmitter,
   createRemotePositionalAudioEmitter,
   RemoteAudioData,
+  RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../audio/audio.game";
