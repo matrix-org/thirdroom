@@ -14,12 +14,13 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
-import { CubeSpawnerModule, CubeSpawnerSystem, GrabSystem } from "../plugins/CubeSpawner";
+import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { SpinnyCubeSystem, ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
+import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 
 export default defineConfig<GameState>({
   modules: [
@@ -34,6 +35,7 @@ export default defineConfig<GameState>({
     FirstPersonCameraModule,
     PhysicsCharacterControllerModule,
     CubeSpawnerModule,
+    GrabThrowModule,
     ThirdRoomModule,
   ],
   systems: [
@@ -46,7 +48,7 @@ export default defineConfig<GameState>({
     PlayerControllerSystem,
     PhysicsSystem,
     CubeSpawnerSystem,
-    GrabSystem,
+    GrabThrowSystem,
 
     SpinnyCubeSystem,
 
