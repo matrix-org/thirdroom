@@ -1,5 +1,13 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent } from "bitecs";
+import {
+  addComponent,
+  defineComponent,
+  defineQuery,
+  // enterQuery,
+  // exitQuery,
+  removeComponent,
+  Types,
+} from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 
 import {
@@ -24,7 +32,7 @@ import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
-import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
+import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
 import randomRange from "../engine/utils/randomRange";
 
@@ -102,8 +110,8 @@ export const CubeSpawnerActionMap: ActionMap = {
       ],
     },
     {
-      id: "pickUp",
-      path: "PickUp",
+      id: "grasp",
+      path: "Grasp",
       type: ActionType.Button,
       bindings: [
         {
@@ -114,6 +122,103 @@ export const CubeSpawnerActionMap: ActionMap = {
     },
   ],
 };
+
+const GraspComponent = defineComponent({
+  handle1: Types.ui32,
+  handle2: Types.ui32,
+  joint: [Types.f32, 3],
+});
+const graspQuery = defineQuery([GraspComponent]);
+// const enterGraspQuery = enterQuery(graspQuery);
+// const exitGraspQuery = exitQuery(graspQuery);
+
+const MAX_GRASP_DIST = 10;
+export function GraspSystem(ctx: GameState) {
+  const physics = getModule(ctx, PhysicsModule);
+  const input = getModule(ctx, InputModule);
+
+  const graspedEntitites = graspQuery(ctx.world);
+
+  const grasp = input.actions.get("Grasp") as ButtonActionState;
+  if (grasp.pressed && graspedEntitites.length) {
+    removeComponent(ctx.world, GraspComponent, graspedEntitites[0]);
+  } else if (grasp.pressed) {
+    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+
+    mat4.getRotation(cameraWorldQuat, cameraMatrix);
+    const target = vec3.fromValues(0, 0, -1);
+    vec3.transformQuat(target, target, cameraWorldQuat);
+    vec3.scale(target, target, MAX_GRASP_DIST);
+
+    const source = mat4.getTranslation(vec3.create(), cameraMatrix);
+
+    const s: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(source);
+    const t: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(target);
+
+    const ray = new RAPIER.Ray(s, t);
+    const maxToi = 4.0;
+    const solid = true;
+    const groups = 0xfffffffff;
+
+    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
+    if (hit != null) {
+      // TODO: Create joint at hitPoint and attach the rigidbody to the joint, move joint around instead of object
+      const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
+      const eid = physics.handleMap.get(hit.colliderHandle);
+      if (!eid) {
+        console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
+      } else if (ctx.entityPrefabMap.get(eid) === "blue-cube") {
+        addComponent(ctx.world, GraspComponent, eid);
+        GraspComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
+      }
+    }
+
+    // query all objects hit by the raycast
+    // physics.physicsWorld.intersectionsWithRay(ray, maxToi, solid, groups, (hit) => {
+    //   const hitPoint = ray.pointAt(hit.toi);
+    //   console.log("Collider", hit.colliderHandle, "hit at point", hitPoint, "with normal", hit.normal);
+    //   return true; // Return `false` instead if we want to stop searching for other hits.
+    // });
+  }
+
+  // TODO: joint grasping
+
+  // const enteredGraspedEntitites = enterGraspQuery(ctx.world);
+  // for (let i = 0; i < enteredGraspedEntitites.length; i++) {
+  //   const eid = enteredGraspedEntitites[i];
+  // const [x, y, z] = GraspComponent.joint[eid];
+  // const params = RAPIER.JointParams.ball({ x, y, z }, { x, y, z });
+  // const rb1 = physics.physicsWorld.getRigidBody(GraspComponent.handle1[eid]);
+  // const rb2 = physics.physicsWorld.getRigidBody(GraspComponent.handle2[eid]);
+  // const joint = physics.physicsWorld.createJoint(params, rb1, rb2);
+  // }
+
+  for (let i = 0; i < graspedEntitites.length; i++) {
+    const eid = graspedEntitites[i];
+
+    // const difference = vec3.create();
+    // vec3.sub(difference, Transform.position[eid], Transform.position[ctx.activeCamera]);
+
+    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[ctx.activeCamera]);
+
+    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    const direction = vec3.fromValues(0, 0, 1);
+    vec3.transformQuat(direction, direction, cameraWorldQuat);
+    vec3.scale(direction, direction, 3);
+
+    vec3.sub(Transform.position[eid], Transform.position[eid], direction);
+
+    const body = RigidBody.store.get(eid);
+    if (body) {
+      applyTransformToRigidBody(body, eid);
+    }
+  }
+
+  // const exitedGraspedEntitites = exitGraspQuery(ctx.world);
+  // for (let i = 0; i < exitedGraspedEntitites.length; i++) {
+  //   const eid = exitedGraspedEntitites[i];
+  // }
+}
 
 const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
@@ -139,41 +244,6 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
 
     addChild(ctx.activeScene, cube);
-  }
-
-  const pickUp = input.actions.get("PickUp") as ButtonActionState;
-  if (pickUp.pressed) {
-    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
-
-    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const target = vec3.fromValues(0, 0, -1);
-    vec3.transformQuat(target, target, cameraWorldQuat);
-    vec3.scale(target, target, 100);
-
-    const source = mat4.getTranslation(vec3.create(), cameraMatrix);
-
-    const s: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(source);
-    const t: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(target);
-
-    const ray = new RAPIER.Ray(s, t);
-    const maxToi = 4.0;
-    const solid = true;
-    const groups = 0xfffffffff;
-
-    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
-    if (hit != null) {
-      // TODO: Create joint at hitPoint and attach the rigidbody to the joint, move joint around instead of object
-      // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
-      const eid = physics.handleMap.get(hit.colliderHandle);
-      console.log("Entity", eid, "hit by raycast");
-    }
-
-    // query all objects hit by the raycast
-    // physics.physicsWorld.intersectionsWithRay(ray, maxToi, solid, groups, (hit) => {
-    //   const hitPoint = ray.pointAt(hit.toi);
-    //   console.log("Collider", hit.colliderHandle, "hit at point", hitPoint, "with normal", hit.normal);
-    //   return true; // Return `false` instead if we want to stop searching for other hits.
-    // });
   }
 
   physics.drainContactEvents((eid1?: number, eid2?: number) => {
