@@ -11,7 +11,6 @@ import {
   RemoteAudioEmitter,
 } from "../engine/audio/audio.game";
 import { Transform, addChild } from "../engine/component/transform";
-import { NOOP } from "../engine/config.common";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -166,7 +165,6 @@ export function GrabSystem(ctx: GameState) {
   } else if (grabBtn.pressed && heldEntity) {
     // release
     removeComponent(ctx.world, GrabComponent, heldEntity);
-    heldEntity = NOOP;
 
     // if grab is pressed
   } else if (grabBtn.pressed) {
@@ -202,7 +200,9 @@ export function GrabSystem(ctx: GameState) {
   }
 
   // if still holding entity, move towards the grab point
+  heldEntity = grabQuery(ctx.world)[0];
   if (heldEntity) {
+    console.log(heldEntity);
     const heldPosition = Transform.position[heldEntity];
 
     const target = _target;
