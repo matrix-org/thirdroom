@@ -7,6 +7,7 @@ import { GameState } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
+import { ResourceModule } from "../../src/engine/resource/resource.game";
 
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
@@ -61,12 +62,30 @@ export const mockPhysicsState = () => ({
   } as unknown as RAPIER.World,
 });
 
-export const mockRenderState = () => {
-  return {};
-};
+export const mockRenderState = () => ({
+  scenes: [],
+  textures: [],
+  unlitMaterials: [],
+  standardMaterials: [],
+  directionalLights: [],
+  pointLights: [],
+  spotLights: [],
+  perspectiveCameras: [],
+  orthographicCameras: [],
+  meshPrimitives: [],
+});
 
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
+});
+
+export const mockResourceModule = () => ({
+  resourceIdMap: new Map(),
+  resources: new Map(),
+  deferredResources: new Map(),
+  renderThreadMessageQueue: [],
+  renderThreadTransferList: [],
+  mainThreadMessageQueue: [],
 });
 
 export const mockGameState = () => {
@@ -87,6 +106,7 @@ export const mockGameState = () => {
   ctx.modules.set(PhysicsModule, mockPhysicsState());
   ctx.modules.set(NetworkModule, mockNetworkState());
   ctx.modules.set(RendererModule, mockRenderState());
+  ctx.modules.set(ResourceModule, mockResourceModule());
 
   registerDefaultPrefabs(ctx);
 

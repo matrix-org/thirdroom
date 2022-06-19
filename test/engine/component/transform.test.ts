@@ -10,6 +10,13 @@ import {
 } from "../../../src/engine/component/transform";
 import { NOOP } from "../../../src/engine/config.common";
 
+function resetComponentData() {
+  Transform.firstChild.fill(0);
+  Transform.prevSibling.fill(0);
+  Transform.nextSibling.fill(0);
+  Transform.parent.fill(0);
+}
+
 describe("Transform Unit Tests", function () {
   describe("scene graph hierarchy", function () {
     describe("parenting", function () {
@@ -52,11 +59,8 @@ describe("Transform Unit Tests", function () {
       });
 
       describe("#addChild()", function () {
-        beforeEach(function () {
-          Transform.firstChild.fill(0);
-          Transform.prevSibling.fill(0);
-          Transform.nextSibling.fill(0);
-        });
+        beforeEach(resetComponentData);
+
         test("should add one child", function () {
           const parent = 1;
           const child = 2;
@@ -86,6 +90,8 @@ describe("Transform Unit Tests", function () {
       });
 
       describe("#removeChild", function () {
+        beforeEach(resetComponentData);
+
         test("should remove one child", function () {
           const parent = 1;
           const child = 2;
