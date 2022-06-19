@@ -202,7 +202,6 @@ export function GrabSystem(ctx: GameState) {
   // if still holding entity, move towards the grab point
   heldEntity = grabQuery(ctx.world)[0];
   if (heldEntity) {
-    console.log(heldEntity);
     const heldPosition = Transform.position[heldEntity];
 
     const target = _target;
