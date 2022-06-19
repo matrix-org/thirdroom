@@ -111,18 +111,17 @@ export function createInteractionGroup(groups: number, mask: number) {
   return (groups << 16) | mask;
 }
 
-export const PhysicsCharacterControllerGroup = 0x0000_0001;
 export const CharacterPhysicsGroup = 0b1;
 export const CharacterInteractionGroup = createInteractionGroup(CharacterPhysicsGroup, PhysicsGroups.All);
 export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~CharacterPhysicsGroup);
 
 const obj = new Object3D();
 
-const walkSpeed = 50;
-const drag = 10;
-const maxWalkSpeed = 100;
+const walkSpeed = 100;
+const drag = 20;
+const maxWalkSpeed = 200;
 const jumpForce = 10;
-const inAirModifier = 0.5;
+const inAirModifier = 0.9;
 const inAirDrag = 10;
 const crouchModifier = 0.7;
 const crouchJumpModifier = 1.5;
@@ -144,7 +143,7 @@ let lastSlideTime = 0;
 
 const colliderShape = new RAPIER.Capsule(0.5, 0.5);
 
-const shapeTranslationOffset = new Vector3(0, 0.8, 0);
+const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
 export const PlayerRig = defineComponent();
@@ -188,7 +187,12 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
+  colliderDesc.setCollisionGroups(CharacterInteractionGroup);
+  colliderDesc.setSolverGroups(CharacterInteractionGroup);
+  // colliderDesc.setTranslation(0, -1, 0);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(world, playerRig, rigidBody);
 

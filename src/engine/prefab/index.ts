@@ -15,6 +15,7 @@ import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
+// import { inflateGLTFNode } from "../gltf/gltf.game";
 // import { inflateGLTFScene, loadGLTFResource } from "../gltf/gltf.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
@@ -106,6 +107,8 @@ export const createCube = (state: GameState, material?: RemoteMaterial) => {
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  colliderDesc.setCollisionGroups(0xffff_ffff);
+  colliderDesc.setSolverGroups(0xffff_ffff);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
@@ -148,6 +151,22 @@ export function createDirectionalLight(state: GameState, parentEid?: number) {
   return eid;
 }
 
+export function createGLTFEntity(ctx: GameState, uri: string) {
+  // const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+  // TODO
+  const eid = addEntity(ctx.world);
+  // inflateGLTFNode(ctx, eid, uri);
+
+  // const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  // const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  // const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  // physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  // addRigidBody(ctx.world, eid, rigidBody);
+
+  return eid;
+}
+
 /* Prefab Functions */
 
 export interface PrefabTemplate {
@@ -176,7 +195,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-export function createContainerizedAvatar(ctx: GameState, path: string) {
+export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
@@ -184,7 +203,7 @@ export function createContainerizedAvatar(ctx: GameState, path: string) {
 
   // TODO
   const eid = addEntity(ctx.world);
-  // loadGLTFNode();
+  // inflateGLTFNode(ctx, eid, uri);
 
   Transform.position[eid].set([0, -0.5, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
