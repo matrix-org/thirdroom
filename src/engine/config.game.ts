@@ -14,7 +14,7 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
-import { CubeSpawnerModule, CubeSpawnerSystem, GraspSystem } from "../plugins/CubeSpawner";
+import { CubeSpawnerModule, CubeSpawnerSystem, GrabSystem } from "../plugins/CubeSpawner";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { SpinnyCubeSystem, ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
@@ -46,7 +46,7 @@ export default defineConfig<GameState>({
     PlayerControllerSystem,
     PhysicsSystem,
     CubeSpawnerSystem,
-    GraspSystem,
+    GrabSystem,
 
     SpinnyCubeSystem,
 

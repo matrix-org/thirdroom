@@ -11,6 +11,7 @@ import {
   RemoteAudioEmitter,
 } from "../engine/audio/audio.game";
 import { Transform, addChild } from "../engine/component/transform";
+import { NOOP } from "../engine/config.common";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -102,8 +103,8 @@ export const CubeSpawnerActionMap: ActionMap = {
       ],
     },
     {
-      id: "grasp",
-      path: "Grasp",
+      id: "grab",
+      path: "Grab",
       type: ActionType.Button,
       bindings: [
         {
@@ -126,44 +127,56 @@ export const CubeSpawnerActionMap: ActionMap = {
   ],
 };
 
-const GraspComponent = defineComponent({
+const GrabComponent = defineComponent({
   handle1: Types.ui32,
   handle2: Types.ui32,
   joint: [Types.f32, 3],
 });
-const graspQuery = defineQuery([GraspComponent]);
+const grabQuery = defineQuery([GrabComponent]);
 
-const GRASP_DISTANCE = 3;
-const GRASP_MOVE_SPEED = 10;
+const GRAB_DISTANCE = 3;
+const GRAB_MOVE_SPEED = 10;
 const CUBE_THROW_FORCE = 10;
 
-export function GraspSystem(ctx: GameState) {
+const _direction = vec3.create();
+const _target = vec3.create();
+
+export function GrabSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
 
-  let graspedEntitites = graspQuery(ctx.world);
+  let heldEntity = grabQuery(ctx.world)[0];
 
-  const graspBtn = input.actions.get("Grasp") as ButtonActionState;
+  const grabBtn = input.actions.get("Grab") as ButtonActionState;
   const throwBtn = input.actions.get("Throw") as ButtonActionState;
-  if (throwBtn.pressed && graspedEntitites[0]) {
-    const eid = graspedEntitites[0];
-    removeComponent(ctx.world, GraspComponent, eid);
+
+  // if holding and entity and throw is pressed
+  if (heldEntity && throwBtn.pressed) {
+    removeComponent(ctx.world, GrabComponent, heldEntity);
 
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const direction = vec3.fromValues(0, 0, -1);
+    const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
-    RigidBody.store.get(eid)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
-  } else if (graspBtn.pressed && graspedEntitites[0]) {
-    const eid = graspedEntitites[0];
-    removeComponent(ctx.world, GraspComponent, eid);
-  } else if (graspBtn.pressed) {
-    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
 
+    // fire!
+    RigidBody.store.get(heldEntity)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
+
+    // if holding an entity and grab is pressed again
+  } else if (grabBtn.pressed && heldEntity) {
+    // release
+    removeComponent(ctx.world, GrabComponent, heldEntity);
+    heldEntity = NOOP;
+
+    // if grab is pressed
+  } else if (grabBtn.pressed) {
+    // raycast outward from camera
+    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
     mat4.getRotation(cameraWorldQuat, cameraMatrix);
-    const target = vec3.fromValues(0, 0, -1);
+
+    const target = vec3.set(_target, 0, 0, -1);
     vec3.transformQuat(target, target, cameraWorldQuat);
-    vec3.scale(target, target, GRASP_DISTANCE);
+    vec3.scale(target, target, GRAB_DISTANCE);
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
@@ -182,34 +195,31 @@ export function GraspSystem(ctx: GameState) {
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
       } else if (ctx.entityPrefabMap.get(eid) === "blue-cube") {
-        addComponent(ctx.world, GraspComponent, eid);
-        GraspComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
+        addComponent(ctx.world, GrabComponent, eid);
+        GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
       }
     }
   }
 
-  // note: must call the query again to process any removals that occurred above
-  graspedEntitites = graspQuery(ctx.world);
-  for (let i = 0; i < graspedEntitites.length; i++) {
-    const eid = graspedEntitites[0];
+  // if still holding entity, move towards the grab point
+  if (heldEntity) {
+    const heldPosition = Transform.position[heldEntity];
 
-    const graspedPosition = Transform.position[eid];
-
-    const target = vec3.create();
+    const target = _target;
     mat4.getTranslation(target, Transform.worldMatrix[ctx.activeCamera]);
 
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const direction = vec3.fromValues(0, 0, 1);
+    const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
-    vec3.scale(direction, direction, GRASP_DISTANCE);
+    vec3.scale(direction, direction, GRAB_DISTANCE);
 
     vec3.sub(target, target, direction);
 
-    vec3.sub(target, target, graspedPosition);
+    vec3.sub(target, target, heldPosition);
 
-    vec3.scale(target, target, GRASP_MOVE_SPEED);
+    vec3.scale(target, target, GRAB_MOVE_SPEED);
 
-    const body = RigidBody.store.get(eid);
+    const body = RigidBody.store.get(heldEntity);
     if (body) {
       body.setLinvel(new RAPIER.Vector3(target[0], target[1], target[2]), true);
     }
@@ -232,7 +242,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const direction = vec3.fromValues(0, 0, -1);
+    const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
     RigidBody.store.get(cube)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
