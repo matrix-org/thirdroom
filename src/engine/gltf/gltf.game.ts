@@ -12,7 +12,6 @@ import {
   createRemoteGlobalAudioEmitter,
   createRemotePositionalAudioEmitter,
   RemoteAudioData,
-  RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../audio/audio.game";
@@ -137,6 +136,50 @@ export async function inflateGLTFScene(
   }
 }
 
+export async function inflateGLTFNode(ctx: GameState, sceneEid: number, uri: string): Promise<void> {
+  addTransformComponent(ctx.world, sceneEid);
+
+  const resource = await loadGLTFResource(uri);
+
+  if (!resource.root.scenes || resource.root.scene === undefined) {
+    throw new Error(`Root scene index not found`);
+  }
+
+  const node = resource.root.scenes[resource.root.scene];
+
+  const nodeInflators: Function[] = [];
+
+  let nodePromise: Promise<void[]> | undefined;
+
+  if (node.nodes) {
+    nodePromise = Promise.all(
+      node.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid))
+    );
+  }
+
+  // const { audioEmitters } =
+  await promiseObject({
+    nodePromise,
+    // audioEmitters: node.extensions?.KHR_audio?.emitters
+    //   ? (Promise.all(
+    //       node.extensions.KHR_audio.emitters.map((emitterIndex: number) =>
+    //         loadGLTFAudioEmitter(ctx, resource, emitterIndex)
+    //       )
+    //     ) as Promise<RemoteGlobalAudioEmitter[]>)
+    //   : undefined,
+  });
+
+  updateMatrixWorld(sceneEid);
+
+  for (const inflator of nodeInflators) {
+    inflator();
+  }
+
+  addRemoteNodeComponent(ctx, sceneEid, {
+    // audioEmitters,
+  });
+}
+
 async function _inflateGLTFNode(
   ctx: GameState,
   resource: GLTFResource,
@@ -249,6 +292,9 @@ export function addTrimesh(ctx: GameState, nodeEid: number) {
     }
 
     const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
+
+    colliderDesc.setCollisionGroups(0xf000_000f);
+    colliderDesc.setSolverGroups(0xf000_000f);
 
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 

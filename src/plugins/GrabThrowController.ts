@@ -121,7 +121,7 @@ export function GrabThrowSystem(ctx: GameState) {
     const ray = new RAPIER.Ray(s, t);
     const maxToi = 4.0;
     const solid = true;
-    const groups = 0xfffffffff;
+    const groups = 0x0ff0_0ff0;
 
     const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
     if (hit != null) {
@@ -129,7 +129,7 @@ export function GrabThrowSystem(ctx: GameState) {
       const eid = physics.handleMap.get(hit.colliderHandle);
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
-      } else if (ctx.entityPrefabMap.get(eid) === "blue-cube") {
+      } else {
         addComponent(ctx.world, GrabComponent, eid);
         GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
       }

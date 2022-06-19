@@ -15,8 +15,7 @@ import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
-// import { inflateGLTFNode } from "../gltf/gltf.game";
-// import { inflateGLTFScene, loadGLTFResource } from "../gltf/gltf.game";
+import { inflateGLTFNode } from "../gltf/gltf.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
   const geometry = new BoxBufferGeometry();
@@ -156,7 +155,7 @@ export function createGLTFEntity(ctx: GameState, uri: string) {
 
   // TODO
   const eid = addEntity(ctx.world);
-  // inflateGLTFNode(ctx, eid, uri);
+  inflateGLTFNode(ctx, eid, uri);
 
   // const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   // const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);

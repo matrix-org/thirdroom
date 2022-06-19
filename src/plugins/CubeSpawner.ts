@@ -12,6 +12,7 @@ import {
 } from "../engine/audio/audio.game";
 import { Transform, addChild } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
+import { createRemoteImage } from "../engine/image/image.game";
 import {
   ActionMap,
   ActionType,
@@ -26,6 +27,7 @@ import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
+import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
 
 type CubeSpawnerModuleState = {
@@ -42,16 +44,17 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
   init(ctx) {
     const module = getModule(ctx, CubeSpawnerModule);
 
+    const image = createRemoteImage(ctx, "/image/crate.gif");
+    const texture = createRemoteTexture(ctx, image);
+
     const cubeMaterial = createRemoteStandardMaterial(ctx, {
-      baseColorFactor: [0, 0, 1, 1.0],
-      roughnessFactor: 0.8,
-      metallicFactor: 0.8,
+      baseColorTexture: texture,
     });
 
     const hitAudioData = createRemoteAudioData(ctx, "/audio/hit.wav");
 
     registerPrefab(ctx, {
-      name: "blue-cube",
+      name: "crate",
       create: () => {
         const eid = createCube(ctx, cubeMaterial);
 
@@ -118,7 +121,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
   const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
   if (spawnCube.pressed) {
-    const cube = createPrefabEntity(ctx, "blue-cube");
+    const cube = createPrefabEntity(ctx, "crate");
 
     addComponent(ctx.world, Networked, cube);
     addComponent(ctx.world, Owned, cube);
