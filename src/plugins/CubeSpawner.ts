@@ -152,7 +152,6 @@ export function GraspSystem(ctx: GameState) {
 
     const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
     if (hit != null) {
-      // TODO: Create joint at hitPoint and attach the rigidbody to the joint, move joint around instead of object
       const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
       const eid = physics.handleMap.get(hit.colliderHandle);
       if (!eid) {
