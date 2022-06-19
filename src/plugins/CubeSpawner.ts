@@ -112,6 +112,17 @@ export const CubeSpawnerActionMap: ActionMap = {
         },
       ],
     },
+    {
+      id: "throw",
+      path: "Throw",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Mouse/Right",
+        },
+      ],
+    },
   ],
 };
 
@@ -130,12 +141,23 @@ export function GraspSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
 
-  const graspedEntitites = graspQuery(ctx.world);
+  let graspedEntitites = graspQuery(ctx.world);
 
-  const grasp = input.actions.get("Grasp") as ButtonActionState;
-  if (grasp.pressed && graspedEntitites.length) {
-    removeComponent(ctx.world, GraspComponent, graspedEntitites[0]);
-  } else if (grasp.pressed) {
+  const graspBtn = input.actions.get("Grasp") as ButtonActionState;
+  const throwBtn = input.actions.get("Throw") as ButtonActionState;
+  if (throwBtn.pressed && graspedEntitites[0]) {
+    const eid = graspedEntitites[0];
+    removeComponent(ctx.world, GraspComponent, eid);
+
+    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    const direction = vec3.fromValues(0, 0, -1);
+    vec3.transformQuat(direction, direction, cameraWorldQuat);
+    vec3.scale(direction, direction, CUBE_THROW_FORCE);
+    RigidBody.store.get(eid)?.applyImpulse(new RAPIER.Vector3(direction[0], direction[1], direction[2]), true);
+  } else if (graspBtn.pressed && graspedEntitites[0]) {
+    const eid = graspedEntitites[0];
+    removeComponent(ctx.world, GraspComponent, eid);
+  } else if (graspBtn.pressed) {
     const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
 
     mat4.getRotation(cameraWorldQuat, cameraMatrix);
@@ -166,8 +188,10 @@ export function GraspSystem(ctx: GameState) {
     }
   }
 
+  // note: must call the query again to process any removals that occurred above
+  graspedEntitites = graspQuery(ctx.world);
   for (let i = 0; i < graspedEntitites.length; i++) {
-    const eid = graspedEntitites[i];
+    const eid = graspedEntitites[0];
 
     const graspedPosition = Transform.position[eid];
 
