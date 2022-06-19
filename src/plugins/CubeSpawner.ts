@@ -122,7 +122,10 @@ const GraspComponent = defineComponent({
 });
 const graspQuery = defineQuery([GraspComponent]);
 
-const MAX_GRASP_DIST = 1;
+const GRASP_DISTANCE = 3;
+const GRASP_MOVE_SPEED = 10;
+const CUBE_THROW_FORCE = 10;
+
 export function GraspSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
@@ -138,7 +141,7 @@ export function GraspSystem(ctx: GameState) {
     mat4.getRotation(cameraWorldQuat, cameraMatrix);
     const target = vec3.fromValues(0, 0, -1);
     vec3.transformQuat(target, target, cameraWorldQuat);
-    vec3.scale(target, target, MAX_GRASP_DIST);
+    vec3.scale(target, target, GRASP_DISTANCE);
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
@@ -161,13 +164,6 @@ export function GraspSystem(ctx: GameState) {
         GraspComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
       }
     }
-
-    // query all objects hit by the raycast
-    // physics.physicsWorld.intersectionsWithRay(ray, maxToi, solid, groups, (hit) => {
-    //   const hitPoint = ray.pointAt(hit.toi);
-    //   console.log("Collider", hit.colliderHandle, "hit at point", hitPoint, "with normal", hit.normal);
-    //   return true; // Return `false` instead if we want to stop searching for other hits.
-    // });
   }
 
   for (let i = 0; i < graspedEntitites.length; i++) {
@@ -181,13 +177,13 @@ export function GraspSystem(ctx: GameState) {
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.fromValues(0, 0, 1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
-    vec3.scale(direction, direction, 3);
+    vec3.scale(direction, direction, GRASP_DISTANCE);
 
     vec3.sub(target, target, direction);
 
     vec3.sub(target, target, graspedPosition);
 
-    vec3.scale(target, target, 10);
+    vec3.scale(target, target, GRASP_MOVE_SPEED);
 
     const body = RigidBody.store.get(eid);
     if (body) {
@@ -195,8 +191,6 @@ export function GraspSystem(ctx: GameState) {
     }
   }
 }
-
-const CUBE_THROW_FORCE = 10;
 
 const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
@@ -207,10 +201,8 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
   if (spawnCube.pressed) {
     const cube = createPrefabEntity(ctx, "blue-cube");
-    // const cube = createPrefabEntity(ctx, "mixamo-test");
 
     addComponent(ctx.world, Networked, cube);
-    // addComponent(state.world, NetworkTransform, cube);
     addComponent(ctx.world, Owned, cube);
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
