@@ -42,6 +42,17 @@ export const GrabThrowActionMapp: ActionMap = {
       ],
     },
     {
+      id: "grab2",
+      path: "Grab2",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyE",
+        },
+      ],
+    },
+    {
       id: "throw",
       path: "Throw",
       type: ActionType.Button,
@@ -49,6 +60,17 @@ export const GrabThrowActionMapp: ActionMap = {
         {
           type: BindingType.Button,
           path: "Mouse/Right",
+        },
+      ],
+    },
+    {
+      id: "throw2",
+      path: "Throw2",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Mouse/Left",
         },
       ],
     },
@@ -81,10 +103,15 @@ export function GrabThrowSystem(ctx: GameState) {
   let heldEntity = grabQuery(ctx.world)[0];
 
   const grabBtn = input.actions.get("Grab") as ButtonActionState;
+  const grabBtn2 = input.actions.get("Grab2") as ButtonActionState;
   const throwBtn = input.actions.get("Throw") as ButtonActionState;
+  const throwBtn2 = input.actions.get("Throw2") as ButtonActionState;
+
+  const grabPressed = grabBtn.pressed || grabBtn2.pressed;
+  const throwPressed = throwBtn.pressed || throwBtn2.pressed;
 
   // if holding and entity and throw is pressed
-  if (heldEntity && throwBtn.pressed) {
+  if (heldEntity && throwPressed) {
     removeComponent(ctx.world, GrabComponent, heldEntity);
 
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
@@ -99,12 +126,12 @@ export function GrabThrowSystem(ctx: GameState) {
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
     // if holding an entity and grab is pressed again
-  } else if (grabBtn.pressed && heldEntity) {
+  } else if (grabPressed && heldEntity) {
     // release
     removeComponent(ctx.world, GrabComponent, heldEntity);
 
     // if grab is pressed
-  } else if (grabBtn.pressed) {
+  } else if (grabPressed) {
     // raycast outward from camera
     const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
     mat4.getRotation(_cameraWorldQuat, cameraMatrix);

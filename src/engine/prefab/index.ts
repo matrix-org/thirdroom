@@ -1,6 +1,6 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
-import { BoxBufferGeometry } from "three";
+import { BoxBufferGeometry, SphereGeometry } from "three";
 
 import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } from "../component/transform";
@@ -17,8 +17,8 @@ import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
 import { inflateGLTFScene } from "../gltf/gltf.game";
 
-export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
-  const geometry = new BoxBufferGeometry();
+export const addCubeMesh = (state: GameState, eid: number, size: number, material?: RemoteMaterial) => {
+  const geometry = new BoxBufferGeometry(size, size, size);
   const indicesArr = geometry.index!.array as Uint16Array;
   const posArr = geometry.attributes.position.array as Float32Array;
   const normArr = geometry.attributes.normal.array as Float32Array;
@@ -85,7 +85,75 @@ export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMate
   });
 };
 
-export const createCube = (state: GameState, material?: RemoteMaterial) => {
+export const addSphereMesh = (state: GameState, eid: number, radius: number, material?: RemoteMaterial) => {
+  const geometry = new SphereGeometry(radius / 2);
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
+
+  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
+  let cursor = 0;
+  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
+  indices.set(indicesArr);
+  cursor += indicesArr.byteLength;
+  const position = new Float32Array(buffer, cursor, posArr.length);
+  position.set(posArr);
+  cursor += posArr.byteLength;
+  const normal = new Float32Array(buffer, cursor, normArr.length);
+  normal.set(normArr);
+  cursor += normArr.byteLength;
+  const uv = new Float32Array(buffer, cursor, uvArr.length);
+  uv.set(uvArr);
+
+  const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
+
+  const remoteMesh = createRemoteMesh(state, {
+    indices: createRemoteAccessor(state, {
+      type: AccessorType.SCALAR,
+      componentType: AccessorComponentType.Uint16,
+      bufferView,
+      count: indices.length,
+    }),
+    attributes: {
+      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: position.byteOffset,
+        count: position.length / 3,
+      }),
+      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: normal.byteOffset,
+        count: normal.length / 3,
+        normalized: true,
+      }),
+      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
+        type: AccessorType.VEC2,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: uv.byteOffset,
+        count: uv.length / 2,
+      }),
+    },
+    material:
+      material ||
+      createRemoteStandardMaterial(state, {
+        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+        roughnessFactor: 0.8,
+        metallicFactor: 0.8,
+      }),
+  });
+
+  addRemoteNodeComponent(state, eid, {
+    mesh: remoteMesh,
+  });
+};
+
+export const createCube = (state: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
@@ -94,6 +162,7 @@ export const createCube = (state: GameState, material?: RemoteMaterial) => {
   addCubeMesh(
     state,
     eid,
+    size,
     material ||
       createRemoteStandardMaterial(state, {
         baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
@@ -105,9 +174,11 @@ export const createCube = (state: GameState, material?: RemoteMaterial) => {
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
-  colliderDesc.setCollisionGroups(0xffff_ffff);
-  colliderDesc.setSolverGroups(0xffff_ffff);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
+    .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+    .setCollisionGroups(0xffff_ffff)
+    .setSolverGroups(0xffff_ffff);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
