@@ -1,4 +1,4 @@
-import { addEntity, defineComponent, defineQuery, removeEntity } from "bitecs";
+import { addEntity, defineQuery, removeEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -6,7 +6,6 @@ import {
   addChild,
   addTransformComponent,
   setEulerFromQuaternion,
-  setQuaternionFromEuler,
   Transform,
   traverse,
 } from "../../engine/component/transform";
@@ -15,45 +14,22 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
-//import { waitForRemoteResource } from "../../engine/resource/resource.game";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
-//import { addGLTFLoaderComponent } from "../../gltf/gltf.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-// import { createContainerizedAvatar, registerPrefab } from "../../engine/prefab";
-// import { createRemoteStandardMaterial } from "../../engine/material/material.game";
-// import {
-//   createRemoteAudio,
-//   createRemoteAudioSource,
-//   createRemotePositionalAudioEmitter,
-// } from "../../engine/audio/audio.game";
-// import { RemoteNodeComponent } from "../../engine/node/node.game";
+import {
+  // createGLTFEntity,
+  createContainerizedAvatar,
+  registerPrefab,
+} from "../../engine/prefab";
 
 type ThirdRoomModuleState = {};
-
-const SpinnyCube = defineComponent();
-
-const spinnyCubeQuery = defineQuery([SpinnyCube]);
-
-export function SpinnyCubeSystem(ctx: GameState) {
-  const entities = spinnyCubeQuery(ctx.world);
-
-  for (let i = 0; i < entities.length; i++) {
-    const eid = entities[i];
-    const quaternion = Transform.quaternion[eid];
-    const rotation = Transform.rotation[eid];
-
-    rotation[1] += ctx.dt * 0.5;
-
-    setQuaternionFromEuler(quaternion, rotation);
-  }
-}
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
@@ -161,19 +137,19 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     //     ),
     // });
 
-    // registerPrefab(ctx, {
-    //   name: "mixamo-x",
-    //   create: () => {
-    //     return createContainerizedAvatar(ctx, "/gltf/mixamo-x.glb");
-    //   },
-    // });
+    registerPrefab(ctx, {
+      name: "mixamo-x",
+      create: () => {
+        return createContainerizedAvatar(ctx, "/gltf/mixamo-x-noanim.glb");
+      },
+    });
 
-    // registerPrefab(ctx, {
-    //   name: "mixamo-y",
-    //   create: () => {
-    //     return createContainerizedAvatar(ctx, "/gltf/mixamo-y.glb");
-    //   },
-    // });
+    registerPrefab(ctx, {
+      name: "mixamo-y",
+      create: () => {
+        return createContainerizedAvatar(ctx, "/gltf/mixamo-y-noanim.glb");
+      },
+    });
 
     // await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
 

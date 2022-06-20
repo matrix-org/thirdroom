@@ -117,9 +117,9 @@ export const CharacterShapecastInteractionGroup = createInteractionGroup(Physics
 
 const obj = new Object3D();
 
-const walkSpeed = 100;
-const drag = 20;
-const maxWalkSpeed = 200;
+const walkSpeed = 50;
+const drag = 10;
+const maxWalkSpeed = 100;
 const jumpForce = 10;
 const inAirModifier = 0.5;
 const inAirDrag = 8;
@@ -200,7 +200,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addCameraPitchTargetComponent(world, camera);
   addChild(playerRig, camera);
   const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.6;
+  cameraPosition[1] = 1.2;
 
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   addComponent(world, Owned, playerRig);

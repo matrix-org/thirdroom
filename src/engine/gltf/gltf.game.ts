@@ -85,7 +85,9 @@ export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  sceneIndex?: number
+  sceneIndex?: number,
+  // TODO: temporary hack for spawning avatars without static trimesh
+  createTrimesh = true
 ): Promise<void> {
   addTransformComponent(ctx.world, sceneEid);
 
@@ -107,7 +109,7 @@ export async function inflateGLTFScene(
 
   if (scene.nodes) {
     nodePromise = Promise.all(
-      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid))
+      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh))
     );
   }
 
@@ -137,56 +139,13 @@ export async function inflateGLTFScene(
   }
 }
 
-export async function inflateGLTFNode(ctx: GameState, sceneEid: number, uri: string): Promise<void> {
-  addTransformComponent(ctx.world, sceneEid);
-
-  const resource = await loadGLTFResource(uri);
-
-  if (!resource.root.scenes || resource.root.scene === undefined) {
-    throw new Error(`Root scene index not found`);
-  }
-
-  const node = resource.root.scenes[resource.root.scene];
-
-  const nodeInflators: Function[] = [];
-
-  let nodePromise: Promise<void[]> | undefined;
-
-  if (node.nodes) {
-    nodePromise = Promise.all(
-      node.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid))
-    );
-  }
-
-  // const { audioEmitters } =
-  await promiseObject({
-    nodePromise,
-    // audioEmitters: node.extensions?.KHR_audio?.emitters
-    //   ? (Promise.all(
-    //       node.extensions.KHR_audio.emitters.map((emitterIndex: number) =>
-    //         loadGLTFAudioEmitter(ctx, resource, emitterIndex)
-    //       )
-    //     ) as Promise<RemoteGlobalAudioEmitter[]>)
-    //   : undefined,
-  });
-
-  updateMatrixWorld(sceneEid);
-
-  for (const inflator of nodeInflators) {
-    inflator();
-  }
-
-  addRemoteNodeComponent(ctx, sceneEid, {
-    // audioEmitters,
-  });
-}
-
 async function _inflateGLTFNode(
   ctx: GameState,
   resource: GLTFResource,
   nodeInflators: Function[],
   nodeIndex: number,
-  parentEid?: number
+  parentEid?: number,
+  createTrimesh = true
 ) {
   const nodeEid = addEntity(ctx.world);
 
@@ -224,7 +183,9 @@ async function _inflateGLTFNode(
 
   if (node.children && node.children.length) {
     await Promise.all(
-      node.children.map((childIndex: number) => _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid))
+      node.children.map((childIndex: number) =>
+        _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid, createTrimesh)
+      )
     );
   }
 
@@ -249,7 +210,7 @@ async function _inflateGLTFNode(
         });
       }
 
-      if (results.mesh) {
+      if (results.mesh && createTrimesh) {
         addTrimesh(ctx, nodeEid);
       }
 

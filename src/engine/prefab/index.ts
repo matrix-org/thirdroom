@@ -15,7 +15,7 @@ import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
-import { inflateGLTFNode } from "../gltf/gltf.game";
+import { inflateGLTFScene } from "../gltf/gltf.game";
 
 export const addCubeMesh = (state: GameState, eid: number, material?: RemoteMaterial) => {
   const geometry = new BoxBufferGeometry();
@@ -151,18 +151,8 @@ export function createDirectionalLight(state: GameState, parentEid?: number) {
 }
 
 export function createGLTFEntity(ctx: GameState, uri: string) {
-  // const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-  // TODO
   const eid = addEntity(ctx.world);
-  inflateGLTFNode(ctx, eid, uri);
-
-  // const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-  // const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  // const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
-  // physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  // addRigidBody(ctx.world, eid, rigidBody);
-
+  inflateGLTFScene(ctx, eid, uri);
   return eid;
 }
 
@@ -200,11 +190,10 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const container = addEntity(ctx.world);
   addTransformComponent(ctx.world, container);
 
-  // TODO
   const eid = addEntity(ctx.world);
-  // inflateGLTFNode(ctx, eid, uri);
+  inflateGLTFScene(ctx, eid, uri, undefined, false);
 
-  Transform.position[eid].set([0, -0.5, 0]);
+  Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
@@ -213,7 +202,12 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+
+  // TODO: collision groups
+  // colliderDesc.setCollisionGroups(0x0000_fff0);
+  // colliderDesc.setSolverGroups(0x0000_fff0);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx.world, container, rigidBody);
 

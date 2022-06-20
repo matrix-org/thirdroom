@@ -77,6 +77,7 @@ export interface GameNetworkState {
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
   cursorView: CursorView;
+  addPlayerResourceQueue: [string, number][];
 }
 
 export enum NetworkAction {
@@ -117,6 +118,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     removedLocalIds: [],
     messageHandlers: {},
     cursorView: createCursorView(),
+    addPlayerResourceQueue: [],
   }),
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
@@ -663,19 +665,21 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     network.peerIdToEntityId.set(peerId, peid);
     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
 
-    const remoteNode = RemoteNodeComponent.get(peid);
+    network.addPlayerResourceQueue.push([peerId, peid]);
 
-    if (!remoteNode) {
-      throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
-    }
+    // const remoteNode = RemoteNodeComponent.get(peid);
 
-    remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
-      sources: [
-        createRemoteMediaStreamSource(state, {
-          stream: createRemoteMediaStream(state, peerId),
-        }),
-      ],
-    });
+    // if (!remoteNode) {
+    //   throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
+    // }
+
+    // remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+    //   sources: [
+    //     createRemoteMediaStreamSource(state, {
+    //       stream: createRemoteMediaStream(state, peerId),
+    //     }),
+    //   ],
+    // });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
   }
@@ -948,4 +952,21 @@ const registerInboundMessageHandler = (network: GameNetworkState, type: number, 
 
 export function InboundNetworkSystem(state: GameState) {
   processNetworkMessages(state);
+
+  const network = getModule(state, NetworkModule);
+
+  for (let i = network.addPlayerResourceQueue.length - 1; i >= 0; i--) {
+    const [peerId, peid] = network.addPlayerResourceQueue[i];
+    const remoteNode = RemoteNodeComponent.get(peid);
+    if (remoteNode) {
+      network.addPlayerResourceQueue.splice(i, 1);
+      remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+        sources: [
+          createRemoteMediaStreamSource(state, {
+            stream: createRemoteMediaStream(state, peerId),
+          }),
+        ],
+      });
+    }
+  }
 }
