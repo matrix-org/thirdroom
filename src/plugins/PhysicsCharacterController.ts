@@ -157,6 +157,7 @@ export const createRawCube = (state: GameState) => {
   addCubeMesh(
     state,
     eid,
+    1,
     createRemoteStandardMaterial(state, {
       baseColorFactor: [1, 1, 1, 1.0],
       roughnessFactor: 0.1,

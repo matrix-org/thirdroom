@@ -294,6 +294,6 @@ export const createPrefabEntity = (state: GameState, prefab: string) => {
   if (create) {
     return create(state);
   } else {
-    return createLoadingEntity(state);
+    return createLoadingEntity(state, 1);
   }
 };
