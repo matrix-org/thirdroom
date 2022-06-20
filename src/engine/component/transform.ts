@@ -1,4 +1,4 @@
-import { addComponent, addEntity, IComponent, removeComponent } from "bitecs";
+import { addComponent, addEntity, defineComponent, IComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -6,7 +6,9 @@ import { GameState, World } from "../GameTypes";
 import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
-import { hierarchyObjectBufferSchema, worldMatrixObjectBufferSchema } from "./transform.common";
+import { hierarchyObjectBufferSchema } from "./transform.common";
+
+export const Hidden = defineComponent();
 
 export interface Transform extends IComponent {
   position: Float32Array[];
@@ -33,12 +35,12 @@ export const gameObjectBuffer = createObjectBufferView(
     rotation: [Float32Array, maxEntities, 3],
     quaternion: [Float32Array, maxEntities, 4],
     localMatrix: [Float32Array, maxEntities, 16],
+    worldMatrix: [Float32Array, maxEntities, 16],
+    worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
     static: [Uint8Array, maxEntities],
   },
   ArrayBuffer
 );
-
-export const worldMatrixObjectBuffer = createObjectBufferView(worldMatrixObjectBufferSchema, ArrayBuffer);
 
 export const hierarchyObjectBuffer = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
 
@@ -50,8 +52,8 @@ export const Transform: Transform = {
   localMatrix: gameObjectBuffer.localMatrix,
   static: gameObjectBuffer.static,
 
-  worldMatrix: worldMatrixObjectBuffer.worldMatrix,
-  worldMatrixNeedsUpdate: worldMatrixObjectBuffer.worldMatrixNeedsUpdate,
+  worldMatrix: gameObjectBuffer.worldMatrix,
+  worldMatrixNeedsUpdate: gameObjectBuffer.worldMatrixNeedsUpdate,
 
   parent: hierarchyObjectBuffer.parent,
   firstChild: hierarchyObjectBuffer.firstChild,
@@ -127,6 +129,11 @@ export function getChildAt(eid: number, index: number): number {
 }
 
 export function addChild(parent: number, child: number) {
+  const previousParent = Transform.parent[child];
+  if (previousParent !== NOOP) {
+    removeChild(previousParent, child);
+  }
+
   Transform.parent[child] = parent;
 
   const lastChild = getLastChild(parent);
@@ -419,26 +426,32 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
-export function traverse(rootEid: number, callback: (eid: number) => void) {
+export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
+  // start at root
   let eid = rootEid;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    callback(eid);
+    const processChildren = callback(eid);
 
     const firstChild = Transform.firstChild[eid];
 
-    if (firstChild) {
+    // go downwards into children
+    if (firstChild && processChildren !== false) {
       eid = firstChild;
     } else {
+      // go upwards if no more siblings
       while (!Transform.nextSibling[eid]) {
+        // back at root
         if (eid === rootEid) {
           return;
         }
 
+        // go upwards
         eid = Transform.parent[eid];
       }
 
+      // go sideways
       eid = Transform.nextSibling[eid];
     }
   }
@@ -458,4 +471,8 @@ export function* getChildren(parentEid: number): Generator<number, number> {
 export function getDirection(out: vec3, matrix: mat4): vec3 {
   vec3.set(out, matrix[8], matrix[9], matrix[10]);
   return vec3.normalize(out, out);
+}
+
+export function UpdateMatrixWorldSystem(ctx: GameState) {
+  updateMatrixWorld(ctx.activeScene);
 }

@@ -3,11 +3,42 @@ import { vec2, glMatrix as glm } from "gl-matrix";
 
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
+import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getModule } from "../engine/module/module.common";
+import { defineModule, getModule } from "../engine/module/module.common";
+
+type FirstPersonCameraModuleState = {};
+
+export const FirstPersonCameraModule = defineModule<GameState, FirstPersonCameraModuleState>({
+  name: "first-person-camera",
+  create() {
+    return {};
+  },
+  init(state) {
+    enableActionMap(state, FirstPersonCameraActionMap);
+  },
+});
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",
+};
+
+export const FirstPersonCameraActionMap: ActionMap = {
+  id: "first-person-camera",
+  actions: [
+    {
+      id: "look",
+      path: FirstPersonCameraActions.Look,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          x: "Mouse/movementX",
+          y: "Mouse/movementY",
+        },
+      ],
+    },
+  ],
 };
 
 export const FirstPersonCameraPitchTarget = defineComponent({

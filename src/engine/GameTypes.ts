@@ -14,9 +14,9 @@ export interface GameState extends BaseThreadContext {
   elapsed: number;
   dt: number;
   world: World;
+  activeScene: number;
+  activeCamera: number;
   prefabTemplateMap: Map<string, PrefabTemplate>;
   entityPrefabMap: Map<number, string>;
-  scene: number;
-  camera: number;
   renderPort: RenderPort;
 }

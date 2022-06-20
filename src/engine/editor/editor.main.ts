@@ -7,9 +7,9 @@ import {
   EditorEventType,
   EditorMessageType,
   editorModuleName,
+  HierarchyTripleBuffer,
   InitializeEditorStateMessage,
   Selection,
-  SharedHierarchyState,
 } from "./editor.common";
 import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
 import {
@@ -38,7 +38,7 @@ export interface EditorModuleState extends EventEmitter {
   activeEntityTripleBuffer?: TripleBuffer;
   activeEntityViews?: ActiveEntityView[];
   activeEntityView?: ActiveEntityView;
-  sharedHierarchyState: SharedHierarchyState;
+  hierarchyTripleBuffer: HierarchyTripleBuffer;
 }
 
 /******************
@@ -49,7 +49,7 @@ export interface EditorModuleState extends EventEmitter {
 export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>({
   name: editorModuleName,
   async create(ctx, { waitForMessage }) {
-    const { sharedHierarchyState } = await waitForMessage<InitializeEditorStateMessage>(
+    const { hierarchyTripleBuffer } = await waitForMessage<InitializeEditorStateMessage>(
       Thread.Game,
       EditorMessageType.InitializeEditorState
     );
@@ -60,7 +60,7 @@ export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>(
       activeEntityComponents: [],
       componentInfoMap: new Map(),
       componentProperties: new Map(),
-      sharedHierarchyState,
+      hierarchyTripleBuffer,
     });
   },
   init(ctx) {

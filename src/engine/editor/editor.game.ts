@@ -1,5 +1,11 @@
-import { addComponent, Component, defineComponent, defineQuery, removeComponent } from "bitecs";
-import { vec3, mat4 } from "gl-matrix";
+import {
+  addComponent,
+  Component,
+  defineComponent,
+  defineQuery,
+  // removeComponent
+} from "bitecs";
+// import { vec3, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { shallowArraysEqual } from "../utils/shallowArraysEqual";
@@ -25,27 +31,35 @@ import {
   ComponentPropertyType,
   ComponentPropertyStore,
 } from "../component/types";
-import { getDirection, hierarchyObjectBuffer, registerTransformComponent, Transform } from "../component/transform";
+import {
+  //getDirection,
+  registerTransformComponent,
+  //Transform
+} from "../component/transform";
 import {
   ActionMap,
   ActionType,
   BindingType,
-  ButtonActionState,
+  //ButtonActionState,
   disableActionMap,
   enableActionMap,
 } from "../input/ActionMappingSystem";
-import { getRaycastResults, raycast, createRay } from "../raycaster/raycaster.game";
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { InputModule } from "../input/input.game";
+//import { InputModule } from "../input/input.game";
 import {
   EditorMessageType,
   editorModuleName,
+  HierarchyTripleBuffer,
   InitializeEditorStateMessage,
-  SharedHierarchyState,
 } from "./editor.common";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
-import { commitToTripleBufferView, createTripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
+import {
+  commitToObjectTripleBuffer,
+  createObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
+} from "../allocator/ObjectBufferView";
 
 // TODO: Importing this module changes the order of Renderable / Transform imports
 // Which in turn changes the cursor buffer view order and breaks transforms.
@@ -56,7 +70,6 @@ import { commitToTripleBufferView, createTripleBufferBackedObjectBufferView } fr
  ********/
 
 export interface EditorModuleState {
-  rayId: number;
   editorLoaded: boolean;
   messages: WorkerMessages[];
   selectedEntities: number[];
@@ -71,7 +84,8 @@ export interface EditorModuleState {
   componentRemoverMap: Map<number, ComponentRemover>;
   nextComponentId: number;
   nextPropertyId: number;
-  sharedHierarchyState: SharedHierarchyState;
+  hierarchyBufferView: ObjectBufferView<typeof hierarchyObjectBufferSchema, ArrayBuffer>;
+  hierarchyTripleBuffer: HierarchyTripleBuffer;
 }
 
 /******************
@@ -81,18 +95,17 @@ export interface EditorModuleState {
 export const EditorModule = defineModule<GameState, EditorModuleState>({
   name: editorModuleName,
   async create(ctx, { sendMessage }) {
-    const sharedHierarchyState = createTripleBufferBackedObjectBufferView(
+    const hierarchyBufferView = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
+    const hierarchyTripleBuffer = createObjectTripleBuffer(
       hierarchyObjectBufferSchema,
-      hierarchyObjectBuffer,
       ctx.mainToGameTripleBufferFlags
     );
 
     sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
-      sharedHierarchyState,
+      hierarchyTripleBuffer,
     });
 
     return {
-      rayId: createRay(),
       editorLoaded: false,
       messages: [],
       selectedEntities: [],
@@ -107,7 +120,8 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       propertyIdMap: new Map(),
       propertyGetterMap: new Map(),
       propertySetterMap: new Map(),
-      sharedHierarchyState,
+      hierarchyBufferView,
+      hierarchyTripleBuffer,
     };
   },
   init(ctx) {
@@ -142,7 +156,7 @@ export function onLoadEditor(state: GameState) {
     componentInfos: editor.componentInfoMap,
   });
 
-  addComponent(state.world, Selected, state.camera);
+  addComponent(state.world, Selected, state.activeCamera);
 }
 
 export function onDisposeEditor(state: GameState) {
@@ -256,7 +270,7 @@ export function EditorStateSystem(state: GameState) {
     updateSelectedEntities(state, selectedEntities.slice());
   }
 
-  commitToTripleBufferView(editor.sharedHierarchyState);
+  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, editor.hierarchyBufferView);
 }
 
 function processEditorMessage(state: GameState, message: WorkerMessages) {
@@ -295,44 +309,45 @@ function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
   } as SelectionChangedMessage);
 }
 
-const editorRayId = 0;
+// const editorRayId = 0;
 
-export function EditorSelectionSystem(state: GameState) {
-  const editor = getModule(state, EditorModule);
+// export function EditorSelectionSystem(state: GameState) {
+//   const editor = getModule(state, EditorModule);
 
-  if (!editor.editorLoaded) {
-    return;
-  }
+//   if (!editor.editorLoaded) {
+//     return;
+//   }
 
-  const raycastResults = getRaycastResults(state, editorRayId);
+//   const raycastResults = getRaycastResults(state, editorRayId);
 
-  if (raycastResults && raycastResults.length > 0) {
-    const intersection = raycastResults[raycastResults.length - 1];
+//   if (raycastResults && raycastResults.length > 0) {
+//     const intersection = raycastResults[raycastResults.length - 1];
 
-    const selectedEntities = editor.selectedEntities;
+//     const selectedEntities = editor.selectedEntities;
 
-    for (let i = 0; i < selectedEntities.length; i++) {
-      removeComponent(state.world, Selected, selectedEntities[i]);
-    }
+//     for (let i = 0; i < selectedEntities.length; i++) {
+//       removeComponent(state.world, Selected, selectedEntities[i]);
+//     }
 
-    addComponent(state.world, Selected, intersection.entity);
+//     addComponent(state.world, Selected, intersection.entity);
 
-    if (intersection.entity !== editor.activeEntity) {
-      editor.activeEntity = intersection.entity;
-      editor.activeEntityChanged = true;
-    }
-  }
+//     if (intersection.entity !== editor.activeEntity) {
+//       editor.activeEntity = intersection.entity;
+//       editor.activeEntityChanged = true;
+//     }
+//   }
 
-  const input = getModule(state, InputModule);
+//   const input = getModule(state, InputModule);
 
-  const select = input.actions.get(EditorActions.select) as ButtonActionState;
+//   const select = input.actions.get(EditorActions.select) as ButtonActionState;
 
-  if (select.pressed) {
-    const direction = getDirection(vec3.create(), Transform.worldMatrix[state.camera]);
-    vec3.negate(direction, direction);
-    raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[state.camera]), direction);
-  }
-}
+//   if (select.pressed) {
+//     const camera = getActiveCamera(state);
+//     const direction = getDirection(vec3.create(), Transform.worldMatrix[camera]);
+//     vec3.negate(direction, direction);
+//     raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[camera]), direction);
+//   }
+// }
 
 /**
  * Component definitions (for editor, serialization/deserialization, and networking)

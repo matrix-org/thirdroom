@@ -6,8 +6,9 @@ import { NetworkModule } from "./network/network.main";
 import { StatsModule } from "./stats/stats.main";
 import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
+import { ResourceModule } from "./resource/resource.main";
 
 export default defineConfig<IMainThreadContext>({
-  modules: [EditorModule, AudioModule, NetworkModule, InputModule, StatsModule, RendererModule],
+  modules: [ResourceModule, EditorModule, AudioModule, NetworkModule, InputModule, StatsModule, RendererModule],
   systems: [MainThreadAudioSystem, MainThreadEditorSystem],
 });

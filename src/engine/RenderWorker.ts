@@ -57,7 +57,7 @@ async function onInit(
     dt: 0,
     gameWorkerMessageTarget,
     messageHandlers: new Map(),
-    systems: [],
+    systems: renderConfig.systems,
     modules: new Map(),
     sendMessage: renderWorkerSendMessage,
   };

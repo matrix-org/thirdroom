@@ -16,6 +16,7 @@ import { useRoomIdFromAlias } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 import { connectToTestNet } from "../../../engine/network/network.main";
+import { loadEnvironment } from "../../../plugins/thirdroom/thirdroom.main";
 
 export interface SessionOutletContext {
   world?: Room;
@@ -44,6 +45,25 @@ export function SessionView() {
   const nextWorldIdFromAlias = useRoomIdFromAlias(location.hash);
 
   const nextWorldId = worldMatch ? worldMatch.params["worldId"] : nextWorldIdFromAlias;
+
+  useEffect(() => {
+    if (mainThread && world) {
+      world.getStateEvent("m.world").then(
+        ({
+          event: {
+            // eslint-disable-next-line camelcase
+            content: { scene_url },
+          },
+        }: any) => {
+          const sceneUrl = session.mediaRepository.mxcUrl(scene_url);
+
+          if (sceneUrl) {
+            loadEnvironment(mainThread, sceneUrl);
+          }
+        }
+      );
+    }
+  }, [session, mainThread, world]);
 
   useEffect(() => {
     setInitialWorld(nextWorldId);

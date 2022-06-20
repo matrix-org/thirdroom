@@ -1,103 +1,114 @@
 import {
-  commitToTripleBufferView,
-  createTripleBufferBackedObjectBufferView,
-  TripleBufferBackedObjectBufferView,
+  commitToObjectTripleBuffer,
+  createObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { renderableObjectBufferView } from "../component/renderable";
-import { renderableSchema } from "../component/renderable.common";
-import { updateMatrixWorld, worldMatrixObjectBuffer } from "../component/transform";
-import { worldMatrixObjectBufferSchema } from "../component/transform.common";
+import {
+  createRemotePerspectiveCamera,
+  RemoteOrthographicCamera,
+  RemotePerspectiveCamera,
+  updateRemoteCameras,
+} from "../camera/camera.game";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import {
-  remoteResourceLoaded,
-  remoteResourceLoadError,
-  remoteResourceDisposed,
-  RemoteResourceManager,
-  createRemoteResourceManager,
-} from "../resources/RemoteResourceManager";
+  addRemoteSceneComponent,
+  RemoteScene,
+  RemoteSceneComponent,
+  updateRendererRemoteScenes,
+} from "../scene/scene.game";
+import { RemoteTexture, updateRemoteTextures } from "../texture/texture.game";
 import {
-  DisposedResourceMessage,
-  LoadedResourceMessage,
-  LoadErrorResourceMessage,
-  WorkerMessageType,
-} from "../WorkerMessage";
-import { InitializeRendererTripleBuffersMessage, RendererMessageType, rendererModuleName } from "./renderer.common";
+  InitializeRendererTripleBuffersMessage,
+  RendererMessageType,
+  rendererModuleName,
+  rendererStateSchema,
+  RendererStateTripleBuffer,
+} from "./renderer.common";
+import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
+import {
+  RemoteDirectionalLight,
+  RemotePointLight,
+  RemoteSpotLight,
+  updateRemoteDirectionalLights,
+  updateRemotePointLights,
+  updateRemoteRemoteSpotLights,
+} from "../light/light.game";
+import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 
-interface GameRendererModuleState {
-  worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
-  renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
-  resourceManager: RemoteResourceManager;
+export type RendererStateBufferView = ObjectBufferView<typeof rendererStateSchema, ArrayBuffer>;
+
+export interface GameRendererModuleState {
+  rendererStateBufferView: RendererStateBufferView;
+  rendererStateTripleBuffer: RendererStateTripleBuffer;
+  scenes: RemoteScene[];
+  textures: RemoteTexture[];
+  unlitMaterials: RemoteUnlitMaterial[];
+  standardMaterials: RemoteStandardMaterial[];
+  directionalLights: RemoteDirectionalLight[];
+  pointLights: RemotePointLight[];
+  spotLights: RemoteSpotLight[];
+  perspectiveCameras: RemotePerspectiveCamera[];
+  orthographicCameras: RemoteOrthographicCamera[];
+  meshPrimitives: RemoteMeshPrimitive[];
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
   name: rendererModuleName,
-  async create({ gameToRenderTripleBufferFlags, renderPort }, { sendMessage, waitForMessage }) {
-    const worldMatrixObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
-      worldMatrixObjectBufferSchema,
-      worldMatrixObjectBuffer,
-      gameToRenderTripleBufferFlags
-    );
-
-    const renderableObjectTripleBuffer = createTripleBufferBackedObjectBufferView(
-      renderableSchema,
-      renderableObjectBufferView,
-      gameToRenderTripleBufferFlags
-    );
+  async create({ gameToRenderTripleBufferFlags }, { sendMessage }) {
+    const rendererStateBufferView = createObjectBufferView(rendererStateSchema, ArrayBuffer);
+    const rendererStateTripleBuffer = createObjectTripleBuffer(rendererStateSchema, gameToRenderTripleBufferFlags);
 
     sendMessage<InitializeRendererTripleBuffersMessage>(
       Thread.Render,
       RendererMessageType.InitializeRendererTripleBuffers,
       {
-        renderableObjectTripleBuffer,
-        worldMatrixObjectTripleBuffer,
+        rendererStateTripleBuffer,
       }
-    );
-
-    const { resourceManagerBuffer } = await waitForMessage(
-      Thread.Render,
-      RendererMessageType.InitializeResourceManager
     );
 
     return {
-      worldMatrixObjectTripleBuffer,
-      renderableObjectTripleBuffer,
-      resourceManager: createRemoteResourceManager(resourceManagerBuffer, renderPort),
+      rendererStateBufferView,
+      rendererStateTripleBuffer,
+      scenes: [],
+      textures: [],
+      unlitMaterials: [],
+      standardMaterials: [],
+      directionalLights: [],
+      pointLights: [],
+      spotLights: [],
+      perspectiveCameras: [],
+      orthographicCameras: [],
+      meshPrimitives: [],
     };
   },
-  init(state) {
-    const disposables = [
-      registerMessageHandler(state, WorkerMessageType.ResourceLoaded, onResourceLoaded),
-      registerMessageHandler(state, WorkerMessageType.ResourceLoadError, onResourceLoadError),
-      registerMessageHandler(state, WorkerMessageType.ResourceDisposed, onResourceDisposed),
-    ];
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
+  async init(ctx) {
+    addRemoteSceneComponent(ctx, ctx.activeScene);
+    addRemoteNodeComponent(ctx, ctx.activeCamera, {
+      camera: createRemotePerspectiveCamera(ctx),
+    });
   },
 });
 
-function onResourceLoaded(state: GameState, message: LoadedResourceMessage) {
-  const renderer = getModule(state, RendererModule);
-  remoteResourceLoaded(renderer.resourceManager, message.resourceId, message.remoteResource);
-}
-
-function onResourceLoadError(state: GameState, message: LoadErrorResourceMessage<Error>) {
-  const renderer = getModule(state, RendererModule);
-  remoteResourceLoadError(renderer.resourceManager, message.resourceId, message.error);
-}
-
-function onResourceDisposed(state: GameState, message: DisposedResourceMessage) {
-  const renderer = getModule(state, RendererModule);
-  remoteResourceDisposed(renderer.resourceManager, message.resourceId);
-}
-
 export const RenderableSystem = (state: GameState) => {
   const renderer = getModule(state, RendererModule);
-  updateMatrixWorld(state.scene);
-  commitToTripleBufferView(renderer.worldMatrixObjectTripleBuffer);
-  commitToTripleBufferView(renderer.renderableObjectTripleBuffer);
+
+  const activeScene = RemoteSceneComponent.get(state.activeScene);
+  const activeCamera = RemoteNodeComponent.get(state.activeCamera);
+
+  renderer.rendererStateBufferView.activeSceneResourceId[0] = activeScene?.rendererResourceId || 0;
+  renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.rendererResourceId || 0;
+
+  commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
+
+  updateRendererRemoteScenes(renderer.scenes);
+  updateRemoteTextures(renderer.textures);
+  updateRemoteMaterials(state);
+  updateRemoteMeshPrimitives(renderer.meshPrimitives);
+  updateRemotePointLights(renderer.pointLights);
+  updateRemoteDirectionalLights(renderer.directionalLights);
+  updateRemoteRemoteSpotLights(renderer.spotLights);
+  updateRemoteCameras(state);
 };

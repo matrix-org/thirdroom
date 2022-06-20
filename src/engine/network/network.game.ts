@@ -36,7 +36,6 @@ import { addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
-import { sendAudioPeerEntityMessage } from "../audio/audio.game";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import {
   AddPeerIdMessage,
@@ -48,6 +47,13 @@ import {
 } from "./network.common";
 import { createPrefabEntity } from "../prefab";
 import { checkBitflag } from "../utils/checkBitflag";
+import { RemoteNodeComponent } from "../node/node.game";
+import {
+  createRemoteMediaStream,
+  createRemoteMediaStreamSource,
+  createRemotePositionalAudioEmitter,
+} from "../audio/audio.game";
+import randomRange from "../utils/randomRange";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -71,6 +77,7 @@ export interface GameNetworkState {
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
   cursorView: CursorView;
+  addPlayerResourceQueue: [string, number][];
 }
 
 export enum NetworkAction {
@@ -111,6 +118,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     removedLocalIds: [],
     messageHandlers: {},
     cursorView: createCursorView(),
+    addPlayerResourceQueue: [],
   }),
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
@@ -205,8 +213,7 @@ export const getPeerIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
 // hack - could also temporarily send whole peerId string to avoid potential collisions
-const rndRange = (min: number, max: number) => Math.random() * (max - min) + min;
-const peerIdIndex = rndRange(0, 0xffff);
+const peerIdIndex = randomRange(0, 0xffff);
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
@@ -456,7 +463,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  addChild(state.scene, eid);
+  addChild(state.activeScene, eid);
 
   return eid;
 }
@@ -657,7 +664,22 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
   if (peid !== undefined) {
     network.peerIdToEntityId.set(peerId, peid);
     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
-    sendAudioPeerEntityMessage(peerId, peid);
+
+    network.addPlayerResourceQueue.push([peerId, peid]);
+
+    // const remoteNode = RemoteNodeComponent.get(peid);
+
+    // if (!remoteNode) {
+    //   throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
+    // }
+
+    // remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+    //   sources: [
+    //     createRemoteMediaStreamSource(state, {
+    //       stream: createRemoteMediaStream(state, peerId),
+    //     }),
+    //   ],
+    // });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
   }
@@ -930,4 +952,21 @@ const registerInboundMessageHandler = (network: GameNetworkState, type: number, 
 
 export function InboundNetworkSystem(state: GameState) {
   processNetworkMessages(state);
+
+  const network = getModule(state, NetworkModule);
+
+  for (let i = network.addPlayerResourceQueue.length - 1; i >= 0; i--) {
+    const [peerId, peid] = network.addPlayerResourceQueue[i];
+    const remoteNode = RemoteNodeComponent.get(peid);
+    if (remoteNode) {
+      network.addPlayerResourceQueue.splice(i, 1);
+      remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+        sources: [
+          createRemoteMediaStreamSource(state, {
+            stream: createRemoteMediaStream(state, peerId),
+          }),
+        ],
+      });
+    }
+  }
 }

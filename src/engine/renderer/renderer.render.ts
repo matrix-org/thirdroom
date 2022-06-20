@@ -1,90 +1,68 @@
-import {
-  ACESFilmicToneMapping,
-  Camera,
-  Matrix4,
-  Object3D,
-  PCFSoftShadowMap,
-  PerspectiveCamera,
-  Quaternion,
-  Scene,
-  sRGBEncoding,
-  Vector3,
-  WebGLRenderer,
-} from "three";
+import { ACESFilmicToneMapping, ImageBitmapLoader, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-import { getReadObjectBufferView, TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
-import { swapReadBufferFlags, TripleBuffer } from "../allocator/TripleBuffer";
-import { renderableSchema } from "../component/renderable.common";
-import { clamp } from "../component/transform";
-import { worldMatrixObjectBufferSchema } from "../component/transform.common";
-import { tickRate } from "../config.common";
-import { GLTFResourceLoader } from "../gltf/GLTFResourceLoader";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
+import { swapReadBufferFlags } from "../allocator/TripleBuffer";
+import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
+import { CameraType } from "../camera/camera.common";
+import {
+  LocalOrthographicCameraResource,
+  LocalPerspectiveCameraResource,
+  onLoadOrthographicCamera,
+  onLoadPerspectiveCamera,
+} from "../camera/camera.render";
+import { ImageResourceType } from "../image/image.common";
+import { onLoadLocalImageResource } from "../image/image.render";
+import { DirectionalLightResourceType, PointLightResourceType, SpotLightResourceType } from "../light/light.common";
+import {
+  onLoadLocalDirectionalLightResource,
+  onLoadLocalPointLightResource,
+  onLoadLocalSpotLightResource,
+} from "../light/light.render";
+import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
+import {
+  LocalStandardMaterialResource,
+  LocalUnlitMaterialResource,
+  onLoadLocalStandardMaterialResource,
+  onLoadLocalUnlitMaterialResource,
+  updateLocalStandardMaterialResources,
+  updateLocalUnlitMaterialResources,
+} from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { CameraResourceLoader } from "../resources/CameraResourceLoader";
-import { GeometryResourceLoader } from "../resources/GeometryResourceLoader";
-import { LightResourceLoader } from "../resources/LightResourceLoader";
-import { MaterialResourceLoader } from "../resources/MaterialResourceLoader";
-import { MeshResourceLoader } from "../resources/MeshResourceLoader";
-import {
-  createResourceManager,
-  createResourceManagerBuffer,
-  onAddResourceRef,
-  onLoadResource,
-  onRemoveResourceRef,
-  registerResourceLoader,
-  ResourceManager,
-  ResourceState,
-} from "../resources/ResourceManager";
-import { SceneResourceLoader } from "../resources/SceneResourceLoader";
-import { TextureResourceLoader } from "../resources/TextureResourceLoader";
-import { StatsBuffer } from "../stats/stats.common";
+import { getLocalResource, registerResourceLoader } from "../resource/resource.render";
+import { SamplerResourceType } from "../sampler/sampler.common";
+import { onLoadSampler } from "../sampler/sampler.render";
+import { SceneResourceType } from "../scene/scene.common";
+import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
+import { TextureResourceType } from "../texture/texture.common";
 import {
-  AddRenderableMessage,
-  PostMessageTarget,
-  RemoveRenderableMessage,
-  RenderableMessages,
-  RenderWorkerResizeMessage,
-  SetActiveCameraMessage,
-  SetActiveSceneMessage,
-  WorkerMessageType,
-} from "../WorkerMessage";
+  LocalTextureResource,
+  onLoadLocalTextureResource,
+  updateLocalTextureResources,
+} from "../texture/texture.render";
+import { createDisposables } from "../utils/createDisposables";
+import { PostMessageTarget, RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
   RendererMessageType,
   rendererModuleName,
+  RendererStateTripleBuffer,
 } from "./renderer.common";
-
-export interface TransformView {
-  worldMatrix: Float32Array[];
-  worldMatrixNeedsUpdate: Uint8Array;
-}
-
-export interface RenderableView {
-  resourceId: Uint32Array;
-  interpolate: Uint8Array;
-  visible: Uint8Array;
-}
-
-export interface Renderable {
-  object?: Object3D;
-  helper?: Object3D;
-  eid: number;
-  resourceId: number;
-}
-
-export type RenderThreadSystem = (state: RenderThreadState) => void;
-
-export interface IInitialRenderThreadState {
-  statsBuffer: StatsBuffer;
-  resourceManagerBuffer: SharedArrayBuffer;
-  renderableTripleBuffer: TripleBuffer;
-  gameWorkerMessageTarget: MessagePort;
-  initialCanvasWidth: number;
-  initialCanvasHeight: number;
-  canvasTarget: HTMLElement;
-}
+import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
+import { AccessorResourceType } from "../accessor/accessor.common";
+import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
+import { MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import {
+  LocalMeshPrimitive,
+  onLoadLocalMeshPrimitiveResource,
+  onLoadLocalMeshResource,
+  updateLocalMeshPrimitiveResources,
+} from "../mesh/mesh.render";
+import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
+import { NodeResourceType } from "../node/node.common";
+import { ResourceId } from "../resource/resource.common";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -94,20 +72,23 @@ export interface RenderThreadState extends BaseThreadContext {
   gameToRenderTripleBufferFlags: Uint8Array;
 }
 
-interface RendererModuleState {
+export interface RendererModuleState {
   needsResize: boolean;
   canvasWidth: number;
   canvasHeight: number;
-  scene: Object3D;
-  camera: Camera;
   renderer: WebGLRenderer;
-  resourceManager: ResourceManager;
-  renderableMessageQueue: RenderableMessages[];
-  renderables: Renderable[];
-  objectToEntityMap: Map<Object3D, number>;
-  renderableIndices: Map<number, number>;
-  renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
-  worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
+  imageBitmapLoader: ImageBitmapLoader;
+  rgbeLoader: RGBELoader;
+  rendererStateTripleBuffer: RendererStateTripleBuffer;
+  scenes: LocalSceneResource[];
+  unlitMaterials: LocalUnlitMaterialResource[];
+  standardMaterials: LocalStandardMaterialResource[];
+  textures: LocalTextureResource[];
+  perspectiveCameraResources: LocalPerspectiveCameraResource[];
+  orthographicCameraResources: LocalOrthographicCameraResource[];
+  meshPrimitives: LocalMeshPrimitive[];
+  nodes: LocalNode[];
+  prevCameraResource?: ResourceId;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -118,28 +99,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       RendererMessageType.InitializeCanvas
     );
 
-    const scene = new Scene();
-
-    // TODO: initialize playerRig from GameWorker
-    const camera = new PerspectiveCamera(70, initialCanvasWidth / initialCanvasHeight, 0.1, 1000);
-    camera.position.y = 1.6;
-
-    const resourceManagerBuffer = createResourceManagerBuffer();
-
-    sendMessage(Thread.Game, RendererMessageType.InitializeResourceManager, {
-      resourceManagerBuffer,
-    });
-
-    const resourceManager = createResourceManager(resourceManagerBuffer);
-    registerResourceLoader(resourceManager, SceneResourceLoader);
-    registerResourceLoader(resourceManager, GeometryResourceLoader);
-    registerResourceLoader(resourceManager, TextureResourceLoader);
-    registerResourceLoader(resourceManager, MaterialResourceLoader);
-    registerResourceLoader(resourceManager, MeshResourceLoader);
-    registerResourceLoader(resourceManager, CameraResourceLoader);
-    registerResourceLoader(resourceManager, LightResourceLoader);
-    registerResourceLoader(resourceManager, GLTFResourceLoader);
-
     const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget || ctx.canvas });
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
@@ -148,37 +107,52 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-    const { renderableObjectTripleBuffer, worldMatrixObjectTripleBuffer } =
-      await waitForMessage<InitializeRendererTripleBuffersMessage>(
-        Thread.Game,
-        RendererMessageType.InitializeRendererTripleBuffers
-      );
+    const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
+      Thread.Game,
+      RendererMessageType.InitializeRendererTripleBuffers
+    );
 
     return {
-      scene,
-      camera,
       needsResize: true,
       renderer,
-      resourceManager,
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
-      renderableMessageQueue: [],
-      objectToEntityMap: new Map(),
-      renderables: [],
-      renderableIndices: new Map<number, number>(),
-      renderableObjectTripleBuffer,
-      worldMatrixObjectTripleBuffer,
+      rendererStateTripleBuffer,
+      scenes: [],
+      textures: [],
+      unlitMaterials: [],
+      standardMaterials: [],
+      directionalLights: [],
+      pointLights: [],
+      spotLights: [],
+      imageBitmapLoader: new ImageBitmapLoader(),
+      rgbeLoader: new RGBELoader(),
+      perspectiveCameraResources: [],
+      orthographicCameraResources: [],
+      meshPrimitives: [],
+      nodes: [],
     };
   },
   init(ctx) {
-    registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize);
-    registerMessageHandler(ctx, WorkerMessageType.AddRenderable, onRenderableMessage);
-    registerMessageHandler(ctx, WorkerMessageType.RemoveRenderable, onRenderableMessage);
-    registerMessageHandler(ctx, WorkerMessageType.SetActiveCamera, onRenderableMessage);
-    registerMessageHandler(ctx, WorkerMessageType.SetActiveScene, onRenderableMessage);
-    registerMessageHandler(ctx, WorkerMessageType.LoadResource, onLoadResource as any);
-    registerMessageHandler(ctx, WorkerMessageType.AddResourceRef, onAddResourceRef);
-    registerMessageHandler(ctx, WorkerMessageType.RemoveResourceRef, onRemoveResourceRef);
+    return createDisposables([
+      registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
+      registerResourceLoader(ctx, SamplerResourceType, onLoadSampler),
+      registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
+      registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
+      registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
+      registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
+      registerResourceLoader(ctx, DirectionalLightResourceType, onLoadLocalDirectionalLightResource),
+      registerResourceLoader(ctx, PointLightResourceType, onLoadLocalPointLightResource),
+      registerResourceLoader(ctx, SpotLightResourceType, onLoadLocalSpotLightResource),
+      registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
+      registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
+      registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
+      registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
+      registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
+      registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
+      registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
+      registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
+    ]);
   },
 });
 
@@ -187,87 +161,13 @@ export function startRenderLoop(state: RenderThreadState) {
   renderer.setAnimationLoop(() => onUpdate(state));
 }
 
-const tempMatrix4 = new Matrix4();
-const tempPosition = new Vector3();
-const tempQuaternion = new Quaternion();
-const tempScale = new Vector3();
-
 function onUpdate(state: RenderThreadState) {
   const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
-
-  const renderModule = getModule(state, RendererModule);
-  const {
-    needsResize,
-    renderer,
-    canvasWidth,
-    canvasHeight,
-    renderables,
-    scene,
-    camera,
-    renderableObjectTripleBuffer,
-    worldMatrixObjectTripleBuffer,
-  } = renderModule;
-
-  processRenderableMessages(state);
 
   const now = performance.now();
   const dt = (state.dt = now - state.elapsed);
   state.elapsed = now;
-  const frameRate = 1 / dt;
-  const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
-
-  const Transform = getReadObjectBufferView(worldMatrixObjectTripleBuffer);
-  const Renderable = getReadObjectBufferView(renderableObjectTripleBuffer);
-
-  renderableObjectTripleBuffer.views;
-
-  for (let i = 0; i < renderables.length; i++) {
-    const { object, helper, eid } = renderables[i];
-
-    if (!object) {
-      continue;
-    }
-
-    object.visible = !!Renderable.visible[eid];
-
-    if (!Transform.worldMatrixNeedsUpdate[eid]) {
-      continue;
-    }
-
-    if (Renderable.interpolate[eid]) {
-      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(tempPosition, tempQuaternion, tempScale);
-      object.position.lerp(tempPosition, lerpAlpha);
-      object.quaternion.slerp(tempQuaternion, lerpAlpha);
-      object.scale.lerp(tempScale, lerpAlpha);
-
-      if (helper) {
-        helper.position.copy(object.position);
-        helper.quaternion.copy(object.quaternion);
-        helper.scale.copy(object.scale);
-      }
-    } else {
-      tempMatrix4.fromArray(Transform.worldMatrix[eid]).decompose(object.position, object.quaternion, object.scale);
-      object.matrix.fromArray(Transform.worldMatrix[eid]);
-      object.matrixWorld.fromArray(Transform.worldMatrix[eid]);
-      object.matrixWorldNeedsUpdate = false;
-
-      if (helper) {
-        helper.position.copy(object.position);
-        helper.quaternion.copy(object.quaternion);
-        helper.scale.copy(object.scale);
-      }
-    }
-  }
-
-  if (needsResize && renderModule.camera.type === "PerspectiveCamera") {
-    const perspectiveCamera = renderModule.camera as PerspectiveCamera;
-    perspectiveCamera.aspect = canvasWidth / canvasHeight;
-    perspectiveCamera.updateProjectionMatrix();
-    renderer.setSize(canvasWidth, canvasHeight, false);
-    renderModule.needsResize = false;
-  }
-
-  renderer.render(scene, camera);
+  state.dt = dt;
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
@@ -293,170 +193,49 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
   renderer.canvasHeight = canvasHeight;
 }
 
-function onRenderableMessage(state: RenderThreadState, message: any) {
-  const { renderableMessageQueue } = getModule(state, RendererModule);
-  renderableMessageQueue.push(message);
-}
+export function RendererSystem(ctx: RenderThreadState) {
+  const rendererModule = getModule(ctx, RendererModule);
+  const { needsResize, renderer, canvasWidth, canvasHeight } = rendererModule;
 
-function processRenderableMessages(state: RenderThreadState) {
-  const { renderableMessageQueue } = getModule(state, RendererModule);
-  while (renderableMessageQueue.length) {
-    const message = renderableMessageQueue.shift() as RenderableMessages;
+  const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
+  const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
+  const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
 
-    switch (message.type) {
-      case WorkerMessageType.AddRenderable:
-        onAddRenderable(state, message);
-        break;
-      case WorkerMessageType.RemoveRenderable:
-        onRemoveRenderable(state, message);
-        break;
-      case WorkerMessageType.SetActiveCamera:
-        onSetActiveCamera(state, message);
-        break;
-      case WorkerMessageType.SetActiveScene:
-        onSetActiveScene(state, message);
-        break;
-    }
-  }
-}
+  const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
+  const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
 
-function onAddRenderable(state: RenderThreadState, message: AddRenderableMessage) {
-  const { resourceId, eid } = message;
-  const { renderableMessageQueue, renderableIndices, renderables, objectToEntityMap, scene, resourceManager } =
-    getModule(state, RendererModule);
-  let renderableIndex = renderableIndices.get(eid);
-  const resourceInfo = resourceManager.store.get(resourceId);
+  if (
+    activeCameraNode &&
+    activeCameraNode.cameraObject &&
+    activeCameraNode.camera &&
+    (needsResize || rendererModule.prevCameraResource !== activeCameraResourceId)
+  ) {
+    if (
+      "isPerspectiveCamera" in activeCameraNode.cameraObject &&
+      activeCameraNode.camera.type === CameraType.Perspective
+    ) {
+      const cameraStateView = getReadObjectBufferView(activeCameraNode.camera.cameraTripleBuffer);
 
-  if (!resourceInfo) {
-    console.warn(`AddRenderable Error: Unknown resourceId ${resourceId} for eid ${eid}`);
-    return;
-  }
-
-  if (resourceInfo.state === ResourceState.Loaded) {
-    const object = resourceInfo.resource as Object3D;
-
-    if (renderableIndex !== undefined) {
-      // Replace an existing renderable on an entity if it changed
-      const removed = renderables.splice(renderableIndex, 1, { object, eid, resourceId });
-
-      if (removed.length > 0 && removed[0].object) {
-        // Remove the renderable object3D only if it exists
-        scene.remove(removed[0].object);
-      }
-    } else {
-      renderableIndex = renderables.length;
-      renderableIndices.set(eid, renderables.length);
-      renderables.push({ object, eid, resourceId });
-      objectToEntityMap.set(object, eid);
-    }
-
-    scene.add(object);
-
-    return;
-  }
-
-  if (resourceInfo.state === ResourceState.Loading) {
-    if (renderableIndex !== undefined) {
-      // Update the renderable with the new resource id and remove the old object
-      const removed = renderables.splice(renderableIndex, 1, { object: undefined, eid, resourceId });
-
-      if (removed.length > 0 && removed[0].object) {
-        // Remove the previous renderable object from the scene if it exists
-        scene.remove(removed[0].object);
-      }
-    } else {
-      renderableIndex = renderables.length;
-      renderableIndices.set(eid, renderables.length);
-      renderables.push({ object: undefined, eid, resourceId });
-    }
-
-    // Resources that are still loading should be re-queued when they finish loading.
-    resourceInfo.promise.finally(() => {
-      const index = renderableIndices.get(eid);
-
-      if (index === undefined || renderables[index].resourceId !== message.resourceId) {
-        // The resource was changed since it finished loading so avoid queueing it again
-        return;
-      }
-
-      renderableMessageQueue.push(message);
-    });
-
-    return;
-  }
-
-  console.warn(
-    `AddRenderable Error: resourceId ${resourceId} for eid ${eid} could not be loaded: ${resourceInfo.error}`
-  );
-}
-
-function onRemoveRenderable(state: RenderThreadState, { eid }: RemoveRenderableMessage) {
-  const { renderableIndices, renderables, objectToEntityMap, scene } = getModule(state, RendererModule);
-
-  const index = renderableIndices.get(eid);
-
-  if (index !== undefined) {
-    const removed = renderables.splice(index, 1);
-    renderableIndices.delete(eid);
-
-    if (removed.length > 0) {
-      const { object, helper } = removed[0];
-
-      if (object) {
-        scene.remove(object);
-        objectToEntityMap.delete(object);
-      }
-
-      if (helper) {
-        scene.remove(helper);
-        objectToEntityMap.delete(helper);
+      if (cameraStateView.aspectRatio[0] === 0) {
+        activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
       }
     }
-  }
-}
 
-function onSetActiveScene(state: RenderThreadState, { eid, resourceId }: SetActiveSceneMessage) {
-  const rendererState = getModule(state, RendererModule);
-  const resourceInfo = rendererState.resourceManager.store.get(resourceId);
+    activeCameraNode.cameraObject.updateProjectionMatrix();
 
-  if (!resourceInfo) {
-    console.error(`SetActiveScene Error: Couldn't find resource ${resourceId} for scene ${eid}`);
-    return;
+    renderer.setSize(canvasWidth, canvasHeight, false);
+    rendererModule.needsResize = false;
+    rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
-  const setScene = (newScene: Scene) => {
-    for (const child of rendererState.scene.children) {
-      newScene.add(child);
-    }
+  updateLocalTextureResources(rendererModule.textures);
+  updateLocalSceneResources(ctx, rendererModule.scenes);
+  updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
+  updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
+  updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
+  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes);
 
-    rendererState.scene = newScene;
-  };
-
-  if (resourceInfo.resource) {
-    const newScene = resourceInfo.resource as Scene;
-    setScene(newScene);
-  } else {
-    resourceInfo.promise.then(({ resource }) => {
-      setScene(resource as Scene);
-    });
-  }
-}
-
-function onSetActiveCamera(state: RenderThreadState, { eid }: SetActiveCameraMessage) {
-  const renderModule = getModule(state, RendererModule);
-  const { renderableIndices, renderables } = renderModule;
-  const index = renderableIndices.get(eid);
-
-  if (index !== undefined && renderables[index]) {
-    const camera = renderables[index].object as Camera;
-
-    const perspectiveCamera = camera as PerspectiveCamera;
-
-    if (perspectiveCamera.isPerspectiveCamera) {
-      perspectiveCamera.aspect = renderModule.canvasWidth / renderModule.canvasHeight;
-      perspectiveCamera.updateProjectionMatrix();
-    }
-
-    renderModule.camera = camera;
+  if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
+    rendererModule.renderer.render(activeSceneResource.scene, activeCameraNode.cameraObject);
   }
 }

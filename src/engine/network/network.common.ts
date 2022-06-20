@@ -9,7 +9,6 @@ export enum NetworkMessageType {
   SetPeerId = "set-peer-id",
   AddPeerId = "add-peer-id",
   RemovePeerId = "remove-peer-id",
-  StateChanged = "state-changed",
   SetHost = "set-host",
 }
 
@@ -38,10 +37,6 @@ export interface AddPeerIdMessage extends Message<NetworkMessageType.AddPeerId> 
 
 export interface RemovePeerIdMessage extends Message<NetworkMessageType.RemovePeerId> {
   peerId: string;
-}
-
-export interface StateChangedMessage extends Message<NetworkMessageType.StateChanged> {
-  state: any;
 }
 
 export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {

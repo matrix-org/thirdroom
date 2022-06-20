@@ -3,21 +3,99 @@ import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
 import { Player } from "../engine/component/Player";
-import { addRenderableComponent } from "../engine/component/renderable";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
-import { ButtonActionState } from "../engine/input/ActionMappingSystem";
+import {
+  ActionMap,
+  ActionType,
+  BindingType,
+  ButtonActionState,
+  enableActionMap,
+} from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getModule } from "../engine/module/module.common";
+import { createRemoteStandardMaterial } from "../engine/material/material.game";
+import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCamera } from "../engine/prefab";
-import { RendererModule } from "../engine/renderer/renderer.game";
-import { GeometryType } from "../engine/resources/GeometryResourceLoader";
-import { MaterialType } from "../engine/resources/MaterialResourceLoader";
-import { loadRemoteResource } from "../engine/resources/RemoteResourceManager";
+import { addCubeMesh, createCamera } from "../engine/prefab";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
+
+function physicsCharacterControllerAction(key: string) {
+  return "PhysicsCharacterController/" + key;
+}
+
+export const PhysicsCharacterControllerActions = {
+  Move: physicsCharacterControllerAction("Move"),
+  Jump: physicsCharacterControllerAction("Jump"),
+  Sprint: physicsCharacterControllerAction("Sprint"),
+  Crouch: physicsCharacterControllerAction("Crouch"),
+};
+
+export const PhysicsCharacterControllerActionMap: ActionMap = {
+  id: "physics-character-controller",
+  actions: [
+    {
+      id: "move",
+      path: PhysicsCharacterControllerActions.Move,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.DirectionalButtons,
+          up: "Keyboard/KeyW",
+          down: "Keyboard/KeyS",
+          left: "Keyboard/KeyA",
+          right: "Keyboard/KeyD",
+        },
+      ],
+    },
+    {
+      id: "jump",
+      path: PhysicsCharacterControllerActions.Jump,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/Space",
+        },
+      ],
+    },
+    {
+      id: "crouch",
+      path: PhysicsCharacterControllerActions.Crouch,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyC",
+        },
+      ],
+    },
+    {
+      id: "sprint",
+      path: PhysicsCharacterControllerActions.Sprint,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/ShiftLeft",
+        },
+      ],
+    },
+  ],
+};
+
+type PhysicsCharacterControllerModuleState = {};
+
+export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsCharacterControllerModuleState>({
+  name: "physics-character-controller",
+  create() {
+    return {};
+  },
+  init(state) {
+    enableActionMap(state, PhysicsCharacterControllerActionMap);
+  },
+});
 
 export enum PhysicsGroups {
   None = 0,
@@ -33,21 +111,9 @@ export function createInteractionGroup(groups: number, mask: number) {
   return (groups << 16) | mask;
 }
 
-export const PhysicsCharacterControllerGroup = 0x0000_0001;
 export const CharacterPhysicsGroup = 0b1;
 export const CharacterInteractionGroup = createInteractionGroup(CharacterPhysicsGroup, PhysicsGroups.All);
 export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~CharacterPhysicsGroup);
-
-function physicsCharacterControllerAction(key: string) {
-  return "PhysicsCharacterController/" + key;
-}
-
-export const PhysicsCharacterControllerActions = {
-  Move: physicsCharacterControllerAction("Move"),
-  Jump: physicsCharacterControllerAction("Jump"),
-  Sprint: physicsCharacterControllerAction("Sprint"),
-  Crouch: physicsCharacterControllerAction("Crouch"),
-};
 
 const obj = new Object3D();
 
@@ -56,7 +122,7 @@ const drag = 10;
 const maxWalkSpeed = 100;
 const jumpForce = 10;
 const inAirModifier = 0.5;
-const inAirDrag = 10;
+const inAirDrag = 8;
 const crouchModifier = 0.7;
 const crouchJumpModifier = 1.5;
 const minSlideSpeed = 3;
@@ -77,40 +143,27 @@ let lastSlideTime = 0;
 
 const colliderShape = new RAPIER.Capsule(0.5, 0.5);
 
-const shapeTranslationOffset = new Vector3(0, 0.8, 0);
+const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (state: GameState, geometryResourceId?: number) => {
-  const { resourceManager } = getModule(state, RendererModule);
+export const createRawCube = (state: GameState) => {
   const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  if (!geometryResourceId) {
-    geometryResourceId = loadRemoteResource(resourceManager, {
-      type: "geometry",
-      geometryType: GeometryType.Box,
-    });
-  }
-
-  const materialResourceId = loadRemoteResource(resourceManager, {
-    type: "material",
-    materialType: MaterialType.Physical,
-    baseColorFactor: [1, 1, 1, 1.0],
-    roughnessFactor: 0.1,
-    metallicFactor: 0.9,
-  });
-
-  const resourceId = loadRemoteResource(resourceManager, {
-    type: "mesh",
-    geometryResourceId,
-    materialResourceId,
-  });
-
-  addRenderableComponent(state, eid, resourceId);
+  addCubeMesh(
+    state,
+    eid,
+    1,
+    createRemoteStandardMaterial(state, {
+      baseColorFactor: [1, 1, 1, 1.0],
+      roughnessFactor: 0.1,
+      metallicFactor: 0.9,
+    })
+  );
 
   return eid;
 };
@@ -135,7 +188,12 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
+  colliderDesc.setCollisionGroups(CharacterInteractionGroup);
+  colliderDesc.setSolverGroups(CharacterInteractionGroup);
+  // colliderDesc.setTranslation(0, -1, 0);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(world, playerRig, rigidBody);
 
@@ -143,7 +201,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addCameraPitchTargetComponent(world, camera);
   addChild(playerRig, camera);
   const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.6;
+  cameraPosition[1] = 1.2;
 
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   addComponent(world, Owned, playerRig);

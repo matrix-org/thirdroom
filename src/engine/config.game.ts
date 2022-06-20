@@ -1,55 +1,69 @@
 import { defineConfig } from "./module/module.common";
-import { AudioModule, AudioSystem } from "./audio/audio.game";
+import { GameAudioModule, GameAudioSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { InboundNetworkSystem, NetworkModule, OutboundNetworkSystem } from "./network/network.game";
-import { GLTFLoaderSystem } from "./gltf/GLTFLoaderSystem";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
-import { FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
-import { PlayerControllerSystem } from "../plugins/PhysicsCharacterController";
-import { RenderableVisibilitySystem } from "./component/renderable";
-import { CubeSpawnSystem, ExampleModule } from "../plugins/example/example";
+import { FirstPersonCameraModule, FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
+import { PhysicsCharacterControllerModule, PlayerControllerSystem } from "../plugins/PhysicsCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
-import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
-import { EditorModule, EditorSelectionSystem, EditorStateSystem } from "./editor/editor.game";
+import {
+  EditorModule,
+  //EditorSelectionSystem,
+  EditorStateSystem,
+} from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
+import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
+import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
+import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
+import { RemoteNodeSystem } from "./node/node.game";
+import { UpdateMatrixWorldSystem } from "./component/transform";
+import { RemoteSceneSystem } from "./scene/scene.game";
+import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 
 export default defineConfig<GameState>({
   modules: [
-    AudioModule,
+    ResourceModule,
+    GameAudioModule,
     InputModule,
     PhysicsModule,
     NetworkModule,
-    RaycasterModule,
     StatsModule,
     EditorModule,
     RendererModule,
-    ExampleModule,
+    ThirdRoomModule,
+    FirstPersonCameraModule,
+    PhysicsCharacterControllerModule,
+    CubeSpawnerModule,
+    GrabThrowModule,
   ],
   systems: [
     ApplyInputSystem,
     ActionMappingSystem,
-    RaycasterSystem,
-    AudioSystem,
 
     InboundNetworkSystem,
 
-    GLTFLoaderSystem,
     FirstPersonCameraSystem,
     PlayerControllerSystem,
     PhysicsSystem,
-    RenderableVisibilitySystem,
-    CubeSpawnSystem,
+    CubeSpawnerSystem,
+    GrabThrowSystem,
+
+    UpdateMatrixWorldSystem,
 
     EditorStateSystem,
-    EditorSelectionSystem,
+    //EditorSelectionSystem,
 
     OutboundNetworkSystem,
 
-    GameWorkerStatsSystem,
-
+    GameAudioSystem,
     RenderableSystem,
+    RemoteNodeSystem,
+    RemoteSceneSystem,
+    ResourceLoaderSystem,
+
     ResetInputSystem,
+    GameWorkerStatsSystem,
   ],
 });

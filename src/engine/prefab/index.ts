@@ -1,139 +1,229 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
+import { BoxBufferGeometry, SphereGeometry } from "three";
 
 import { GameState } from "../GameTypes";
-import {
-  addChild,
-  addTransformComponent,
-  createTransformEntity,
-  setQuaternionFromEuler,
-  Transform,
-} from "../component/transform";
-import { setActiveCamera, setActiveScene, addRenderableComponent } from "../component/renderable";
+import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } from "../component/transform";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { MaterialType } from "../resources/MaterialResourceLoader";
-import { SceneDefinition, SCENE_RESOURCE } from "../resources/SceneResourceLoader";
-import { CameraType } from "../resources/CameraResourceLoader";
-import { LightType, LIGHT_RESOURCE } from "../resources/LightResourceLoader";
-import { loadRemoteResource } from "../resources/RemoteResourceManager";
-import { TextureType } from "../resources/TextureResourceLoader";
-import { GeometryType } from "../resources/GeometryResourceLoader";
-import { playAudio } from "../audio/audio.game";
-import { getModule } from "../module/module.common";
-import { RendererModule } from "../renderer/renderer.game";
-import { createGLTFEntity } from "../gltf/GLTFLoader";
+import { getModule, Thread } from "../module/module.common";
+import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
+import { createRemoteMesh } from "../mesh/mesh.game";
+import { createRemoteAccessor } from "../accessor/accessor.game";
+import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
+import { createRemoteBufferView } from "../bufferView/bufferView.game";
+import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
+import { addRemoteNodeComponent } from "../node/node.game";
+import { createDirectionalLightResource } from "../light/light.game";
+import { inflateGLTFScene } from "../gltf/gltf.game";
 
-/* Prefab Factories */
+export const addCubeMesh = (state: GameState, eid: number, size: number, material?: RemoteMaterial) => {
+  const geometry = new BoxBufferGeometry(size, size, size);
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
 
-interface SceneProps {
-  setActive?: boolean;
-  environmentMapUrl?: string;
-}
+  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
+  let cursor = 0;
+  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
+  indices.set(indicesArr);
+  cursor += indicesArr.byteLength;
+  const position = new Float32Array(buffer, cursor, posArr.length);
+  position.set(posArr);
+  cursor += posArr.byteLength;
+  const normal = new Float32Array(buffer, cursor, normArr.length);
+  normal.set(normArr);
+  cursor += normArr.byteLength;
+  const uv = new Float32Array(buffer, cursor, uvArr.length);
+  uv.set(uvArr);
 
-export function createScene(state: GameState, props: SceneProps = {}): number {
-  const { resourceManager } = getModule(state, RendererModule);
-  const eid = createTransformEntity(state.world);
+  const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
 
-  const sceneDef: SceneDefinition = {
-    type: SCENE_RESOURCE,
-  };
+  const remoteMesh = createRemoteMesh(state, {
+    indices: createRemoteAccessor(state, {
+      type: AccessorType.SCALAR,
+      componentType: AccessorComponentType.Uint16,
+      bufferView,
+      count: indices.length,
+    }),
+    attributes: {
+      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: position.byteOffset,
+        count: position.length / 3,
+      }),
+      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: normal.byteOffset,
+        count: normal.length / 3,
+        normalized: true,
+      }),
+      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
+        type: AccessorType.VEC2,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: uv.byteOffset,
+        count: uv.length / 2,
+      }),
+    },
+    material:
+      material ||
+      createRemoteStandardMaterial(state, {
+        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+        roughnessFactor: 0.8,
+        metallicFactor: 0.8,
+      }),
+  });
 
-  if (props.environmentMapUrl) {
-    const environmentMap = loadRemoteResource(resourceManager, {
-      type: "texture",
-      textureType: TextureType.RGBE,
-      url: props.environmentMapUrl,
-    });
+  addRemoteNodeComponent(state, eid, {
+    mesh: remoteMesh,
+  });
+};
 
-    sceneDef.environmentTextureResourceId = environmentMap;
-    sceneDef.backgroundTextureResourceId = environmentMap;
-  }
+export const addSphereMesh = (state: GameState, eid: number, radius: number, material?: RemoteMaterial) => {
+  const geometry = new SphereGeometry(radius / 2);
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const sceneResourceId = loadRemoteResource(resourceManager, sceneDef);
+  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
+  let cursor = 0;
+  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
+  indices.set(indicesArr);
+  cursor += indicesArr.byteLength;
+  const position = new Float32Array(buffer, cursor, posArr.length);
+  position.set(posArr);
+  cursor += posArr.byteLength;
+  const normal = new Float32Array(buffer, cursor, normArr.length);
+  normal.set(normArr);
+  cursor += normArr.byteLength;
+  const uv = new Float32Array(buffer, cursor, uvArr.length);
+  uv.set(uvArr);
 
-  if (props.setActive === undefined || props.setActive) {
-    setActiveScene(state, eid, sceneResourceId);
-  }
+  const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
 
-  return eid;
-}
+  const remoteMesh = createRemoteMesh(state, {
+    indices: createRemoteAccessor(state, {
+      type: AccessorType.SCALAR,
+      componentType: AccessorComponentType.Uint16,
+      bufferView,
+      count: indices.length,
+    }),
+    attributes: {
+      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: position.byteOffset,
+        count: position.length / 3,
+      }),
+      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: normal.byteOffset,
+        count: normal.length / 3,
+        normalized: true,
+      }),
+      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
+        type: AccessorType.VEC2,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: uv.byteOffset,
+        count: uv.length / 2,
+      }),
+    },
+    material:
+      material ||
+      createRemoteStandardMaterial(state, {
+        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+        roughnessFactor: 0.8,
+        metallicFactor: 0.8,
+      }),
+  });
 
-export const createCube = (state: GameState, geometryResourceId?: number, materialResourceId?: number) => {
-  const { resourceManager } = getModule(state, RendererModule);
+  addRemoteNodeComponent(state, eid, {
+    mesh: remoteMesh,
+  });
+};
+
+export const createCube = (state: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  if (!geometryResourceId) {
-    geometryResourceId = loadRemoteResource(resourceManager, {
-      type: "geometry",
-      geometryType: GeometryType.Box,
-    });
-  }
-
-  if (!materialResourceId) {
-    materialResourceId = loadRemoteResource(resourceManager, {
-      type: "material",
-      materialType: MaterialType.Physical,
-      baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-      roughnessFactor: 0.8,
-      metallicFactor: 0.8,
-    });
-  }
-
-  const resourceId = loadRemoteResource(resourceManager, {
-    type: "mesh",
-    geometryResourceId,
-    materialResourceId,
-  });
+  addCubeMesh(
+    state,
+    eid,
+    size,
+    material ||
+      createRemoteStandardMaterial(state, {
+        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+        roughnessFactor: 0.8,
+        metallicFactor: 0.8,
+      })
+  );
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
+    .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+    .setCollisionGroups(0xffff_ffff)
+    .setSolverGroups(0xffff_ffff);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
-  addRenderableComponent(state, eid, resourceId);
 
   return eid;
 };
 
 export function createCamera(state: GameState, setActive = true): number {
-  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const cameraResource = loadRemoteResource(resourceManager, {
-    type: "camera",
-    cameraType: CameraType.Perspective,
+
+  const remoteCamera = createRemotePerspectiveCamera(state, {
     yfov: 75,
     znear: 0.1,
   });
-  addRenderableComponent(state, eid, cameraResource);
+
+  addRemoteNodeComponent(state, eid, {
+    camera: remoteCamera,
+  });
 
   if (setActive) {
-    setActiveCamera(state, eid);
+    state.activeCamera = eid;
   }
 
   return eid;
 }
 
 export function createDirectionalLight(state: GameState, parentEid?: number) {
-  const { resourceManager } = getModule(state, RendererModule);
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
-  const lightResourceId = loadRemoteResource(resourceManager, {
-    type: LIGHT_RESOURCE,
-    lightType: LightType.Directional,
-    intensity: 0.5,
+
+  addRemoteNodeComponent(state, eid, {
+    light: createDirectionalLightResource(state),
   });
-  addRenderableComponent(state, eid, lightResourceId);
 
   if (parentEid !== undefined) {
     addChild(parentEid, eid);
   }
 
+  return eid;
+}
+
+export function createGLTFEntity(ctx: GameState, uri: string) {
+  const eid = addEntity(ctx.world);
+  inflateGLTFScene(ctx, eid, uri);
   return eid;
 }
 
@@ -165,132 +255,16 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-export function registerDefaultPrefabs(state: GameState) {
-  const { resourceManager } = getModule(state, RendererModule);
-  registerPrefab(state, {
-    name: "random-cube",
-    create: createCube,
-  });
-  registerPrefab(state, {
-    name: "red-cube",
-    create: () => {
-      const eid = createCube(
-        state,
-        loadRemoteResource(resourceManager, {
-          type: "geometry",
-          geometryType: GeometryType.Box,
-        }),
-        loadRemoteResource(resourceManager, {
-          type: "material",
-          materialType: MaterialType.Physical,
-          baseColorFactor: [1, 0, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      );
-      return eid;
-    },
-  });
-  registerPrefab(state, {
-    name: "musical-cube",
-    create: () => {
-      const eid = createCube(
-        state,
-        loadRemoteResource(resourceManager, {
-          type: "geometry",
-          geometryType: GeometryType.Box,
-        }),
-        loadRemoteResource(resourceManager, {
-          type: "material",
-          materialType: MaterialType.Physical,
-          baseColorFactor: [1, 0, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      );
+export function createContainerizedAvatar(ctx: GameState, uri: string) {
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
 
-      playAudio("/audio/bach.mp3", eid);
+  const container = addEntity(ctx.world);
+  addTransformComponent(ctx.world, container);
 
-      return eid;
-    },
-  });
-  registerPrefab(state, {
-    name: "green-cube",
-    create: () =>
-      createCube(
-        state,
-        loadRemoteResource(resourceManager, {
-          type: "geometry",
-          geometryType: GeometryType.Box,
-        }),
-        loadRemoteResource(resourceManager, {
-          type: "material",
-          materialType: MaterialType.Physical,
-          baseColorFactor: [0, 1, 0, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "blue-cube",
-    create: () =>
-      createCube(
-        state,
-        loadRemoteResource(resourceManager, {
-          type: "geometry",
-          geometryType: GeometryType.Box,
-        }),
-        loadRemoteResource(resourceManager, {
-          type: "material",
-          materialType: MaterialType.Physical,
-          baseColorFactor: [0, 0, 1, 1.0],
-          roughnessFactor: 0.8,
-          metallicFactor: 0.8,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "player-cube",
-    create: () =>
-      createCube(
-        state,
-        loadRemoteResource(resourceManager, {
-          type: "geometry",
-          geometryType: GeometryType.Box,
-        }),
-        loadRemoteResource(resourceManager, {
-          type: "material",
-          materialType: MaterialType.Physical,
-          baseColorFactor: [1, 1, 1, 1.0],
-          roughnessFactor: 0.1,
-          metallicFactor: 0.9,
-        })
-      ),
-  });
-  registerPrefab(state, {
-    name: "mixamo-x",
-    create: () => {
-      return createRotatedAvatar(state, "/gltf/mixamo-x.glb");
-    },
-  });
-  registerPrefab(state, {
-    name: "mixamo-y",
-    create: () => {
-      return createRotatedAvatar(state, "/gltf/mixamo-y.glb");
-    },
-  });
-}
+  const eid = addEntity(ctx.world);
+  inflateGLTFScene(ctx, eid, uri, undefined, false);
 
-function createRotatedAvatar(state: GameState, path: string) {
-  const { physicsWorld } = getModule(state, PhysicsModule);
-
-  const container = addEntity(state.world);
-  addTransformComponent(state.world, container);
-
-  const eid = createGLTFEntity(state, path);
-
-  Transform.position[eid].set([0, -0.5, 0]);
+  Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
@@ -299,9 +273,14 @@ function createRotatedAvatar(state: GameState, path: string) {
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+
+  // TODO: collision groups
+  // colliderDesc.setCollisionGroups(0x0000_fff0);
+  // colliderDesc.setSolverGroups(0x0000_fff0);
+
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(state.world, container, rigidBody);
+  addRigidBody(ctx.world, container, rigidBody);
 
   return container;
 }
@@ -315,6 +294,6 @@ export const createPrefabEntity = (state: GameState, prefab: string) => {
   if (create) {
     return create(state);
   } else {
-    return createLoadingEntity(state);
+    return createLoadingEntity(state, 1);
   }
 };

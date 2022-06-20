@@ -1,7 +1,4 @@
-import { TripleBufferBackedObjectBufferView } from "../allocator/ObjectBufferView";
-import { renderableSchema } from "../component/renderable.common";
-import { worldMatrixObjectBufferSchema } from "../component/transform.common";
-import { ResourceManager } from "../resources/ResourceManager";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 
 export const rendererModuleName = "renderer";
 
@@ -17,11 +14,13 @@ export interface InitializeCanvasMessage {
   initialCanvasHeight: number;
 }
 
-export interface InitializeResourceManagerMessage {
-  resourceManagerBuffer: ResourceManager;
-}
+export const rendererStateSchema = defineObjectBufferSchema({
+  activeSceneResourceId: [Uint32Array, 1],
+  activeCameraResourceId: [Uint32Array, 1],
+});
+
+export type RendererStateTripleBuffer = ObjectTripleBuffer<typeof rendererStateSchema>;
 
 export interface InitializeRendererTripleBuffersMessage {
-  renderableObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof renderableSchema, ArrayBuffer>;
-  worldMatrixObjectTripleBuffer: TripleBufferBackedObjectBufferView<typeof worldMatrixObjectBufferSchema, ArrayBuffer>;
+  rendererStateTripleBuffer: RendererStateTripleBuffer;
 }

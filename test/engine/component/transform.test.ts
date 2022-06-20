@@ -10,6 +10,13 @@ import {
 } from "../../../src/engine/component/transform";
 import { NOOP } from "../../../src/engine/config.common";
 
+function resetComponentData() {
+  Transform.firstChild.fill(0);
+  Transform.prevSibling.fill(0);
+  Transform.nextSibling.fill(0);
+  Transform.parent.fill(0);
+}
+
 describe("Transform Unit Tests", function () {
   describe("scene graph hierarchy", function () {
     describe("parenting", function () {
@@ -52,11 +59,8 @@ describe("Transform Unit Tests", function () {
       });
 
       describe("#addChild()", function () {
-        beforeEach(function () {
-          Transform.firstChild.fill(0);
-          Transform.prevSibling.fill(0);
-          Transform.nextSibling.fill(0);
-        });
+        beforeEach(resetComponentData);
+
         test("should add one child", function () {
           const parent = 1;
           const child = 2;
@@ -86,6 +90,8 @@ describe("Transform Unit Tests", function () {
       });
 
       describe("#removeChild", function () {
+        beforeEach(resetComponentData);
+
         test("should remove one child", function () {
           const parent = 1;
           const child = 2;
@@ -187,6 +193,56 @@ describe("Transform Unit Tests", function () {
         traverse(1, (eid) => result.push(eid));
 
         expect(result).toStrictEqual([1, 2, 6, 7, 3, 4, 5]);
+      });
+
+      test("should skip children if you return false", () => {
+        /**
+         *       root(1)
+         *         / \
+         *      A(2) B(3)
+         *      /     / \
+         *    E(6)  C(4) D(5)
+         *    /
+         *   F(7)
+         */
+
+        const root = 1;
+        const childA = 2;
+        const childB = 3;
+        const childC = 4;
+        const childD = 5;
+        const childE = 6;
+        const childF = 7;
+        addChild(root, childA);
+        addChild(root, childB);
+        addChild(childB, childC);
+        addChild(childB, childD);
+        addChild(childA, childE);
+        addChild(childE, childF);
+
+        const results1: number[] = [];
+
+        traverse(1, (eid) => {
+          if (eid === childA) {
+            return false;
+          }
+
+          results1.push(eid);
+        });
+
+        expect(results1).toStrictEqual([1, 3, 4, 5]);
+
+        const results2: number[] = [];
+
+        traverse(1, (eid) => {
+          if (eid === childB) {
+            return false;
+          }
+
+          results2.push(eid);
+        });
+
+        expect(results2).toStrictEqual([1, 2, 6, 7]);
       });
     });
   });

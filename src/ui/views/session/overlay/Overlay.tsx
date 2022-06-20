@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import classNames from "classnames";
 import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
@@ -18,7 +19,7 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, RoomListTabs, OverlayWindow } from "../../../hooks/useStore";
+import { useStore, RoomListTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListWorld } from "../sidebar/RoomListWorlds";
 import { RoomListChats } from "../sidebar/RoomListChats";
@@ -45,7 +46,8 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
 
   const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
   const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
-  const { worldId, isEnteredWorld } = useStore((state) => state.world);
+  const { worldId, isEnteredWorld, loadState } = useStore((state) => state.world);
+  const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const { selectedWindow } = useStore((state) => state.overlayWindow);
@@ -54,8 +56,40 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
+  const [worldPreviewUrl, setWorldPreviewUrl] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (selectedWorldId) {
+      const world = session.rooms.get(selectedWorldId);
+
+      if (world) {
+        world.getStateEvent("m.world").then(
+          ({
+            event: {
+              // eslint-disable-next-line camelcase
+              content: { scene_preview_url },
+            },
+          }: any) => {
+            setWorldPreviewUrl(session.mediaRepository.mxcUrl(scene_preview_url));
+          }
+        );
+      }
+    }
+  }, [session, selectedWorldId]);
+
+  const previewingWorld =
+    worldId !== selectedWorldId ||
+    !(
+      loadState === WorldLoadState.Loaded ||
+      loadState === WorldLoadState.Entering ||
+      loadState === WorldLoadState.Entered
+    );
+
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
+      {worldPreviewUrl && previewingWorld && (
+        <img alt="World Preview" src={worldPreviewUrl} className="Overlay__world-preview" />
+      )}
       {selectedWindow ? undefined : (
         <SidebarView
           spaces={spacesEnabled ? <SpacesView /> : undefined}

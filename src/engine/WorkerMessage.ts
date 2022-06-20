@@ -1,11 +1,7 @@
 import type { OffscreenCanvas } from "three";
-import type { vec3 } from "gl-matrix";
-import { ResourceDefinition } from "./resources/ResourceManager";
 import { TripleBuffer } from "./allocator/TripleBuffer";
-import { GLTFEntityDescription } from "./gltf";
 import { ComponentPropertyValues } from "./editor/editor.game";
 import { ComponentInfo, ComponentPropertyValue } from "./component/types";
-import { RaycastResult, RayId } from "./raycaster/raycaster.common";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -18,16 +14,6 @@ export enum WorkerMessageType {
   StartRenderWorker = "start-render-worker",
   InitializeGameWorkerRenderState = "initialize-game-worker-render-state",
   RenderWorkerResize = "render-worker-resize",
-  LoadResource = "load-resource",
-  ResourceLoaded = "resource-loaded",
-  ResourceLoadError = "resource-load-error",
-  AddResourceRef = "add-resource-ref",
-  RemoveResourceRef = "remove-resource-ref",
-  ResourceDisposed = "resource-disposed",
-  AddRenderable = "add-renderable",
-  RemoveRenderable = "remove-renderable",
-  SetActiveCamera = "set-active-camera",
-  SetActiveScene = "set-active-scene",
   ExportScene = "export-scene",
   ExportGLTF = "export-gltf",
   SaveGLTF = "save-gltf",
@@ -49,8 +35,6 @@ export enum WorkerMessageType {
   SelectionChanged = "selection-changed",
   ComponentInfoChanged = "component-info-changed",
   ComponentPropertyChanged = "component-property-changed",
-  Raycast = "raycast",
-  RaycastResults = "raycast-results",
   PlayAudio = "play-audio",
   SetAudioListener = "set-audio-listener",
   SetAudioPeerEntity = "set-audio-peer-entity",
@@ -106,68 +90,8 @@ export interface RenderWorkerResizeMessage extends WorkerMessage {
   canvasHeight: number;
 }
 
-export interface LoadedResourceMessage<RemoteResource = undefined> extends WorkerMessage {
-  type: WorkerMessageType.ResourceLoaded;
-  resourceId: number;
-  remoteResource?: RemoteResource;
-}
-
-export interface LoadErrorResourceMessage<Error> extends WorkerMessage {
-  type: WorkerMessageType.ResourceLoadError;
-  resourceId: number;
-  error: Error;
-}
-
-export interface DisposedResourceMessage extends WorkerMessage {
-  type: WorkerMessageType.ResourceDisposed;
-  resourceId: number;
-}
-
-export interface LoadResourceMessage<Def extends ResourceDefinition> extends WorkerMessage {
-  type: WorkerMessageType.LoadResource;
-  resourceId: number;
-  resourceDef: Def;
-}
-
-export interface AddResourceRefMessage extends WorkerMessage {
-  type: WorkerMessageType.AddResourceRef;
-  resourceId: number;
-}
-
-export interface RemoveResourceRefMessage extends WorkerMessage {
-  type: WorkerMessageType.RemoveResourceRef;
-  resourceId: number;
-}
-
-export interface AddRenderableMessage extends WorkerMessage {
-  type: WorkerMessageType.AddRenderable;
-  eid: number;
-  resourceId: number;
-}
-
-export interface RemoveRenderableMessage extends WorkerMessage {
-  type: WorkerMessageType.RemoveRenderable;
-  eid: number;
-}
-
-export interface SetActiveCameraMessage extends WorkerMessage {
-  type: WorkerMessageType.SetActiveCamera;
-  eid: number;
-}
-
-export interface SetActiveSceneMessage extends WorkerMessage {
-  type: WorkerMessageType.SetActiveScene;
-  eid: number;
-  resourceId: number;
-}
-
 export interface ExportSceneMessage extends WorkerMessage {
   type: WorkerMessageType.ExportScene;
-}
-
-export interface ExportGLTFMessage extends WorkerMessage {
-  type: WorkerMessageType.ExportGLTF;
-  scene: GLTFEntityDescription;
 }
 
 export interface SaveGLTFMessage extends WorkerMessage {
@@ -276,19 +200,6 @@ export interface ComponentPropertyChangedMessage extends WorkerMessage {
   value: ComponentPropertyValue;
 }
 
-export interface RaycastMessage extends WorkerMessage {
-  type: WorkerMessageType.Raycast;
-  rayId: RayId;
-  origin: vec3;
-  direction: vec3;
-}
-
-export interface RaycastResultsMessage extends WorkerMessage {
-  type: WorkerMessageType.RaycastResults;
-  rayId: number;
-  results: RaycastResult[];
-}
-
 export interface PlayAudioMessage extends WorkerMessage {
   type: WorkerMessageType.PlayAudio;
   filepath: string;
@@ -310,24 +221,13 @@ export type WorkerMessages =
   | InitializeGameWorkerMessage
   | InitializeRenderWorkerMessage
   | RenderWorkerResizeMessage
-  | LoadedResourceMessage<any>
-  | LoadErrorResourceMessage<any>
-  | DisposedResourceMessage
-  | LoadResourceMessage<any>
-  | AddResourceRefMessage
-  | RemoveResourceRefMessage
-  | AddRenderableMessage
-  | RemoveRenderableMessage
   | RenderWorkerInitializedMessage
   | StartRenderWorkerMessage
   | RenderWorkerErrorMessage
   | GameWorkerInitializedMessage
   | GameWorkerErrorMessage
   | StartGameWorkerMessage
-  | SetActiveCameraMessage
-  | SetActiveSceneMessage
   | ExportSceneMessage
-  | ExportGLTFMessage
   | SaveGLTFMessage
   | ReliableNetworkMessage
   | UnreliableNetworkMessage
@@ -347,17 +247,9 @@ export type WorkerMessages =
   | SelectionChangedMessage
   | ComponentInfoChangedMessage
   | ComponentPropertyChangedMessage
-  | RaycastMessage
-  | RaycastResultsMessage
   | PlayAudioMessage
   | SetAudioListenerMessage
   | SetAudioPeerEntityMessage;
-
-export type RenderableMessages =
-  | AddRenderableMessage
-  | RemoveRenderableMessage
-  | SetActiveCameraMessage
-  | SetActiveSceneMessage;
 
 export type MessagePortLike = MessagePort | LocalMessagePort;
 export class LocalMessageChannel {

@@ -3,7 +3,6 @@ import { addEntity, createWorld } from "bitecs";
 import { addChild, addTransformComponent } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
-import { registerDefaultPrefabs } from "./prefab";
 import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
@@ -62,8 +61,8 @@ async function onInit({
     elapsed: performance.now(),
     dt: 0,
     world,
-    scene,
-    camera,
+    activeScene: scene,
+    activeCamera: camera,
     prefabTemplateMap: new Map(),
     entityPrefabMap: new Map(),
     systems: gameConfig.systems,
@@ -105,8 +104,6 @@ async function onInit({
   }
 
   await modulePromise;
-
-  registerDefaultPrefabs(state);
 
   console.log("GameWorker initialized");
 

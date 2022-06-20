@@ -14,13 +14,13 @@ import { GameState, World } from "../GameTypes";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
-import { playAudio } from "../audio/audio.game";
 import { defineModule, getModule } from "../module/module.common";
 
 interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleMap: Map<number, number>;
+  drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
 }
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
@@ -33,13 +33,30 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleMap = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
+    const drainContactEvents = (callback: (eid1: number, eid2: number) => void) => {
+      eventQueue.drainContactEvents((handle1, handle2) => {
+        const eid1 = handleMap.get(handle1);
+        if (eid1 === undefined) {
+          console.warn(`Contact with unregistered physics handle ${handle1}`);
+          // return;
+        }
+        const eid2 = handleMap.get(handle2);
+        if (eid2 === undefined) {
+          console.warn(`Contact with unregistered physics handle ${handle2}`);
+          // return;
+        }
+        callback(eid1!, eid2!);
+      });
+    };
+
     return {
       physicsWorld,
       eventQueue,
       handleMap,
+      drainContactEvents,
     };
   },
-  async init() {},
+  init(ctx) {},
 });
 
 const RigidBodySoA = defineComponent({});
@@ -57,6 +74,10 @@ export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) =>
 };
 
 const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
+  if (body.isStatic()) {
+    return;
+  }
+
   const rigidPos = body.translation();
   const rigidRot = body.rotation();
   const position = Transform.position[eid];
@@ -72,8 +93,6 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
   quaternion[3] = rigidRot.w;
 };
 
-// todo: put on physicsstate
-
 export const PhysicsSystem = (state: GameState) => {
   const { world, dt } = state;
   const { physicsWorld, handleMap, eventQueue } = getModule(state, PhysicsModule);
@@ -85,6 +104,7 @@ export const PhysicsSystem = (state: GameState) => {
     if (body) {
       handleMap.delete(body.handle);
       physicsWorld.removeRigidBody(body);
+      RigidBody.store.delete(eid);
     }
   }
 
@@ -93,13 +113,16 @@ export const PhysicsSystem = (state: GameState) => {
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
 
-    const rotation = Transform.rotation[eid];
-    const quaternion = Transform.quaternion[eid];
-    setQuaternionFromEuler(quaternion, rotation);
-
     const body = RigidBody.store.get(eid);
+
     if (body) {
-      applyTransformToRigidBody(body, eid);
+      if (!body.isStatic()) {
+        const rotation = Transform.rotation[eid];
+        const quaternion = Transform.quaternion[eid];
+        setQuaternionFromEuler(quaternion, rotation);
+        applyTransformToRigidBody(body, eid);
+      }
+
       handleMap.set(body.handle, eid);
     }
   }
@@ -109,7 +132,8 @@ export const PhysicsSystem = (state: GameState) => {
   for (let i = 0; i < physicsEntities.length; i++) {
     const eid = physicsEntities[i];
     const body = RigidBody.store.get(eid);
-    if (body) {
+
+    if (body && !body.isStatic()) {
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         applyTransformToRigidBody(body, eid);
       } else {
@@ -120,10 +144,6 @@ export const PhysicsSystem = (state: GameState) => {
 
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
-
-  eventQueue.drainContactEvents((handle1: RAPIER.RigidBodyHandle, handle2: RAPIER.RigidBodyHandle) => {
-    playAudio("/audio/hit.wav", handleMap.get(handle2));
-  });
 };
 
 export function addRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {
