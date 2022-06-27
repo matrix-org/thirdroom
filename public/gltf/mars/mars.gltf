@@ -1,0 +1,33 @@
+{
+  "asset": {
+    "version": "2.0"
+  },
+  "extensionsUsed": ["MX_tiles_renderer", "MX_character_controller", "MX_spawn_point"],
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0, 1],
+      "extensions": {
+        "MX_character_controller": {
+          "type": "fly"
+        }
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "rotation": [0.7071067811865475, 0, 0, 0.7071067811865476],
+      "extensions": {
+        "MX_tiles_renderer": {
+          "tilesetUrl": "tiles/scene-tileset.json"
+        }
+      }
+    },
+    {
+      "translation": [0, 20, 0],
+      "extensions": {
+        "MX_spawn_point": {}
+      }
+    }
+  ]
+}

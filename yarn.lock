@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"3d-tiles-renderer@^0.3.9":
+  version "0.3.9"
+  resolved "https://registry.yarnpkg.com/3d-tiles-renderer/-/3d-tiles-renderer-0.3.9.tgz#6855b0b68c2b88d129d2c72993b0aa025bf35852"
+  integrity sha512-6uYWcRLt/xhAGFHDA9QWvLCzxz0YpB++DkRR2OCImdcS8+c259H6dg8H1mYf+HhHayJQSMEZSbxdO74BW3FpBQ==
+  dependencies:
+    path-browserify "^1.0.1"
+
 "@ampproject/remapping@^2.1.0":
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/@ampproject/remapping/-/remapping-2.1.2.tgz#4edca94973ded9630d20101cd8559cedb8d8bd34"
@@ -3659,6 +3666,11 @@ parse5@6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/parse5/-/parse5-6.0.1.tgz#e1a1c085c569b3dc08321184f19a39cc27f7c30b"
   integrity sha512-Ofn/CTFzRGTTxwpNEs9PP93gXShHcTq255nzRYSKe8AkVpZY7e1fpmTfOyoIvjP5HG7Z2ZM7VS9PPhQGW2pOpw==
+
+path-browserify@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/path-browserify/-/path-browserify-1.0.1.tgz#d98454a9c3753d5790860f16f68867b9e46be1fd"
+  integrity sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==
 
 path-exists@^3.0.0:
   version "3.0.0"

@@ -48,6 +48,9 @@ import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType } from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
+import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
+import { hasSpawnPointExtension } from "./MX_spawn_point";
+import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
 
 export interface GLTFResource {
   baseUrl: string;
@@ -137,6 +140,10 @@ export async function inflateGLTFScene(
   if (hasHubsComponentsExtension(resource.root)) {
     inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
   }
+
+  if (hasCharacterControllerExtension(scene)) {
+    inflateSceneCharacterController(ctx, resource, sceneIndex, sceneEid);
+  }
 }
 
 async function _inflateGLTFNode(
@@ -192,7 +199,7 @@ async function _inflateGLTFNode(
   const results = await promises;
 
   nodeInflators.push(() => {
-    if (results.mesh || results.camera || results.light || results.audioEmitter) {
+    if (results.mesh || results.camera || results.light || results.audioEmitter || hasTilesRendererExtension(node)) {
       addRemoteNodeComponent(ctx, nodeEid, results as any);
     }
 
@@ -214,9 +221,13 @@ async function _inflateGLTFNode(
         addTrimesh(ctx, nodeEid);
       }
 
-      if (node.extras && node.extras["spawn-point"]) {
+      if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node)) {
         addComponent(ctx.world, SpawnPoint, nodeEid);
       }
+    }
+
+    if (hasTilesRendererExtension(node)) {
+      addTilesRenderer(ctx, resource, nodeIndex, nodeEid);
     }
   });
 }

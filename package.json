@@ -23,6 +23,7 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "3d-tiles-renderer": "^0.3.9",
     "@dimforge/rapier3d-compat": "0.7.6",
     "@radix-ui/react-dialog": "^0.1.7",
     "@radix-ui/react-dropdown-menu": "^0.1.6",

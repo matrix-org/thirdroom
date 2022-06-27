@@ -21,6 +21,7 @@ import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
 import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
+import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 
 export default defineConfig<GameState>({
   modules: [
@@ -35,6 +36,7 @@ export default defineConfig<GameState>({
     ThirdRoomModule,
     FirstPersonCameraModule,
     PhysicsCharacterControllerModule,
+    FlyCharacterControllerModule,
     CubeSpawnerModule,
     GrabThrowModule,
   ],
@@ -46,6 +48,7 @@ export default defineConfig<GameState>({
 
     FirstPersonCameraSystem,
     PlayerControllerSystem,
+    FlyControlsSystem,
     PhysicsSystem,
     CubeSpawnerSystem,
     GrabThrowSystem,
