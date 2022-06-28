@@ -9,6 +9,10 @@
   dependencies:
     path-browserify "^1.0.1"
 
+"3d-tiles-renderer@https://github.com/matrix-org/3DTilesRendererJS.git#basic-typescript-types":
+  version "0.3.9"
+  resolved "https://github.com/matrix-org/3DTilesRendererJS.git#10c43ca7cd1e72c90430496e8b149dbd4bcef5bb"
+
 "@ampproject/remapping@^2.1.0":
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/@ampproject/remapping/-/remapping-2.1.2.tgz#4edca94973ded9630d20101cd8559cedb8d8bd34"
