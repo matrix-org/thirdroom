@@ -1,5 +1,5 @@
 .Dialog__overlay {
-  background-color: #00000027;
+  background-color: #00000033;
   position: fixed;
   top: 0;
   left: 0;
@@ -45,7 +45,7 @@
 }
 .Dialog[data-state="open"] {
   animation-name: dialog-anime;
-  animation-duration: 200ms;
+  animation-duration: 150ms;
   animation-iteration-count: 1;
 
   transform: translate(-50%, -50%) scale(1);

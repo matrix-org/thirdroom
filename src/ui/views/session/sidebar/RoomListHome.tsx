@@ -13,6 +13,9 @@ import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -50,11 +53,21 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <IconButton
-                size="sm"
-                label="Create World"
-                iconSrc={AddIC}
-                onClick={() => selectWindow(OverlayWindow.CreateWorld)}
+              <JoinWorldDialog
+                renderTrigger={(openDialog) => (
+                  <DropdownMenu
+                    content={
+                      <>
+                        <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                          Create World
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join World</DropdownMenuItem>
+                      </>
+                    }
+                  >
+                    <IconButton size="sm" label="Create World" iconSrc={AddIC} />
+                  </DropdownMenu>
+                )}
               />
             }
           />

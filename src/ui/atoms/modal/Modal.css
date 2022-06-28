@@ -1,5 +1,5 @@
 .Modal__overlay {
-  background-color: #00000027;
+  background-color: #00000033;
   position: fixed;
   top: 0;
   left: 0;
@@ -54,7 +54,7 @@
 
 @keyframes modal-anime {
   0% {
-    transform: translate(-50%, -40%) scale(0.5);
+    transform: translate(-50%, -40%) scale(0.7);
     opacity: 0;
   }
   75% {
