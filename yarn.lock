@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"3d-tiles-renderer@^0.3.9":
-  version "0.3.9"
-  resolved "https://registry.yarnpkg.com/3d-tiles-renderer/-/3d-tiles-renderer-0.3.9.tgz#6855b0b68c2b88d129d2c72993b0aa025bf35852"
-  integrity sha512-6uYWcRLt/xhAGFHDA9QWvLCzxz0YpB++DkRR2OCImdcS8+c259H6dg8H1mYf+HhHayJQSMEZSbxdO74BW3FpBQ==
-  dependencies:
-    path-browserify "^1.0.1"
-
 "3d-tiles-renderer@https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch":
   version "0.3.9"
   resolved "https://github.com/matrix-org/3DTilesRendererJS.git#0a24d695752f6e419d47cca0bbec0e8ba8f0af4c"
