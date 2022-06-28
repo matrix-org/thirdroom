@@ -53,11 +53,12 @@ import {
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
-import { MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import { InstancedMeshResourceType, MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
 import {
   LocalMeshPrimitive,
   onLoadLocalMeshPrimitiveResource,
   onLoadLocalMeshResource,
+  onLoadLocalInstancedMeshResource,
   updateLocalMeshPrimitiveResources,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
@@ -154,6 +155,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
+      registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
     ]);
