@@ -29,12 +29,15 @@ export const roundCursor = <T extends TypedArrayConstructor>(buffer: CursorBuffe
 export const addView = <T extends TypedArrayConstructor>(
   buffer: CursorBuffer,
   Type: T,
-  size: number
+  size: number,
+  defaultValues?: InstanceType<T>
 ): InstanceType<T> => {
   roundCursor(buffer, Type);
 
   const store = new Type(buffer, buffer[$cursor], size);
   buffer[$cursor] += size * store.BYTES_PER_ELEMENT;
+
+  if (defaultValues) store.set(defaultValues as any);
 
   return store as InstanceType<T>;
 };
