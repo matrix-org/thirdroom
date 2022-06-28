@@ -28,6 +28,8 @@ import {
   createContainerizedAvatar,
   registerPrefab,
 } from "../../engine/prefab";
+import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
+import { createFlyPlayerRig } from "../FlyCharacterController";
 
 type ThirdRoomModuleState = {};
 
@@ -222,10 +224,21 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
     removeEntity(world, state.activeCamera);
   }
 
-  const playerRig = createPlayerRig(state);
-  vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
-  vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
-  setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
+  const characterControllerType = SceneCharacterControllerComponent.get(state.activeScene)?.type;
+
+  let playerRig: number;
+
+  if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
+    playerRig = createFlyPlayerRig(state);
+  } else {
+    playerRig = createPlayerRig(state);
+  }
+
+  if (spawnPoints.length > 0) {
+    vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
+    vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
+    setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
+  }
 
   addChild(state.activeScene, playerRig);
 }

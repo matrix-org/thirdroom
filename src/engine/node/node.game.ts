@@ -25,6 +25,7 @@ import {
   RendererNodeTripleBuffer,
   RendererSharedNodeResource,
 } from "./node.common";
+import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -43,6 +44,8 @@ export interface RemoteNode {
   set light(light: RemoteLight | undefined);
   get camera(): RemoteCamera | undefined;
   set camera(camera: RemoteCamera | undefined);
+  get tilesRenderer(): RemoteTilesRenderer | undefined;
+  set tilesRenderer(tilesRenderer: RemoteTilesRenderer | undefined);
   get audioEmitter(): RemotePositionalAudioEmitter | undefined;
   set audioEmitter(audioEmitter: RemotePositionalAudioEmitter | undefined);
   get static(): boolean;
@@ -54,6 +57,7 @@ interface NodeProps {
   light?: RemoteLight;
   camera?: RemoteCamera;
   audioEmitter?: RemotePositionalAudioEmitter;
+  tilesRenderer?: RemoteTilesRenderer;
   static?: boolean;
 }
 
@@ -68,6 +72,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     if (props?.light) remoteNode.light = props.light;
     if (props?.camera) remoteNode.camera = props.camera;
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
+    if (props?.tilesRenderer) remoteNode.tilesRenderer = props.tilesRenderer;
 
     return remoteNode;
   }
@@ -78,6 +83,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   rendererNodeBufferView.mesh[0] = props?.mesh?.resourceId || 0;
   rendererNodeBufferView.light[0] = props?.light?.resourceId || 0;
   rendererNodeBufferView.camera[0] = props?.camera?.resourceId || 0;
+  rendererNodeBufferView.tilesRenderer[0] = props?.tilesRenderer?.resourceId || 0;
   rendererNodeBufferView.static[0] = props?.static ? 1 : 0;
 
   audioNodeBufferView.audioEmitter[0] = props?.audioEmitter?.resourceId || 0;
@@ -99,6 +105,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _light: RemoteLight | undefined = props?.light;
   let _camera: RemoteCamera | undefined = props?.camera;
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
+  let _tilesRenderer: RemoteTilesRenderer | undefined = props?.tilesRenderer;
 
   const remoteNode: RemoteNode = {
     eid,
@@ -128,6 +135,13 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     set camera(camera: RemoteCamera | undefined) {
       _camera = camera;
       rendererNodeBufferView.camera[0] = camera?.resourceId || 0;
+    },
+    get tilesRenderer() {
+      return _tilesRenderer;
+    },
+    set tilesRenderer(tilesRenderer: RemoteTilesRenderer | undefined) {
+      _tilesRenderer = tilesRenderer;
+      rendererNodeBufferView.tilesRenderer[0] = tilesRenderer?.resourceId || 0;
     },
     get audioEmitter() {
       return _audioEmitter;

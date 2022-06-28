@@ -55,7 +55,12 @@ export function SessionView() {
             content: { scene_url },
           },
         }: any) => {
-          const sceneUrl = session.mediaRepository.mxcUrl(scene_url);
+          // eslint-disable-next-line camelcase
+          let sceneUrl = scene_url;
+
+          if (sceneUrl && sceneUrl.startsWith("mxc:")) {
+            sceneUrl = session.mediaRepository.mxcUrl(scene_url);
+          }
 
           if (sceneUrl) {
             loadEnvironment(mainThread, sceneUrl);

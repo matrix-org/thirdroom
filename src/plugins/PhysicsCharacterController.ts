@@ -216,6 +216,11 @@ export const PlayerControllerSystem = (state: GameState) => {
   const { physicsWorld } = getModule(state, PhysicsModule);
   const input = getModule(state, InputModule);
   const playerRig = playerRigQuery(state.world)[0];
+
+  if (!playerRig) {
+    return;
+  }
+
   const body = RigidBody.store.get(playerRig);
   if (body) {
     obj.quaternion.x = Transform.quaternion[playerRig][0];

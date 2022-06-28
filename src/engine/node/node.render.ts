@@ -27,6 +27,7 @@ import { ResourceId } from "../resource/resource.common";
 import { getLocalResource } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
 import { LocalSceneResource } from "../scene/scene.render";
+import { LocalTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererNodeTripleBuffer, RendererSharedNodeResource } from "./node.common";
 
@@ -41,6 +42,7 @@ export interface LocalNode {
   cameraObject?: PerspectiveCamera | OrthographicCamera;
   light?: LocalLightResource;
   lightObject?: Light;
+  tilesRenderer?: LocalTilesRendererResource;
 }
 
 export async function onLoadLocalNode(
@@ -98,20 +100,18 @@ export function updateTransformFromNode(
 export function updateLocalNodeResources(
   ctx: RenderThreadState,
   rendererModule: RendererModuleState,
-  nodes: LocalNode[]
+  nodes: LocalNode[],
+  activeSceneResource: LocalSceneResource | undefined,
+  activeCameraNode: LocalNode | undefined
 ) {
-  const rendererState = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
-  const activeScene = rendererState.activeSceneResourceId[0];
-  const sceneResource = getLocalResource<LocalSceneResource>(ctx, activeScene)?.resource;
-
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     const nodeResource = getLocalResource<LocalNode>(ctx, node.resourceId);
 
     if (nodeResource && nodeResource.statusView[1]) {
       if (node.camera) {
-        if (sceneResource && node.cameraObject) {
-          sceneResource.scene.remove(node.cameraObject);
+        if (activeSceneResource && node.cameraObject) {
+          activeSceneResource.scene.remove(node.cameraObject);
         }
 
         if (node.camera.type === CameraType.Perspective) {
@@ -133,8 +133,8 @@ export function updateLocalNodeResources(
       }
 
       if (node.mesh) {
-        if (sceneResource && node.meshPrimitiveObjects) {
-          sceneResource.scene.remove(...node.meshPrimitiveObjects);
+        if (activeSceneResource && node.meshPrimitiveObjects) {
+          activeSceneResource.scene.remove(...node.meshPrimitiveObjects);
         }
 
         const primitives = node.mesh.primitives;
@@ -154,27 +154,37 @@ export function updateLocalNodeResources(
       }
 
       if (node.light) {
-        if (sceneResource && node.lightObject) {
-          sceneResource.scene.remove(node.lightObject);
+        if (activeSceneResource && node.lightObject) {
+          activeSceneResource.scene.remove(node.lightObject);
         }
 
         node.lightObject = undefined;
         node.light = undefined;
       }
 
+      if (node.tilesRenderer) {
+        if (activeSceneResource) {
+          activeSceneResource.scene.remove(node.tilesRenderer.tilesRenderer.group);
+        }
+
+        node.tilesRenderer.tilesRenderer.dispose();
+        node.tilesRenderer = undefined;
+      }
+
       nodes.splice(i, 1);
     }
   }
 
-  if (!sceneResource) {
+  if (!activeSceneResource) {
     return;
   }
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
-    updateNodeCamera(ctx, sceneResource.scene, node, nodeView);
-    updateNodeLight(ctx, sceneResource.scene, node, nodeView);
-    updateNodeMesh(ctx, sceneResource.scene, node, nodeView);
+    updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
   }
 }

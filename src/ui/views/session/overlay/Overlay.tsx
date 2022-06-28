@@ -70,7 +70,13 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
               content: { scene_preview_url },
             },
           }: any) => {
-            setWorldPreviewUrl(session.mediaRepository.mxcUrl(scene_preview_url));
+            // eslint-disable-next-line camelcase
+            if (scene_preview_url && scene_preview_url.startsWith("mxc:")) {
+              // eslint-disable-next-line camelcase
+              scene_preview_url = session.mediaRepository.mxcUrl(scene_preview_url);
+            }
+
+            setWorldPreviewUrl(scene_preview_url);
           }
         );
       }
