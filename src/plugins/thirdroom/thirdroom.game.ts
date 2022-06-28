@@ -228,15 +228,18 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
 
   let playerRig: number;
 
-  if (characterControllerType === CharacterControllerType.Fly) {
+  if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
     playerRig = createFlyPlayerRig(state);
   } else {
     playerRig = createPlayerRig(state);
   }
 
-  vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
-  vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
-  setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
+  if (spawnPoints.length > 0) {
+    vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
+    vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
+    setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
+  }
+
   addChild(state.activeScene, playerRig);
 }
 
