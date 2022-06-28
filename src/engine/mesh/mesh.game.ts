@@ -20,6 +20,8 @@ import {
   SharedMeshPrimitiveResource,
   MeshPrimitiveResourceType,
   MeshPrimitiveTripleBuffer,
+  InstancedMeshResourceType,
+  SharedInstancedMeshResource,
 } from "./mesh.common";
 
 export type MeshPrimitiveBufferView = ObjectBufferView<typeof meshPrimitiveSchema, ArrayBuffer>;
@@ -45,6 +47,11 @@ export interface MeshPrimitiveProps {
   indices?: RemoteAccessor<any, any>;
   material?: RemoteMaterial;
   mode?: number;
+}
+
+export interface RemoteInstancedMesh {
+  resourceId: number;
+  attributes: { [key: string]: RemoteAccessor<any, any> };
 }
 
 export function createRemoteMesh(ctx: GameState, primitives: MeshPrimitiveProps | MeshPrimitiveProps[]): RemoteMesh {
@@ -110,6 +117,32 @@ function createRemoteMeshPrimitive(ctx: GameState, props: MeshPrimitiveProps): R
   rendererModule.meshPrimitives.push(remoteMeshPrimitive);
 
   return remoteMeshPrimitive;
+}
+
+export function createRemoteInstancedMesh(
+  ctx: GameState,
+  attributes: { [key: string]: RemoteAccessor<any, any> }
+): RemoteInstancedMesh {
+  const sharedResource: SharedInstancedMeshResource = {
+    attributes: Object.fromEntries(
+      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
+        name,
+        accessor.resourceId,
+      ])
+    ),
+  };
+
+  const resourceId = createResource<SharedInstancedMeshResource>(
+    ctx,
+    Thread.Render,
+    InstancedMeshResourceType,
+    sharedResource
+  );
+
+  return {
+    resourceId,
+    attributes,
+  };
 }
 
 export function updateRemoteMeshPrimitives(meshPrimitives: RemoteMeshPrimitive[]) {

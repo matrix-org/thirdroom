@@ -1,4 +1,18 @@
-import { Mesh, BufferGeometry, Material, Line, LineSegments, Points, LineLoop, SkinnedMesh, Scene } from "three";
+import {
+  Mesh,
+  BufferGeometry,
+  Material,
+  Line,
+  LineSegments,
+  Points,
+  LineLoop,
+  SkinnedMesh,
+  Scene,
+  InstancedMesh,
+  Vector3,
+  Quaternion,
+  Matrix4,
+} from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
@@ -22,9 +36,11 @@ import { getLocalResource, waitForLocalResource } from "../resource/resource.ren
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
+  InstancedMeshAttribute,
   MeshPrimitiveAttribute,
   MeshPrimitiveMode,
   MeshPrimitiveTripleBuffer,
+  SharedInstancedMeshResource,
   SharedMeshPrimitiveResource,
   SharedMeshResource,
 } from "./mesh.common";
@@ -153,7 +169,45 @@ export async function onLoadLocalMeshPrimitiveResource(
   return localMeshPrimitive;
 }
 
-function createMeshPrimitiveObject(primitive: LocalMeshPrimitive): PrimitiveObject3D {
+export interface LocalInstancedMesh {
+  resourceId: ResourceId;
+  attributes: { [key: string]: LocalAccessor };
+}
+
+export async function onLoadLocalInstancedMeshResource(
+  ctx: RenderThreadState,
+  resourceId: ResourceId,
+  props: SharedInstancedMeshResource
+): Promise<LocalInstancedMesh> {
+  const attributePromises: { [key: string]: Promise<LocalAccessor> } = {};
+
+  for (const attributeName in props.attributes) {
+    attributePromises[attributeName] = waitForLocalResource(
+      ctx,
+      props.attributes[attributeName],
+      `instanced-mesh.${attributeName} accessor`
+    );
+  }
+
+  const attributes = await promiseObject(attributePromises);
+
+  const localInstancedMesh: LocalInstancedMesh = {
+    resourceId,
+    attributes,
+  };
+
+  return localInstancedMesh;
+}
+
+const tempPosition = new Vector3();
+const tempQuaternion = new Quaternion();
+const tempScale = new Vector3();
+const tempMatrix = new Matrix4();
+
+function createMeshPrimitiveObject(
+  primitive: LocalMeshPrimitive,
+  instancedMesh?: LocalInstancedMesh
+): PrimitiveObject3D {
   let object: PrimitiveObject3D;
 
   const { mode, geometryObj, materialObj } = primitive;
@@ -165,7 +219,52 @@ function createMeshPrimitiveObject(primitive: LocalMeshPrimitive): PrimitiveObje
   ) {
     // todo: skinned mesh
     const isSkinnedMesh = false;
-    const mesh = isSkinnedMesh ? new SkinnedMesh(geometryObj, materialObj) : new Mesh(geometryObj, materialObj);
+
+    let mesh: Mesh | InstancedMesh | SkinnedMesh;
+
+    if (isSkinnedMesh) {
+      mesh = new SkinnedMesh(geometryObj, materialObj);
+    } else if (instancedMesh) {
+      const attributes = Object.entries(instancedMesh.attributes);
+      const count = attributes[0][1].attribute.count;
+
+      const instancedMeshObject = new InstancedMesh(geometryObj, materialObj, count);
+      instancedMeshObject.frustumCulled = false;
+
+      tempPosition.set(0, 0, 0);
+      tempQuaternion.set(0, 0, 0, 1);
+      tempScale.set(1, 1, 1);
+
+      for (let instanceIndex = 0; instanceIndex < count; instanceIndex++) {
+        if (instancedMesh.attributes[InstancedMeshAttribute.TRANSLATION]) {
+          tempPosition.fromBufferAttribute(
+            instancedMesh.attributes[InstancedMeshAttribute.TRANSLATION].attribute,
+            instanceIndex
+          );
+        }
+
+        if (instancedMesh.attributes[InstancedMeshAttribute.ROTATION]) {
+          // TODO: Add fromBufferAttribute to Quaternion types
+          (tempQuaternion as any).fromBufferAttribute(
+            instancedMesh.attributes[InstancedMeshAttribute.ROTATION].attribute,
+            instanceIndex
+          );
+        }
+
+        if (instancedMesh.attributes[InstancedMeshAttribute.SCALE]) {
+          tempScale.fromBufferAttribute(
+            instancedMesh.attributes[InstancedMeshAttribute.SCALE].attribute,
+            instanceIndex
+          );
+        }
+
+        instancedMeshObject.setMatrixAt(instanceIndex, tempMatrix.compose(tempPosition, tempQuaternion, tempScale));
+      }
+
+      mesh = instancedMeshObject;
+    } else {
+      mesh = new Mesh(geometryObj, materialObj);
+    }
 
     if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
       // we normalize floating point skin weight array to fix malformed assets (see #15319)
@@ -279,7 +378,9 @@ export function updateNodeMesh(
   }
 
   if (!node.meshPrimitiveObjects) {
-    node.meshPrimitiveObjects = node.mesh.primitives.map(createMeshPrimitiveObject);
+    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
+      createMeshPrimitiveObject(primitive, node.instancedMesh)
+    );
     scene.add(...node.meshPrimitiveObjects);
   }
 

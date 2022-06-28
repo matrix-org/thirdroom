@@ -36,7 +36,13 @@ import {
 } from "../light/light.game";
 import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
-import { createRemoteMesh, MeshPrimitiveProps, RemoteMesh } from "../mesh/mesh.game";
+import {
+  createRemoteInstancedMesh,
+  createRemoteMesh,
+  MeshPrimitiveProps,
+  RemoteInstancedMesh,
+  RemoteMesh,
+} from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
@@ -46,7 +52,7 @@ import { TextureEncoding } from "../texture/texture.common";
 import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
-import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType } from "./GLTF";
+import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType, GLTFInstancedMeshExtension } from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
@@ -177,6 +183,10 @@ async function _inflateGLTFNode(
 
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,
+    instancedMesh:
+      node.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined
+        ? _loadGLTFInstancedMesh(ctx, resource, node.extensions?.EXT_mesh_gpu_instancing)
+        : undefined,
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
       node.extensions?.KHR_lights_punctual?.light !== undefined
@@ -1038,6 +1048,22 @@ async function _createGLTFMeshPrimitive(
     material,
     mode: primitive.mode,
   };
+}
+
+async function _loadGLTFInstancedMesh(
+  ctx: GameState,
+  resource: GLTFResource,
+  extension: GLTFInstancedMeshExtension
+): Promise<RemoteInstancedMesh> {
+  const attributesPromises: { [key: string]: Promise<RemoteAccessor<any, any>> } = {};
+
+  for (const key in extension.attributes) {
+    attributesPromises[key] = loadGLTFAccessor(ctx, resource, extension.attributes[key]);
+  }
+
+  const attributes = await promiseObject(attributesPromises);
+
+  return createRemoteInstancedMesh(ctx, attributes);
 }
 
 export async function loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteCamera> {
