@@ -172,27 +172,28 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
   const prefab = spawnCube.pressed ? "crate" : spawnBall.pressed ? "bouncy-ball" : "crate";
 
-  if (spawnCube.pressed || spawnBall.pressed) {
-    const cube = createPrefabEntity(ctx, prefab);
+  for (let i = 0; i < 100; i++)
+    if (spawnCube.pressed || spawnBall.pressed) {
+      const cube = createPrefabEntity(ctx, prefab);
 
-    // caveat: must add owned before networked (should maybe change Owned to Remote)
-    addComponent(ctx.world, Owned, cube);
-    addComponent(ctx.world, Networked, cube);
+      // caveat: must add owned before networked (should maybe change Owned to Remote)
+      addComponent(ctx.world, Owned, cube);
+      addComponent(ctx.world, Networked, cube);
 
-    mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
+      mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
-    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-    const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, cameraWorldQuat);
-    vec3.scale(direction, direction, CUBE_THROW_FORCE);
+      mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+      const direction = vec3.set(_direction, 0, 0, -1);
+      vec3.transformQuat(direction, direction, cameraWorldQuat);
+      vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
-    _impulse.x = direction[0];
-    _impulse.y = direction[1];
-    _impulse.z = direction[2];
-    RigidBody.store.get(cube)?.applyImpulse(_impulse, true);
+      _impulse.x = direction[0];
+      _impulse.y = direction[1];
+      _impulse.z = direction[2];
+      RigidBody.store.get(cube)?.applyImpulse(_impulse, true);
 
-    addChild(ctx.activeScene, cube);
-  }
+      addChild(ctx.activeScene, cube);
+    }
 
   physics.drainContactEvents((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
     const body1 = physics.physicsWorld.getRigidBody(handle1!);
