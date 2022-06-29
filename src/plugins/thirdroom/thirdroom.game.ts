@@ -192,8 +192,10 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
   newSceneResource.backgroundTexture = environmentMapTexture;
   newSceneResource.environmentTexture = environmentMapTexture;
 
+  let defaultCamera = NOOP;
+
   if (!ctx.activeCamera) {
-    const defaultCamera = addEntity(ctx.world);
+    defaultCamera = addEntity(ctx.world);
 
     addTransformComponent(ctx.world, defaultCamera);
 
@@ -214,6 +216,15 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
     await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
 
     addChild(newScene, collisionGeo);
+  }
+
+  const spawnPoints = spawnPointQuery(ctx.world);
+
+  if (ctx.activeCamera === defaultCamera && spawnPoints.length > 0) {
+    vec3.copy(Transform.position[defaultCamera], Transform.position[spawnPoints[0]]);
+    Transform.position[defaultCamera][1] += 1.6;
+    vec3.copy(Transform.quaternion[defaultCamera], Transform.quaternion[spawnPoints[0]]);
+    setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
   }
 }
 
