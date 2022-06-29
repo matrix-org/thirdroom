@@ -280,6 +280,11 @@ export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
   writeFloat32(v, position[1]);
   writeFloat32(v, position[2]);
 
+  const velocity = RigidBody.velocity[eid];
+  writeFloat32(v, velocity[0]);
+  writeFloat32(v, velocity[1]);
+  writeFloat32(v, velocity[2]);
+
   const quaternion = Transform.quaternion[eid];
   writeFloat32(v, quaternion[0]);
   writeFloat32(v, quaternion[1]);
@@ -292,13 +297,16 @@ export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
 export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefined) => {
   if (eid !== undefined) {
     const position = Networked.position[eid];
-    // const position = Transform.position[eid];
     position[0] = readFloat32(v);
     position[1] = readFloat32(v);
     position[2] = readFloat32(v);
 
+    const velocity = Networked.velocity[eid];
+    velocity[0] = readFloat32(v);
+    velocity[1] = readFloat32(v);
+    velocity[2] = readFloat32(v);
+
     const quaternion = Networked.quaternion[eid];
-    // const quaternion = Transform.quaternion[eid];
     quaternion[0] = readFloat32(v);
     quaternion[1] = readFloat32(v);
     quaternion[2] = readFloat32(v);
