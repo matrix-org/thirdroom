@@ -1,4 +1,4 @@
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room, Invite } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -18,6 +18,9 @@ import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
 import { InviteDialog } from "../dialogs/InviteDialog";
+import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
+import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -28,12 +31,14 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
   const [rooms] = useRoomsOfType(session, RoomTypes.Room);
+  const [worldInvites] = useInvitesOfType(session, RoomTypes.World);
+  const [roomInvites] = useInvitesOfType(session, RoomTypes.Room);
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
-  const renderAvatar = (room: Room, isWorld: boolean) => {
+  const renderAvatar = (room: Room | Invite, isWorld: boolean) => {
     const avatar = (
       <Avatar
         name={room.name || "Empty room"}
@@ -75,6 +80,18 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           />
         }
       >
+        {worldInvites.map((invite) => (
+          <RoomTile
+            key={invite.id}
+            avatar={
+              <AvatarBadgeWrapper badge={<NotificationBadge variant="secondary" content="Invite" />}>
+                {renderAvatar(invite, true)}
+              </AvatarBadgeWrapper>
+            }
+            content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
+            onClick={() => selectWorld(invite.id)}
+          />
+        ))}
         {worlds.map((room) => {
           const groupCall = groupCalls.get(room.id);
           return (
@@ -103,6 +120,18 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
         })}
       </Category>
       <Category header={<CategoryHeader title="All Messages" />}>
+        {roomInvites.map((invite) => (
+          <RoomTile
+            key={invite.id}
+            avatar={
+              <AvatarBadgeWrapper badge={<NotificationBadge variant="secondary" content="Invite" />}>
+                {renderAvatar(invite, false)}
+              </AvatarBadgeWrapper>
+            }
+            content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
+            onClick={() => console.log("hell")}
+          />
+        ))}
         {rooms.map((room) => (
           <RoomTile
             key={room.id}

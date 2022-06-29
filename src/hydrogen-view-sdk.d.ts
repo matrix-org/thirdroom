@@ -443,6 +443,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
+    invites: ObservableMap<string, Invite>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
     callHandler: CallHandler;
     createRoom(options: ICreateRoom): RoomBeingCreated;
@@ -558,8 +559,42 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getSyncToken: any;
     platform: Platform;
   }
+  export interface InviteOptions {
+    roomId: string;
+    user: any;
+    hsApi: HomeServerApi;
+    mediaRepository: MediaRepository;
+    emitCollectionRemove: any;
+    emitCollectionUpdate: any;
+    platform: Platform;
+  }
 
   export type RoomId = string;
+
+  export class Invite extends EventEmitter<any> {
+    constructor(options: InviteOptions);
+    get isInvite(): true;
+    get id(): string;
+    get name(): string;
+    get isDirectMessage(): boolean;
+    get avatarUrl(): string | null;
+    get avatarColorId(): string;
+    get type(): string | undefined;
+    get timestamp(): number;
+    get isEncrypted(): boolean;
+    get inviter(): RoomMember;
+    isDirectMessageForUserId(userId: string): boolean;
+    get isPublic(): boolean;
+    get canonicalAlias(): string | null;
+    accept(log?: any): Promise<void>;
+    reject(log?: any): Promise<void>;
+    get accepting(): boolean;
+    get accepted(): boolean;
+    get rejecting(): boolean;
+    get rejected(): boolean;
+    get mediaRepository(): MediaRepository;
+    load(inviteData: any, log: any): void;
+  }
 
   export class BaseRoom extends EventEmitter<any> {
     constructor(roomOptions: RoomOptions);
@@ -581,7 +616,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get isEncrypted(): boolean;
     get isJoined(): boolean;
     get isLeft(): boolean;
-    get canonicalAlias(): string;
+    get canonicalAlias(): string | null;
     get joinedMemberCount(): number;
     get mediaRepository(): MediaRepository;
     get membership(): any;

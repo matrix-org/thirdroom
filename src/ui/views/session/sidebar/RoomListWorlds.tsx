@@ -1,4 +1,4 @@
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Invite, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -13,6 +13,14 @@ import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import AddUserIC from "../../../../../res/ic/add-user.svg";
+import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { InviteDialog } from "../dialogs/InviteDialog";
+import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
+import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 
 interface RoomListWorldProps {
   groupCalls: Map<string, GroupCall>;
@@ -22,11 +30,12 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
   const { session, platform } = useHydrogen(true);
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
+  const [worldInvites] = useInvitesOfType(session, RoomTypes.World);
 
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
-  const renderAvatar = (room: Room) => {
+  const renderAvatar = (room: Room | Invite) => {
     const avatar = (
       <Avatar
         name={room.name || "Empty room"}
@@ -48,16 +57,38 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <IconButton
-                size="sm"
-                label="Create World"
-                iconSrc={AddIC}
-                onClick={() => selectWindow(OverlayWindow.CreateWorld)}
+              <JoinWorldDialog
+                renderTrigger={(openDialog) => (
+                  <DropdownMenu
+                    content={
+                      <>
+                        <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                          Create World
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join World</DropdownMenuItem>
+                      </>
+                    }
+                  >
+                    <IconButton size="sm" label="Create World" iconSrc={AddIC} />
+                  </DropdownMenu>
+                )}
               />
             }
           />
         }
       >
+        {worldInvites.map((invite) => (
+          <RoomTile
+            key={invite.id}
+            avatar={
+              <AvatarBadgeWrapper badge={<NotificationBadge variant="secondary" content="Invite" />}>
+                {renderAvatar(invite)}
+              </AvatarBadgeWrapper>
+            }
+            content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
+            onClick={() => selectWorld(invite.id)}
+          />
+        ))}
         {worlds.map((room) => {
           const groupCall = groupCalls.get(room.id);
           return (
@@ -71,6 +102,15 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
                   <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
                   {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
                 </>
+              }
+              options={
+                <InviteDialog
+                  key={room.id}
+                  roomId={room.id}
+                  renderTrigger={(openDialog) => (
+                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                  )}
+                />
               }
             />
           );

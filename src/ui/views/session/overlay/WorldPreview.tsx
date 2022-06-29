@@ -1,4 +1,4 @@
-import { useEffect, useCallback, MouseEvent } from "react";
+import { useEffect, useCallback, MouseEvent, useReducer } from "react";
 import { Room, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,56 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, WorldLoadState } from "../../../hooks/useStore";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
+import { useInvite } from "../../../hooks/useInvite";
+import { useIsMounted } from "../../../hooks/useIsMounted";
+import { Dots } from "../../../atoms/loading/Dots";
+
+interface InviteWorldPreviewProps {
+  session: Session;
+  roomId: string;
+}
+function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
+  const [, forceUpdate] = useReducer((v) => v + 1, 0);
+  const isMounted = useIsMounted();
+  const invite = useInvite(session, roomId);
+
+  if (invite === undefined) return <WorldPreviewCard title="Failed to load Invite" />;
+
+  const accept = async () => {
+    forceUpdate();
+    // TODO: handle error when unable to join
+    // when canonicalAlias is not available.
+    await invite.accept();
+    forceUpdate();
+  };
+  const reject = async () => {
+    forceUpdate();
+    await invite.reject();
+    if (!isMounted) return;
+    forceUpdate();
+  };
+
+  return (
+    <WorldPreviewCard
+      title={invite.name}
+      desc={`Invited by ${invite.inviter.name}`}
+      options={
+        <div className="flex gap-xs">
+          {!(invite.accepting || invite.accepted) && (
+            <Button fill="outline" onClick={reject} disabled={invite.rejecting}>
+              {invite.rejecting ? <Dots color="primary" /> : "Reject"}
+            </Button>
+          )}
+          {!(invite.rejecting || invite.rejected) && (
+            <Button onClick={accept} disabled={invite.accepting}>
+              {invite.accepting ? <Dots color="on-primary" /> : "Accept"}
+            </Button>
+          )}
+        </div>
+      }
+    />
+  );
+}
 
 interface JoinWorldPreviewProps {
   session: Session;
@@ -156,7 +206,8 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
         }
 
         if (roomStatus & RoomStatus.BeingCreated) return <WorldPreviewCard title="Creating Room..." />;
-        if (roomStatus & RoomStatus.Invited) return <WorldPreviewCard title="Invited To Room" />;
+        if (roomStatus & RoomStatus.Invited && previewWorldId)
+          return <InviteWorldPreview session={session} roomId={previewWorldId} />;
         if (roomStatus & RoomStatus.Archived) return <WorldPreviewCard title="Room Archived" />;
 
         if (roomStatus & RoomStatus.Joined) {
