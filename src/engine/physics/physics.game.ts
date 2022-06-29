@@ -69,16 +69,9 @@ export const physicsQuery = defineQuery([RigidBody]);
 export const enteredPhysicsQuery = enterQuery(physicsQuery);
 export const exitedPhysicsQuery = exitQuery(physicsQuery);
 
-// const _pos = new Vector3(0, 0, 0);
-// const _vel = new Vector3(0, 0, 0);
-// const _quat = new Vector3(0, 0, 0);
 export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) => {
   const position = Transform.position[eid];
   const quaternion = Transform.quaternion[eid];
-  // const velocity = RigidBody.velocity[eid];
-  // _vel.fromArray(velocity);
-  // console.log(_vel);
-  // body.setLinvel(_vel, true);
   body.setTranslation(new Vector3().fromArray(position), true);
   body.setRotation(new Quaternion().fromArray(quaternion), true);
 };

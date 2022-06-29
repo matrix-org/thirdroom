@@ -318,6 +318,7 @@ export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefi
   return v;
 };
 
+// todo: bench performance of defineChangedSerializer vs raw function
 const defineChangedSerializer = (...fns: ((v: CursorView, eid: number) => boolean)[]) => {
   const spacer = fns.length <= 8 ? spaceUint8 : fns.length <= 16 ? spaceUint16 : spaceUint32;
   return (v: CursorView, eid: number) => {
@@ -346,8 +347,6 @@ export const serializeTransformChanged = defineChangedSerializer(
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 3)
 );
 
-// todo: bench performance of defineChangedSerializer vs raw function
-
 // export const serializeTransformChanged = (v: CursorView, eid: number) => {
 //   const writeChangeMask = spaceUint8(v);
 //   let changeMask = 0;
@@ -368,6 +367,7 @@ export const serializeTransformChanged = defineChangedSerializer(
 //   return changeMask > 0;
 // };
 
+// todo: bench performance of defineChangedSerializer vs raw function
 export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
   const readChangeMask = fns.length <= 8 ? readUint8 : fns.length <= 16 ? readUint16 : readUint32;
   return (v: CursorView, eid: number | undefined) => {
@@ -392,16 +392,6 @@ export const deserializeTransformChanged = defineChangedDeserializer(
   (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v))
 );
-
-// export const deserializeTransformChanged = defineChangedDeserializer(
-//   (v, eid) => (eid ? (Transform.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
-//   (v, eid) => (eid ? (Transform.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v))
-// );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
 //   const changeMask = readUint8(v);
@@ -677,21 +667,19 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     network.peerIdToEntityId.set(peerId, peid);
     console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
 
-    network.addPlayerResourceQueue.push([peerId, peid]);
+    const remoteNode = RemoteNodeComponent.get(peid);
 
-    // const remoteNode = RemoteNodeComponent.get(peid);
+    if (!remoteNode) {
+      throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
+    }
 
-    // if (!remoteNode) {
-    //   throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
-    // }
-
-    // remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
-    //   sources: [
-    //     createRemoteMediaStreamSource(state, {
-    //       stream: createRemoteMediaStream(state, peerId),
-    //     }),
-    //   ],
-    // });
+    remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+      sources: [
+        createRemoteMediaStreamSource(state, {
+          stream: createRemoteMediaStream(state, peerId),
+        }),
+      ],
+    });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
   }
