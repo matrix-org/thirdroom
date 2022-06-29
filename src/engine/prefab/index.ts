@@ -1,13 +1,13 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
-import { BoxBufferGeometry, SphereGeometry } from "three";
+import { BoxBufferGeometry, BufferGeometry, SphereBufferGeometry } from "three";
 
 import { GameState } from "../GameTypes";
 import { addChild, addTransformComponent, setQuaternionFromEuler, Transform } from "../component/transform";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { getModule, Thread } from "../module/module.common";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
-import { createRemoteMesh } from "../mesh/mesh.game";
+import { createRemoteMesh, RemoteMesh } from "../mesh/mesh.game";
 import { createRemoteAccessor } from "../accessor/accessor.game";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { createRemoteBufferView } from "../bufferView/bufferView.game";
@@ -16,160 +16,93 @@ import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
 import { inflateGLTFScene } from "../gltf/gltf.game";
+import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
 
-export const addCubeMesh = (state: GameState, eid: number, size: number, material?: RemoteMaterial) => {
+export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
+
+  const buffer = createCursorBuffer(
+    new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength)
+  );
+
+  const indices = addView(buffer, Uint16Array, indicesArr.length, indicesArr);
+  const position = addView(buffer, Float32Array, posArr.length, posArr);
+  const normal = addView(buffer, Float32Array, normArr.length, normArr);
+  const uv = addView(buffer, Float32Array, uvArr.length, uvArr);
+
+  const bufferView = createRemoteBufferView(ctx, Thread.Render, buffer);
+
+  const remoteMesh = createRemoteMesh(ctx, {
+    indices: createRemoteAccessor(ctx, {
+      type: AccessorType.SCALAR,
+      componentType: AccessorComponentType.Uint16,
+      bufferView,
+      count: indices.length,
+    }),
+    attributes: {
+      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(ctx, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: position.byteOffset,
+        count: position.length / 3,
+      }),
+      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(ctx, {
+        type: AccessorType.VEC3,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: normal.byteOffset,
+        count: normal.length / 3,
+        normalized: true,
+      }),
+      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(ctx, {
+        type: AccessorType.VEC2,
+        componentType: AccessorComponentType.Float32,
+        bufferView,
+        byteOffset: uv.byteOffset,
+        count: uv.length / 2,
+      }),
+    },
+    material:
+      material ||
+      createRemoteStandardMaterial(ctx, {
+        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+        roughnessFactor: 0.8,
+        metallicFactor: 0.8,
+      }),
+  });
+
+  return remoteMesh;
+};
+
+export const createCubeMesh = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const geometry = new BoxBufferGeometry(size, size, size);
-  const indicesArr = geometry.index!.array as Uint16Array;
-  const posArr = geometry.attributes.position.array as Float32Array;
-  const normArr = geometry.attributes.normal.array as Float32Array;
-  const uvArr = geometry.attributes.uv.array as Float32Array;
-
-  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
-  let cursor = 0;
-  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
-  indices.set(indicesArr);
-  cursor += indicesArr.byteLength;
-  const position = new Float32Array(buffer, cursor, posArr.length);
-  position.set(posArr);
-  cursor += posArr.byteLength;
-  const normal = new Float32Array(buffer, cursor, normArr.length);
-  normal.set(normArr);
-  cursor += normArr.byteLength;
-  const uv = new Float32Array(buffer, cursor, uvArr.length);
-  uv.set(uvArr);
-
-  const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
-
-  const remoteMesh = createRemoteMesh(state, {
-    indices: createRemoteAccessor(state, {
-      type: AccessorType.SCALAR,
-      componentType: AccessorComponentType.Uint16,
-      bufferView,
-      count: indices.length,
-    }),
-    attributes: {
-      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: position.byteOffset,
-        count: position.length / 3,
-      }),
-      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: normal.byteOffset,
-        count: normal.length / 3,
-        normalized: true,
-      }),
-      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
-        type: AccessorType.VEC2,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: uv.byteOffset,
-        count: uv.length / 2,
-      }),
-    },
-    material:
-      material ||
-      createRemoteStandardMaterial(state, {
-        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-        roughnessFactor: 0.8,
-        metallicFactor: 0.8,
-      }),
-  });
-
-  addRemoteNodeComponent(state, eid, {
-    mesh: remoteMesh,
-  });
+  return createMesh(ctx, geometry, material);
 };
 
-export const addSphereMesh = (state: GameState, eid: number, radius: number, material?: RemoteMaterial) => {
-  const geometry = new SphereGeometry(radius / 2);
-  const indicesArr = geometry.index!.array as Uint16Array;
-  const posArr = geometry.attributes.position.array as Float32Array;
-  const normArr = geometry.attributes.normal.array as Float32Array;
-  const uvArr = geometry.attributes.uv.array as Float32Array;
-
-  const buffer = new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
-  let cursor = 0;
-  const indices = new Uint16Array(buffer, cursor, indicesArr.length);
-  indices.set(indicesArr);
-  cursor += indicesArr.byteLength;
-  const position = new Float32Array(buffer, cursor, posArr.length);
-  position.set(posArr);
-  cursor += posArr.byteLength;
-  const normal = new Float32Array(buffer, cursor, normArr.length);
-  normal.set(normArr);
-  cursor += normArr.byteLength;
-  const uv = new Float32Array(buffer, cursor, uvArr.length);
-  uv.set(uvArr);
-
-  const bufferView = createRemoteBufferView(state, Thread.Render, buffer);
-
-  const remoteMesh = createRemoteMesh(state, {
-    indices: createRemoteAccessor(state, {
-      type: AccessorType.SCALAR,
-      componentType: AccessorComponentType.Uint16,
-      bufferView,
-      count: indices.length,
-    }),
-    attributes: {
-      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(state, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: position.byteOffset,
-        count: position.length / 3,
-      }),
-      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(state, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: normal.byteOffset,
-        count: normal.length / 3,
-        normalized: true,
-      }),
-      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(state, {
-        type: AccessorType.VEC2,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: uv.byteOffset,
-        count: uv.length / 2,
-      }),
-    },
-    material:
-      material ||
-      createRemoteStandardMaterial(state, {
-        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-        roughnessFactor: 0.8,
-        metallicFactor: 0.8,
-      }),
-  });
-
-  addRemoteNodeComponent(state, eid, {
-    mesh: remoteMesh,
-  });
+export const createSphereMesh = (ctx: GameState, radius: number, material?: RemoteMaterial) => {
+  const geometry = new SphereBufferGeometry(radius / 2);
+  return createMesh(ctx, geometry, material);
 };
 
-export const createCube = (state: GameState, size: number, material?: RemoteMaterial) => {
-  const { world } = state;
-  const { physicsWorld } = getModule(state, PhysicsModule);
+export const createCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+  const { world } = ctx;
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  addCubeMesh(
-    state,
-    eid,
-    size,
-    material ||
-      createRemoteStandardMaterial(state, {
-        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-        roughnessFactor: 0.8,
-        metallicFactor: 0.8,
-      })
-  );
+  createRemoteStandardMaterial(ctx, {
+    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+    roughnessFactor: 0.8,
+    metallicFactor: 0.8,
+  });
+
+  addRemoteNodeComponent(ctx, eid, {
+    mesh: createCubeMesh(ctx, size, material),
+  });
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
@@ -260,6 +193,7 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
 
   const container = addEntity(ctx.world);
   addTransformComponent(ctx.world, container);
+  addRemoteNodeComponent(ctx, container);
 
   const eid = addEntity(ctx.world);
   inflateGLTFScene(ctx, eid, uri, undefined, false);

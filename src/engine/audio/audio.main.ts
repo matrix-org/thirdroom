@@ -552,6 +552,9 @@ function updateMediaStreamSources(ctx: IMainThreadContext, audioModule: MainAudi
   }
 }
 
+const MAX_AUDIO_COUNT = 1000;
+let audioCount = 0;
+
 function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const localAudioSources = audioModule.sources;
 
@@ -586,7 +589,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
       const audioBuffer = currentAudioData as AudioBuffer;
       if (audioBuffer) {
         // One-shot audio buffer source
-        if (readSourceView.play[0] && !readSourceView.loop[0]) {
+        if (readSourceView.play[0] && !readSourceView.loop[0] && audioCount < MAX_AUDIO_COUNT) {
           const sampleSource = audioModule.context.createBufferSource();
           sampleSource.connect(localAudioSource.gainNode);
           sampleSource.buffer = audioBuffer;
@@ -594,9 +597,11 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 
           sampleSource.onended = () => {
             sampleSource.disconnect();
+            audioCount--;
           };
 
           sampleSource.start();
+          audioCount++;
 
           // For one-shots don't update the current time or playing state.
           writeSourceView.playing[0] = 0;

@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
+import { Vector3 } from "three";
 
 import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -96,8 +97,16 @@ const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 const _cameraWorldQuat = quat.create();
 
+// const shapeCastPosition = new Vector3();
+// const shapeCastRotation = new Quaternion();
+
+// const colliderShape = new RAPIER.Ball(0.5);
+
+const collisionGroups = 0x0ff0_0ff0;
+
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
+  // const { physicsWorld } = physics;
   const input = getModule(ctx, InputModule);
 
   let heldEntity = grabQuery(ctx.world)[0];
@@ -142,23 +151,27 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
-    const s: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(source);
-    const t: RAPIER.Vector3 = (([x, y, z]) => ({ x, y, z }))(target);
+    const s: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(source);
+    const t: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(target);
 
     const ray = new RAPIER.Ray(s, t);
     const maxToi = 4.0;
     const solid = true;
-    const groups = 0x0ff0_0ff0;
 
-    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, groups);
+    // shapeCastPosition.copy(s);
+
+    // TODO: use shape for pickup and ray for things like constraint tools
+    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
+    // const hit = physicsWorld.castShape(shapeCastPosition, shapeCastRotation, t, colliderShape, ctx.dt, collisionGroups);
+
     if (hit != null) {
-      const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
-      const eid = physics.handleMap.get(hit.colliderHandle);
+      // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
+      const eid = physics.handleToEid.get(hit.colliderHandle);
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
       } else {
         addComponent(ctx.world, GrabComponent, eid);
-        GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
+        // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
       }
     }
   }
