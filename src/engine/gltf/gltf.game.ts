@@ -1,6 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
-import { vec3 } from "gl-matrix";
+import { mat4, quat, vec3 } from "gl-matrix";
 import { Matrix4 } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -97,7 +97,7 @@ export async function inflateGLTFScene(
   sceneIndex?: number,
   // TODO: temporary hack for spawning avatars without static trimesh
   createTrimesh = true
-): Promise<void> {
+): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
   const resource = await loadGLTFResource(uri);
@@ -110,6 +110,9 @@ export async function inflateGLTFScene(
     throw new Error(`Scene ${sceneIndex} not found`);
   }
 
+  const hasInstancedMeshExtension =
+    resource.root.extensionsUsed && resource.root.extensionsUsed.includes("EXT_mesh_gpu_instancing");
+
   const scene = resource.root.scenes[sceneIndex];
 
   const nodeInflators: Function[] = [];
@@ -118,7 +121,9 @@ export async function inflateGLTFScene(
 
   if (scene.nodes) {
     nodePromise = Promise.all(
-      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh))
+      scene.nodes.map((nodeIndex) =>
+        _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh && !hasInstancedMeshExtension)
+      )
     );
   }
 
@@ -150,7 +155,13 @@ export async function inflateGLTFScene(
   if (hasCharacterControllerExtension(scene)) {
     inflateSceneCharacterController(ctx, resource, sceneIndex, sceneEid);
   }
+
+  return resource;
 }
+
+const tempPosition = vec3.create();
+const tempRotation = quat.create();
+const tempScale = vec3.create();
 
 async function _inflateGLTFNode(
   ctx: GameState,
@@ -196,6 +207,16 @@ async function _inflateGLTFNode(
       node.extensions?.KHR_audio?.emitter !== undefined
         ? loadGLTFAudioEmitter(ctx, resource, node.extensions.KHR_audio.emitter)
         : undefined,
+    colliderMesh:
+      node.extensions?.OMI_collider !== undefined &&
+      resource.root.extensions?.OMI_collider &&
+      resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh !== undefined
+        ? loadGLTFMesh(
+            ctx,
+            resource,
+            resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh
+          )
+        : undefined,
   });
 
   if (node.children && node.children.length) {
@@ -231,13 +252,44 @@ async function _inflateGLTFNode(
         addTrimesh(ctx, nodeEid);
       }
 
-      if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node)) {
+      if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node) || node.name === "__SpawnPoint") {
         addComponent(ctx.world, SpawnPoint, nodeEid);
       }
     }
 
     if (hasTilesRendererExtension(node)) {
       addTilesRenderer(ctx, resource, nodeIndex, nodeEid);
+    }
+
+    if (node.extensions?.OMI_collider) {
+      const index = node.extensions.OMI_collider.collider;
+      const collider = resource.root.extensions!.OMI_collider.colliders[index];
+      const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+      if (collider.type === "box") {
+        const worldMatrix = Transform.worldMatrix[nodeEid];
+        mat4.getTranslation(tempPosition, worldMatrix);
+        mat4.getRotation(tempRotation, worldMatrix);
+        mat4.getScaling(tempScale, worldMatrix);
+
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+        rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
+        rigidBodyDesc.setRotation(
+          new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
+        );
+        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+        vec3.mul(tempScale, tempScale, collider.extents);
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
+        colliderDesc.setTranslation(collider.center[0], collider.center[1], collider.center[2]);
+        colliderDesc.setCollisionGroups(0xf000_000f);
+        colliderDesc.setSolverGroups(0xf000_000f);
+        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+        addRigidBody(ctx.world, nodeEid, rigidBody);
+      } else if (collider.type === "mesh" && results.colliderMesh) {
+        addTrimeshFromMesh(ctx, nodeEid, results.colliderMesh);
+      }
     }
   });
 }
@@ -249,9 +301,13 @@ export function addTrimesh(ctx: GameState, nodeEid: number) {
     return;
   }
 
+  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh);
+}
+
+function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
-  for (const primitive of remoteNode.mesh.primitives) {
+  for (const primitive of mesh.primitives) {
     const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 

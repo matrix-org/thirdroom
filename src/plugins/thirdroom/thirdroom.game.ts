@@ -185,7 +185,7 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
     }),
   });
 
-  await inflateGLTFScene(ctx, newScene, message.url);
+  const scene = await inflateGLTFScene(ctx, newScene, message.url);
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
@@ -207,6 +207,14 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
   }
 
   ctx.activeScene = newScene;
+
+  // Temp hack for city scene
+  if (scene.root.scenes && scene.root.scenes.length > 0 && scene.root.scenes[0].name === "SampleSceneDay 1") {
+    const collisionGeo = addEntity(ctx.world);
+    await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
+
+    addChild(newScene, collisionGeo);
+  }
 }
 
 const spawnPointQuery = defineQuery([SpawnPoint]);
