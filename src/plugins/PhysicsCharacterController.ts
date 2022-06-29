@@ -14,7 +14,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
+import { Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCamera } from "../engine/prefab";
@@ -187,7 +187,6 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
-  addComponent(world, NetworkTransform, playerRig);
 
   return playerRig;
 };

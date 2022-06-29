@@ -144,6 +144,13 @@ export const PhysicsSystem = (state: GameState) => {
     const body = RigidBody.store.get(eid);
 
     if (body && !body.isStatic()) {
+      // sync velocity
+      const linvel = body.linvel();
+      const velocity = RigidBody.velocity[eid];
+      velocity[0] = linvel.x;
+      velocity[1] = linvel.y;
+      velocity[2] = linvel.z;
+
       // networked physics body
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         applyTransformToRigidBody(body, eid);

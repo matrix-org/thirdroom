@@ -22,6 +22,7 @@ import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
 import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
+import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
 
 export default defineConfig<GameState>({
   modules: [
@@ -45,6 +46,7 @@ export default defineConfig<GameState>({
     ActionMappingSystem,
 
     InboundNetworkSystem,
+    NetworkTransformSystem,
 
     FirstPersonCameraSystem,
     PlayerControllerSystem,

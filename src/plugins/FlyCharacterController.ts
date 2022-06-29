@@ -13,7 +13,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { NetworkModule, Owned, Networked, NetworkTransform } from "../engine/network/network.game";
+import { NetworkModule, Owned, Networked } from "../engine/network/network.game";
 import { createCamera } from "../engine/prefab";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
@@ -64,7 +64,6 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
-  addComponent(world, NetworkTransform, playerRig);
 
   return playerRig;
 }

@@ -175,8 +175,9 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   if (spawnCube.pressed || spawnBall.pressed) {
     const cube = createPrefabEntity(ctx, prefab);
 
-    addComponent(ctx.world, Networked, cube);
+    // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, cube);
+    addComponent(ctx.world, Networked, cube);
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
