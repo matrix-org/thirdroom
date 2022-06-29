@@ -13,9 +13,11 @@ import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import AddUserIC from "../../../../../res/ic/add-user.svg";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
+import { InviteDialog } from "../dialogs/InviteDialog";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -86,6 +88,15 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
                   <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
                   {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
                 </>
+              }
+              options={
+                <InviteDialog
+                  key={room.id}
+                  roomId={room.id}
+                  renderTrigger={(openDialog) => (
+                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                  )}
+                />
               }
             />
           );

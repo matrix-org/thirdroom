@@ -1857,12 +1857,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getPushers(options?: BaseRequestOptions): IHomeServerRequest;
     join(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     joinIdOrAlias(roomIdOrAlias: string, options?: BaseRequestOptions): IHomeServerRequest;
+    invite(roomId: string, userId: string, options?: BaseRequestOptions): IHomeServerRequest;
     leave(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     forget(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     logout(options?: BaseRequestOptions): IHomeServerRequest;
     getDehydratedDevice(options?: BaseRequestOptions): IHomeServerRequest;
     createDehydratedDevice(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
     claimDehydratedDevice(deviceId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    searchProfile(searchTerm: string, limit?: number, options?: BaseRequestOptions): IHomeServerRequest;
     profile(userId: string, options?: BaseRequestOptions): IHomeServerRequest;
     setProfileDisplayName(userId: string, displayName: string, options?: BaseRequestOptions): IHomeServerRequest;
     setProfileAvatarUrl(userId: string, avatarUrl: string, options?: BaseRequestOptions): IHomeServerRequest;

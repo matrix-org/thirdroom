@@ -108,7 +108,7 @@ export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
               )}
             </div>
             <Button size="lg" type="submit">
-              {joining && <Dots color="on-primary" size="sm" />}
+              {joining && <Dots color="on-primary" />}
               {joining ? "Joining" : "Join World"}
             </Button>
           </form>
