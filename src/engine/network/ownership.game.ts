@@ -5,14 +5,12 @@ import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView 
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
-import { writeMessageType, Networked, NetPipeData, NetworkModule } from "./network.game";
-
-const RemoveOwnershipMessage = 10;
+import { writeMessageType, Networked, NetPipeData, NetworkModule, NetworkAction } from "./network.game";
 
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 2));
 
 export const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
-  writeMessageType(messageView, RemoveOwnershipMessage);
+  writeMessageType(messageView, NetworkAction.RemoveOwnershipMessage);
   serializeRemoveOwnership(messageView, eid);
   return sliceCursorView(messageView);
 };
