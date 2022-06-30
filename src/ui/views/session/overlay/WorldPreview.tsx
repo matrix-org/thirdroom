@@ -1,4 +1,4 @@
-import { useEffect, useCallback, MouseEvent, useReducer } from "react";
+import { useEffect, useCallback, MouseEvent } from "react";
 import { Room, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 import { useNavigate } from "react-router-dom";
 
@@ -10,39 +10,22 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, WorldLoadState } from "../../../hooks/useStore";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
-import { useInvite } from "../../../hooks/useInvite";
-import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Dots } from "../../../atoms/loading/Dots";
+import { useInviteControl } from "../../../hooks/useInviteControl";
 
 interface InviteWorldPreviewProps {
   session: Session;
   roomId: string;
 }
 function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
-  const [, forceUpdate] = useReducer((v) => v + 1, 0);
-  const isMounted = useIsMounted();
-  const invite = useInvite(session, roomId);
+  const { invite, accept, reject } = useInviteControl(session, roomId);
 
   if (invite === undefined) return <WorldPreviewCard title="Failed to load Invite" />;
-
-  const accept = async () => {
-    forceUpdate();
-    // TODO: handle error when unable to join
-    // when canonicalAlias is not available.
-    await invite.accept();
-    forceUpdate();
-  };
-  const reject = async () => {
-    forceUpdate();
-    await invite.reject();
-    if (!isMounted) return;
-    forceUpdate();
-  };
 
   return (
     <WorldPreviewCard
       title={invite.name}
-      desc={`Invited by ${invite.inviter.name}`}
+      desc={`${invite.inviter.name} invites you`}
       options={
         <div className="flex gap-xs">
           {!(invite.accepting || invite.accepted) && (

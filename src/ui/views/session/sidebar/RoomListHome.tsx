@@ -129,7 +129,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
               </AvatarBadgeWrapper>
             }
             content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
-            onClick={() => console.log("hell")}
+            onClick={() => selectChat(invite.id)}
           />
         ))}
         {rooms.map((room) => (
