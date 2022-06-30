@@ -63,10 +63,7 @@ const deserializeRemoveOwnership = (input: NetPipeData) => {
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
-  console.log("#deserializeRemoveOwnership()", nid, eid);
   if (eid) {
-    console.log("#deserializeRemoveOwnership() removeEntity()", eid);
-    // removeEntity(ctx.world, eid);
     removeComponent(ctx.world, Networked, eid);
     removeComponent(ctx.world, RemoteNodeComponent, eid);
     removeComponent(ctx.world, RigidBody, eid);
