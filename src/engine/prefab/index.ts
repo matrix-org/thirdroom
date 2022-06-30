@@ -88,6 +88,8 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
   return createMesh(ctx, geometry, material);
 };
 
+const COLLISION_GROUPS = 0xffff_ffff;
+
 export const createCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = ctx;
   const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -109,8 +111,8 @@ export const createCube = (ctx: GameState, size: number, material?: RemoteMateri
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
     .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
-    .setCollisionGroups(0xffff_ffff)
-    .setSolverGroups(0xffff_ffff);
+    .setCollisionGroups(COLLISION_GROUPS)
+    .setSolverGroups(COLLISION_GROUPS);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
@@ -209,9 +211,8 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
   const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
 
-  // TODO: collision groups
-  // colliderDesc.setCollisionGroups(0x0000_fff0);
-  // colliderDesc.setSolverGroups(0x0000_fff0);
+  colliderDesc.setCollisionGroups(0x0000_fff0);
+  colliderDesc.setSolverGroups(0x0000_fff0);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx.world, container, rigidBody);

@@ -103,7 +103,7 @@ const _cameraWorldQuat = quat.create();
 
 // const colliderShape = new RAPIER.Ball(0.5);
 
-const collisionGroups = 0x0ff0_0ff0;
+const collisionGroups = 0x00f0_000f;
 
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);

@@ -98,7 +98,7 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
 
 export enum PhysicsGroups {
   None = 0,
-  All = 0xffff,
+  All = 0x0000_f000,
 }
 
 export enum PhysicsInteractionGroups {
