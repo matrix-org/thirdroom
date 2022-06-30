@@ -1009,8 +1009,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export class TemplateBuilder<T extends IObservableValue> {
     constructor(templateView: TemplateView<T>);
     close(): void;
-    el(name: string, attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]): ViewNode;
-    elNS(ns: string, name: string, attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]): ViewNode;
+    el(name: string, attributes?: Attributes<T> | Children<T>, children?: Children<T>): ViewNode;
+    elNS(ns: string, name: string, attributes?: Attributes<T> | Children<T>, children?: Children<T>): ViewNode;
     view(view: IView, mountOptions?: IMountArgs): ViewNode;
     mapView<R>(mapFn: (value: T) => R, viewCreator: (mapped: R) => IView | null): ViewNode;
     map<R>(mapFn: (value: T) => R, renderFn: (mapped: R, t: Builder<T>, vm: T) => ViewNode): ViewNode;
@@ -1023,14 +1023,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export const SVG_NS = "http://www.w3.org/2000/svg";
 
   export type ClassNames<T> = { [className: string]: boolean | ((value: T) => boolean) };
-  export type Child = string | Text | ViewNode;
+  type TextBinding<T> = (v: T) => string | number | boolean | undefined | null;
+  export type Child<T> = string | Text | ViewNode | TextBinding<T>;
+  type Children<T> = Child<T> | Child<T>[];
   export type RenderFn<T> = (t: Builder<T>, vm: T) => ViewNode;
   type EventHandler = (event: Event) => void;
   type AttributeStaticValue = string | boolean;
   type AttributeBinding<T> = (value: T) => AttributeStaticValue;
   export type AttrValue<T> = AttributeStaticValue | AttributeBinding<T> | EventHandler | ClassNames<T>;
   export type Attributes<T> = { [attribute: string]: AttrValue<T> };
-  type ElementFn<T> = (attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]) => Element;
+  type ElementFn<T> = (attributes?: Attributes<T> | Children<T>, children?: Children<T>) => Element;
   export type Builder<T> = TemplateBuilder<T> & { [tagName: string]: ElementFn<T> };
 
   export class TimelineView extends TemplateView<TimelineViewModel> {
