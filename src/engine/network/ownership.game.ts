@@ -1,11 +1,19 @@
 import { RigidBody } from "@dimforge/rapier3d-compat";
-import { removeComponent } from "bitecs";
+import { addComponent, hasComponent, removeComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
-import { writeMessageType, Networked, NetPipeData, NetworkModule, NetworkAction } from "./network.game";
+import {
+  writeMessageType,
+  Networked,
+  NetPipeData,
+  NetworkModule,
+  NetworkAction,
+  broadcastReliable,
+  Owned,
+} from "./network.game";
 
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 2));
 
@@ -28,5 +36,13 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
     removeComponent(ctx.world, Networked, eid);
     removeComponent(ctx.world, RemoteNodeComponent, eid);
     removeComponent(ctx.world, RigidBody, eid);
+  }
+};
+
+export const takeOwnership = (ctx: GameState, eid: number) => {
+  if (!hasComponent(ctx.world, Owned, eid)) {
+    addComponent(ctx.world, Owned, eid);
+    // send message to remove on other side
+    broadcastReliable(ctx, createRemoveOwnershipMessage(ctx, eid));
   }
 };

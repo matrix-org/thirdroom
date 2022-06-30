@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, Types, defineQuery, removeComponent, addComponent, hasComponent } from "bitecs";
+import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
@@ -14,8 +14,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { broadcastReliable, Owned } from "../engine/network/network.game";
-import { createRemoveOwnershipMessage } from "../engine/network/ownership.game";
+import { takeOwnership } from "../engine/network/ownership.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 
 type GrabThrow = {};
@@ -174,11 +173,7 @@ export function GrabThrowSystem(ctx: GameState) {
       } else {
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
         addComponent(ctx.world, GrabComponent, eid);
-        if (!hasComponent(ctx.world, Owned, eid)) {
-          addComponent(ctx.world, Owned, eid);
-          // send message to remove on other side
-          broadcastReliable(ctx, createRemoveOwnershipMessage(ctx, eid));
-        }
+        takeOwnership(ctx, eid);
       }
     }
   }
