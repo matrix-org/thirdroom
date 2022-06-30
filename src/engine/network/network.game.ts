@@ -93,9 +93,9 @@ export enum NetworkAction {
   NewPeerSnapshot,
 }
 
-const writeMessageType = writeUint8;
+export const writeMessageType = writeUint8;
 
-type NetPipeData = [GameState, CursorView];
+export type NetPipeData = [GameState, CursorView];
 
 /******************
  * Initialization *
@@ -247,10 +247,6 @@ export const Networked = defineComponent({
 export const Owned = defineComponent();
 
 /* Queries */
-
-export const networkedQuery = defineQuery([Networked]);
-export const enteredNetworkedQuery = enterQuery(networkedQuery);
-export const exitedNetworkedQuery = exitQuery(networkedQuery);
 
 export const ownedNetworkedQuery = defineQuery([Networked, Owned]);
 export const createdOwnedNetworkedQuery = enterQuery(ownedNetworkedQuery);
@@ -841,11 +837,14 @@ export const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
 };
 
 const assignNetworkIds = (state: GameState) => {
+  const network = getModule(state, NetworkModule);
   const entered = enteredNetworkIdQuery(state.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
-    Networked.networkId[eid] = createNetworkId(state) || 0;
-    console.log("networkId", Networked.networkId[eid], "assigned to eid", eid);
+    const nid = createNetworkId(state) || 0;
+    Networked.networkId[eid] = nid;
+    console.log("networkId", nid, "assigned to eid", eid);
+    network.networkIdToEntityId.set(nid, eid);
   }
   return state;
 };
@@ -944,7 +943,11 @@ const processNetworkMessages = (state: GameState) => {
   }
 };
 
-const registerInboundMessageHandler = (network: GameNetworkState, type: number, cb: (input: NetPipeData) => void) => {
+export const registerInboundMessageHandler = (
+  network: GameNetworkState,
+  type: number,
+  cb: (input: NetPipeData) => void
+) => {
   network.messageHandlers[type] = cb;
 };
 

@@ -1,8 +1,9 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
+import { defineComponent, Types, defineQuery, removeComponent, addComponent, hasComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
+import { createCursorView, CursorView, readUint32, sliceCursorView, writeUint32 } from "../engine/allocator/CursorView";
 import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
@@ -14,9 +15,21 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
+import {
+  broadcastReliable,
+  NetPipeData,
+  Networked,
+  NetworkModule,
+  Owned,
+  registerInboundMessageHandler,
+  writeMessageType,
+} from "../engine/network/network.game";
+import { RemoteNodeComponent } from "../engine/node/node.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 
 type GrabThrow = {};
+
+const RemoveOwnershipMessage = 10;
 
 export const GrabThrowModule = defineModule<GameState, GrabThrow>({
   name: "grab-throw",
@@ -24,11 +37,43 @@ export const GrabThrowModule = defineModule<GameState, GrabThrow>({
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, GrabThrowActionMapp);
+    enableActionMap(ctx, GrabThrowActionMap);
+
+    const network = getModule(ctx, NetworkModule);
+
+    // TODO: make new API for this that allows user to use strings (internally mapped to an integer)
+    registerInboundMessageHandler(network, RemoveOwnershipMessage, deserializeRemoveOwnership);
   },
 });
 
-export const GrabThrowActionMapp: ActionMap = {
+const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 2));
+
+const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
+  writeMessageType(messageView, RemoveOwnershipMessage);
+  serializeRemoveOwnership(messageView, eid);
+  return sliceCursorView(messageView);
+};
+
+const serializeRemoveOwnership = (cv: CursorView, eid: number) => {
+  writeUint32(cv, Networked.networkId[eid]);
+};
+
+const deserializeRemoveOwnership = (input: NetPipeData) => {
+  const [ctx, cv] = input;
+  const network = getModule(ctx, NetworkModule);
+  const nid = readUint32(cv);
+  const eid = network.networkIdToEntityId.get(nid);
+  console.log("#deserializeRemoveOwnership()", nid, eid);
+  if (eid) {
+    console.log("#deserializeRemoveOwnership() removeEntity()", eid);
+    // removeEntity(ctx.world, eid);
+    removeComponent(ctx.world, Networked, eid);
+    removeComponent(ctx.world, RemoteNodeComponent, eid);
+    removeComponent(ctx.world, RigidBody, eid);
+  }
+};
+
+export const GrabThrowActionMap: ActionMap = {
   id: "grab-throw",
   actions: [
     {
@@ -151,8 +196,8 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
-    const s: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(source);
-    const t: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(target);
+    const s: Vector3 = new Vector3().fromArray(source);
+    const t: Vector3 = new Vector3().fromArray(target);
 
     const ray = new RAPIER.Ray(s, t);
     const maxToi = 4.0;
@@ -170,8 +215,13 @@ export function GrabThrowSystem(ctx: GameState) {
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
       } else {
-        addComponent(ctx.world, GrabComponent, eid);
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
+        addComponent(ctx.world, GrabComponent, eid);
+        if (!hasComponent(ctx.world, Owned, eid)) {
+          addComponent(ctx.world, Owned, eid);
+          // send message to remove on other side
+          broadcastReliable(ctx, createRemoveOwnershipMessage(ctx, eid));
+        }
       }
     }
   }
