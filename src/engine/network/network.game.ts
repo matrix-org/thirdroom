@@ -55,6 +55,7 @@ import {
 } from "../audio/audio.game";
 import randomRange from "../utils/randomRange";
 import { RigidBody } from "../physics/physics.game";
+import { deserializeRemoveOwnership } from "./ownership.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -91,6 +92,7 @@ export enum NetworkAction {
   AssignPeerIdIndex,
   InformPlayerNetworkId,
   NewPeerSnapshot,
+  RemoveOwnershipMessage,
 }
 
 export const writeMessageType = writeUint8;
@@ -122,6 +124,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
 
+    // TODO: make new API for this that allows user to use strings (internally mapped to an integer)
     registerInboundMessageHandler(network, NetworkAction.Create, deserializeCreates);
     registerInboundMessageHandler(network, NetworkAction.UpdateChanged, deserializeUpdatesChanged);
     registerInboundMessageHandler(network, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
@@ -131,6 +134,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
+    registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),

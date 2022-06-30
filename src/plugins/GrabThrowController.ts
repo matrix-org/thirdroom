@@ -3,7 +3,6 @@ import { defineComponent, Types, defineQuery, removeComponent, addComponent, has
 import { vec3, mat4, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
-import { createCursorView, CursorView, readUint32, sliceCursorView, writeUint32 } from "../engine/allocator/CursorView";
 import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
@@ -15,21 +14,11 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import {
-  broadcastReliable,
-  NetPipeData,
-  Networked,
-  NetworkModule,
-  Owned,
-  registerInboundMessageHandler,
-  writeMessageType,
-} from "../engine/network/network.game";
-import { RemoteNodeComponent } from "../engine/node/node.game";
+import { broadcastReliable, Owned } from "../engine/network/network.game";
+import { createRemoveOwnershipMessage } from "../engine/network/ownership.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 
 type GrabThrow = {};
-
-const RemoveOwnershipMessage = 10;
 
 export const GrabThrowModule = defineModule<GameState, GrabThrow>({
   name: "grab-throw",
@@ -38,37 +27,8 @@ export const GrabThrowModule = defineModule<GameState, GrabThrow>({
   },
   init(ctx) {
     enableActionMap(ctx, GrabThrowActionMap);
-
-    const network = getModule(ctx, NetworkModule);
-
-    // TODO: make new API for this that allows user to use strings (internally mapped to an integer)
-    registerInboundMessageHandler(network, RemoveOwnershipMessage, deserializeRemoveOwnership);
   },
 });
-
-const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 2));
-
-const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
-  writeMessageType(messageView, RemoveOwnershipMessage);
-  serializeRemoveOwnership(messageView, eid);
-  return sliceCursorView(messageView);
-};
-
-const serializeRemoveOwnership = (cv: CursorView, eid: number) => {
-  writeUint32(cv, Networked.networkId[eid]);
-};
-
-const deserializeRemoveOwnership = (input: NetPipeData) => {
-  const [ctx, cv] = input;
-  const network = getModule(ctx, NetworkModule);
-  const nid = readUint32(cv);
-  const eid = network.networkIdToEntityId.get(nid);
-  if (eid) {
-    removeComponent(ctx.world, Networked, eid);
-    removeComponent(ctx.world, RemoteNodeComponent, eid);
-    removeComponent(ctx.world, RigidBody, eid);
-  }
-};
 
 export const GrabThrowActionMap: ActionMap = {
   id: "grab-throw",
