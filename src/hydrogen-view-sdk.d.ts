@@ -1025,7 +1025,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type ClassNames<T> = { [className: string]: boolean | ((value: T) => boolean) };
   type TextBinding<T> = (v: T) => string | number | boolean | undefined | null;
   export type Child<T> = string | Text | ViewNode | TextBinding<T>;
-  type Children<T> = Child<T> | Child<T>[];
+  export type Children<T> = Child<T> | Child<T>[];
   export type RenderFn<T> = (t: Builder<T>, vm: T) => ViewNode;
   type EventHandler = (event: Event) => void;
   type AttributeStaticValue = string | boolean;
