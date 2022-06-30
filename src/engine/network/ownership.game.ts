@@ -1,10 +1,8 @@
-import { addComponent, hasComponent, removeComponent } from "bitecs";
+import { addComponent, hasComponent, removeEntity } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNodeComponent } from "../node/node.game";
-import { RigidBody } from "../physics/physics.game";
 import {
   writeMessageType,
   Networked,
@@ -33,9 +31,9 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
   if (eid) {
-    removeComponent(ctx.world, Networked, eid);
-    removeComponent(ctx.world, RemoteNodeComponent, eid);
-    removeComponent(ctx.world, RigidBody, eid);
+    // hack - set nid to 0 to prevent removal of entity over the network
+    Networked.networkId[eid] = 0;
+    removeEntity(ctx.world, eid);
   }
 };
 
