@@ -1,10 +1,10 @@
-import { RigidBody } from "@dimforge/rapier3d-compat";
 import { addComponent, hasComponent, removeComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
+import { RigidBody } from "../physics/physics.game";
 import {
   writeMessageType,
   Networked,
