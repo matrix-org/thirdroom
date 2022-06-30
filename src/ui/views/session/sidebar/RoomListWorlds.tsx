@@ -14,7 +14,7 @@ import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import AddUserIC from "../../../../../res/ic/add-user.svg";
-import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
+import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { InviteDialog } from "../dialogs/InviteDialog";
@@ -57,7 +57,7 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <JoinWorldDialog
+              <JoinWithAliasDialog
                 renderTrigger={(openDialog) => (
                   <DropdownMenu
                     content={
@@ -65,7 +65,7 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
                         <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
                           Create World
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={openDialog}>Join World</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join with Alias</DropdownMenuItem>
                       </>
                     }
                   >

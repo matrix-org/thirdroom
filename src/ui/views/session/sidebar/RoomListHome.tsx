@@ -16,7 +16,7 @@ import AddIC from "../../../../../res/ic/add.svg";
 import AddUserIC from "../../../../../res/ic/add-user.svg";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
-import { JoinWorldDialog } from "../dialogs/JoinWorldDialog";
+import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
 import { InviteDialog } from "../dialogs/InviteDialog";
 import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
 import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
@@ -60,7 +60,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <JoinWorldDialog
+              <JoinWithAliasDialog
                 renderTrigger={(openDialog) => (
                   <DropdownMenu
                     content={
@@ -68,7 +68,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
                         <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
                           Create World
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={openDialog}>Join World</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join with Alias</DropdownMenuItem>
                       </>
                     }
                   >
@@ -119,7 +119,20 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           );
         })}
       </Category>
-      <Category header={<CategoryHeader title="All Messages" />}>
+      <Category
+        header={
+          <CategoryHeader
+            title="All Messages"
+            options={
+              <JoinWithAliasDialog
+                renderTrigger={(openDialog) => (
+                  <IconButton size="sm" label="Create World" onClick={openDialog} iconSrc={AddIC} />
+                )}
+              />
+            }
+          />
+        }
+      >
         {roomInvites.map((invite) => (
           <RoomTile
             key={invite.id}
@@ -139,6 +152,15 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
             avatar={renderAvatar(room, false)}
             onClick={() => selectChat(room.id)}
             content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+            options={
+              <InviteDialog
+                key={room.id}
+                roomId={room.id}
+                renderTrigger={(openDialog) => (
+                  <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                )}
+              />
+            }
           />
         ))}
       </Category>

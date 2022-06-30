@@ -1,5 +1,4 @@
 import { ReactNode, useState, FormEvent, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";
@@ -17,13 +16,12 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import InfoIC from "../../../../../res/ic/info.svg";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 
-interface JoinWorldDialogProps {
+interface JoinWithAliasDialogProps {
   renderTrigger: (openDialog: () => void) => ReactNode;
 }
 
-export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
+export function JoinWithAliasDialog({ renderTrigger }: JoinWithAliasDialogProps) {
   const { session } = useHydrogen(true);
-  const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
   const openDialog = () => setIsOpen(true);
@@ -58,11 +56,10 @@ export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
 
     setJoining(true);
     try {
-      const roomId = await session.joinRoom(aliasOrId);
-      navigate(`/world/${roomId}`);
+      await session.joinRoom(aliasOrId);
       closeDialog();
     } catch (err) {
-      setError(`Failed to join "${aliasOrId}". Either world is private or doesn't exist.`);
+      setError(`Failed to join "${aliasOrId}". Either world/room is private or doesn't exist.`);
     }
     setJoining(false);
   };
@@ -78,7 +75,7 @@ export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
         <div className="flex flex-column">
           <Header
             className="shrink-0"
-            left={<HeaderTitle size="lg">Join World</HeaderTitle>}
+            left={<HeaderTitle size="lg">Join with Alias</HeaderTitle>}
             right={<IconButton iconSrc={CrossIC} onClick={closeDialog} label="Close" />}
           />
           <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
@@ -86,8 +83,8 @@ export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
               <SettingTile
                 label={
                   <>
-                    <Label>World Alias</Label>
-                    <Tooltip content="Use alias or world id." side="right">
+                    <Label>Alias</Label>
+                    <Tooltip content="Use alias or id." side="right">
                       <Icon src={InfoIC} color="surface-low" size="sm" />
                     </Tooltip>
                   </>
@@ -109,7 +106,7 @@ export function JoinWorldDialog({ renderTrigger }: JoinWorldDialogProps) {
             </div>
             <Button size="lg" type="submit">
               {joining && <Dots color="on-primary" />}
-              {joining ? "Joining" : "Join World"}
+              {joining ? "Joining" : "Join"}
             </Button>
           </form>
         </div>
