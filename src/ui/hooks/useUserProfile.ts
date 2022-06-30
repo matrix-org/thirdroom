@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Session, Client, SyncStatus, Room, RoomVisibility, RoomType } from "@thirdroom/hydrogen-view-sdk";
 
-import { getMxIdUsername, getProfileRoom } from "../utils/matrixUtils";
+import { getMxIdUsername, getProfileRoom, waitToCreateRoom } from "../utils/matrixUtils";
 import { useStore } from "./useStore";
 import { useIsMounted } from "./useIsMounted";
 
@@ -51,7 +51,7 @@ export function useUserProfile(client: Client, session?: Session) {
   );
 
   const initProfileRoom = useCallback(
-    (session: Session) => {
+    async (session: Session) => {
       const profileRoom = getProfileRoom(session.rooms);
 
       if (profileRoom) {
@@ -78,16 +78,12 @@ export function useUserProfile(client: Client, session?: Session) {
           },
         });
 
-        const unSubs = roomBeingCreated.disposableOn("change", () => {
-          if (!roomBeingCreated.roomId) return;
-          const profileRoom = session.rooms.get(roomBeingCreated.roomId);
-          unSubs();
-          if (!profileRoom) {
-            window.setTimeout(() => window.location.reload());
-            return;
-          }
-          listenProfileChange(session, profileRoom);
-        });
+        const profileRoom = await waitToCreateRoom(session, roomBeingCreated);
+        if (!profileRoom) {
+          window.setTimeout(() => window.location.reload());
+          return;
+        }
+        listenProfileChange(session, profileRoom);
       }
     },
     [listenProfileChange]

@@ -393,6 +393,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     visibility: RoomVisibility;
     name?: string;
     topic?: string;
+    invites?: string[];
     isEncrypted?: boolean;
     isFederationDisabled?: boolean;
     alias?: string;

@@ -1,4 +1,4 @@
-import { Room, ObservableMap } from "@thirdroom/hydrogen-view-sdk";
+import { Room, ObservableMap, HomeServerApi, RoomBeingCreated, Session } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
 
@@ -63,4 +63,30 @@ export function getProfileRoom(rooms: ObservableMap<string, Room>) {
   for (const room of rooms.values()) {
     if (room.type === type) return room;
   }
+}
+
+export async function isValidUserId(hsApi: HomeServerApi, userId: string) {
+  if (!userId.match(/^@.+:.+$/)) return false;
+
+  try {
+    await hsApi.profile(userId).response();
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+export async function waitToCreateRoom(
+  session: Session,
+  roomBeingCreated: RoomBeingCreated
+): Promise<Room | undefined> {
+  return new Promise((resolve) => {
+    const unSubs = roomBeingCreated.disposableOn("change", () => {
+      unSubs();
+      if (!roomBeingCreated.roomId) return resolve(undefined);
+      const profileRoom = session.rooms.get(roomBeingCreated.roomId);
+      if (!profileRoom) return resolve(undefined);
+      resolve(profileRoom);
+    });
+  });
 }

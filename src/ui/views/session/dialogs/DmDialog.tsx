@@ -1,4 +1,5 @@
 import { ReactNode, useState, FormEvent, useEffect, useCallback, ChangeEvent } from "react";
+import { RoomVisibility } from "@thirdroom/hydrogen-view-sdk";
 
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";
@@ -18,55 +19,53 @@ import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useSearchProfile } from "../../../hooks/useSearchProfile";
 import { ProfileSuggestion } from "./ProfileSuggestion";
-import { isValidUserId } from "../../../utils/matrixUtils";
+import { isValidUserId, waitToCreateRoom } from "../../../utils/matrixUtils";
 
-interface InviteDialogProps {
-  roomId: string;
+interface DmDialogProps {
   renderTrigger: (openDialog: () => void) => ReactNode;
 }
 
-export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
+export function DmDialog({ renderTrigger }: DmDialogProps) {
   const { session } = useHydrogen(true);
 
   const [isOpen, setIsOpen] = useState(false);
   const openDialog = () => setIsOpen(true);
   const closeDialog = () => setIsOpen(false);
-  const [inviting, setInviting] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string>();
 
   const { loading, value: searchResult, setSearchTerm } = useSearchProfile(session.hsApi);
 
   useEffect(() => {
     if (isOpen === false) {
-      setInviting(false);
+      setStarting(false);
       setError(undefined);
       setSearchTerm(undefined);
     }
   }, [isOpen, setSearchTerm]);
 
-  const inviteUser = async (userId: string) => {
-    if (inviting) return;
+  const dmUser = async (userId: string) => {
+    if (starting) return;
     setError(undefined);
-    setInviting(true);
+    setStarting(true);
     if ((await isValidUserId(session.hsApi, userId)) === false) {
-      setError(`User id "${userId}" is invalid. Failed to invite.`);
-      setInviting(false);
+      setError(`User id "${userId}" is invalid. Failed to start direct message.`);
+      setStarting(false);
       return;
     }
-    try {
-      await session.hsApi.invite(roomId, userId).response();
-      closeDialog();
-    } catch (err) {
-      setError(`Failed to invite "${userId}".`);
-    }
-    setInviting(false);
+    const roomBeingCreated = session.createRoom({
+      visibility: RoomVisibility.DirectMessage,
+      invites: [userId],
+    });
+    await waitToCreateRoom(session, roomBeingCreated);
+    closeDialog();
   };
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
 
     const value = evt.currentTarget.input.value as string;
-    inviteUser(value.trim());
+    dmUser(value.trim());
   };
 
   const handleInputChange = useDebounce(
@@ -87,7 +86,7 @@ export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
         <div className="flex flex-column">
           <Header
             className="shrink-0"
-            left={<HeaderTitle size="lg">Invite</HeaderTitle>}
+            left={<HeaderTitle size="lg">Direct Message</HeaderTitle>}
             right={<IconButton iconSrc={CrossIC} onClick={closeDialog} label="Close" />}
           />
           <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
@@ -110,16 +109,16 @@ export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
                   placeholder="@user:server.name"
                 />
               </SettingTile>
-              {!inviting && error && (
+              {!starting && error && (
                 <Text variant="b3" color="danger" weight="medium">
                   {error}
                 </Text>
               )}
-              <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={inviteUser} />
+              <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={dmUser} />
             </div>
             <Button size="lg" type="submit">
-              {inviting && <Dots color="on-primary" />}
-              {inviting ? "Inviting" : "Invite"}
+              {starting && <Dots color="on-primary" />}
+              {starting ? "Starting" : "Direct Message"}
             </Button>
           </form>
         </div>

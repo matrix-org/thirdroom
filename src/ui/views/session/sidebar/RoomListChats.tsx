@@ -1,4 +1,4 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { Invite, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -10,15 +10,19 @@ import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
+import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
+import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
 
 export function RoomListChats() {
   const { session, platform } = useHydrogen(true);
 
   const [rooms] = useRoomsOfType(session, RoomTypes.Room);
+  const [roomInvites] = useInvitesOfType(session, RoomTypes.Room);
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
 
-  const renderAvatar = (room: Room) => {
+  const renderAvatar = (room: Room | Invite) => {
     const avatar = (
       <Avatar
         name={room.name || "Empty room"}
@@ -36,6 +40,18 @@ export function RoomListChats() {
   return (
     <>
       <Category header={<CategoryHeader title="All Messages" />}>
+        {roomInvites.map((invite) => (
+          <RoomTile
+            key={invite.id}
+            avatar={
+              <AvatarBadgeWrapper badge={<NotificationBadge variant="secondary" content="Invite" />}>
+                {renderAvatar(invite)}
+              </AvatarBadgeWrapper>
+            }
+            content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
+            onClick={() => selectChat(invite.id)}
+          />
+        ))}
         {rooms.map((room) => (
           <RoomTile
             key={room.id}
