@@ -190,6 +190,8 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
+const AVATAR_COLLISION_GROUPS = 0xffff_f00f;
+
 export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
@@ -211,8 +213,8 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
   const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
 
-  colliderDesc.setCollisionGroups(0x0000_fff0);
-  colliderDesc.setSolverGroups(0x0000_fff0);
+  colliderDesc.setCollisionGroups(AVATAR_COLLISION_GROUPS);
+  colliderDesc.setSolverGroups(AVATAR_COLLISION_GROUPS);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx.world, container, rigidBody);
