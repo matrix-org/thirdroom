@@ -7,8 +7,18 @@ import { StatsModule } from "./stats/stats.main";
 import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
 import { ResourceModule } from "./resource/resource.main";
+import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.main";
 
 export default defineConfig<IMainThreadContext>({
-  modules: [ResourceModule, EditorModule, AudioModule, NetworkModule, InputModule, StatsModule, RendererModule],
+  modules: [
+    ResourceModule,
+    EditorModule,
+    AudioModule,
+    NetworkModule,
+    InputModule,
+    StatsModule,
+    RendererModule,
+    ThirdroomModule,
+  ],
   systems: [MainThreadAudioSystem, MainThreadEditorSystem],
 });

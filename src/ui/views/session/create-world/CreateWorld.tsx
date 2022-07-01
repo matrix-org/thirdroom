@@ -118,8 +118,10 @@ export function CreateWorld() {
       });
 
       navigate(`/world/${roomBeingCreated.id}`);
+
+      selectWindow();
     },
-    [session, navigate]
+    [session, navigate, selectWindow]
   );
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {

@@ -28,6 +28,8 @@ export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>
     }
   }, [isMounted, canvasRef]);
 
+  // TODO: Implement engine APIs
+
   return context;
 }
 

@@ -1,4 +1,4 @@
-import { MouseEvent } from "react";
+import { MouseEventHandler } from "react";
 import classNames from "classnames";
 
 import { Icon } from "../icon/Icon";
@@ -22,7 +22,7 @@ interface IIconButton {
   iconSrc: string;
   label: string;
   type?: "button" | "submit" | "reset";
-  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
 }
 

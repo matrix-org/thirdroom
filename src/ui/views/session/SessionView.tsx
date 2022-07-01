@@ -1,6 +1,6 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
-import { Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
-import { GroupCall, ObservableValue, Room, LocalMedia, CallIntent } from "@thirdroom/hydrogen-view-sdk";
+import { Outlet, useMatch, useNavigate, useSearchParams } from "react-router-dom";
+import { GroupCall, Room, LocalMedia, CallIntent, RoomBeingCreated, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -8,163 +8,240 @@ import "./SessionView.css";
 import { useInitMainThreadContext, MainThreadContextProvider } from "../../hooks/useMainThread";
 import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
-import { useRoom } from "../../hooks/useRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
 import { useStore } from "../../hooks/useStore";
-import { useRoomIdFromAlias } from "../../hooks/useRoomIdFromAlias";
+import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
-import { useAsyncObservableValue } from "../../hooks/useAsyncObservableValue";
 import { connectToTestNet } from "../../../engine/network/network.main";
 import { loadEnvironment } from "../../../plugins/thirdroom/thirdroom.main";
+import { getProfileRoom } from "../../utils/matrixUtils";
+import { useRoomStatus } from "../../hooks/useRoomStatus";
+
+let worldReloadId = 0;
 
 export interface SessionOutletContext {
-  world?: Room;
+  world?: Room | RoomBeingCreated;
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
-  onLeftWorld: () => void;
+  onExitWorld: () => void;
 }
 
 export function SessionView() {
-  const { client, session, platform, profileRoom } = useHydrogen(true);
+  const { client, session, platform } = useHydrogen(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
-  const networkInterfaceRef = useRef<() => void>();
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
 
   const navigate = useNavigate();
 
-  const location = useLocation();
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
 
-  const worldMatch = useMatch({ path: "world/:worldId/*" });
-  const { worldId, setInitialWorld, leftWorld, enteredWorld } = useStore((state) => state.world);
-  const world = useRoom(session, worldId);
-  const nextWorldIdFromAlias = useRoomIdFromAlias(location.hash);
+  const networkInterfaceRef = useRef<() => void>();
 
-  const nextWorldId = worldMatch ? worldMatch.params["worldId"] : nextWorldIdFromAlias;
+  const world = useWorld();
+  const [params] = useSearchParams();
 
-  useEffect(() => {
-    if (mainThread && world) {
-      world.getStateEvent("m.world").then(
-        ({
-          event: {
-            // eslint-disable-next-line camelcase
-            content: { scene_url },
-          },
-        }: any) => {
-          // eslint-disable-next-line camelcase
-          let sceneUrl = scene_url;
+  const curWorldReloadId = params.get("reload");
 
-          if (sceneUrl && sceneUrl.startsWith("mxc:")) {
-            sceneUrl = session.mediaRepository.mxcUrl(scene_url);
-          }
-
-          if (sceneUrl) {
-            loadEnvironment(mainThread, sceneUrl);
-          }
-        }
-      );
-    }
-  }, [session, mainThread, world]);
-
-  useEffect(() => {
-    setInitialWorld(nextWorldId);
-  }, [nextWorldId, setInitialWorld]);
-
-  const { value: powerLevels } = useAsyncObservableValue(
-    () => (world ? world.observePowerLevels() : Promise.resolve(new ObservableValue(undefined))),
-    [world]
-  );
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === worldId ? call : []));
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
     return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, worldId]);
+  }, [calls, world]);
 
-  const onLeftWorld = useCallback(() => {
-    leftWorld();
-    document.exitPointerLock();
+  const { value: roomStatus } = useRoomStatus(session, world?.id);
 
-    if (activeCall) {
-      activeCall.leave();
+  useEffect(() => {
+    if (
+      world &&
+      "isBeingCreated" in world &&
+      roomStatus !== undefined &&
+      (roomStatus & RoomStatus.Replaced) !== 0 &&
+      roomStatus & RoomStatus.BeingCreated
+    ) {
+      navigate(`/world/${world.roomId}`);
     }
+  }, [navigate, roomStatus, world]);
+
+  useEffect(() => {
+    const state = useStore.getState();
+
+    if (world && mainThread) {
+      if ("isBeingCreated" in world) {
+        return;
+      }
+
+      // Load the world from the active route
+      const loadWorld = async () => {
+        state.world.loadingWorld(world.id);
+
+        const stateEvent = await world.getStateEvent("m.world");
+
+        let sceneUrl = stateEvent?.event.content?.scene_url;
+
+        if (typeof sceneUrl !== "string") {
+          state.world.setWorldError(new Error("Matrix room is not a valid world."));
+          return;
+        }
+
+        if (sceneUrl.startsWith("mxc:")) {
+          try {
+            sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
+          } catch (error) {
+            console.error(error);
+            state.world.setWorldError(new Error(`Invalid scene url "${sceneUrl}"`));
+            return;
+          }
+        }
+
+        try {
+          await loadEnvironment(mainThread!, sceneUrl);
+          state.world.loadedWorld();
+        } catch (error) {
+          console.error(error);
+          state.world.setWorldError(error as Error);
+          return;
+        }
+      };
+
+      loadWorld();
+    }
+
+    return () => {
+      state.world.leftWorld();
+
+      document.exitPointerLock();
+
+      if (networkInterfaceRef.current) {
+        networkInterfaceRef.current();
+      }
+    };
+  }, [mainThread, world, curWorldReloadId, session]);
+
+  const onJoinSelectedWorld = useCallback(async () => {
+    const worldId = useStore.getState().overlayWorld.selectedWorldId;
+
+    if (!worldId) {
+      return;
+    }
+
+    useStore.getState().world.joinWorld();
+
+    try {
+      await session.joinRoom(worldId);
+
+      const room = session.rooms.get(worldId);
+
+      navigate(`/world/${(room && room.canonicalAlias) || worldId}`);
+    } catch (error) {
+      useStore.getState().world.setWorldError(error as Error);
+    }
+  }, [session, navigate]);
+
+  const onReloadSelectedWorld = useCallback(() => {
+    const state = useStore.getState();
+
+    const worldId = state.overlayWorld.selectedWorldId;
+
+    if (!worldId) {
+      return;
+    }
+
+    const room = session.rooms.get(worldId);
+
+    navigate(`/world/${(room && room.canonicalAlias) || worldId}?reload=${worldReloadId++}`);
+  }, [session, navigate]);
+
+  const onLoadSelectedWorld = useCallback(async () => {
+    const state = useStore.getState();
+
+    const worldId = state.overlayWorld.selectedWorldId;
+
+    if (!worldId) {
+      return;
+    }
+
+    const room = session.rooms.get(worldId);
+
+    navigate(`/world/${(room && room.canonicalAlias) || worldId}`);
+  }, [session, navigate]);
+
+  const onEnterSelectedWorld = useCallback(async () => {
+    if (!world || "isBeingCreated" in world || !mainThread) {
+      return;
+    }
+
+    const state = useStore.getState();
+
+    state.world.enteringWorld();
+
+    let groupCall: GroupCall | undefined;
+
+    for (const [, call] of Array.from(session.callHandler.calls)) {
+      if (call.roomId === world.id) {
+        groupCall = call;
+        break;
+      }
+    }
+
+    if (!groupCall) {
+      groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
+    }
+
+    const stream = await platform.mediaDevices.getMediaTracks(true, false);
+    const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
+    await groupCall.join(localMedia);
+
+    const profileRoom = getProfileRoom(session.rooms);
+
+    if (profileRoom) {
+      const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
+
+      if (profileEvent && profileEvent.event.content.avatar_url) {
+        await session.hsApi.sendState(world.id, "org.matrix.msc3815.world.member", session.userId, {
+          avatar_url: profileEvent.event.content.avatar_url,
+        });
+      }
+    }
+
+    if (import.meta.env.VITE_USE_TESTNET) {
+      connectToTestNet(mainThread);
+      return;
+    }
+
+    const powerLevels = await world.observePowerLevels();
+
+    networkInterfaceRef.current = createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
+
+    useStore.getState().world.enteredWorld();
+    canvasRef.current?.requestPointerLock();
+  }, [world, platform, session, mainThread, client]);
+
+  const onExitWorld = useCallback(() => {
+    const state = useStore.getState();
+
+    state.world.leftWorld();
+
+    document.exitPointerLock();
 
     if (networkInterfaceRef.current) {
       networkInterfaceRef.current();
     }
-  }, [activeCall, leftWorld]);
-
-  const onEnteredWorld = useCallback(
-    (call: GroupCall) => {
-      enteredWorld();
-      canvasRef.current?.requestPointerLock();
-
-      if (import.meta.env.VITE_USE_TESTNET && mainThread) {
-        connectToTestNet(mainThread);
-        return;
-      }
-
-      if (mainThread && powerLevels) {
-        networkInterfaceRef.current = createMatrixNetworkInterface(mainThread, client, powerLevels, call);
-      }
-    },
-    [client, mainThread, powerLevels, enteredWorld]
-  );
-
-  const onLoadWorld = useCallback(
-    async (room: Room) => {
-      const isEnteredWorld = useStore.getState().world.isEnteredWorld;
-
-      if (isEnteredWorld) {
-        onLeftWorld();
-      }
-
-      navigate(`/world/${room.canonicalAlias ?? room.id}`);
-      return;
-    },
-    [navigate, onLeftWorld]
-  );
-
-  const onEnterWorld = useCallback(
-    async (room: Room) => {
-      const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === room.id ? call : []));
-
-      let call = roomCalls.length && roomCalls[0];
-
-      if (!call) {
-        call = await session.callHandler.createCall(room.id, "m.voice", "Test World", CallIntent.Room);
-      }
-
-      const stream = await platform.mediaDevices.getMediaTracks(true, false);
-      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
-      await call.join(localMedia);
-
-      const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
-      if (profileEvent && profileEvent.event.content.avatar_url) {
-        await session.hsApi.sendState(room.id, "org.matrix.msc3815.world.member", session.userId, {
-          avatar_url: profileEvent.event.content.avatar_url,
-        });
-      }
-
-      onEnteredWorld(call);
-    },
-    [platform, session, calls, profileRoom, onEnteredWorld]
-  );
+  }, []);
 
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
       world,
       activeCall,
       canvasRef,
-      onLeftWorld,
+      onExitWorld,
     }),
-    [world, activeCall, canvasRef, onLeftWorld]
+    [world, activeCall, canvasRef, onExitWorld]
   );
-
-  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -177,9 +254,11 @@ export function SessionView() {
               <Overlay
                 calls={calls}
                 activeCall={activeCall}
-                onLeftWorld={onLeftWorld}
-                onLoadWorld={onLoadWorld}
-                onEnterWorld={onEnterWorld}
+                onExitWorld={onExitWorld}
+                onJoinWorld={onJoinSelectedWorld}
+                onReloadWorld={onReloadSelectedWorld}
+                onLoadWorld={onLoadSelectedWorld}
+                onEnterWorld={onEnterSelectedWorld}
               />
             )}
             <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
