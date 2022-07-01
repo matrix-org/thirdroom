@@ -14,6 +14,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
+import { takeOwnership } from "../engine/network/ownership.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 
 type GrabThrow = {};
@@ -24,11 +25,11 @@ export const GrabThrowModule = defineModule<GameState, GrabThrow>({
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, GrabThrowActionMapp);
+    enableActionMap(ctx, GrabThrowActionMap);
   },
 });
 
-export const GrabThrowActionMapp: ActionMap = {
+export const GrabThrowActionMap: ActionMap = {
   id: "grab-throw",
   actions: [
     {
@@ -102,7 +103,7 @@ const _cameraWorldQuat = quat.create();
 
 // const colliderShape = new RAPIER.Ball(0.5);
 
-const collisionGroups = 0x0ff0_0ff0;
+const collisionGroups = 0x00f0_000f;
 
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
@@ -151,8 +152,8 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
-    const s: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(source);
-    const t: Vector3 = (([x, y, z]) => new Vector3(x, y, z))(target);
+    const s: Vector3 = new Vector3().fromArray(source);
+    const t: Vector3 = new Vector3().fromArray(target);
 
     const ray = new RAPIER.Ray(s, t);
     const maxToi = 4.0;
@@ -170,8 +171,9 @@ export function GrabThrowSystem(ctx: GameState) {
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
       } else {
-        addComponent(ctx.world, GrabComponent, eid);
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
+        addComponent(ctx.world, GrabComponent, eid);
+        takeOwnership(ctx, eid);
       }
     }
   }
