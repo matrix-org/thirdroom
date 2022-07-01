@@ -190,7 +190,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return state.prefabTemplateMap.get(name);
 }
 
-const AVATAR_COLLISION_GROUPS = 0xffff_f00f;
+const AVATAR_COLLISION_GROUPS = 0x0ff0_f00f;
 
 export function createContainerizedAvatar(ctx: GameState, uri: string) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
