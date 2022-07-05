@@ -1,6 +1,15 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
 import { Outlet, useMatch, useNavigate, useSearchParams } from "react-router-dom";
-import { GroupCall, Room, LocalMedia, CallIntent, RoomBeingCreated, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
+import {
+  GroupCall,
+  Room,
+  LocalMedia,
+  CallIntent,
+  RoomBeingCreated,
+  RoomStatus,
+  SubscriptionHandle,
+  StateEvent,
+} from "@thirdroom/hydrogen-view-sdk";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -68,50 +77,73 @@ export function SessionView() {
   }, [navigate, roomStatus, world]);
 
   useEffect(() => {
-    const state = useStore.getState();
-
-    if (world && mainThread) {
-      if ("isBeingCreated" in world) {
-        return;
-      }
-
-      // Load the world from the active route
-      const loadWorld = async () => {
-        state.world.loadingWorld(world.id);
-
-        const stateEvent = await world.getStateEvent("m.world");
-
-        let sceneUrl = stateEvent?.event.content?.scene_url;
-
-        if (typeof sceneUrl !== "string") {
-          state.world.setWorldError(new Error("Matrix room is not a valid world."));
-          return;
-        }
-
-        if (sceneUrl.startsWith("mxc:")) {
-          try {
-            sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
-          } catch (error) {
-            console.error(error);
-            state.world.setWorldError(new Error(`Invalid scene url "${sceneUrl}"`));
-            return;
-          }
-        }
-
-        try {
-          await loadEnvironment(mainThread!, sceneUrl);
-          state.world.loadedWorld();
-        } catch (error) {
-          console.error(error);
-          state.world.setWorldError(error as Error);
-          return;
-        }
-      };
-
-      loadWorld();
+    if (!world || !mainThread) {
+      return;
     }
 
+    const state = useStore.getState();
+
+    if ("isBeingCreated" in world) {
+      state.world.loadingWorld(world.id);
+
+      return () => {
+        state.world.leftWorld();
+      };
+    }
+
+    let subscriptionHandle: SubscriptionHandle;
+
+    state.world.loadingWorld(world.id);
+
+    world
+      .observeStateTypeAndKey("m.world", "")
+      .then((observable) => {
+        const onLoad = async (event: StateEvent | undefined) => {
+          let sceneUrl = event?.content?.scene_url;
+
+          if (typeof sceneUrl !== "string") {
+            state.world.setWorldError(new Error("Matrix room is not a valid world."));
+            return;
+          }
+
+          if (sceneUrl.startsWith("mxc:")) {
+            try {
+              sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
+            } catch (error) {
+              console.error(error);
+              state.world.setWorldError(new Error(`Invalid scene url "${sceneUrl}"`));
+              return;
+            }
+          }
+
+          try {
+            await loadEnvironment(mainThread!, sceneUrl);
+            state.world.loadedWorld();
+          } catch (error) {
+            console.error(error);
+            state.world.setWorldError(error as Error);
+            return;
+          }
+        };
+
+        subscriptionHandle = observable.subscribe(onLoad);
+
+        const initialEvent = observable.get();
+
+        if (initialEvent) {
+          onLoad(initialEvent);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        state.world.setWorldError(error as Error);
+      });
+
     return () => {
+      if (subscriptionHandle) {
+        subscriptionHandle();
+      }
+
       state.world.leftWorld();
 
       document.exitPointerLock();
@@ -224,6 +256,8 @@ export function SessionView() {
   const onExitWorld = useCallback(() => {
     const state = useStore.getState();
 
+    navigate("/");
+
     state.world.leftWorld();
 
     document.exitPointerLock();
@@ -231,7 +265,7 @@ export function SessionView() {
     if (networkInterfaceRef.current) {
       networkInterfaceRef.current();
     }
-  }, []);
+  }, [navigate]);
 
   const outletContext = useMemo<SessionOutletContext>(
     () => ({

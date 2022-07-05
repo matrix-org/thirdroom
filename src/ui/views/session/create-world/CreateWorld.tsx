@@ -57,11 +57,14 @@ export function CreateWorld() {
   const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
+  const [creatingRoom, setCreatingRoom] = useState(false);
 
   const navigate = useNavigate();
 
   const handleCreateWorld = useCallback(
     async ({ avatar, name, sceneMxc, scenePrevMxc, topic, visibility, alias }: CreateWorldOptions) => {
+      setCreatingRoom(true);
+
       const avatarInfo = !avatar
         ? undefined
         : {
@@ -267,8 +270,12 @@ export function CreateWorld() {
                     </Button>
                   }
                   right={
-                    <Button size="lg" type="submit" disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc}>
-                      Create World
+                    <Button
+                      size="lg"
+                      type="submit"
+                      disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc || creatingRoom}
+                    >
+                      {creatingRoom ? "Creating World..." : "Create World"}
                     </Button>
                   }
                 />

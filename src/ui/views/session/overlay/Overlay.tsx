@@ -95,24 +95,21 @@ export function Overlay({
     if (selectedWorldId) {
       const world = session.rooms.get(selectedWorldId);
 
-      if (world) {
-        world.getStateEvent("m.world").then(
-          ({
-            event: {
-              // eslint-disable-next-line camelcase
-              content: { scene_preview_url },
-            },
-          }: any) => {
-            // eslint-disable-next-line camelcase
-            if (scene_preview_url && scene_preview_url.startsWith("mxc:")) {
-              // eslint-disable-next-line camelcase
-              scene_preview_url = session.mediaRepository.mxcUrl(scene_preview_url);
-            }
-
-            setWorldPreviewUrl(scene_preview_url);
-          }
-        );
+      if (!world || "isBeingCreated" in world) {
+        return;
       }
+
+      world.getStateEvent("m.world").then((result: any) => {
+        let scenePreviewUrl = result?.event?.content?.scene_preview_url;
+
+        // eslint-disable-next-line camelcase
+        if (scenePreviewUrl && scenePreviewUrl.startsWith("mxc:")) {
+          // eslint-disable-next-line camelcase
+          scenePreviewUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
+        }
+
+        setWorldPreviewUrl(scenePreviewUrl);
+      });
     }
   }, [session, selectedWorldId]);
 
