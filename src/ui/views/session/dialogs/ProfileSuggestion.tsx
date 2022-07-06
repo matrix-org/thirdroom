@@ -7,7 +7,7 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getMxIdUsername } from "../../../utils/matrixUtils";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Scroll } from "../../../atoms/scroll/Scroll";
-import { ProfileSearchResult } from "../../../hooks/useSearchProfile";
+import { SearchProfileResult } from "../../../hooks/useSearchProfile";
 
 export function ProfileSuggestion({
   loading,
@@ -16,14 +16,14 @@ export function ProfileSuggestion({
 }: {
   loading: boolean;
   onSelect: (userId: string) => void;
-  searchResult?: ProfileSearchResult;
+  searchResult?: SearchProfileResult;
 }) {
   const { session, platform } = useHydrogen(true);
   return (
     <SettingTile label={<Label>Suggestions</Label>}>
       {loading ? (
         <Text variant="b3">Looking for suggestion...</Text>
-      ) : !searchResult?.results ? (
+      ) : !searchResult ? (
         <Text variant="b3">User suggestion will appear here.</Text>
       ) : searchResult.results.length === 0 ? (
         <Text variant="b3">No suggestion found.</Text>
@@ -32,17 +32,17 @@ export function ProfileSuggestion({
           <div style={{ paddingBottom: "var(--sp-sm)" }} className="flex items-center gap-xs">
             {(() => {
               const profiles = searchResult.results;
-              return profiles.map((profile: { user_id: string; avatar_url?: string; display_name?: string }) => {
-                const name = profile.display_name ?? getMxIdUsername(profile.user_id);
-                const avatarHttpUrl = profile.avatar_url
-                  ? getAvatarHttpUrl(profile.avatar_url, 16, platform, session.mediaRepository)
+              return profiles.map((profile) => {
+                const name = profile.displayName ?? getMxIdUsername(profile.userId);
+                const avatarHttpUrl = profile.avatarUrl
+                  ? getAvatarHttpUrl(profile.avatarUrl, 16, platform, session.mediaRepository)
                   : undefined;
                 return (
-                  <Chip key={profile.user_id} onClick={(e) => onSelect(profile.user_id)}>
+                  <Chip key={profile.userId} onClick={(e) => onSelect(profile.userId)}>
                     <Avatar
                       imageSrc={avatarHttpUrl}
                       name={name}
-                      bgColor={`var(--usercolor${getIdentifierColorNumber(profile.user_id)})`}
+                      bgColor={`var(--usercolor${getIdentifierColorNumber(profile.userId)})`}
                       size="xxs"
                       shape="circle"
                     />
