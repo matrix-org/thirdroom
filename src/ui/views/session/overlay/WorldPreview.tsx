@@ -1,14 +1,14 @@
-import { useEffect, useCallback, MouseEvent } from "react";
-import { Room, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
+import { MouseEventHandler, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
-import { useRoomStatus } from "../../../hooks/useRoomStatus";
-import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
-import { useRoom } from "../../../hooks/useRoom";
 import { useStore, WorldLoadState } from "../../../hooks/useStore";
+import { useRoom } from "../../../hooks/useRoom";
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
@@ -17,6 +17,7 @@ interface InviteWorldPreviewProps {
   session: Session;
   roomId: string;
 }
+
 function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
   const { invite, accept, reject } = useInviteControl(session, roomId);
 
@@ -44,61 +45,27 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
   );
 }
 
-interface JoinWorldPreviewProps {
-  session: Session;
-  roomId: string;
-}
-function JoinWorldPreview({ session, roomId }: JoinWorldPreviewProps) {
-  const {
-    callback: onJoinWorld,
-    error: joinRoomError,
-    loading: joiningRoom,
-  } = useAsyncCallback(
-    async (roomId: string) => {
-      await session.joinRoom(roomId);
-    },
-    [session]
-  );
-
-  if (joinRoomError) {
-    return <WorldPreviewCard title="Unnamed Room" desc={`Error joining world: ${joinRoomError.message}`} />;
-  }
-  return (
-    <WorldPreviewCard
-      title="Unnamed Room"
-      options={
-        <Button size="lg" variant="primary" disabled={joiningRoom} onClick={() => onJoinWorld(roomId)}>
-          {joiningRoom ? "Joining World..." : "Join World"}
-        </Button>
-      }
-    />
-  );
-}
-
 interface IWorldPreview {
-  session: Session;
-  onLoadWorld: (room: Room) => Promise<void>;
-  onEnterWorld: (room: Room) => Promise<void>;
+  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
+  onLoadWorld: MouseEventHandler<HTMLButtonElement>;
+  onReloadWorld: MouseEventHandler<HTMLButtonElement>;
+  onEnterWorld: MouseEventHandler<HTMLButtonElement>;
 }
 
-const WorldLoadButtonText: { [key in WorldLoadState]: string } = {
-  [WorldLoadState.None]: "Load Room",
-  [WorldLoadState.Loading]: "Loading...",
-  [WorldLoadState.Loaded]: "Enter Room",
-  [WorldLoadState.Entering]: "Entering...",
-  [WorldLoadState.Error]: "Reload Room",
-  [WorldLoadState.Entered]: "Close Overlay",
-};
-
-export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPreview) {
+export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
   const navigate = useNavigate();
-  const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
-  const closeOverlay = useStore((state) => state.overlay.closeOverlay);
-  const { worldId, loadState, loadError, loadingWorld, loadedWorld, loadWorldError, enteringWorld, enteredWorld } =
-    useStore((state) => state.world);
+  const { session } = useHydrogen(true);
+
+  const { worldId, selectedWorldId, joiningWorld, loadState, error, closeOverlay } = useStore((state) => ({
+    selectedWorldId: state.overlayWorld.selectedWorldId,
+    worldId: state.world.worldId,
+    joiningWorld: state.world.joiningWorld,
+    loadState: state.world.loadState,
+    error: state.world.error,
+    closeOverlay: state.overlay.closeOverlay,
+  }));
 
   const previewWorldId = selectedWorldId || worldId;
-  const isPreviewLoaded = previewWorldId === worldId;
 
   const room = useRoom(session, previewWorldId);
   const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
@@ -109,55 +76,6 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     value: roomStatus,
   } = useRoomStatus(session, previewWorldId);
 
-  const onClickRoomLoadButton = useCallback(
-    async (e: MouseEvent) => {
-      e.preventDefault();
-      if (!room) return;
-
-      if (isPreviewLoaded) {
-        if (loadState === WorldLoadState.Entered) {
-          closeOverlay();
-          return;
-        }
-        if (loadState === WorldLoadState.Loaded) {
-          enteringWorld();
-          try {
-            await onEnterWorld(room);
-            enteredWorld();
-          } catch (error: any) {
-            console.error(error);
-            loadWorldError(error);
-          }
-        }
-      }
-
-      if (isPreviewLoaded === false || loadState === WorldLoadState.None) {
-        loadingWorld(room.id);
-        try {
-          await onLoadWorld(room);
-          loadedWorld();
-        } catch (error: any) {
-          console.error(error);
-          loadWorldError(error);
-        }
-        return;
-      }
-    },
-    [
-      loadState,
-      room,
-      isPreviewLoaded,
-      loadingWorld,
-      onLoadWorld,
-      loadedWorld,
-      loadWorldError,
-      enteringWorld,
-      onEnterWorld,
-      enteredWorld,
-      closeOverlay,
-    ]
-  );
-
   useEffect(() => {
     if (!roomBeingCreated) return;
     if (roomStatus === undefined) return;
@@ -167,52 +85,142 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
     }
   }, [navigate, roomStatus, roomBeingCreated]);
 
-  if (!selectedWorldId && !worldId) {
-    return null;
-  }
-
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
       {(() => {
         if (roomStatus === undefined) {
-          if (roomStatusLoading) return <WorldPreviewCard title="Loading Room..." />;
-          return (
-            <WorldPreviewCard
-              title="Loading Failed"
-              desc={roomStatusError ? `Error loading world: ${roomStatusError}` : "Unknown error occured"}
-            />
-          );
-        }
-
-        if (roomStatus & RoomStatus.Replaced) {
+          if (roomStatusLoading) {
+            return <WorldPreviewCard title="Loading Room..." />;
+          } else if (room === undefined) {
+            return null;
+          } else {
+            return (
+              <WorldPreviewCard
+                title="Loading Failed"
+                desc={roomStatusError ? `Error loading world: ${roomStatusError}` : "Unknown error occured"}
+              />
+            );
+          }
+        } else if (roomStatus & RoomStatus.Replaced) {
           return null;
-        }
+        } else if (roomStatus & RoomStatus.BeingCreated) {
+          return <WorldPreviewCard title="Creating Room..." />;
+        } else if (roomStatus & RoomStatus.Invited) {
+          if (!previewWorldId) {
+            return <WorldPreviewCard title="Loading Room..." />;
+          }
 
-        if (roomStatus & RoomStatus.BeingCreated) return <WorldPreviewCard title="Creating Room..." />;
-        if (roomStatus & RoomStatus.Invited && previewWorldId)
           return <InviteWorldPreview session={session} roomId={previewWorldId} />;
-        if (roomStatus & RoomStatus.Archived) return <WorldPreviewCard title="Room Archived" />;
+        } else if (roomStatus & RoomStatus.Archived) {
+          return <WorldPreviewCard title="Room Archived" />;
+        } else if (roomStatus & RoomStatus.Joined) {
+          const roomName = room?.name || "Unnamed Room";
+          const memberCount = room?.joinedMemberCount || 0;
 
-        if (roomStatus & RoomStatus.Joined) {
+          if (selectedWorldId !== worldId) {
+            return (
+              <WorldPreviewCard
+                title={roomName}
+                memberCount={memberCount}
+                options={
+                  <Button size="lg" variant="secondary" onClick={onLoadWorld}>
+                    Load World
+                  </Button>
+                }
+              />
+            );
+          }
+
+          switch (loadState) {
+            case WorldLoadState.None:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  options={
+                    <Button size="lg" variant="secondary" onClick={onLoadWorld}>
+                      Load World
+                    </Button>
+                  }
+                />
+              );
+            case WorldLoadState.Loading:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  options={
+                    <Button size="lg" variant="secondary" disabled>
+                      Loading...
+                    </Button>
+                  }
+                />
+              );
+            case WorldLoadState.Loaded:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  options={
+                    <Button size="lg" variant="primary" onClick={onEnterWorld}>
+                      Enter World
+                    </Button>
+                  }
+                />
+              );
+            case WorldLoadState.Error:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  desc={error ? error.message : "Unknown error"}
+                  options={
+                    <Button size="lg" variant="secondary" onClick={onReloadWorld}>
+                      Reload World
+                    </Button>
+                  }
+                />
+              );
+            case WorldLoadState.Entering:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  options={
+                    <Button size="lg" variant="secondary" disabled>
+                      Entering...
+                    </Button>
+                  }
+                />
+              );
+            case WorldLoadState.Entered:
+              return (
+                <WorldPreviewCard
+                  title={roomName}
+                  memberCount={memberCount}
+                  options={
+                    <Button size="lg" variant="secondary" onClick={closeOverlay}>
+                      Close Overlay
+                    </Button>
+                  }
+                />
+              );
+          }
+        } else if (roomStatus === RoomStatus.None) {
+          if (error) {
+            return <WorldPreviewCard title="Unnamed Room" desc={`Error joining world: ${error.message}`} />;
+          }
+
           return (
             <WorldPreviewCard
-              title={room?.name || "Unnamed Room"}
-              memberCount={room?.joinedMemberCount || 0}
-              desc={isPreviewLoaded && loadError ? loadError.message : undefined}
+              title="Unnamed Room"
               options={
-                <Button
-                  size="lg"
-                  variant={isPreviewLoaded && loadState === WorldLoadState.Loaded ? "primary" : "secondary"}
-                  onClick={onClickRoomLoadButton}
-                >
-                  {isPreviewLoaded ? WorldLoadButtonText[loadState] : WorldLoadButtonText[WorldLoadState.None]}
+                <Button size="lg" variant="primary" disabled={joiningWorld} onClick={onJoinWorld}>
+                  {joiningWorld ? "Joining World..." : "Join World"}
                 </Button>
               }
             />
           );
-        }
-        if (roomStatus === RoomStatus.None && selectedWorldId) {
-          return <JoinWorldPreview session={session} roomId={selectedWorldId} />;
         }
 
         return <WorldPreviewCard title="Unknown error occurred" />;

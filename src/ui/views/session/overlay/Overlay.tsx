@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { MouseEventHandler, useEffect, useState } from "react";
 import classNames from "classnames";
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
@@ -41,18 +41,51 @@ import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 interface OverlayProps {
   calls: Map<string, GroupCall>;
   activeCall: GroupCall | undefined;
-  onLeftWorld: () => void;
-  onLoadWorld: (room: Room) => Promise<void>;
-  onEnterWorld: (room: Room) => Promise<void>;
+  onExitWorld: MouseEventHandler<HTMLButtonElement>;
+  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
+  onLoadWorld: MouseEventHandler<HTMLButtonElement>;
+  onReloadWorld: MouseEventHandler<HTMLButtonElement>;
+  onEnterWorld: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWorld }: OverlayProps) {
+export function Overlay({
+  calls,
+  activeCall,
+  onExitWorld,
+  onJoinWorld,
+  onLoadWorld,
+  onReloadWorld,
+  onEnterWorld,
+}: OverlayProps) {
   const { session, platform } = useHydrogen(true);
 
-  const { selectedRoomListTab, selectRoomListTab } = useStore((state) => state.overlaySidebar);
-  const { selectedChatId, activeChats, selectChat, minimizeChat, closeChat } = useStore((state) => state.overlayChat);
-  const { worldId, isEnteredWorld, loadState } = useStore((state) => state.world);
-  const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
+  const {
+    selectedRoomListTab,
+    selectRoomListTab,
+    selectedChatId,
+    activeChats,
+    selectChat,
+    minimizeChat,
+    closeChat,
+    worldId,
+    isEnteredWorld,
+    loadState,
+    selectedWorldId,
+  } = useStore((state) => ({
+    selectedRoomListTab: state.overlaySidebar.selectedRoomListTab,
+    selectRoomListTab: state.overlaySidebar.selectRoomListTab,
+    selectedChatId: state.overlayChat.selectedChatId,
+    activeChats: state.overlayChat.activeChats,
+    selectChat: state.overlayChat.selectChat,
+    minimizeChat: state.overlayChat.minimizeChat,
+    closeChat: state.overlayChat.closeChat,
+    worldId: state.world.worldId,
+    isEnteredWorld: state.world.isEnteredWorld,
+    loadState: state.world.loadState,
+    selectedWorldId: state.overlayWorld.selectedWorldId,
+    closeOverlay: state.overlay.closeOverlay,
+  }));
+
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -68,24 +101,21 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
     if (selectedWorldId) {
       const world = session.rooms.get(selectedWorldId);
 
-      if (world) {
-        world.getStateEvent("m.world").then(
-          ({
-            event: {
-              // eslint-disable-next-line camelcase
-              content: { scene_preview_url },
-            },
-          }: any) => {
-            // eslint-disable-next-line camelcase
-            if (scene_preview_url && scene_preview_url.startsWith("mxc:")) {
-              // eslint-disable-next-line camelcase
-              scene_preview_url = session.mediaRepository.mxcUrl(scene_preview_url);
-            }
-
-            setWorldPreviewUrl(scene_preview_url);
-          }
-        );
+      if (!world || "isBeingCreated" in world) {
+        return;
       }
+
+      world.getStateEvent("m.world").then((result: any) => {
+        let scenePreviewUrl = result?.event?.content?.scene_preview_url;
+
+        // eslint-disable-next-line camelcase
+        if (scenePreviewUrl && scenePreviewUrl.startsWith("mxc:")) {
+          // eslint-disable-next-line camelcase
+          scenePreviewUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
+        }
+
+        setWorldPreviewUrl(scenePreviewUrl);
+      });
     }
   }, [session, selectedWorldId]);
 
@@ -145,12 +175,7 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
                           iconSrc={callMute ? MicOffIC : MicIC}
                           onClick={toggleMute}
                         />
-                        <IconButton
-                          variant="danger"
-                          label="Left world"
-                          iconSrc={LogoutIC}
-                          onClick={(a) => onLeftWorld()}
-                        />
+                        <IconButton variant="danger" label="Left world" iconSrc={LogoutIC} onClick={onExitWorld} />
                       </>
                     }
                   />
@@ -167,7 +192,12 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
         </div>
       ) : (
         <div className="Overlay__content grow">
-          <WorldPreview session={session} onLoadWorld={onLoadWorld} onEnterWorld={onEnterWorld} />
+          <WorldPreview
+            onJoinWorld={onJoinWorld}
+            onLoadWorld={onLoadWorld}
+            onReloadWorld={onReloadWorld}
+            onEnterWorld={onEnterWorld}
+          />
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={

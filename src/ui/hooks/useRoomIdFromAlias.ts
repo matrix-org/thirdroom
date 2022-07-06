@@ -1,31 +1,36 @@
-import { useState, useEffect } from "react";
+import { Room, RoomBeingCreated } from "@thirdroom/hydrogen-view-sdk";
+import { useLocation, useMatch } from "react-router-dom";
 
 import { useHydrogen } from "./useHydrogen";
-import { useIsMounted } from "./useIsMounted";
-import { getRoomWithAlias, resolveRoomAlias } from "../utils/matrixUtils";
+import { useObservableMap } from "./useObservableMap";
 
-export function useRoomIdFromAlias(alias?: string) {
+export function useWorld(): Room | RoomBeingCreated | undefined {
   const { session } = useHydrogen(true);
-  const { homeserver } = session.sessionInfo;
-  const [roomId, setRoomId] = useState<string>();
-  const isMounted = useIsMounted();
+  const location = useLocation();
+  const worldMatch = useMatch({ path: "world/:worldId/*" });
+  const alias = location.hash;
+  const worldId = worldMatch && worldMatch.params["worldId"];
 
-  useEffect(() => {
-    if (typeof alias !== "string" || alias.startsWith("#") === false) {
-      setRoomId(undefined);
-      return;
+  const rooms = useObservableMap(() => session.rooms, [session.rooms]);
+  const roomsBeingCreated = useObservableMap(() => session.roomsBeingCreated, [session.roomsBeingCreated]);
+
+  if (alias) {
+    for (const room of rooms.values()) {
+      if (room.canonicalAlias === alias) {
+        return room;
+      }
     }
-    const room = getRoomWithAlias(session.rooms, alias);
+  } else if (worldId) {
+    const room = rooms.get(worldId);
+
     if (room) {
-      setRoomId(room.id);
-    } else {
-      resolveRoomAlias(homeserver, alias).then((result) => {
-        if (!isMounted) return;
-        if (result.roomId) setRoomId(result.roomId);
-        else setRoomId(undefined);
-      });
+      return room;
     }
-  }, [session, homeserver, alias, isMounted]);
 
-  return roomId;
+    const roomBeingCreated = roomsBeingCreated.get(worldId);
+
+    return roomBeingCreated;
+  }
+
+  return undefined;
 }

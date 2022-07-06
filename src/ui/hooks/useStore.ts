@@ -63,17 +63,19 @@ export interface OverlayChatState {
 }
 
 export interface WorldState {
+  joiningWorld: boolean;
   isEnteredWorld: boolean;
   worldId: RoomId | undefined;
   loadState: WorldLoadState;
-  loadError?: Error;
+  error?: Error;
   setInitialWorld(roomId: RoomId | undefined): void;
   loadingWorld(roomId: RoomId | undefined): void;
   loadedWorld(): void;
-  loadWorldError(error: Error): void;
+  setWorldError(error: Error): void;
   enteringWorld(): void;
   enteredWorld(): void;
   leftWorld(): void;
+  joinWorld(): void;
 }
 
 export interface WorldChatState {
@@ -194,22 +196,30 @@ export const useStore = create<StoreState>()(
       isEnteredWorld: false,
       worldId: undefined,
       loadState: WorldLoadState.None,
-      loadError: undefined,
+      error: undefined,
+      joiningWorld: false,
       setInitialWorld(roomId: RoomId | undefined) {
         set((state) => {
           state.overlayWorld.selectedWorldId = roomId;
           state.world.worldId = roomId;
-          state.world.loadError = undefined;
+          state.world.error = undefined;
           state.world.loadState = WorldLoadState.None;
           state.overlayWindow.selectedWindow = undefined;
+          state.world.joiningWorld = false;
+        });
+      },
+      joinWorld() {
+        set((state) => {
+          state.world.joiningWorld = true;
         });
       },
       loadingWorld(roomId: RoomId | undefined) {
         set((state) => {
           state.overlayWorld.selectedWorldId = roomId;
           state.world.worldId = roomId;
-          state.world.loadError = undefined;
+          state.world.error = undefined;
           state.world.loadState = roomId ? WorldLoadState.Loading : WorldLoadState.None;
+          state.world.joiningWorld = false;
         });
       },
       loadedWorld() {
@@ -217,10 +227,10 @@ export const useStore = create<StoreState>()(
           state.world.loadState = WorldLoadState.Loaded;
         });
       },
-      loadWorldError(error: Error) {
+      setWorldError(error: Error) {
         set((state) => {
           state.world.loadState = WorldLoadState.Error;
-          state.world.loadError = error as Error;
+          state.world.error = error as Error;
         });
       },
       enteringWorld() {
@@ -242,6 +252,7 @@ export const useStore = create<StoreState>()(
           state.world.loadState = WorldLoadState.None;
           state.worldChat.isOpen = false;
           state.overlay.isOpen = true;
+          state.world.joiningWorld = false;
         });
       },
     },

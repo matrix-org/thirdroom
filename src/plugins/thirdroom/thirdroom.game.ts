@@ -10,10 +10,17 @@ import {
   traverse,
 } from "../../engine/component/transform";
 import { GameState, World } from "../../engine/GameTypes";
-import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
-import { EnterWorldMessage, ExitWorldMessage, LoadEnvironmentMessage, ThirdRoomMessageType } from "./thirdroom.common";
+import {
+  EnterWorldMessage,
+  EnvironmentLoadedMessage,
+  EnvironmentLoadErrorMessage,
+  ExitWorldMessage,
+  LoadEnvironmentMessage,
+  ThirdRoomMessageType,
+} from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
@@ -170,61 +177,78 @@ function disposeScene(world: World, scene: number) {
 }
 
 async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
-  if (ctx.activeScene) {
-    disposeScene(ctx.world, ctx.activeScene);
-    ctx.activeScene = NOOP;
-    ctx.activeCamera = NOOP;
-  }
+  try {
+    if (ctx.activeScene) {
+      disposeScene(ctx.world, ctx.activeScene);
+      ctx.activeScene = NOOP;
+      ctx.activeCamera = NOOP;
+    }
 
-  const newScene = addEntity(ctx.world);
+    const newScene = addEntity(ctx.world);
 
-  const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
-  const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
-    sampler: createRemoteSampler(ctx, {
-      mapping: SamplerMapping.EquirectangularReflectionMapping,
-    }),
-  });
-
-  const scene = await inflateGLTFScene(ctx, newScene, message.url);
-
-  const newSceneResource = RemoteSceneComponent.get(newScene)!;
-
-  newSceneResource.backgroundTexture = environmentMapTexture;
-  newSceneResource.environmentTexture = environmentMapTexture;
-
-  let defaultCamera = NOOP;
-
-  if (!ctx.activeCamera) {
-    defaultCamera = addEntity(ctx.world);
-
-    addTransformComponent(ctx.world, defaultCamera);
-
-    addChild(newScene, defaultCamera);
-
-    addRemoteNodeComponent(ctx, defaultCamera, {
-      camera: createRemotePerspectiveCamera(ctx),
+    const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
+    const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
+      sampler: createRemoteSampler(ctx, {
+        mapping: SamplerMapping.EquirectangularReflectionMapping,
+      }),
     });
 
-    ctx.activeCamera = defaultCamera;
-  }
+    const scene = await inflateGLTFScene(ctx, newScene, message.url);
 
-  ctx.activeScene = newScene;
+    const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
-  // Temp hack for city scene
-  if (scene.root.scenes && scene.root.scenes.length > 0 && scene.root.scenes[0].name === "SampleSceneDay 1") {
-    const collisionGeo = addEntity(ctx.world);
-    await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
+    newSceneResource.backgroundTexture = environmentMapTexture;
+    newSceneResource.environmentTexture = environmentMapTexture;
 
-    addChild(newScene, collisionGeo);
-  }
+    let defaultCamera = NOOP;
 
-  const spawnPoints = spawnPointQuery(ctx.world);
+    if (!ctx.activeCamera) {
+      defaultCamera = addEntity(ctx.world);
 
-  if (ctx.activeCamera === defaultCamera && spawnPoints.length > 0) {
-    vec3.copy(Transform.position[defaultCamera], Transform.position[spawnPoints[0]]);
-    Transform.position[defaultCamera][1] += 1.6;
-    vec3.copy(Transform.quaternion[defaultCamera], Transform.quaternion[spawnPoints[0]]);
-    setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
+      addTransformComponent(ctx.world, defaultCamera);
+
+      addChild(newScene, defaultCamera);
+
+      addRemoteNodeComponent(ctx, defaultCamera, {
+        camera: createRemotePerspectiveCamera(ctx),
+      });
+
+      ctx.activeCamera = defaultCamera;
+    }
+
+    ctx.activeScene = newScene;
+
+    // Temp hack for city scene
+    if (scene.root.scenes && scene.root.scenes.length > 0 && scene.root.scenes[0].name === "SampleSceneDay 1") {
+      const collisionGeo = addEntity(ctx.world);
+      await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
+
+      addChild(newScene, collisionGeo);
+    }
+
+    const spawnPoints = spawnPointQuery(ctx.world);
+
+    if (ctx.activeCamera === defaultCamera && spawnPoints.length > 0) {
+      vec3.copy(Transform.position[defaultCamera], Transform.position[spawnPoints[0]]);
+      Transform.position[defaultCamera][1] += 1.6;
+      vec3.copy(Transform.quaternion[defaultCamera], Transform.quaternion[spawnPoints[0]]);
+      setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
+    }
+
+    ctx.sendMessage<EnvironmentLoadedMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.EnvironmentLoaded,
+      id: message.id,
+      url: message.url,
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    ctx.sendMessage<EnvironmentLoadErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.EnvironmentLoadError,
+      id: message.id,
+      url: message.url,
+      error: error.message || "Unknown error",
+    });
   }
 }
 
