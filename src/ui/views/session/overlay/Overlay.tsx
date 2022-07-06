@@ -36,6 +36,7 @@ import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { useInvite } from "../../../hooks/useInvite";
+import { WorldSettings } from "../world-settings/WorldSettings";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -55,7 +56,7 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
-  const { selectedWindow } = useStore((state) => state.overlayWindow);
+  const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
   const spacesEnabled = false;
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
   const groupCalls = new Map<string, GroupCall>();
@@ -156,6 +157,9 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
         <div className="Overlay__window grow flex">
           {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}
           {selectedWindow === OverlayWindow.UserProfile && <UserProfile />}
+          {selectedWindow === OverlayWindow.WorldSettings && worldSettingsId && (
+            <WorldSettings roomId={worldSettingsId} />
+          )}
         </div>
       ) : (
         <div className="Overlay__content grow">
