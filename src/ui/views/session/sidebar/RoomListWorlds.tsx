@@ -1,4 +1,4 @@
-import { GroupCall, Invite, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -18,9 +18,6 @@ import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { InviteDialog } from "../dialogs/InviteDialog";
-import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
-import { AvatarBadgeWrapper } from "../../../atoms/avatar/AvatarBadgeWrapper";
-import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 
 interface RoomListWorldProps {
   groupCalls: Map<string, GroupCall>;
@@ -30,12 +27,11 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
   const { session, platform } = useHydrogen(true);
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
-  const [worldInvites] = useInvitesOfType(session, RoomTypes.World);
 
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
   const { selectWindow } = useStore((state) => state.overlayWindow);
 
-  const renderAvatar = (room: Room | Invite) => {
+  const renderAvatar = (room: Room) => {
     const avatar = (
       <Avatar
         name={room.name || "Empty room"}
@@ -77,18 +73,6 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
           />
         }
       >
-        {worldInvites.map((invite) => (
-          <RoomTile
-            key={invite.id}
-            avatar={
-              <AvatarBadgeWrapper badge={<NotificationBadge variant="secondary" content="Invite" />}>
-                {renderAvatar(invite)}
-              </AvatarBadgeWrapper>
-            }
-            content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
-            onClick={() => selectWorld(invite.id)}
-          />
-        ))}
         {worlds.map((room) => {
           const groupCall = groupCalls.get(room.id);
           return (

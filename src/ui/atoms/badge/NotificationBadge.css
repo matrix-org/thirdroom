@@ -10,8 +10,8 @@
 
 .NotificationBadge--with-content {
   padding: 0 3px;
-  min-width: 20px;
-  height: 20px;
+  min-width: 16px;
+  height: 16px;
   & .Text {
     font-size: 10px;
     line-height: 10px;

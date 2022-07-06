@@ -9,7 +9,11 @@ import HomeIC from "../../../../../res/ic/home.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import ChatIC from "../../../../../res/ic/chat.svg";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
+import NotificationIC from "../../../../../res/ic/notification.svg";
 import "./RoomListHeader.css";
+import { useInviteList } from "../../../hooks/useInviteList";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
+import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
 
 interface IRoomListHeader {
   selectedTab: RoomListTabs;
@@ -20,6 +24,7 @@ export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
   const { session, platform, logout } = useHydrogen(true);
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
+  const invites = useInviteList(session);
 
   return (
     <header className="RoomListHeader flex items-center justify-around">
@@ -65,6 +70,17 @@ export function RoomListHeader({ selectedTab, onTabSelect }: IRoomListHeader) {
         isActive={selectedTab === RoomListTabs.Friends}
         onClick={() => onTabSelect(RoomListTabs.Friends)}
       />
+      <BadgeWrapper
+        className="grow basis-0"
+        badge={invites.length > 0 ? <NotificationBadge content={invites.length} /> : undefined}
+      >
+        <RoomListTab
+          name="Notifications"
+          iconSrc={NotificationIC}
+          isActive={selectedTab === RoomListTabs.Notifications}
+          onClick={() => onTabSelect(RoomListTabs.Notifications)}
+        />
+      </BadgeWrapper>
     </header>
   );
 }

@@ -7,6 +7,7 @@ export enum RoomListTabs {
   Worlds = "Worlds",
   Chats = "Chats",
   Friends = "Friends",
+  Notifications = "Notifications",
 }
 
 export enum OverlayWindow {
