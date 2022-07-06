@@ -10,6 +10,39 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useRoom } from "../../../hooks/useRoom";
 import { useStore, WorldLoadState } from "../../../hooks/useStore";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
+import { Dots } from "../../../atoms/loading/Dots";
+import { useInviteControl } from "../../../hooks/useInviteControl";
+
+interface InviteWorldPreviewProps {
+  session: Session;
+  roomId: string;
+}
+function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
+  const { invite, accept, reject } = useInviteControl(session, roomId);
+
+  if (invite === undefined) return <WorldPreviewCard title="Failed to load Invite" />;
+
+  return (
+    <WorldPreviewCard
+      title={invite.name}
+      desc={`${invite.inviter.name} invites you`}
+      options={
+        <div className="flex gap-xs">
+          {!(invite.accepting || invite.accepted) && (
+            <Button fill="outline" onClick={reject} disabled={invite.rejecting}>
+              {invite.rejecting ? <Dots color="primary" /> : "Reject"}
+            </Button>
+          )}
+          {!(invite.rejecting || invite.rejected) && (
+            <Button onClick={accept} disabled={invite.accepting}>
+              {invite.accepting ? <Dots color="on-primary" /> : "Accept"}
+            </Button>
+          )}
+        </div>
+      }
+    />
+  );
+}
 
 interface JoinWorldPreviewProps {
   session: Session;
@@ -156,7 +189,8 @@ export function WorldPreview({ session, onLoadWorld, onEnterWorld }: IWorldPrevi
         }
 
         if (roomStatus & RoomStatus.BeingCreated) return <WorldPreviewCard title="Creating Room..." />;
-        if (roomStatus & RoomStatus.Invited) return <WorldPreviewCard title="Invited To Room" />;
+        if (roomStatus & RoomStatus.Invited && previewWorldId)
+          return <InviteWorldPreview session={session} roomId={previewWorldId} />;
         if (roomStatus & RoomStatus.Archived) return <WorldPreviewCard title="Room Archived" />;
 
         if (roomStatus & RoomStatus.Joined) {

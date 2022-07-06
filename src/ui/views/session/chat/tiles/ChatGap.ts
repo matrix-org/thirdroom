@@ -10,8 +10,8 @@ export class ChatGap extends TemplateView<GapTile> implements TileView {
     return t.li(
       { className: "ChatGap flex justify-center" },
       t.p({ className: "ChatGap__content Text Text-b2 Text--surface Text--semi-bold" }, [
-        vm.isLoading ? "Loading more messages..." : "Not loading!",
-        vm.error ? vm.error : "",
+        (vm) => (vm.isLoading ? "Loading more messages..." : "Not loading!"),
+        (vm) => (vm.error ? vm.error : ""),
       ])
     );
   }

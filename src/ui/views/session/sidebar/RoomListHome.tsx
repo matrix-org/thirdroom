@@ -13,6 +13,11 @@ import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import AddUserIC from "../../../../../res/ic/add-user.svg";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
+import { InviteDialog } from "../dialogs/InviteDialog";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -33,7 +38,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
       <Avatar
         name={room.name || "Empty room"}
         size={isWorld ? "xl" : "lg"}
-        shape={room.isDirectMessage || isWorld ? "circle" : "rounded"}
+        shape={isWorld ? "circle" : "rounded"}
         className="shrink-0"
         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
         imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
@@ -50,11 +55,21 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <IconButton
-                size="sm"
-                label="Create World"
-                iconSrc={AddIC}
-                onClick={() => selectWindow(OverlayWindow.CreateWorld)}
+              <JoinWithAliasDialog
+                renderTrigger={(openDialog) => (
+                  <DropdownMenu
+                    content={
+                      <>
+                        <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                          Create World
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join with Alias</DropdownMenuItem>
+                      </>
+                    }
+                  >
+                    <IconButton size="sm" label="Create World" iconSrc={AddIC} />
+                  </DropdownMenu>
+                )}
               />
             }
           />
@@ -74,11 +89,33 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
                   {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
                 </>
               }
+              options={
+                <InviteDialog
+                  key={room.id}
+                  roomId={room.id}
+                  renderTrigger={(openDialog) => (
+                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                  )}
+                />
+              }
             />
           );
         })}
       </Category>
-      <Category header={<CategoryHeader title="All Messages" />}>
+      <Category
+        header={
+          <CategoryHeader
+            title="All Messages"
+            options={
+              <JoinWithAliasDialog
+                renderTrigger={(openDialog) => (
+                  <IconButton size="sm" label="Create World" onClick={openDialog} iconSrc={AddIC} />
+                )}
+              />
+            }
+          />
+        }
+      >
         {rooms.map((room) => (
           <RoomTile
             key={room.id}
@@ -86,6 +123,15 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
             avatar={renderAvatar(room, false)}
             onClick={() => selectChat(room.id)}
             content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+            options={
+              <InviteDialog
+                key={room.id}
+                roomId={room.id}
+                renderTrigger={(openDialog) => (
+                  <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                )}
+              />
+            }
           />
         ))}
       </Category>

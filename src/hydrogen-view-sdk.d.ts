@@ -393,6 +393,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     visibility: RoomVisibility;
     name?: string;
     topic?: string;
+    invites?: string[];
     isEncrypted?: boolean;
     isFederationDisabled?: boolean;
     alias?: string;
@@ -443,6 +444,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
+    invites: ObservableMap<string, Invite>;
     roomsBeingCreated: ObservableMap<string, RoomBeingCreated>;
     callHandler: CallHandler;
     createRoom(options: ICreateRoom): RoomBeingCreated;
@@ -558,8 +560,42 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getSyncToken: any;
     platform: Platform;
   }
+  export interface InviteOptions {
+    roomId: string;
+    user: any;
+    hsApi: HomeServerApi;
+    mediaRepository: MediaRepository;
+    emitCollectionRemove: any;
+    emitCollectionUpdate: any;
+    platform: Platform;
+  }
 
   export type RoomId = string;
+
+  export class Invite extends EventEmitter<any> {
+    constructor(options: InviteOptions);
+    get isInvite(): true;
+    get id(): string;
+    get name(): string;
+    get isDirectMessage(): boolean;
+    get avatarUrl(): string | null;
+    get avatarColorId(): string;
+    get type(): string | undefined;
+    get timestamp(): number;
+    get isEncrypted(): boolean;
+    get inviter(): RoomMember;
+    isDirectMessageForUserId(userId: string): boolean;
+    get isPublic(): boolean;
+    get canonicalAlias(): string | null;
+    accept(log?: any): Promise<void>;
+    reject(log?: any): Promise<void>;
+    get accepting(): boolean;
+    get accepted(): boolean;
+    get rejecting(): boolean;
+    get rejected(): boolean;
+    get mediaRepository(): MediaRepository;
+    load(inviteData: any, log: any): void;
+  }
 
   export class BaseRoom extends EventEmitter<any> {
     constructor(roomOptions: RoomOptions);
@@ -581,7 +617,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get isEncrypted(): boolean;
     get isJoined(): boolean;
     get isLeft(): boolean;
-    get canonicalAlias(): string;
+    get canonicalAlias(): string | null;
     get joinedMemberCount(): number;
     get mediaRepository(): MediaRepository;
     get membership(): any;
@@ -973,8 +1009,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export class TemplateBuilder<T extends IObservableValue> {
     constructor(templateView: TemplateView<T>);
     close(): void;
-    el(name: string, attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]): ViewNode;
-    elNS(ns: string, name: string, attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]): ViewNode;
+    el(name: string, attributes?: Attributes<T> | Children<T>, children?: Children<T>): ViewNode;
+    elNS(ns: string, name: string, attributes?: Attributes<T> | Children<T>, children?: Children<T>): ViewNode;
     view(view: IView, mountOptions?: IMountArgs): ViewNode;
     mapView<R>(mapFn: (value: T) => R, viewCreator: (mapped: R) => IView | null): ViewNode;
     map<R>(mapFn: (value: T) => R, renderFn: (mapped: R, t: Builder<T>, vm: T) => ViewNode): ViewNode;
@@ -987,14 +1023,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export const SVG_NS = "http://www.w3.org/2000/svg";
 
   export type ClassNames<T> = { [className: string]: boolean | ((value: T) => boolean) };
-  export type Child = string | Text | ViewNode;
+  type TextBinding<T> = (v: T) => string | number | boolean | undefined | null;
+  export type Child<T> = string | Text | ViewNode | TextBinding<T>;
+  export type Children<T> = Child<T> | Child<T>[];
   export type RenderFn<T> = (t: Builder<T>, vm: T) => ViewNode;
   type EventHandler = (event: Event) => void;
   type AttributeStaticValue = string | boolean;
   type AttributeBinding<T> = (value: T) => AttributeStaticValue;
   export type AttrValue<T> = AttributeStaticValue | AttributeBinding<T> | EventHandler | ClassNames<T>;
   export type Attributes<T> = { [attribute: string]: AttrValue<T> };
-  type ElementFn<T> = (attributes?: Attributes<T> | Child | Child[], children?: Child | Child[]) => Element;
+  type ElementFn<T> = (attributes?: Attributes<T> | Children<T>, children?: Children<T>) => Element;
   export type Builder<T> = TemplateBuilder<T> & { [tagName: string]: ElementFn<T> };
 
   export class TimelineView extends TemplateView<TimelineViewModel> {
@@ -1857,12 +1895,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getPushers(options?: BaseRequestOptions): IHomeServerRequest;
     join(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     joinIdOrAlias(roomIdOrAlias: string, options?: BaseRequestOptions): IHomeServerRequest;
+    invite(roomId: string, userId: string, options?: BaseRequestOptions): IHomeServerRequest;
     leave(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     forget(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     logout(options?: BaseRequestOptions): IHomeServerRequest;
     getDehydratedDevice(options?: BaseRequestOptions): IHomeServerRequest;
     createDehydratedDevice(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
     claimDehydratedDevice(deviceId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    searchProfile(searchTerm: string, limit?: number, options?: BaseRequestOptions): IHomeServerRequest;
     profile(userId: string, options?: BaseRequestOptions): IHomeServerRequest;
     setProfileDisplayName(userId: string, displayName: string, options?: BaseRequestOptions): IHomeServerRequest;
     setProfileAvatarUrl(userId: string, avatarUrl: string, options?: BaseRequestOptions): IHomeServerRequest;

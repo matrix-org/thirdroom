@@ -1,17 +1,19 @@
+import classNames from "classnames";
 import { ReactNode } from "react";
 
 import { Text } from "../../../atoms/text/Text";
 import "./ChatHeader.css";
 
 interface IChatHeader {
+  className?: string;
   avatar: ReactNode;
   title: string;
   options: ReactNode;
 }
 
-export function ChatHeader({ avatar, title, options }: IChatHeader) {
+export function ChatHeader({ className, avatar, title, options }: IChatHeader) {
   return (
-    <header className="ChatHeader flex items-center">
+    <header className={classNames("ChatHeader flex items-center", className)}>
       <div className="shrink-0">{avatar}</div>
       <div className="ChatHeader__title grow">
         <Text className="truncate">{title}</Text>
