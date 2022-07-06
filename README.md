@@ -266,3 +266,4 @@ We currently deploy Third Room to Netlify via a custom GitHub actions deploy scr
 set the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets in your GitHub configuration, this setup should work for you
 as well. Every PR will be built and deployed as a preview deploy and every commit / merge to `main` will be deployed to
 your Netlify site.
+
