@@ -32,7 +32,7 @@ export function RoomListChats() {
       <Avatar
         name={room.name || "Empty room"}
         size="lg"
-        shape={room.isDirectMessage ? "circle" : "rounded"}
+        shape="rounded"
         className="shrink-0"
         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
         imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}

@@ -43,7 +43,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
       <Avatar
         name={room.name || "Empty room"}
         size={isWorld ? "xl" : "lg"}
-        shape={room.isDirectMessage || isWorld ? "circle" : "rounded"}
+        shape={isWorld ? "circle" : "rounded"}
         className="shrink-0"
         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
         imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
