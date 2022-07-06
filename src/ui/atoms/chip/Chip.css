@@ -1,0 +1,23 @@
+.Chip {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: var(--sp-xxs);
+  background-color: var(--bg-surface-low);
+  border-radius: var(--br-lg);
+}
+
+.Chip > .Text {
+  margin: 0 var(--sp-xxs);
+}
+
+.Chip--clickable {
+  cursor: pointer;
+  &:hover {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}

@@ -1,4 +1,4 @@
-import { TemplateView, BaseMessageTile, Child, TileView, Builder } from "@thirdroom/hydrogen-view-sdk";
+import { TemplateView, BaseMessageTile, TileView, Builder } from "@thirdroom/hydrogen-view-sdk";
 
 import "./ChatBaseMessage.css";
 
@@ -31,5 +31,5 @@ export abstract class ChatBaseMessage extends TemplateView<BaseMessageTile> impl
   }
 
   onClick() {}
-  abstract renderBody(t: Builder<BaseMessageTile>, vm: BaseMessageTile): Child | Child[];
+  abstract renderBody<T extends Builder<BaseMessageTile>>(t: T, vm: BaseMessageTile): Element;
 }

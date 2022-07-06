@@ -15,6 +15,9 @@ import { RoomListContent } from "../sidebar/RoomListContent";
 import { ActiveChats } from "./ActiveChats";
 import { ActiveChatTile } from "../../components/active-chat-tile/ActiveChatTile";
 import { ChatView } from "../chat/ChatView";
+import { ChatViewHeader } from "../chat/ChatViewHeader";
+import { ChatViewContent } from "../chat/ChatViewContent";
+import { ChatViewInvite } from "../chat/ChatViewInvite";
 import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
@@ -32,6 +35,8 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import LogoutIC from "../../../../../res/ic/logout.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
+import { useInvite } from "../../../hooks/useInvite";
+import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -83,6 +88,7 @@ export function Overlay({
 
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
+  const selectedChatInvite = useInvite(session, selectedChatId);
   const { selectedWindow } = useStore((state) => state.overlayWindow);
   const spacesEnabled = false;
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
@@ -138,6 +144,7 @@ export function Overlay({
                   {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld groupCalls={groupCalls} />}
                   {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
                   {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
+                  {selectedRoomListTab === RoomListTabs.Notifications && <RoomListNotifications />}
                 </RoomListContent>
               }
               footer={
@@ -193,9 +200,34 @@ export function Overlay({
           />
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
-              chat={selectedChat && <ChatView room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />}
+              chat={
+                (selectedChat || selectedChatInvite) && (
+                  <ChatView>
+                    {selectedChat && (
+                      <>
+                        <ChatViewHeader
+                          room={selectedChat || selectedChatInvite}
+                          onMinimize={minimizeChat}
+                          onClose={closeChat}
+                        />
+                        <ChatViewContent room={selectedChat} />
+                      </>
+                    )}
+                    {selectedChatInvite && (
+                      <>
+                        <ChatViewHeader
+                          room={selectedChatInvite || selectedChatInvite}
+                          onMinimize={minimizeChat}
+                          onClose={closeChat}
+                        />
+                        <ChatViewInvite session={session} roomId={selectedChatInvite.id} />
+                      </>
+                    )}
+                  </ChatView>
+                )
+              }
               tiles={[...activeChats].map((rId) => {
-                const room = session.rooms.get(rId);
+                const room = session.rooms.get(rId) ?? session.invites.get(rId);
                 if (!room) return null;
 
                 const roomName = room.name || "Empty room";

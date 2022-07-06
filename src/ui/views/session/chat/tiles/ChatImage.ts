@@ -1,4 +1,4 @@
-import { ImageTile, Builder } from "@thirdroom/hydrogen-view-sdk";
+import { ImageTile, Builder, BaseMessageTile } from "@thirdroom/hydrogen-view-sdk";
 
 import { ChatBaseMessage } from "./ChatBaseMessage";
 
@@ -9,7 +9,7 @@ export class ChatImage extends ChatBaseMessage {
     super(vm);
   }
 
-  renderBody(t: Builder<ImageTile>, vm: ImageTile): Element {
+  renderBody<T extends Builder<BaseMessageTile>>(t: T, vm: ImageTile): Element {
     const { height } = vm;
     return t.div(
       { className: "ChatImage__body flex" },

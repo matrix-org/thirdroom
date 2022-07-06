@@ -163,6 +163,8 @@ const tempPosition = vec3.create();
 const tempRotation = quat.create();
 const tempScale = vec3.create();
 
+const TRIMESH_COLLISION_GROUPS = 0xf000_000f;
+
 async function _inflateGLTFNode(
   ctx: GameState,
   resource: GLTFResource,
@@ -282,8 +284,8 @@ async function _inflateGLTFNode(
         vec3.mul(tempScale, tempScale, collider.extents);
         const colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
         colliderDesc.setTranslation(collider.center[0], collider.center[1], collider.center[2]);
-        colliderDesc.setCollisionGroups(0xf000_000f);
-        colliderDesc.setSolverGroups(0xf000_000f);
+        colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
+        colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx.world, nodeEid, rigidBody);
@@ -332,8 +334,8 @@ function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
 
     const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
 
-    colliderDesc.setCollisionGroups(0xf000_000f);
-    colliderDesc.setSolverGroups(0xf000_000f);
+    colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
+    colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
 
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 

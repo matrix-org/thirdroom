@@ -1,6 +1,6 @@
 import { MouseEventHandler, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { RoomStatus } from "@thirdroom/hydrogen-view-sdk";
+import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
@@ -10,6 +10,40 @@ import { useRoom } from "../../../hooks/useRoom";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
+import { Dots } from "../../../atoms/loading/Dots";
+import { useInviteControl } from "../../../hooks/useInviteControl";
+
+interface InviteWorldPreviewProps {
+  session: Session;
+  roomId: string;
+}
+
+function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
+  const { invite, accept, reject } = useInviteControl(session, roomId);
+
+  if (invite === undefined) return <WorldPreviewCard title="Failed to load Invite" />;
+
+  return (
+    <WorldPreviewCard
+      title={invite.name}
+      desc={`${invite.inviter.name} invites you`}
+      options={
+        <div className="flex gap-xs">
+          {!(invite.accepting || invite.accepted) && (
+            <Button fill="outline" onClick={reject} disabled={invite.rejecting}>
+              {invite.rejecting ? <Dots color="primary" /> : "Reject"}
+            </Button>
+          )}
+          {!(invite.rejecting || invite.rejected) && (
+            <Button onClick={accept} disabled={invite.accepting}>
+              {invite.accepting ? <Dots color="on-primary" /> : "Accept"}
+            </Button>
+          )}
+        </div>
+      }
+    />
+  );
+}
 
 interface IWorldPreview {
   onJoinWorld: MouseEventHandler<HTMLButtonElement>;
@@ -31,14 +65,16 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
     closeOverlay: state.overlay.closeOverlay,
   }));
 
-  const room = useRoom(session, selectedWorldId || worldId);
-  const roomBeingCreated = useRoomBeingCreated(session, selectedWorldId || worldId);
+  const previewWorldId = selectedWorldId || worldId;
+
+  const room = useRoom(session, previewWorldId);
+  const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
 
   const {
     loading: roomStatusLoading,
     error: roomStatusError,
     value: roomStatus,
-  } = useRoomStatus(session, selectedWorldId || worldId);
+  } = useRoomStatus(session, previewWorldId);
 
   useEffect(() => {
     if (!roomBeingCreated) return;
@@ -70,7 +106,11 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
         } else if (roomStatus & RoomStatus.BeingCreated) {
           return <WorldPreviewCard title="Creating Room..." />;
         } else if (roomStatus & RoomStatus.Invited) {
-          return <WorldPreviewCard title="Invited To Room" />;
+          if (!previewWorldId) {
+            return <WorldPreviewCard title="Loading Room..." />;
+          }
+
+          return <InviteWorldPreview session={session} roomId={previewWorldId} />;
         } else if (roomStatus & RoomStatus.Archived) {
           return <WorldPreviewCard title="Room Archived" />;
         } else if (roomStatus & RoomStatus.Joined) {

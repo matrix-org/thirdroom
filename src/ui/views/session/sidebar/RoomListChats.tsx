@@ -10,6 +10,11 @@ import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
+import { IconButton } from "../../../atoms/button/IconButton";
+import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
+import { InviteDialog } from "../dialogs/InviteDialog";
+import AddIC from "../../../../../res/ic/add.svg";
+import AddUserIC from "../../../../../res/ic/add-user.svg";
 
 export function RoomListChats() {
   const { session, platform } = useHydrogen(true);
@@ -23,7 +28,7 @@ export function RoomListChats() {
       <Avatar
         name={room.name || "Empty room"}
         size="lg"
-        shape={room.isDirectMessage ? "circle" : "rounded"}
+        shape="rounded"
         className="shrink-0"
         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
         imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
@@ -35,7 +40,20 @@ export function RoomListChats() {
 
   return (
     <>
-      <Category header={<CategoryHeader title="All Messages" />}>
+      <Category
+        header={
+          <CategoryHeader
+            title="All Messages"
+            options={
+              <JoinWithAliasDialog
+                renderTrigger={(openDialog) => (
+                  <IconButton size="sm" label="Create World" onClick={openDialog} iconSrc={AddIC} />
+                )}
+              />
+            }
+          />
+        }
+      >
         {rooms.map((room) => (
           <RoomTile
             key={room.id}
@@ -43,6 +61,15 @@ export function RoomListChats() {
             avatar={renderAvatar(room)}
             onClick={() => selectChat(room.id)}
             content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+            options={
+              <InviteDialog
+                key={room.id}
+                roomId={room.id}
+                renderTrigger={(openDialog) => (
+                  <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                )}
+              />
+            }
           />
         ))}
       </Category>

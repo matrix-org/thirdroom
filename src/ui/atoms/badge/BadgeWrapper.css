@@ -1,0 +1,12 @@
+.BadgeWrapper {
+  display: inline-flex;
+  position: relative;
+  line-height: 0;
+}
+.BadgeWrapper__item {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border: 2px solid var(--bg-surface);
+  border-radius: 9999px;
+}

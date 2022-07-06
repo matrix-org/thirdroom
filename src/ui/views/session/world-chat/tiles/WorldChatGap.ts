@@ -10,8 +10,8 @@ export class WorldChatGap extends TemplateView<GapTile> implements TileView {
     return t.li(
       { className: "WorldChatGap flex item-center" },
       t.p({ className: "Text Text-b2 Text--world Text--semi-bold" }, [
-        vm.isLoading ? "Loading more messages..." : "Not loading!",
-        vm.error ? vm.error : "",
+        (vm) => (vm.isLoading ? "Loading more messages..." : "Not loading!"),
+        (vm) => (vm.error ? vm.error : ""),
       ])
     );
   }

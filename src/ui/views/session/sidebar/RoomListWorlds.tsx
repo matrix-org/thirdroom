@@ -13,6 +13,11 @@ import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
+import AddUserIC from "../../../../../res/ic/add-user.svg";
+import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { InviteDialog } from "../dialogs/InviteDialog";
 
 interface RoomListWorldProps {
   groupCalls: Map<string, GroupCall>;
@@ -48,11 +53,21 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
           <CategoryHeader
             title="Worlds"
             options={
-              <IconButton
-                size="sm"
-                label="Create World"
-                iconSrc={AddIC}
-                onClick={() => selectWindow(OverlayWindow.CreateWorld)}
+              <JoinWithAliasDialog
+                renderTrigger={(openDialog) => (
+                  <DropdownMenu
+                    content={
+                      <>
+                        <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                          Create World
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={openDialog}>Join with Alias</DropdownMenuItem>
+                      </>
+                    }
+                  >
+                    <IconButton size="sm" label="Create World" iconSrc={AddIC} />
+                  </DropdownMenu>
+                )}
               />
             }
           />
@@ -71,6 +86,15 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
                   <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
                   {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
                 </>
+              }
+              options={
+                <InviteDialog
+                  key={room.id}
+                  roomId={room.id}
+                  renderTrigger={(openDialog) => (
+                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                  )}
+                />
               }
             />
           );
