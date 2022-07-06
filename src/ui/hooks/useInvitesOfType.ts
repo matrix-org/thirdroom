@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Invite, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { useObservableList } from "./useObservableList";
-import { RoomTypes } from "./useRoomsOfType";
+import { roomTypeFilter, RoomTypes } from "./useRoomsOfType";
 
 function roomListComparator(a: Invite, b: Invite) {
   return b.timestamp - a.timestamp;
@@ -13,13 +13,7 @@ export function useInvitesOfType(session: Session, initialType: RoomTypes): [Inv
 
   return [
     useObservableList(() => {
-      const roomFilter = (room: Invite) => {
-        if (type === RoomTypes.World) return room.type === "org.matrix.msc3815.world";
-        if (type === RoomTypes.Room && !room.type) return true;
-        if (type === RoomTypes.Direct) return room.isDirectMessage;
-        return false;
-      };
-      return session.invites.filterValues(roomFilter).sortValues(roomListComparator);
+      return session.invites.filterValues((invite) => roomTypeFilter(invite, type)).sortValues(roomListComparator);
     }, [session.invites, type]),
     setType,
   ];

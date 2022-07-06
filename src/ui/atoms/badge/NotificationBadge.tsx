@@ -7,11 +7,11 @@ import "./NotificationBadge.css";
 interface INotificationBadge {
   className?: string;
   variant?: "primary" | "secondary" | "danger";
-  content?: string;
+  content?: string | number;
 }
 
 export function NotificationBadge({ className, variant = "primary", content }: INotificationBadge) {
-  const hasContent = typeof content === "string";
+  const hasContent = content !== undefined;
   const notifClass = classNames(
     "NotificationBadge",
     `NotificationBadge--${variant}`,

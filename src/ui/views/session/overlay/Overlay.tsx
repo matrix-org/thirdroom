@@ -37,6 +37,7 @@ import LogoutIC from "../../../../../res/ic/logout.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
+import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -108,6 +109,7 @@ export function Overlay({ calls, activeCall, onLeftWorld, onLoadWorld, onEnterWo
                   {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld groupCalls={groupCalls} />}
                   {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
                   {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
+                  {selectedRoomListTab === RoomListTabs.Notifications && <RoomListNotifications />}
                 </RoomListContent>
               }
               footer={

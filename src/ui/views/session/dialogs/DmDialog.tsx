@@ -34,7 +34,7 @@ export function DmDialog({ renderTrigger }: DmDialogProps) {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string>();
 
-  const { loading, value: searchResult, setSearchTerm } = useSearchProfile(session.hsApi);
+  const { loading, value: searchResult, setSearchTerm } = useSearchProfile(session);
 
   useEffect(() => {
     if (isOpen === false) {
