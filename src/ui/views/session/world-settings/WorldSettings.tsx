@@ -77,7 +77,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         <Switch />
                       </SettingTile>
                     </div>
-                    <div className="flex gap-gl">
+                    <div className="flex gap-lg">
                       <SettingTile className="grow" label={<Label>Scene</Label>}>
                         <div />
                       </SettingTile>
