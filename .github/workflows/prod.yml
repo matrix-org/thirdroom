@@ -30,11 +30,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           env: Netlify
           ref: ${{ github.event.workflow_run.head_sha }}
-      - id: prdetails
-        uses: matrix-org/pr-details-action@v1.1
-        with:
-          owner: ${{ github.event.workflow_run.head_repository.owner.login }}
-          branch: ${{ github.event.workflow_run.head_branch }}
 
       - name: Deploy to Netlify
         id: netlify

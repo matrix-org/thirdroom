@@ -1,6 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
-import { vec3 } from "gl-matrix";
+import { mat4, quat, vec3 } from "gl-matrix";
 import { Matrix4 } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -36,7 +36,13 @@ import {
 } from "../light/light.game";
 import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
-import { createRemoteMesh, MeshPrimitiveProps, RemoteMesh } from "../mesh/mesh.game";
+import {
+  createRemoteInstancedMesh,
+  createRemoteMesh,
+  MeshPrimitiveProps,
+  RemoteInstancedMesh,
+  RemoteMesh,
+} from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
@@ -46,8 +52,11 @@ import { TextureEncoding } from "../texture/texture.common";
 import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
-import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType } from "./GLTF";
+import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType, GLTFInstancedMeshExtension } from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
+import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
+import { hasSpawnPointExtension } from "./MX_spawn_point";
+import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
 
 export interface GLTFResource {
   baseUrl: string;
@@ -88,7 +97,7 @@ export async function inflateGLTFScene(
   sceneIndex?: number,
   // TODO: temporary hack for spawning avatars without static trimesh
   createTrimesh = true
-): Promise<void> {
+): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
   const resource = await loadGLTFResource(uri);
@@ -101,6 +110,9 @@ export async function inflateGLTFScene(
     throw new Error(`Scene ${sceneIndex} not found`);
   }
 
+  const hasInstancedMeshExtension =
+    resource.root.extensionsUsed && resource.root.extensionsUsed.includes("EXT_mesh_gpu_instancing");
+
   const scene = resource.root.scenes[sceneIndex];
 
   const nodeInflators: Function[] = [];
@@ -109,7 +121,9 @@ export async function inflateGLTFScene(
 
   if (scene.nodes) {
     nodePromise = Promise.all(
-      scene.nodes.map((nodeIndex) => _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh))
+      scene.nodes.map((nodeIndex) =>
+        _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh && !hasInstancedMeshExtension)
+      )
     );
   }
 
@@ -137,7 +151,19 @@ export async function inflateGLTFScene(
   if (hasHubsComponentsExtension(resource.root)) {
     inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
   }
+
+  if (hasCharacterControllerExtension(scene)) {
+    inflateSceneCharacterController(ctx, resource, sceneIndex, sceneEid);
+  }
+
+  return resource;
 }
+
+const tempPosition = vec3.create();
+const tempRotation = quat.create();
+const tempScale = vec3.create();
+
+const TRIMESH_COLLISION_GROUPS = 0xf000_000f;
 
 async function _inflateGLTFNode(
   ctx: GameState,
@@ -170,6 +196,10 @@ async function _inflateGLTFNode(
 
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,
+    instancedMesh:
+      node.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined
+        ? _loadGLTFInstancedMesh(ctx, resource, node.extensions?.EXT_mesh_gpu_instancing)
+        : undefined,
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
       node.extensions?.KHR_lights_punctual?.light !== undefined
@@ -178,6 +208,16 @@ async function _inflateGLTFNode(
     audioEmitter:
       node.extensions?.KHR_audio?.emitter !== undefined
         ? loadGLTFAudioEmitter(ctx, resource, node.extensions.KHR_audio.emitter)
+        : undefined,
+    colliderMesh:
+      node.extensions?.OMI_collider !== undefined &&
+      resource.root.extensions?.OMI_collider &&
+      resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh !== undefined
+        ? loadGLTFMesh(
+            ctx,
+            resource,
+            resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh
+          )
         : undefined,
   });
 
@@ -192,7 +232,7 @@ async function _inflateGLTFNode(
   const results = await promises;
 
   nodeInflators.push(() => {
-    if (results.mesh || results.camera || results.light || results.audioEmitter) {
+    if (results.mesh || results.camera || results.light || results.audioEmitter || hasTilesRendererExtension(node)) {
       addRemoteNodeComponent(ctx, nodeEid, results as any);
     }
 
@@ -214,8 +254,43 @@ async function _inflateGLTFNode(
         addTrimesh(ctx, nodeEid);
       }
 
-      if (node.extras && node.extras["spawn-point"]) {
+      if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node) || node.name === "__SpawnPoint") {
         addComponent(ctx.world, SpawnPoint, nodeEid);
+      }
+    }
+
+    if (hasTilesRendererExtension(node)) {
+      addTilesRenderer(ctx, resource, nodeIndex, nodeEid);
+    }
+
+    if (node.extensions?.OMI_collider) {
+      const index = node.extensions.OMI_collider.collider;
+      const collider = resource.root.extensions!.OMI_collider.colliders[index];
+      const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+      if (collider.type === "box") {
+        const worldMatrix = Transform.worldMatrix[nodeEid];
+        mat4.getTranslation(tempPosition, worldMatrix);
+        mat4.getRotation(tempRotation, worldMatrix);
+        mat4.getScaling(tempScale, worldMatrix);
+
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+        rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
+        rigidBodyDesc.setRotation(
+          new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
+        );
+        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+        vec3.mul(tempScale, tempScale, collider.extents);
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
+        colliderDesc.setTranslation(collider.center[0], collider.center[1], collider.center[2]);
+        colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
+        colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
+        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+        addRigidBody(ctx.world, nodeEid, rigidBody);
+      } else if (collider.type === "mesh" && results.colliderMesh) {
+        addTrimeshFromMesh(ctx, nodeEid, results.colliderMesh);
       }
     }
   });
@@ -228,9 +303,13 @@ export function addTrimesh(ctx: GameState, nodeEid: number) {
     return;
   }
 
+  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh);
+}
+
+function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
-  for (const primitive of remoteNode.mesh.primitives) {
+  for (const primitive of mesh.primitives) {
     const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -255,8 +334,8 @@ export function addTrimesh(ctx: GameState, nodeEid: number) {
 
     const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
 
-    colliderDesc.setCollisionGroups(0xf000_000f);
-    colliderDesc.setSolverGroups(0xf000_000f);
+    colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
+    colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
 
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
@@ -1027,6 +1106,22 @@ async function _createGLTFMeshPrimitive(
     material,
     mode: primitive.mode,
   };
+}
+
+async function _loadGLTFInstancedMesh(
+  ctx: GameState,
+  resource: GLTFResource,
+  extension: GLTFInstancedMeshExtension
+): Promise<RemoteInstancedMesh> {
+  const attributesPromises: { [key: string]: Promise<RemoteAccessor<any, any>> } = {};
+
+  for (const key in extension.attributes) {
+    attributesPromises[key] = loadGLTFAccessor(ctx, resource, extension.attributes[key]);
+  }
+
+  const attributes = await promiseObject(attributesPromises);
+
+  return createRemoteInstancedMesh(ctx, attributes);
 }
 
 export async function loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteCamera> {

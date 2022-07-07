@@ -18,7 +18,7 @@ import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 
 export function WorldView() {
-  const { canvasRef, world, onLeftWorld, activeCall } = useOutletContext<SessionOutletContext>();
+  const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
@@ -52,7 +52,7 @@ export function WorldView() {
         return;
       }
       if (e.altKey && e.code === "KeyL") {
-        onLeftWorld();
+        onExitWorld();
       }
       if (e.code === "KeyM") {
         toggleMute();
@@ -95,7 +95,7 @@ export function WorldView() {
         </Text>
       </div>
       <div className="flex flex-column items-center">
-        <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={() => onLeftWorld()} />
+        <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={onExitWorld} />
         <Text variant="b3" color="world" weight="bold">
           Alt + L
         </Text>
@@ -107,7 +107,7 @@ export function WorldView() {
     <div className="WorldView">
       <Stats />
       <div className="WorldView__chat flex">
-        <WorldChat open={isChatOpen} room={world} />
+        {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}

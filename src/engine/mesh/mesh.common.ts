@@ -3,6 +3,7 @@ import { ResourceId } from "../resource/resource.common";
 
 export const MeshResourceType = "mesh";
 export const MeshPrimitiveResourceType = "mesh-primitive";
+export const InstancedMeshResourceType = "instanced-mesh";
 
 export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
@@ -16,6 +17,10 @@ export interface MeshResourceProps {
 
 export interface SharedMeshResource {
   initialProps: MeshResourceProps;
+}
+
+export interface SharedInstancedMeshResource {
+  attributes: { [key: string]: ResourceId };
 }
 
 export const meshPrimitiveSchema = defineObjectBufferSchema({
@@ -48,4 +53,10 @@ export enum MeshPrimitiveAttribute {
   COLOR_0 = "COLOR_0",
   JOINTS_0 = "JOINTS_0",
   WEIGHTS_0 = "WEIGHTS_0",
+}
+
+export enum InstancedMeshAttribute {
+  TRANSLATION = "TRANSLATION",
+  ROTATION = "ROTATION",
+  SCALE = "SCALE",
 }

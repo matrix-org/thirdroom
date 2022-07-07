@@ -193,5 +193,7 @@ export function createMatrixNetworkInterface(
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();
     }
+
+    groupCall.leave();
   };
 }

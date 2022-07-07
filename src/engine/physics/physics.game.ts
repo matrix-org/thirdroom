@@ -6,6 +6,7 @@ import {
   enterQuery,
   hasComponent,
   exitQuery,
+  Types,
 } from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
@@ -19,7 +20,7 @@ import { defineModule, getModule } from "../module/module.common";
 interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
-  handleMap: Map<number, number>;
+  handleToEid: Map<number, number>;
   drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
 }
 
@@ -30,36 +31,38 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
 
     const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
     const physicsWorld = new RAPIER.World(gravity);
-    const handleMap = new Map<number, number>();
+    const handleToEid = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
-    const drainContactEvents = (callback: (eid1: number, eid2: number) => void) => {
+    const drainContactEvents = (callback: (eid1: number, eid2: number, handle1: number, handle2: number) => void) => {
       eventQueue.drainContactEvents((handle1, handle2) => {
-        const eid1 = handleMap.get(handle1);
+        const eid1 = handleToEid.get(handle1);
         if (eid1 === undefined) {
           console.warn(`Contact with unregistered physics handle ${handle1}`);
           // return;
         }
-        const eid2 = handleMap.get(handle2);
+        const eid2 = handleToEid.get(handle2);
         if (eid2 === undefined) {
           console.warn(`Contact with unregistered physics handle ${handle2}`);
           // return;
         }
-        callback(eid1!, eid2!);
+        callback(eid1!, eid2!, handle1, handle2);
       });
     };
 
     return {
       physicsWorld,
       eventQueue,
-      handleMap,
+      handleToEid,
       drainContactEvents,
     };
   },
   init(ctx) {},
 });
 
-const RigidBodySoA = defineComponent({});
+const RigidBodySoA = defineComponent({
+  velocity: [Types.f32, 3],
+});
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
 
 export const physicsQuery = defineQuery([RigidBody]);
@@ -95,14 +98,14 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
 
 export const PhysicsSystem = (state: GameState) => {
   const { world, dt } = state;
-  const { physicsWorld, handleMap, eventQueue } = getModule(state, PhysicsModule);
+  const { physicsWorld, handleToEid, eventQueue } = getModule(state, PhysicsModule);
   // remove rigidbody from physics world
   const exited = exitedPhysicsQuery(world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     const body = RigidBody.store.get(eid);
     if (body) {
-      handleMap.delete(body.handle);
+      handleToEid.delete(body.handle);
       physicsWorld.removeRigidBody(body);
       RigidBody.store.delete(eid);
     }
@@ -123,7 +126,7 @@ export const PhysicsSystem = (state: GameState) => {
         applyTransformToRigidBody(body, eid);
       }
 
-      handleMap.set(body.handle, eid);
+      handleToEid.set(body.handle, eid);
     }
   }
 
@@ -134,6 +137,14 @@ export const PhysicsSystem = (state: GameState) => {
     const body = RigidBody.store.get(eid);
 
     if (body && !body.isStatic()) {
+      // sync velocity
+      const linvel = body.linvel();
+      const velocity = RigidBody.velocity[eid];
+      velocity[0] = linvel.x;
+      velocity[1] = linvel.y;
+      velocity[2] = linvel.z;
+
+      // networked physics body
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         applyTransformToRigidBody(body, eid);
       } else {

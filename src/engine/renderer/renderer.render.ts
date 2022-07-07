@@ -53,16 +53,19 @@ import {
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
-import { MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import { InstancedMeshResourceType, MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
 import {
   LocalMeshPrimitive,
   onLoadLocalMeshPrimitiveResource,
   onLoadLocalMeshResource,
+  onLoadLocalInstancedMeshResource,
   updateLocalMeshPrimitiveResources,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
 import { ResourceId } from "../resource/resource.common";
+import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
+import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -131,6 +134,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       orthographicCameraResources: [],
       meshPrimitives: [],
       nodes: [],
+      tilesRenderers: [],
     };
   },
   init(ctx) {
@@ -151,7 +155,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
+      registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
+      registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
     ]);
   },
 });
@@ -233,7 +239,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
-  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes);
+  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     rendererModule.renderer.render(activeSceneResource.scene, activeCameraNode.cameraObject);

@@ -2,6 +2,12 @@
 # yarn lockfile v1
 
 
+"3d-tiles-renderer@https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch":
+  version "0.3.9"
+  resolved "https://github.com/matrix-org/3DTilesRendererJS.git#0a24d695752f6e419d47cca0bbec0e8ba8f0af4c"
+  dependencies:
+    path-browserify "^1.0.1"
+
 "@ampproject/remapping@^2.1.0":
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/@ampproject/remapping/-/remapping-2.1.2.tgz#4edca94973ded9630d20101cd8559cedb8d8bd34"
@@ -840,10 +846,10 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@thirdroom/hydrogen-view-sdk@0.0.10":
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.10.tgz#d9455328bc3aaaf312b99435f86fdd28f58d41b0"
-  integrity sha512-KgSDJFKFkx3dNih3egVBWKhGvPVjp3nAv8cvQNQenIPKVz5XzoXp+Pa4x0+9jA1d3wAycuOCNgLOOXIF6Q43BQ==
+"@thirdroom/hydrogen-view-sdk@0.0.11":
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.11.tgz#0eb6c48638a18b1763f64a971f1d67558ebb43b4"
+  integrity sha512-v548yes0SvGge1VXH274Fo1JqWSI9h1z3zkEGZZijoIEGcO6fTZioAyzjCcgsn4aFBPom4z0KunlLyWpCbfASg==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.3.tgz"
     another-json "^0.2.0"
@@ -3659,6 +3665,11 @@ parse5@6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/parse5/-/parse5-6.0.1.tgz#e1a1c085c569b3dc08321184f19a39cc27f7c30b"
   integrity sha512-Ofn/CTFzRGTTxwpNEs9PP93gXShHcTq255nzRYSKe8AkVpZY7e1fpmTfOyoIvjP5HG7Z2ZM7VS9PPhQGW2pOpw==
+
+path-browserify@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/path-browserify/-/path-browserify-1.0.1.tgz#d98454a9c3753d5790860f16f68867b9e46be1fd"
+  integrity sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==
 
 path-exists@^3.0.0:
   version "3.0.0"

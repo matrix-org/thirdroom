@@ -26,7 +26,7 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { addSphereMesh, createCube, createPrefabEntity, registerPrefab } from "../engine/prefab";
+import { createCube, createPrefabEntity, createSphereMesh, registerPrefab } from "../engine/prefab";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
 
@@ -175,8 +175,9 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   if (spawnCube.pressed || spawnBall.pressed) {
     const cube = createPrefabEntity(ctx, prefab);
 
-    addComponent(ctx.world, Networked, cube);
+    // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, cube);
+    addComponent(ctx.world, Networked, cube);
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
@@ -193,9 +194,28 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     addChild(ctx.activeScene, cube);
   }
 
-  physics.drainContactEvents((eid1?: number, eid2?: number) => {
-    const playbackRate = randomRange(0.25, 0.75);
-    const gain = randomRange(0.25, 0.75);
+  physics.drainContactEvents((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
+    const body1 = physics.physicsWorld.getRigidBody(handle1!);
+    const body2 = physics.physicsWorld.getRigidBody(handle2!);
+
+    let gain = 1;
+
+    if (body1 && body2) {
+      const linvel1 = body1.linvel();
+      const linvel2 = body2.linvel();
+
+      const x =
+        Math.abs(linvel1.x) +
+        Math.abs(linvel1.y) +
+        Math.abs(linvel1.z) +
+        Math.abs(linvel2.x) +
+        Math.abs(linvel2.y) +
+        Math.abs(linvel2.z);
+
+      gain = x / 20;
+    }
+
+    const playbackRate = randomRange(0.3, 0.75);
     const emitter = module.hitAudioEmitters.get(eid2!)! || module.hitAudioEmitters.get(eid1!)!;
     const source = emitter.sources[0] as RemoteAudioSource;
     playAudio(source, { playbackRate, gain });
@@ -208,17 +228,9 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  addSphereMesh(
-    state,
-    eid,
-    size,
-    material ||
-      createRemoteStandardMaterial(state, {
-        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-        roughnessFactor: 0.8,
-        metallicFactor: 0.8,
-      })
-  );
+  const mesh = createSphereMesh(state, 1, material);
+
+  addRemoteNodeComponent(state, eid, { mesh });
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);

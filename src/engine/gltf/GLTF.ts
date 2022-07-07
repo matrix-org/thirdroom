@@ -760,3 +760,12 @@ export enum GLTFLightType {
   Point = "point",
   Spot = "spot",
 }
+
+export interface GLTFInstancedMeshExtension {
+  /**
+   * A plain JSON object, where each key corresponds to a mesh attribute semantic and each value is the index of the accessor containing attribute's data.
+   */
+  attributes: {
+    [k: string]: GLTFId;
+  };
+}

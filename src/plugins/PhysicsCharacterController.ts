@@ -13,12 +13,11 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { createRemoteStandardMaterial } from "../engine/material/material.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { Networked, NetworkTransform, Owned } from "../engine/network/network.game";
+import { Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { addCubeMesh, createCamera } from "../engine/prefab";
+import { createCamera } from "../engine/prefab";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
@@ -99,7 +98,7 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
 
 export enum PhysicsGroups {
   None = 0,
-  All = 0xffff,
+  All = 0x0000_f000,
 }
 
 export enum PhysicsInteractionGroups {
@@ -149,25 +148,6 @@ const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 export const PlayerRig = defineComponent();
 export const playerRigQuery = defineQuery([PlayerRig]);
 
-export const createRawCube = (state: GameState) => {
-  const { world } = state;
-  const eid = addEntity(world);
-  addTransformComponent(world, eid);
-
-  addCubeMesh(
-    state,
-    eid,
-    1,
-    createRemoteStandardMaterial(state, {
-      baseColorFactor: [1, 1, 1, 1.0],
-      roughnessFactor: 0.1,
-      metallicFactor: 0.9,
-    })
-  );
-
-  return eid;
-};
-
 export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
@@ -207,7 +187,6 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
   addComponent(world, Networked, playerRig);
-  addComponent(world, NetworkTransform, playerRig);
 
   return playerRig;
 };
@@ -216,6 +195,11 @@ export const PlayerControllerSystem = (state: GameState) => {
   const { physicsWorld } = getModule(state, PhysicsModule);
   const input = getModule(state, InputModule);
   const playerRig = playerRigQuery(state.world)[0];
+
+  if (!playerRig) {
+    return;
+  }
+
   const body = RigidBody.store.get(playerRig);
   if (body) {
     obj.quaternion.x = Transform.quaternion[playerRig][0];
