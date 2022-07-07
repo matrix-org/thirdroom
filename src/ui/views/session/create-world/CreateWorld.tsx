@@ -10,9 +10,6 @@ import { Switch } from "../../../atoms/button/Switch";
 import { Label } from "../../../atoms/text/Label";
 import { Input } from "../../../atoms/input/Input";
 import { Scroll } from "../../../atoms/scroll/Scroll";
-import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
-import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
 import { Header } from "../../../atoms/header/Header";
@@ -28,12 +25,13 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
-import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import { SceneUpload } from "./SceneUpload";
 import "./CreateWorld.css";
 import { ScenePreviewUpload } from "./ScenePreviewUpload";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
+import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
+import { useFilePicker } from "../../../hooks/useFilePicker";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -51,7 +49,7 @@ export function CreateWorld() {
   const userHSDomain = getMxIdDomain(session.userId);
   const { closeWindow } = useStore((state) => state.overlayWindow);
 
-  const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
+  const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
   const [sceneMxc, setSceneMxc] = useState<string>();
   const [scenePrevMxc, setScenePrevMxc] = useState<string>();
   const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
@@ -137,7 +135,7 @@ export function CreateWorld() {
       sceneMxc,
       scenePrevMxc,
       topic: topicInput.value || undefined,
-      avatar: !avatarBlob ? undefined : avatarBlob,
+      avatar: avatarData.blob,
       alias: aliasInput.value || undefined,
     });
   };
@@ -161,12 +159,6 @@ export function CreateWorld() {
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
-  const handleAvatarSelect = useCallback(async () => {
-    const data = await platform.openFile("image/*");
-    if (!data) return;
-    setAvatarBlob(data.blob);
-  }, [setAvatarBlob, platform]);
-
   return (
     <Window>
       <Content
@@ -189,32 +181,7 @@ export function CreateWorld() {
                 <Scroll>
                   <div className="CreateWorld__content">
                     <SettingTile label={<Label>World Avatar</Label>}>
-                      <ThumbnailHover
-                        content={
-                          !avatarBlob ? undefined : (
-                            <IconButton
-                              variant="world"
-                              onClick={() => setAvatarBlob(undefined)}
-                              size="xl"
-                              iconSrc={CrossCircleIC}
-                              label="Remove world avatar"
-                            />
-                          )
-                        }
-                      >
-                        <Thumbnail size="sm" className="flex">
-                          {avatarBlob ? (
-                            <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
-                          ) : (
-                            <IconButton
-                              onClick={handleAvatarSelect}
-                              size="xl"
-                              iconSrc={AddIC}
-                              label="Add world avatar"
-                            />
-                          )}
-                        </Thumbnail>
-                      </ThumbnailHover>
+                      <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
                     </SettingTile>
                     <div className="flex gap-lg">
                       <SceneUpload onMxcChange={setSceneMxc} />

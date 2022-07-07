@@ -31,5 +31,13 @@ export function useFilePicker(platform: Platform, mimeType: string) {
     []
   );
 
-  return { fileData, pickFile, dropFile };
+  const resetUses = useCallback(
+    () => ({
+      pickUsed: 0,
+      dropUsed: 0,
+    }),
+    []
+  );
+
+  return { fileData, pickFile, dropFile, resetUses };
 }

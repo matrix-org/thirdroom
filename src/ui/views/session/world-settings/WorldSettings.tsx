@@ -35,12 +35,13 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   const { closeWindow } = useStore((state) => state.overlayWindow);
   const room = useRoom(session, roomId);
   const roomName = room?.name ?? "";
-  const avatarUrl = room?.avatarUrl
+  let httpAvatarUrl = room?.avatarUrl
     ? getAvatarHttpUrl(room.avatarUrl, 150, platform, session.mediaRepository) ?? undefined
     : undefined;
 
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
-  const httpAvatarUrl = avatarData.dropUsed > 0 ? avatarData.url : avatarUrl;
+  const isAvatarChanged = avatarData.dropUsed > 0 || avatarData.pickUsed > 0;
+  httpAvatarUrl = isAvatarChanged ? avatarData.url : httpAvatarUrl;
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
