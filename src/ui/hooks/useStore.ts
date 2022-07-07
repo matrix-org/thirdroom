@@ -48,8 +48,9 @@ export interface OverlaySidebarState {
 export interface OverlayWindowState {
   selectedWindow?: OverlayWindow;
   worldSettingsId?: string;
-  selectWindow(window?: OverlayWindow): void;
+  selectWindow(window: OverlayWindow): void;
   selectWorldSettingsWindow(roomId: string): void;
+  closeWindow(): void;
 }
 
 export interface OverlayWorldState {
@@ -147,7 +148,7 @@ export const useStore = create<StoreState>()(
     },
     overlayWindow: {
       selectedWindow: undefined,
-      selectWindow(window?: OverlayWindow) {
+      selectWindow(window: OverlayWindow) {
         set((state) => {
           state.overlayWindow.selectedWindow = window;
         });
@@ -156,6 +157,12 @@ export const useStore = create<StoreState>()(
         set((state) => {
           state.overlayWindow.selectedWindow = OverlayWindow.WorldSettings;
           state.overlayWindow.worldSettingsId = roomId;
+        });
+      },
+      closeWindow() {
+        set((state) => {
+          state.overlayWindow.selectedWindow = undefined;
+          state.overlayWindow.worldSettingsId = undefined;
         });
       },
     },

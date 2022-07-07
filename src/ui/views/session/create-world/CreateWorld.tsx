@@ -49,7 +49,7 @@ export function CreateWorld() {
   const { session, platform } = useHydrogen(true);
   const { homeserver } = session.sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
-  const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
+  const { closeWindow } = useStore((state) => state.overlayWindow);
 
   const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
   const [sceneMxc, setSceneMxc] = useState<string>();
@@ -178,7 +178,7 @@ export function CreateWorld() {
                 Create World
               </HeaderTitle>
             }
-            right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
+            right={<IconButton onClick={() => closeWindow()} iconSrc={CrossCircleIC} label="Close" />}
           />
         }
       >
@@ -260,7 +260,7 @@ export function CreateWorld() {
               bottom={
                 <Footer
                   left={
-                    <Button size="lg" fill="outline" onClick={() => selectWindow()}>
+                    <Button size="lg" fill="outline" onClick={() => closeWindow()}>
                       Cancel
                     </Button>
                   }

@@ -30,7 +30,7 @@ import "./UserProfileOverview.css";
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
   const { displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const { closeWindow } = useStore((state) => state.overlayWindow);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
   const [newAvatar, setNewAvatar] = useState<IBlobHandle | string | undefined>(avatarUrl);
@@ -58,7 +58,7 @@ export function UserProfileOverview() {
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    selectWindow();
+    closeWindow();
     const name = evt.currentTarget.displayName.value.trim() as string;
     if (name !== displayName && name !== "") {
       session.hsApi.setProfileDisplayName(session.userId, name);
@@ -80,7 +80,7 @@ export function UserProfileOverview() {
   const handleReset = () => {
     setNewDisplayName(displayName);
     setNewAvatar(avatarUrl);
-    selectWindow();
+    closeWindow();
   };
 
   return (
