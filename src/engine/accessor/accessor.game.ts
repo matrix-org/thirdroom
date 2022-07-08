@@ -3,7 +3,7 @@ import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "
 import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
-import { createResource } from "../resource/resource.game";
+import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import {
   AccessorComponentType,
   AccessorComponentTypeToTypedArray,
@@ -21,6 +21,7 @@ export interface RemoteAccessor<
   B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 > {
+  name: string;
   resourceId: number;
   bufferView: B;
   sparse: S extends AccessorSparseProps
@@ -57,6 +58,7 @@ interface AccessorProps<
   B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 > {
+  name?: string;
   type: AccessorType;
   componentType: AccessorComponentType;
   bufferView: B;
@@ -68,34 +70,65 @@ interface AccessorProps<
   sparse?: S;
 }
 
+const DEFAULT_ACCESSOR_NAME = "Accessor";
+
 export function createRemoteAccessor<
   B extends RemoteBufferView<Thread.Render> | undefined,
   S extends AccessorSparseProps | undefined
 >(ctx: GameState, props: AccessorProps<B, S>): RemoteAccessor<B, S> {
-  const resourceId = createResource<AccessorResourceProps>(ctx, Thread.Render, AccessorResourceType, {
-    type: props.type,
-    componentType: props.componentType,
-    bufferView: props.bufferView ? props.bufferView.resourceId : undefined,
-    count: props.count,
-    byteOffset: props.byteOffset || 0,
-    normalized: props.normalized || false,
-    min: props.min,
-    max: props.max,
-    sparse: props.sparse
-      ? {
-          count: props.sparse.count,
-          indices: {
-            bufferView: props.sparse.indices.bufferView.resourceId,
-            byteOffset: props.sparse.indices.byteOffset || 0,
-            componentType: props.sparse.indices.componentType,
-          },
-          values: {
-            bufferView: props.sparse.values.bufferView.resourceId,
-            byteOffset: props.sparse.values.byteOffset || 0,
-          },
+  const name = props.name || DEFAULT_ACCESSOR_NAME;
+
+  if (props.bufferView) {
+    addResourceRef(ctx, props.bufferView.resourceId);
+  }
+
+  if (props.sparse) {
+    addResourceRef(ctx, props.sparse.indices.bufferView.resourceId);
+    addResourceRef(ctx, props.sparse.values.bufferView.resourceId);
+  }
+
+  const resourceId = createResource<AccessorResourceProps>(
+    ctx,
+    Thread.Render,
+    AccessorResourceType,
+    {
+      type: props.type,
+      componentType: props.componentType,
+      bufferView: props.bufferView ? props.bufferView.resourceId : undefined,
+      count: props.count,
+      byteOffset: props.byteOffset || 0,
+      normalized: props.normalized || false,
+      min: props.min,
+      max: props.max,
+      sparse: props.sparse
+        ? {
+            count: props.sparse.count,
+            indices: {
+              bufferView: props.sparse.indices.bufferView.resourceId,
+              byteOffset: props.sparse.indices.byteOffset || 0,
+              componentType: props.sparse.indices.componentType,
+            },
+            values: {
+              bufferView: props.sparse.values.bufferView.resourceId,
+              byteOffset: props.sparse.values.byteOffset || 0,
+            },
+          }
+        : undefined,
+    },
+    {
+      name,
+      dispose() {
+        if (props.bufferView) {
+          disposeResource(ctx, props.bufferView.resourceId);
         }
-      : undefined,
-  });
+
+        if (props.sparse) {
+          disposeResource(ctx, props.sparse.indices.bufferView.resourceId);
+          disposeResource(ctx, props.sparse.values.bufferView.resourceId);
+        }
+      },
+    }
+  );
 
   const bufferView = props.bufferView;
 
@@ -165,6 +198,7 @@ export function createRemoteAccessor<
   }
 
   return {
+    name,
     resourceId,
     attribute,
     bufferView: props.bufferView,

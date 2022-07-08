@@ -5,11 +5,11 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
   addTransformComponent,
+  removeRecursive,
   setEulerFromQuaternion,
   Transform,
-  traverse,
 } from "../../engine/component/transform";
-import { GameState, World } from "../../engine/GameTypes";
+import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
@@ -19,6 +19,7 @@ import {
   EnvironmentLoadErrorMessage,
   ExitWorldMessage,
   LoadEnvironmentMessage,
+  PrintResourcesMessage,
   ThirdRoomMessageType,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
@@ -26,7 +27,7 @@ import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createRemoteSampler } from "../../engine/sampler/sampler.game";
 import { SamplerMapping } from "../../engine/sampler/sampler.common";
-import { inflateGLTFScene } from "../../engine/gltf/gltf.game";
+import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
@@ -37,8 +38,11 @@ import {
 } from "../../engine/prefab";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
+import { ResourceModule } from "../../engine/resource/resource.game";
 
-type ThirdRoomModuleState = {};
+interface ThirdRoomModuleState {
+  sceneGLTF?: GLTFResource;
+}
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
@@ -50,6 +54,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadEnvironment, onLoadEnvironment),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
+      registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
     ];
 
     // const cube = addEntity(ctx.world);
@@ -170,30 +175,35 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
-function disposeScene(world: World, scene: number) {
-  traverse(scene, (eid) => {
-    removeEntity(world, eid);
-  });
-}
-
 async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+
   try {
     if (ctx.activeScene) {
-      disposeScene(ctx.world, ctx.activeScene);
+      removeRecursive(ctx.world, ctx.activeScene);
+
+      if (thirdroom.sceneGLTF) {
+        disposeGLTFResource(thirdroom.sceneGLTF);
+        thirdroom.sceneGLTF = undefined;
+      }
+
       ctx.activeScene = NOOP;
       ctx.activeCamera = NOOP;
     }
 
     const newScene = addEntity(ctx.world);
 
-    const environmentMap = createRemoteImage(ctx, "/cubemap/venice_sunset_1k.hdr");
-    const environmentMapTexture = createRemoteTexture(ctx, environmentMap, {
+    const environmentMapTexture = createRemoteTexture(ctx, {
+      name: "Environment Map Texture",
+      image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
       sampler: createRemoteSampler(ctx, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
       }),
     });
 
-    const scene = await inflateGLTFScene(ctx, newScene, message.url);
+    const sceneGltf = await inflateGLTFScene(ctx, newScene, message.url);
+
+    thirdroom.sceneGLTF = sceneGltf;
 
     const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
@@ -219,7 +229,11 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
     ctx.activeScene = newScene;
 
     // Temp hack for city scene
-    if (scene.root.scenes && scene.root.scenes.length > 0 && scene.root.scenes[0].name === "SampleSceneDay 1") {
+    if (
+      sceneGltf.root.scenes &&
+      sceneGltf.root.scenes.length > 0 &&
+      sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
+    ) {
       const collisionGeo = addEntity(ctx.world);
       await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
 
@@ -287,9 +301,22 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
-  disposeScene(ctx.world, ctx.activeScene);
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+
+  removeRecursive(ctx.world, ctx.activeScene);
+
+  if (thirdroom.sceneGLTF) {
+    disposeGLTFResource(thirdroom.sceneGLTF);
+    thirdroom.sceneGLTF = undefined;
+  }
+
   ctx.activeCamera = NOOP;
   ctx.activeScene = NOOP;
+}
+
+function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
+  const resourceModule = getModule(ctx, ResourceModule);
+  console.table(Array.from(resourceModule.resources.values()), ["name", "id", "thread", "resourceType", "refCount"]);
 }
 
 const waitUntil = (fn: Function) =>

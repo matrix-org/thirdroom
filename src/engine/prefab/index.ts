@@ -33,46 +33,50 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const normal = addView(buffer, Float32Array, normArr.length, normArr);
   const uv = addView(buffer, Float32Array, uvArr.length, uvArr);
 
-  const bufferView = createRemoteBufferView(ctx, Thread.Render, buffer);
+  const bufferView = createRemoteBufferView(ctx, { thread: Thread.Render, buffer });
 
   const remoteMesh = createRemoteMesh(ctx, {
-    indices: createRemoteAccessor(ctx, {
-      type: AccessorType.SCALAR,
-      componentType: AccessorComponentType.Uint16,
-      bufferView,
-      count: indices.length,
-    }),
-    attributes: {
-      [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(ctx, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: position.byteOffset,
-        count: position.length / 3,
-      }),
-      [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(ctx, {
-        type: AccessorType.VEC3,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: normal.byteOffset,
-        count: normal.length / 3,
-        normalized: true,
-      }),
-      [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(ctx, {
-        type: AccessorType.VEC2,
-        componentType: AccessorComponentType.Float32,
-        bufferView,
-        byteOffset: uv.byteOffset,
-        count: uv.length / 2,
-      }),
-    },
-    material:
-      material ||
-      createRemoteStandardMaterial(ctx, {
-        baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-        roughnessFactor: 0.8,
-        metallicFactor: 0.8,
-      }),
+    primitives: [
+      {
+        indices: createRemoteAccessor(ctx, {
+          type: AccessorType.SCALAR,
+          componentType: AccessorComponentType.Uint16,
+          bufferView,
+          count: indices.length,
+        }),
+        attributes: {
+          [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC3,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: position.byteOffset,
+            count: position.length / 3,
+          }),
+          [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC3,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: normal.byteOffset,
+            count: normal.length / 3,
+            normalized: true,
+          }),
+          [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC2,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: uv.byteOffset,
+            count: uv.length / 2,
+          }),
+        },
+        material:
+          material ||
+          createRemoteStandardMaterial(ctx, {
+            baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+            roughnessFactor: 0.8,
+            metallicFactor: 0.8,
+          }),
+      },
+    ],
   });
 
   return remoteMesh;

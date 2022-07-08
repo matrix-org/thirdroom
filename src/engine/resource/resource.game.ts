@@ -11,12 +11,16 @@ import {
 
 interface RemoteResource {
   id: ResourceId;
+  name: string;
+  thread: Thread;
   resourceType: string;
   props: any;
   loaded: boolean;
   error?: string;
   statusView: Uint8Array;
   cacheKey?: string;
+  refCount: number;
+  dispose?: () => void;
 }
 
 interface ResourceModuleState {
@@ -74,21 +78,29 @@ function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedM
   }
 }
 
+interface ResourceOptions {
+  name?: string;
+  transferList?: Transferable[];
+  cacheKey?: any;
+  dispose?: () => void;
+}
+
+const UNKNOWN_RESOURCE_NAME = "Unknown Resource";
+
 export function createResource<Props>(
   ctx: GameState,
   thread: Thread,
   resourceType: string,
   props: Props,
-  transferList?: Transferable[],
-  cacheKey?: any
+  options?: ResourceOptions
 ): number {
   const resourceModule = getModule(ctx, ResourceModule);
 
   let resourceCache = resourceModule.resourceIdMap.get(resourceType);
 
   if (resourceCache) {
-    if (cacheKey !== undefined) {
-      const existingResourceId = resourceCache.get(cacheKey);
+    if (options?.cacheKey !== undefined) {
+      const existingResourceId = resourceCache.get(options.cacheKey);
 
       if (existingResourceId !== undefined) {
         return existingResourceId;
@@ -108,15 +120,19 @@ export function createResource<Props>(
 
   resourceModule.resources.set(id, {
     id,
+    name: options?.name || UNKNOWN_RESOURCE_NAME,
+    thread,
     resourceType,
     props,
     loaded: false,
     statusView,
-    cacheKey,
+    cacheKey: options?.cacheKey,
+    refCount: 0,
+    dispose: options?.dispose,
   });
 
-  if (cacheKey !== undefined) {
-    resourceCache.set(cacheKey, id);
+  if (options?.cacheKey !== undefined) {
+    resourceCache.set(options.cacheKey, id);
   }
 
   const deferred = createDeferred<undefined>();
@@ -133,14 +149,14 @@ export function createResource<Props>(
   if (thread === Thread.Main) {
     resourceModule.mainThreadMessageQueue.push(message);
 
-    if (transferList) {
-      resourceModule.mainThreadTransferList.push(...transferList);
+    if (options?.transferList) {
+      resourceModule.mainThreadTransferList.push(...options.transferList);
     }
   } else if (thread === Thread.Render) {
     resourceModule.renderThreadMessageQueue.push(message);
 
-    if (transferList) {
-      resourceModule.renderThreadTransferList.push(...transferList);
+    if (options?.transferList) {
+      resourceModule.renderThreadTransferList.push(...options.transferList);
     }
   } else {
     throw new Error("Invalid resource thread target");
@@ -156,6 +172,16 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
 
   if (!resource) {
     return false;
+  }
+
+  resource.refCount--;
+
+  if (resource.refCount > 0) {
+    return false;
+  }
+
+  if (resource.dispose) {
+    resource.dispose();
   }
 
   if (resource.cacheKey) {
@@ -179,6 +205,16 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
   resourceModule.resources.delete(resourceId);
 
   return true;
+}
+
+export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  const resource = resourceModule.resources.get(resourceId);
+
+  if (resource) {
+    resource.refCount++;
+  }
 }
 
 export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {

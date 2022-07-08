@@ -1,4 +1,4 @@
-import { addComponent, addEntity, defineComponent, IComponent, removeComponent } from "bitecs";
+import { addComponent, addEntity, defineComponent, IComponent, removeComponent, removeEntity } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -455,6 +455,21 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
       eid = Transform.nextSibling[eid];
     }
   }
+}
+
+export function traverseReverse(rootEid: number, callback: (eid: number) => unknown) {
+  const stack: number[] = [];
+  traverse(rootEid, (eid) => stack.push(eid));
+
+  while (stack.length) {
+    callback(stack.pop()!);
+  }
+}
+
+export function removeRecursive(world: World, rootEid: number) {
+  traverseReverse(rootEid, (eid) => {
+    removeEntity(world, eid);
+  });
 }
 
 export function* getChildren(parentEid: number): Generator<number, number> {
