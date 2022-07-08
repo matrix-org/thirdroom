@@ -674,7 +674,7 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
       sources: [
         createRemoteMediaStreamSource(state, {
-          stream: createRemoteMediaStream(state, peerId),
+          stream: createRemoteMediaStream(state, { streamId: peerId }),
         }),
       ],
     });
