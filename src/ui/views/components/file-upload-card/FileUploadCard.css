@@ -1,0 +1,6 @@
+.FileUploadCard {
+  background-color: var(--bg-surface);
+  padding: var(--sp-xs);
+  border-radius: var(--br-sm);
+  border: 1px solid var(--bg-surface-border);
+}
