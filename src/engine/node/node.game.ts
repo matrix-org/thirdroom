@@ -162,7 +162,6 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   );
 
   if (_mesh) {
-    console.log(`addRemoteNode mesh ${eid} ${_mesh.resourceId}`);
     addResourceRef(ctx, _mesh.resourceId);
   }
 
