@@ -34,6 +34,8 @@ interface ResourceModuleState {
   renderThreadTransferList: Transferable[];
 }
 
+class ResourceDisposedError extends Error {}
+
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
   create() {
@@ -137,6 +139,14 @@ export function createResource<Props>(
 
   const deferred = createDeferred<undefined>();
 
+  deferred.promise.catch((error) => {
+    if (error instanceof ResourceDisposedError) {
+      return;
+    }
+
+    console.error(error);
+  });
+
   resourceModule.deferredResources.set(id, deferred);
 
   const message = {
@@ -195,7 +205,7 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
   const deferred = resourceModule.deferredResources.get(resourceId);
 
   if (deferred) {
-    deferred.reject(new Error("Resource disposed"));
+    deferred.reject(new ResourceDisposedError("Resource disposed"));
     resourceModule.deferredResources.delete(resourceId);
   }
 
