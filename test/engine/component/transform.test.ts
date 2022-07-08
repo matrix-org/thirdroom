@@ -7,6 +7,7 @@ import {
   addChild,
   removeChild,
   traverse,
+  traverseReverse,
 } from "../../../src/engine/component/transform";
 import { NOOP } from "../../../src/engine/config.common";
 
@@ -244,6 +245,46 @@ describe("Transform Unit Tests", function () {
 
         expect(results2).toStrictEqual([1, 2, 6, 7]);
       });
+    });
+  });
+
+  describe("traverseReverse", () => {
+    beforeEach(function () {
+      Transform.firstChild.fill(0);
+      Transform.prevSibling.fill(0);
+      Transform.nextSibling.fill(0);
+    });
+
+    test("should traverse with reverse ordering", () => {
+      /**
+       *       root(1)
+       *         / \
+       *      A(2) B(3)
+       *      /     / \
+       *    E(6)  C(4) D(5)
+       *    /
+       *   F(7)
+       */
+
+      const root = 1;
+      const childA = 2;
+      const childB = 3;
+      const childC = 4;
+      const childD = 5;
+      const childE = 6;
+      const childF = 7;
+      addChild(root, childA);
+      addChild(root, childB);
+      addChild(childB, childC);
+      addChild(childB, childD);
+      addChild(childA, childE);
+      addChild(childE, childF);
+
+      const result: number[] = [];
+
+      traverseReverse(1, (eid) => result.push(eid));
+
+      expect(result).toStrictEqual([5, 4, 3, 7, 6, 2, 1]);
     });
   });
 });

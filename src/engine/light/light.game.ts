@@ -32,6 +32,7 @@ export type PointLightBufferView = ObjectBufferView<typeof pointLightSchema, Arr
 export type SpotLightBufferView = ObjectBufferView<typeof spotLightSchema, ArrayBuffer>;
 
 export interface RemoteDirectionalLight {
+  name: string;
   resourceId: ResourceId;
   type: LightType.Directional;
   lightBufferView: DirectionalLightBufferView;
@@ -45,6 +46,7 @@ export interface RemoteDirectionalLight {
 }
 
 export interface RemotePointLight {
+  name: string;
   resourceId: ResourceId;
   type: LightType.Point;
   lightBufferView: PointLightBufferView;
@@ -60,6 +62,7 @@ export interface RemotePointLight {
 }
 
 export interface RemoteSpotLight {
+  name: string;
   resourceId: ResourceId;
   type: LightType.Spot;
   lightBufferView: SpotLightBufferView;
@@ -102,10 +105,13 @@ export function updateRemoteRemoteSpotLights(spotLights: RemoteSpotLight[]) {
 }
 
 export interface DirectionalLightProps {
+  name?: string;
   color?: vec3;
   intensity?: number;
   castShadow?: boolean;
 }
+
+const DEFAULT_DIRECTIONAL_LIGHT_NAME = "Directional Light";
 
 export function createDirectionalLightResource(ctx: GameState, props?: DirectionalLightProps): RemoteDirectionalLight {
   const rendererModule = getModule(ctx, RendererModule);
@@ -118,12 +124,23 @@ export function createDirectionalLightResource(ctx: GameState, props?: Direction
 
   const lightTripleBuffer = createObjectTripleBuffer(directionalLightSchema, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedDirectionalLightResource>(ctx, Thread.Render, DirectionalLightResourceType, {
-    type: LightType.Directional,
-    lightTripleBuffer,
-  });
+  const name = props?.name || DEFAULT_DIRECTIONAL_LIGHT_NAME;
+
+  const resourceId = createResource<SharedDirectionalLightResource>(
+    ctx,
+    Thread.Render,
+    DirectionalLightResourceType,
+    {
+      type: LightType.Directional,
+      lightTripleBuffer,
+    },
+    {
+      name,
+    }
+  );
 
   const remoteLight: RemoteDirectionalLight = {
+    name,
     resourceId,
     lightBufferView,
     lightTripleBuffer,
@@ -154,11 +171,14 @@ export function createDirectionalLightResource(ctx: GameState, props?: Direction
 }
 
 export interface PointLightProps {
+  name?: string;
   color?: vec3;
   intensity?: number;
   range?: number;
   castShadow?: boolean;
 }
+
+const DEFAULT_POINT_LIGHT_NAME = "Point Light";
 
 export function createPointLightResource(ctx: GameState, props?: PointLightProps): RemotePointLight {
   const rendererModule = getModule(ctx, RendererModule);
@@ -172,12 +192,23 @@ export function createPointLightResource(ctx: GameState, props?: PointLightProps
 
   const lightTripleBuffer = createObjectTripleBuffer(pointLightSchema, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedPointLightResource>(ctx, Thread.Render, PointLightResourceType, {
-    type: LightType.Point,
-    lightTripleBuffer,
-  });
+  const name = props?.name || DEFAULT_POINT_LIGHT_NAME;
+
+  const resourceId = createResource<SharedPointLightResource>(
+    ctx,
+    Thread.Render,
+    PointLightResourceType,
+    {
+      type: LightType.Point,
+      lightTripleBuffer,
+    },
+    {
+      name,
+    }
+  );
 
   const remoteLight: RemotePointLight = {
+    name,
     resourceId,
     lightBufferView,
     lightTripleBuffer,
@@ -214,6 +245,7 @@ export function createPointLightResource(ctx: GameState, props?: PointLightProps
 }
 
 export interface SpotLightProps {
+  name?: string;
   color?: vec3;
   intensity?: number;
   range?: number;
@@ -221,6 +253,8 @@ export interface SpotLightProps {
   outerConeAngle?: number;
   castShadow?: boolean;
 }
+
+const DEFAULT_SPOT_LIGHT_NAME = "Spot Light";
 
 export function createSpotLightResource(ctx: GameState, props?: SpotLightProps): RemoteSpotLight {
   const rendererModule = getModule(ctx, RendererModule);
@@ -237,12 +271,23 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightProps):
 
   const lightTripleBuffer = createObjectTripleBuffer(spotLightSchema, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedSpotLightResource>(ctx, Thread.Render, SpotLightResourceType, {
-    type: LightType.Spot,
-    lightTripleBuffer,
-  });
+  const name = props?.name || DEFAULT_SPOT_LIGHT_NAME;
+
+  const resourceId = createResource<SharedSpotLightResource>(
+    ctx,
+    Thread.Render,
+    SpotLightResourceType,
+    {
+      type: LightType.Spot,
+      lightTripleBuffer,
+    },
+    {
+      name,
+    }
+  );
 
   const remoteLight: RemoteSpotLight = {
+    name,
     resourceId,
     lightBufferView,
     lightTripleBuffer,

@@ -7,8 +7,8 @@ import {
   createRemoteAudioSource,
   playAudio,
   RemoteAudioSource,
-  addAudioEmitterComponent,
   RemoteAudioEmitter,
+  createRemotePositionalAudioEmitter,
 } from "../engine/audio/audio.game";
 import { Transform, addChild, addTransformComponent } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -44,14 +44,15 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
   init(ctx) {
     const module = getModule(ctx, CubeSpawnerModule);
 
-    const image = createRemoteImage(ctx, "/image/crate.gif");
-    const texture = createRemoteTexture(ctx, image);
+    const image = createRemoteImage(ctx, { name: "Crate Image", uri: "/image/crate.gif" });
+    const texture = createRemoteTexture(ctx, { name: "Crate Texture", image });
 
     const cubeMaterial = createRemoteStandardMaterial(ctx, {
+      name: "Cube Material",
       baseColorTexture: texture,
     });
 
-    const crateAudioData = createRemoteAudioData(ctx, "/audio/hit.wav");
+    const crateAudioData = createRemoteAudioData(ctx, { name: "Crate Audio Data", uri: "/audio/hit.wav" });
 
     registerPrefab(ctx, {
       name: "crate",
@@ -64,7 +65,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
           autoPlay: false,
         });
 
-        const audioEmitter = addAudioEmitterComponent(ctx, eid, {
+        const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [hitAudioSource],
         });
 
@@ -78,9 +79,10 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
       },
     });
 
-    const ballAudioData = createRemoteAudioData(ctx, "/audio/bounce.wav");
+    const ballAudioData = createRemoteAudioData(ctx, { name: "Ball Audio Data", uri: "/audio/bounce.wav" });
 
     const ballMaterial = createRemoteStandardMaterial(ctx, {
+      name: "Ball Material",
       baseColorTexture: texture,
       baseColorFactor: [0.9, 0.5, 0.5, 1],
       occlusionTexture: texture,
@@ -101,7 +103,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
           gain: 0,
         });
 
-        const audioEmitter = addAudioEmitterComponent(ctx, eid, {
+        const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [hitAudioSource],
         });
 

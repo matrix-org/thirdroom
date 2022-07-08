@@ -2,6 +2,7 @@ import { IMainThreadContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
+import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
 import {
   EnvironmentLoadedMessage,
   EnvironmentLoadErrorMessage,
@@ -21,7 +22,13 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
       loadEnvironmentMessageId: 0,
     };
   },
-  init() {},
+  init(ctx) {
+    registerThirdroomGlobalFn("printResources", () => {
+      ctx.sendMessage(Thread.Game, {
+        type: "print-resources",
+      });
+    });
+  },
 });
 
 export function loadEnvironment(ctx: IMainThreadContext, url: string) {

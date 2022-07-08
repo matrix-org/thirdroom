@@ -25,6 +25,7 @@ export type PerspectiveCameraBufferView = ObjectBufferView<typeof perspectiveCam
 export type OrthographicCameraBufferView = ObjectBufferView<typeof orthographicCameraSchema, ArrayBuffer>;
 
 export interface RemotePerspectiveCamera {
+  name: string;
   resourceId: ResourceId;
   type: CameraType.Perspective;
   cameraBufferView: PerspectiveCameraBufferView;
@@ -42,6 +43,7 @@ export interface RemotePerspectiveCamera {
 }
 
 export interface RemoteOrthographicCamera {
+  name: string;
   resourceId: ResourceId;
   type: CameraType.Orthographic;
   cameraBufferView: OrthographicCameraBufferView;
@@ -61,12 +63,15 @@ export interface RemoteOrthographicCamera {
 export type RemoteCamera = RemotePerspectiveCamera | RemoteOrthographicCamera;
 
 export interface PerspectiveCameraProps {
+  name?: string;
   layers?: number;
   aspectRatio?: number;
   yfov: number;
   zfar?: number;
   znear: number;
 }
+
+const DEFAULT_PERSPECTIVE_CAMERA_NAME = "Perspective Camera";
 
 export function createRemotePerspectiveCamera(ctx: GameState, props?: PerspectiveCameraProps): RemotePerspectiveCamera {
   const rendererModule = getModule(ctx, RendererModule);
@@ -82,6 +87,8 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
 
   const cameraTripleBuffer = createObjectTripleBuffer(perspectiveCameraSchema, ctx.gameToMainTripleBufferFlags);
 
+  const name = props?.name || DEFAULT_PERSPECTIVE_CAMERA_NAME;
+
   const resourceId = createResource<SharedPerspectiveCameraResource>(
     ctx,
     Thread.Render,
@@ -89,10 +96,14 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
     {
       type: CameraType.Perspective,
       cameraTripleBuffer,
+    },
+    {
+      name,
     }
   );
 
   const remoteCamera: RemotePerspectiveCamera = {
+    name,
     resourceId,
     cameraBufferView,
     cameraTripleBuffer,
@@ -139,12 +150,15 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
 }
 
 export interface OrthographicCameraProps {
+  name?: string;
   layers?: number;
   xmag: number;
   ymag: number;
   zfar: number;
   znear: number;
 }
+
+const DEFAULT_ORTHOGRAPHIC_CAMERA_NAME = "Orthographic Camera";
 
 export function createRemoteOrthographicCamera(
   ctx: GameState,
@@ -162,6 +176,8 @@ export function createRemoteOrthographicCamera(
 
   const cameraTripleBuffer = createObjectTripleBuffer(orthographicCameraSchema, ctx.gameToMainTripleBufferFlags);
 
+  const name = props.name || DEFAULT_ORTHOGRAPHIC_CAMERA_NAME;
+
   const resourceId = createResource<SharedOrthographicCameraResource>(
     ctx,
     Thread.Render,
@@ -169,10 +185,14 @@ export function createRemoteOrthographicCamera(
     {
       type: CameraType.Orthographic,
       cameraTripleBuffer,
+    },
+    {
+      name,
     }
   );
 
   const remoteCamera: RemoteOrthographicCamera = {
+    name,
     resourceId,
     cameraBufferView,
     cameraTripleBuffer,

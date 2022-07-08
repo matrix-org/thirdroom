@@ -4,15 +4,34 @@ import { Thread } from "../module/module.common";
 import { TilesRendererResoruceProps, TilesRendererResourceType } from "./tiles-renderer.common";
 
 export interface RemoteTilesRenderer {
+  name: string;
   resourceId: number;
   tilesetUrl: string;
 }
 
-export function createRemoteTilesRenderer(ctx: GameState, tilesetUrl: string): RemoteTilesRenderer {
+const DEFAULT_TILES_RENDERER_NAME = "Tiles Renderer";
+
+export interface TilesRendererProps {
+  name?: string;
+  tilesetUrl: string;
+}
+
+export function createRemoteTilesRenderer(ctx: GameState, props: TilesRendererProps): RemoteTilesRenderer {
+  const name = props.name || DEFAULT_TILES_RENDERER_NAME;
+
   return {
-    tilesetUrl,
-    resourceId: createResource<TilesRendererResoruceProps>(ctx, Thread.Render, TilesRendererResourceType, {
-      tilesetUrl,
-    }),
+    name,
+    tilesetUrl: props.tilesetUrl,
+    resourceId: createResource<TilesRendererResoruceProps>(
+      ctx,
+      Thread.Render,
+      TilesRendererResourceType,
+      {
+        tilesetUrl: props.tilesetUrl,
+      },
+      {
+        name,
+      }
+    ),
   };
 }

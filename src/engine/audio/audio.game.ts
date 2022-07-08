@@ -1,5 +1,3 @@
-import { addComponent, defineQuery, exitQuery, hasComponent } from "bitecs";
-
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
@@ -33,7 +31,7 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
-import { createResource, disposeResource } from "../resource/resource.game";
+import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
@@ -78,34 +76,72 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
  */
 
 export interface RemoteAudioData {
+  name: string;
   resourceId: number;
   uri?: string;
   bufferView?: RemoteBufferView<Thread.Main>;
 }
 
-export function createRemoteAudioFromBufferView(
-  ctx: GameState,
-  bufferView: RemoteBufferView<Thread.Main>,
-  mimeType: string
-): RemoteAudioData {
+export interface BufferViewAudioDataProps {
+  name?: string;
+  bufferView: RemoteBufferView<Thread.Main>;
+  mimeType: string;
+}
+
+export interface AudioDataProps {
+  name?: string;
+  uri: string;
+}
+
+const DEFAULT_AUDIO_DATA_NAME = "Audio Data";
+
+export function createRemoteAudioFromBufferView(ctx: GameState, props: BufferViewAudioDataProps): RemoteAudioData {
+  const name = props.name || DEFAULT_AUDIO_DATA_NAME;
+
+  addResourceRef(ctx, props.bufferView.resourceId);
+
   return {
-    resourceId: createResource<AudioResourceProps>(ctx, Thread.Main, AudioResourceType.AudioSource, {
-      bufferView: bufferView.resourceId,
-      mimeType,
-    }),
-    bufferView,
+    name,
+    resourceId: createResource<AudioResourceProps>(
+      ctx,
+      Thread.Main,
+      AudioResourceType.AudioSource,
+      {
+        bufferView: props.bufferView.resourceId,
+        mimeType: props.mimeType,
+      },
+      {
+        name,
+        dispose() {
+          disposeResource(ctx, props.bufferView.resourceId);
+        },
+      }
+    ),
+    bufferView: props.bufferView,
   };
 }
 
-export function createRemoteAudioData(ctx: GameState, uri: string): RemoteAudioData {
+export function createRemoteAudioData(ctx: GameState, props: AudioDataProps): RemoteAudioData {
+  const name = props.name || DEFAULT_AUDIO_DATA_NAME;
+
   return {
-    resourceId: createResource<AudioResourceProps>(ctx, Thread.Main, AudioResourceType.AudioData, {
-      uri,
-    }),
+    name,
+    resourceId: createResource<AudioResourceProps>(
+      ctx,
+      Thread.Main,
+      AudioResourceType.AudioData,
+      {
+        uri: props.uri,
+      },
+      {
+        name,
+      }
+    ),
   };
 }
 
 export interface RemoteAudioSource {
+  name: string;
   resourceId: number;
   audioSourceWriteBuffer: ObjectBufferView<typeof writeAudioSourceSchema, ArrayBuffer>;
   audioSourceReadBuffer: ObjectBufferView<typeof readAudioSourceSchema, ArrayBuffer>;
@@ -127,6 +163,7 @@ export interface RemoteAudioSource {
 }
 
 export interface AudioSourceProps {
+  name?: string;
   audio?: RemoteAudioData;
   gain?: number;
   playbackRate?: number;
@@ -134,6 +171,8 @@ export interface AudioSourceProps {
   autoPlay?: boolean;
   loop?: boolean;
 }
+
+const DEFAULT_AUDIO_SOURCE_NAME = "Audio Source";
 
 export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps): RemoteAudioSource {
   const audioModule = getModule(ctx, GameAudioModule);
@@ -154,14 +193,34 @@ export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps
 
   const sharedReadAudioSource = createObjectTripleBuffer(readAudioSourceSchema, ctx.mainToGameTripleBufferFlags);
 
-  const resourceId = createResource<SharedAudioSourceResource>(ctx, Thread.Main, AudioResourceType.AudioSource, {
-    writeAudioSourceTripleBuffer: sharedWriteAudioSource,
-    readAudioSourceTripleBuffer: sharedReadAudioSource,
-  });
+  const name = props?.name || DEFAULT_AUDIO_SOURCE_NAME;
 
   let _audio: RemoteAudioData | undefined = props?.audio;
 
+  if (_audio) {
+    addResourceRef(ctx, _audio.resourceId);
+  }
+
+  const resourceId = createResource<SharedAudioSourceResource>(
+    ctx,
+    Thread.Main,
+    AudioResourceType.AudioSource,
+    {
+      writeAudioSourceTripleBuffer: sharedWriteAudioSource,
+      readAudioSourceTripleBuffer: sharedReadAudioSource,
+    },
+    {
+      name,
+      dispose() {
+        if (_audio) {
+          disposeResource(ctx, _audio.resourceId);
+        }
+      },
+    }
+  );
+
   const remoteAudioSource: RemoteAudioSource = {
+    name,
     resourceId,
     audioSourceWriteBuffer,
     audioSourceReadBuffer,
@@ -170,9 +229,17 @@ export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps
     get audio(): RemoteAudioData | undefined {
       return _audio;
     },
-    set audio(value: RemoteAudioData | undefined) {
-      _audio = value;
-      audioSourceWriteBuffer.audio[0] = value ? value.resourceId : 0;
+    set audio(audio: RemoteAudioData | undefined) {
+      if (audio) {
+        addResourceRef(ctx, audio.resourceId);
+      }
+
+      if (_audio) {
+        disposeResource(ctx, _audio.resourceId);
+      }
+
+      _audio = audio;
+      audioSourceWriteBuffer.audio[0] = audio ? audio.resourceId : 0;
     },
     get gain(): number {
       return audioSourceWriteBuffer.gain[0];
@@ -215,18 +282,38 @@ export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps
 }
 
 interface RemoteMediaStream {
+  name: string;
   resourceId: ResourceId;
 }
 
-export function createRemoteMediaStream(ctx: GameState, streamId: string): RemoteMediaStream {
+interface MediaStreamProps {
+  name?: string;
+  streamId: string;
+}
+
+const DEFAULT_MEDIA_STREAM_NAME = "Media Stream";
+
+export function createRemoteMediaStream(ctx: GameState, props: MediaStreamProps): RemoteMediaStream {
+  const name = props.name || DEFAULT_MEDIA_STREAM_NAME;
+
   return {
-    resourceId: createResource<SharedMediaStreamResource>(ctx, Thread.Main, AudioResourceType.MediaStreamId, {
-      streamId,
-    }),
+    name,
+    resourceId: createResource<SharedMediaStreamResource>(
+      ctx,
+      Thread.Main,
+      AudioResourceType.MediaStreamId,
+      {
+        streamId: props.streamId,
+      },
+      {
+        name,
+      }
+    ),
   };
 }
 
 export interface RemoteMediaStreamSource {
+  name: string;
   resourceId: number;
   mediaStreamSourceBuffer: ObjectBufferView<typeof mediaStreamSourceSchema, ArrayBuffer>;
   mediaStreamSourceTripleBuffer: MediaStreamSourceTripleBuffer;
@@ -237,9 +324,12 @@ export interface RemoteMediaStreamSource {
 }
 
 export interface MediaStreamSourceProps {
+  name?: string;
   stream?: RemoteMediaStream;
   gain?: number;
 }
+
+const DEFAULT_MEDIA_STREAM_SOURCE = "Media Stream Source";
 
 export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStreamSourceProps): RemoteMediaStreamSource {
   const audioModule = getModule(ctx, GameAudioModule);
@@ -254,25 +344,48 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
     ctx.gameToMainTripleBufferFlags
   );
 
+  const name = props?.name || DEFAULT_MEDIA_STREAM_SOURCE;
+
+  let _stream: RemoteMediaStream | undefined = props?.stream || undefined;
+
+  if (_stream) {
+    addResourceRef(ctx, _stream.resourceId);
+  }
+
   const resourceId = createResource<MediaStreamSourceTripleBuffer>(
     ctx,
     Thread.Main,
     AudioResourceType.MediaStreamSource,
-    mediaStreamSourceTripleBuffer
+    mediaStreamSourceTripleBuffer,
+    {
+      name,
+      dispose() {
+        if (_stream) {
+          disposeResource(ctx, _stream.resourceId);
+        }
+      },
+    }
   );
 
-  let _stream: RemoteMediaStream | undefined = props?.stream || undefined;
-
   const remoteMediaStreamSource: RemoteMediaStreamSource = {
+    name,
     resourceId,
     mediaStreamSourceBuffer,
     mediaStreamSourceTripleBuffer,
     get stream(): RemoteMediaStream | undefined {
       return _stream;
     },
-    set stream(value: RemoteMediaStream | undefined) {
-      _stream = value;
-      mediaStreamSourceBuffer.stream[0] = value?.resourceId || 0;
+    set stream(stream: RemoteMediaStream | undefined) {
+      if (stream) {
+        addResourceRef(ctx, stream.resourceId);
+      }
+
+      if (_stream) {
+        disposeResource(ctx, _stream.resourceId);
+      }
+
+      _stream = stream;
+      mediaStreamSourceBuffer.stream[0] = stream?.resourceId || 0;
     },
     get gain(): number {
       return mediaStreamSourceBuffer.gain[0];
@@ -289,7 +402,10 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
 
 export type RemoteEmitterSource = RemoteAudioSource | RemoteMediaStreamSource;
 
+const DEFAULT_GLOBAL_AUDIO_EMITTER_NAME = "Global Audio Emitter";
+
 export interface RemoteGlobalAudioEmitter {
+  name: string;
   type: AudioEmitterType.Global;
   resourceId: ResourceId;
   globalAudioEmitterBuffer: ObjectBufferView<typeof globalAudioEmitterSchema, ArrayBuffer>;
@@ -303,6 +419,7 @@ export interface RemoteGlobalAudioEmitter {
 }
 
 export interface GlobalAudioEmitterProps {
+  name?: string;
   sources?: RemoteEmitterSource[];
   gain?: number;
   output?: AudioEmitterOutput;
@@ -322,14 +439,34 @@ export function createRemoteGlobalAudioEmitter(
 
   const sharedGlobalAudioEmitter = createObjectTripleBuffer(globalAudioEmitterSchema, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedAudioEmitterResource>(ctx, Thread.Main, AudioResourceType.AudioEmitter, {
-    type: AudioEmitterType.Global,
-    emitterTripleBuffer: sharedGlobalAudioEmitter,
-  });
+  const name = props?.name || DEFAULT_GLOBAL_AUDIO_EMITTER_NAME;
 
   let _sources: RemoteEmitterSource[] = props?.sources || [];
 
+  for (const source of _sources) {
+    addResourceRef(ctx, source.resourceId);
+  }
+
+  const resourceId = createResource<SharedAudioEmitterResource>(
+    ctx,
+    Thread.Main,
+    AudioResourceType.AudioEmitter,
+    {
+      type: AudioEmitterType.Global,
+      emitterTripleBuffer: sharedGlobalAudioEmitter,
+    },
+    {
+      name,
+      dispose() {
+        for (const source of _sources) {
+          disposeResource(ctx, source.resourceId);
+        }
+      },
+    }
+  );
+
   const remoteGlobalAudioEmitter: RemoteGlobalAudioEmitter = {
+    name,
     type: AudioEmitterType.Global,
     resourceId,
     globalAudioEmitterBuffer,
@@ -338,8 +475,16 @@ export function createRemoteGlobalAudioEmitter(
       // TODO: Use a proxy to check for array mutation?
       return _sources;
     },
-    set sources(value: RemoteEmitterSource[]) {
-      _sources = value;
+    set sources(sources: RemoteEmitterSource[]) {
+      for (const source of sources) {
+        addResourceRef(ctx, source.resourceId);
+      }
+
+      for (const source of _sources) {
+        disposeResource(ctx, source.resourceId);
+      }
+
+      _sources = sources;
       globalAudioEmitterBuffer.sources.set(_sources.map((source) => source.resourceId));
     },
     get gain(): number {
@@ -362,6 +507,7 @@ export function createRemoteGlobalAudioEmitter(
 }
 
 export interface RemotePositionalAudioEmitter {
+  name: string;
   type: AudioEmitterType.Positional;
   resourceId: ResourceId;
   positionalAudioEmitterBuffer: ObjectBufferView<typeof positionalAudioEmitterSchema, ArrayBuffer>;
@@ -389,6 +535,7 @@ export interface RemotePositionalAudioEmitter {
 }
 
 export interface PositionalAudioEmitterProps {
+  name?: string;
   sources?: RemoteEmitterSource[];
   gain?: number;
   coneInnerAngle?: number;
@@ -402,6 +549,8 @@ export interface PositionalAudioEmitterProps {
 }
 
 export type RemoteAudioEmitter = RemoteGlobalAudioEmitter | RemotePositionalAudioEmitter;
+
+const DEFAULT_POSITIONAL_AUDIO_EMITTER = "Positional Audio Emitter";
 
 export function createRemotePositionalAudioEmitter(
   ctx: GameState,
@@ -430,15 +579,35 @@ export function createRemotePositionalAudioEmitter(
     ctx.gameToMainTripleBufferFlags
   );
 
-  const resourceId = createResource<SharedAudioEmitterResource>(ctx, Thread.Main, AudioResourceType.AudioEmitter, {
-    type: AudioEmitterType.Positional,
-    emitterTripleBuffer: sharedPositionalAudioEmitter,
-  });
-
   let _sources: RemoteEmitterSource[] = props?.sources || [];
+
+  for (const source of _sources) {
+    addResourceRef(ctx, source.resourceId);
+  }
+
+  const name = props.name || DEFAULT_POSITIONAL_AUDIO_EMITTER;
+
+  const resourceId = createResource<SharedAudioEmitterResource>(
+    ctx,
+    Thread.Main,
+    AudioResourceType.AudioEmitter,
+    {
+      type: AudioEmitterType.Positional,
+      emitterTripleBuffer: sharedPositionalAudioEmitter,
+    },
+    {
+      name,
+      dispose() {
+        for (const source of _sources) {
+          disposeResource(ctx, source.resourceId);
+        }
+      },
+    }
+  );
 
   const remotePositionalAudioEmitter: RemotePositionalAudioEmitter = {
     type: AudioEmitterType.Positional,
+    name,
     resourceId,
     positionalAudioEmitterBuffer,
     sharedPositionalAudioEmitter,
@@ -446,8 +615,16 @@ export function createRemotePositionalAudioEmitter(
       // TODO: Use a proxy to check for array mutation?
       return _sources;
     },
-    set sources(value: RemoteEmitterSource[]) {
-      _sources = value;
+    set sources(sources: RemoteEmitterSource[]) {
+      for (const source of sources) {
+        addResourceRef(ctx, source.resourceId);
+      }
+
+      for (const source of _sources) {
+        disposeResource(ctx, source.resourceId);
+      }
+
+      _sources = sources;
       positionalAudioEmitterBuffer.sources.set(_sources.map((source) => source.resourceId));
     },
     get gain(): number {
@@ -527,44 +704,9 @@ export function playAudio(audioSource: RemoteAudioSource, options?: PlayAudioOpt
   Object.assign(audioSource, options);
 }
 
-export const AudioEmitterComponent: Map<number, RemotePositionalAudioEmitter> = new Map();
-
-export function addAudioEmitterComponent(
-  ctx: GameState,
-  eid: number,
-  props?: PositionalAudioEmitterProps
-): RemotePositionalAudioEmitter {
-  if (hasComponent(ctx.world, AudioEmitterComponent, eid)) {
-    const audioEmitter = AudioEmitterComponent.get(eid)!;
-
-    if (props?.coneInnerAngle) audioEmitter.coneInnerAngle = props.coneInnerAngle;
-    if (props?.coneOuterAngle) audioEmitter.coneOuterAngle = props.coneOuterAngle;
-    if (props?.coneOuterGain) audioEmitter.coneOuterGain = props.coneOuterGain;
-    if (props?.distanceModel) audioEmitter.distanceModel = props.distanceModel;
-    if (props?.gain) audioEmitter.gain = props.gain;
-    if (props?.maxDistance) audioEmitter.maxDistance = props.maxDistance;
-    if (props?.output) audioEmitter.output = props.output;
-    if (props?.refDistance) audioEmitter.refDistance = props.refDistance;
-    if (props?.rolloffFactor) audioEmitter.rolloffFactor = props.rolloffFactor;
-    if (props?.sources) audioEmitter.sources = props.sources;
-
-    return audioEmitter;
-  }
-
-  const audioEmitter = createRemotePositionalAudioEmitter(ctx, props || {});
-
-  addComponent(ctx.world, AudioEmitterComponent, eid);
-  AudioEmitterComponent.set(eid, audioEmitter);
-
-  return audioEmitter;
-}
-
 /**
  * Systems
  */
-
-const remoteAudioEmitterQuery = defineQuery([AudioEmitterComponent]);
-const remoteAudioEmitterExitQuery = exitQuery(remoteAudioEmitterQuery);
 
 export function GameAudioSystem(ctx: GameState) {
   const audioModule = getModule(ctx, GameAudioModule);
@@ -617,21 +759,4 @@ export function GameAudioSystem(ctx: GameState) {
   }
 
   updateAudioRemoteScenes(audioModule.scenes);
-
-  disposeAudioEmitters(ctx);
-}
-
-function disposeAudioEmitters(ctx: GameState) {
-  const disposedEntities = remoteAudioEmitterExitQuery(ctx.world);
-
-  for (let i = 0; i < disposedEntities.length; i++) {
-    const eid = disposedEntities[i];
-
-    const remoteEmitter = RemoteNodeComponent.get(eid);
-
-    if (remoteEmitter) {
-      disposeResource(ctx, remoteEmitter.audioResourceId);
-      AudioEmitterComponent.delete(eid);
-    }
-  }
 }

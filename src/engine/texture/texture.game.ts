@@ -11,7 +11,7 @@ import { RemoteImage } from "../image/image.game";
 import { getModule, Thread } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
-import { createResource } from "../resource/resource.game";
+import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import { RemoteSampler } from "../sampler/sampler.game";
 import {
   TextureTripleBuffer,
@@ -24,6 +24,7 @@ import {
 export type TextureBufferView = ObjectBufferView<typeof textureSchema, ArrayBuffer>;
 
 export interface RemoteTexture {
+  name: string;
   resourceId: ResourceId;
   textureBufferView: TextureBufferView;
   textureTripleBuffer: TextureTripleBuffer;
@@ -37,6 +38,8 @@ export interface RemoteTexture {
 }
 
 export interface TextureProps {
+  name?: string;
+  image: RemoteImage;
   sampler?: RemoteSampler;
   encoding?: TextureEncoding;
   offset?: vec2;
@@ -44,15 +47,20 @@ export interface TextureProps {
   scale?: vec2;
 }
 
-export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: TextureProps): RemoteTexture {
+const DEFAULT_TEXTURE_NAME = "Texture";
+
+export function createRemoteTexture(ctx: GameState, props: TextureProps): RemoteTexture {
   const rendererModule = getModule(ctx, RendererModule);
 
   const textureBufferView = createObjectBufferView(textureSchema, ArrayBuffer);
 
+  const imageResourceId = props.image.resourceId;
+  const samplerResourceId = props.sampler?.resourceId;
+
   const initialProps = {
-    encoding: props?.encoding || TextureEncoding.Linear,
-    image: image.resourceId,
-    sampler: props?.sampler ? props.sampler.resourceId : undefined,
+    encoding: props.encoding || TextureEncoding.Linear,
+    image: imageResourceId,
+    sampler: samplerResourceId,
   };
 
   textureBufferView.offset.set(props?.offset || [0, 0]);
@@ -61,16 +69,40 @@ export function createRemoteTexture(ctx: GameState, image: RemoteImage, props?: 
 
   const textureTripleBuffer = createObjectTripleBuffer(textureSchema, ctx.gameToMainTripleBufferFlags);
 
-  const resourceId = createResource<SharedTextureResource>(ctx, Thread.Render, TextureResourceType, {
-    initialProps,
-    textureTripleBuffer,
-  });
+  const name = props?.name || DEFAULT_TEXTURE_NAME;
+
+  addResourceRef(ctx, imageResourceId);
+
+  if (samplerResourceId !== undefined) {
+    addResourceRef(ctx, samplerResourceId);
+  }
+
+  const resourceId = createResource<SharedTextureResource>(
+    ctx,
+    Thread.Render,
+    TextureResourceType,
+    {
+      initialProps,
+      textureTripleBuffer,
+    },
+    {
+      name,
+      dispose() {
+        disposeResource(ctx, imageResourceId);
+
+        if (samplerResourceId !== undefined) {
+          disposeResource(ctx, samplerResourceId);
+        }
+      },
+    }
+  );
 
   const remoteTexture: RemoteTexture = {
+    name,
     resourceId,
     textureBufferView,
     textureTripleBuffer,
-    image,
+    image: props.image,
     get offset(): vec2 {
       return textureBufferView.offset;
     },

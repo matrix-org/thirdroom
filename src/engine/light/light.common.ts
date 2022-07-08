@@ -1,7 +1,7 @@
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 
-export const DirectionalLightResourceType = "point-light";
-export const PointLightResourceType = "directional-light";
+export const DirectionalLightResourceType = "directional-light";
+export const PointLightResourceType = "point-light";
 export const SpotLightResourceType = "spot-light";
 
 export const directionalLightSchema = defineObjectBufferSchema({
