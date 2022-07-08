@@ -26,7 +26,7 @@ import { Input } from "../../../atoms/input/Input";
 import { Switch } from "../../../atoms/button/Switch";
 import UploadIC from "../../../../../res/ic/upload.svg";
 import { Icon } from "../../../atoms/icon/Icon";
-import { AutoUploadButton, AutoUploadInfo } from "../../components/AutoUploadButton";
+import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -85,16 +85,28 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                     </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
-                        <AutoUploadButton mimeType=".glb" onUploadInfo={setSceneInfo}>
-                          <Icon src={UploadIC} color="on-primary" />
-                          Upload Scene
-                        </AutoUploadButton>
+                        <AutoFileUpload
+                          mimeType=".glb"
+                          onUploadInfo={setSceneInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Scene
+                            </Button>
+                          )}
+                        />
                       </SettingTile>
                       <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
-                        <AutoUploadButton mimeType="image/*" onUploadInfo={setPreviewInfo}>
-                          <Icon src={UploadIC} color="on-primary" />
-                          Upload Preview
-                        </AutoUploadButton>
+                        <AutoFileUpload
+                          mimeType="image/*"
+                          onUploadInfo={setPreviewInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Preview
+                            </Button>
+                          )}
+                        />
                       </SettingTile>
                     </div>
                   </div>

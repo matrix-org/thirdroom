@@ -1,7 +1,6 @@
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
-import { Button, ButtonVariant, ButtonFill, ButtonSize } from "../../atoms/button/Button";
 import { FileUploadCard } from "./file-upload-card/FileUploadCard";
 import { useAttachmentUpload } from "../../hooks/useAttachmentUpload";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -14,16 +13,13 @@ export interface AutoUploadInfo {
   url?: string;
 }
 
-interface AutoUploadButtonProps {
-  variant?: ButtonVariant;
-  fill?: ButtonFill;
-  size?: ButtonSize;
+interface AutoFileUploadProps {
   mimeType: string;
   onUploadInfo: (info: AutoUploadInfo) => void;
-  children: ReactNode;
+  renderButton: (pickFile: () => Promise<void>) => JSX.Element;
 }
 
-export function AutoUploadButton({ variant, fill, size, mimeType, onUploadInfo, children }: AutoUploadButtonProps) {
+export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFileUploadProps) {
   const { session, platform } = useHydrogen(true);
 
   const { fileData, pickFile, dropFile } = useFilePicker(platform, mimeType);
@@ -35,7 +31,10 @@ export function AutoUploadButton({ variant, fill, size, mimeType, onUploadInfo, 
   );
   useEffect(() => {
     if (fileData.blob) upload(fileData.blob);
-    else cancel();
+    else {
+      cancel();
+      setProgress(0);
+    }
   }, [fileData.blob, upload, cancel]);
 
   useEffect(() => {
@@ -54,8 +53,6 @@ export function AutoUploadButton({ variant, fill, size, mimeType, onUploadInfo, 
       onUploadDrop={dropFile}
     />
   ) : (
-    <Button variant={variant} fill={fill} size={size} onClick={pickFile}>
-      {children}
-    </Button>
+    renderButton(pickFile)
   );
 }
