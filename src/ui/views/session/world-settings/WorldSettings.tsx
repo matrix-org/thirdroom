@@ -1,4 +1,4 @@
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -24,6 +24,9 @@ import "./WorldSettings.css";
 import { getAvatarHttpUrl } from "../../../utils/avatar";
 import { Input } from "../../../atoms/input/Input";
 import { Switch } from "../../../atoms/button/Switch";
+import UploadIC from "../../../../../res/ic/upload.svg";
+import { Icon } from "../../../atoms/icon/Icon";
+import { AutoUploadButton, AutoUploadInfo } from "../../components/AutoUploadButton";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -42,6 +45,9 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
   const isAvatarChanged = avatarData.dropUsed > 0 || avatarData.pickUsed > 0;
   httpAvatarUrl = isAvatarChanged ? avatarData.url : httpAvatarUrl;
+
+  const [, setSceneInfo] = useState<AutoUploadInfo>({});
+  const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
@@ -70,19 +76,25 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                       </SettingTile>
                     </div>
                     <div className="flex gap-lg">
-                      <SettingTile className="grow" label={<Label>World Name</Label>}>
+                      <SettingTile className="grow basis-0" label={<Label>World Name</Label>}>
                         <Input defaultValue={roomName} />
                       </SettingTile>
-                      <SettingTile className="grow" label={<Label>Private</Label>}>
+                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
                         <Switch />
                       </SettingTile>
                     </div>
                     <div className="flex gap-lg">
-                      <SettingTile className="grow" label={<Label>Scene</Label>}>
-                        <div />
+                      <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
+                        <AutoUploadButton mimeType=".glb" onUploadInfo={setSceneInfo}>
+                          <Icon src={UploadIC} color="on-primary" />
+                          Upload Scene
+                        </AutoUploadButton>
                       </SettingTile>
-                      <SettingTile className="grow" label={<Label>Scene Preview</Label>}>
-                        <div />
+                      <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
+                        <AutoUploadButton mimeType="image/*" onUploadInfo={setPreviewInfo}>
+                          <Icon src={UploadIC} color="on-primary" />
+                          Upload Preview
+                        </AutoUploadButton>
                       </SettingTile>
                     </div>
                   </div>
@@ -108,6 +120,8 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
             <WindowAside className="flex">
               <ScenePreview
                 className="grow"
+                src={previewInfo.url}
+                alt="Scene Preview"
                 fallback={
                   <Text variant="b3" color="surface-low" weight="medium">
                     Your uploaded scene preview will appear here.
