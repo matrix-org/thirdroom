@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
 
+export interface FileData {
+  blob?: IBlobHandle;
+  url?: string;
+  pickUsed: number;
+  dropUsed: number;
+}
+
 export function useFilePicker(platform: Platform, mimeType: string) {
-  const [fileData, setFileData] = useState<{ blob?: IBlobHandle; url?: string; pickUsed: number; dropUsed: number }>({
+  const [fileData, setFileData] = useState<FileData>({
     pickUsed: 0,
     dropUsed: 0,
   });

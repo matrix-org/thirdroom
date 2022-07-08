@@ -20,7 +20,7 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
     <div className={classNames("FileUploadCard flex flex-column gap-xs", className)}>
       <div className="flex items-center gap-xs">
         <div className="grow">
-          <Text className="truncate" variant="b2" weight="medium">
+          <Text variant="b2" weight="medium">
             {name}
           </Text>
         </div>
@@ -32,7 +32,7 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
           {sentBytes < totalBytes ? `${getPercentage(totalBytes, sentBytes)}%` : "Completed"}
         </Text>
         <Text variant="b3" color="surface-low">
-          {bytesToSize(sentBytes)} / {bytesToSize(totalBytes)}
+          {sentBytes < totalBytes ? `${bytesToSize(sentBytes)} / ${bytesToSize(totalBytes)}` : bytesToSize(totalBytes)}
         </Text>
       </div>
     </div>
