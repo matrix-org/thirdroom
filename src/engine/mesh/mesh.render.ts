@@ -32,7 +32,7 @@ import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
@@ -303,6 +303,16 @@ function createMeshPrimitiveObject(
 /* Updates */
 
 export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPrimitives: LocalMeshPrimitive[]) {
+  for (let i = meshPrimitives.length - 1; i >= 0; i--) {
+    const meshPrimitiveResource = meshPrimitives[i];
+
+    if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
+      meshPrimitiveResource.geometryObj.dispose();
+      meshPrimitiveResource.materialObj.dispose();
+      meshPrimitives.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
     const sharedMeshPrimitive = getReadObjectBufferView(meshPrimitive.meshPrimitiveTripleBuffer);

@@ -6,7 +6,7 @@ import { NetworkModule } from "./network/network.main";
 import { StatsModule } from "./stats/stats.main";
 import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
-import { ResourceModule } from "./resource/resource.main";
+import { ResourceModule, ResourceDisposalSystem } from "./resource/resource.main";
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.main";
 
 export default defineConfig<IMainThreadContext>({
@@ -20,5 +20,5 @@ export default defineConfig<IMainThreadContext>({
     RendererModule,
     ThirdroomModule,
   ],
-  systems: [MainThreadAudioSystem, MainThreadEditorSystem],
+  systems: [MainThreadAudioSystem, MainThreadEditorSystem, ResourceDisposalSystem],
 });

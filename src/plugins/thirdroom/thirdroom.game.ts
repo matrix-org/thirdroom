@@ -42,6 +42,7 @@ import { ResourceModule } from "../../engine/resource/resource.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
+  collisionsGLTF?: GLTFResource;
 }
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
@@ -187,6 +188,11 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
         thirdroom.sceneGLTF = undefined;
       }
 
+      if (thirdroom.collisionsGLTF) {
+        disposeGLTFResource(thirdroom.collisionsGLTF);
+        thirdroom.collisionsGLTF = undefined;
+      }
+
       ctx.activeScene = NOOP;
       ctx.activeCamera = NOOP;
     }
@@ -235,8 +241,7 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
       sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
     ) {
       const collisionGeo = addEntity(ctx.world);
-      await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
-
+      thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
       addChild(newScene, collisionGeo);
     }
 
@@ -310,13 +315,19 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
     thirdroom.sceneGLTF = undefined;
   }
 
+  if (thirdroom.collisionsGLTF) {
+    disposeGLTFResource(thirdroom.collisionsGLTF);
+    thirdroom.collisionsGLTF = undefined;
+  }
+
   ctx.activeCamera = NOOP;
   ctx.activeScene = NOOP;
 }
 
 function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
   const resourceModule = getModule(ctx, ResourceModule);
-  console.table(Array.from(resourceModule.resources.values()), ["name", "id", "thread", "resourceType", "refCount"]);
+  console.log(Thread.Game, resourceModule);
+  //console.table(Array.from(resourceModule.resources.values()), ["name", "id", "thread", "resourceType", "refCount"]);
 }
 
 const waitUntil = (fn: Function) =>

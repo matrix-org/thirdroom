@@ -16,7 +16,6 @@ import {
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { CameraType } from "../camera/camera.common";
 import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
@@ -118,20 +117,6 @@ export function updateLocalNodeResources(
       if (node.camera) {
         if (activeSceneResource && node.cameraObject) {
           activeSceneResource.scene.remove(node.cameraObject);
-        }
-
-        if (node.camera.type === CameraType.Perspective) {
-          const index = rendererModule.perspectiveCameraResources.indexOf(node.camera);
-
-          if (index !== -1) {
-            rendererModule.perspectiveCameraResources.splice(index, 1);
-          }
-        } else if (node.camera.type === CameraType.Orthographic) {
-          const index = rendererModule.orthographicCameraResources.indexOf(node.camera);
-
-          if (index !== -1) {
-            rendererModule.orthographicCameraResources.splice(index, 1);
-          }
         }
 
         node.cameraObject = undefined;
