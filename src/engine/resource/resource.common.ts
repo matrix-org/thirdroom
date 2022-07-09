@@ -1,5 +1,6 @@
 import { NOOP } from "../config.common";
 import { defineModule, Thread, registerMessageHandler, getModule, BaseThreadContext } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
 
 export type ResourceId = number;
@@ -8,6 +9,7 @@ export enum ResourceMessageType {
   InitResources = "init-resources",
   LoadResources = "load-resources",
   ResourceLoaded = "resource-loaded",
+  ResourceDisposed = "resource-disposed",
 }
 
 export enum ResourceStatus {
@@ -35,6 +37,11 @@ export interface ResourceLoadedMessage<Response = unknown> {
   response?: Response;
 }
 
+export interface ResourceDisposedMessage {
+  type: ResourceMessageType.ResourceDisposed;
+  id: ResourceId;
+}
+
 interface LocalResource<Resource = unknown> {
   id: number;
   loaded: boolean;
@@ -58,27 +65,30 @@ export type ResourceLoader<ThreadContext extends BaseThreadContext, Props, Resou
 ) => Promise<Resource>;
 
 interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
+  disposedResources: ResourceId[];
   resources: Map<ResourceId, LocalResource>;
   deferredResources: Map<ResourceId, Deferred<unknown>>;
   resourceLoaders: Map<string, ResourceLoader<ThreadContext, unknown, unknown>>;
 }
+
+export class ResourceDisposedError extends Error {}
 
 export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>() => {
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
     create() {
       return {
+        disposedResources: [],
         resources: new Map(),
         deferredResources: new Map(),
         resourceLoaders: new Map(),
       };
     },
     init(ctx) {
-      const dispose = registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources);
-
-      return () => {
-        dispose();
-      };
+      return createDisposables([
+        registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
+        registerMessageHandler(ctx, ResourceMessageType.ResourceDisposed, onDisposeResource),
+      ]);
     },
   });
 
@@ -88,6 +98,11 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const resource of resources) {
       loadResource(ctx, resourceModule, resource);
     }
+  }
+
+  function onDisposeResource(ctx: ThreadContext, { id }: ResourceDisposedMessage) {
+    const resourceModule = getModule(ctx, ResourceModule);
+    resourceModule.disposedResources.push(id);
   }
 
   async function loadResource(
@@ -113,6 +128,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       deferred = createDeferred<unknown>();
       resourceModule.deferredResources.set(id, deferred);
     }
+
+    deferred.promise.catch((error) => {
+      if (error instanceof ResourceDisposedError) {
+        return;
+      }
+
+      console.error(error);
+    });
 
     try {
       const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
@@ -180,10 +203,39 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     return resourceModule.resources.get(resourceId) as LocalResource<Resource>;
   }
 
+  function getResourceDisposed(ctx: ThreadContext, resourceId: ResourceId): ResourceStatus {
+    const resourceModule = getModule(ctx, ResourceModule);
+    const resource = resourceModule.resources.get(resourceId);
+    return resource ? resource.statusView[1] : ResourceStatus.None;
+  }
+
+  function ResourceDisposalSystem(ctx: ThreadContext) {
+    const { disposedResources, deferredResources, resources } = getModule(ctx, ResourceModule);
+
+    for (let i = disposedResources.length - 1; i >= 0; i--) {
+      const resourceId = disposedResources[i];
+
+      if (resources.has(resourceId)) {
+        const deferredResource = deferredResources.get(resourceId);
+
+        if (deferredResource) {
+          deferredResource.reject(new ResourceDisposedError("Resource disposed"));
+          deferredResources.delete(resourceId);
+        }
+
+        resources.delete(resourceId);
+
+        disposedResources.splice(i, 1);
+      }
+    }
+  }
+
   return {
     ResourceModule,
     registerResourceLoader,
     waitForLocalResource,
     getLocalResource,
+    getResourceDisposed,
+    ResourceDisposalSystem,
   };
 };

@@ -3,6 +3,8 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
   LoadResourcesMessage,
+  ResourceDisposedError,
+  ResourceDisposedMessage,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
@@ -33,8 +35,6 @@ interface ResourceModuleState {
   mainThreadTransferList: Transferable[];
   renderThreadTransferList: Transferable[];
 }
-
-class ResourceDisposedError extends Error {}
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
@@ -213,6 +213,11 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
   resource.statusView[1] = 1;
 
   resourceModule.resources.delete(resourceId);
+
+  ctx.sendMessage<ResourceDisposedMessage>(resource.thread, {
+    type: ResourceMessageType.ResourceDisposed,
+    id: resourceId,
+  });
 
   return true;
 }

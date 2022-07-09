@@ -1,5 +1,6 @@
 import { IMainThreadContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { ResourceModule } from "../../engine/resource/resource.main";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
@@ -27,6 +28,12 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
       ctx.sendMessage(Thread.Game, {
         type: "print-resources",
       });
+
+      ctx.sendMessage(Thread.Render, {
+        type: "print-resources",
+      });
+
+      console.log(Thread.Main, getModule(ctx, ResourceModule));
     });
   },
 });
