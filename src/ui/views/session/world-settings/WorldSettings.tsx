@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState, useRef } from "react";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -51,13 +51,21 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   const roomName = room?.name ?? "Empty Name";
   const [newName, setNewName] = useState(roomName);
 
+  const isPrivateRef = useRef(true);
+  const [isPrivate, setIsPrivate] = useState(true);
+
   const [worldInfo, setWorldInfo] = useState<{ sceneUrl?: string; previewUrl?: string }>({});
 
   const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
   const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
 
   useEffect(() => {
-    if (room)
+    if (room) {
+      room.getStateEvent("m.room.join_rules").then((event) => {
+        if (!isMounted) return;
+        isPrivateRef.current = event?.event?.content.join_rule !== "public";
+        setIsPrivate(event?.event?.content.join_rule !== "public");
+      });
       room.getStateEvent("m.world").then((event) => {
         if (!isMounted) return;
         const content = event?.event?.content;
@@ -66,6 +74,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
           previewUrl: content?.scene_preview_url,
         });
       });
+    }
   }, [room, isMounted]);
 
   const handleNameChange = (evt: ChangeEvent<HTMLInputElement>) => setNewName(evt.target.value.trim());
@@ -84,7 +93,11 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
         });
       })();
     }
-    // TODO: isPrivate
+    if (isPrivateRef.current !== isPrivate) {
+      session.hsApi.sendState(room.id, "m.room.join_rules", "", {
+        join_rule: isPrivate ? "invite" : "public",
+      });
+    }
     if (roomName !== newName && newName.trim() !== "") {
       session.hsApi.sendState(room.id, "m.room.name", "", {
         name: newName,
@@ -130,7 +143,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         <Input onChange={handleNameChange} defaultValue={roomName} required />
                       </SettingTile>
                       <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-                        <Switch />
+                        <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
                       </SettingTile>
                     </div>
                     <div className="flex gap-lg">
@@ -173,7 +186,13 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                     <Button
                       size="lg"
                       type="submit"
-                      disabled={!isAvatarChanged && roomName === newName && !sceneInfo.mxc && !previewInfo.mxc}
+                      disabled={
+                        !isAvatarChanged &&
+                        isPrivateRef.current === isPrivate &&
+                        roomName === newName &&
+                        !sceneInfo.mxc &&
+                        !previewInfo.mxc
+                      }
                     >
                       Save
                     </Button>
