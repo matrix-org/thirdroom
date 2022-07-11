@@ -26,12 +26,12 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
-import { SceneUpload } from "./SceneUpload";
+import UploadIC from "../../../../../res/ic/upload.svg";
 import "./CreateWorld.css";
-import { ScenePreviewUpload } from "./ScenePreviewUpload";
-import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
+import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
+import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -50,9 +50,10 @@ export function CreateWorld() {
   const { closeWindow } = useStore((state) => state.overlayWindow);
 
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
-  const [sceneMxc, setSceneMxc] = useState<string>();
-  const [scenePrevMxc, setScenePrevMxc] = useState<string>();
-  const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
+
+  const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
+  const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
+
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
   const [creatingRoom, setCreatingRoom] = useState(false);
@@ -127,7 +128,7 @@ export function CreateWorld() {
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    if (isAliasAvail === false || !sceneMxc || !scenePrevMxc) return;
+    if (isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
@@ -137,8 +138,8 @@ export function CreateWorld() {
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
-      sceneMxc,
-      scenePrevMxc,
+      sceneMxc: sceneInfo.mxc,
+      scenePrevMxc: previewInfo.mxc,
       topic: topicInput.value || undefined,
       avatar: avatarData.blob,
       alias: aliasInput.value || undefined,
@@ -189,8 +190,30 @@ export function CreateWorld() {
                       <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
                     </SettingTile>
                     <div className="flex gap-lg">
-                      <SceneUpload onMxcChange={setSceneMxc} />
-                      <ScenePreviewUpload onMxcChange={setScenePrevMxc} onBlobChange={setScenePrevBlob} />
+                      <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
+                        <AutoFileUpload
+                          mimeType=".glb"
+                          onUploadInfo={setSceneInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Scene
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
+                        <AutoFileUpload
+                          mimeType="image/*"
+                          onUploadInfo={setPreviewInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Preview
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
                     </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
@@ -240,7 +263,7 @@ export function CreateWorld() {
                     <Button
                       size="lg"
                       type="submit"
-                      disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc || creatingRoom}
+                      disabled={isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc || creatingRoom}
                     >
                       {creatingRoom ? "Creating World..." : "Create World"}
                     </Button>
@@ -253,7 +276,7 @@ export function CreateWorld() {
             <WindowAside className="flex">
               <ScenePreview
                 className="grow"
-                src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+                src={previewInfo.url}
                 fallback={
                   <Text variant="b3" color="surface-low" weight="medium">
                     Your uploaded scene preview will appear here.
