@@ -20,7 +20,7 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
     <div className={classNames("FileUploadCard flex flex-column gap-xs", className)}>
       <div className="flex items-center gap-xs">
         <div className="grow">
-          <Text variant="b2" weight="medium">
+          <Text className="truncate" variant="b2" weight="medium">
             {name}
           </Text>
         </div>
