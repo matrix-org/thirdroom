@@ -28,6 +28,7 @@ import UploadIC from "../../../../../res/ic/upload.svg";
 import { Icon } from "../../../atoms/icon/Icon";
 import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
 import { useIsMounted } from "../../../hooks/useIsMounted";
+import { uploadAttachment } from "../../../utils/matrixUtils";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -73,8 +74,15 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
     evt.preventDefault();
     if (!room) return;
     if (isAvatarChanged) {
-      // TODO: upload avatar
-      // TODO: change avatar mxc
+      (async () => {
+        let mxc = "";
+        if (avatarData.blob) {
+          mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
+        }
+        session.hsApi.sendState(room.id, "m.room.avatar", "", {
+          url: mxc,
+        });
+      })();
     }
     // TODO: isPrivate
     if (roomName !== newName && newName.trim() !== "") {

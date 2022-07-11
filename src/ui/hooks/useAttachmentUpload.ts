@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AttachmentUpload, HomeServerApi, IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
 
+import { uploadAttachment } from "../utils/matrixUtils";
+
 export function useAttachmentUpload(
   hsApi: HomeServerApi,
   platform: Platform,
@@ -15,18 +17,18 @@ export function useAttachmentUpload(
         console.warn("Already uploading attachment.", blob);
         return;
       }
-      const nativeBlob = blob.nativeBlob;
-      const attachment = new AttachmentUpload({ filename: nativeBlob.name, blob, platform });
+      const mxc = await uploadAttachment(
+        hsApi,
+        platform,
+        blob,
+        (attachment) => {
+          attachmentRef.current = attachment;
+        },
+        onProgress
+      );
 
-      attachmentRef.current = attachment;
-      await attachment.upload(hsApi, () => {
-        onProgress?.(attachment.sentBytes, attachment.size);
-      });
       if (!attachmentRef.current) return;
-
-      const content = {} as { url?: string };
-      attachment.applyToContent("url", content);
-      setMxc(content.url);
+      setMxc(mxc);
       attachmentRef.current === null;
     },
     [hsApi, platform, onProgress]

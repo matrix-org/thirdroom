@@ -1,5 +1,4 @@
 import { useState, ChangeEvent, FormEvent } from "react";
-import { AttachmentUpload } from "@thirdroom/hydrogen-view-sdk";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
@@ -22,6 +21,7 @@ import { Edit3DAvatar } from "./Edit3DAvatar";
 import "./UserProfileOverview.css";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
+import { uploadAttachment } from "../../../utils/matrixUtils";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -58,17 +58,11 @@ export function UserProfileOverview() {
       session.hsApi.setProfileDisplayName(session.userId, name);
     }
     if (isAvatarChanged) {
-      let url = "";
+      let mxc = "";
       if (typeof avatarData.blob === "object") {
-        const { nativeBlob } = avatarData.blob;
-
-        const attachment = new AttachmentUpload({ filename: nativeBlob.name, blob: avatarData.blob, platform });
-        await attachment.upload(session.hsApi, () => undefined);
-        const content = {} as { url?: string };
-        attachment.applyToContent("url", content);
-        url = content.url ?? "";
+        mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
       }
-      session.hsApi.setProfileAvatarUrl(session.userId, url);
+      session.hsApi.setProfileAvatarUrl(session.userId, mxc);
     }
   };
   const handleReset = () => {
