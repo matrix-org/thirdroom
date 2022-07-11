@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -21,12 +21,13 @@ import { useFilePicker } from "../../../hooks/useFilePicker";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoom } from "../../../hooks/useRoom";
 import "./WorldSettings.css";
-import { getAvatarHttpUrl } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getHttpUrl } from "../../../utils/avatar";
 import { Input } from "../../../atoms/input/Input";
 import { Switch } from "../../../atoms/button/Switch";
 import UploadIC from "../../../../../res/ic/upload.svg";
 import { Icon } from "../../../atoms/icon/Icon";
 import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -36,21 +37,62 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   const { session, platform } = useHydrogen(true);
 
   const { closeWindow } = useStore((state) => state.overlayWindow);
+  const isMounted = useIsMounted();
   const room = useRoom(session, roomId);
-  const roomName = room?.name ?? "";
+
   let httpAvatarUrl = room?.avatarUrl
     ? getAvatarHttpUrl(room.avatarUrl, 150, platform, session.mediaRepository) ?? undefined
     : undefined;
-
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
-  const isAvatarChanged = avatarData.dropUsed > 0 || avatarData.pickUsed > 0;
+  const isAvatarChanged = (httpAvatarUrl || avatarData.blob) && (avatarData.dropUsed > 0 || avatarData.pickUsed > 0);
   httpAvatarUrl = isAvatarChanged ? avatarData.url : httpAvatarUrl;
 
-  const [, setSceneInfo] = useState<AutoUploadInfo>({});
+  const roomName = room?.name ?? "Empty Name";
+  const [newName, setNewName] = useState(roomName);
+
+  const [worldInfo, setWorldInfo] = useState<{ sceneUrl?: string; previewUrl?: string }>({});
+
+  const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
   const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
+
+  useEffect(() => {
+    if (room)
+      room.getStateEvent("m.world").then((event) => {
+        if (!isMounted) return;
+        const content = event?.event?.content;
+        setWorldInfo({
+          sceneUrl: content?.scene_url,
+          previewUrl: content?.scene_preview_url,
+        });
+      });
+  }, [room, isMounted]);
+
+  const handleNameChange = (evt: ChangeEvent<HTMLInputElement>) => setNewName(evt.target.value.trim());
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
+    if (!room) return;
+    if (isAvatarChanged) {
+      // TODO: upload avatar
+      // TODO: change avatar mxc
+    }
+    // TODO: isPrivate
+    if (roomName !== newName && newName.trim() !== "") {
+      session.hsApi.sendState(room.id, "m.room.name", "", {
+        name: newName,
+      });
+    }
+    if (sceneInfo.mxc || previewInfo.mxc) {
+      room.getStateEvent("m.world").then((event) => {
+        const content = event?.event?.content;
+        session.hsApi.sendState(room.id, "m.world", "", {
+          scene_url: sceneInfo.mxc ?? content?.scene_url,
+          scene_preview_url: previewInfo.mxc ?? content?.scene_preview_url,
+        });
+      });
+    }
+
+    closeWindow();
   };
 
   return (
@@ -76,8 +118,8 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                       </SettingTile>
                     </div>
                     <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>World Name</Label>}>
-                        <Input defaultValue={roomName} />
+                      <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
+                        <Input onChange={handleNameChange} defaultValue={roomName} required />
                       </SettingTile>
                       <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
                         <Switch />
@@ -89,9 +131,9 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                           mimeType=".glb"
                           onUploadInfo={setSceneInfo}
                           renderButton={(pickFile) => (
-                            <Button onClick={pickFile}>
-                              <Icon src={UploadIC} color="on-primary" />
-                              Upload Scene
+                            <Button fill="outline" onClick={pickFile}>
+                              <Icon src={UploadIC} color="primary" />
+                              Change Scene
                             </Button>
                           )}
                         />
@@ -101,9 +143,9 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                           mimeType="image/*"
                           onUploadInfo={setPreviewInfo}
                           renderButton={(pickFile) => (
-                            <Button onClick={pickFile}>
-                              <Icon src={UploadIC} color="on-primary" />
-                              Upload Preview
+                            <Button fill="outline" onClick={pickFile}>
+                              <Icon src={UploadIC} color="primary" />
+                              Change Preview
                             </Button>
                           )}
                         />
@@ -120,7 +162,11 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                     </Button>
                   }
                   right={
-                    <Button size="lg" type="submit" disabled={true}>
+                    <Button
+                      size="lg"
+                      type="submit"
+                      disabled={!isAvatarChanged && roomName === newName && !sceneInfo.mxc && !previewInfo.mxc}
+                    >
                       Save
                     </Button>
                   }
@@ -132,7 +178,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
             <WindowAside className="flex">
               <ScenePreview
                 className="grow"
-                src={previewInfo.url}
+                src={previewInfo.url ?? getHttpUrl(session, worldInfo.previewUrl)}
                 alt="Scene Preview"
                 fallback={
                   <Text variant="b3" color="surface-low" weight="medium">
