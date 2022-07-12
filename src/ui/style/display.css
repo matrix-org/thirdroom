@@ -17,5 +17,5 @@
   display: flow-root;
 }
 .hidden {
-  display: hidden;
+  display: none;
 }
