@@ -99,6 +99,13 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.perspectiveCameras.findIndex((camera) => camera.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.perspectiveCameras.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -188,6 +195,13 @@ export function createRemoteOrthographicCamera(
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.orthographicCameras.findIndex((camera) => camera.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.orthographicCameras.splice(index, 1);
+        }
+      },
     }
   );
 

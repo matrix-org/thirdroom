@@ -136,6 +136,13 @@ export function createDirectionalLightResource(ctx: GameState, props?: Direction
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.directionalLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.directionalLights.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -204,6 +211,13 @@ export function createPointLightResource(ctx: GameState, props?: PointLightProps
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.pointLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.pointLights.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -283,6 +297,13 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightProps):
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.spotLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.spotLights.splice(index, 1);
+        }
+      },
     }
   );
 

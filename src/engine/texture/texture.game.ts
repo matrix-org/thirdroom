@@ -93,6 +93,12 @@ export function createRemoteTexture(ctx: GameState, props: TextureProps): Remote
         if (samplerResourceId !== undefined) {
           disposeResource(ctx, samplerResourceId);
         }
+
+        const index = rendererModule.textures.findIndex((texture) => texture.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.textures.splice(index, 1);
+        }
       },
     }
   );

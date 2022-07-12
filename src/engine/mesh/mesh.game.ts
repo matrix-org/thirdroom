@@ -163,6 +163,12 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
         if (_material) {
           disposeResource(ctx, _material.resourceId);
         }
+
+        const index = rendererModule.meshPrimitives.findIndex((primitive) => primitive.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.meshPrimitives.splice(index, 1);
+        }
       },
     }
   );
