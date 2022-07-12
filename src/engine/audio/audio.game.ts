@@ -79,12 +79,12 @@ export interface RemoteAudioData {
   name: string;
   resourceId: number;
   uri?: string;
-  bufferView?: RemoteBufferView<Thread.Main>;
+  bufferView?: RemoteBufferView<Thread.Main, undefined>;
 }
 
 export interface BufferViewAudioDataProps {
   name?: string;
-  bufferView: RemoteBufferView<Thread.Main>;
+  bufferView: RemoteBufferView<Thread.Main, undefined>;
   mimeType: string;
 }
 

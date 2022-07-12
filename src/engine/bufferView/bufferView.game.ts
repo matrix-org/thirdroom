@@ -3,27 +3,27 @@ import { Thread } from "../module/module.common";
 import { createResource } from "../resource/resource.game";
 import { BufferViewResourceProps, BufferViewResourceType } from "./bufferView.common";
 
-export interface RemoteBufferView<T extends Thread> {
+export interface RemoteBufferView<T extends Thread, B extends SharedArrayBuffer | undefined> {
   name: string;
   thread: T;
   resourceId: number;
-  buffer?: SharedArrayBuffer;
+  buffer: B;
   byteStride: number;
 }
 
-interface BufferViewProps<T extends Thread> {
+interface BufferViewProps<T extends Thread, B extends SharedArrayBuffer | ArrayBuffer> {
   name?: string;
   thread: T;
-  buffer: ArrayBuffer | SharedArrayBuffer;
+  buffer: B;
   byteStride?: number;
 }
 
 const DEFAULT_BUFFER_VIEW_NAME = "Buffer View";
 
-export function createRemoteBufferView<T extends Thread>(
+export function createRemoteBufferView<T extends Thread, B extends SharedArrayBuffer | ArrayBuffer>(
   ctx: GameState,
-  props: BufferViewProps<T>
-): RemoteBufferView<T> {
+  props: BufferViewProps<T, B>
+): RemoteBufferView<T, B extends SharedArrayBuffer ? SharedArrayBuffer : undefined> {
   const name = props.name || DEFAULT_BUFFER_VIEW_NAME;
   const byteStride = props.byteStride || 0;
 
@@ -45,6 +45,8 @@ export function createRemoteBufferView<T extends Thread>(
     thread: props.thread,
     resourceId,
     byteStride,
-    buffer: props.buffer instanceof SharedArrayBuffer ? props.buffer : undefined,
+    buffer: (props.buffer instanceof SharedArrayBuffer ? props.buffer : undefined) as B extends SharedArrayBuffer
+      ? SharedArrayBuffer
+      : undefined,
   };
 }

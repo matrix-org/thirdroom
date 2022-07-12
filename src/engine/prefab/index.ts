@@ -16,7 +16,6 @@ import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { createDirectionalLightResource } from "../light/light.game";
 import { inflateGLTFScene } from "../gltf/gltf.game";
-import { addView, createCursorBuffer } from "../allocator/CursorBuffer";
 
 export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
   const indicesArr = geometry.index!.array as Uint16Array;
@@ -24,14 +23,18 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const normArr = geometry.attributes.normal.array as Float32Array;
   const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const buffer = createCursorBuffer(
-    new ArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength)
+  const buffer = new SharedArrayBuffer(
+    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
   );
 
-  const indices = addView(buffer, Uint16Array, indicesArr.length, indicesArr);
-  const position = addView(buffer, Float32Array, posArr.length, posArr);
-  const normal = addView(buffer, Float32Array, normArr.length, normArr);
-  const uv = addView(buffer, Float32Array, uvArr.length, uvArr);
+  const indices = new Uint16Array(buffer, 0, indicesArr.length);
+  indices.set(indicesArr);
+  const position = new Float32Array(buffer, indices.byteLength, posArr.length);
+  position.set(posArr);
+  const normal = new Float32Array(buffer, position.byteOffset + position.byteLength, normArr.length);
+  normal.set(normArr);
+  const uv = new Float32Array(buffer, normal.byteOffset + normal.byteLength, uvArr.length);
+  uv.set(uvArr);
 
   const bufferView = createRemoteBufferView(ctx, { thread: Thread.Render, buffer });
 

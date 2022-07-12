@@ -66,7 +66,7 @@ export interface GLTFResource {
   binaryChunk?: ArrayBuffer;
   cameras: Map<number, RemoteCamera>;
   accessors: Map<number, RemoteAccessor<any, any>>;
-  bufferViews: Map<number, RemoteBufferView<Thread>>;
+  bufferViews: Map<number, RemoteBufferView<Thread, any>>;
   buffers: Map<number, ArrayBuffer>;
   meshes: Map<number, RemoteMesh>;
   lights: Map<number, RemoteLight>;
@@ -79,7 +79,7 @@ export interface GLTFResource {
   audioEmitters: Map<number, RemoteAudioEmitter>;
   cameraPromises: Map<number, Promise<RemoteCamera>>;
   accessorPromises: Map<number, Promise<RemoteAccessor<any, any>>>;
-  bufferViewPromises: Map<number, { thread: Thread; shared: boolean; promise: Promise<RemoteBufferView<Thread>> }>;
+  bufferViewPromises: Map<number, { thread: Thread; shared: boolean; promise: Promise<RemoteBufferView<Thread, any>> }>;
   bufferPromises: Map<number, Promise<ArrayBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
@@ -567,13 +567,13 @@ async function _loadGLTFBuffer(resource: GLTFResource, index: number) {
   return bufferData;
 }
 
-export async function loadGLTFBufferView<T extends Thread>(
+export async function loadGLTFBufferView<T extends Thread, S extends boolean>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
   thread: T,
-  shared: boolean
-): Promise<RemoteBufferView<T>> {
+  shared: S
+): Promise<RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>> {
   const result = resource.bufferViewPromises.get(index);
 
   if (result) {
@@ -587,23 +587,23 @@ export async function loadGLTFBufferView<T extends Thread>(
       throw new Error(`BufferView ${index} cannot be backed by both an ArrayBuffer and SharedArrayBuffer.`);
     }
 
-    return result.promise as Promise<RemoteBufferView<T>>;
+    return result.promise as Promise<RemoteBufferView<T, any>>;
   }
 
-  const promise = _loadGLTFBufferView(ctx, resource, index, thread, shared);
+  const promise = _loadGLTFBufferView<T, S>(ctx, resource, index, thread, shared);
 
   resource.bufferViewPromises.set(index, { thread, promise, shared });
 
   return promise;
 }
 
-async function _loadGLTFBufferView<T extends Thread>(
+async function _loadGLTFBufferView<T extends Thread, S extends boolean>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
   thread: T,
   shared: boolean
-): Promise<RemoteBufferView<T>> {
+): Promise<RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>> {
   if (!resource.root.bufferViews || !resource.root.bufferViews[index]) {
     throw new Error(`BufferView ${index} not found`);
   }
@@ -625,7 +625,7 @@ async function _loadGLTFBufferView<T extends Thread>(
 
   resource.bufferViews.set(index, remoteBufferView);
 
-  return remoteBufferView as RemoteBufferView<T>;
+  return remoteBufferView as RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>;
 }
 
 export async function loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
