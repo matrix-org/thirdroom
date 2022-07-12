@@ -39,7 +39,6 @@ import { RemoteNodeComponent } from "../node/node.game";
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
   audioStateTripleBuffer: AudioStateTripleBuffer;
-  audioDatum: RemoteAudioData[];
   audioSources: RemoteAudioSource[];
   mediaStreamSources: RemoteMediaStreamSource[];
   globalAudioEmitters: RemoteGlobalAudioEmitter[];
@@ -60,7 +59,6 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
     return {
       audioStateBufferView,
       audioStateTripleBuffer,
-      audioDatum: [],
       audioSources: [],
       mediaStreamSources: [],
       globalAudioEmitters: [],
@@ -215,6 +213,12 @@ export function createRemoteAudioSource(ctx: GameState, props?: AudioSourceProps
         if (_audio) {
           disposeResource(ctx, _audio.resourceId);
         }
+
+        const index = audioModule.audioSources.findIndex((source) => source.resourceId === resourceId);
+
+        if (index !== -1) {
+          audioModule.audioSources.splice(index, 1);
+        }
       },
     }
   );
@@ -363,6 +367,12 @@ export function createRemoteMediaStreamSource(ctx: GameState, props?: MediaStrea
         if (_stream) {
           disposeResource(ctx, _stream.resourceId);
         }
+
+        const index = audioModule.mediaStreamSources.findIndex((source) => source.resourceId === resourceId);
+
+        if (index !== -1) {
+          audioModule.mediaStreamSources.splice(index, 1);
+        }
       },
     }
   );
@@ -460,6 +470,14 @@ export function createRemoteGlobalAudioEmitter(
       dispose() {
         for (const source of _sources) {
           disposeResource(ctx, source.resourceId);
+        }
+
+        const index = audioModule.globalAudioEmitters.findIndex(
+          (audioEmitter) => audioEmitter.resourceId === resourceId
+        );
+
+        if (index !== -1) {
+          audioModule.globalAudioEmitters.splice(index, 1);
         }
       },
     }
@@ -600,6 +618,14 @@ export function createRemotePositionalAudioEmitter(
       dispose() {
         for (const source of _sources) {
           disposeResource(ctx, source.resourceId);
+        }
+
+        const index = audioModule.positionalAudioEmitters.findIndex(
+          (audioEmitter) => audioEmitter.resourceId === resourceId
+        );
+
+        if (index !== -1) {
+          audioModule.positionalAudioEmitters.splice(index, 1);
         }
       },
     }

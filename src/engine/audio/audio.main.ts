@@ -20,7 +20,12 @@ import {
   AudioEmitterOutput,
   AudioEmitterDistanceModelMap,
 } from "./audio.common";
-import { getLocalResource, registerResourceLoader, waitForLocalResource } from "../resource/resource.main";
+import {
+  getLocalResource,
+  getResourceDisposed,
+  registerResourceLoader,
+  waitForLocalResource,
+} from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
 import { LocalBufferView } from "../bufferView/bufferView.common";
 import { AudioNodeTripleBuffer, NodeResourceType } from "../node/node.common";
@@ -47,7 +52,6 @@ export interface MainAudioModule {
   voiceGain: GainNode;
   musicGain: GainNode;
   mediaStreams: Map<string, MediaStream>;
-  datum: LocalAudioData[];
   sources: LocalAudioSource[];
   mediaStreamSources: LocalMediaStreamSource[];
   emitters: LocalAudioEmitter[];
@@ -116,11 +120,8 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       voiceGain,
       musicGain,
       mediaStreams: new Map(),
-      datum: [],
       sources: [],
       mediaStreamSources: [],
-      globalEmitters: [],
-      positionalEmitters: [],
       emitters: [],
       nodes: [],
       scenes: [],
@@ -416,9 +417,8 @@ function disposeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioMod
   const { nodes } = audioModule;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
-    const nodeResource = getLocalResource<MainNode>(ctx, node.resourceId);
 
-    if (nodeResource && nodeResource.statusView[1]) {
+    if (getResourceDisposed(ctx, node.resourceId)) {
       if (node.audioEmitter) {
         for (let i = 0; i < node.audioEmitter.sources.length; i++) {
           const source = node.audioEmitter.sources[i];
@@ -534,6 +534,16 @@ function createSwappableMediaStreamAudioSourceNode(
 function updateMediaStreamSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const localMediaStreamSources = audioModule.mediaStreamSources;
 
+  for (let i = localMediaStreamSources.length - 1; i >= 0; i--) {
+    const localMediaStreamSource = localMediaStreamSources[i];
+
+    if (getResourceDisposed(ctx, localMediaStreamSource.resourceId)) {
+      localMediaStreamSource.gainNode.disconnect();
+      localMediaStreamSource.mediaStreamSourceNode.disconnect();
+      localMediaStreamSources.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < localMediaStreamSources.length; i++) {
     const localMediaStreamSource = localMediaStreamSources[i];
 
@@ -557,6 +567,20 @@ let audioCount = 0;
 
 function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const localAudioSources = audioModule.sources;
+
+  for (let i = localAudioSources.length - 1; i >= 0; i--) {
+    const localAudioSource = localAudioSources[i];
+
+    if (getResourceDisposed(ctx, localAudioSource.resourceId)) {
+      localAudioSource.gainNode.disconnect();
+
+      if (localAudioSource.sourceNode) {
+        localAudioSource.sourceNode.disconnect();
+      }
+
+      localAudioSources.splice(i, 1);
+    }
+  }
 
   for (let i = 0; i < localAudioSources.length; i++) {
     const localAudioSource = localAudioSources[i];
@@ -678,8 +702,21 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 }
 
 function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
-  for (let i = 0; i < audioModule.emitters.length; i++) {
-    const audioEmitter = audioModule.emitters[i];
+  const localAudioEmitters = audioModule.emitters;
+
+  for (let i = localAudioEmitters.length - 1; i >= 0; i--) {
+    const localAudioEmitter = localAudioEmitters[i];
+
+    if (getResourceDisposed(ctx, localAudioEmitter.resourceId)) {
+      localAudioEmitter.inputGain.disconnect();
+      localAudioEmitter.outputGain.disconnect();
+
+      localAudioEmitters.splice(i, 1);
+    }
+  }
+
+  for (let i = 0; i < localAudioEmitters.length; i++) {
+    const audioEmitter = localAudioEmitters[i];
     const emitterView = getReadObjectBufferView(audioEmitter.emitterTripleBuffer);
 
     const currentSources = audioEmitter.sources;

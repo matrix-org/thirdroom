@@ -24,7 +24,7 @@ import { LocalInstancedMesh, LocalMesh, updateNodeMesh } from "../mesh/mesh.rend
 import { getModule } from "../module/module.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource } from "../resource/resource.render";
+import { getResourceDisposed } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
 import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
@@ -111,9 +111,7 @@ export function updateLocalNodeResources(
 ) {
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
-    const nodeResource = getLocalResource<LocalNode>(ctx, node.resourceId);
-
-    if (nodeResource && nodeResource.statusView[1]) {
+    if (getResourceDisposed(ctx, node.resourceId)) {
       if (node.camera) {
         if (activeSceneResource && node.cameraObject) {
           activeSceneResource.scene.remove(node.cameraObject);
