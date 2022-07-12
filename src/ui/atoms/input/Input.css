@@ -21,8 +21,8 @@
     }
   }
   &:focus-within {
-    outline: var(--outline);
-    outline-offset: var(--outline-offset);
+    outline: var(--tc-surface) solid 2px;
+    outline-offset: var(--focus-outline-offset);
   }
 }
 

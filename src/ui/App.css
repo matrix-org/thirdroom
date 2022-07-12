@@ -144,8 +144,8 @@
   --z-dialog: 200;
 
   /* outline */
-  --outline: var(--tc-surface) solid 2px;
-  --outline-offset: -2px;
+  --focus-outline: var(--tc-surface) solid 2px;
+  --focus-outline-offset: -2px;
 
   /* other */
   --usercolor1: #368bd6;
@@ -192,8 +192,8 @@ code {
   -webkit-tap-highlight-color: transparent;
 }
 *:focus {
-  outline: var(--outline);
-  outline-offset: var(--outline-offset);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 :--heading {
