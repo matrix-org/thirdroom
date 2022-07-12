@@ -117,7 +117,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   };
 
   return (
-    <Window>
+    <Window onRequestClose={closeWindow}>
       <Content
         onSubmit={handleSubmit}
         top={

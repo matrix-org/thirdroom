@@ -166,7 +166,7 @@ export function CreateWorld() {
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
   return (
-    <Window>
+    <Window onRequestClose={closeWindow}>
       <Content
         onSubmit={handleSubmit}
         top={

@@ -24,7 +24,7 @@ export function UserProfile() {
   const [selectedSegment] = useState(UserProfileSegment.Overview);
 
   return (
-    <Window>
+    <Window onRequestClose={closeWindow}>
       <Header
         left={
           <HeaderTitle
