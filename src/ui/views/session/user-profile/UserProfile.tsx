@@ -9,7 +9,7 @@ import { useStore } from "../../../hooks/useStore";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { UserProfileOverview } from "./UserProfileOverview";
 import { UserProfileInventory } from "./UserProfileInventory";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import CrossIC from "../../../../../res/ic/cross.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 
 enum UserProfileSegment {
@@ -41,7 +41,7 @@ export function UserProfile() {
             Profile
           </HeaderTitle>
         }
-        right={<IconButton onClick={() => closeWindow()} iconSrc={CrossCircleIC} label="Close" />}
+        right={<IconButton onClick={() => closeWindow()} iconSrc={CrossIC} label="Close" />}
       />
       {selectedSegment === UserProfileSegment.Overview && <UserProfileOverview />}
       {selectedSegment === UserProfileSegment.Inventory && <UserProfileInventory />}

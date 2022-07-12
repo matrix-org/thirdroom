@@ -2,7 +2,7 @@ import { IconButton } from "../../../atoms/button/IconButton";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import CrossIC from "../../../../../res/ic/cross.svg";
 import AddIC from "../../../../../res/ic/add.svg";
 
 interface AvatarPickerProps {
@@ -15,7 +15,7 @@ export function AvatarPicker({ url, onAvatarPick, onAvatarDrop }: AvatarPickerPr
     <ThumbnailHover
       content={
         !url ? undefined : (
-          <IconButton variant="world" onClick={onAvatarDrop} size="xl" iconSrc={CrossCircleIC} label="Remove avatar" />
+          <IconButton variant="world" onClick={onAvatarDrop} size="xl" iconSrc={CrossIC} label="Remove avatar" />
         )
       }
     >
