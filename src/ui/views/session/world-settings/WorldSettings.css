@@ -1,0 +1,7 @@
+.WorldSettings__content {
+  padding: var(--sp-xs) var(--sp-md);
+
+  & > * {
+    margin-top: var(--sp-lg);
+  }
+}

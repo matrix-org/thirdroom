@@ -19,7 +19,7 @@ enum UserProfileSegment {
 
 export function UserProfile() {
   const { session, platform } = useHydrogen(true);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const { closeWindow } = useStore((state) => state.overlayWindow);
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const [selectedSegment] = useState(UserProfileSegment.Overview);
 
@@ -41,7 +41,7 @@ export function UserProfile() {
             Profile
           </HeaderTitle>
         }
-        right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
+        right={<IconButton onClick={() => closeWindow()} iconSrc={CrossCircleIC} label="Close" />}
       />
       {selectedSegment === UserProfileSegment.Overview && <UserProfileOverview />}
       {selectedSegment === UserProfileSegment.Inventory && <UserProfileInventory />}

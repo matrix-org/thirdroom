@@ -14,6 +14,7 @@ import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import AddUserIC from "../../../../../res/ic/add-user.svg";
+import SettingIC from "../../../../../res/ic/setting.svg";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
@@ -31,7 +32,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const { selectWindow, selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
 
   const renderAvatar = (room: Room, isWorld: boolean) => {
     const avatar = (
@@ -90,13 +91,21 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
                 </>
               }
               options={
-                <InviteDialog
-                  key={room.id}
-                  roomId={room.id}
-                  renderTrigger={(openDialog) => (
-                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
-                  )}
-                />
+                <>
+                  <InviteDialog
+                    key={room.id}
+                    roomId={room.id}
+                    renderTrigger={(openDialog) => (
+                      <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                    )}
+                  />
+                  <IconButton
+                    onClick={() => selectWorldSettingsWindow(room.id)}
+                    iconSrc={SettingIC}
+                    variant="surface-low"
+                    label="Settings"
+                  />
+                </>
               }
             />
           );

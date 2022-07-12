@@ -1,7 +1,5 @@
-import React, { useState, useCallback, ChangeEvent, FormEvent } from "react";
-import { AttachmentUpload, IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+import { useState, ChangeEvent, FormEvent } from "react";
 
-import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -14,41 +12,37 @@ import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { ScenePreviewOverlay } from "../../components/scene-preview/ScenePreviewOverlay";
 import { Text } from "../../../atoms/text/Text";
 import { WindowAside } from "../../components/window/WindowAside";
-import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
-import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { getAvatarHttpUrl, getHttpUrl } from "../../../utils/avatar";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Button } from "../../../atoms/button/Button";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { use3DAvatar } from "../../../hooks/use3DAvatar";
 import { Edit3DAvatar } from "./Edit3DAvatar";
-import AddIC from "../../../../../res/ic/add.svg";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
 import "./UserProfileOverview.css";
+import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
+import { useFilePicker } from "../../../hooks/useFilePicker";
+import { uploadAttachment } from "../../../utils/matrixUtils";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
   const { displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const { closeWindow } = useStore((state) => state.overlayWindow);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
-  const [newAvatar, setNewAvatar] = useState<IBlobHandle | string | undefined>(avatarUrl);
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
-  const avatarHttpUrl: string | null | undefined = !newAvatar
-    ? undefined
-    : typeof newAvatar === "string"
-    ? getAvatarHttpUrl(newAvatar, 150, platform, session.mediaRepository)
-    : URL.createObjectURL(newAvatar.nativeBlob);
+  let httpAvatarUrl = avatarUrl
+    ? getAvatarHttpUrl(avatarUrl, 150, platform, session.mediaRepository) ?? undefined
+    : undefined;
 
-  const handleAvatarSelect = useCallback(async () => {
-    const data = await platform.openFile("image/*");
-    if (!data) return;
-    setNewAvatar(data.blob);
-  }, [platform]);
-
-  const handleAvatarRemove = () => setNewAvatar(undefined);
+  const {
+    fileData: avatarData,
+    pickFile: pickAvatar,
+    dropFile: dropAvatar,
+    resetUses: resetAvatarUses,
+  } = useFilePicker(platform, "image/*");
+  const isAvatarChanged = avatarData.dropUsed > 0 || avatarData.pickUsed > 0;
+  httpAvatarUrl = isAvatarChanged ? avatarData.url : httpAvatarUrl;
 
   const debounceDisplayNameChange = useDebounce(setNewDisplayName, { wait: 200 });
   const onDisplayNameChange = (evt: ChangeEvent<HTMLInputElement>) => {
@@ -58,29 +52,23 @@ export function UserProfileOverview() {
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    selectWindow();
+    closeWindow();
     const name = evt.currentTarget.displayName.value.trim() as string;
     if (name !== displayName && name !== "") {
       session.hsApi.setProfileDisplayName(session.userId, name);
     }
-    if (newAvatar !== avatarUrl) {
-      let url = "";
-      if (typeof newAvatar === "object") {
-        const nativeBlob = newAvatar.nativeBlob;
-
-        const attachment = new AttachmentUpload({ filename: nativeBlob.name, blob: newAvatar, platform });
-        await attachment.upload(session.hsApi, () => undefined);
-        const content = {} as { url?: string };
-        attachment.applyToContent("url", content);
-        url = content.url ?? "";
+    if (isAvatarChanged) {
+      let mxc = "";
+      if (typeof avatarData.blob === "object") {
+        mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
       }
-      session.hsApi.setProfileAvatarUrl(session.userId, url);
+      session.hsApi.setProfileAvatarUrl(session.userId, mxc);
     }
   };
   const handleReset = () => {
     setNewDisplayName(displayName);
-    setNewAvatar(avatarUrl);
-    selectWindow();
+    resetAvatarUses();
+    closeWindow();
   };
 
   return (
@@ -93,32 +81,7 @@ export function UserProfileOverview() {
             <Scroll>
               <div className="UserProfileOverview__content">
                 <SettingTile label={<Label>Profile Picture</Label>}>
-                  <ThumbnailHover
-                    content={
-                      !avatarHttpUrl ? undefined : (
-                        <IconButton
-                          variant="world"
-                          onClick={handleAvatarRemove}
-                          size="xl"
-                          iconSrc={CrossCircleIC}
-                          label="Remove Profile Picture"
-                        />
-                      )
-                    }
-                  >
-                    <Thumbnail size="sm" className="flex">
-                      {avatarHttpUrl ? (
-                        <ThumbnailImg src={avatarHttpUrl} />
-                      ) : (
-                        <IconButton
-                          onClick={handleAvatarSelect}
-                          size="xl"
-                          iconSrc={AddIC}
-                          label="Upload Profile Picture"
-                        />
-                      )}
-                    </Thumbnail>
-                  </ThumbnailHover>
+                  <AvatarPicker url={httpAvatarUrl} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
                 </SettingTile>
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
@@ -130,7 +93,7 @@ export function UserProfileOverview() {
             </Scroll>
           }
           bottom={
-            (displayName !== newDisplayName || avatarUrl !== newAvatar) && (
+            (displayName !== newDisplayName || isAvatarChanged) && (
               <Footer
                 left={
                   <Button fill="outline" type="reset">

@@ -14,6 +14,7 @@ import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import AddUserIC from "../../../../../res/ic/add-user.svg";
+import SettingIC from "../../../../../res/ic/setting.svg";
 import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
@@ -29,7 +30,7 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
 
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const { selectWindow, selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
 
   const renderAvatar = (room: Room) => {
     const avatar = (
@@ -88,13 +89,21 @@ export function RoomListWorld({ groupCalls }: RoomListWorldProps) {
                 </>
               }
               options={
-                <InviteDialog
-                  key={room.id}
-                  roomId={room.id}
-                  renderTrigger={(openDialog) => (
-                    <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
-                  )}
-                />
+                <>
+                  <InviteDialog
+                    key={room.id}
+                    roomId={room.id}
+                    renderTrigger={(openDialog) => (
+                      <IconButton onClick={openDialog} iconSrc={AddUserIC} variant="surface-low" label="More options" />
+                    )}
+                  />
+                  <IconButton
+                    onClick={() => selectWorldSettingsWindow(room.id)}
+                    iconSrc={SettingIC}
+                    variant="surface-low"
+                    label="Settings"
+                  />
+                </>
               }
             />
           );

@@ -1,0 +1,22 @@
+.Progress {
+  height: 8px;
+  width: 100%;
+  border-radius: 9999px;
+  background-color: var(--bg-surface-low);
+  overflow: hidden;
+}
+
+.Progress__indicator {
+  height: 100%;
+  transition: width ease-in-out 200ms;
+}
+
+.Progress--primary .Progress__indicator {
+  background-color: var(--bg-primary);
+}
+.Progress--secondary .Progress__indicator {
+  background-color: var(--bg-secondary);
+}
+.Progress--danger .Progress__indicator {
+  background-color: var(--bg-danger);
+}

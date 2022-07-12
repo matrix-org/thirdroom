@@ -1,4 +1,5 @@
 .ThumbnailHover {
+  display: flex;
   position: relative;
   overflow: hidden;
   border-radius: var(--br-lg);

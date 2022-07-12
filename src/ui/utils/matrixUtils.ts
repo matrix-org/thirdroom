@@ -1,4 +1,13 @@
-import { Room, ObservableMap, HomeServerApi, RoomBeingCreated, Session } from "@thirdroom/hydrogen-view-sdk";
+import {
+  Room,
+  ObservableMap,
+  AttachmentUpload,
+  Platform,
+  IBlobHandle,
+  HomeServerApi,
+  RoomBeingCreated,
+  Session,
+} from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
 
@@ -89,4 +98,23 @@ export async function waitToCreateRoom(
       resolve(profileRoom);
     });
   });
+}
+
+export async function uploadAttachment(
+  hsApi: HomeServerApi,
+  platform: Platform,
+  blob: IBlobHandle,
+  onAttachmentCreate?: (attachment: AttachmentUpload) => void,
+  onProgress?: (sentBytes: number, totalBytes: number) => void
+) {
+  const attachment = new AttachmentUpload({ filename: blob.nativeBlob.name, blob, platform });
+  onAttachmentCreate?.(attachment);
+
+  await attachment.upload(hsApi, () => {
+    onProgress?.(attachment.sentBytes, attachment.size);
+  });
+
+  const content = {} as { url?: string };
+  attachment.applyToContent("url", content);
+  return content.url;
 }
