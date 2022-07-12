@@ -7,14 +7,14 @@ export interface RemoteBufferView<T extends Thread> {
   name: string;
   thread: T;
   resourceId: number;
-  buffer: ArrayBuffer;
+  buffer?: SharedArrayBuffer;
   byteStride: number;
 }
 
 interface BufferViewProps<T extends Thread> {
   name?: string;
   thread: T;
-  buffer: ArrayBuffer;
+  buffer: ArrayBuffer | SharedArrayBuffer;
   byteStride?: number;
 }
 
@@ -37,7 +37,6 @@ export function createRemoteBufferView<T extends Thread>(
     },
     {
       name,
-      transferList: [props.buffer],
     }
   );
 
@@ -46,6 +45,6 @@ export function createRemoteBufferView<T extends Thread>(
     thread: props.thread,
     resourceId,
     byteStride,
-    buffer: props.buffer,
+    buffer: props.buffer instanceof SharedArrayBuffer ? props.buffer : undefined,
   };
 }

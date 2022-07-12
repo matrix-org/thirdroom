@@ -79,7 +79,7 @@ export interface GLTFResource {
   audioEmitters: Map<number, RemoteAudioEmitter>;
   cameraPromises: Map<number, Promise<RemoteCamera>>;
   accessorPromises: Map<number, Promise<RemoteAccessor<any, any>>>;
-  bufferViewPromises: Map<number, { thread: Thread; promise: Promise<RemoteBufferView<Thread>> }>;
+  bufferViewPromises: Map<number, { thread: Thread; shared: boolean; promise: Promise<RemoteBufferView<Thread>> }>;
   bufferPromises: Map<number, Promise<ArrayBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
@@ -571,7 +571,8 @@ export async function loadGLTFBufferView<T extends Thread>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  thread: T
+  thread: T,
+  shared: boolean
 ): Promise<RemoteBufferView<T>> {
   const result = resource.bufferViewPromises.get(index);
 
@@ -582,12 +583,16 @@ export async function loadGLTFBufferView<T extends Thread>(
       );
     }
 
+    if (result.shared !== shared) {
+      throw new Error(`BufferView ${index} cannot be backed by both an ArrayBuffer and SharedArrayBuffer.`);
+    }
+
     return result.promise as Promise<RemoteBufferView<T>>;
   }
 
-  const promise = _loadGLTFBufferView(ctx, resource, index, thread);
+  const promise = _loadGLTFBufferView(ctx, resource, index, thread, shared);
 
-  resource.bufferViewPromises.set(index, { thread, promise });
+  resource.bufferViewPromises.set(index, { thread, promise, shared });
 
   return promise;
 }
@@ -596,7 +601,8 @@ async function _loadGLTFBufferView<T extends Thread>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  thread: T
+  thread: T,
+  shared: boolean
 ): Promise<RemoteBufferView<T>> {
   if (!resource.root.bufferViews || !resource.root.bufferViews[index]) {
     throw new Error(`BufferView ${index} not found`);
@@ -605,7 +611,7 @@ async function _loadGLTFBufferView<T extends Thread>(
   const bufferView = resource.root.bufferViews[index];
   const buffer = await loadGLTFBuffer(resource, bufferView.buffer);
 
-  const bufferViewData = new ArrayBuffer(bufferView.byteLength);
+  const bufferViewData = shared ? new SharedArrayBuffer(bufferView.byteLength) : new ArrayBuffer(bufferView.byteLength);
   const readView = new Uint8Array(buffer, bufferView.byteOffset || 0, bufferView.byteLength);
   const writeView = new Uint8Array(bufferViewData);
   writeView.set(readView);
@@ -652,7 +658,7 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, image.bufferView, Thread.Render);
+    const remoteBufferView = await loadGLTFBufferView(ctx, resource, image.bufferView, Thread.Render, false);
 
     remoteImage = createRemoteImageFromBufferView(ctx, {
       name: image.name,
@@ -898,7 +904,7 @@ async function _loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: num
       throw new Error(`audio[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main);
+    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main, false);
 
     remoteAudio = createRemoteAudioFromBufferView(ctx, {
       name: audio.name,
@@ -1067,15 +1073,15 @@ async function _loadGLTFAccessor(
   const { bufferView, sparseValuesBufferView, sparseIndicesBufferView } = await promiseObject({
     bufferView:
       accessor.bufferView !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.bufferView, Thread.Render, true)
         : undefined,
     sparseValuesBufferView:
       accessor.sparse?.values !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.sparse.values.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.sparse.values.bufferView, Thread.Render, true)
         : undefined,
     sparseIndicesBufferView:
       accessor.sparse?.indices !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.sparse.indices.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.sparse.indices.bufferView, Thread.Render, true)
         : undefined,
   });
 
