@@ -1,4 +1,4 @@
-import { addEntity, defineQuery, removeEntity } from "bitecs";
+import { addEntity, defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -278,7 +278,7 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   const spawnPoints = spawnPointQuery(world);
 
   if (state.activeCamera) {
-    removeEntity(world, state.activeCamera);
+    removeRecursive(world, state.activeCamera);
   }
 
   const characterControllerType = SceneCharacterControllerComponent.get(state.activeScene)?.type;

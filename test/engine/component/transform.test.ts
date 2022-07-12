@@ -166,34 +166,33 @@ describe("Transform Unit Tests", function () {
 
       test("should traverse in depth first order", () => {
         /**
-         *       root(1)
-         *         / \
-         *      A(2) B(3)
-         *      /     / \
-         *    E(6)  C(4) D(5)
-         *    /
-         *   F(7)
+         * 1 --> 2 ---> 5
+         *   |-> 3 ---> 6
+         *   |-> 4  |-> 7
+         *          |-> 8
          */
 
-        const root = 1;
-        const childA = 2;
-        const childB = 3;
-        const childC = 4;
-        const childD = 5;
-        const childE = 6;
-        const childF = 7;
-        addChild(root, childA);
-        addChild(root, childB);
-        addChild(childB, childC);
-        addChild(childB, childD);
-        addChild(childA, childE);
-        addChild(childE, childF);
+        const entity1 = 1;
+        const entity2 = 2;
+        const entity3 = 3;
+        const entity4 = 4;
+        const entity5 = 5;
+        const entity6 = 6;
+        const entity7 = 7;
+        const entity8 = 8;
+        addChild(entity1, entity2);
+        addChild(entity1, entity3);
+        addChild(entity1, entity4);
+        addChild(entity2, entity5);
+        addChild(entity3, entity6);
+        addChild(entity3, entity7);
+        addChild(entity3, entity8);
 
         const result: number[] = [];
 
         traverse(1, (eid) => result.push(eid));
 
-        expect(result).toStrictEqual([1, 2, 6, 7, 3, 4, 5]);
+        expect(result).toStrictEqual([1, 2, 5, 3, 6, 7, 8, 4]);
       });
 
       test("should skip children if you return false", () => {
@@ -245,6 +244,58 @@ describe("Transform Unit Tests", function () {
 
         expect(results2).toStrictEqual([1, 2, 6, 7]);
       });
+
+      test("should correctly traverse a sub-tree", () => {
+        /**
+         *       A(1)
+         *         / \
+         *      B(2) C(root 3)
+         *      /     / \
+         *    F(6)  D(4) E(5)
+         *    /
+         *   G(7)
+         */
+
+        const entityA = 1;
+        const entityB = 2;
+        const entityC = 3;
+        const entityD = 4;
+        const entityE = 5;
+        const entityF = 6;
+        const entityG = 7;
+        addChild(entityA, entityB);
+        addChild(entityA, entityC);
+        addChild(entityC, entityD);
+        addChild(entityC, entityE);
+        addChild(entityB, entityF);
+        addChild(entityF, entityG);
+
+        const results: number[] = [];
+
+        traverse(entityC, (eid) => {
+          results.push(eid);
+        });
+
+        expect(results).toStrictEqual([3, 4, 5]);
+      });
+
+      test("should traverse a single entity", () => {
+        const entityA = 1;
+        const entityB = 2;
+        const entityC = 3;
+
+        addChild(entityA, entityB);
+        addChild(entityA, entityC);
+
+        const results: number[] = [];
+
+        traverse(entityB, (eid) => {
+          results.push(eid);
+        });
+
+        expect(results).toStrictEqual([entityB]);
+        console.log("yup");
+      }, 1000);
     });
   });
 

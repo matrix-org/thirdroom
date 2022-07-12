@@ -1,4 +1,12 @@
-import { addComponent, addEntity, defineComponent, IComponent, removeComponent, removeEntity } from "bitecs";
+import {
+  addComponent,
+  addEntity,
+  defineComponent,
+  getEntityComponents,
+  IComponent,
+  removeComponent,
+  removeEntity,
+} from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -86,11 +94,18 @@ export function registerTransformComponent(state: GameState) {
 
 export function addTransformComponent(world: World, eid: number) {
   addComponent(world, Transform, eid);
+  vec3.set(Transform.position[eid], 0, 0, 0);
   vec3.set(Transform.scale[eid], 1, 1, 1);
+  vec3.set(Transform.rotation[eid], 0, 0, 0);
   quat.identity(Transform.quaternion[eid]);
   mat4.identity(Transform.localMatrix[eid]);
+  Transform.static[eid] = 0;
   mat4.identity(Transform.worldMatrix[eid]);
   Transform.worldMatrixNeedsUpdate[eid] = 1;
+  Transform.parent[eid] = 0;
+  Transform.firstChild[eid] = 0;
+  Transform.nextSibling[eid] = 0;
+  Transform.prevSibling[eid] = 0;
   Transform.hierarchyUpdated[eid] = 1;
 }
 
@@ -440,6 +455,11 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
     if (firstChild && processChildren !== false) {
       eid = firstChild;
     } else {
+      // Don't traverse the root's siblings
+      if (eid === rootEid) {
+        return;
+      }
+
       // go upwards if no more siblings
       while (!Transform.nextSibling[eid]) {
         // back at root
@@ -468,8 +488,23 @@ export function traverseReverse(rootEid: number, callback: (eid: number) => unkn
 
 export function removeRecursive(world: World, rootEid: number) {
   traverseReverse(rootEid, (eid) => {
+    // TODO: removeEntity should reset components
+    const components = getEntityComponents(world, eid);
+
+    for (let i = 0; i < components.length; i++) {
+      removeComponent(world, components[i], eid, true);
+    }
+
     removeEntity(world, eid);
   });
+
+  if (Transform.parent[rootEid]) {
+    removeChild(Transform.parent[rootEid], rootEid);
+  } else {
+    Transform.firstChild[rootEid] = NOOP;
+    Transform.prevSibling[rootEid] = NOOP;
+    Transform.nextSibling[rootEid] = NOOP;
+  }
 }
 
 export function* getChildren(parentEid: number): Generator<number, number> {
