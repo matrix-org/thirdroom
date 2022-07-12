@@ -4,7 +4,7 @@ export enum ThirdRoomMessageType {
   LoadEnvironment = "load-environment",
   EnvironmentLoaded = "environment-loaded",
   EnvironmentLoadError = "environment-load-error",
-  PrintResources = "print-resources",
+  PrintThreadState = "print-thread-state",
 }
 
 export interface EnterWorldMessage {
@@ -34,6 +34,6 @@ export interface EnvironmentLoadErrorMessage {
   error: string;
 }
 
-export interface PrintResourcesMessage {
-  type: ThirdRoomMessageType.PrintResources;
+export interface PrintThreadStateMessage {
+  type: ThirdRoomMessageType.PrintThreadState;
 }

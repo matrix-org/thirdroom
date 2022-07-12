@@ -19,7 +19,7 @@ import {
   EnvironmentLoadErrorMessage,
   ExitWorldMessage,
   LoadEnvironmentMessage,
-  PrintResourcesMessage,
+  PrintThreadStateMessage,
   ThirdRoomMessageType,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
@@ -38,7 +38,6 @@ import {
 } from "../../engine/prefab";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
-import { ResourceModule } from "../../engine/resource/resource.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -55,7 +54,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadEnvironment, onLoadEnvironment),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
-      registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
+      registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
     ];
 
     // const cube = addEntity(ctx.world);
@@ -324,10 +323,8 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   ctx.activeScene = NOOP;
 }
 
-function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
-  const resourceModule = getModule(ctx, ResourceModule);
-  console.log(Thread.Game, resourceModule);
-  //console.table(Array.from(resourceModule.resources.values()), ["name", "id", "thread", "resourceType", "refCount"]);
+function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
+  console.log(Thread.Game, ctx);
 }
 
 const waitUntil = (fn: Function) =>
