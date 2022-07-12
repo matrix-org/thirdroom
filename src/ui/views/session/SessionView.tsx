@@ -264,6 +264,7 @@ export function SessionView() {
 
     if (networkInterfaceRef.current) {
       networkInterfaceRef.current();
+      networkInterfaceRef.current = undefined;
     }
   }, [navigate]);
 
