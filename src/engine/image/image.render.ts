@@ -37,6 +37,7 @@ export async function onLoadLocalImageResource(
   const { rgbeLoader, imageBitmapLoader, images } = getModule(ctx, RendererModule);
 
   let uri: string;
+  let isObjectUrl = false;
 
   if ("bufferView" in props) {
     const { buffer } = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
@@ -46,6 +47,7 @@ export async function onLoadLocalImageResource(
     });
 
     uri = URL.createObjectURL(blob);
+    isObjectUrl = true;
   } else {
     uri = props.uri;
   }
@@ -55,16 +57,28 @@ export async function onLoadLocalImageResource(
   let localImageResource: LocalImageResource;
 
   if (isRGBE) {
+    const texture = await rgbeLoader.loadAsync(uri);
+
+    if (isObjectUrl) {
+      URL.revokeObjectURL(uri);
+    }
+
     localImageResource = {
       resourceId,
       format: ImageFormat.RGBE,
-      texture: await rgbeLoader.loadAsync(uri),
+      texture,
     };
   } else {
+    const image = await imageBitmapLoader.loadAsync(uri);
+
+    if (isObjectUrl) {
+      URL.revokeObjectURL(uri);
+    }
+
     localImageResource = {
       resourceId,
       format: ImageFormat.RGBA,
-      image: await imageBitmapLoader.loadAsync(uri),
+      image,
     };
   }
 
