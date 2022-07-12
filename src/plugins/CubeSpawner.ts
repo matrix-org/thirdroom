@@ -27,6 +27,7 @@ import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createCube, createPrefabEntity, createSphereMesh, registerPrefab } from "../engine/prefab";
+import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
 
@@ -45,14 +46,18 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     const module = getModule(ctx, CubeSpawnerModule);
 
     const image = createRemoteImage(ctx, { name: "Crate Image", uri: "/image/crate.gif" });
+    addResourceRef(ctx, image.resourceId);
     const texture = createRemoteTexture(ctx, { name: "Crate Texture", image });
+    addResourceRef(ctx, texture.resourceId);
 
     const cubeMaterial = createRemoteStandardMaterial(ctx, {
       name: "Cube Material",
       baseColorTexture: texture,
     });
+    addResourceRef(ctx, cubeMaterial.resourceId);
 
     const crateAudioData = createRemoteAudioData(ctx, { name: "Crate Audio Data", uri: "/audio/hit.wav" });
+    addResourceRef(ctx, crateAudioData.resourceId);
 
     registerPrefab(ctx, {
       name: "crate",
@@ -80,6 +85,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     });
 
     const ballAudioData = createRemoteAudioData(ctx, { name: "Ball Audio Data", uri: "/audio/bounce.wav" });
+    addResourceRef(ctx, ballAudioData.resourceId);
 
     const ballMaterial = createRemoteStandardMaterial(ctx, {
       name: "Ball Material",
@@ -89,6 +95,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
       emissiveTexture: texture,
       metallicRoughnessTexture: texture,
     });
+    addResourceRef(ctx, ballMaterial.resourceId);
 
     registerPrefab(ctx, {
       name: "bouncy-ball",
