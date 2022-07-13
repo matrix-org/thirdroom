@@ -1,0 +1,6 @@
+.EmptyState {
+  padding: var(--sp-md);
+  & > * {
+    max-width: 560px;
+  }
+}
