@@ -36,8 +36,6 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
 }
 
 export function App() {
-  console.log("----rerender");
-
   return (
     <>
       <FocusOutlineManager />
