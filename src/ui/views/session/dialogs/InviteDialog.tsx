@@ -108,6 +108,7 @@ export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
                   maxLength={255}
                   autoFocus
                   placeholder="@user:server.name"
+                  required
                 />
               </SettingTile>
               {!inviting && error && (

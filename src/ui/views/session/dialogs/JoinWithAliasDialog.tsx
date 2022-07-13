@@ -96,6 +96,7 @@ export function JoinWithAliasDialog({ renderTrigger }: JoinWithAliasDialogProps)
                   maxLength={255}
                   autoFocus
                   placeholder="#example:server.name"
+                  required
                 />
               </SettingTile>
               {!joining && error && (
