@@ -442,11 +442,7 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
-let counter = 0;
-
 export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
-  counter = 0;
-
   // start at root
   let eid = rootEid;
 
@@ -458,12 +454,7 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
 
     // go downwards into children
     if (firstChild && processChildren !== false) {
-      if (firstChild === undefined) {
-        debugger;
-      }
-
       eid = firstChild;
-      counter++;
     } else {
       // Don't traverse the root's siblings
       if (eid === rootEid) {
@@ -477,33 +468,12 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
           return;
         }
 
-        if (!Transform.parent[eid]) {
-          debugger;
-          throw new Error("Disposing already disposed entity");
-        }
-
         // go upwards
         eid = Transform.parent[eid];
-
-        counter++;
-
-        if (counter > 5000) {
-          debugger;
-        }
-      }
-
-      if (Transform.nextSibling[eid] === undefined) {
-        debugger;
       }
 
       // go sideways
       eid = Transform.nextSibling[eid];
-
-      counter++;
-    }
-
-    if (counter > 5000) {
-      debugger;
     }
   }
 }
