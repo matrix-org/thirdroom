@@ -2,6 +2,7 @@ import {
   addComponent,
   addEntity,
   defineComponent,
+  entityExists,
   getEntityComponents,
   IComponent,
   removeComponent,
@@ -520,6 +521,10 @@ export function traverseReverseRecursive(eid: number, callback: (eid: number) =>
 }
 
 export function removeRecursive(world: World, rootEid: number) {
+  if (!entityExists(world, rootEid)) {
+    return;
+  }
+
   traverseReverseRecursive(rootEid, (eid) => {
     // TODO: removeEntity should reset components
     const components = getEntityComponents(world, eid);

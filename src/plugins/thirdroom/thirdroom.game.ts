@@ -31,13 +31,10 @@ import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engin
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import {
-  // createGLTFEntity,
-  createContainerizedAvatar,
-  registerPrefab,
-} from "../../engine/prefab";
+import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
+import { createContainerizedAvatar } from "../avatar";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;

@@ -137,9 +137,7 @@ export function createMatrixNetworkInterface(
   }
 
   function joinWorld(userId: string, isHost: boolean) {
-    updateHost();
-    // console.log("joinWorld()", isHost);
-    // setHost(ctx, isHost);
+    setHost(ctx, isHost);
     setPeerId(ctx, userId);
     enterWorld(ctx);
 

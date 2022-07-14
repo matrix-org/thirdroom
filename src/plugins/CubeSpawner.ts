@@ -22,11 +22,12 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../engine/material/material.game";
+import { createCube, createSphereMesh } from "../engine/mesh/mesh.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCube, createPrefabEntity, createSphereMesh, registerPrefab } from "../engine/prefab";
+import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game";
 import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";

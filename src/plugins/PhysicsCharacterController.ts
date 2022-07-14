@@ -2,6 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
+import { createCamera } from "../engine/camera/camera.game";
 import { Player } from "../engine/component/Player";
 import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -17,7 +18,7 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCamera, Prefab } from "../engine/prefab";
+import { Prefab } from "../engine/prefab/prefab.game";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {

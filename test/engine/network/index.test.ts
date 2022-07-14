@@ -10,7 +10,7 @@ import {
   deserializeDeletes,
   deserializeTransformChanged,
   deserializeUpdatesChanged,
-  getPeerIdFromNetworkId,
+  getPeerIdIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
   Owned,
@@ -51,7 +51,7 @@ describe("Network Tests", () => {
   describe("networkId", () => {
     it("should #getPeerIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;
-      strictEqual(getPeerIdFromNetworkId(nid), 0x000f);
+      strictEqual(getPeerIdIndexFromNetworkId(nid), 0x000f);
     });
     it("should #getLocalIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;

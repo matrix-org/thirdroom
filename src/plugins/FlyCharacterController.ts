@@ -1,6 +1,7 @@
 import { addEntity, addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
+import { createCamera } from "../engine/camera/camera.game";
 import { Player } from "../engine/component/Player";
 import { addTransformComponent, Transform, addChild, updateMatrixWorld } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -14,7 +15,7 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { NetworkModule, Owned, Networked } from "../engine/network/network.game";
-import { createCamera, Prefab } from "../engine/prefab";
+import { Prefab } from "../engine/prefab/prefab.game";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
 type FlyCharacterControllerModuleState = {};

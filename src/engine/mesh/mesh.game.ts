@@ -1,13 +1,22 @@
-import { RemoteAccessor } from "../accessor/accessor.game";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { addEntity } from "bitecs";
+import { BufferGeometry, BoxBufferGeometry, SphereBufferGeometry } from "three";
+
+import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
+import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
+import { createRemoteBufferView } from "../bufferView/bufferView.game";
+import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteMaterial } from "../material/material.game";
+import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
+import { addRemoteNodeComponent } from "../node/node.game";
+import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import {
@@ -22,6 +31,7 @@ import {
   MeshPrimitiveTripleBuffer,
   InstancedMeshResourceType,
   SharedInstancedMeshResource,
+  MeshPrimitiveAttribute,
 } from "./mesh.common";
 
 export type MeshPrimitiveBufferView = ObjectBufferView<typeof meshPrimitiveSchema, ArrayBuffer>;
@@ -249,3 +259,114 @@ export function updateRemoteMeshPrimitives(meshPrimitives: RemoteMeshPrimitive[]
     commitToObjectTripleBuffer(meshPrimitive.meshPrimitiveTripleBuffer, meshPrimitive.meshPrimitiveBufferView);
   }
 }
+
+export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
+  const indicesArr = geometry.index!.array as Uint16Array;
+  const posArr = geometry.attributes.position.array as Float32Array;
+  const normArr = geometry.attributes.normal.array as Float32Array;
+  const uvArr = geometry.attributes.uv.array as Float32Array;
+
+  const buffer = new SharedArrayBuffer(
+    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
+  );
+
+  const indices = new Uint16Array(buffer, 0, indicesArr.length);
+  indices.set(indicesArr);
+  const position = new Float32Array(buffer, indices.byteLength, posArr.length);
+  position.set(posArr);
+  const normal = new Float32Array(buffer, position.byteOffset + position.byteLength, normArr.length);
+  normal.set(normArr);
+  const uv = new Float32Array(buffer, normal.byteOffset + normal.byteLength, uvArr.length);
+  uv.set(uvArr);
+
+  const bufferView = createRemoteBufferView(ctx, { thread: Thread.Render, buffer });
+
+  const remoteMesh = createRemoteMesh(ctx, {
+    primitives: [
+      {
+        indices: createRemoteAccessor(ctx, {
+          type: AccessorType.SCALAR,
+          componentType: AccessorComponentType.Uint16,
+          bufferView,
+          count: indices.length,
+        }),
+        attributes: {
+          [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC3,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: position.byteOffset,
+            count: position.length / 3,
+          }),
+          [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC3,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: normal.byteOffset,
+            count: normal.length / 3,
+            normalized: true,
+          }),
+          [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(ctx, {
+            type: AccessorType.VEC2,
+            componentType: AccessorComponentType.Float32,
+            bufferView,
+            byteOffset: uv.byteOffset,
+            count: uv.length / 2,
+          }),
+        },
+        material:
+          material ||
+          createRemoteStandardMaterial(ctx, {
+            baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+            roughnessFactor: 0.8,
+            metallicFactor: 0.8,
+          }),
+      },
+    ],
+  });
+
+  return remoteMesh;
+};
+
+export const createCubeMesh = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+  const geometry = new BoxBufferGeometry(size, size, size);
+  return createMesh(ctx, geometry, material);
+};
+
+export const createSphereMesh = (ctx: GameState, radius: number, material?: RemoteMaterial) => {
+  const geometry = new SphereBufferGeometry(radius / 2);
+  return createMesh(ctx, geometry, material);
+};
+
+const COLLISION_GROUPS = 0xffff_ffff;
+
+export const createCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+  const { world } = ctx;
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+
+  createRemoteStandardMaterial(ctx, {
+    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+    roughnessFactor: 0.8,
+    metallicFactor: 0.8,
+  });
+
+  addRemoteNodeComponent(ctx, eid, {
+    mesh: createCubeMesh(ctx, size, material),
+  });
+
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
+    .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+    .setCollisionGroups(COLLISION_GROUPS)
+    .setSolverGroups(COLLISION_GROUPS);
+
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+  addRigidBody(world, eid, rigidBody);
+
+  return eid;
+};

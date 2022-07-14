@@ -1,11 +1,15 @@
+import { addEntity } from "bitecs";
+
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
+import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
@@ -266,4 +270,24 @@ export function updateRemoteCameras(ctx: GameState) {
     commitToObjectTripleBuffer(orthographicCamera.cameraTripleBuffer, orthographicCamera.cameraBufferView);
     orthographicCamera.cameraBufferView.projectionMatrixNeedsUpdate[0] = 0;
   }
+}
+
+export function createCamera(state: GameState, setActive = true): number {
+  const eid = addEntity(state.world);
+  addTransformComponent(state.world, eid);
+
+  const remoteCamera = createRemotePerspectiveCamera(state, {
+    yfov: 75,
+    znear: 0.1,
+  });
+
+  addRemoteNodeComponent(state, eid, {
+    camera: remoteCamera,
+  });
+
+  if (setActive) {
+    state.activeCamera = eid;
+  }
+
+  return eid;
 }

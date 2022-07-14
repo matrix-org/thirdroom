@@ -23,10 +23,11 @@ import { RemoteSceneSystem } from "./scene/scene.game";
 import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
-import { PrefabDisposalSystem } from "./prefab";
+import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 
 export default defineConfig<GameState>({
   modules: [
+    PrefabModule,
     ResourceModule,
     GameAudioModule,
     InputModule,

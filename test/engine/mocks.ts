@@ -2,7 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { createWorld } from "bitecs";
 
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
-import { registerPrefab } from "../../src/engine/prefab";
+import { registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";

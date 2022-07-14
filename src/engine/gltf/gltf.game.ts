@@ -92,6 +92,12 @@ export interface GLTFResource {
   audioEmitterPromises: Map<number, { output: AudioEmitterOutput; promise: Promise<RemoteAudioEmitter> }>;
 }
 
+export function createGLTFEntity(ctx: GameState, uri: string) {
+  const eid = addEntity(ctx.world);
+  inflateGLTFScene(ctx, eid, uri);
+  return eid;
+}
+
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,

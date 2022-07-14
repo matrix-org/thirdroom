@@ -19,6 +19,7 @@ import {
   writeFloat32,
   writePropIfChanged,
   writeString,
+  writeUint16,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
@@ -35,7 +36,7 @@ import {
   SetHostMessage,
   SetPeerIdMessage,
 } from "./network.common";
-import { createPrefabEntity, Prefab } from "../prefab";
+import { createPrefabEntity, Prefab } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { RemoteNodeComponent } from "../node/node.game";
 import {
@@ -163,21 +164,45 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
 
   network.peers.push(peerId);
   network.newPeers.push(peerId);
-  if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+
+  // Set our local peer id index
+  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
 
-  const i = network.peers.indexOf(peerId);
-  if (i > -1) {
+  const peerArrIndex = network.peers.indexOf(peerId);
+  console.log(network.peerIdToIndex);
+  const peerIndex = network.peerIdToIndex.get(peerId);
+
+  if (peerIndex === undefined) {
+    console.error(`Couldn't find peer index for ${peerId}`);
+  }
+
+  if (peerArrIndex > -1) {
+    const entities = networkedQuery(ctx.world);
+    console.log("networkedQuery", entities);
+
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const eid = entities[i];
+
+      const networkId = Networked.networkId[eid];
+
+      console.log("onRemovePeerId", peerIndex, getPeerIdIndexFromNetworkId(networkId));
+
+      if (peerIndex === getPeerIdIndexFromNetworkId(networkId)) {
+        removeRecursive(ctx.world, eid);
+      }
+    }
+
     const eid = network.peerIdToEntityId.get(peerId);
     console.log("removing peer", peerId);
     if (eid) removeRecursive(ctx.world, eid);
     console.log("removed", peerId);
 
-    network.peers.splice(i, 1);
+    network.peers.splice(peerArrIndex, 1);
     network.peerIdToIndex.delete(peerId);
     network.peerIdToEntityId.delete(peerId);
   } else {
@@ -185,11 +210,19 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   }
 };
 
+// hack - could also temporarily send whole peerId string to avoid potential collisions
+const peerIdIndex = Math.round(randomRange(0, 0xffff));
+
+// Set local peer id
 const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
   network.peerId = peerId;
-  if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+
+  console.log("onSetPeerId", peerIdIndex);
+  network.peerIdToIndex.set(peerId, peerIdIndex);
+  network.indexToPeerId.set(peerIdIndex, peerId);
 };
 
 const onSetHost = (ctx: GameState, message: SetHostMessage) => {
@@ -199,20 +232,18 @@ const onSetHost = (ctx: GameState, message: SetHostMessage) => {
 
 /* Utils */
 
-const mapPeerIdAndIndex = (ctx: GameState, peerId: string) => {
-  const network = getModule(ctx, NetworkModule);
-  const peerIdIndex = network.peerIdCount++;
-  network.peerIdToIndex.set(peerId, peerIdIndex);
-  network.indexToPeerId.set(peerIdIndex, peerId);
-};
+// const mapPeerIdAndIndex = (ctx: GameState, peerId: string) => {
+//   const network = getModule(ctx, NetworkModule);
+//   // const peerIdIndex = network.peerIdCount++;
+//   network.peerIdToIndex.set(peerId, peerIdIndex);
+//   network.indexToPeerId.set(peerIdIndex, peerId);
+// };
 
 const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1) << offset);
 
-export const getPeerIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
+export const getPeerIdIndexFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
-// hack - could also temporarily send whole peerId string to avoid potential collisions
-const peerIdIndex = randomRange(0, 0xffff);
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
@@ -254,6 +285,7 @@ export const exitedNetworkedQuery = exitQuery(networkedQuery);
 export const ownedNetworkedQuery = defineQuery([Networked, Owned]);
 export const createdOwnedNetworkedQuery = enterQuery(ownedNetworkedQuery);
 export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
+
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 
 // bitecs todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
@@ -449,7 +481,7 @@ export function serializeCreates(input: NetPipeData) {
 }
 
 export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab: string) {
-  console.log("createRemoteNetworkedEntity()");
+  console.log("createRemoteNetworkedEntity()", nid, prefab);
   const network = getModule(state, NetworkModule);
   const eid = createPrefabEntity(state, prefab);
 
@@ -607,7 +639,7 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   }
 
   writeString(v, peerId);
-  writeUint8(v, peerIdIndex);
+  writeUint16(v, peerIdIndex);
 
   return input;
 }
@@ -617,10 +649,11 @@ export function deserializePeerIdIndex(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
   const peerId = readString(v);
-  const peerIdIndex = readUint8(v);
+  const peerIdIndex = readUint16(v);
 
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
+
   console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
@@ -899,7 +932,10 @@ const sendUpdates = (ctx: GameState) => {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
           // if hosting, broadcast peerIdIndex message
-          if (network.hosting) broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
+          // if (network.hosting) {
+          // broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
+          broadcastReliable(ctx, createPeerIdIndexMessage(ctx, network.peerId));
+          // }
 
           console.log("newPeerSnapshotMsg", new Uint8Array(newPeerSnapshotMsg));
 
