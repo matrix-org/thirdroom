@@ -187,6 +187,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
+  // Networked component isn't reset when removed so reset on add
   addComponent(world, Networked, playerRig, true);
 
   return playerRig;
