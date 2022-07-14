@@ -1,5 +1,5 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity } from "bitecs";
+import { addComponent, addEntity, defineQuery, exitQuery } from "bitecs";
 import { BoxBufferGeometry, BufferGeometry, SphereBufferGeometry } from "three";
 
 import { GameState } from "../GameTypes";
@@ -179,6 +179,8 @@ export interface PrefabTemplate {
   deserialize?: Function;
 }
 
+export const Prefab: Map<number, string> = new Map();
+
 export function registerPrefab(state: GameState, template: PrefabTemplate) {
   if (state.prefabTemplateMap.has(template.name)) {
     console.warn("warning: overwriting existing prefab", template.name);
@@ -188,9 +190,23 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
 
   template.create = () => {
     const eid = create();
-    state.entityPrefabMap.set(eid, template.name);
+    Prefab.set(eid, template.name);
+    addComponent(state.world, Prefab, eid);
     return eid;
   };
+}
+
+const prefabQuery = defineQuery([Prefab]);
+const removedPrefabQuery = exitQuery(prefabQuery);
+
+export function PrefabDisposalSystem(state: GameState) {
+  const removed = removedPrefabQuery(state.world);
+
+  for (let i = 0; i < removed.length; i++) {
+    const eid = removed[i];
+    console.log("removing prefab", Prefab.get(eid));
+    Prefab.delete(eid);
+  }
 }
 
 export function getPrefabTemplate(state: GameState, name: string) {

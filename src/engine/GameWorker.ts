@@ -64,7 +64,6 @@ async function onInit({
     activeScene: scene,
     activeCamera: camera,
     prefabTemplateMap: new Map(),
-    entityPrefabMap: new Map(),
     systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),

@@ -186,7 +186,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, cube);
-    addComponent(ctx.world, Networked, cube);
+    addComponent(ctx.world, Networked, cube, true);
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 

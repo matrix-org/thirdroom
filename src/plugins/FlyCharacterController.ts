@@ -14,7 +14,7 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { NetworkModule, Owned, Networked } from "../engine/network/network.game";
-import { createCamera } from "../engine/prefab";
+import { createCamera, Prefab } from "../engine/prefab";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
 type FlyCharacterControllerModuleState = {};
@@ -43,7 +43,7 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  state.entityPrefabMap.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
+  Prefab.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
   network.peerIdToEntityId.set(network.peerId, playerRig);
 
@@ -63,7 +63,7 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
-  addComponent(world, Networked, playerRig);
+  addComponent(world, Networked, playerRig, true);
 
   return playerRig;
 }

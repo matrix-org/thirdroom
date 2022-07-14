@@ -92,7 +92,6 @@ export const mockGameState = () => {
   const ctx = {
     world: createWorld(),
     prefabTemplateMap: new Map(),
-    entityPrefabMap: new Map(),
     renderer: mockRenderState(),
     renderPort: mockPostMessageTarget(),
     systemGraphChanged: true,

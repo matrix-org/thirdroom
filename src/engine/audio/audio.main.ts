@@ -379,28 +379,34 @@ async function onLoadAudioEmitter(
 
 export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioModule = getModule(ctx, AudioModule);
-  const { nodes } = audioModule;
 
   const audioStateView = getReadObjectBufferView(audioModule.audioStateTripleBuffer);
 
   const activeAudioListener = audioStateView.activeAudioListenerResourceId[0];
   const activeSceneResourceId = audioStateView.activeSceneResourceId[0];
 
-  disposeAudioEmitters(ctx, audioModule);
-
   updateMediaStreamSources(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
   updateGlobalAudioEmitters(ctx, audioModule, activeSceneResourceId);
-  updateNodeAudioEmitters(nodes, ctx, audioModule, activeAudioListener);
+  updateNodeAudioEmitters(ctx, audioModule, activeAudioListener);
 }
 
-function updateNodeAudioEmitters(
-  nodes: MainNode[],
-  ctx: IMainThreadContext,
-  audioModule: MainAudioModule,
-  activeAudioListener: number
-) {
+function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule, activeAudioListener: number) {
+  const { nodes } = audioModule;
+
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+
+    if (getResourceDisposed(ctx, node.resourceId)) {
+      if (node.audioEmitter) {
+        node.emitterPannerNode?.disconnect();
+      }
+
+      nodes.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const nodeView = getReadObjectBufferView(node.audioNodeTripleBuffer);
@@ -409,30 +415,6 @@ function updateNodeAudioEmitters(
 
     if (node.resourceId === activeAudioListener) {
       setAudioListenerTransform(audioModule.context.listener, nodeView.worldMatrix);
-    }
-  }
-}
-
-function disposeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
-  const { nodes } = audioModule;
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const node = nodes[i];
-
-    if (getResourceDisposed(ctx, node.resourceId)) {
-      if (node.audioEmitter) {
-        for (let i = 0; i < node.audioEmitter.sources.length; i++) {
-          const source = node.audioEmitter.sources[i];
-          source.gainNode.disconnect(node.audioEmitter.inputGain);
-          // TODO: add back-refs to emitters that the source is attached to. if emitters on source are empty then remove the source too
-        }
-        node.audioEmitter.sources = [];
-        node.audioEmitter = undefined;
-        node.emitterOutput = undefined;
-        node.emitterPannerNode?.disconnect();
-        node.emitterPannerNode = undefined;
-      }
-
-      nodes.splice(i, 1);
     }
   }
 }
@@ -494,7 +476,11 @@ function createSwappableMediaStreamAudioSourceNode(
   function disconnect(destination: AudioParam, output: number): void;
   function disconnect(destination?: number | AudioNode | AudioParam, output?: number, input?: number): void {
     if (node) {
-      node.disconnect(destination as any, output as any, input as any);
+      if (destination) {
+        node.disconnect(destination as any, output as any, input as any);
+      } else {
+        node.disconnect();
+      }
     }
 
     const connectionIndex = connections.findIndex(

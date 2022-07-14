@@ -39,6 +39,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
 });
 
 export function loadEnvironment(ctx: IMainThreadContext, url: string) {
+  console.log("load main");
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 
@@ -79,6 +80,8 @@ export function loadEnvironment(ctx: IMainThreadContext, url: string) {
     id,
     url,
   });
+
+  console.log("sent message");
 
   return loadingEnvironment.promise;
 }

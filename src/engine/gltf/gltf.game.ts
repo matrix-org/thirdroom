@@ -386,19 +386,20 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
 export async function loadGLTFResource(uri: string): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
-  const cachedGltf = gltfCache.get(url.href);
+  // TODO: Add gltfResource pinning
+  // const cachedGltf = gltfCache.get(url.href);
 
-  if (cachedGltf) {
-    cachedGltf.refCount++;
-    return cachedGltf.promise;
-  }
+  // if (cachedGltf) {
+  //   cachedGltf.refCount++;
+  //   return cachedGltf.promise;
+  // }
 
   const promise = _loadGLTFResource(url.href);
 
-  gltfCache.set(url.href, {
-    refCount: 1,
-    promise,
-  });
+  // gltfCache.set(url.href, {
+  //   refCount: 1,
+  //   promise,
+  // });
 
   return promise;
 }

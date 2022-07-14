@@ -137,7 +137,9 @@ export function createMatrixNetworkInterface(
   }
 
   function joinWorld(userId: string, isHost: boolean) {
-    setHost(ctx, isHost);
+    updateHost();
+    // console.log("joinWorld()", isHost);
+    // setHost(ctx, isHost);
     setPeerId(ctx, userId);
     enterWorld(ctx);
 
@@ -180,15 +182,22 @@ export function createMatrixNetworkInterface(
 
     if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
       setHost(ctx, true);
+      console.log("SETTING HOST: TRUE");
     } else {
       setHost(ctx, false);
+      console.log("SETTING HOST: FALSE");
     }
   }
 
   return () => {
+    console.log("dispose network interface");
     disconnect(ctx);
 
+    console.log("after disconnect");
+
     exitWorld(ctx);
+
+    console.log("after exit");
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();

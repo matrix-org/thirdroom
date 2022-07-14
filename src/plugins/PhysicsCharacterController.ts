@@ -17,7 +17,7 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCamera } from "../engine/prefab";
+import { createCamera, Prefab } from "../engine/prefab";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
@@ -157,7 +157,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  state.entityPrefabMap.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
+  Prefab.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
   network.peerIdToEntityId.set(network.peerId, playerRig);
 
@@ -186,7 +186,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   addComponent(world, Owned, playerRig);
   addComponent(world, Player, playerRig);
-  addComponent(world, Networked, playerRig);
+  addComponent(world, Networked, playerRig, true);
 
   return playerRig;
 };

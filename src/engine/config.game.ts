@@ -23,6 +23,7 @@ import { RemoteSceneSystem } from "./scene/scene.game";
 import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
+import { PrefabDisposalSystem } from "./prefab";
 
 export default defineConfig<GameState>({
   modules: [
@@ -67,6 +68,7 @@ export default defineConfig<GameState>({
     RemoteNodeSystem,
     RemoteSceneSystem,
     ResourceLoaderSystem,
+    PrefabDisposalSystem,
 
     ResetInputSystem,
     GameWorkerStatsSystem,

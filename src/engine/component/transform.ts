@@ -15,6 +15,7 @@ import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "./transform.common";
+import { Networked } from "../network/network.game";
 
 export const Hidden = defineComponent();
 
@@ -441,7 +442,11 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
+let counter = 0;
+
 export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
+  counter = 0;
+
   // start at root
   let eid = rootEid;
 
@@ -453,7 +458,12 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
 
     // go downwards into children
     if (firstChild && processChildren !== false) {
+      if (firstChild === undefined) {
+        debugger;
+      }
+
       eid = firstChild;
+      counter++;
     } else {
       // Don't traverse the root's siblings
       if (eid === rootEid) {
@@ -467,32 +477,89 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
           return;
         }
 
+        if (!Transform.parent[eid]) {
+          debugger;
+          throw new Error("Disposing already disposed entity");
+        }
+
         // go upwards
         eid = Transform.parent[eid];
+
+        counter++;
+
+        if (counter > 5000) {
+          debugger;
+        }
+      }
+
+      if (Transform.nextSibling[eid] === undefined) {
+        debugger;
       }
 
       // go sideways
       eid = Transform.nextSibling[eid];
+
+      counter++;
     }
+
+    if (counter > 5000) {
+      debugger;
+    }
+  }
+}
+
+export function traverseRecursive(eid: number, callback: (eid: number) => unknown | false) {
+  if (eid) {
+    const processChildren = callback(eid);
+
+    if (processChildren === false) return;
+  }
+
+  let curChild = Transform.firstChild[eid];
+
+  while (curChild) {
+    traverseRecursive(curChild, callback);
+    curChild = Transform.nextSibling[curChild];
   }
 }
 
 export function traverseReverse(rootEid: number, callback: (eid: number) => unknown) {
   const stack: number[] = [];
-  traverse(rootEid, (eid) => stack.push(eid));
+  traverse(rootEid, (eid) => {
+    stack.push(eid);
+  });
+
+  console.log("done!");
 
   while (stack.length) {
     callback(stack.pop()!);
   }
 }
 
+export function traverseReverseRecursive(eid: number, callback: (eid: number) => unknown) {
+  let curChild = getLastChild(eid);
+
+  while (curChild) {
+    traverseReverseRecursive(curChild, callback);
+    curChild = Transform.prevSibling[curChild];
+  }
+
+  if (eid) {
+    callback(eid);
+  }
+}
+
 export function removeRecursive(world: World, rootEid: number) {
-  traverseReverse(rootEid, (eid) => {
+  traverseReverseRecursive(rootEid, (eid) => {
     // TODO: removeEntity should reset components
     const components = getEntityComponents(world, eid);
 
     for (let i = 0; i < components.length; i++) {
-      removeComponent(world, components[i], eid, true);
+      if (components[i] === Networked) {
+        removeComponent(world, components[i], eid, false);
+      } else {
+        removeComponent(world, components[i], eid, true);
+      }
     }
 
     removeEntity(world, eid);
