@@ -5,10 +5,6 @@
   box-shadow: var(--bs-surface);
 }
 
-.SpacesView__scrollable {
+.SpacesView > * {
   padding: var(--sp-xs) 0;
-
-  & .SidebarTab {
-    margin-bottom: var(--sp-xs);
-  }
 }

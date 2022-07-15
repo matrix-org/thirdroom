@@ -12,6 +12,11 @@
   letter-spacing: var(--ls-s1);
   line-height: var(--lh-s1);
 }
+.Text-s2 {
+  font-size: var(--fs-s2);
+  letter-spacing: var(--ls-s2);
+  line-height: var(--lh-s2);
+}
 .Text-b1 {
   font-size: var(--fs-b1);
   letter-spacing: var(--ls-b1);

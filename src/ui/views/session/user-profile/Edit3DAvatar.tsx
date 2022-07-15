@@ -33,11 +33,22 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
   const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
 
   const saveChanges = () => {
-    if (!avatarInfo.mxc || !previewInfo.mxc) return;
-    session.hsApi.sendState(profileRoom.id, "org.matrix.msc3815.world.profile", "", {
-      avatar_url: avatarInfo.mxc,
-      avatar_preview_url: previewInfo.mxc,
-    });
+    if (!avatarInfo.mxc && !previewInfo.mxc) return;
+    const update = (avatarUrl: string, previewUrl: string) => {
+      session.hsApi.sendState(profileRoom.id, "org.matrix.msc3815.world.profile", "", {
+        avatar_url: avatarUrl,
+        avatar_preview_url: previewUrl,
+      });
+    };
+    if (avatarInfo.mxc && previewInfo.mxc) {
+      update(avatarInfo.mxc, previewInfo.mxc);
+    } else {
+      profileRoom.getStateEvent("org.matrix.msc3815.world.profile").then((event) => {
+        const avatarUrl: string = event?.event.content.avatar_url;
+        const avatarPreviewUrl: string = event?.event.content.avatar_preview_url;
+        update(avatarInfo.mxc ?? avatarUrl, previewInfo.mxc ?? avatarPreviewUrl);
+      });
+    }
     closeModal();
   };
 
@@ -88,7 +99,7 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
                       </Button>
                     }
                     right={
-                      <Button onClick={saveChanges} disabled={!avatarInfo.mxc || !previewInfo.mxc}>
+                      <Button onClick={saveChanges} disabled={!avatarInfo.mxc && !previewInfo.mxc}>
                         Save
                       </Button>
                     }
