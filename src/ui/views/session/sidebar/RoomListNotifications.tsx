@@ -51,7 +51,7 @@ export function RoomListNotifications() {
         </Category>
       )}
       {roomInvites.length > 0 && (
-        <Category header={<CategoryHeader title="Chat Invites" />}>
+        <Category header={<CategoryHeader title="Room Invites" />}>
           {roomInvites.map((invite) => (
             <RoomTile
               key={invite.id}

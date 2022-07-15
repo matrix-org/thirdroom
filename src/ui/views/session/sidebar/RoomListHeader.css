@@ -1,8 +1,6 @@
 .RoomListHeader {
-  padding: var(--sp-xs) var(--sp-xs);
-  gap: var(--sp-sm);
+  height: 54px;
+  padding: 0 var(--sp-md);
 
-  & .RoomListTab {
-    flex: 1 1 0;
-  }
+  border-bottom: 1px solid var(--bg-surface-border);
 }

@@ -1,7 +1,7 @@
 .RoomListViewContent {
   min-height: 100%;
 
-  & .Category {
-    padding-bottom: var(--sp-lg);
+  & > * {
+    padding: var(--sp-xs) 0;
   }
 }

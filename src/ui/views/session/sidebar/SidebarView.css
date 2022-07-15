@@ -1,7 +1,6 @@
 .SidebarView {
   height: inherit;
   pointer-events: all;
-  gap: var(--sp-xs);
 
   position: relative;
 }

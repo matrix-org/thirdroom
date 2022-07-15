@@ -6,13 +6,8 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
 import { RoomTile } from "../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
-import { Category } from "../../components/category/Category";
-import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
-import { DmDialog } from "../dialogs/DmDialog";
-import { IconButton } from "../../../atoms/button/IconButton";
-import AddIC from "../../../../../res/ic/add.svg";
 
 export function RoomListFriends() {
   const { session, platform } = useHydrogen(true);
@@ -37,31 +32,16 @@ export function RoomListFriends() {
   };
 
   return (
-    <>
-      <Category
-        header={
-          <CategoryHeader
-            title="Friends"
-            options={
-              <DmDialog
-                renderTrigger={(openDialog) => (
-                  <IconButton size="sm" onClick={openDialog} label="Create World" iconSrc={AddIC} />
-                )}
-              />
-            }
-          />
-        }
-      >
-        {rooms.map((room) => (
-          <RoomTile
-            key={room.id}
-            isActive={room.id === selectedChatId}
-            avatar={renderAvatar(room)}
-            onClick={() => selectChat(room.id)}
-            content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
-          />
-        ))}
-      </Category>
-    </>
+    <div>
+      {rooms.map((room) => (
+        <RoomTile
+          key={room.id}
+          isActive={room.id === selectedChatId}
+          avatar={renderAvatar(room)}
+          onClick={() => selectChat(room.id)}
+          content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+        />
+      ))}
+    </div>
   );
 }

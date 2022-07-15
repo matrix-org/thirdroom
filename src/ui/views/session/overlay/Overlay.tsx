@@ -22,10 +22,8 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, RoomListTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
+import { useStore, SidebarTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
-import { RoomListWorld } from "../sidebar/RoomListWorlds";
-import { RoomListChats } from "../sidebar/RoomListChats";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { NowPlaying } from "../../components/now-playing/NowPlaying";
 import { NowPlayingTitle } from "../../components/now-playing/NowPlayingTitle";
@@ -61,8 +59,7 @@ export function Overlay({
   const { session, platform } = useHydrogen(true);
 
   const {
-    selectedRoomListTab,
-    selectRoomListTab,
+    selectedSidebarTab,
     selectedChatId,
     activeChats,
     selectChat,
@@ -73,8 +70,8 @@ export function Overlay({
     loadState,
     selectedWorldId,
   } = useStore((state) => ({
-    selectedRoomListTab: state.overlaySidebar.selectedRoomListTab,
-    selectRoomListTab: state.overlaySidebar.selectRoomListTab,
+    selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
+    selectSidebarTab: state.overlaySidebar.selectSidebarTab,
     selectedChatId: state.overlayChat.selectedChatId,
     activeChats: state.overlayChat.activeChats,
     selectChat: state.overlayChat.selectChat,
@@ -91,7 +88,6 @@ export function Overlay({
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
   const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
-  const spacesEnabled = false;
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
@@ -133,19 +129,17 @@ export function Overlay({
       {worldPreviewUrl && previewingWorld && (
         <img alt="World Preview" src={worldPreviewUrl} className="Overlay__world-preview" />
       )}
-      {selectedWindow ? undefined : (
-        <SidebarView
-          spaces={spacesEnabled ? <SpacesView /> : undefined}
-          roomList={
+      <SidebarView
+        spaces={<SpacesView />}
+        roomList={
+          selectedWindow === undefined && (
             <RoomListView
-              header={<RoomListHeader selectedTab={selectedRoomListTab} onTabSelect={selectRoomListTab} />}
+              header={<RoomListHeader />}
               content={
                 <RoomListContent>
-                  {selectedRoomListTab === RoomListTabs.Home && <RoomListHome groupCalls={groupCalls} />}
-                  {selectedRoomListTab === RoomListTabs.Worlds && <RoomListWorld groupCalls={groupCalls} />}
-                  {selectedRoomListTab === RoomListTabs.Chats && <RoomListChats />}
-                  {selectedRoomListTab === RoomListTabs.Friends && <RoomListFriends />}
-                  {selectedRoomListTab === RoomListTabs.Notifications && <RoomListNotifications />}
+                  {selectedSidebarTab === SidebarTabs.Home && <RoomListHome groupCalls={groupCalls} />}
+                  {selectedSidebarTab === SidebarTabs.Friends && <RoomListFriends />}
+                  {selectedSidebarTab === SidebarTabs.Notifications && <RoomListNotifications />}
                 </RoomListContent>
               }
               footer={
@@ -183,9 +177,9 @@ export function Overlay({
                 )
               }
             />
-          }
-        />
-      )}
+          )
+        }
+      />
       {selectedWindow ? (
         <div className="Overlay__window grow flex">
           {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}

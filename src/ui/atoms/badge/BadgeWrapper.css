@@ -5,8 +5,8 @@
 }
 .BadgeWrapper__item {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: -4px;
+  top: -4px;
   border: 2px solid var(--bg-surface);
   border-radius: 9999px;
 }

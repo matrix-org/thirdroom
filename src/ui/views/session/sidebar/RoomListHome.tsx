@@ -11,13 +11,9 @@ import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { WorldTileMembers } from "./WorldTileMembers";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
-import { useStore, OverlayWindow } from "../../../hooks/useStore";
-import AddIC from "../../../../../res/ic/add.svg";
+import { useStore } from "../../../hooks/useStore";
 import AddUserIC from "../../../../../res/ic/add-user.svg";
 import SettingIC from "../../../../../res/ic/setting.svg";
-import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
-import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
-import { JoinWithAliasDialog } from "../dialogs/JoinWithAliasDialog";
 import { InviteDialog } from "../dialogs/InviteDialog";
 
 interface RoomListHomeProps {
@@ -32,7 +28,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
   const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
-  const { selectWindow, selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
+  const { selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
 
   const renderAvatar = (room: Room, isWorld: boolean) => {
     const avatar = (
@@ -51,31 +47,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
 
   return (
     <>
-      <Category
-        header={
-          <CategoryHeader
-            title="Worlds"
-            options={
-              <JoinWithAliasDialog
-                renderTrigger={(openDialog) => (
-                  <DropdownMenu
-                    content={
-                      <>
-                        <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
-                          Create World
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={openDialog}>Join with Alias</DropdownMenuItem>
-                      </>
-                    }
-                  >
-                    <IconButton size="sm" label="Create World" iconSrc={AddIC} />
-                  </DropdownMenu>
-                )}
-              />
-            }
-          />
-        }
-      >
+      <Category header={<CategoryHeader title="Worlds" />}>
         {worlds.map((room) => {
           const groupCall = groupCalls.get(room.id);
           return (
@@ -111,20 +83,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           );
         })}
       </Category>
-      <Category
-        header={
-          <CategoryHeader
-            title="All Messages"
-            options={
-              <JoinWithAliasDialog
-                renderTrigger={(openDialog) => (
-                  <IconButton size="sm" label="Create World" onClick={openDialog} iconSrc={AddIC} />
-                )}
-              />
-            }
-          />
-        }
-      >
+      <Category header={<CategoryHeader title="All Messages" />}>
         {rooms.map((room) => (
           <RoomTile
             key={room.id}
