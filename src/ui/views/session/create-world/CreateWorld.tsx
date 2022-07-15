@@ -25,7 +25,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import CrossIC from "../../../../../res/ic/cross.svg";
 import UploadIC from "../../../../../res/ic/upload.svg";
 import "./CreateWorld.css";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
@@ -166,7 +166,7 @@ export function CreateWorld() {
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
   return (
-    <Window>
+    <Window onRequestClose={closeWindow}>
       <Content
         onSubmit={handleSubmit}
         top={
@@ -176,7 +176,7 @@ export function CreateWorld() {
                 Create World
               </HeaderTitle>
             }
-            right={<IconButton onClick={() => closeWindow()} iconSrc={CrossCircleIC} label="Close" />}
+            right={<IconButton onClick={() => closeWindow()} iconSrc={CrossIC} label="Close" />}
           />
         }
       >

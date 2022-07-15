@@ -3,8 +3,8 @@
   width: 100%;
 
   &:focus-within {
-    outline: var(--outline);
-    outline-offset: var(--outline-offset);
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
   }
 
   & > button {

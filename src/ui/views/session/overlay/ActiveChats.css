@@ -12,10 +12,6 @@
   position: absolute;
   bottom: 60px;
   right: 0;
-
-  & .ChatView {
-    border: 1px solid var(--bg-surface-border);
-  }
 }
 
 .ActiveChats__tiles {

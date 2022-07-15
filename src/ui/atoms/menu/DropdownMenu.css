@@ -2,10 +2,7 @@
   background-color: var(--bg-surface);
   border-radius: var(--br-xs);
   box-shadow: var(--bs-dropdown);
-}
-
-.DropdownMenu__arrow {
-  fill: var(--bg-surface);
+  overflow: hidden;
 }
 
 .DropdownMenu__trigger {

@@ -1,5 +1,6 @@
 .ActiveChatTile {
   background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
   line-height: 0;
 
   position: relative;

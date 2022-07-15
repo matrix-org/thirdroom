@@ -1,6 +1,7 @@
 .RoomListView {
   width: 400px;
   background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
   border-radius: var(--br-xs);
   overflow: hidden;
 }

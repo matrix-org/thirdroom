@@ -5,7 +5,7 @@ import { Content } from "../../../atoms/content/Content";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { Window } from "../../components/window/Window";
-import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
+import CrossIC from "../../../../../res/ic/cross.svg";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
@@ -117,13 +117,13 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   };
 
   return (
-    <Window>
+    <Window onRequestClose={closeWindow}>
       <Content
         onSubmit={handleSubmit}
         top={
           <Header
             left={<HeaderTitle>World Settings</HeaderTitle>}
-            right={<IconButton onClick={() => closeWindow()} label="Close" iconSrc={CrossCircleIC} />}
+            right={<IconButton onClick={() => closeWindow()} label="Close" iconSrc={CrossIC} />}
           />
         }
       >
