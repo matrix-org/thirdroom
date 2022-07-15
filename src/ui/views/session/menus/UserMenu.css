@@ -1,0 +1,8 @@
+.UserMenu {
+  padding-bottom: var(--sp-xs);
+}
+
+.UserMenu__header {
+  padding: var(--sp-md);
+  border-bottom: 1px solid var(--bg-surface-border);
+}

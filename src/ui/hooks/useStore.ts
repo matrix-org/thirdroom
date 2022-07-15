@@ -2,10 +2,8 @@ import create from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { RoomId } from "@thirdroom/hydrogen-view-sdk";
 
-export enum RoomListTabs {
+export enum SidebarTabs {
   Home = "Home",
-  Worlds = "Worlds",
-  Chats = "Chats",
   Friends = "Friends",
   Notifications = "Notifications",
 }
@@ -41,8 +39,8 @@ export interface OverlayState {
 }
 
 export interface OverlaySidebarState {
-  selectedRoomListTab: RoomListTabs;
-  selectRoomListTab(tab: RoomListTabs): void;
+  selectedSidebarTab: SidebarTabs;
+  selectSidebarTab(tab: SidebarTabs): void;
 }
 
 export interface OverlayWindowState {
@@ -141,10 +139,12 @@ export const useStore = create<StoreState>()(
       },
     },
     overlaySidebar: {
-      selectedRoomListTab: RoomListTabs.Home,
-      selectRoomListTab(tab: RoomListTabs) {
+      selectedSidebarTab: SidebarTabs.Home,
+      selectSidebarTab(tab: SidebarTabs) {
         set((state) => {
-          state.overlaySidebar.selectedRoomListTab = tab;
+          state.overlayWindow.selectedWindow = undefined;
+          state.overlayWindow.worldSettingsId = undefined;
+          state.overlaySidebar.selectedSidebarTab = tab;
         });
       },
     },

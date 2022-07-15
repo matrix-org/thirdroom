@@ -19,7 +19,7 @@ interface IText {
   id?: string;
   className?: string;
   style?: CSSProperties;
-  variant?: "h2" | "s1" | "b1" | "b2" | "b3";
+  variant?: "h2" | "s1" | "s2" | "b1" | "b2" | "b3";
   color?: textColor;
   weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "label" | "div";

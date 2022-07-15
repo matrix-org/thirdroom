@@ -17,7 +17,10 @@ export function ChatViewInvite({ session, roomId }: ChatViewInviteProps) {
   if (invite === undefined) return <Text className="grow flex justify-center items-center">Failed to load invite</Text>;
 
   return (
-    <div className="grow flex flex-column justify-center items-center gap-md">
+    <div
+      style={{ padding: "var(--sp-md)" }}
+      className="grow text-center flex flex-column justify-center items-center gap-md"
+    >
       <Avatar
         imageSrc={invite.avatarUrl}
         size="lg"

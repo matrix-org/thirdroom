@@ -8,10 +8,6 @@
 
 .CategoryHeader__content {
   padding: var(--sp-xs) var(--sp-md);
-
-  & .Icon {
-    margin-right: var(--sp-xxs);
-  }
 }
 
 .CategoryHeader__options {

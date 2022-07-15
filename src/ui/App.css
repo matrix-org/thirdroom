@@ -105,6 +105,7 @@
   /* font sizes */
   --fs-h2: 24px;
   --fs-s1: 20px;
+  --fs-s2: 18px;
   --fs-b1: 16px;
   --fs-b2: 14px;
   --fs-b3: 12px;
@@ -112,6 +113,7 @@
   /* line heights */
   --lh-h2: 28px;
   --lh-s1: 24px;
+  --lh-s2: 22px;
   --lh-b1: 24px;
   --lh-b2: 20px;
   --lh-b3: 18px;
@@ -119,6 +121,7 @@
   /* letter spacing */
   --ls-h2: 0;
   --ls-s1: 0;
+  --ls-s2: 0;
   --ls-b1: 0;
   --ls-b2: 0;
   --ls-b3: 0;

@@ -1,18 +1,10 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
-
+import { Button } from "../../../atoms/button/Button";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
-import { Avatar } from "../../../atoms/avatar/Avatar";
-import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
-import { RoomTile } from "../../components/room-tile/RoomTile";
-import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
-import { Category } from "../../components/category/Category";
-import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
+import { EmptyState } from "../../components/empty-state/EmptyState";
 import { DmDialog } from "../dialogs/DmDialog";
-import { IconButton } from "../../../atoms/button/IconButton";
-import AddIC from "../../../../../res/ic/add.svg";
+import { RoomSelector } from "./selector/RoomSelector";
 
 export function RoomListFriends() {
   const { session, platform } = useHydrogen(true);
@@ -21,47 +13,22 @@ export function RoomListFriends() {
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
 
-  const renderAvatar = (room: Room) => {
-    const avatar = (
-      <Avatar
-        name={room.name || "Empty room"}
-        size="lg"
-        shape="circle"
-        className="shrink-0"
-        bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-        imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
+  if (rooms.length === 0) {
+    return (
+      <EmptyState
+        style={{ minHeight: "400px" }}
+        heading="No Friends"
+        text="You don't have any friend yet."
+        actions={<DmDialog renderTrigger={(openDialog) => <Button onClick={openDialog}>Direct Message</Button>} />}
       />
     );
-    if (selectedChatId === room.id) return <AvatarOutline>{avatar}</AvatarOutline>;
-    return avatar;
-  };
+  }
 
   return (
-    <>
-      <Category
-        header={
-          <CategoryHeader
-            title="Friends"
-            options={
-              <DmDialog
-                renderTrigger={(openDialog) => (
-                  <IconButton size="sm" onClick={openDialog} label="Create World" iconSrc={AddIC} />
-                )}
-              />
-            }
-          />
-        }
-      >
-        {rooms.map((room) => (
-          <RoomTile
-            key={room.id}
-            isActive={room.id === selectedChatId}
-            avatar={renderAvatar(room)}
-            onClick={() => selectChat(room.id)}
-            content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
-          />
-        ))}
-      </Category>
-    </>
+    <div>
+      {rooms.map((room) => (
+        <RoomSelector isSelected={room.id === selectedChatId} onSelect={selectChat} room={room} platform={platform} />
+      ))}
+    </div>
   );
 }
