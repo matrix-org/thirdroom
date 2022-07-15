@@ -50,7 +50,12 @@ export function UserMenu() {
           </div>
           <div>
             <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserProfile)}>View Profile</DropdownMenuItem>
-            <DropdownMenuItem onSelect={logout} variant="danger">
+            <DropdownMenuItem
+              onSelect={() => {
+                if (confirm("Are you sure?")) logout();
+              }}
+              variant="danger"
+            >
               Logout
             </DropdownMenuItem>
           </div>
