@@ -83,7 +83,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           );
         })}
       </Category>
-      <Category header={<CategoryHeader title="All Messages" />}>
+      <Category header={<CategoryHeader title="Rooms" />}>
         {rooms.map((room) => (
           <RoomTile
             key={room.id}
