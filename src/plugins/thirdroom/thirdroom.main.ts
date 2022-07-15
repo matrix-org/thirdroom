@@ -4,15 +4,15 @@ import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
 import {
-  EnvironmentLoadedMessage,
-  EnvironmentLoadErrorMessage,
-  LoadEnvironmentMessage,
+  WorldLoadedMessage,
+  WorldLoadErrorMessage,
+  LoadWorldMessage,
   PrintThreadStateMessage,
   ThirdRoomMessageType,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
-  loadEnvironmentMessageId: number;
+  loadWorldMessageId: number;
   environmentUrl?: string;
 }
 
@@ -20,7 +20,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   name: "thirdroom",
   create() {
     return {
-      loadEnvironmentMessageId: 0,
+      loadWorldMessageId: 0,
     };
   },
   init(ctx) {
@@ -38,17 +38,17 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   },
 });
 
-export function loadEnvironment(ctx: IMainThreadContext, url: string) {
+export function loadWorld(ctx: IMainThreadContext, url: string) {
   console.log("load main");
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 
-  const id = thirdroom.loadEnvironmentMessageId++;
+  const id = thirdroom.loadWorldMessageId++;
 
   // eslint-disable-next-line prefer-const
   let disposeHandlers: () => void;
 
-  const onLoadEnvironment = (ctx: IMainThreadContext, message: EnvironmentLoadedMessage) => {
+  const onLoadWorld = (ctx: IMainThreadContext, message: WorldLoadedMessage) => {
     if (message.id === id) {
       if (message.url === thirdroom.environmentUrl) {
         loadingEnvironment.resolve(undefined);
@@ -60,7 +60,7 @@ export function loadEnvironment(ctx: IMainThreadContext, url: string) {
     }
   };
 
-  const onEnvironmentLoadError = (ctx: IMainThreadContext, message: EnvironmentLoadErrorMessage) => {
+  const onLoadWorldError = (ctx: IMainThreadContext, message: WorldLoadErrorMessage) => {
     console.log(`error`, message);
     if (message.id === id) {
       loadingEnvironment.reject(new Error(message.error));
@@ -69,19 +69,17 @@ export function loadEnvironment(ctx: IMainThreadContext, url: string) {
   };
 
   disposeHandlers = createDisposables([
-    registerMessageHandler(ctx, ThirdRoomMessageType.EnvironmentLoaded, onLoadEnvironment),
-    registerMessageHandler(ctx, ThirdRoomMessageType.EnvironmentLoadError, onEnvironmentLoadError),
+    registerMessageHandler(ctx, ThirdRoomMessageType.WorldLoaded, onLoadWorld),
+    registerMessageHandler(ctx, ThirdRoomMessageType.WorldLoadError, onLoadWorldError),
   ]);
 
   thirdroom.environmentUrl = url;
 
-  ctx.sendMessage<LoadEnvironmentMessage>(Thread.Game, {
-    type: ThirdRoomMessageType.LoadEnvironment,
+  ctx.sendMessage<LoadWorldMessage>(Thread.Game, {
+    type: ThirdRoomMessageType.LoadWorld,
     id,
     url,
   });
-
-  console.log("sent message");
 
   return loadingEnvironment.promise;
 }

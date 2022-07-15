@@ -1,9 +1,9 @@
 export enum ThirdRoomMessageType {
   EnterWorld = "enter-world",
   ExitWorld = "exit-world",
-  LoadEnvironment = "load-environment",
-  EnvironmentLoaded = "environment-loaded",
-  EnvironmentLoadError = "environment-load-error",
+  LoadWorld = "load-world",
+  WorldLoaded = "world-loaded",
+  WorldLoadError = "world-load-error",
   PrintThreadState = "print-thread-state",
 }
 
@@ -15,20 +15,20 @@ export interface ExitWorldMessage {
   type: ThirdRoomMessageType.ExitWorld;
 }
 
-export interface LoadEnvironmentMessage {
-  type: ThirdRoomMessageType.LoadEnvironment;
+export interface LoadWorldMessage {
+  type: ThirdRoomMessageType.LoadWorld;
   id: number;
   url: string;
 }
 
-export interface EnvironmentLoadedMessage {
-  type: ThirdRoomMessageType.EnvironmentLoaded;
+export interface WorldLoadedMessage {
+  type: ThirdRoomMessageType.WorldLoaded;
   id: number;
   url: string;
 }
 
-export interface EnvironmentLoadErrorMessage {
-  type: ThirdRoomMessageType.EnvironmentLoadError;
+export interface WorldLoadErrorMessage {
+  type: ThirdRoomMessageType.WorldLoadError;
   id: number;
   url: string;
   error: string;

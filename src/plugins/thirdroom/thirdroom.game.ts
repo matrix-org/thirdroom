@@ -15,10 +15,10 @@ import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
-  EnvironmentLoadedMessage,
-  EnvironmentLoadErrorMessage,
+  WorldLoadedMessage,
+  WorldLoadErrorMessage,
   ExitWorldMessage,
-  LoadEnvironmentMessage,
+  LoadWorldMessage,
   PrintThreadStateMessage,
   ThirdRoomMessageType,
 } from "./thirdroom.common";
@@ -48,7 +48,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
   async init(ctx) {
     const disposables = [
-      registerMessageHandler(ctx, ThirdRoomMessageType.LoadEnvironment, onLoadEnvironment),
+      registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
@@ -172,7 +172,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
-async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
+async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   try {
@@ -254,16 +254,16 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
       setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
     }
 
-    ctx.sendMessage<EnvironmentLoadedMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.EnvironmentLoaded,
+    ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.WorldLoaded,
       id: message.id,
       url: message.url,
     });
   } catch (error: any) {
     console.error(error);
 
-    ctx.sendMessage<EnvironmentLoadErrorMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.EnvironmentLoadError,
+    ctx.sendMessage<WorldLoadErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.WorldLoadError,
       id: message.id,
       url: message.url,
       error: error.message || "Unknown error",

@@ -23,7 +23,7 @@ import { useStore } from "../../hooks/useStore";
 import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet } from "../../../engine/network/network.main";
-import { loadEnvironment } from "../../../plugins/thirdroom/thirdroom.main";
+import { loadWorld } from "../../../plugins/thirdroom/thirdroom.main";
 import { getProfileRoom } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
 
@@ -117,7 +117,7 @@ export function SessionView() {
           }
 
           try {
-            await loadEnvironment(mainThread!, sceneUrl);
+            await loadWorld(mainThread!, sceneUrl);
             state.world.loadedWorld();
           } catch (error) {
             console.error(error);
