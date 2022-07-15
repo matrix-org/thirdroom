@@ -10,7 +10,7 @@ import {
   deserializeDeletes,
   deserializeTransformChanged,
   deserializeUpdatesChanged,
-  getPeerIdFromNetworkId,
+  getPeerIdIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
   Owned,
@@ -32,7 +32,6 @@ import {
   readString,
   readUint16,
   readUint32,
-  readUint8,
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
@@ -51,7 +50,7 @@ describe("Network Tests", () => {
   describe("networkId", () => {
     it("should #getPeerIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;
-      strictEqual(getPeerIdFromNetworkId(nid), 0x000f);
+      strictEqual(getPeerIdIndexFromNetworkId(nid), 0x000f);
     });
     it("should #getLocalIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;

@@ -1,4 +1,13 @@
-import { addComponent, addEntity, defineComponent, IComponent, removeComponent, removeEntity } from "bitecs";
+import {
+  addComponent,
+  addEntity,
+  defineComponent,
+  entityExists,
+  getEntityComponents,
+  IComponent,
+  removeComponent,
+  removeEntity,
+} from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -7,6 +16,7 @@ import { registerEditorComponent } from "../editor/editor.game";
 import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "./transform.common";
+import { Networked } from "../network/network.game";
 
 export const Hidden = defineComponent();
 
@@ -86,11 +96,18 @@ export function registerTransformComponent(state: GameState) {
 
 export function addTransformComponent(world: World, eid: number) {
   addComponent(world, Transform, eid);
+  vec3.set(Transform.position[eid], 0, 0, 0);
   vec3.set(Transform.scale[eid], 1, 1, 1);
+  vec3.set(Transform.rotation[eid], 0, 0, 0);
   quat.identity(Transform.quaternion[eid]);
   mat4.identity(Transform.localMatrix[eid]);
+  Transform.static[eid] = 0;
   mat4.identity(Transform.worldMatrix[eid]);
   Transform.worldMatrixNeedsUpdate[eid] = 1;
+  Transform.parent[eid] = 0;
+  Transform.firstChild[eid] = 0;
+  Transform.nextSibling[eid] = 0;
+  Transform.prevSibling[eid] = 0;
   Transform.hierarchyUpdated[eid] = 1;
 }
 
@@ -426,6 +443,8 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
+// TODO: traverse still seems to be broken in some edge cases and needs more test cases.
+// Use traverseRecursive to debug edge cases and build out proper iterative solution
 export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
   // start at root
   let eid = rootEid;
@@ -440,6 +459,11 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
     if (firstChild && processChildren !== false) {
       eid = firstChild;
     } else {
+      // Don't traverse the root's siblings
+      if (eid === rootEid) {
+        return;
+      }
+
       // go upwards if no more siblings
       while (!Transform.nextSibling[eid]) {
         // back at root
@@ -457,19 +481,72 @@ export function traverse(rootEid: number, callback: (eid: number) => unknown | f
   }
 }
 
+export function traverseRecursive(eid: number, callback: (eid: number) => unknown | false) {
+  if (eid) {
+    const processChildren = callback(eid);
+
+    if (processChildren === false) return;
+  }
+
+  let curChild = Transform.firstChild[eid];
+
+  while (curChild) {
+    traverseRecursive(curChild, callback);
+    curChild = Transform.nextSibling[curChild];
+  }
+}
+
 export function traverseReverse(rootEid: number, callback: (eid: number) => unknown) {
   const stack: number[] = [];
-  traverse(rootEid, (eid) => stack.push(eid));
+  traverse(rootEid, (eid) => {
+    stack.push(eid);
+  });
 
   while (stack.length) {
     callback(stack.pop()!);
   }
 }
 
+export function traverseReverseRecursive(eid: number, callback: (eid: number) => unknown) {
+  let curChild = getLastChild(eid);
+
+  while (curChild) {
+    traverseReverseRecursive(curChild, callback);
+    curChild = Transform.prevSibling[curChild];
+  }
+
+  if (eid) {
+    callback(eid);
+  }
+}
+
 export function removeRecursive(world: World, rootEid: number) {
-  traverseReverse(rootEid, (eid) => {
+  if (!entityExists(world, rootEid)) {
+    return;
+  }
+
+  traverseReverseRecursive(rootEid, (eid) => {
+    // TODO: removeEntity should reset components
+    const components = getEntityComponents(world, eid);
+
+    for (let i = 0; i < components.length; i++) {
+      if (components[i] === Networked) {
+        removeComponent(world, components[i], eid, false);
+      } else {
+        removeComponent(world, components[i], eid, true);
+      }
+    }
+
     removeEntity(world, eid);
   });
+
+  if (Transform.parent[rootEid]) {
+    removeChild(Transform.parent[rootEid], rootEid);
+  } else {
+    Transform.firstChild[rootEid] = NOOP;
+    Transform.prevSibling[rootEid] = NOOP;
+    Transform.nextSibling[rootEid] = NOOP;
+  }
 }
 
 export function* getChildren(parentEid: number): Generator<number, number> {

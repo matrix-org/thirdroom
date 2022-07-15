@@ -1,14 +1,4 @@
-import {
-  addComponent,
-  defineQuery,
-  enterQuery,
-  exitQuery,
-  Not,
-  pipe,
-  removeEntity,
-  defineComponent,
-  Types,
-} from "bitecs";
+import { addComponent, defineQuery, enterQuery, exitQuery, Not, pipe, defineComponent, Types } from "bitecs";
 
 import {
   createCursorView,
@@ -29,10 +19,11 @@ import {
   writeFloat32,
   writePropIfChanged,
   writeString,
+  writeUint16,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { addChild, Transform } from "../component/transform";
+import { addChild, removeRecursive, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
@@ -45,7 +36,7 @@ import {
   SetHostMessage,
   SetPeerIdMessage,
 } from "./network.common";
-import { createPrefabEntity } from "../prefab";
+import { createPrefabEntity, Prefab } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { RemoteNodeComponent } from "../node/node.game";
 import {
@@ -170,30 +161,54 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
 
   network.peers.push(peerId);
   network.newPeers.push(peerId);
-  if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+
+  // Set our local peer id index
+  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
 
-  const i = network.peers.indexOf(peerId);
-  if (i > -1) {
-    const eid = network.peerIdToEntityId.get(peerId);
-    if (eid) removeEntity(ctx.world, eid);
+  const peerArrIndex = network.peers.indexOf(peerId);
+  const peerIndex = network.peerIdToIndex.get(peerId);
 
-    network.peers.splice(i, 1);
+  if (peerArrIndex > -1) {
+    const entities = networkedQuery(ctx.world);
+
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const eid = entities[i];
+
+      const networkId = Networked.networkId[eid];
+
+      if (peerIndex === getPeerIdIndexFromNetworkId(networkId)) {
+        removeRecursive(ctx.world, eid);
+      }
+    }
+
+    const eid = network.peerIdToEntityId.get(peerId);
+    if (eid) removeRecursive(ctx.world, eid);
+
+    network.peers.splice(peerArrIndex, 1);
     network.peerIdToIndex.delete(peerId);
+    network.peerIdToEntityId.delete(peerId);
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
 };
 
+// hack - could also temporarily send whole peerId string to avoid potential collisions
+const peerIdIndex = Math.round(randomRange(0, 0xffff));
+
+// Set local peer id
 const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
   network.peerId = peerId;
-  if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+
+  network.peerIdToIndex.set(peerId, peerIdIndex);
+  network.indexToPeerId.set(peerIdIndex, peerId);
 };
 
 const onSetHost = (ctx: GameState, message: SetHostMessage) => {
@@ -203,20 +218,18 @@ const onSetHost = (ctx: GameState, message: SetHostMessage) => {
 
 /* Utils */
 
-const mapPeerIdAndIndex = (ctx: GameState, peerId: string) => {
-  const network = getModule(ctx, NetworkModule);
-  const peerIdIndex = network.peerIdCount++;
-  network.peerIdToIndex.set(peerId, peerIdIndex);
-  network.indexToPeerId.set(peerIdIndex, peerId);
-};
+// const mapPeerIdAndIndex = (ctx: GameState, peerId: string) => {
+//   const network = getModule(ctx, NetworkModule);
+//   // const peerIdIndex = network.peerIdCount++;
+//   network.peerIdToIndex.set(peerId, peerIdIndex);
+//   network.indexToPeerId.set(peerIdIndex, peerId);
+// };
 
 const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1) << offset);
 
-export const getPeerIdFromNetworkId = (nid: number) => isolateBits(nid, 16);
+export const getPeerIdIndexFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
 
-// hack - could also temporarily send whole peerId string to avoid potential collisions
-const peerIdIndex = randomRange(0, 0xffff);
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
@@ -252,9 +265,13 @@ export const Owned = defineComponent();
 
 /* Queries */
 
+export const networkedQuery = defineQuery([Networked]);
+export const exitedNetworkedQuery = exitQuery(networkedQuery);
+
 export const ownedNetworkedQuery = defineQuery([Networked, Owned]);
 export const createdOwnedNetworkedQuery = enterQuery(ownedNetworkedQuery);
 export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
+
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
 
 // bitecs todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
@@ -418,7 +435,7 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = state.entityPrefabMap.get(eid) || "cube";
+    const prefabName = Prefab.get(eid) || "cube";
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -436,7 +453,7 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = state.entityPrefabMap.get(eid) || "cube";
+    const prefabName = Prefab.get(eid) || "cube";
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -459,9 +476,12 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   //   body.lockRotations(true, true);
   // }
 
-  addComponent(state.world, Networked, eid);
+  addComponent(state.world, Networked, eid, true);
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
+
+  addComponent(state.world, Prefab, eid);
+  Prefab.set(eid, prefab);
 
   addChild(state.activeScene, eid);
 
@@ -580,7 +600,7 @@ export function deserializeDeletes(input: NetPipeData) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.log("deserialized deletion for nid", nid, "eid", eid);
-      removeEntity(state.world, eid);
+      removeRecursive(state.world, eid);
       network.networkIdToEntityId.delete(nid);
     }
   }
@@ -602,7 +622,7 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   }
 
   writeString(v, peerId);
-  writeUint8(v, peerIdIndex);
+  writeUint16(v, peerIdIndex);
 
   return input;
 }
@@ -612,7 +632,7 @@ export function deserializePeerIdIndex(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
   const peerId = readString(v);
-  const peerIdIndex = readUint8(v);
+  const peerIdIndex = readUint16(v);
 
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
@@ -863,6 +883,16 @@ const deleteNetworkIds = (state: GameState) => {
   return state;
 };
 
+function disposeNetworkedEntities(state: GameState) {
+  const network = getModule(state, NetworkModule);
+  const exited = exitedNetworkedQuery(state.world);
+
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    network.networkIdToEntityId.delete(Networked.networkId[eid]);
+  }
+}
+
 const sendUpdates = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
   const data: NetPipeData = [ctx, network.cursorView];
@@ -884,7 +914,10 @@ const sendUpdates = (ctx: GameState) => {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
           // if hosting, broadcast peerIdIndex message
-          if (network.hosting) broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
+          // if (network.hosting) {
+          // broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
+          broadcastReliable(ctx, createPeerIdIndexMessage(ctx, network.peerId));
+          // }
 
           sendReliable(ctx, theirPeerId, newPeerSnapshotMsg);
         }
@@ -911,6 +944,8 @@ export function OutboundNetworkSystem(state: GameState) {
   sendUpdates(state);
   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
   deleteNetworkIds(state);
+
+  disposeNetworkedEntities(state);
 
   return state;
 }

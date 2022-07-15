@@ -18,7 +18,7 @@ import {
 } from "./accessor.common";
 
 export interface RemoteAccessor<
-  B extends RemoteBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
   S extends AccessorSparseProps | undefined
 > {
   name: string;
@@ -27,10 +27,10 @@ export interface RemoteAccessor<
   sparse: S extends AccessorSparseProps
     ? {
         indices: {
-          bufferView: RemoteBufferView<Thread.Render>;
+          bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
         };
         values: {
-          bufferView: RemoteBufferView<Thread.Render>;
+          bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
         };
       }
     : undefined;
@@ -38,13 +38,13 @@ export interface RemoteAccessor<
 }
 
 interface AccessorSparseIndicesProps {
-  bufferView: RemoteBufferView<Thread.Render>;
+  bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
   byteOffset?: number;
   componentType: AccessorSparseIndicesComponentType;
 }
 
 interface AccessorSparseValuesProps {
-  bufferView: RemoteBufferView<Thread.Render>;
+  bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
   byteOffset?: number;
 }
 
@@ -55,7 +55,7 @@ interface AccessorSparseProps {
 }
 
 interface AccessorProps<
-  B extends RemoteBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
   S extends AccessorSparseProps | undefined
 > {
   name?: string;
@@ -73,7 +73,7 @@ interface AccessorProps<
 const DEFAULT_ACCESSOR_NAME = "Accessor";
 
 export function createRemoteAccessor<
-  B extends RemoteBufferView<Thread.Render> | undefined,
+  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
   S extends AccessorSparseProps | undefined
 >(ctx: GameState, props: AccessorProps<B, S>): RemoteAccessor<B, S> {
   const name = props.name || DEFAULT_ACCESSOR_NAME;

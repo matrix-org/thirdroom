@@ -5,14 +5,9 @@ import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { CameraType } from "../camera/camera.common";
-import {
-  LocalOrthographicCameraResource,
-  LocalPerspectiveCameraResource,
-  onLoadOrthographicCamera,
-  onLoadPerspectiveCamera,
-} from "../camera/camera.render";
+import { onLoadOrthographicCamera, onLoadPerspectiveCamera } from "../camera/camera.render";
 import { ImageResourceType } from "../image/image.common";
-import { onLoadLocalImageResource } from "../image/image.render";
+import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
 import { DirectionalLightResourceType, PointLightResourceType, SpotLightResourceType } from "../light/light.common";
 import {
   onLoadLocalDirectionalLightResource,
@@ -83,14 +78,13 @@ export interface RendererModuleState {
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
-  scenes: LocalSceneResource[];
-  unlitMaterials: LocalUnlitMaterialResource[];
-  standardMaterials: LocalStandardMaterialResource[];
-  textures: LocalTextureResource[];
-  perspectiveCameraResources: LocalPerspectiveCameraResource[];
-  orthographicCameraResources: LocalOrthographicCameraResource[];
-  meshPrimitives: LocalMeshPrimitive[];
-  nodes: LocalNode[];
+  scenes: LocalSceneResource[]; // done
+  unlitMaterials: LocalUnlitMaterialResource[]; // done
+  standardMaterials: LocalStandardMaterialResource[]; // done
+  images: LocalImageResource[]; // done
+  textures: LocalTextureResource[]; // done
+  meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
+  nodes: LocalNode[]; // done
   prevCameraResource?: ResourceId;
 }
 
@@ -122,6 +116,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
       scenes: [],
+      images: [],
       textures: [],
       unlitMaterials: [],
       standardMaterials: [],
@@ -130,8 +125,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       spotLights: [],
       imageBitmapLoader: new ImageBitmapLoader(),
       rgbeLoader: new RGBELoader(),
-      perspectiveCameraResources: [],
-      orthographicCameraResources: [],
       meshPrimitives: [],
       nodes: [],
       tilesRenderers: [],
@@ -234,7 +227,8 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
-  updateLocalTextureResources(rendererModule.textures);
+  updateLocalImageResources(ctx, rendererModule.images);
+  updateLocalTextureResources(ctx, rendererModule.textures);
   updateLocalSceneResources(ctx, rendererModule.scenes);
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);

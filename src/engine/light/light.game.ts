@@ -1,3 +1,4 @@
+import { addEntity } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import {
@@ -6,8 +7,10 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
+import { addTransformComponent, addChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
@@ -136,6 +139,13 @@ export function createDirectionalLightResource(ctx: GameState, props?: Direction
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.directionalLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.directionalLights.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -204,6 +214,13 @@ export function createPointLightResource(ctx: GameState, props?: PointLightProps
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.pointLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.pointLights.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -283,6 +300,13 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightProps):
     },
     {
       name,
+      dispose() {
+        const index = rendererModule.spotLights.findIndex((light) => light.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.spotLights.splice(index, 1);
+        }
+      },
     }
   );
 
@@ -333,4 +357,19 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightProps):
   rendererModule.spotLights.push(remoteLight);
 
   return remoteLight;
+}
+
+export function createDirectionalLight(state: GameState, parentEid?: number) {
+  const eid = addEntity(state.world);
+  addTransformComponent(state.world, eid);
+
+  addRemoteNodeComponent(state, eid, {
+    light: createDirectionalLightResource(state),
+  });
+
+  if (parentEid !== undefined) {
+    addChild(parentEid, eid);
+  }
+
+  return eid;
 }

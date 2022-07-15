@@ -1,7 +1,6 @@
 import { IWorld } from "bitecs";
 
 import { BaseThreadContext } from "./module/module.common";
-import { PrefabTemplate } from "./prefab";
 
 export type World = IWorld;
 
@@ -16,7 +15,5 @@ export interface GameState extends BaseThreadContext {
   world: World;
   activeScene: number;
   activeCamera: number;
-  prefabTemplateMap: Map<string, PrefabTemplate>;
-  entityPrefabMap: Map<number, string>;
   renderPort: RenderPort;
 }
