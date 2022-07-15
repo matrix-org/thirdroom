@@ -59,6 +59,7 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
           roomId={room.id}
           renderTrigger={(openDialog) => (
             <DropdownMenu
+              side="right"
               onOpenChange={setFocused}
               content={
                 <>

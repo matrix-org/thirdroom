@@ -49,6 +49,7 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
           roomId={room.id}
           renderTrigger={(openDialog) => (
             <DropdownMenu
+              side="right"
               onOpenChange={setFocused}
               content={
                 <>
