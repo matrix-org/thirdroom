@@ -1,3 +1,4 @@
+import { Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { createLocalResourceModule } from "./resource.common";
 
@@ -8,7 +9,7 @@ const {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
-} = createLocalResourceModule<RenderThreadState>();
+} = createLocalResourceModule<RenderThreadState>(Thread.Render);
 
 export {
   ResourceModule,

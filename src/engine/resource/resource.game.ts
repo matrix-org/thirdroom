@@ -1,6 +1,7 @@
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
+import { IRefCounted } from "../utils/Disposable";
 import {
   LoadResourcesMessage,
   ResourceDisposedError,
@@ -11,29 +12,66 @@ import {
   ResourceStatus,
 } from "./resource.common";
 
-interface RemoteResource {
-  id: ResourceId;
-  name: string;
-  thread: Thread;
-  resourceType: string;
-  props: any;
+interface ThreadResourceHandle {
+  thread: Thread.Main | Thread.Render;
   loaded: boolean;
   error?: string;
+  deferred?: Deferred<void>;
   statusView: Uint8Array;
-  cacheKey?: string;
-  refCount: number;
-  dispose?: () => void;
 }
 
 interface ResourceModuleState {
   resourceIdCounter: number;
-  resources: Map<ResourceId, RemoteResource>;
-  resourceIdMap: Map<string, Map<any, ResourceId>>;
-  deferredResources: Map<ResourceId, Deferred<undefined>>;
-  mainThreadMessageQueue: any[];
-  renderThreadMessageQueue: any[];
-  mainThreadTransferList: Transferable[];
-  renderThreadTransferList: Transferable[];
+  resources: Map<ResourceId, Resource>;
+  threadResources: Map<ResourceId, ThreadResourceHandle[]>;
+  threadMessageQueues: {
+    [Thread.Main]: any[];
+    [Thread.Render]: any[];
+  };
+  threadTransferLists: {
+    [Thread.Main]: Transferable[];
+    [Thread.Render]: Transferable[];
+  };
+}
+
+export abstract class Resource implements IRefCounted {
+  public resourceId: ResourceId;
+  public name: string;
+
+  private refCount = 0;
+
+  constructor(private ctx: GameState, public resourceType: string, name?: string) {
+    this.name = name || resourceType;
+    this.resourceId = createResource(ctx, this);
+  }
+
+  protected createThreadResource<T>(thread: Thread.Render | Thread.Main, props: T, transferList?: Transferable[]) {
+    createThreadResource(this.ctx, this, thread, props, transferList);
+  }
+
+  promise(): Promise<this> {
+    return waitForResource(this.ctx, this);
+  }
+
+  addRef() {
+    this.refCount++;
+  }
+
+  protected onDisposed() {}
+
+  release(): boolean {
+    this.refCount--;
+
+    if (this.refCount > 0) {
+      return false;
+    }
+
+    disposeResource(this.ctx, this);
+
+    this.onDisposed();
+
+    return true;
+  }
 }
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
@@ -42,12 +80,15 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     return {
       resourceIdCounter: 1,
       resources: new Map(),
-      resourceIdMap: new Map(),
-      deferredResources: new Map(),
-      mainThreadMessageQueue: [],
-      renderThreadMessageQueue: [],
-      mainThreadTransferList: [],
-      renderThreadTransferList: [],
+      threadResources: new Map(),
+      threadMessageQueues: {
+        [Thread.Main]: [],
+        [Thread.Render]: [],
+      },
+      threadTransferLists: {
+        [Thread.Main]: [],
+        [Thread.Render]: [],
+      },
     };
   },
   init(ctx) {
@@ -55,234 +96,163 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
 });
 
-function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
+function onResourceLoaded(ctx: GameState, { id, thread, loaded, error }: ResourceLoadedMessage) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resource = resourceModule.resources.get(id);
+  const threadResources = resourceModule.threadResources.get(id);
 
-  if (!resource) {
+  if (!threadResources) {
     return;
   }
 
-  const deferred = resourceModule.deferredResources.get(id);
+  for (let i = 0; i < threadResources.length; i++) {
+    const threadResource = threadResources[i];
 
-  if (!deferred) {
-    return;
-  }
+    if (threadResource.thread === thread) {
+      threadResource.loaded = loaded;
+      threadResource.error = error;
 
-  resource.loaded = loaded;
-  resource.error = error;
-
-  if (error) {
-    deferred.reject(error);
-  } else {
-    deferred.resolve(undefined);
-  }
-}
-
-interface ResourceOptions {
-  name?: string;
-  transferList?: Transferable[];
-  cacheKey?: any;
-  dispose?: () => void;
-}
-
-const UNKNOWN_RESOURCE_NAME = "Unknown Resource";
-
-export function createResource<Props>(
-  ctx: GameState,
-  thread: Thread,
-  resourceType: string,
-  props: Props,
-  options?: ResourceOptions
-): number {
-  const resourceModule = getModule(ctx, ResourceModule);
-
-  let resourceCache = resourceModule.resourceIdMap.get(resourceType);
-
-  if (resourceCache) {
-    if (options?.cacheKey !== undefined) {
-      const existingResourceId = resourceCache.get(options.cacheKey);
-
-      if (existingResourceId !== undefined) {
-        return existingResourceId;
+      if (threadResource.deferred) {
+        if (error) {
+          threadResource.deferred.reject(error);
+        } else {
+          threadResource.deferred.resolve();
+        }
       }
-    }
-  } else {
-    resourceCache = new Map();
-    resourceModule.resourceIdMap.set(resourceType, resourceCache);
-  }
 
-  const id = resourceModule.resourceIdCounter++;
+      return;
+    }
+  }
+}
+
+function createResource(ctx: GameState, resource: Resource): ResourceId {
+  const resourceModule = getModule(ctx, ResourceModule);
+  const resourceId = resourceModule.resourceIdCounter++;
+  resourceModule.resources.set(resourceId, resource);
+  return resourceId;
+}
+
+function createThreadResource<Props>(
+  ctx: GameState,
+  resource: Resource,
+  thread: Thread.Main | Thread.Render,
+  props: Props,
+  transferList?: Transferable[]
+) {
+  const resourceModule = getModule(ctx, ResourceModule);
 
   // First byte loading flag, second byte is dispose flag
   const statusBuffer = new SharedArrayBuffer(2);
   const statusView = new Uint8Array(statusBuffer);
   statusView[0] = ResourceStatus.Loading;
 
-  resourceModule.resources.set(id, {
-    id,
-    name: options?.name || UNKNOWN_RESOURCE_NAME,
+  resourceModule.threadMessageQueues[thread].push({
+    resourceType: resource.resourceType,
+    id: resource.resourceId,
+    props,
+    statusView,
+  });
+
+  if (transferList) {
+    resourceModule.threadTransferLists[thread].push(...transferList);
+  }
+
+  let threadResources = resourceModule.threadResources.get(resource.resourceId);
+
+  if (!threadResources) {
+    threadResources = [];
+    resourceModule.threadResources.set(resource.resourceId, threadResources);
+  }
+
+  threadResources.push({
     thread,
-    resourceType,
-    props,
+    statusView,
     loaded: false,
-    statusView,
-    cacheKey: options?.cacheKey,
-    refCount: 0,
-    dispose: options?.dispose,
   });
-
-  if (options?.cacheKey !== undefined) {
-    resourceCache.set(options.cacheKey, id);
-  }
-
-  const deferred = createDeferred<undefined>();
-
-  deferred.promise.catch((error) => {
-    if (error instanceof ResourceDisposedError) {
-      return;
-    }
-
-    console.error(error);
-  });
-
-  resourceModule.deferredResources.set(id, deferred);
-
-  const message = {
-    resourceType,
-    id,
-    props,
-    statusView,
-  };
-
-  if (thread === Thread.Main) {
-    resourceModule.mainThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.mainThreadTransferList.push(...options.transferList);
-    }
-  } else if (thread === Thread.Render) {
-    resourceModule.renderThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.renderThreadTransferList.push(...options.transferList);
-    }
-  } else {
-    throw new Error("Invalid resource thread target");
-  }
-
-  return id;
 }
 
-export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
+function disposeResource(ctx: GameState, resource: Resource) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resource = resourceModule.resources.get(resourceId);
+  const threadResourceHandles = resourceModule.threadResources.get(resource.resourceId);
 
-  if (!resource) {
-    return false;
+  if (threadResourceHandles) {
+    for (let i = 0; i < threadResourceHandles.length; i++) {
+      const threadResourceHandle = threadResourceHandles[i];
+
+      threadResourceHandle.error = "Resource disposed";
+      threadResourceHandle.loaded = true;
+
+      if (threadResourceHandle.deferred) {
+        threadResourceHandle.deferred.reject(new ResourceDisposedError("Resource disposed"));
+      }
+
+      // Set dispose flag
+      threadResourceHandle.statusView[1] = 1;
+
+      ctx.sendMessage<ResourceDisposedMessage>(threadResourceHandle.thread, {
+        type: ResourceMessageType.ResourceDisposed,
+        id: resource.resourceId,
+      });
+    }
+
+    resourceModule.threadResources.delete(resource.resourceId);
   }
 
-  resource.refCount--;
+  resourceModule.resources.delete(resource.resourceId);
+}
 
-  if (resource.refCount > 0) {
-    return false;
+function waitForResource<R extends Resource>(ctx: GameState, resource: R): Promise<R> {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  const threadResourceHandles = resourceModule.threadResources.get(resource.resourceId);
+
+  if (!threadResourceHandles) {
+    return Promise.resolve(resource);
   }
 
-  if (resource.dispose) {
-    resource.dispose();
-  }
+  const promises: Promise<void>[] = [];
 
-  if (resource.cacheKey) {
-    const resourceTypeCache = resourceModule.resourceIdMap.get(resource.resourceType);
-
-    if (resourceTypeCache) {
-      resourceTypeCache.delete(resource.cacheKey);
+  for (const threadResourceHandle of threadResourceHandles) {
+    if (threadResourceHandle.deferred) {
+      promises.push(threadResourceHandle.deferred.promise);
+    } else if (threadResourceHandle.error) {
+      promises.push(Promise.reject(threadResourceHandle.error));
+    } else if (threadResourceHandle.loaded) {
+      promises.push(Promise.resolve());
+    } else {
+      const deferred = createDeferred<void>();
+      threadResourceHandle.deferred = deferred;
+      promises.push(deferred.promise);
     }
   }
 
-  const deferred = resourceModule.deferredResources.get(resourceId);
-
-  if (deferred) {
-    deferred.reject(new ResourceDisposedError("Resource disposed"));
-    resourceModule.deferredResources.delete(resourceId);
-  }
-
-  // Set dispose flag
-  resource.statusView[1] = 1;
-
-  resourceModule.resources.delete(resourceId);
-
-  ctx.sendMessage<ResourceDisposedMessage>(resource.thread, {
-    type: ResourceMessageType.ResourceDisposed,
-    id: resourceId,
-  });
-
-  return true;
+  return Promise.all(promises).then(() => resource);
 }
 
-export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
-  const resourceModule = getModule(ctx, ResourceModule);
-
-  const resource = resourceModule.resources.get(resourceId);
-
-  if (resource) {
-    resource.refCount++;
-  }
-}
-
-export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const deferred = resourceModule.deferredResources.get(resourceId);
-
-  if (deferred) {
-    return deferred.promise;
-  }
-
-  return Promise.reject(new Error(`Resource ${resourceId} not found.`));
-}
-
-export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resource = resourceModule.resources.get(resourceId);
-  return resource ? resource.statusView[0] : ResourceStatus.None;
-}
+const threads: [Thread.Main, Thread.Render] = [Thread.Main, Thread.Render];
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  const resourceModule = getModule(ctx, ResourceModule);
+  const { threadMessageQueues, threadTransferLists } = getModule(ctx, ResourceModule);
 
-  if (resourceModule.mainThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Main,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.mainThreadMessageQueue,
-      },
-      resourceModule.mainThreadTransferList.length > 0 ? resourceModule.mainThreadTransferList : undefined
-    );
+  for (let i = 0; i < threads.length; i++) {
+    const thread = threads[i];
 
-    resourceModule.mainThreadMessageQueue = [];
+    if (threadMessageQueues[thread].length !== 0) {
+      ctx.sendMessage<LoadResourcesMessage>(
+        thread,
+        {
+          type: ResourceMessageType.LoadResources,
+          resources: threadMessageQueues[thread],
+        },
+        threadTransferLists[thread].length > 0 ? threadTransferLists[thread] : undefined
+      );
 
-    if (resourceModule.mainThreadTransferList.length > 0) {
-      resourceModule.mainThreadTransferList = [];
-    }
-  }
+      threadMessageQueues[thread] = [];
 
-  if (resourceModule.renderThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Render,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.renderThreadMessageQueue,
-      },
-      resourceModule.renderThreadTransferList.length > 0 ? resourceModule.renderThreadTransferList : undefined
-    );
-
-    resourceModule.renderThreadMessageQueue = [];
-
-    if (resourceModule.renderThreadTransferList.length > 0) {
-      resourceModule.renderThreadTransferList = [];
+      if (threadTransferLists[thread].length > 0) {
+        threadTransferLists[thread] = [];
+      }
     }
   }
 }

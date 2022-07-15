@@ -1,4 +1,5 @@
 import { IMainThreadContext } from "../MainThread";
+import { Thread } from "../module/module.common";
 import { createLocalResourceModule } from "./resource.common";
 
 const {
@@ -8,7 +9,7 @@ const {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
-} = createLocalResourceModule<IMainThreadContext>();
+} = createLocalResourceModule<IMainThreadContext>(Thread.Main);
 
 export {
   ResourceModule,

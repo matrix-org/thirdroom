@@ -31,6 +31,7 @@ export interface LoadResourcesMessage {
 
 export interface ResourceLoadedMessage<Response = unknown> {
   type: ResourceMessageType.ResourceLoaded;
+  thread: Thread;
   id: ResourceId;
   loaded: boolean;
   error?: string;
@@ -73,7 +74,7 @@ interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
 
 export class ResourceDisposedError extends Error {}
 
-export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>() => {
+export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>(thread: Thread) => {
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
     create() {
@@ -159,6 +160,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     ctx.sendMessage<ResourceLoadedMessage>(Thread.Game, {
       type: ResourceMessageType.ResourceLoaded,
+      thread,
       id,
       loaded: resource.loaded,
       error: resource.error,
