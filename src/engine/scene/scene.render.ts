@@ -5,12 +5,13 @@ import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
+  resourceId: ResourceId;
   scene: Scene;
   backgroundTexture?: LocalTextureResource;
   environmentTexture?: LocalTextureResource;
@@ -19,7 +20,7 @@ export interface LocalSceneResource {
 
 export async function onLoadLocalSceneResource(
   ctx: RenderThreadState,
-  id: ResourceId,
+  resourceId: ResourceId,
   { rendererSceneTripleBuffer }: RendererSharedSceneResource
 ): Promise<LocalSceneResource> {
   const rendererModule = getModule(ctx, RendererModule);
@@ -38,6 +39,7 @@ export async function onLoadLocalSceneResource(
   const scene = new Scene();
 
   const localSceneResource = {
+    resourceId,
     scene,
     rendererSceneTripleBuffer,
   };
@@ -48,6 +50,14 @@ export async function onLoadLocalSceneResource(
 }
 
 export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
+  for (let i = scenes.length - 1; i >= 0; i--) {
+    const sceneResource = scenes[i];
+
+    if (getResourceDisposed(ctx, sceneResource.resourceId)) {
+      scenes.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < scenes.length; i++) {
     const sceneResource = scenes[i];
     const { scene, rendererSceneTripleBuffer, backgroundTexture, environmentTexture } = sceneResource;

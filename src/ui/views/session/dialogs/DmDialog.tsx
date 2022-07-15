@@ -107,6 +107,7 @@ export function DmDialog({ renderTrigger }: DmDialogProps) {
                   maxLength={255}
                   autoFocus
                   placeholder="@user:server.name"
+                  required
                 />
               </SettingTile>
               {!starting && error && (

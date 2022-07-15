@@ -40,7 +40,6 @@ export function DropdownMenu({
         portalled={portalled}
       >
         {content}
-        <RadixDropdownMenu.Arrow className="DropdownMenu__arrow" height={5} width={10} offset={8} />
       </RadixDropdownMenu.Content>
     </RadixDropdownMenu.Root>
   );

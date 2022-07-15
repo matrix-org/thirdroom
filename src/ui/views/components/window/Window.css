@@ -3,5 +3,6 @@
   width: 100%;
   border-radius: var(--br-lg);
   background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
   overflow: hidden;
 }

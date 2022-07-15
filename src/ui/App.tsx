@@ -1,5 +1,6 @@
-import { lazy, ReactNode, Suspense } from "react";
+import { lazy, ReactNode, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
+import { useFocusVisible } from "@react-aria/interactions";
 
 import "./App.css";
 
@@ -8,6 +9,14 @@ import { LoginView } from "./views/login/LoginView";
 import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
 import { HomeView } from "./views/session/home/HomeView";
+
+function FocusOutlineManager() {
+  const { isFocusVisible } = useFocusVisible();
+  useEffect(() => {
+    document.body.style.setProperty("--focus-outline", isFocusVisible ? "var(--tc-surface) solid 2px" : "none");
+  }, [isFocusVisible]);
+  return <></>;
+}
 
 let storybookRoute: ReactNode = null;
 
@@ -28,16 +37,19 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<HydrogenRootView />}>
-        <Route path="/login" element={<LoginView />} />
-        <Route element={<SessionView />}>
-          <Route path="world/:worldId" element={<WorldView />} />
-          <Route path="world/" element={<WorldView />} />
-          <Route path="/" element={<HomeView />} />
+    <>
+      <FocusOutlineManager />
+      <Routes>
+        <Route element={<HydrogenRootView />}>
+          <Route path="/login" element={<LoginView />} />
+          <Route element={<SessionView />}>
+            <Route path="world/:worldId" element={<WorldView />} />
+            <Route path="world/" element={<WorldView />} />
+            <Route path="/" element={<HomeView />} />
+          </Route>
         </Route>
-      </Route>
-      {storybookRoute}
-    </Routes>
+        {storybookRoute}
+      </Routes>
+    </>
   );
 }

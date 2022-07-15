@@ -2,6 +2,7 @@
   width: 60px;
   border-radius: var(--br-xs);
   background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
 }
 
 .SpacesView__scrollable {

@@ -22,11 +22,13 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../engine/material/material.game";
+import { createCube, createSphereMesh } from "../engine/mesh/mesh.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createCube, createPrefabEntity, createSphereMesh, registerPrefab } from "../engine/prefab";
+import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game";
+import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
 
@@ -45,14 +47,18 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     const module = getModule(ctx, CubeSpawnerModule);
 
     const image = createRemoteImage(ctx, { name: "Crate Image", uri: "/image/crate.gif" });
+    addResourceRef(ctx, image.resourceId);
     const texture = createRemoteTexture(ctx, { name: "Crate Texture", image });
+    addResourceRef(ctx, texture.resourceId);
 
     const cubeMaterial = createRemoteStandardMaterial(ctx, {
       name: "Cube Material",
       baseColorTexture: texture,
     });
+    addResourceRef(ctx, cubeMaterial.resourceId);
 
     const crateAudioData = createRemoteAudioData(ctx, { name: "Crate Audio Data", uri: "/audio/hit.wav" });
+    addResourceRef(ctx, crateAudioData.resourceId);
 
     registerPrefab(ctx, {
       name: "crate",
@@ -80,6 +86,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     });
 
     const ballAudioData = createRemoteAudioData(ctx, { name: "Ball Audio Data", uri: "/audio/bounce.wav" });
+    addResourceRef(ctx, ballAudioData.resourceId);
 
     const ballMaterial = createRemoteStandardMaterial(ctx, {
       name: "Ball Material",
@@ -89,6 +96,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
       emissiveTexture: texture,
       metallicRoughnessTexture: texture,
     });
+    addResourceRef(ctx, ballMaterial.resourceId);
 
     registerPrefab(ctx, {
       name: "bouncy-ball",
@@ -179,7 +187,8 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, cube);
-    addComponent(ctx.world, Networked, cube);
+    // Networked component isn't reset when removed so reset on add
+    addComponent(ctx.world, Networked, cube, true);
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 

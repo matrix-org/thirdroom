@@ -1,6 +1,6 @@
 .DropdownMenuItem {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   padding: var(--sp-xs) var(--sp-md);
   cursor: pointer;
   transition: background-color 100ms ease-in-out;

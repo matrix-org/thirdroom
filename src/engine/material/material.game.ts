@@ -158,6 +158,12 @@ export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialPr
         if (_baseColorTexture) {
           disposeResource(ctx, _baseColorTexture.resourceId);
         }
+
+        const index = rendererModule.unlitMaterials.findIndex((material) => material.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.unlitMaterials.splice(index, 1);
+        }
       },
     }
   );
@@ -290,6 +296,12 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
 
         if (_emissiveTexture) {
           disposeResource(ctx, _emissiveTexture.resourceId);
+        }
+
+        const index = rendererModule.standardMaterials.findIndex((material) => material.resourceId === resourceId);
+
+        if (index !== -1) {
+          rendererModule.standardMaterials.splice(index, 1);
         }
       },
     }
