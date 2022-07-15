@@ -5,7 +5,7 @@ While Thirdroom is in active development we're lacking integration tests, so we 
 ## Checklist
 
 - [] Did CI pass successfully?
-- [] Open the branch locally
+- [] Open the PR's deploy preview
 - [] Open the browser's task manager and record initial memory usage for the tab
 - [] Complete the following tasks in #uk-city:thirdroom.dev
   - [] Join world
