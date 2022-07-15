@@ -16,7 +16,7 @@ export function SettingTile({ className, label, options, children }: SettingTile
         {label}
         {options}
       </div>
-      <div className="SettingTile__content flex flex-column items-start">{children}</div>
+      <div className="SettingTile__content">{children}</div>
     </div>
   );
 }

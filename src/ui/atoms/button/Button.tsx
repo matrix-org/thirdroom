@@ -4,11 +4,14 @@ import classNames from "classnames";
 import { Text } from "../text/Text";
 
 import "./Button.css";
+export type ButtonVariant = "primary" | "secondary" | "danger";
+export type ButtonFill = "solid" | "outline";
+export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 interface IButton {
   className?: string;
-  variant?: "primary" | "secondary" | "danger";
-  fill?: "solid" | "outline";
-  size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
+  variant?: ButtonVariant;
+  fill?: ButtonFill;
+  size?: ButtonSize;
   type?: "button" | "submit" | "reset";
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;

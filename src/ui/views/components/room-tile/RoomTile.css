@@ -2,9 +2,17 @@
 .RoomTile--active {
   width: 100%;
 
+  &:focus-within {
+    outline: var(--outline);
+    outline-offset: var(--outline-offset);
+  }
+
   & > button {
     padding: var(--sp-xs) var(--sp-md);
     cursor: pointer;
+    &:focus {
+      outline: none;
+    }
   }
 }
 

@@ -1,5 +1,4 @@
 import { ReactNode, useState } from "react";
-import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { Modal } from "../../../atoms/modal/Modal";
 import { ModalContent } from "../../../atoms/modal/ModalContent";
@@ -14,8 +13,11 @@ import { Scroll } from "../../../atoms/scroll/Scroll";
 import "./Edit3DAvatar.css";
 import { Footer } from "../../../atoms/footer/Footer";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { AvatarUpload } from "./AvatarUpload";
-import { AvatarPreviewUpload } from "./AvatarPreviewUpload";
+import { SettingTile } from "../../components/setting-tile/SettingTile";
+import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
+import { Label } from "../../../atoms/text/Label";
+import { Icon } from "../../../atoms/icon/Icon";
+import UploadIC from "../../../../../res/ic/upload.svg";
 
 interface Edit3DAvatarProps {
   renderTrigger: (openModal: () => void) => ReactNode;
@@ -27,15 +29,14 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
 
-  const [avatarUrl, setAvatarUrl] = useState<string>();
-  const [avatarPrevUrl, setAvatarPrevUrl] = useState<string>();
-  const [avatarPrevBlob, setAvatarPrevBlob] = useState<IBlobHandle>();
+  const [avatarInfo, setAvatarInfo] = useState<AutoUploadInfo>({});
+  const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
 
   const saveChanges = () => {
-    if (!avatarUrl || !avatarPrevUrl) return;
+    if (!avatarInfo.mxc || !previewInfo.mxc) return;
     session.hsApi.sendState(profileRoom.id, "org.matrix.msc3815.world.profile", "", {
-      avatar_url: avatarUrl,
-      avatar_preview_url: avatarPrevUrl,
+      avatar_url: avatarInfo.mxc,
+      avatar_preview_url: previewInfo.mxc,
     });
     closeModal();
   };
@@ -52,8 +53,30 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
                 children={
                   <Scroll>
                     <div className="Edit3DAvatar__content">
-                      <AvatarUpload onMxcChange={setAvatarUrl} />
-                      <AvatarPreviewUpload onMxcChange={setAvatarPrevUrl} onBlobChange={setAvatarPrevBlob} />
+                      <SettingTile className="grow basis-0" label={<Label>Avatar</Label>}>
+                        <AutoFileUpload
+                          mimeType=".glb"
+                          onUploadInfo={setAvatarInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Avatar
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Avatar Preview</Label>}>
+                        <AutoFileUpload
+                          mimeType="image/*"
+                          onUploadInfo={setPreviewInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Preview
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
                     </div>
                   </Scroll>
                 }
@@ -65,7 +88,7 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
                       </Button>
                     }
                     right={
-                      <Button onClick={saveChanges} disabled={!avatarUrl || !avatarPrevUrl}>
+                      <Button onClick={saveChanges} disabled={!avatarInfo.mxc || !previewInfo.mxc}>
                         Save
                       </Button>
                     }
@@ -77,7 +100,7 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
               <ModalAside className="flex">
                 <ScenePreview
                   className="grow"
-                  src={avatarPrevBlob ? URL.createObjectURL(avatarPrevBlob.nativeBlob) : undefined}
+                  src={previewInfo.url}
                   alt="3D Avatar preview"
                   fallback={
                     <Text variant="b3" color="surface-low" weight="medium">

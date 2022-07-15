@@ -2,6 +2,11 @@
 .Scroll__viewport {
   height: 100%;
   width: 100%;
+
+  & > div {
+    /* Radix sets it to table which cause overflow issues with flex items */
+    display: block !important;
+  }
 }
 
 .Scroll__track {

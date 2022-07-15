@@ -10,9 +10,6 @@ import { Switch } from "../../../atoms/button/Switch";
 import { Label } from "../../../atoms/text/Label";
 import { Input } from "../../../atoms/input/Input";
 import { Scroll } from "../../../atoms/scroll/Scroll";
-import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
-import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { ThumbnailHover } from "../../../atoms/thumbnail/ThumbnailHover";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Window } from "../../components/window/Window";
 import { Header } from "../../../atoms/header/Header";
@@ -28,11 +25,12 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
-import AddIC from "../../../../../res/ic/add.svg";
 import CrossCircleIC from "../../../../../res/ic/cross-circle.svg";
-import { SceneUpload } from "./SceneUpload";
+import UploadIC from "../../../../../res/ic/upload.svg";
 import "./CreateWorld.css";
-import { ScenePreviewUpload } from "./ScenePreviewUpload";
+import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
+import { useFilePicker } from "../../../hooks/useFilePicker";
+import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 
 export interface CreateWorldOptions {
@@ -49,12 +47,13 @@ export function CreateWorld() {
   const { session, platform } = useHydrogen(true);
   const { homeserver } = session.sessionInfo;
   const userHSDomain = getMxIdDomain(session.userId);
-  const selectWindow = useStore((state) => state.overlayWindow.selectWindow);
+  const { closeWindow } = useStore((state) => state.overlayWindow);
 
-  const [avatarBlob, setAvatarBlob] = useState<IBlobHandle>();
-  const [sceneMxc, setSceneMxc] = useState<string>();
-  const [scenePrevMxc, setScenePrevMxc] = useState<string>();
-  const [scenePrevBlob, setScenePrevBlob] = useState<IBlobHandle>();
+  const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
+
+  const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
+  const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
+
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
   const isMounted = useIsMounted();
   const [creatingRoom, setCreatingRoom] = useState(false);
@@ -122,14 +121,14 @@ export function CreateWorld() {
 
       navigate(`/world/${roomBeingCreated.id}`);
 
-      selectWindow();
+      closeWindow();
     },
-    [session, navigate, selectWindow]
+    [session, navigate, closeWindow]
   );
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    if (isAliasAvail === false || !sceneMxc || !scenePrevMxc) return;
+    if (isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
@@ -139,10 +138,10 @@ export function CreateWorld() {
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
-      sceneMxc,
-      scenePrevMxc,
+      sceneMxc: sceneInfo.mxc,
+      scenePrevMxc: previewInfo.mxc,
       topic: topicInput.value || undefined,
-      avatar: !avatarBlob ? undefined : avatarBlob,
+      avatar: avatarData.blob,
       alias: aliasInput.value || undefined,
     });
   };
@@ -166,12 +165,6 @@ export function CreateWorld() {
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
-  const handleAvatarSelect = useCallback(async () => {
-    const data = await platform.openFile("image/*");
-    if (!data) return;
-    setAvatarBlob(data.blob);
-  }, [setAvatarBlob, platform]);
-
   return (
     <Window>
       <Content
@@ -183,7 +176,7 @@ export function CreateWorld() {
                 Create World
               </HeaderTitle>
             }
-            right={<IconButton onClick={() => selectWindow()} iconSrc={CrossCircleIC} label="Close" />}
+            right={<IconButton onClick={() => closeWindow()} iconSrc={CrossCircleIC} label="Close" />}
           />
         }
       >
@@ -194,36 +187,33 @@ export function CreateWorld() {
                 <Scroll>
                   <div className="CreateWorld__content">
                     <SettingTile label={<Label>World Avatar</Label>}>
-                      <ThumbnailHover
-                        content={
-                          !avatarBlob ? undefined : (
-                            <IconButton
-                              variant="world"
-                              onClick={() => setAvatarBlob(undefined)}
-                              size="xl"
-                              iconSrc={CrossCircleIC}
-                              label="Remove world avatar"
-                            />
-                          )
-                        }
-                      >
-                        <Thumbnail size="sm" className="flex">
-                          {avatarBlob ? (
-                            <ThumbnailImg src={URL.createObjectURL(avatarBlob.nativeBlob)} />
-                          ) : (
-                            <IconButton
-                              onClick={handleAvatarSelect}
-                              size="xl"
-                              iconSrc={AddIC}
-                              label="Add world avatar"
-                            />
-                          )}
-                        </Thumbnail>
-                      </ThumbnailHover>
+                      <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
                     </SettingTile>
                     <div className="flex gap-lg">
-                      <SceneUpload onMxcChange={setSceneMxc} />
-                      <ScenePreviewUpload onMxcChange={setScenePrevMxc} onBlobChange={setScenePrevBlob} />
+                      <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
+                        <AutoFileUpload
+                          mimeType=".glb"
+                          onUploadInfo={setSceneInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Scene
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
+                      <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
+                        <AutoFileUpload
+                          mimeType="image/*"
+                          onUploadInfo={setPreviewInfo}
+                          renderButton={(pickFile) => (
+                            <Button onClick={pickFile}>
+                              <Icon src={UploadIC} color="on-primary" />
+                              Upload Preview
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
                     </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
@@ -265,7 +255,7 @@ export function CreateWorld() {
               bottom={
                 <Footer
                   left={
-                    <Button size="lg" fill="outline" onClick={() => selectWindow()}>
+                    <Button size="lg" fill="outline" onClick={() => closeWindow()}>
                       Cancel
                     </Button>
                   }
@@ -273,7 +263,7 @@ export function CreateWorld() {
                     <Button
                       size="lg"
                       type="submit"
-                      disabled={isAliasAvail === false || !sceneMxc || !scenePrevMxc || creatingRoom}
+                      disabled={isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc || creatingRoom}
                     >
                       {creatingRoom ? "Creating World..." : "Create World"}
                     </Button>
@@ -286,7 +276,7 @@ export function CreateWorld() {
             <WindowAside className="flex">
               <ScenePreview
                 className="grow"
-                src={scenePrevBlob ? URL.createObjectURL(scenePrevBlob.nativeBlob) : undefined}
+                src={previewInfo.url}
                 fallback={
                   <Text variant="b3" color="surface-low" weight="medium">
                     Your uploaded scene preview will appear here.

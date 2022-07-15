@@ -21,3 +21,7 @@ export function bytesToSize(bytes: number) {
   if (i === 0) return `${bytes} ${sizes[i]}`;
   return `${(bytes / 1024 ** i).toFixed(1)} ${sizes[i]}`;
 }
+
+export function getPercentage(total: number, value: number) {
+  return Math.round((value / total) * 100);
+}
