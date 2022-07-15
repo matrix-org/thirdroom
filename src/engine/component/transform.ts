@@ -443,6 +443,8 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
+// TODO: traverse still seems to be broken in some edge cases and needs more test cases.
+// Use traverseRecursive to debug edge cases and build out proper iterative solution
 export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
   // start at root
   let eid = rootEid;
@@ -499,8 +501,6 @@ export function traverseReverse(rootEid: number, callback: (eid: number) => unkn
   traverse(rootEid, (eid) => {
     stack.push(eid);
   });
-
-  console.log("done!");
 
   while (stack.length) {
     callback(stack.pop()!);

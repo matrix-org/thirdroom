@@ -124,10 +124,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
     registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
-    registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, (...args) => {
-      console.log("NewPeerSnapshot", args);
-      return deserializeNewPeerSnapshot(...args);
-    });
+    registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
 
     const disposables = [
@@ -174,23 +171,15 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   const { peerId } = message;
 
   const peerArrIndex = network.peers.indexOf(peerId);
-  console.log(network.peerIdToIndex);
   const peerIndex = network.peerIdToIndex.get(peerId);
-
-  if (peerIndex === undefined) {
-    console.error(`Couldn't find peer index for ${peerId}`);
-  }
 
   if (peerArrIndex > -1) {
     const entities = networkedQuery(ctx.world);
-    console.log("networkedQuery", entities);
 
     for (let i = entities.length - 1; i >= 0; i--) {
       const eid = entities[i];
 
       const networkId = Networked.networkId[eid];
-
-      console.log("onRemovePeerId", peerIndex, getPeerIdIndexFromNetworkId(networkId));
 
       if (peerIndex === getPeerIdIndexFromNetworkId(networkId)) {
         removeRecursive(ctx.world, eid);
@@ -198,9 +187,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     }
 
     const eid = network.peerIdToEntityId.get(peerId);
-    console.log("removing peer", peerId);
     if (eid) removeRecursive(ctx.world, eid);
-    console.log("removed", peerId);
 
     network.peers.splice(peerArrIndex, 1);
     network.peerIdToIndex.delete(peerId);
@@ -220,7 +207,6 @@ const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   network.peerId = peerId;
   // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
 
-  console.log("onSetPeerId", peerIdIndex);
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
 };
@@ -453,7 +439,6 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
-      console.log("serializeCreatesSnapshot() nid", nid, "eid", eid, "prefab", prefabName);
     } else {
       console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
     }
@@ -481,7 +466,6 @@ export function serializeCreates(input: NetPipeData) {
 }
 
 export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab: string) {
-  console.log("createRemoteNetworkedEntity()", nid, prefab);
   const network = getModule(state, NetworkModule);
   const eid = createPrefabEntity(state, prefab);
 
@@ -512,7 +496,6 @@ export function deserializeCreates(input: NetPipeData) {
     const nid = readUint32(v);
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
-    console.log("existingEntity!", nid, existingEntity);
     if (existingEntity) continue;
     const eid = createRemoteNetworkedEntity(state, nid, prefabName);
     console.log("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
@@ -653,7 +636,6 @@ export function deserializePeerIdIndex(input: NetPipeData) {
 
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
-
   console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
@@ -936,8 +918,6 @@ const sendUpdates = (ctx: GameState) => {
           // broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
           broadcastReliable(ctx, createPeerIdIndexMessage(ctx, network.peerId));
           // }
-
-          console.log("newPeerSnapshotMsg", new Uint8Array(newPeerSnapshotMsg));
 
           sendReliable(ctx, theirPeerId, newPeerSnapshotMsg);
         }

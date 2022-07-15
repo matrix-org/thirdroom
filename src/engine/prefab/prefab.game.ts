@@ -54,7 +54,6 @@ export function PrefabDisposalSystem(state: GameState) {
 
   for (let i = 0; i < removed.length; i++) {
     const eid = removed[i];
-    console.log("removing prefab", Prefab.get(eid));
     Prefab.delete(eid);
   }
 }

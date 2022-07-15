@@ -32,7 +32,6 @@ import {
   readString,
   readUint16,
   readUint32,
-  readUint8,
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";

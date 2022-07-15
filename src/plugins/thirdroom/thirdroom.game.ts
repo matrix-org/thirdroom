@@ -176,8 +176,6 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   try {
-    console.log("loading environment");
-
     if (ctx.activeScene) {
       removeRecursive(ctx.world, ctx.activeScene);
 
@@ -194,8 +192,6 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
       ctx.activeScene = NOOP;
       ctx.activeCamera = NOOP;
     }
-
-    console.log("disposed scene");
 
     const newScene = addEntity(ctx.world);
 
@@ -308,25 +304,17 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
-  console.log("onExitWorld");
-
   removeRecursive(ctx.world, ctx.activeScene);
-
-  console.log("removeRecursive");
 
   if (thirdroom.sceneGLTF) {
     disposeGLTFResource(thirdroom.sceneGLTF);
     thirdroom.sceneGLTF = undefined;
   }
 
-  console.log("disposeGLTFResource");
-
   if (thirdroom.collisionsGLTF) {
     disposeGLTFResource(thirdroom.collisionsGLTF);
     thirdroom.collisionsGLTF = undefined;
   }
-
-  console.log("disposeGLTFResource collisionsGLTF");
 
   ctx.activeCamera = NOOP;
   ctx.activeScene = NOOP;

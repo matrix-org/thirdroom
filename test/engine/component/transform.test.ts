@@ -296,7 +296,6 @@ describe("Transform Unit Tests", function () {
         });
 
         expect(results).toStrictEqual([entityB]);
-        console.log("yup");
       }, 1000);
     });
   });
@@ -478,7 +477,6 @@ describe("Transform Unit Tests", function () {
       });
 
       expect(results).toStrictEqual([entityB]);
-      console.log("yup");
     }, 1000);
   });
 });

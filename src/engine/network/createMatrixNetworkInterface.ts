@@ -180,22 +180,15 @@ export function createMatrixNetworkInterface(
 
     if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
       setHost(ctx, true);
-      console.log("SETTING HOST: TRUE");
     } else {
       setHost(ctx, false);
-      console.log("SETTING HOST: FALSE");
     }
   }
 
   return () => {
-    console.log("dispose network interface");
     disconnect(ctx);
 
-    console.log("after disconnect");
-
     exitWorld(ctx);
-
-    console.log("after exit");
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();
