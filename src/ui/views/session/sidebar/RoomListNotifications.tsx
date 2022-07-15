@@ -11,6 +11,7 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
 import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
+import { EmptyState } from "../../components/empty-state/EmptyState";
 
 export function RoomListNotifications() {
   const { session, platform } = useHydrogen(true);
@@ -36,10 +37,20 @@ export function RoomListNotifications() {
     return avatar;
   };
 
+  if (worldInvites.length === 0 && roomInvites.length === 0 && dmInvites.length === 0) {
+    return (
+      <EmptyState
+        style={{ minHeight: "400px" }}
+        heading="No Notification"
+        text="You don't have any notifications yet."
+      />
+    );
+  }
+
   return (
     <>
       {worldInvites.length > 0 && (
-        <Category header={<CategoryHeader title="World Invites" />}>
+        <Category header={<CategoryHeader title="Invites - Worlds" />}>
           {worldInvites.map((invite) => (
             <RoomTile
               key={invite.id}
@@ -51,7 +62,7 @@ export function RoomListNotifications() {
         </Category>
       )}
       {roomInvites.length > 0 && (
-        <Category header={<CategoryHeader title="Room Invites" />}>
+        <Category header={<CategoryHeader title="Invites - Rooms" />}>
           {roomInvites.map((invite) => (
             <RoomTile
               key={invite.id}
@@ -63,7 +74,7 @@ export function RoomListNotifications() {
         </Category>
       )}
       {dmInvites.length > 0 && (
-        <Category header={<CategoryHeader title="Direct Messages Invites" />}>
+        <Category header={<CategoryHeader title="Invites - Direct Messages" />}>
           {dmInvites.map((invite) => (
             <RoomTile
               key={invite.id}

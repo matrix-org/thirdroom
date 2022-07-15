@@ -7,11 +7,17 @@ interface IRoomTile {
   content: ReactNode;
   options?: ReactNode;
   isActive?: boolean;
+  isFocused?: boolean;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function RoomTile({ avatar, content, options, isActive = false, onClick }: IRoomTile) {
-  const roomTileClass = classNames("RoomTile", { "RoomTile--active": isActive }, "flex items-center");
+export function RoomTile({ avatar, content, options, isActive = false, isFocused = false, onClick }: IRoomTile) {
+  const roomTileClass = classNames(
+    "RoomTile",
+    { "RoomTile--active": isActive },
+    { "RoomTile--focused": isFocused },
+    "flex items-center"
+  );
 
   return (
     <div className={roomTileClass}>

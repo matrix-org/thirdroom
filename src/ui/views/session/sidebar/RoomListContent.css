@@ -2,6 +2,6 @@
   min-height: 100%;
 
   & > * {
-    padding: var(--sp-xs) 0;
+    padding-bottom: var(--sp-xs);
   }
 }

@@ -45,7 +45,8 @@
 .RoomTile:hover,
 .RoomTile:focus-within,
 .RoomTile:active,
-.RoomTile--active {
+.RoomTile--active,
+.RoomTile--focused {
   & .RoomTile__options {
     display: block;
   }
