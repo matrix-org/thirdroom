@@ -1,4 +1,4 @@
-import { addEntity, defineQuery, removeEntity } from "bitecs";
+import { addEntity, defineQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -15,11 +15,11 @@ import { NetworkModule } from "../../engine/network/network.game";
 import { createPlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
-  EnvironmentLoadedMessage,
-  EnvironmentLoadErrorMessage,
+  WorldLoadedMessage,
+  WorldLoadErrorMessage,
   ExitWorldMessage,
-  LoadEnvironmentMessage,
-  PrintResourcesMessage,
+  LoadWorldMessage,
+  PrintThreadStateMessage,
   ThirdRoomMessageType,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
@@ -31,17 +31,14 @@ import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engin
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import {
-  // createGLTFEntity,
-  createContainerizedAvatar,
-  registerPrefab,
-} from "../../engine/prefab";
+import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
-import { ResourceModule } from "../../engine/resource/resource.game";
+import { createContainerizedAvatar } from "../avatar";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
+  collisionsGLTF?: GLTFResource;
 }
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
@@ -51,10 +48,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
   async init(ctx) {
     const disposables = [
-      registerMessageHandler(ctx, ThirdRoomMessageType.LoadEnvironment, onLoadEnvironment),
+      registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
-      registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
+      registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
     ];
 
     // const cube = addEntity(ctx.world);
@@ -175,7 +172,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
-async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage) {
+async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   try {
@@ -185,6 +182,11 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
       if (thirdroom.sceneGLTF) {
         disposeGLTFResource(thirdroom.sceneGLTF);
         thirdroom.sceneGLTF = undefined;
+      }
+
+      if (thirdroom.collisionsGLTF) {
+        disposeGLTFResource(thirdroom.collisionsGLTF);
+        thirdroom.collisionsGLTF = undefined;
       }
 
       ctx.activeScene = NOOP;
@@ -235,8 +237,7 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
       sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
     ) {
       const collisionGeo = addEntity(ctx.world);
-      await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
-
+      thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
       addChild(newScene, collisionGeo);
     }
 
@@ -249,16 +250,16 @@ async function onLoadEnvironment(ctx: GameState, message: LoadEnvironmentMessage
       setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
     }
 
-    ctx.sendMessage<EnvironmentLoadedMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.EnvironmentLoaded,
+    ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.WorldLoaded,
       id: message.id,
       url: message.url,
     });
   } catch (error: any) {
     console.error(error);
 
-    ctx.sendMessage<EnvironmentLoadErrorMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.EnvironmentLoadError,
+    ctx.sendMessage<WorldLoadErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.WorldLoadError,
       id: message.id,
       url: message.url,
       error: error.message || "Unknown error",
@@ -278,7 +279,7 @@ async function onEnterWorld(state: GameState, message: EnterWorldMessage) {
   const spawnPoints = spawnPointQuery(world);
 
   if (state.activeCamera) {
-    removeEntity(world, state.activeCamera);
+    removeRecursive(world, state.activeCamera);
   }
 
   const characterControllerType = SceneCharacterControllerComponent.get(state.activeScene)?.type;
@@ -310,13 +311,17 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
     thirdroom.sceneGLTF = undefined;
   }
 
+  if (thirdroom.collisionsGLTF) {
+    disposeGLTFResource(thirdroom.collisionsGLTF);
+    thirdroom.collisionsGLTF = undefined;
+  }
+
   ctx.activeCamera = NOOP;
   ctx.activeScene = NOOP;
 }
 
-function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
-  const resourceModule = getModule(ctx, ResourceModule);
-  console.table(Array.from(resourceModule.resources.values()), ["name", "id", "thread", "resourceType", "refCount"]);
+function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
+  console.log(Thread.Game, ctx);
 }
 
 const waitUntil = (fn: Function) =>

@@ -1,6 +1,7 @@
-import { addComponent, hasComponent, removeEntity } from "bitecs";
+import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
+import { removeRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import {
@@ -33,7 +34,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   if (eid) {
     // hack - set nid to 0 to prevent removal of entity over the network
     Networked.networkId[eid] = 0;
-    removeEntity(ctx.world, eid);
+    removeRecursive(ctx.world, eid);
   }
 };
 

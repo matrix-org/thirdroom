@@ -66,7 +66,7 @@ export interface GLTFResource {
   binaryChunk?: ArrayBuffer;
   cameras: Map<number, RemoteCamera>;
   accessors: Map<number, RemoteAccessor<any, any>>;
-  bufferViews: Map<number, RemoteBufferView<Thread>>;
+  bufferViews: Map<number, RemoteBufferView<Thread, any>>;
   buffers: Map<number, ArrayBuffer>;
   meshes: Map<number, RemoteMesh>;
   lights: Map<number, RemoteLight>;
@@ -79,7 +79,7 @@ export interface GLTFResource {
   audioEmitters: Map<number, RemoteAudioEmitter>;
   cameraPromises: Map<number, Promise<RemoteCamera>>;
   accessorPromises: Map<number, Promise<RemoteAccessor<any, any>>>;
-  bufferViewPromises: Map<number, { thread: Thread; promise: Promise<RemoteBufferView<Thread>> }>;
+  bufferViewPromises: Map<number, { thread: Thread; shared: boolean; promise: Promise<RemoteBufferView<Thread, any>> }>;
   bufferPromises: Map<number, Promise<ArrayBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
@@ -90,6 +90,12 @@ export interface GLTFResource {
   audioPromises: Map<number, Promise<RemoteAudioData>>;
   audioSourcePromises: Map<number, Promise<RemoteAudioSource>>;
   audioEmitterPromises: Map<number, { output: AudioEmitterOutput; promise: Promise<RemoteAudioEmitter> }>;
+}
+
+export function createGLTFEntity(ctx: GameState, uri: string) {
+  const eid = addEntity(ctx.world);
+  inflateGLTFScene(ctx, eid, uri);
+  return eid;
 }
 
 export async function inflateGLTFScene(
@@ -386,19 +392,20 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
 export async function loadGLTFResource(uri: string): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
-  const cachedGltf = gltfCache.get(url.href);
+  // TODO: Add gltfResource pinning
+  // const cachedGltf = gltfCache.get(url.href);
 
-  if (cachedGltf) {
-    cachedGltf.refCount++;
-    return cachedGltf.promise;
-  }
+  // if (cachedGltf) {
+  //   cachedGltf.refCount++;
+  //   return cachedGltf.promise;
+  // }
 
   const promise = _loadGLTFResource(url.href);
 
-  gltfCache.set(url.href, {
-    refCount: 1,
-    promise,
-  });
+  // gltfCache.set(url.href, {
+  //   refCount: 1,
+  //   promise,
+  // });
 
   return promise;
 }
@@ -567,12 +574,13 @@ async function _loadGLTFBuffer(resource: GLTFResource, index: number) {
   return bufferData;
 }
 
-export async function loadGLTFBufferView<T extends Thread>(
+export async function loadGLTFBufferView<T extends Thread, S extends boolean>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  thread: T
-): Promise<RemoteBufferView<T>> {
+  thread: T,
+  shared: S
+): Promise<RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>> {
   const result = resource.bufferViewPromises.get(index);
 
   if (result) {
@@ -582,22 +590,27 @@ export async function loadGLTFBufferView<T extends Thread>(
       );
     }
 
-    return result.promise as Promise<RemoteBufferView<T>>;
+    if (result.shared !== shared) {
+      throw new Error(`BufferView ${index} cannot be backed by both an ArrayBuffer and SharedArrayBuffer.`);
+    }
+
+    return result.promise as Promise<RemoteBufferView<T, any>>;
   }
 
-  const promise = _loadGLTFBufferView(ctx, resource, index, thread);
+  const promise = _loadGLTFBufferView<T, S>(ctx, resource, index, thread, shared);
 
-  resource.bufferViewPromises.set(index, { thread, promise });
+  resource.bufferViewPromises.set(index, { thread, promise, shared });
 
   return promise;
 }
 
-async function _loadGLTFBufferView<T extends Thread>(
+async function _loadGLTFBufferView<T extends Thread, S extends boolean>(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  thread: T
-): Promise<RemoteBufferView<T>> {
+  thread: T,
+  shared: boolean
+): Promise<RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>> {
   if (!resource.root.bufferViews || !resource.root.bufferViews[index]) {
     throw new Error(`BufferView ${index} not found`);
   }
@@ -605,7 +618,7 @@ async function _loadGLTFBufferView<T extends Thread>(
   const bufferView = resource.root.bufferViews[index];
   const buffer = await loadGLTFBuffer(resource, bufferView.buffer);
 
-  const bufferViewData = new ArrayBuffer(bufferView.byteLength);
+  const bufferViewData = shared ? new SharedArrayBuffer(bufferView.byteLength) : new ArrayBuffer(bufferView.byteLength);
   const readView = new Uint8Array(buffer, bufferView.byteOffset || 0, bufferView.byteLength);
   const writeView = new Uint8Array(bufferViewData);
   writeView.set(readView);
@@ -619,7 +632,7 @@ async function _loadGLTFBufferView<T extends Thread>(
 
   resource.bufferViews.set(index, remoteBufferView);
 
-  return remoteBufferView as RemoteBufferView<T>;
+  return remoteBufferView as RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>;
 }
 
 export async function loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
@@ -652,7 +665,7 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, image.bufferView, Thread.Render);
+    const remoteBufferView = await loadGLTFBufferView(ctx, resource, image.bufferView, Thread.Render, false);
 
     remoteImage = createRemoteImageFromBufferView(ctx, {
       name: image.name,
@@ -898,7 +911,7 @@ async function _loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: num
       throw new Error(`audio[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main);
+    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main, false);
 
     remoteAudio = createRemoteAudioFromBufferView(ctx, {
       name: audio.name,
@@ -1067,15 +1080,15 @@ async function _loadGLTFAccessor(
   const { bufferView, sparseValuesBufferView, sparseIndicesBufferView } = await promiseObject({
     bufferView:
       accessor.bufferView !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.bufferView, Thread.Render, true)
         : undefined,
     sparseValuesBufferView:
       accessor.sparse?.values !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.sparse.values.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.sparse.values.bufferView, Thread.Render, true)
         : undefined,
     sparseIndicesBufferView:
       accessor.sparse?.indices !== undefined
-        ? loadGLTFBufferView(ctx, resource, accessor.sparse.indices.bufferView, Thread.Render)
+        ? loadGLTFBufferView(ctx, resource, accessor.sparse.indices.bufferView, Thread.Render, true)
         : undefined,
   });
 

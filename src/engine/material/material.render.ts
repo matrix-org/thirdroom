@@ -17,7 +17,7 @@ import { MeshPrimitiveAttribute, MeshPrimitiveMode } from "../mesh/mesh.common";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
@@ -280,6 +280,14 @@ export function updateLocalUnlitMaterialResources(
   ctx: RenderThreadState,
   unlitMaterials: LocalUnlitMaterialResource[]
 ) {
+  for (let i = unlitMaterials.length - 1; i >= 0; i--) {
+    const unlitMaterialResource = unlitMaterials[i];
+
+    if (getResourceDisposed(ctx, unlitMaterialResource.resourceId)) {
+      unlitMaterials.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < unlitMaterials.length; i++) {
     const unlitMaterial = unlitMaterials[i];
     const materialView = getReadObjectBufferView(unlitMaterial.materialTripleBuffer);
@@ -292,6 +300,14 @@ export function updateLocalStandardMaterialResources(
   ctx: RenderThreadState,
   standardMaterials: LocalStandardMaterialResource[]
 ) {
+  for (let i = standardMaterials.length - 1; i >= 0; i--) {
+    const standardMaterialResource = standardMaterials[i];
+
+    if (getResourceDisposed(ctx, standardMaterialResource.resourceId)) {
+      standardMaterials.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < standardMaterials.length; i++) {
     const standardMaterial = standardMaterials[i];
     const materialView = getReadObjectBufferView(standardMaterial.materialTripleBuffer);

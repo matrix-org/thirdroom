@@ -9,13 +9,13 @@ export interface RemoteImage {
   name: string;
   resourceId: ResourceId;
   uri?: string;
-  bufferView?: RemoteBufferView<Thread.Render>;
+  bufferView?: RemoteBufferView<Thread.Render, undefined>;
   mimeType?: string;
 }
 
 export interface BufferViewRemoteImageProps {
   name?: string;
-  bufferView: RemoteBufferView<Thread.Render>;
+  bufferView: RemoteBufferView<Thread.Render, undefined>;
   mimeType: string;
 }
 

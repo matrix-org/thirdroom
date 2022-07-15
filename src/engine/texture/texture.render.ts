@@ -5,12 +5,13 @@ import { ImageFormat, LocalImageResource } from "../image/image.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
-import { waitForLocalResource } from "../resource/resource.render";
+import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { LocalSamplerResource } from "../sampler/sampler.render";
 import { TextureTripleBuffer, SharedTextureResource } from "./texture.common";
 
 export interface LocalTextureResource {
   resourceId: ResourceId;
+  image: LocalImageResource;
   texture: Texture;
   textureTripleBuffer: TextureTripleBuffer;
 }
@@ -55,6 +56,7 @@ export async function onLoadLocalTextureResource(
 
   const localTexture: LocalTextureResource = {
     resourceId,
+    image,
     texture,
     textureTripleBuffer,
   };
@@ -64,7 +66,21 @@ export async function onLoadLocalTextureResource(
   return localTexture;
 }
 
-export function updateLocalTextureResources(textures: LocalTextureResource[]) {
+export function updateLocalTextureResources(ctx: RenderThreadState, textures: LocalTextureResource[]) {
+  for (let i = textures.length - 1; i >= 0; i--) {
+    const textureResource = textures[i];
+
+    if (getResourceDisposed(ctx, textureResource.resourceId)) {
+      if (textureResource.image.format === ImageFormat.RGBA) {
+        textureResource.texture.dispose();
+      }
+
+      // Don't dispose the RGBE texture object because we might still be using it
+
+      textures.splice(i, 1);
+    }
+  }
+
   for (let i = 0; i < textures.length; i++) {
     const { texture, textureTripleBuffer } = textures[i];
     const textureBufferView = getReadObjectBufferView(textureTripleBuffer);
