@@ -51,7 +51,7 @@ export function SessionView() {
 
   const networkInterfaceRef = useRef<() => void>();
 
-  const world = useWorld();
+  const [worldIdOrAlias, world] = useWorld();
   const [params] = useSearchParams();
 
   const curWorldReloadId = params.get("reload");
@@ -77,11 +77,16 @@ export function SessionView() {
   }, [navigate, roomStatus, world]);
 
   useEffect(() => {
-    if (!world || !mainThread) {
+    const state = useStore.getState();
+
+    if (!world && worldIdOrAlias) {
+      state.world.setInitialWorld(worldIdOrAlias);
       return;
     }
 
-    const state = useStore.getState();
+    if (!world || !mainThread) {
+      return;
+    }
 
     if ("isBeingCreated" in world) {
       state.world.loadingWorld(world.id);
@@ -152,7 +157,7 @@ export function SessionView() {
         networkInterfaceRef.current();
       }
     };
-  }, [mainThread, world, curWorldReloadId, session]);
+  }, [mainThread, world, curWorldReloadId, session, worldIdOrAlias]);
 
   const onJoinSelectedWorld = useCallback(async () => {
     const worldId = useStore.getState().overlayWorld.selectedWorldId;
