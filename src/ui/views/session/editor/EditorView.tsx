@@ -1,16 +1,14 @@
 import "./EditorView.css";
 import { useEditor } from "../../../hooks/useEditor";
-import { PropertiesPanel } from "./PropertiesPanel";
 import { HierarchyPanel } from "./HierarchyPanel";
 
 export function EditorView() {
-  const loading = useEditor();
+  const { loading, scene } = useEditor();
   return (
     <>
       {loading ? null : (
         <div className="EditorView_rightPanel gap-xs">
-          <HierarchyPanel />
-          <PropertiesPanel />
+          <HierarchyPanel scene={scene!} />
         </div>
       )}
     </>

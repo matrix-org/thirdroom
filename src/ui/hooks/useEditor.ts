@@ -1,28 +1,35 @@
 import { useEffect, useState } from "react";
 
 import { useMainThreadContext } from "./useMainThread";
-import { EditorEventType } from "../../engine/editor/editor.common";
 import { getModule } from "../../engine/module/module.common";
-import { EditorModule, sendDisposeEditorMessage, sendLoadEditorMessage } from "../../engine/editor/editor.main";
+import { EditorModule, loadEditor, disposeEditor, EditorEventType } from "../../engine/editor/editor.main";
+import { EditorNode } from "../../engine/editor/editor.common";
 
-export function useEditor(): boolean {
+interface EditorUIState {
+  loading: boolean;
+  scene?: EditorNode;
+}
+
+export function useEditor(): EditorUIState {
   const mainThread = useMainThreadContext();
   const editor = getModule(mainThread, EditorModule);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<EditorUIState>({
+    loading: true,
+  });
 
   useEffect(() => {
-    function onEditorLoaded() {
-      setLoading(false);
+    function onEditorLoaded(scene: EditorNode) {
+      setState({ loading: false, scene });
     }
 
-    editor.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
-    sendLoadEditorMessage(mainThread);
+    editor.eventEmitter.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
+    loadEditor(mainThread);
 
     return () => {
-      sendDisposeEditorMessage(mainThread);
-      editor.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
+      disposeEditor(mainThread);
+      editor.eventEmitter.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
     };
   }, [editor, mainThread]);
 
-  return loading;
+  return state;
 }

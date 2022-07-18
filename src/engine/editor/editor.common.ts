@@ -1,58 +1,33 @@
-import { addViewByComponentPropertyType, createCursorBuffer } from "../allocator/CursorBuffer";
-import { TypedArray } from "../allocator/types";
-import { ComponentInfo } from "../component/types";
-import { maxEntities } from "../config.common";
-import { TripleBuffer } from "../allocator/TripleBuffer";
-import { ObjectTripleBuffer } from "../allocator/ObjectBufferView";
-import { hierarchyObjectBufferSchema } from "../component/transform.common";
+/*********
+ * Types *
+ ********/
 
-export interface Selection {
-  activeEntity?: number;
-  activeEntityComponents?: number[];
-  selectedEntities: number[];
+export interface EditorNode {
+  id: number;
+  eid: number;
+  name: string;
+  children: EditorNode[];
 }
 
-export enum EditorEventType {
-  EditorLoaded = "editor-loaded",
-  SelectionChanged = "selection-changed",
-  ComponentInfoChanged = "component-info-changed",
-  ComponentPropertyChanged = "component-property-changed",
-}
-
-export interface ActiveEntityView {
-  [propertyId: number]: TypedArray | TypedArray[] | undefined;
-}
-
-export function createActiveEntityViews(
-  activeEntityTripleBuffer: TripleBuffer,
-  activeEntityComponents: number[],
-  componentInfoMap: Map<number, ComponentInfo>
-): ActiveEntityView[] {
-  return activeEntityTripleBuffer.buffers.map((sharedArrayBuffer) => {
-    const cursorBuffer = createCursorBuffer(sharedArrayBuffer);
-    const activeEntityView: ActiveEntityView = {};
-
-    for (const componentId of activeEntityComponents) {
-      const componentInfo = componentInfoMap.get(componentId);
-
-      if (componentInfo) {
-        for (const property of componentInfo.props) {
-          activeEntityView[property.id] = addViewByComponentPropertyType(cursorBuffer, property.type, maxEntities);
-        }
-      }
-    }
-    return activeEntityView;
-  });
-}
-
-export type HierarchyTripleBuffer = ObjectTripleBuffer<typeof hierarchyObjectBufferSchema>;
+/************
+ * Messages *
+ ************/
 
 export enum EditorMessageType {
-  InitializeEditorState = "InitializeEditorState",
+  LoadEditor = "load-editor",
+  EditorLoaded = "editor-loaded",
+  DisposeEditor = "dispose-editor",
 }
 
-export interface InitializeEditorStateMessage {
-  hierarchyTripleBuffer: HierarchyTripleBuffer;
+export interface LoadEditorMessage {
+  type: EditorMessageType.LoadEditor;
 }
 
-export const editorModuleName = "editor";
+export interface EditorLoadedMessage {
+  type: EditorMessageType.EditorLoaded;
+  scene?: EditorNode;
+}
+
+export interface DisposeEditorMessage {
+  type: EditorMessageType.DisposeEditor;
+}
