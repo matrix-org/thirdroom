@@ -24,6 +24,7 @@ export function WorldView() {
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
+  const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
   useKeyDown(
@@ -59,6 +60,9 @@ export function WorldView() {
       }
       if (e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
+      }
+      if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
+        setStatsEnabled((enabled) => !enabled);
       }
     },
     [isEnteredWorld, isChatOpen, isOverlayOpen, openWorldChat, closeWorldChat, openOverlay, closeOverlay]
@@ -105,7 +109,7 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
-      <Stats />
+      <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>

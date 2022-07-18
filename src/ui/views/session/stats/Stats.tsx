@@ -4,19 +4,15 @@ import { getStats, StatsObject } from "../../../../engine/stats/stats.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Text } from "../../../atoms/text/Text";
 import "./Stats.css";
-import { registerThirdroomGlobalFn } from "../../../../engine/utils/registerThirdroomGlobal";
 
-export function Stats() {
+interface StatsProps {
+  statsEnabled: boolean;
+}
+
+export function Stats({ statsEnabled }: StatsProps) {
   const mainThread = useMainThreadContext();
-  const [showStats, setShowStats] = useState<boolean>(false);
   const [, setFrame] = useState<number>(0);
   const statsRef = useRef<StatsObject>();
-
-  useEffect(() => {
-    return registerThirdroomGlobalFn("showStats", (value: boolean) => {
-      setShowStats(value);
-    });
-  }, []);
 
   useEffect(() => {
     let timeoutId: number;
@@ -32,16 +28,16 @@ export function Stats() {
       timeoutId = window.setTimeout(onUpdate, 100);
     };
 
-    if (showStats) {
+    if (statsEnabled) {
       onUpdate();
     }
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [mainThread, showStats]);
+  }, [mainThread, statsEnabled]);
 
-  return showStats ? (
+  return statsEnabled ? (
     <div className="Stats">
       {statsRef.current &&
         Object.entries(statsRef.current).map(([name, value]) => {
