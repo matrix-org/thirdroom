@@ -1,15 +1,35 @@
+import { enterQuery, exitQuery } from "bitecs";
+
 import { GameState } from "../GameTypes";
-import { Transform } from "../component/transform";
+import { hierarchyObjectBuffer } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { EditorLoadedMessage, EditorMessageType, EditorNode } from "./editor.common";
+import {
+  EditorLoadedMessage,
+  EditorMessageType,
+  editorStateSchema,
+  EditorStateTripleBuffer,
+  HierarchyTripleBuffer,
+  InitializeEditorStateMessage,
+  NamesChangedMessage,
+} from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
-import { Name } from "../component/Name";
+import { Name, nameQuery } from "../component/Name";
+import {
+  commitToObjectTripleBuffer,
+  createObjectBufferView,
+  createObjectTripleBuffer,
+  ObjectBufferView,
+} from "../allocator/ObjectBufferView";
+import { hierarchyObjectBufferSchema } from "../component/transform.common";
 
 /*********
  * Types *
  *********/
 
 export interface EditorModuleState {
+  editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
+  editorStateTripleBuffer: EditorStateTripleBuffer;
+  hierarchyTripleBuffer: HierarchyTripleBuffer;
   editorLoaded: boolean;
 }
 
@@ -19,8 +39,23 @@ export interface EditorModuleState {
 
 export const EditorModule = defineModule<GameState, EditorModuleState>({
   name: "editor",
-  create() {
+  create(ctx, { sendMessage }) {
+    const editorStateBufferView = createObjectBufferView(editorStateSchema, ArrayBuffer);
+    const editorStateTripleBuffer = createObjectTripleBuffer(editorStateSchema, ctx.gameToMainTripleBufferFlags);
+    const hierarchyTripleBuffer = createObjectTripleBuffer(
+      hierarchyObjectBufferSchema,
+      ctx.gameToMainTripleBufferFlags
+    );
+
+    sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
+      editorStateTripleBuffer,
+      hierarchyTripleBuffer,
+    });
+
     return {
+      editorStateBufferView,
+      editorStateTripleBuffer,
+      hierarchyTripleBuffer,
       editorLoaded: false,
     };
   },
@@ -43,7 +78,7 @@ export function onLoadEditor(ctx: GameState) {
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
-    scene: buildEditorNode(ctx.activeScene),
+    names: Name,
   });
 }
 
@@ -56,40 +91,49 @@ export function onDisposeEditor(state: GameState) {
  * Systems *
  ***********/
 
-export function EditorStateSystem(state: GameState) {
-  const editor = getModule(state, EditorModule);
+const nameEnterQuery = enterQuery(nameQuery);
+const nameExitQuery = exitQuery(nameQuery);
+export const editorNameChangedQueue: [number, string][] = [];
+
+export function EditorStateSystem(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
 
   if (!editor.editorLoaded) {
     return;
   }
-}
 
-/*********
- * Utils *
- *********/
+  editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene;
 
-function buildEditorNode(eid: number, parent?: EditorNode): EditorNode | undefined {
-  let node: EditorNode | undefined;
+  commitToObjectTripleBuffer(editor.editorStateTripleBuffer, editor.editorStateBufferView);
+  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, hierarchyObjectBuffer);
 
-  if (eid) {
-    node = {
-      id: eid,
-      eid,
-      name: Name.get(eid) || `Entity ${eid}`,
-      children: [],
-    };
+  const entered = nameEnterQuery(ctx.world);
+  const exited = nameExitQuery(ctx.world);
 
-    if (parent) {
-      parent.children.push(node);
-    }
+  if (entered.length === 0 && exited.length === 0 && editorNameChangedQueue.length === 0) {
+    return;
   }
 
-  let curChild = Transform.firstChild[eid];
+  const created: [number, string][] = [];
 
-  while (curChild) {
-    buildEditorNode(curChild, node);
-    curChild = Transform.nextSibling[curChild];
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    created.push([eid, Name.get(eid) || `Entity ${eid}`]);
   }
 
-  return node;
+  const deleted: number[] = [];
+
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    deleted.push(eid);
+  }
+
+  ctx.sendMessage<NamesChangedMessage>(Thread.Main, {
+    type: EditorMessageType.NamesChanged,
+    created,
+    updated: editorNameChangedQueue,
+    deleted,
+  });
+
+  editorNameChangedQueue.length = 0;
 }

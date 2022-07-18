@@ -6,9 +6,9 @@ export function EditorView() {
   const { loading, scene } = useEditor();
   return (
     <>
-      {loading ? null : (
+      {loading || !scene ? null : (
         <div className="EditorView_rightPanel gap-xs">
-          <HierarchyPanel scene={scene!} />
+          <HierarchyPanel scene={scene} />
         </div>
       )}
     </>

@@ -18,16 +18,22 @@ export function useEditor(): EditorUIState {
   });
 
   useEffect(() => {
-    function onEditorLoaded(scene: EditorNode) {
+    function onEditorLoaded() {
+      setState({ loading: false });
+    }
+
+    function onHierarchyChanged(scene: EditorNode) {
       setState({ loading: false, scene });
     }
 
     editor.eventEmitter.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
+    editor.eventEmitter.addListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
     loadEditor(mainThread);
 
     return () => {
       disposeEditor(mainThread);
       editor.eventEmitter.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
+      editor.eventEmitter.removeListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
     };
   }, [editor, mainThread]);
 

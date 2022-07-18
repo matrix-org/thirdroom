@@ -1,5 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
+import { editorNameChangedQueue } from "../editor/editor.game";
 import { GameState, World } from "../GameTypes";
 
 /**
@@ -12,7 +13,12 @@ export function addNameComponent(world: World, eid: number, name: string) {
   Name.set(eid, name);
 }
 
-const nameQuery = defineQuery([Name]);
+export function setName(eid: number, name: string) {
+  editorNameChangedQueue.push([eid, name]);
+  Name.set(eid, name);
+}
+
+export const nameQuery = defineQuery([Name]);
 const nameExitQuery = exitQuery(nameQuery);
 
 export function NameSystem(ctx: GameState) {
