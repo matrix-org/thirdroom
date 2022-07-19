@@ -3,7 +3,16 @@ import classNames from "classnames";
 import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
-import { EditorNode } from "../../../../engine/editor/editor.common";
+import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import {
+  addSelectedEntity,
+  focusEntity,
+  renameEntity,
+  reparentEntities,
+  setSelectedEntity,
+  toggleSelectedEntity,
+} from "../../../../engine/editor/editor.main";
 
 enum DnDItemTypes {
   Node = "node",
@@ -55,13 +64,14 @@ function findEntityById(node: EditorNode, eid: number): EditorNode | undefined {
 }
 
 interface HierarchyPanelProps {
+  activeEntity: number;
+  selectedEntities: number[];
   scene: EditorNode;
 }
 
-const selected: number[] = [];
-const active = undefined;
+export function HierarchyPanel({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+  const mainThread = useMainThreadContext();
 
-export function HierarchyPanel({ scene }: HierarchyPanelProps) {
   const canDrop = useCallback(
     (item: DnDItem, target: number | undefined, position: NodeDropPosition) => {
       if (!item.nodeIds) {
@@ -91,35 +101,69 @@ export function HierarchyPanel({ scene }: HierarchyPanelProps) {
 
   const canDrag = useCallback(
     (nodeId: number) => {
-      return !selected.includes(scene.id);
+      return !selectedEntities.includes(scene.id);
     },
-    [scene]
+    [scene, selectedEntities]
   );
 
-  const getDragItem = useCallback((nodeId: number) => {
-    return { type: DnDItemTypes.Node, nodeIds: selected };
-  }, []);
+  const getDragItem = useCallback(
+    (nodeId: number) => {
+      return { type: DnDItemTypes.Node, nodeIds: selectedEntities };
+    },
+    [selectedEntities]
+  );
 
-  const onToggleSelectedNode = useCallback((nodeId) => {}, []);
+  const onToggleSelectedNode = useCallback(
+    (nodeId) => {
+      toggleSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onAddSelectedNode = useCallback((nodeId) => {}, []);
+  const onAddSelectedNode = useCallback(
+    (nodeId) => {
+      addSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onSetSelectedNode = useCallback((nodeId) => {}, []);
+  const onSetSelectedNode = useCallback(
+    (nodeId) => {
+      console.log("onSetSelectedNode");
+      setSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onDoubleClickNode = useCallback((nodeId) => {
-    console.log(`Focus ${nodeId}`);
-  }, []);
+  const onDoubleClickNode = useCallback(
+    (nodeId) => {
+      focusEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onRenameNode = useCallback((nodeId, name) => {}, []);
+  const onRenameNode = useCallback(
+    (nodeId, name) => {
+      renameEntity(mainThread, nodeId, name);
+    },
+    [mainThread]
+  );
 
-  const onDrop = useCallback((item: DnDItem, target: number | undefined, position: NodeDropPosition) => {}, []);
+  const onDrop = useCallback(
+    (item: DnDItem, target: number | undefined, position: NodeDropPosition) => {
+      if (item.type === DnDItemTypes.Node && item.nodeIds) {
+        reparentEntities(mainThread, item.nodeIds, target, position as unknown as ReparentEntityPosition);
+      }
+    },
+    [mainThread]
+  );
 
   return (
     <div className="HierarchyPanel">
       <TreeView
         tree={scene}
-        selected={selected}
-        active={active}
+        selected={selectedEntities}
+        active={activeEntity}
         itemSize={32}
         onToggleSelectedNode={onToggleSelectedNode}
         onAddSelectedNode={onAddSelectedNode}

@@ -1,20 +1,29 @@
 import EventEmitter from "events";
 
 import {
+  AddSelectedEntityMessage,
   DisposeEditorMessage,
   EditorLoadedMessage,
   EditorMessageType,
   EditorNode,
   EditorStateTripleBuffer,
+  FocusEntityMessage,
   HierarchyTripleBuffer,
   InitializeEditorStateMessage,
   LoadEditorMessage,
   NamesChangedMessage,
+  RenameEntityMessage,
+  ReparentEntitiesMessage,
+  ReparentEntityPosition,
+  SelectionChangedMessage,
+  SetSelectedEntityMessage,
+  ToggleSelectedEntityMessage,
 } from "./editor.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { NOOP } from "../config.common";
 
 /*********
  * Types *
@@ -22,6 +31,8 @@ import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocato
 
 export interface EditorModuleState {
   names: Map<number, string>;
+  activeEntity: number;
+  selectedEntities: number[];
   editorStateTripleBuffer: EditorStateTripleBuffer;
   hierarchyTripleBuffer: HierarchyTripleBuffer;
   eventEmitter: EventEmitter;
@@ -29,12 +40,29 @@ export interface EditorModuleState {
 }
 
 /************************
- * Editor Message Types *
+ * Editor Event Types *
  ************************/
 
 export enum EditorEventType {
   EditorLoaded = "editor-loaded",
   HierarchyChanged = "hierarchy-changed",
+  SelectionChanged = "selection-changed",
+}
+
+export interface EditorLoadedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
+}
+
+export interface HierarchyChangedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
+  scene?: EditorNode;
+}
+
+export interface SelectionChangedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
 }
 
 /******************
@@ -52,6 +80,8 @@ export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>(
 
     return {
       names: new Map(),
+      activeEntity: NOOP,
+      selectedEntities: [],
       editorStateTripleBuffer,
       hierarchyTripleBuffer,
       eventEmitter: new EventEmitter(),
@@ -62,6 +92,7 @@ export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>(
     return createDisposables([
       registerMessageHandler(ctx, EditorMessageType.EditorLoaded, onEditorLoaded),
       registerMessageHandler(ctx, EditorMessageType.NamesChanged, onNamesChanged),
+      registerMessageHandler(ctx, EditorMessageType.SelectionChanged, onSelectionChanged),
     ]);
   },
 });
@@ -89,7 +120,13 @@ function updateHierarchy(editor: EditorModuleState) {
 
   const scene = buildEditorNode(editor.names, hierarchyView, activeScene);
 
-  editor.eventEmitter.emit(EditorEventType.HierarchyChanged, scene);
+  const event: HierarchyChangedEvent = {
+    scene,
+    activeEntity: editor.activeEntity,
+    selectedEntities: editor.selectedEntities,
+  };
+
+  editor.eventEmitter.emit(EditorEventType.HierarchyChanged, event);
 }
 
 /********************
@@ -100,7 +137,14 @@ function onEditorLoaded(ctx: IMainThreadContext, message: EditorLoadedMessage) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = true;
   editor.names = message.names;
-  editor.eventEmitter.emit(EditorEventType.EditorLoaded);
+  editor.selectedEntities = message.selectedEntities;
+  editor.activeEntity = message.activeEntity;
+
+  const event: EditorLoadedEvent = {
+    selectedEntities: message.selectedEntities,
+    activeEntity: message.activeEntity,
+  };
+  editor.eventEmitter.emit(EditorEventType.EditorLoaded, event);
 }
 
 function onNamesChanged(ctx: IMainThreadContext, { created, updated, deleted }: NamesChangedMessage) {
@@ -124,6 +168,18 @@ function onNamesChanged(ctx: IMainThreadContext, { created, updated, deleted }: 
   updateHierarchy(editor);
 }
 
+function onSelectionChanged(ctx: IMainThreadContext, message: SelectionChangedMessage) {
+  const editor = getModule(ctx, EditorModule);
+  editor.selectedEntities = message.selectedEntities;
+  editor.activeEntity = message.activeEntity;
+
+  const event: SelectionChangedEvent = {
+    selectedEntities: message.selectedEntities,
+    activeEntity: message.activeEntity,
+  };
+  editor.eventEmitter.emit(EditorEventType.SelectionChanged, event);
+}
+
 /*******
  * API *
  *******/
@@ -140,6 +196,56 @@ export function disposeEditor(ctx: IMainThreadContext) {
   editor.names = new Map();
   ctx.sendMessage<DisposeEditorMessage>(Thread.Game, {
     type: EditorMessageType.DisposeEditor,
+  });
+}
+
+export function toggleSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<ToggleSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.ToggleSelectedEntity,
+    eid,
+  });
+}
+
+export function setSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<SetSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.SetSelectedEntity,
+    eid,
+  });
+}
+
+export function addSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<AddSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.AddSelectedEntity,
+    eid,
+  });
+}
+
+export function focusEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<FocusEntityMessage>(Thread.Game, {
+    type: EditorMessageType.FocusEntity,
+    eid,
+  });
+}
+
+export function renameEntity(ctx: IMainThreadContext, eid: number, name: string) {
+  ctx.sendMessage<RenameEntityMessage>(Thread.Game, {
+    type: EditorMessageType.RenameEntity,
+    eid,
+    name,
+  });
+}
+
+export function reparentEntities(
+  ctx: IMainThreadContext,
+  entities: number[],
+  target: number | undefined,
+  position: ReparentEntityPosition
+) {
+  ctx.sendMessage<ReparentEntitiesMessage>(Thread.Game, {
+    type: EditorMessageType.ReparentEntities,
+    entities,
+    target,
+    position,
   });
 }
 

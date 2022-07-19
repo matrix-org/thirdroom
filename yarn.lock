@@ -912,10 +912,10 @@
     dompurify "^2.3.0"
     off-color "^2.0.0"
 
-"@thirdroom/manifold-editor-components@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.1.tgz#faa8c389db1ee694ef75937eb11d577dbc9fa0b3"
-  integrity sha512-wUY0yKCacG78OFrv34SPUsavQUNJWi2jTGwA9x6KRZ+opQhhCsdD/5R7C2KSdtkoYn2HK4xZZtyGcjymfkE2FA==
+"@thirdroom/manifold-editor-components@0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.4.tgz#4f5affc9b21a34b6ffc6d87d38dbcdda3d053285"
+  integrity sha512-YCBrFyfiqLAf81Bbs0vpVIalCi8RUrpX7xp8JB5HeGcdQ5zHtzSUsRox7LtZCZ2/Onw6nEQP2iuNk851GG/Cmw==
 
 "@thirdroom/ringbuffer@^0.0.1":
   version "0.0.1"

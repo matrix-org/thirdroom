@@ -1,19 +1,34 @@
-import { enterQuery, exitQuery } from "bitecs";
+import {
+  addComponent,
+  defineComponent,
+  defineQuery,
+  enterQuery,
+  exitQuery,
+  hasComponent,
+  removeComponent,
+} from "bitecs";
 
 import { GameState } from "../GameTypes";
 import { hierarchyObjectBuffer } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
+  AddSelectedEntityMessage,
   EditorLoadedMessage,
   EditorMessageType,
   editorStateSchema,
   EditorStateTripleBuffer,
+  FocusEntityMessage,
   HierarchyTripleBuffer,
   InitializeEditorStateMessage,
   NamesChangedMessage,
+  RenameEntityMessage,
+  ReparentEntitiesMessage,
+  SelectionChangedMessage,
+  SetSelectedEntityMessage,
+  ToggleSelectedEntityMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
-import { Name, nameQuery } from "../component/Name";
+import { Name, nameQuery, setName } from "../component/Name";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
@@ -21,12 +36,15 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
+import { NOOP } from "../config.common";
 
 /*********
  * Types *
  *********/
 
 export interface EditorModuleState {
+  activeEntity: number;
+  activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
   hierarchyTripleBuffer: HierarchyTripleBuffer;
@@ -53,6 +71,8 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
     });
 
     return {
+      activeEntity: NOOP,
+      activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
       hierarchyTripleBuffer,
@@ -63,9 +83,28 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
     return createDisposables([
       registerMessageHandler(ctx, EditorMessageType.LoadEditor, onLoadEditor),
       registerMessageHandler(ctx, EditorMessageType.DisposeEditor, onDisposeEditor),
+      registerMessageHandler(ctx, EditorMessageType.SetSelectedEntity, onSetSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.AddSelectedEntity, onAddSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.ToggleSelectedEntity, onToggleSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.FocusEntity, onFocusEntity),
+      registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
+      registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
     ]);
   },
 });
+
+/***********
+ * Queries *
+ ***********/
+
+const Selected = defineComponent({});
+const selectedQuery = defineQuery([Selected]);
+const selectedEnterQuery = enterQuery(selectedQuery);
+const selectedExitQuery = exitQuery(selectedQuery);
+
+const nameEnterQuery = enterQuery(nameQuery);
+const nameExitQuery = exitQuery(nameQuery);
+export const editorNameChangedQueue: [number, string][] = [];
 
 /********************
  * Message Handlers *
@@ -79,21 +118,71 @@ export function onLoadEditor(ctx: GameState) {
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
     names: Name,
+    activeEntity: editor.activeEntity,
+    selectedEntities: Array.from(selectedQuery(ctx.world)),
   });
 }
 
-export function onDisposeEditor(state: GameState) {
-  const editor = getModule(state, EditorModule);
+export function onDisposeEditor(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = false;
 }
+
+export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
+
+  const selected = selectedQuery(ctx.world);
+
+  for (let i = 0; i < selected.length; i++) {
+    const eid = selected[i];
+
+    if (message.eid === eid) {
+      continue;
+    }
+
+    removeComponent(ctx.world, Selected, eid);
+  }
+
+  addComponent(ctx.world, Selected, message.eid);
+
+  editor.activeEntity = message.eid;
+  editor.activeEntityChanged = true;
+}
+
+export function onAddSelectedEntity(ctx: GameState, message: AddSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
+  addComponent(ctx.world, Selected, message.eid);
+  editor.activeEntity = message.eid;
+  editor.activeEntityChanged = true;
+}
+
+export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
+
+  if (hasComponent(ctx.world, Selected, message.eid)) {
+    removeComponent(ctx.world, Selected, message.eid);
+
+    const selected = selectedQuery(ctx.world);
+    editor.activeEntity = selected.length === 0 ? NOOP : selected[selected.length - 1];
+  } else {
+    addComponent(ctx.world, Selected, message.eid);
+    editor.activeEntity = message.eid;
+  }
+
+  editor.activeEntityChanged = true;
+}
+
+export function onFocusEntity(ctx: GameState, message: FocusEntityMessage) {}
+
+export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
+  setName(message.eid, message.name);
+}
+
+export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
 
 /***********
  * Systems *
  ***********/
-
-const nameEnterQuery = enterQuery(nameQuery);
-const nameExitQuery = exitQuery(nameQuery);
-export const editorNameChangedQueue: [number, string][] = [];
 
 export function EditorStateSystem(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
@@ -110,30 +199,41 @@ export function EditorStateSystem(ctx: GameState) {
   const entered = nameEnterQuery(ctx.world);
   const exited = nameExitQuery(ctx.world);
 
-  if (entered.length === 0 && exited.length === 0 && editorNameChangedQueue.length === 0) {
-    return;
+  if (entered.length !== 0 || exited.length !== 0 || editorNameChangedQueue.length !== 0) {
+    const created: [number, string][] = [];
+
+    for (let i = 0; i < entered.length; i++) {
+      const eid = entered[i];
+      created.push([eid, Name.get(eid) || `Entity ${eid}`]);
+    }
+
+    const deleted: number[] = [];
+
+    for (let i = 0; i < exited.length; i++) {
+      const eid = exited[i];
+      deleted.push(eid);
+    }
+
+    ctx.sendMessage<NamesChangedMessage>(Thread.Main, {
+      type: EditorMessageType.NamesChanged,
+      created,
+      updated: editorNameChangedQueue,
+      deleted,
+    });
+
+    editorNameChangedQueue.length = 0;
   }
 
-  const created: [number, string][] = [];
+  const selectedAdded = selectedEnterQuery(ctx.world);
+  const selectedRemoved = selectedExitQuery(ctx.world);
 
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-    created.push([eid, Name.get(eid) || `Entity ${eid}`]);
+  if (selectedAdded.length > 0 || selectedRemoved.length > 0 || editor.activeEntityChanged) {
+    editor.activeEntityChanged = false;
+
+    ctx.sendMessage<SelectionChangedMessage>(Thread.Main, {
+      type: EditorMessageType.SelectionChanged,
+      activeEntity: editor.activeEntity,
+      selectedEntities: Array.from(selectedQuery(ctx.world)),
+    });
   }
-
-  const deleted: number[] = [];
-
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    deleted.push(eid);
-  }
-
-  ctx.sendMessage<NamesChangedMessage>(Thread.Main, {
-    type: EditorMessageType.NamesChanged,
-    created,
-    updated: editorNameChangedQueue,
-    deleted,
-  });
-
-  editorNameChangedQueue.length = 0;
 }
