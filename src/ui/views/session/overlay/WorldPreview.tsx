@@ -12,6 +12,7 @@ import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
+import { MemberListDialog } from "../dialogs/MemberListDialog";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -123,9 +124,17 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 title={roomName}
                 memberCount={memberCount}
                 options={
-                  <Button size="lg" variant="secondary" onClick={onLoadWorld}>
-                    Load World
-                  </Button>
+                  <>
+                    {room && (
+                      <MemberListDialog
+                        room={room}
+                        renderTrigger={(openDialog) => <Button onClick={openDialog}>Members</Button>}
+                      />
+                    )}
+                    <Button size="lg" variant="secondary" onClick={onLoadWorld}>
+                      Load World
+                    </Button>
+                  </>
                 }
               />
             );

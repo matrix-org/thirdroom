@@ -27,7 +27,13 @@ export function RoomListFriends() {
   return (
     <div>
       {rooms.map((room) => (
-        <RoomSelector isSelected={room.id === selectedChatId} onSelect={selectChat} room={room} platform={platform} />
+        <RoomSelector
+          key={room.id}
+          isSelected={room.id === selectedChatId}
+          onSelect={selectChat}
+          room={room}
+          platform={platform}
+        />
       ))}
     </div>
   );

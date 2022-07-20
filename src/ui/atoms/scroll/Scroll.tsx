@@ -1,4 +1,4 @@
-import { ReactNode, RefObject, UIEvent } from "react";
+import { CSSProperties, ReactNode, RefObject, UIEvent } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import classNames from "classnames";
 
@@ -6,6 +6,7 @@ import "./Scroll.css";
 
 interface IScroll {
   className?: string;
+  style?: CSSProperties;
   orientation?: "horizontal" | "vertical" | "both";
   type?: "hover" | "scroll" | "always" | "auto";
   onScroll?: (event: UIEvent<HTMLDivElement>) => void;
@@ -15,6 +16,7 @@ interface IScroll {
 
 export function Scroll({
   className,
+  style,
   orientation = "vertical",
   type = "auto",
   onScroll,
@@ -25,7 +27,7 @@ export function Scroll({
 
   return (
     <ScrollArea.Root className={scrollClass} type={type}>
-      <ScrollArea.Viewport className="Scroll__viewport" ref={forwardRef} onScroll={onScroll}>
+      <ScrollArea.Viewport className="Scroll__viewport" style={style} ref={forwardRef} onScroll={onScroll}>
         {children}
       </ScrollArea.Viewport>
       {(orientation === "horizontal" || orientation === "both") && (

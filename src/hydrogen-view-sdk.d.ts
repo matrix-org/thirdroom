@@ -507,7 +507,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get membership(): string;
   }
 
-  export class MemberList {}
+  export class RetainedValue {
+    constructor(freeCallback: () => void);
+    retain(): void;
+    release(): void;
+  }
+
+  export class MemberList extends RetainedValue {
+    constructor({ members, closeCallback }: { members: void; closeCallback: () => void });
+    afterSync(memberChanges: any): void;
+    get members(): ObservableMap<string, RoomMember>;
+  }
 
   export interface PowerLevelOptions {
     powerLevelEvent: any;
