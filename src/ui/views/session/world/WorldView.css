@@ -15,7 +15,7 @@
   --chat-width: 385px;
   max-width: var(--chat-width);
   width: 100%;
-  max-height: calc(100% - 70px);
+  height: calc(100% - 70px);
 
   position: absolute;
   bottom: var(--sp-md);
