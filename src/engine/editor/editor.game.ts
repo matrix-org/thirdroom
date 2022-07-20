@@ -9,7 +9,7 @@ import {
 } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { hierarchyObjectBuffer } from "../component/transform";
+import { hierarchyObjectBuffer, traverseRecursive } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddSelectedEntityMessage,
@@ -37,6 +37,8 @@ import {
 } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
 import { NOOP } from "../config.common";
+import { RemoteNodeComponent } from "../node/node.game";
+import { addLayer, Layer, removeLayer } from "../node/node.common";
 
 /*********
  * Types *
@@ -191,11 +193,13 @@ export function EditorStateSystem(ctx: GameState) {
     return;
   }
 
+  // Update editor state and hierarchy triple buffers
   editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene;
 
   commitToObjectTripleBuffer(editor.editorStateTripleBuffer, editor.editorStateBufferView);
   commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, hierarchyObjectBuffer);
 
+  // Send updated names to main thread
   const entered = nameEnterQuery(ctx.world);
   const exited = nameExitQuery(ctx.world);
 
@@ -224,6 +228,8 @@ export function EditorStateSystem(ctx: GameState) {
     editorNameChangedQueue.length = 0;
   }
 
+  // Send updated selection state to main thread
+  const selected = selectedQuery(ctx.world);
   const selectedAdded = selectedEnterQuery(ctx.world);
   const selectedRemoved = selectedExitQuery(ctx.world);
 
@@ -233,7 +239,33 @@ export function EditorStateSystem(ctx: GameState) {
     ctx.sendMessage<SelectionChangedMessage>(Thread.Main, {
       type: EditorMessageType.SelectionChanged,
       activeEntity: editor.activeEntity,
-      selectedEntities: Array.from(selectedQuery(ctx.world)),
+      selectedEntities: Array.from(selected),
     });
+
+    // Update the remote nodes with the editor selection layer added/removed
+    // Recursively update this layer so that the selected effect can be applied to all descendants
+    for (let i = 0; i < selectedRemoved.length; i++) {
+      const eid = selected[i];
+
+      traverseRecursive(eid, (child) => {
+        const remoteNode = RemoteNodeComponent.get(child);
+
+        if (remoteNode) {
+          remoteNode.layers = removeLayer(remoteNode.layers, Layer.EditorSelection);
+        }
+      });
+    }
+
+    for (let i = 0; i < selectedAdded.length; i++) {
+      const eid = selected[i];
+
+      traverseRecursive(eid, (child) => {
+        const remoteNode = RemoteNodeComponent.get(child);
+
+        if (remoteNode) {
+          remoteNode.layers = addLayer(remoteNode.layers, Layer.EditorSelection);
+        }
+      });
+    }
   }
 }
