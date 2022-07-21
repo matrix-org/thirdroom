@@ -101,9 +101,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
-      antialias: false,
-      stencil: false,
-      depth: false,
+      antialias: true,
       canvas: canvasTarget || ctx.canvas,
     });
     renderer.toneMapping = ACESFilmicToneMapping;

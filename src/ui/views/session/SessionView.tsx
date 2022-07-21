@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
-import { Outlet, useMatch, useNavigate, useSearchParams } from "react-router-dom";
+import { Outlet, useMatch, useNavigate } from "react-router-dom";
 import {
   GroupCall,
   Room,
@@ -51,10 +51,7 @@ export function SessionView() {
 
   const networkInterfaceRef = useRef<() => void>();
 
-  const [worldIdOrAlias, world] = useWorld();
-  const [params] = useSearchParams();
-
-  const curWorldReloadId = params.get("reload");
+  const [worldIdOrAlias, world, curWorldReloadId] = useWorld();
 
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
