@@ -24,6 +24,7 @@ import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
+import { NameSystem } from "./component/Name";
 
 export default defineConfig<GameState>({
   modules: [
@@ -70,6 +71,7 @@ export default defineConfig<GameState>({
     RemoteSceneSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
+    NameSystem,
 
     ResetInputSystem,
     GameWorkerStatsSystem,

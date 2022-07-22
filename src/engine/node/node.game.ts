@@ -53,6 +53,8 @@ export interface RemoteNode {
   set audioEmitter(audioEmitter: RemotePositionalAudioEmitter | undefined);
   get static(): boolean;
   set static(value: boolean);
+  get layers(): number;
+  set layers(value: number);
 }
 
 const DEFAULT_NODE_NAME = "Node";
@@ -66,6 +68,7 @@ interface NodeProps {
   audioEmitter?: RemotePositionalAudioEmitter;
   tilesRenderer?: RemoteTilesRenderer;
   static?: boolean;
+  layers?: number;
 }
 
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
@@ -94,6 +97,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   rendererNodeBufferView.camera[0] = props?.camera?.resourceId || 0;
   rendererNodeBufferView.tilesRenderer[0] = props?.tilesRenderer?.resourceId || 0;
   rendererNodeBufferView.static[0] = props?.static ? 1 : 0;
+  rendererNodeBufferView.layers[0] = props?.layers ? props.layers : 1;
 
   audioNodeBufferView.audioEmitter[0] = props?.audioEmitter?.resourceId || 0;
   audioNodeBufferView.static[0] = props?.static ? 1 : 0;
@@ -290,6 +294,12 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     set static(value: boolean) {
       rendererNodeBufferView.static[0] = value ? 1 : 0;
       audioNodeBufferView.static[0] = value ? 1 : 0;
+    },
+    get layers() {
+      return rendererNodeBufferView.layers[0];
+    },
+    set layers(value: number) {
+      rendererNodeBufferView.layers[0] = value;
     },
   };
 

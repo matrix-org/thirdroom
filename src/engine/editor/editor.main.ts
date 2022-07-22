@@ -1,191 +1,285 @@
 import EventEmitter from "events";
 
-import { ComponentInfo } from "../component/types";
 import {
-  ActiveEntityView,
-  createActiveEntityViews,
-  EditorEventType,
+  AddSelectedEntityMessage,
+  DisposeEditorMessage,
+  EditorLoadedMessage,
   EditorMessageType,
-  editorModuleName,
+  EditorNode,
+  EditorStateTripleBuffer,
+  FocusEntityMessage,
   HierarchyTripleBuffer,
   InitializeEditorStateMessage,
-  Selection,
-} from "./editor.common";
-import { getReadBufferIndex, swapReadBuffer, TripleBuffer } from "../allocator/TripleBuffer";
-import {
-  ComponentInfoChangedMessage,
-  ComponentPropertyChangedMessage,
-  EditorLoadedMessage,
-  SaveGLTFMessage,
+  LoadEditorMessage,
+  NamesChangedMessage,
+  RenameEntityMessage,
+  ReparentEntitiesMessage,
+  ReparentEntityPosition,
   SelectionChangedMessage,
-  WorkerMessageType,
-} from "../WorkerMessage";
+  SetSelectedEntityMessage,
+  ToggleSelectedEntityMessage,
+} from "./editor.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { registerThirdroomGlobalFn } from "../utils/registerThirdroomGlobal";
-import { downloadFile } from "../utils/downloadFile";
+import { createDisposables } from "../utils/createDisposables";
+import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { NOOP } from "../config.common";
 
 /*********
  * Types *
- ********/
+ *********/
 
-export interface EditorModuleState extends EventEmitter {
+export interface EditorModuleState {
+  names: Map<number, string>;
+  activeEntity: number;
   selectedEntities: number[];
-  activeEntity?: number;
-  activeEntityComponents?: number[];
-  componentInfoMap: Map<number, ComponentInfo>;
-  componentProperties: Map<number, any>;
-  activeEntityTripleBuffer?: TripleBuffer;
-  activeEntityViews?: ActiveEntityView[];
-  activeEntityView?: ActiveEntityView;
+  editorStateTripleBuffer: EditorStateTripleBuffer;
   hierarchyTripleBuffer: HierarchyTripleBuffer;
+  eventEmitter: EventEmitter;
+  editorLoaded: boolean;
+}
+
+/************************
+ * Editor Event Types *
+ ************************/
+
+export enum EditorEventType {
+  EditorLoaded = "editor-loaded",
+  HierarchyChanged = "hierarchy-changed",
+  SelectionChanged = "selection-changed",
+}
+
+export interface EditorLoadedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
+}
+
+export interface HierarchyChangedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
+  scene?: EditorNode;
+}
+
+export interface SelectionChangedEvent {
+  activeEntity: number;
+  selectedEntities: number[];
 }
 
 /******************
  * Initialization *
- *****************/
+ ******************/
 
 // Access module-specific state by importing this context in your systems, modules, or React components
 export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>({
-  name: editorModuleName,
+  name: "editor",
   async create(ctx, { waitForMessage }) {
-    const { hierarchyTripleBuffer } = await waitForMessage<InitializeEditorStateMessage>(
+    const { editorStateTripleBuffer, hierarchyTripleBuffer } = await waitForMessage<InitializeEditorStateMessage>(
       Thread.Game,
       EditorMessageType.InitializeEditorState
     );
 
-    return Object.assign(new EventEmitter(), {
+    return {
+      names: new Map(),
+      activeEntity: NOOP,
       selectedEntities: [],
-      activeEntity: undefined,
-      activeEntityComponents: [],
-      componentInfoMap: new Map(),
-      componentProperties: new Map(),
+      editorStateTripleBuffer,
       hierarchyTripleBuffer,
-    });
+      eventEmitter: new EventEmitter(),
+      editorLoaded: false,
+    };
   },
   init(ctx) {
-    const disposables = [
-      registerMessageHandler(ctx, WorkerMessageType.EditorLoaded, onEditorLoaded),
-      registerMessageHandler(ctx, WorkerMessageType.SelectionChanged, onSelectionChanged),
-      registerMessageHandler(ctx, WorkerMessageType.ComponentInfoChanged, onComponentInfoChanged),
-      registerMessageHandler(ctx, WorkerMessageType.ComponentPropertyChanged, onComponentPropertyChanged),
-      registerMessageHandler(ctx, WorkerMessageType.SaveGLTF, onSaveGLTF),
-      registerThirdroomGlobalFn("exportScene", () => {
-        sendExportSceneMessage(ctx);
-      }),
-    ];
-
-    return () => {
-      // Optional dispose function
-      sendDisposeEditorMessage(ctx);
-
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
+    return createDisposables([
+      registerMessageHandler(ctx, EditorMessageType.EditorLoaded, onEditorLoaded),
+      registerMessageHandler(ctx, EditorMessageType.NamesChanged, onNamesChanged),
+      registerMessageHandler(ctx, EditorMessageType.SelectionChanged, onSelectionChanged),
+    ]);
   },
 });
 
 /***********
  * Systems *
- **********/
+ ***********/
 
 export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
   const editor = getModule(mainThread, EditorModule);
 
-  // Set activeHierarchyView to point to the latest updated triple buffer view containing scene hierarchy info
-  // getReadObjectBufferView(editor.sharedHierarchyState);
-
-  if (editor.activeEntityTripleBuffer && editor.activeEntityViews) {
-    swapReadBuffer(editor.activeEntityTripleBuffer);
-    editor.activeEntityView = editor.activeEntityViews[getReadBufferIndex(editor.activeEntityTripleBuffer)];
+  if (!editor.editorLoaded) {
+    return;
   }
+
+  updateHierarchy(editor);
+}
+
+function updateHierarchy(editor: EditorModuleState) {
+  const editorStateView = getReadObjectBufferView(editor.editorStateTripleBuffer);
+
+  const activeScene = editorStateView.activeSceneEid[0];
+
+  const hierarchyView = getReadObjectBufferView(editor.hierarchyTripleBuffer);
+
+  const scene = buildEditorNode(editor.names, hierarchyView, activeScene);
+
+  const event: HierarchyChangedEvent = {
+    scene,
+    activeEntity: editor.activeEntity,
+    selectedEntities: editor.selectedEntities,
+  };
+
+  editor.eventEmitter.emit(EditorEventType.HierarchyChanged, event);
 }
 
 /********************
  * Message Handlers *
- *******************/
+ ********************/
 
-function onEditorLoaded(mainThread: IMainThreadContext, message: EditorLoadedMessage) {
-  const editor = getModule(mainThread, EditorModule);
-  editor.componentInfoMap = new Map(message.componentInfos);
-  editor.emit(EditorEventType.EditorLoaded);
-}
-
-function onSelectionChanged(mainThread: IMainThreadContext, message: SelectionChangedMessage) {
-  const editor = getModule(mainThread, EditorModule);
+function onEditorLoaded(ctx: IMainThreadContext, message: EditorLoadedMessage) {
+  const editor = getModule(ctx, EditorModule);
+  editor.editorLoaded = true;
+  editor.names = message.names;
   editor.selectedEntities = message.selectedEntities;
   editor.activeEntity = message.activeEntity;
-  editor.activeEntityComponents = message.activeEntityComponents;
-  editor.activeEntityTripleBuffer = message.activeEntityTripleBuffer;
 
-  let activeEntityViews: ActiveEntityView[] | undefined;
-  let activeEntityView: ActiveEntityView | undefined;
+  const event: EditorLoadedEvent = {
+    selectedEntities: message.selectedEntities,
+    activeEntity: message.activeEntity,
+  };
+  editor.eventEmitter.emit(EditorEventType.EditorLoaded, event);
+}
 
-  if (message.activeEntityTripleBuffer && message.activeEntityComponents) {
-    activeEntityViews = createActiveEntityViews(
-      message.activeEntityTripleBuffer,
-      message.activeEntityComponents,
-      editor.componentInfoMap
-    );
-    activeEntityView = activeEntityViews[getReadBufferIndex(message.activeEntityTripleBuffer)];
+function onNamesChanged(ctx: IMainThreadContext, { created, updated, deleted }: NamesChangedMessage) {
+  const editor = getModule(ctx, EditorModule);
+
+  for (let i = 0; i < created.length; i++) {
+    const [eid, name] = created[i];
+    editor.names.set(eid, name);
   }
 
-  editor.activeEntityViews = activeEntityViews;
-  editor.activeEntityView = activeEntityView;
+  for (let i = 0; i < updated.length; i++) {
+    const [eid, name] = updated[i];
+    editor.names.set(eid, name);
+  }
 
-  editor.emit(EditorEventType.SelectionChanged, {
-    selectedEntities: editor.selectedEntities,
-    activeEntity: editor.activeEntity,
-    activeEntityComponents: editor.activeEntityComponents,
-  } as Selection);
+  for (let i = 0; i < deleted.length; i++) {
+    const eid = deleted[i];
+    editor.names.delete(eid);
+  }
+
+  updateHierarchy(editor);
 }
 
-function onComponentInfoChanged(ctx: IMainThreadContext, message: ComponentInfoChangedMessage) {
+function onSelectionChanged(ctx: IMainThreadContext, message: SelectionChangedMessage) {
   const editor = getModule(ctx, EditorModule);
-  editor.componentInfoMap.set(message.componentId, message.componentInfo);
-  editor.emit(EditorEventType.ComponentInfoChanged, message.componentId, message.componentInfo);
-}
+  editor.selectedEntities = message.selectedEntities;
+  editor.activeEntity = message.activeEntity;
 
-function onComponentPropertyChanged(ctx: IMainThreadContext, message: ComponentPropertyChangedMessage) {}
-
-function onSaveGLTF(ctx: IMainThreadContext, message: SaveGLTFMessage) {
-  downloadFile(message.buffer, "scene.glb", "application/octet-stream");
+  const event: SelectionChangedEvent = {
+    selectedEntities: message.selectedEntities,
+    activeEntity: message.activeEntity,
+  };
+  editor.eventEmitter.emit(EditorEventType.SelectionChanged, event);
 }
 
 /*******
  * API *
- ******/
+ *******/
 
-export function sendLoadEditorMessage(ctx: IMainThreadContext) {
-  ctx.gameWorker.postMessage({ type: WorkerMessageType.LoadEditor });
+export function loadEditor(ctx: IMainThreadContext) {
+  ctx.sendMessage<LoadEditorMessage>(Thread.Game, {
+    type: EditorMessageType.LoadEditor,
+  });
 }
 
-export function sendRemoveComponentMessage(ctx: IMainThreadContext, componentId: number) {
+export function disposeEditor(ctx: IMainThreadContext) {
   const editor = getModule(ctx, EditorModule);
-  ctx.gameWorker.postMessage({
-    type: WorkerMessageType.RemoveComponent,
-    entities: editor.selectedEntities,
-    componentId,
+  editor.editorLoaded = false;
+  editor.names = new Map();
+  ctx.sendMessage<DisposeEditorMessage>(Thread.Game, {
+    type: EditorMessageType.DisposeEditor,
   });
 }
 
-export function sendSetComponentPropertyMessage(ctx: IMainThreadContext, propertyId: number, value: any) {
-  const editor = getModule(ctx, EditorModule);
-  ctx.gameWorker.postMessage({
-    type: WorkerMessageType.SetComponentProperty,
-    entities: editor.selectedEntities,
-    propertyId,
-    value,
+export function toggleSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<ToggleSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.ToggleSelectedEntity,
+    eid,
   });
 }
 
-export function sendExportSceneMessage(ctx: IMainThreadContext) {
-  ctx.gameWorker.postMessage({
-    type: WorkerMessageType.ExportScene,
+export function setSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<SetSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.SetSelectedEntity,
+    eid,
   });
 }
 
-export function sendDisposeEditorMessage(ctx: IMainThreadContext) {
-  ctx.gameWorker.postMessage({ type: WorkerMessageType.DisposeEditor });
+export function addSelectedEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<AddSelectedEntityMessage>(Thread.Game, {
+    type: EditorMessageType.AddSelectedEntity,
+    eid,
+  });
+}
+
+export function focusEntity(ctx: IMainThreadContext, eid: number) {
+  ctx.sendMessage<FocusEntityMessage>(Thread.Game, {
+    type: EditorMessageType.FocusEntity,
+    eid,
+  });
+}
+
+export function renameEntity(ctx: IMainThreadContext, eid: number, name: string) {
+  ctx.sendMessage<RenameEntityMessage>(Thread.Game, {
+    type: EditorMessageType.RenameEntity,
+    eid,
+    name,
+  });
+}
+
+export function reparentEntities(
+  ctx: IMainThreadContext,
+  entities: number[],
+  target: number | undefined,
+  position: ReparentEntityPosition
+) {
+  ctx.sendMessage<ReparentEntitiesMessage>(Thread.Game, {
+    type: EditorMessageType.ReparentEntities,
+    entities,
+    target,
+    position,
+  });
+}
+
+/*********
+ * Utils *
+ *********/
+
+function buildEditorNode(
+  names: Map<number, string>,
+  hierarchyView: ReadObjectTripleBufferView<HierarchyTripleBuffer>,
+  eid: number,
+  parent?: EditorNode
+): EditorNode | undefined {
+  let node: EditorNode | undefined;
+
+  if (eid) {
+    node = {
+      id: eid,
+      eid,
+      name: names.get(eid) || `Entity ${eid}`,
+      children: [],
+    };
+
+    if (parent) {
+      parent.children.push(node);
+    }
+  }
+
+  let curChild = hierarchyView.firstChild[eid];
+
+  while (curChild) {
+    buildEditorNode(names, hierarchyView, curChild, node);
+    curChild = hierarchyView.nextSibling[curChild];
+  }
+
+  return node;
 }

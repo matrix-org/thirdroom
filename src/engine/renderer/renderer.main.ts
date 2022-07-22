@@ -10,19 +10,18 @@ type MainRendererModuleState = {};
 
 export const RendererModule = defineModule<IMainThreadContext, MainRendererModuleState>({
   name: rendererModuleName,
-  async create({ canvas }, { sendMessage }) {
-    const canvasTarget = window.OffscreenCanvas ? canvas.transferControlToOffscreen() : canvas;
-    const isOffscreenCanvas = window.OffscreenCanvas && canvasTarget instanceof OffscreenCanvas;
+  async create({ canvas, useOffscreenCanvas }, { sendMessage }) {
+    const canvasTarget = useOffscreenCanvas ? canvas.transferControlToOffscreen() : canvas;
 
     sendMessage(
       Thread.Render,
       RendererMessageType.InitializeCanvas,
       {
-        canvasTarget: isOffscreenCanvas ? canvasTarget : undefined,
+        canvasTarget: useOffscreenCanvas ? canvasTarget : undefined,
         initialCanvasWidth: canvas.clientWidth,
         initialCanvasHeight: canvas.clientHeight,
       },
-      isOffscreenCanvas ? [canvasTarget] : undefined
+      useOffscreenCanvas ? [canvasTarget as OffscreenCanvas] : undefined
     );
 
     return {};

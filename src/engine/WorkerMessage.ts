@@ -1,7 +1,4 @@
 import type { OffscreenCanvas } from "three";
-import { TripleBuffer } from "./allocator/TripleBuffer";
-import { ComponentPropertyValues } from "./editor/editor.game";
-import { ComponentInfo, ComponentPropertyValue } from "./component/types";
 
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
@@ -26,15 +23,6 @@ export enum WorkerMessageType {
   RemovePeerId = "remove-peer-id",
   StateChanged = "state-changed",
   SetHost = "set-host",
-  LoadEditor = "load-editor",
-  EditorLoaded = "editor-loaded",
-  DisposeEditor = "dispose-editor",
-  AddComponent = "add-component",
-  RemoveComponent = "remove-component",
-  SetComponentProperty = "set-component-property",
-  SelectionChanged = "selection-changed",
-  ComponentInfoChanged = "component-info-changed",
-  ComponentPropertyChanged = "component-property-changed",
   PlayAudio = "play-audio",
   SetAudioListener = "set-audio-listener",
   SetAudioPeerEntity = "set-audio-peer-entity",
@@ -146,60 +134,6 @@ export interface SetHostMessage extends WorkerMessage {
   value: boolean;
 }
 
-export interface LoadEditorMessage extends WorkerMessage {
-  type: WorkerMessageType.LoadEditor;
-}
-
-export interface DisposeEditorMessage extends WorkerMessage {
-  type: WorkerMessageType.DisposeEditor;
-}
-
-export interface EditorLoadedMessage extends WorkerMessage {
-  type: WorkerMessageType.EditorLoaded;
-  componentInfos: [number, ComponentInfo][];
-}
-
-export interface AddComponentMessage<Props extends ComponentPropertyValues = ComponentPropertyValues>
-  extends WorkerMessage {
-  type: WorkerMessageType.AddComponent;
-  entities: number[];
-  componentId: number;
-  props?: Props;
-}
-
-export interface RemoveComponentMessage extends WorkerMessage {
-  type: WorkerMessageType.RemoveComponent;
-  entities: number[];
-  componentId: number;
-}
-
-export interface SetComponentPropertyMessage extends WorkerMessage {
-  type: WorkerMessageType.SetComponentProperty;
-  entities: number[];
-  propertyId: number;
-  value: ComponentPropertyValue;
-}
-
-export interface SelectionChangedMessage extends WorkerMessage {
-  type: WorkerMessageType.SelectionChanged;
-  selectedEntities: number[];
-  activeEntity?: number;
-  activeEntityComponents?: number[];
-  activeEntityTripleBuffer?: TripleBuffer;
-}
-
-export interface ComponentInfoChangedMessage extends WorkerMessage {
-  type: WorkerMessageType.ComponentInfoChanged;
-  componentId: number;
-  componentInfo: ComponentInfo;
-}
-
-export interface ComponentPropertyChangedMessage extends WorkerMessage {
-  type: WorkerMessageType.ComponentPropertyChanged;
-  propertyId: number;
-  value: ComponentPropertyValue;
-}
-
 export interface PlayAudioMessage extends WorkerMessage {
   type: WorkerMessageType.PlayAudio;
   filepath: string;
@@ -238,15 +172,6 @@ export type WorkerMessages =
   | RemovePeerIdMessage
   | StateChangedMessage
   | SetHostMessage
-  | LoadEditorMessage
-  | EditorLoadedMessage
-  | DisposeEditorMessage
-  | SetComponentPropertyMessage
-  | AddComponentMessage
-  | RemoveComponentMessage
-  | SelectionChangedMessage
-  | ComponentInfoChangedMessage
-  | ComponentPropertyChangedMessage
   | PlayAudioMessage
   | SetAudioListenerMessage
   | SetAudioPeerEntityMessage;

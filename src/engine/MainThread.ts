@@ -7,6 +7,7 @@ import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuf
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
 export interface IMainThreadContext extends BaseThreadContext {
+  useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
   canvas: HTMLCanvasElement;
@@ -18,8 +19,13 @@ export interface IMainThreadContext extends BaseThreadContext {
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
+  const supportsOffscreenCanvas = !!window.OffscreenCanvas;
+  const [, hashSearch] = window.location.hash.split("?");
+  const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
+  const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
+
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker(canvas);
+  const renderWorker = await initRenderWorker(canvas, useOffscreenCanvas);
   const interWorkerMessageChannel = new MessageChannel();
 
   function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
@@ -39,6 +45,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     gameToMainTripleBufferFlags,
     systems: mainThreadConfig.systems,
     modules: new Map(),
+    useOffscreenCanvas,
     canvas,
     gameWorker,
     renderWorker,
@@ -141,10 +148,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   };
 }
 
-async function initRenderWorker(canvas: HTMLCanvasElement): Promise<Worker | MessagePort> {
-  const supportsOffscreenCanvas = !!window.OffscreenCanvas;
-
-  if (supportsOffscreenCanvas) {
+async function initRenderWorker(canvas: HTMLCanvasElement, useOffscreenCanvas: boolean): Promise<Worker | MessagePort> {
+  if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
     const { default: RenderWorker } = await import("./RenderWorker?worker");
     return new RenderWorker();

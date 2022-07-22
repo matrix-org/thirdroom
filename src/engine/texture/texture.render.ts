@@ -54,6 +54,11 @@ export async function onLoadLocalTextureResource(
     texture.needsUpdate = true;
   }
 
+  // Set the texture anisotropy which improves rendering at extreme angles.
+  // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+  // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+  texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
+
   const localTexture: LocalTextureResource = {
     resourceId,
     image,

@@ -1,9 +1,18 @@
-import { useCallback, useState } from "react";
-import { Scene, Object3D, Matrix4 } from "three";
+import { useCallback } from "react";
 import classNames from "classnames";
 import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
+import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import {
+  addSelectedEntity,
+  focusEntity,
+  renameEntity,
+  reparentEntities,
+  setSelectedEntity,
+  toggleSelectedEntity,
+} from "../../../../engine/editor/editor.main";
 
 enum DnDItemTypes {
   Node = "node",
@@ -17,16 +26,10 @@ interface DnDItem {
   nodeIds?: number[];
 }
 
-interface TreeState {
-  scene: Scene;
-  selected: number[];
-  active?: number;
-}
+function getSelectionRoots(scene: EditorNode, selection: number[]): EditorNode[] {
+  const roots: EditorNode[] = [];
 
-function getSelectionRoots(scene: Object3D, selection: number[]): Object3D[] {
-  const roots: Object3D[] = [];
-
-  const traverse = (object: Object3D) => {
+  const traverse = (object: EditorNode) => {
     if (selection.includes(object.id)) {
       roots.push(object);
       return;
@@ -42,75 +45,32 @@ function getSelectionRoots(scene: Object3D, selection: number[]): Object3D[] {
   return roots;
 }
 
-const objectAddedEvent = { type: "added" };
+function findEntityById(node: EditorNode, eid: number): EditorNode | undefined {
+  if (node.eid === eid) {
+    return node;
+  }
 
-const tempMatrix = new Matrix4();
+  for (let i = 0; i < node.children.length; i++) {
+    const child = node.children[i];
 
-function reparentObjects(parent: Object3D, objects: Object3D[], before?: Object3D) {
-  parent.updateMatrixWorld();
+    const found = findEntityById(child, eid);
 
-  console.log({ parent, objects, before });
-
-  for (const object of objects) {
-    // Maintain world position when reparenting.
-    if (object.parent && object.parent !== parent) {
-      object.parent.updateMatrixWorld();
-
-      tempMatrix.copy(parent.matrixWorld).invert();
-      tempMatrix.multiply(object.parent.matrixWorld);
-
-      // Update local matrix and position/rotation/scale/quaternion properties
-      object.applyMatrix4(tempMatrix);
-      // Update matrixWorld
-      object.matrixWorld.multiplyMatrices(object.parent.matrixWorld, object.matrix);
-    }
-
-    if (object.parent !== null) {
-      object.parent.remove(object);
+    if (found) {
+      return found;
     }
   }
 
-  if (before) {
-    const beforeIndex = parent.children.indexOf(before);
-
-    if (beforeIndex === -1) {
-      throw new Error("Couldn't find beforeId");
-    }
-
-    parent.children.splice(beforeIndex, 0, ...objects);
-  } else {
-    parent.children.push(...objects);
-  }
-
-  for (const object of objects) {
-    object.parent = parent;
-    object.dispatchEvent(objectAddedEvent);
-  }
+  return undefined;
 }
 
-export function HierarchyPanel() {
-  const [{ scene, selected, active }, setState] = useState<TreeState>(() => {
-    const scene = new Scene();
-    scene.name = "Scene";
+interface HierarchyPanelProps {
+  activeEntity: number;
+  selectedEntities: number[];
+  scene: EditorNode;
+}
 
-    const objectA = new Object3D();
-    objectA.name = "Object3D A";
-    scene.add(objectA);
-
-    const objectB = new Object3D();
-    objectB.name = "Object3D B";
-    objectA.add(objectB);
-
-    const objectC = new Object3D();
-    objectC.name = "Object3D C";
-    scene.add(objectC);
-
-    return {
-      scene,
-      selected: [],
-      active: undefined,
-    };
-  });
+export function HierarchyPanel({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+  const mainThread = useMainThreadContext();
 
   const canDrop = useCallback(
     (item: DnDItem, target: number | undefined, position: NodeDropPosition) => {
@@ -122,14 +82,14 @@ export function HierarchyPanel() {
         return position === NodeDropPosition.Root;
       }
 
-      if (target === scene.id && (position === NodeDropPosition.Before || position === NodeDropPosition.After)) {
+      if (target === scene.eid && (position === NodeDropPosition.Before || position === NodeDropPosition.After)) {
         return false;
       }
 
       const roots = getSelectionRoots(scene, item.nodeIds);
 
       for (const root of roots) {
-        if (root.getObjectById(target) !== undefined) {
+        if (findEntityById(root, target) !== undefined) {
           return false;
         }
       }
@@ -141,108 +101,69 @@ export function HierarchyPanel() {
 
   const canDrag = useCallback(
     (nodeId: number) => {
-      return !selected.includes(scene.id);
+      return !selectedEntities.includes(scene.id);
     },
-    [scene, selected]
+    [scene, selectedEntities]
   );
 
   const getDragItem = useCallback(
     (nodeId: number) => {
-      return { type: DnDItemTypes.Node, nodeIds: selected };
+      return { type: DnDItemTypes.Node, nodeIds: selectedEntities };
     },
-    [selected]
+    [selectedEntities]
   );
 
-  const onToggleSelectedNode = useCallback((nodeId) => {
-    setState((state) => {
-      const isSelected = state.selected.includes(nodeId);
-      const nextSelected = isSelected
-        ? state.selected.filter((selectedId) => selectedId !== nodeId)
-        : [...state.selected, nodeId];
+  const onToggleSelectedNode = useCallback(
+    (nodeId) => {
+      toggleSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-      return {
-        ...state,
-        selected: nextSelected,
-        active: nextSelected.length > 0 ? nextSelected[nextSelected.length - 1] : undefined,
-      };
-    });
-  }, []);
+  const onAddSelectedNode = useCallback(
+    (nodeId) => {
+      addSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onAddSelectedNode = useCallback((nodeId) => {
-    setState((state) => {
-      const isSelected = state.selected.includes(nodeId);
+  const onSetSelectedNode = useCallback(
+    (nodeId) => {
+      console.log("onSetSelectedNode");
+      setSelectedEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-      return {
-        ...state,
-        selected: !isSelected ? [...state.selected, nodeId] : state.selected,
-        active: nodeId,
-      };
-    });
-  }, []);
+  const onDoubleClickNode = useCallback(
+    (nodeId) => {
+      focusEntity(mainThread, nodeId);
+    },
+    [mainThread]
+  );
 
-  const onSetSelectedNode = useCallback((nodeId) => {
-    setState((state) => ({
-      ...state,
-      selected: [nodeId],
-      active: nodeId,
-    }));
-  }, []);
-
-  const onDoubleClickNode = useCallback((nodeId) => {
-    console.log(`Focus ${nodeId}`);
-  }, []);
-
-  const onRenameNode = useCallback((nodeId, name) => {
-    setState((state) => {
-      const object = state.scene.getObjectById(nodeId);
-
-      if (object) {
-        object.name = name;
-      }
-
-      return { ...state };
-    });
-  }, []);
+  const onRenameNode = useCallback(
+    (nodeId, name) => {
+      renameEntity(mainThread, nodeId, name);
+    },
+    [mainThread]
+  );
 
   const onDrop = useCallback(
     (item: DnDItem, target: number | undefined, position: NodeDropPosition) => {
-      const roots = getSelectionRoots(scene, item.nodeIds!);
-
-      if (position === NodeDropPosition.Root) {
-        reparentObjects(scene, roots);
-        return;
+      if (item.type === DnDItemTypes.Node && item.nodeIds) {
+        reparentEntities(mainThread, item.nodeIds, target, position as unknown as ReparentEntityPosition);
       }
-
-      if (!target) {
-        return;
-      }
-
-      const node = scene.getObjectById(target);
-
-      if (!node) {
-        return;
-      }
-
-      if (position === NodeDropPosition.On) {
-        reparentObjects(node, roots);
-      } else if (position === NodeDropPosition.Before) {
-        reparentObjects(node.parent!, roots, node);
-      } else if (position === NodeDropPosition.After) {
-        const nodeIndex = node.parent!.children.indexOf(node);
-        reparentObjects(node.parent!, roots, node.parent!.children[nodeIndex + 1]);
-      }
-
-      setState((state) => ({ ...state }));
     },
-    [scene]
+    [mainThread]
   );
 
   return (
     <div className="HierarchyPanel">
       <TreeView
         tree={scene}
-        selected={selected}
-        active={active}
+        selected={selectedEntities}
+        active={activeEntity}
         itemSize={32}
         onToggleSelectedNode={onToggleSelectedNode}
         onAddSelectedNode={onAddSelectedNode}
