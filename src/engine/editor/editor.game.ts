@@ -245,7 +245,7 @@ export function EditorStateSystem(ctx: GameState) {
     // Update the remote nodes with the editor selection layer added/removed
     // Recursively update this layer so that the selected effect can be applied to all descendants
     for (let i = 0; i < selectedRemoved.length; i++) {
-      const eid = selected[i];
+      const eid = selectedRemoved[i];
 
       traverseRecursive(eid, (child) => {
         const remoteNode = RemoteNodeComponent.get(child);
@@ -257,7 +257,7 @@ export function EditorStateSystem(ctx: GameState) {
     }
 
     for (let i = 0; i < selectedAdded.length; i++) {
-      const eid = selected[i];
+      const eid = selectedAdded[i];
 
       traverseRecursive(eid, (child) => {
         const remoteNode = RemoteNodeComponent.get(child);

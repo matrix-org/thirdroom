@@ -101,16 +101,14 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
-      antialias: true,
       canvas: canvasTarget || ctx.canvas,
     });
+    renderer.outputEncoding = sRGBEncoding;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
-    renderer.outputEncoding = sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
-    renderer.shadowMap.autoUpdate = false;
-    renderer.autoClear = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
     const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
@@ -246,6 +244,6 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject);
+    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
   }
 }
