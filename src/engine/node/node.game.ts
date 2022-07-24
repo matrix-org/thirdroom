@@ -11,7 +11,7 @@ import { RemoteCamera } from "../camera/camera.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RemoteLight } from "../light/light.game";
-import { RemoteMesh, RemoteInstancedMesh } from "../mesh/mesh.game";
+import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -43,6 +43,8 @@ export interface RemoteNode {
   set mesh(mesh: RemoteMesh | undefined);
   get instancedMesh(): RemoteInstancedMesh | undefined;
   set instancedMesh(instancedMesh: RemoteInstancedMesh | undefined);
+  get skinnedMesh(): RemoteSkinnedMesh | undefined;
+  set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined);
   get light(): RemoteLight | undefined;
   set light(light: RemoteLight | undefined);
   get camera(): RemoteCamera | undefined;
@@ -61,6 +63,7 @@ interface NodeProps {
   name?: string;
   mesh?: RemoteMesh;
   instancedMesh?: RemoteInstancedMesh;
+  skinnedMesh?: RemoteSkinnedMesh;
   light?: RemoteLight;
   camera?: RemoteCamera;
   audioEmitter?: RemotePositionalAudioEmitter;
@@ -77,6 +80,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
     if (props?.mesh) remoteNode.mesh = props.mesh;
     if (props?.instancedMesh) remoteNode.instancedMesh = props.instancedMesh;
+    if (props?.skinnedMesh) remoteNode.skinnedMesh = props.skinnedMesh;
     if (props?.light) remoteNode.light = props.light;
     if (props?.camera) remoteNode.camera = props.camera;
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
@@ -90,6 +94,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   rendererNodeBufferView.mesh[0] = props?.mesh?.resourceId || 0;
   rendererNodeBufferView.instancedMesh[0] = props?.instancedMesh?.resourceId || 0;
+  rendererNodeBufferView.skinnedMesh[0] = props?.skinnedMesh?.resourceId || 0;
   rendererNodeBufferView.light[0] = props?.light?.resourceId || 0;
   rendererNodeBufferView.camera[0] = props?.camera?.resourceId || 0;
   rendererNodeBufferView.tilesRenderer[0] = props?.tilesRenderer?.resourceId || 0;
@@ -104,6 +109,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   let _mesh: RemoteMesh | undefined = props?.mesh;
   let _instancedMesh: RemoteInstancedMesh | undefined = props?.instancedMesh;
+  let _skinnedMesh: RemoteSkinnedMesh | undefined = props?.skinnedMesh;
   let _light: RemoteLight | undefined = props?.light;
   let _camera: RemoteCamera | undefined = props?.camera;
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
@@ -127,6 +133,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
         if (_instancedMesh) {
           disposeResource(ctx, _instancedMesh.resourceId);
+        }
+
+        if (_skinnedMesh) {
+          disposeResource(ctx, _skinnedMesh.resourceId);
         }
 
         if (_light) {
@@ -167,6 +177,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   if (_instancedMesh) {
     addResourceRef(ctx, _instancedMesh.resourceId);
+  }
+
+  if (_skinnedMesh) {
+    addResourceRef(ctx, _skinnedMesh.resourceId);
   }
 
   if (_light) {
@@ -223,6 +237,21 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
       _instancedMesh = instancedMesh;
       rendererNodeBufferView.instancedMesh[0] = instancedMesh?.resourceId || 0;
+    },
+    get skinnedMesh() {
+      return _skinnedMesh;
+    },
+    set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined) {
+      if (skinnedMesh) {
+        addResourceRef(ctx, skinnedMesh.resourceId);
+      }
+
+      if (_skinnedMesh) {
+        disposeResource(ctx, _skinnedMesh.resourceId);
+      }
+
+      _skinnedMesh = skinnedMesh;
+      rendererNodeBufferView.skinnedMesh[0] = skinnedMesh?.resourceId || 0;
     },
     get light() {
       return _light;

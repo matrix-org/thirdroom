@@ -21,8 +21,11 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
   inflateGLTFScene(ctx, eid, uri, undefined, false);
 
   Transform.position[eid].set([0, -1, 0]);
-  Transform.rotation[eid].set([0, Math.PI, 0]);
+  Transform.rotation[eid].set([-Math.PI / 2, 0, Math.PI / 2]);
+  // Transform.rotation[eid].set([-Math.PI / 2, 0, 0]);
+  // Transform.rotation[eid].set([0, Math.PI, 0]);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
+
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
   addChild(container, eid);

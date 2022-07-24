@@ -15,7 +15,7 @@ import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -32,6 +32,8 @@ import {
   InstancedMeshResourceType,
   SharedInstancedMeshResource,
   MeshPrimitiveAttribute,
+  SharedSkinnedMeshResource,
+  SkinnedMeshResourceType,
 } from "./mesh.common";
 
 export type MeshPrimitiveBufferView = ObjectBufferView<typeof meshPrimitiveSchema, ArrayBuffer>;
@@ -77,8 +79,22 @@ export interface RemoteInstancedMeshProps {
   attributes: { [key: string]: RemoteAccessor<any, any> };
 }
 
+export interface RemoteSkinnedMesh {
+  name: string;
+  resourceId: number;
+  joints: RemoteNode[];
+  inverseBindMatrices?: RemoteAccessor<any, any>;
+}
+
+export interface RemoteSkinnedMeshProps {
+  name?: string;
+  joints: RemoteNode[];
+  inverseBindMatrices?: RemoteAccessor<any, any>;
+}
+
 const DEFAULT_MESH_NAME = "Mesh";
 const DEFAULT_INSTANCED_MESH_NAME = "Instanced Mesh";
+const DEFAULT_SKINNED_MESH_NAME = "Skinned Mesh";
 
 export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): RemoteMesh {
   const name = props.name || DEFAULT_MESH_NAME;
@@ -250,6 +266,37 @@ export function createRemoteInstancedMesh(ctx: GameState, props: RemoteInstanced
     name,
     resourceId,
     attributes,
+  };
+}
+
+export function createRemoteSkinnedMesh(ctx: GameState, props: RemoteSkinnedMeshProps): RemoteSkinnedMesh {
+  const name = props.name || DEFAULT_SKINNED_MESH_NAME;
+  const joints = props.joints;
+  const inverseBindMatrices = props.inverseBindMatrices;
+
+  const sharedResource: SharedSkinnedMeshResource = {
+    joints: joints.map((j) => j.rendererResourceId),
+    inverseBindMatrices: props.inverseBindMatrices?.resourceId,
+  };
+
+  const resourceId = createResource<SharedSkinnedMeshResource>(
+    ctx,
+    Thread.Render,
+    SkinnedMeshResourceType,
+    sharedResource,
+    {
+      name,
+      dispose() {
+        if (props.inverseBindMatrices) disposeResource(ctx, props.inverseBindMatrices.resourceId);
+      },
+    }
+  );
+
+  return {
+    name,
+    resourceId,
+    joints,
+    inverseBindMatrices,
   };
 }
 

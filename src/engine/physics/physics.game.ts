@@ -22,6 +22,7 @@ interface PhysicsModuleState {
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
   drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
+  collisionHandlers: ((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => void)[];
 }
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
@@ -55,6 +56,7 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
       eventQueue,
       handleToEid,
       drainContactEvents,
+      collisionHandlers: [],
     };
   },
   init(ctx) {},
@@ -98,7 +100,7 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
 
 export const PhysicsSystem = (state: GameState) => {
   const { world, dt } = state;
-  const { physicsWorld, handleToEid, eventQueue } = getModule(state, PhysicsModule);
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(state, PhysicsModule);
   // remove rigidbody from physics world
   const exited = exitedPhysicsQuery(world);
   for (let i = 0; i < exited.length; i++) {
@@ -155,6 +157,14 @@ export const PhysicsSystem = (state: GameState) => {
 
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
+
+  eventQueue.drainContactEvents((handle1, handle2) => {
+    const eid1 = handleToEid.get(handle1);
+    const eid2 = handleToEid.get(handle2);
+    for (const collisionHandler of collisionHandlers) {
+      collisionHandler(eid1, eid2, handle1, handle2);
+    }
+  });
 };
 
 export function addRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {

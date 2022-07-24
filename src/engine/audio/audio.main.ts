@@ -47,6 +47,7 @@ export interface MainAudioModule {
   audioStateTripleBuffer: AudioStateTripleBuffer;
   context: AudioContext;
   // todo: MixerTrack/MixerInsert interface
+  mainLimiter: DynamicsCompressorNode;
   mainGain: GainNode;
   environmentGain: GainNode;
   voiceGain: GainNode;
@@ -87,16 +88,22 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     const audioContext = new AudioContext();
 
     // hack - must play something thru the audio context for media streams to activate
-    (() => {
-      const osc = audioContext.createOscillator();
-      osc.frequency.value = 0;
-      osc.connect(audioContext.destination);
-      osc.start();
-      osc.stop();
-    })();
+    const osc = audioContext.createOscillator();
+    osc.frequency.value = 0;
+    osc.connect(audioContext.destination);
+    osc.start();
+    osc.stop();
+
+    const mainLimiter = new DynamicsCompressorNode(audioContext);
+    mainLimiter.threshold.value = -0.01;
+    mainLimiter.knee.value = 0;
+    mainLimiter.ratio.value = 20;
+    mainLimiter.attack.value = 0.007;
+    mainLimiter.release.value = 0.02;
+    mainLimiter.connect(audioContext.destination);
 
     const mainGain = new GainNode(audioContext);
-    mainGain.connect(audioContext.destination);
+    mainGain.connect(mainLimiter);
 
     const environmentGain = new GainNode(audioContext);
     environmentGain.connect(mainGain);
@@ -115,7 +122,8 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     return {
       audioStateTripleBuffer,
       context: audioContext,
-      mainGain: mainGain,
+      mainLimiter,
+      mainGain,
       environmentGain,
       voiceGain,
       musicGain,

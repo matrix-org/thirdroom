@@ -133,6 +133,35 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     //   playAudio(hitAudioSource);
     // }, 1000);
 
+    const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
+
+    collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
+      const body1 = physicsWorld.getRigidBody(handle1!);
+      const body2 = physicsWorld.getRigidBody(handle2!);
+
+      let gain = 1;
+
+      if (body1 && body2) {
+        const linvel1 = body1.linvel();
+        const linvel2 = body2.linvel();
+
+        const manhattanLength =
+          Math.abs(linvel1.x) +
+          Math.abs(linvel1.y) +
+          Math.abs(linvel1.z) +
+          Math.abs(linvel2.x) +
+          Math.abs(linvel2.y) +
+          Math.abs(linvel2.z);
+
+        gain = manhattanLength / 20;
+      }
+
+      const playbackRate = randomRange(0.3, 0.75);
+      const emitter = module.hitAudioEmitters.get(eid2!)! || module.hitAudioEmitters.get(eid1!)!;
+      const source = emitter.sources[0] as RemoteAudioSource;
+      playAudio(source, { playbackRate, gain });
+    });
+
     enableActionMap(ctx, CubeSpawnerActionMap);
   },
 });
@@ -173,9 +202,8 @@ const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
-  const module = getModule(ctx, CubeSpawnerModule);
+  // const module = getModule(ctx, CubeSpawnerModule);
   const input = getModule(ctx, InputModule);
-  const physics = getModule(ctx, PhysicsModule);
 
   const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
   const spawnBall = input.actions.get("SpawnBall") as ButtonActionState;
@@ -204,33 +232,6 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     addChild(ctx.activeScene, cube);
   }
-
-  physics.drainContactEvents((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
-    const body1 = physics.physicsWorld.getRigidBody(handle1!);
-    const body2 = physics.physicsWorld.getRigidBody(handle2!);
-
-    let gain = 1;
-
-    if (body1 && body2) {
-      const linvel1 = body1.linvel();
-      const linvel2 = body2.linvel();
-
-      const x =
-        Math.abs(linvel1.x) +
-        Math.abs(linvel1.y) +
-        Math.abs(linvel1.z) +
-        Math.abs(linvel2.x) +
-        Math.abs(linvel2.y) +
-        Math.abs(linvel2.z);
-
-      gain = x / 20;
-    }
-
-    const playbackRate = randomRange(0.3, 0.75);
-    const emitter = module.hitAudioEmitters.get(eid2!)! || module.hitAudioEmitters.get(eid1!)!;
-    const source = emitter.sources[0] as RemoteAudioSource;
-    playAudio(source, { playbackRate, gain });
-  });
 };
 
 export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial) => {
