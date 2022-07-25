@@ -1,22 +1,13 @@
+import { Camera, HalfFloatType, Layers, OrthographicCamera, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import {
-  Camera,
-  Layers,
-  LinearFilter,
-  OrthographicCamera,
-  PerspectiveCamera,
-  RGBAFormat,
-  Scene,
-  sRGBEncoding,
-  Vector2,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from "three";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
+  EffectComposer,
+  RenderPass,
+  EffectPass,
+  BloomEffect,
+  OutlineEffect,
+  DepthOfFieldEffect,
+  VignetteEffect,
+} from "postprocessing";
 
 import { Layer } from "../node/node.common";
 
@@ -27,6 +18,14 @@ declare module "three" {
   }
 }
 
+declare module "postprocessing" {
+  interface OutlineEffect {
+    scene: Scene;
+    camera: Camera;
+    depthPass: DepthPass;
+  }
+}
+
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
  * for various platforms. This implementation is only focused on desktops with integrated or dedicated GPUs.
@@ -34,59 +33,77 @@ declare module "three" {
  */
 export class RenderPipeline {
   effectComposer: EffectComposer;
-  renderPass: RenderPass;
-  outlinePass: OutlinePass;
-  bloomPass: UnrealBloomPass;
-  gammaCorrectionPass: ShaderPass;
   outlineLayers: Layers;
 
+  curScene?: Scene;
+  curCamera?: Camera;
+
+  outlineEffect?: OutlineEffect;
+  bloomEffect?: BloomEffect;
+
+  renderPass?: RenderPass;
+  effectPass?: EffectPass;
+
   constructor(private renderer: WebGLRenderer) {
-    const rendererSize = renderer.getSize(new Vector2());
-
-    const target = new WebGLRenderTarget(rendererSize.width, rendererSize.height, {
-      minFilter: LinearFilter,
-      magFilter: LinearFilter,
-      format: RGBAFormat,
-      encoding: sRGBEncoding,
-      samples: 16,
-    });
-
-    const scene = new Scene();
-    const camera = new Camera();
-
-    this.effectComposer = new EffectComposer(renderer, target);
-    this.renderPass = new RenderPass(scene, camera);
-    this.outlinePass = new OutlinePass(rendererSize, scene, camera);
-    this.bloomPass = new UnrealBloomPass(rendererSize, 0.2, 0.4, 0.5);
-    this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
-
-    this.effectComposer.addPass(this.renderPass);
-    this.effectComposer.addPass(this.outlinePass);
-    this.effectComposer.addPass(this.bloomPass);
-    this.effectComposer.addPass(this.gammaCorrectionPass);
-
     this.outlineLayers = new Layers();
     this.outlineLayers.set(Layer.EditorSelection);
+
+    this.effectComposer = new EffectComposer(renderer, {
+      frameBufferType: HalfFloatType,
+      multisampling: 16,
+      updateStyle: false,
+    });
   }
 
   setSize(width: number, height: number) {
     this.renderer.setSize(width, height, false);
-    this.effectComposer.setSize(width, height);
+
+    if (this.effectComposer) {
+      this.effectComposer.setSize(width, height, false);
+    }
   }
 
   render(scene: Scene, camera: PerspectiveCamera | OrthographicCamera, dt: number) {
-    this.renderPass.scene = scene;
-    this.renderPass.camera = camera;
-    this.outlinePass.renderScene = scene;
-    this.outlinePass.renderCamera = camera;
+    if (this.curScene !== scene || this.curCamera !== camera) {
+      this.curScene = scene;
+      this.curCamera = camera;
 
-    this.outlinePass.selectedObjects.length = 0;
+      this.effectComposer.reset();
 
-    scene.traverse((child) => {
-      if (child.layers.test(this.outlineLayers)) {
-        this.outlinePass.selectedObjects.push(child);
-      }
-    });
+      const renderPass = new RenderPass(scene, camera);
+
+      this.outlineEffect = new OutlineEffect(scene, camera);
+      this.outlineEffect.selection.layer = Layer.OutlineEffect;
+      const bloomEffect = new BloomEffect({
+        luminanceThreshold: 0.85,
+      });
+      const depthOfFieldEffect = new DepthOfFieldEffect(camera);
+      const vignetteEffect = new VignetteEffect({
+        eskil: false,
+        offset: 0.35,
+        darkness: 0.5,
+      });
+
+      const outlinePass = new EffectPass(camera, this.outlineEffect);
+
+      const effectPass = new EffectPass(camera, depthOfFieldEffect, bloomEffect, vignetteEffect);
+
+      this.effectComposer.addPass(renderPass);
+      this.effectComposer.addPass(outlinePass);
+      this.effectComposer.addPass(effectPass);
+    }
+
+    if (this.outlineEffect) {
+      const outlineEffect = this.outlineEffect;
+
+      outlineEffect.selection.clear();
+
+      scene.traverse((child) => {
+        if (child.layers.test(this.outlineLayers)) {
+          outlineEffect.selection.add(child);
+        }
+      });
+    }
 
     this.effectComposer.render(dt);
   }

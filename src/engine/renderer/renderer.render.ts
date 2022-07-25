@@ -101,6 +101,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
+      antialias: false,
+      stencil: false,
+      depth: false,
       canvas: canvasTarget || ctx.canvas,
     });
     renderer.outputEncoding = sRGBEncoding;
@@ -108,7 +111,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = false;
     renderer.shadowMap.type = PCFSoftShadowMap;
+    renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
     const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
@@ -172,9 +178,8 @@ function onUpdate(state: RenderThreadState) {
   const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
 
   const now = performance.now();
-  const dt = (state.dt = now - state.elapsed);
+  state.dt = (now - state.elapsed) / 1000;
   state.elapsed = now;
-  state.dt = dt;
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
@@ -202,7 +207,7 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, renderer } = rendererModule;
 
   const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
@@ -244,6 +249,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
+    renderer.info.reset();
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
   }
 }

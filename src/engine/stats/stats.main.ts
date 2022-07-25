@@ -55,8 +55,8 @@ export function getStats(context: IMainThreadContext): StatsObject {
   const { stats, buffer } = getModule(context, StatsModule);
   stats.fps = buffer.f32[Stats.fps].toFixed(2);
   stats.frameTime = buffer.f32[Stats.frameTime].toFixed(2);
-  stats.frameDuration = (buffer.f32[Stats.frameDuration] * 1000).toFixed(2);
-  stats.gameTime = (buffer.f32[Stats.gameTime] * 1000).toFixed(2);
+  stats.frameDuration = buffer.f32[Stats.frameDuration].toFixed(2);
+  stats.gameTime = buffer.f32[Stats.gameTime].toFixed(2);
   stats.gameDuration = buffer.f32[Stats.gameDuration].toFixed(2);
   stats.frame = buffer.u32[Stats.frame];
   stats.staleFrames = buffer.u32[Stats.staleFrames];

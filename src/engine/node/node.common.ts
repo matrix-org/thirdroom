@@ -5,6 +5,7 @@ export const NodeResourceType = "node";
 export enum Layer {
   Default,
   EditorSelection,
+  OutlineEffect,
 }
 
 export function addLayer(layers: number, layer: Layer): number {
