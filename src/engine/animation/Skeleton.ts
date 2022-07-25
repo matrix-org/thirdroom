@@ -1,246 +1,248 @@
-import {
-  DataTexture,
-  Matrix4,
-  SkinnedMesh as ThreeSkinnedMesh,
-  Skeleton as ThreeSkeleton,
-  MathUtils,
-  RGBAFormat,
-  FloatType,
-  Vector3,
-  Vector4,
-} from "three";
+export {};
 
-const _offsetMatrix = new Matrix4();
-const _identityMatrix = new Matrix4();
+// import {
+//   DataTexture,
+//   Matrix4,
+//   SkinnedMesh as ThreeSkinnedMesh,
+//   Skeleton as ThreeSkeleton,
+//   MathUtils,
+//   RGBAFormat,
+//   FloatType,
+//   Vector3,
+//   Vector4,
+// } from "three";
 
-export class Skeleton extends ThreeSkeleton {
-  // frame: number;
-  // update(): void;
-  // boneTexture: DataTexture;
-  // boneTextureSize: number;
-  // skinnedMesh: SkinnedMesh;
-  // bindMatrix: Matrix4;
-  // bindMatrixInverse: Matrix4;
-  // constructor(bones: Bone[], inverses: Matrix4[]) {}
+// const _offsetMatrix = new Matrix4();
+// const _identityMatrix = new Matrix4();
 
-  init() {
-    console.log("skeleton.init()");
-    return super.init();
-  }
+// export class Skeleton extends ThreeSkeleton {
+//   // frame: number;
+//   // update(): void;
+//   // boneTexture: DataTexture;
+//   // boneTextureSize: number;
+//   // skinnedMesh: SkinnedMesh;
+//   // bindMatrix: Matrix4;
+//   // bindMatrixInverse: Matrix4;
+//   // constructor(bones: Bone[], inverses: Matrix4[]) {}
 
-  calculateInverses() {
-    console.log("skeleton.calculateInverses()");
-    return super.calculateInverses();
-  }
+//   init() {
+//     console.log("skeleton.init()");
+//     return super.init();
+//   }
 
-  pose() {
-    console.log("skeleton.pose()");
-    // return super.pose();
+//   calculateInverses() {
+//     console.log("skeleton.calculateInverses()");
+//     return super.calculateInverses();
+//   }
 
-    // recover the bind-time world matrices
+//   pose() {
+//     console.log("skeleton.pose()");
+//     // return super.pose();
 
-    for (let i = 0, il = this.bones.length; i < il; i++) {
-      const bone = this.bones[i];
+//     // recover the bind-time world matrices
 
-      if (bone) {
-        bone.matrixWorld.copy(this.boneInverses[i]); //.invert();
-      }
-    }
+//     for (let i = 0, il = this.bones.length; i < il; i++) {
+//       const bone = this.bones[i];
 
-    // compute the local matrices, positions, rotations and scales
+//       if (bone) {
+//         bone.matrixWorld.copy(this.boneInverses[i]); //.invert();
+//       }
+//     }
 
-    for (let i = 0, il = this.bones.length; i < il; i++) {
-      const bone = this.bones[i];
+//     // compute the local matrices, positions, rotations and scales
 
-      if (bone) {
-        if (bone.parent && bone.parent.isBone) {
-          bone.matrix.copy(bone.parent.matrixWorld); //.invert();
-          bone.matrix.multiply(bone.matrixWorld);
-        } else {
-          bone.matrix.copy(bone.matrixWorld);
-        }
+//     for (let i = 0, il = this.bones.length; i < il; i++) {
+//       const bone = this.bones[i];
 
-        bone.matrix.decompose(bone.position, bone.quaternion, bone.scale);
-      }
-    }
-  }
+//       if (bone) {
+//         if (bone.parent && bone.parent.isBone) {
+//           bone.matrix.copy(bone.parent.matrixWorld); //.invert();
+//           bone.matrix.multiply(bone.matrixWorld);
+//         } else {
+//           bone.matrix.copy(bone.matrixWorld);
+//         }
 
-  update() {
-    // console.log("skeleton.update()");
-    // return super.update();
+//         bone.matrix.decompose(bone.position, bone.quaternion, bone.scale);
+//       }
+//     }
+//   }
 
-    const bones = this.bones;
-    const boneInverses = this.boneInverses;
-    const boneMatrices = this.boneMatrices;
-    const boneTexture = this.boneTexture;
+//   update() {
+//     // console.log("skeleton.update()");
+//     // return super.update();
 
-    // flatten bone matrices to array
+//     const bones = this.bones;
+//     const boneInverses = this.boneInverses;
+//     const boneMatrices = this.boneMatrices;
+//     const boneTexture = this.boneTexture;
 
-    for (let i = 0, il = bones.length; i < il; i++) {
-      // compute the offset between the current and the original transform
+//     // flatten bone matrices to array
 
-      const boneMatrix = bones[i] ? bones[i].matrixWorld : _identityMatrix;
-      const boneInverseMatrix = boneInverses[i];
+//     for (let i = 0, il = bones.length; i < il; i++) {
+//       // compute the offset between the current and the original transform
 
-      _offsetMatrix.multiplyMatrices(boneMatrix, boneInverseMatrix);
-      _offsetMatrix.toArray(boneMatrices, i * 16);
-    }
+//       const boneMatrix = bones[i] ? bones[i].matrixWorld : _identityMatrix;
+//       const boneInverseMatrix = boneInverses[i];
 
-    if (boneTexture !== null) {
-      boneTexture.needsUpdate = true;
-    }
-  }
+//       _offsetMatrix.multiplyMatrices(boneMatrix, boneInverseMatrix);
+//       _offsetMatrix.toArray(boneMatrices, i * 16);
+//     }
 
-  clone() {
-    console.log("skeleton.clone()");
-    return super.clone();
-  }
+//     if (boneTexture !== null) {
+//       boneTexture.needsUpdate = true;
+//     }
+//   }
 
-  computeBoneTexture() {
-    console.log("skeleton.computeBoneTexture()");
-    // return super.computeBoneTexture();
+//   clone() {
+//     console.log("skeleton.clone()");
+//     return super.clone();
+//   }
 
-    // layout (1 matrix = 4 pixels)
-    //      RGBA RGBA RGBA RGBA (=> column1, column2, column3, column4)
-    //  with  8x8  pixel texture max   16 bones * 4 pixels =  (8 * 8)
-    //       16x16 pixel texture max   64 bones * 4 pixels = (16 * 16)
-    //       32x32 pixel texture max  256 bones * 4 pixels = (32 * 32)
-    //       64x64 pixel texture max 1024 bones * 4 pixels = (64 * 64)
+//   computeBoneTexture() {
+//     console.log("skeleton.computeBoneTexture()");
+//     // return super.computeBoneTexture();
 
-    let size = Math.sqrt(this.bones.length * 4); // 4 pixels needed for 1 matrix
-    size = MathUtils.ceilPowerOfTwo(size);
-    size = Math.max(size, 4);
+//     // layout (1 matrix = 4 pixels)
+//     //      RGBA RGBA RGBA RGBA (=> column1, column2, column3, column4)
+//     //  with  8x8  pixel texture max   16 bones * 4 pixels =  (8 * 8)
+//     //       16x16 pixel texture max   64 bones * 4 pixels = (16 * 16)
+//     //       32x32 pixel texture max  256 bones * 4 pixels = (32 * 32)
+//     //       64x64 pixel texture max 1024 bones * 4 pixels = (64 * 64)
 
-    const boneMatrices = new Float32Array(size * size * 4); // 4 floats per RGBA pixel
-    boneMatrices.set(this.boneMatrices); // copy current values
+//     let size = Math.sqrt(this.bones.length * 4); // 4 pixels needed for 1 matrix
+//     size = MathUtils.ceilPowerOfTwo(size);
+//     size = Math.max(size, 4);
 
-    const boneTexture = new DataTexture(boneMatrices, size, size, RGBAFormat, FloatType);
-    boneTexture.needsUpdate = true;
+//     const boneMatrices = new Float32Array(size * size * 4); // 4 floats per RGBA pixel
+//     boneMatrices.set(this.boneMatrices); // copy current values
 
-    this.boneMatrices = boneMatrices;
-    this.boneTexture = boneTexture;
-    this.boneTextureSize = size;
+//     const boneTexture = new DataTexture(boneMatrices, size, size, RGBAFormat, FloatType);
+//     boneTexture.needsUpdate = true;
 
-    return this;
-  }
+//     this.boneMatrices = boneMatrices;
+//     this.boneTexture = boneTexture;
+//     this.boneTextureSize = size;
 
-  getBoneByName(name) {
-    console.log("skeleton.getBoneByName()");
-    return super.getBoneByName(name);
-  }
+//     return this;
+//   }
 
-  dispose() {
-    console.log("skeleton.dispose()");
-    return super.dispose();
-  }
-}
+//   getBoneByName(name) {
+//     console.log("skeleton.getBoneByName()");
+//     return super.getBoneByName(name);
+//   }
 
-const _basePosition = /*@__PURE__*/ new Vector3();
+//   dispose() {
+//     console.log("skeleton.dispose()");
+//     return super.dispose();
+//   }
+// }
 
-const _skinIndex = /*@__PURE__*/ new Vector4();
-const _skinWeight = /*@__PURE__*/ new Vector4();
+// const _basePosition = /*@__PURE__*/ new Vector3();
 
-const _vector = /*@__PURE__*/ new Vector3();
-const _matrix = /*@__PURE__*/ new Matrix4();
+// const _skinIndex = /*@__PURE__*/ new Vector4();
+// const _skinWeight = /*@__PURE__*/ new Vector4();
 
-export class SkinnedMesh extends ThreeSkinnedMesh {
-  constructor(geometry, material) {
-    super(geometry, material);
+// const _vector = /*@__PURE__*/ new Vector3();
+// const _matrix = /*@__PURE__*/ new Matrix4();
 
-    this.isSkinnedMesh = true;
+// export class SkinnedMesh extends ThreeSkinnedMesh {
+//   constructor(geometry, material) {
+//     super(geometry, material);
 
-    this.type = "SkinnedMesh";
+//     this.isSkinnedMesh = true;
 
-    this.bindMode = "attached";
-    this.bindMatrix = new Matrix4();
-    this.bindMatrixInverse = new Matrix4();
-  }
-  copy(source, recursive) {
-    super.copy(source, recursive);
+//     this.type = "SkinnedMesh";
 
-    this.bindMode = source.bindMode;
-    this.bindMatrix.copy(source.bindMatrix);
-    this.bindMatrixInverse.copy(source.bindMatrixInverse);
+//     this.bindMode = "attached";
+//     this.bindMatrix = new Matrix4();
+//     this.bindMatrixInverse = new Matrix4();
+//   }
+//   copy(source, recursive) {
+//     super.copy(source, recursive);
 
-    this.skeleton = source.skeleton;
+//     this.bindMode = source.bindMode;
+//     this.bindMatrix.copy(source.bindMatrix);
+//     this.bindMatrixInverse.copy(source.bindMatrixInverse);
 
-    return this;
-  }
+//     this.skeleton = source.skeleton;
 
-  bind(skeleton, bindMatrix) {
-    this.skeleton = skeleton;
+//     return this;
+//   }
 
-    if (bindMatrix === undefined) {
-      this.updateMatrixWorld(true);
+//   bind(skeleton, bindMatrix) {
+//     this.skeleton = skeleton;
 
-      this.skeleton.calculateInverses();
+//     if (bindMatrix === undefined) {
+//       this.updateMatrixWorld(true);
 
-      bindMatrix = this.matrixWorld;
-    }
+//       this.skeleton.calculateInverses();
 
-    this.bindMatrix.copy(bindMatrix);
-    this.bindMatrixInverse.copy(bindMatrix); //.invert();
-  }
+//       bindMatrix = this.matrixWorld;
+//     }
 
-  pose() {
-    this.skeleton.pose();
-  }
+//     this.bindMatrix.copy(bindMatrix);
+//     this.bindMatrixInverse.copy(bindMatrix); //.invert();
+//   }
 
-  normalizeSkinWeights() {
-    const vector = new Vector4();
+//   pose() {
+//     this.skeleton.pose();
+//   }
 
-    const skinWeight = this.geometry.attributes.skinWeight;
+//   normalizeSkinWeights() {
+//     const vector = new Vector4();
 
-    for (let i = 0, l = skinWeight.count; i < l; i++) {
-      vector.fromBufferAttribute(skinWeight, i);
+//     const skinWeight = this.geometry.attributes.skinWeight;
 
-      const scale = 1.0 / vector.manhattanLength();
+//     for (let i = 0, l = skinWeight.count; i < l; i++) {
+//       vector.fromBufferAttribute(skinWeight, i);
 
-      if (scale !== Infinity) {
-        vector.multiplyScalar(scale);
-      } else {
-        vector.set(1, 0, 0, 0); // do something reasonable
-      }
+//       const scale = 1.0 / vector.manhattanLength();
 
-      skinWeight.setXYZW(i, vector.x, vector.y, vector.z, vector.w);
-    }
-  }
+//       if (scale !== Infinity) {
+//         vector.multiplyScalar(scale);
+//       } else {
+//         vector.set(1, 0, 0, 0); // do something reasonable
+//       }
 
-  updateMatrixWorld(force) {
-    // super.updateMatrixWorld(force);
+//       skinWeight.setXYZW(i, vector.x, vector.y, vector.z, vector.w);
+//     }
+//   }
 
-    if (this.bindMode === "attached") {
-      // this.bindMatrixInverse.copy(this.matrixWorld).invert();
-    } else if (this.bindMode === "detached") {
-      // this.bindMatrixInverse.copy(this.bindMatrix).invert();
-    } else {
-      console.warn("SkinnedMesh: Unrecognized bindMode: " + this.bindMode);
-    }
-  }
+//   updateMatrixWorld(force) {
+//     // super.updateMatrixWorld(force);
 
-  boneTransform(index, target) {
-    const skeleton = this.skeleton;
-    const geometry = this.geometry;
+//     if (this.bindMode === "attached") {
+//       // this.bindMatrixInverse.copy(this.matrixWorld).invert();
+//     } else if (this.bindMode === "detached") {
+//       // this.bindMatrixInverse.copy(this.bindMatrix).invert();
+//     } else {
+//       console.warn("SkinnedMesh: Unrecognized bindMode: " + this.bindMode);
+//     }
+//   }
 
-    _skinIndex.fromBufferAttribute(geometry.attributes.skinIndex, index);
-    _skinWeight.fromBufferAttribute(geometry.attributes.skinWeight, index);
+//   boneTransform(index, target) {
+//     const skeleton = this.skeleton;
+//     const geometry = this.geometry;
 
-    _basePosition.copy(target).applyMatrix4(this.bindMatrix);
+//     _skinIndex.fromBufferAttribute(geometry.attributes.skinIndex, index);
+//     _skinWeight.fromBufferAttribute(geometry.attributes.skinWeight, index);
 
-    target.set(0, 0, 0);
+//     _basePosition.copy(target).applyMatrix4(this.bindMatrix);
 
-    for (let i = 0; i < 4; i++) {
-      const weight = _skinWeight.getComponent(i);
+//     target.set(0, 0, 0);
 
-      if (weight !== 0) {
-        const boneIndex = _skinIndex.getComponent(i);
+//     for (let i = 0; i < 4; i++) {
+//       const weight = _skinWeight.getComponent(i);
 
-        _matrix.multiplyMatrices(skeleton.bones[boneIndex].matrixWorld, skeleton.boneInverses[boneIndex]);
+//       if (weight !== 0) {
+//         const boneIndex = _skinIndex.getComponent(i);
 
-        target.addScaledVector(_vector.copy(_basePosition).applyMatrix4(_matrix), weight);
-      }
-    }
+//         _matrix.multiplyMatrices(skeleton.bones[boneIndex].matrixWorld, skeleton.boneInverses[boneIndex]);
 
-    return target.applyMatrix4(this.bindMatrixInverse);
-  }
-}
+//         target.addScaledVector(_vector.copy(_basePosition).applyMatrix4(_matrix), weight);
+//       }
+//     }
+
+//     return target.applyMatrix4(this.bindMatrixInverse);
+//   }
+// }

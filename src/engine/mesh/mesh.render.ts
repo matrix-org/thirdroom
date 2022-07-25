@@ -14,11 +14,13 @@ import {
   Bone,
   MeshBasicMaterial,
   BoxGeometry,
+  SkinnedMesh,
+  Skeleton,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { Skeleton, SkinnedMesh } from "../animation/Skeleton";
+// import { Skeleton, SkinnedMesh } from "../animation/Skeleton";
 import { GLTFMesh } from "../gltf/GLTF";
 import { MaterialType } from "../material/material.common";
 import {
@@ -272,7 +274,7 @@ function createMeshPrimitiveObject(
           scene.add(bone);
           setTransformFromNode(ctx, boneReadView, bone);
 
-          const debugBone = (jointNode.debugBone = new Mesh(
+          const debugBone = ((jointNode as any).debugBone = new Mesh(
             new BoxGeometry(7, 7, 7),
             new MeshBasicMaterial({ color: 0x777 })
           ));
@@ -297,16 +299,16 @@ function createMeshPrimitiveObject(
 
       const skeleton = new Skeleton(bones, boneInverses);
 
-      mesh.bind(skeleton, mesh.matrixWorld);
+      (mesh as SkinnedMesh).bind(skeleton, mesh.matrixWorld);
 
       if (!mesh.geometry.attributes.skinWeight.normalized) {
         // we normalize floating point skin weight array to fix malformed assets (see #15319)
         // it's important to skip this for non-float32 data since normalizeSkinWeights assumes non-normalized inputs
-        mesh.normalizeSkinWeights();
+        (mesh as SkinnedMesh).normalizeSkinWeights();
       }
 
       if (Object.keys(mesh.geometry.morphAttributes).length > 0) {
-        updateMorphTargets(mesh, primitive);
+        updateMorphTargets(mesh, primitive as unknown as GLTFMesh);
       }
 
       mesh = new Mesh(new BufferGeometry(), new MeshBasicMaterial({ wireframe: true }));
@@ -492,7 +494,7 @@ export function updateNodeMesh(
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
             updateTransformFromNode(ctx, boneReadView, joint.bone);
-            updateTransformFromNode(ctx, boneReadView, joint.debugBone);
+            updateTransformFromNode(ctx, boneReadView, (joint as any).debugBone);
           }
         }
       }
