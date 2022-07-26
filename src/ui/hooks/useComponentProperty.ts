@@ -1,10 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 import { ComponentPropertyType, ComponentPropertyValue } from "../../engine/component/types";
-import { EditorEventType } from "../../engine/editor/editor.common";
-import { EditorModule, sendSetComponentPropertyMessage } from "../../engine/editor/editor.main";
-import { getModule } from "../../engine/module/module.common";
-import { useMainThreadContext } from "./useMainThread";
 
 interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
   value: ComponentPropertyValue<T> | undefined;
@@ -12,35 +8,11 @@ interface ComponentPropertyInputProps<T extends ComponentPropertyType> {
 }
 
 export function useComponentProperty<T extends ComponentPropertyType>(propId: number): ComponentPropertyInputProps<T> {
-  const mainThread = useMainThreadContext();
-  const editor = getModule(mainThread, EditorModule);
-  const [value, setValue] = useState<ComponentPropertyValue<T> | undefined>(() =>
-    editor.componentProperties.get(propId)
-  );
+  const [value, setValue] = useState<ComponentPropertyValue<T> | undefined>();
 
-  const onChange = useCallback(
-    (value: ComponentPropertyValue<T>) => {
-      sendSetComponentPropertyMessage(mainThread, propId, value);
-      setValue(value);
-    },
-    [mainThread, propId]
-  );
-
-  useEffect(() => {
-    function onComponentPropertyChanged(changedPropId: number, nextValue: ComponentPropertyValue<T>) {
-      if (changedPropId === propId) {
-        setValue(nextValue);
-      }
-    }
-
-    editor.addListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
-
-    setValue(editor.componentProperties.get(propId));
-
-    return () => {
-      editor.removeListener(EditorEventType.ComponentPropertyChanged, onComponentPropertyChanged);
-    };
-  }, [editor, propId]);
+  const onChange = useCallback((value: ComponentPropertyValue<T>) => {
+    setValue(value);
+  }, []);
 
   return { value, onChange };
 }

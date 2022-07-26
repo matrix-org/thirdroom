@@ -18,6 +18,7 @@ import {
 } from "../audio/audio.game";
 import { createRemoteBufferView, RemoteBufferView } from "../bufferView/bufferView.game";
 import { createRemoteOrthographicCamera, createRemotePerspectiveCamera, RemoteCamera } from "../camera/camera.game";
+import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
 import {
   addChild,
@@ -123,6 +124,8 @@ export async function inflateGLTFScene(
 
   const scene = resource.root.scenes[sceneIndex];
 
+  addNameComponent(ctx.world, sceneEid, scene.name || `Scene ${sceneIndex}`);
+
   const nodeInflators: Function[] = [];
 
   let nodePromise: Promise<void[]> | undefined;
@@ -194,6 +197,8 @@ async function _inflateGLTFNode(
   }
 
   const node = resource.root.nodes[nodeIndex];
+
+  addNameComponent(ctx.world, nodeEid, node.name || `Node ${nodeIndex}`);
 
   if (node.matrix) Transform.worldMatrix[nodeEid].set(node.matrix);
   if (node.translation) Transform.position[nodeEid].set(node.translation);

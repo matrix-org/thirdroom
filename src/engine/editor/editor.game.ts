@@ -1,414 +1,271 @@
 import {
   addComponent,
-  Component,
   defineComponent,
   defineQuery,
-  // removeComponent
+  enterQuery,
+  exitQuery,
+  hasComponent,
+  removeComponent,
 } from "bitecs";
-// import { vec3, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
-import { shallowArraysEqual } from "../utils/shallowArraysEqual";
-import {
-  AddComponentMessage,
-  //ExportGLTFMessage,
-  RemoveComponentMessage,
-  SelectionChangedMessage,
-  SetComponentPropertyMessage,
-  WorkerMessages,
-  WorkerMessageType,
-} from "../WorkerMessage";
-import {
-  ComponentPropertyGetter,
-  ComponentPropertyGetters,
-  ComponentPropertySetter,
-  ComponentPropertySetters,
-} from "../component/serialization";
-import {
-  ComponentInfo,
-  ComponentPropertyInfo,
-  ComponentPropertyValue,
-  ComponentPropertyType,
-  ComponentPropertyStore,
-} from "../component/types";
-import {
-  //getDirection,
-  registerTransformComponent,
-  //Transform
-} from "../component/transform";
-import {
-  ActionMap,
-  ActionType,
-  BindingType,
-  //ButtonActionState,
-  disableActionMap,
-  enableActionMap,
-} from "../input/ActionMappingSystem";
-import { TripleBuffer } from "../allocator/TripleBuffer";
+import { hierarchyObjectBuffer, traverseRecursive } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-//import { InputModule } from "../input/input.game";
 import {
+  AddSelectedEntityMessage,
+  EditorLoadedMessage,
   EditorMessageType,
-  editorModuleName,
+  editorStateSchema,
+  EditorStateTripleBuffer,
+  FocusEntityMessage,
   HierarchyTripleBuffer,
   InitializeEditorStateMessage,
+  NamesChangedMessage,
+  RenameEntityMessage,
+  ReparentEntitiesMessage,
+  SelectionChangedMessage,
+  SetSelectedEntityMessage,
+  ToggleSelectedEntityMessage,
 } from "./editor.common";
-import { hierarchyObjectBufferSchema } from "../component/transform.common";
+import { createDisposables } from "../utils/createDisposables";
+import { Name, nameQuery, setName } from "../component/Name";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-
-// TODO: Importing this module changes the order of Renderable / Transform imports
-// Which in turn changes the cursor buffer view order and breaks transforms.
-//import { exportGLTF } from "../gltf/exportGLTF";
+import { hierarchyObjectBufferSchema } from "../component/transform.common";
+import { NOOP } from "../config.common";
+import { RemoteNodeComponent } from "../node/node.game";
+import { addLayer, Layer, removeLayer } from "../node/node.common";
 
 /*********
  * Types *
- ********/
+ *********/
 
 export interface EditorModuleState {
-  editorLoaded: boolean;
-  messages: WorkerMessages[];
-  selectedEntities: number[];
-  activeEntity?: number;
+  activeEntity: number;
   activeEntityChanged: boolean;
-  componentIdMap: Map<Component, number>;
-  componentInfoMap: Map<number, ComponentInfo>;
-  propertyIdMap: Map<ComponentPropertyStore, number>;
-  propertyGetterMap: Map<number, ComponentPropertyGetter>;
-  propertySetterMap: Map<number, ComponentPropertySetter>;
-  componentAdderMap: Map<number, ComponentAdder>;
-  componentRemoverMap: Map<number, ComponentRemover>;
-  nextComponentId: number;
-  nextPropertyId: number;
-  hierarchyBufferView: ObjectBufferView<typeof hierarchyObjectBufferSchema, ArrayBuffer>;
+  editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
+  editorStateTripleBuffer: EditorStateTripleBuffer;
   hierarchyTripleBuffer: HierarchyTripleBuffer;
+  editorLoaded: boolean;
 }
 
 /******************
  * Initialization *
- *****************/
+ ******************/
 
 export const EditorModule = defineModule<GameState, EditorModuleState>({
-  name: editorModuleName,
-  async create(ctx, { sendMessage }) {
-    const hierarchyBufferView = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
+  name: "editor",
+  create(ctx, { sendMessage }) {
+    const editorStateBufferView = createObjectBufferView(editorStateSchema, ArrayBuffer);
+    const editorStateTripleBuffer = createObjectTripleBuffer(editorStateSchema, ctx.gameToMainTripleBufferFlags);
     const hierarchyTripleBuffer = createObjectTripleBuffer(
       hierarchyObjectBufferSchema,
-      ctx.mainToGameTripleBufferFlags
+      ctx.gameToMainTripleBufferFlags
     );
 
     sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
+      editorStateTripleBuffer,
       hierarchyTripleBuffer,
     });
 
     return {
-      editorLoaded: false,
-      messages: [],
-      selectedEntities: [],
-      activeEntity: undefined,
+      activeEntity: NOOP,
       activeEntityChanged: false,
-      nextComponentId: 1,
-      componentIdMap: new Map(),
-      componentInfoMap: new Map(),
-      componentAdderMap: new Map(),
-      componentRemoverMap: new Map(),
-      nextPropertyId: 1,
-      propertyIdMap: new Map(),
-      propertyGetterMap: new Map(),
-      propertySetterMap: new Map(),
-      hierarchyBufferView,
+      editorStateBufferView,
+      editorStateTripleBuffer,
       hierarchyTripleBuffer,
+      editorLoaded: false,
     };
   },
   init(ctx) {
-    const disposables = [
-      registerMessageHandler(ctx, WorkerMessageType.LoadEditor, onLoadEditor),
-      registerMessageHandler(ctx, WorkerMessageType.DisposeEditor, onDisposeEditor),
-      registerMessageHandler(ctx, WorkerMessageType.AddComponent, onEditorMessage),
-      registerMessageHandler(ctx, WorkerMessageType.RemoveComponent, onEditorMessage),
-      registerMessageHandler(ctx, WorkerMessageType.SetComponentProperty, onEditorMessage),
-      //registerMessageHandler(ctx, WorkerMessageType.ExportGLTF, onExportGLTF),
-    ];
-
-    registerTransformComponent(ctx);
-
-    return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
-    };
+    return createDisposables([
+      registerMessageHandler(ctx, EditorMessageType.LoadEditor, onLoadEditor),
+      registerMessageHandler(ctx, EditorMessageType.DisposeEditor, onDisposeEditor),
+      registerMessageHandler(ctx, EditorMessageType.SetSelectedEntity, onSetSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.AddSelectedEntity, onAddSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.ToggleSelectedEntity, onToggleSelectedEntity),
+      registerMessageHandler(ctx, EditorMessageType.FocusEntity, onFocusEntity),
+      registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
+      registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
+    ]);
   },
 });
 
-export function onLoadEditor(state: GameState) {
-  const editor = getModule(state, EditorModule);
+/***********
+ * Queries *
+ ***********/
+
+const Selected = defineComponent({});
+const selectedQuery = defineQuery([Selected]);
+const selectedEnterQuery = enterQuery(selectedQuery);
+const selectedExitQuery = exitQuery(selectedQuery);
+
+const nameEnterQuery = enterQuery(nameQuery);
+const nameExitQuery = exitQuery(nameQuery);
+export const editorNameChangedQueue: [number, string][] = [];
+
+/********************
+ * Message Handlers *
+ ********************/
+
+export function onLoadEditor(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
 
   editor.editorLoaded = true;
 
-  enableActionMap(state, editorActionMap);
-
-  postMessage({
-    type: WorkerMessageType.EditorLoaded,
-    componentInfos: editor.componentInfoMap,
+  ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
+    type: EditorMessageType.EditorLoaded,
+    names: Name,
+    activeEntity: editor.activeEntity,
+    selectedEntities: Array.from(selectedQuery(ctx.world)),
   });
-
-  addComponent(state.world, Selected, state.activeCamera);
 }
 
-export function onDisposeEditor(state: GameState) {
-  const editor = getModule(state, EditorModule);
-
+export function onDisposeEditor(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = false;
-  editor.messages.length = 0;
-  disableActionMap(state, editorActionMap);
 }
 
-export function onEditorMessage(state: GameState, message: any) {
-  const editor = getModule(state, EditorModule);
+export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
 
-  if (editor.editorLoaded) {
-    editor.messages.push(message);
+  const selected = selectedQuery(ctx.world);
+
+  for (let i = 0; i < selected.length; i++) {
+    const eid = selected[i];
+
+    if (message.eid === eid) {
+      continue;
+    }
+
+    removeComponent(ctx.world, Selected, eid);
   }
+
+  addComponent(ctx.world, Selected, message.eid);
+
+  editor.activeEntity = message.eid;
+  editor.activeEntityChanged = true;
 }
 
-function onAddComponent(state: GameState, message: AddComponentMessage) {
-  const editor = getModule(state, EditorModule);
-  const { entities, componentId, props } = message;
-
-  const adder = editor.componentAdderMap.get(componentId);
-
-  if (!adder) {
-    return;
-  }
-
-  // Should we make setters that take the full entity array to batch operations?
-  for (let i = 0; i < entities.length; i++) {
-    adder(state, entities[i], props);
-  }
+export function onAddSelectedEntity(ctx: GameState, message: AddSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
+  addComponent(ctx.world, Selected, message.eid);
+  editor.activeEntity = message.eid;
+  editor.activeEntityChanged = true;
 }
 
-function onRemoveComponent(state: GameState, message: RemoveComponentMessage) {
-  const editor = getModule(state, EditorModule);
-  const remover = editor.componentRemoverMap.get(message.componentId);
+export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEntityMessage) {
+  const editor = getModule(ctx, EditorModule);
 
-  if (!remover) {
-    return;
+  if (hasComponent(ctx.world, Selected, message.eid)) {
+    removeComponent(ctx.world, Selected, message.eid);
+
+    const selected = selectedQuery(ctx.world);
+    editor.activeEntity = selected.length === 0 ? NOOP : selected[selected.length - 1];
+  } else {
+    addComponent(ctx.world, Selected, message.eid);
+    editor.activeEntity = message.eid;
   }
 
-  // Should we make setters that take the full entity array to batch operations?
-  for (let i = 0; i < message.entities.length; i++) {
-    remover(state, message.entities[i]);
-  }
+  editor.activeEntityChanged = true;
 }
 
-function onSetComponentProperty(state: GameState, message: SetComponentPropertyMessage) {
-  const editor = getModule(state, EditorModule);
-  const setter = editor.propertySetterMap.get(message.propertyId);
+export function onFocusEntity(ctx: GameState, message: FocusEntityMessage) {}
 
-  if (!setter) {
-    return;
-  }
-
-  // Should we make setters that take the full entity array to batch operations?
-  for (let i = 0; i < message.entities.length; i++) {
-    setter(state, message.entities[i], message.value);
-  }
+export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
+  setName(message.eid, message.name);
 }
 
-// function onExportGLTF(state: GameState, message: ExportGLTFMessage) {
-//   exportGLTF(state, state.scene);
-// }
+export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
 
 /***********
  * Systems *
- **********/
+ ***********/
 
-export enum EditorActions {
-  select = "Editor/select",
-}
-
-const editorActionMap: ActionMap = {
-  id: "Editor",
-  actions: [
-    {
-      id: "select",
-      path: EditorActions.select,
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyG",
-        },
-      ],
-    },
-  ],
-};
-
-export const Selected = defineComponent({});
-
-const selectedQuery = defineQuery([Selected]);
-
-export function EditorStateSystem(state: GameState) {
-  const editor = getModule(state, EditorModule);
+export function EditorStateSystem(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
 
   if (!editor.editorLoaded) {
     return;
   }
 
-  while (editor.messages.length) {
-    const msg = editor.messages.pop();
-    if (msg) processEditorMessage(state, msg);
+  // Update editor state and hierarchy triple buffers
+  editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene;
+
+  commitToObjectTripleBuffer(editor.editorStateTripleBuffer, editor.editorStateBufferView);
+  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, hierarchyObjectBuffer);
+
+  // Send updated names to main thread
+  const entered = nameEnterQuery(ctx.world);
+  const exited = nameExitQuery(ctx.world);
+
+  if (entered.length !== 0 || exited.length !== 0 || editorNameChangedQueue.length !== 0) {
+    const created: [number, string][] = [];
+
+    for (let i = 0; i < entered.length; i++) {
+      const eid = entered[i];
+      created.push([eid, Name.get(eid) || `Entity ${eid}`]);
+    }
+
+    const deleted: number[] = [];
+
+    for (let i = 0; i < exited.length; i++) {
+      const eid = exited[i];
+      deleted.push(eid);
+    }
+
+    ctx.sendMessage<NamesChangedMessage>(Thread.Main, {
+      type: EditorMessageType.NamesChanged,
+      created,
+      updated: editorNameChangedQueue,
+      deleted,
+    });
+
+    editorNameChangedQueue.length = 0;
   }
 
-  const selectedEntities = selectedQuery(state.world);
+  // Send updated selection state to main thread
+  const selected = selectedQuery(ctx.world);
+  const selectedAdded = selectedEnterQuery(ctx.world);
+  const selectedRemoved = selectedExitQuery(ctx.world);
 
-  if (!shallowArraysEqual(selectedEntities, editor.selectedEntities) || editor.activeEntityChanged) {
-    updateSelectedEntities(state, selectedEntities.slice());
+  if (selectedAdded.length > 0 || selectedRemoved.length > 0 || editor.activeEntityChanged) {
+    editor.activeEntityChanged = false;
+
+    ctx.sendMessage<SelectionChangedMessage>(Thread.Main, {
+      type: EditorMessageType.SelectionChanged,
+      activeEntity: editor.activeEntity,
+      selectedEntities: Array.from(selected),
+    });
+
+    // Update the remote nodes with the editor selection layer added/removed
+    // Recursively update this layer so that the selected effect can be applied to all descendants
+    for (let i = 0; i < selectedRemoved.length; i++) {
+      const eid = selectedRemoved[i];
+
+      traverseRecursive(eid, (child) => {
+        const remoteNode = RemoteNodeComponent.get(child);
+
+        if (remoteNode) {
+          remoteNode.layers = removeLayer(remoteNode.layers, Layer.EditorSelection);
+        }
+      });
+    }
+
+    for (let i = 0; i < selectedAdded.length; i++) {
+      const eid = selectedAdded[i];
+
+      traverseRecursive(eid, (child) => {
+        const remoteNode = RemoteNodeComponent.get(child);
+
+        if (remoteNode) {
+          remoteNode.layers = addLayer(remoteNode.layers, Layer.EditorSelection);
+        }
+      });
+    }
   }
-
-  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, editor.hierarchyBufferView);
-}
-
-function processEditorMessage(state: GameState, message: WorkerMessages) {
-  switch (message.type) {
-    case WorkerMessageType.AddComponent:
-      onAddComponent(state, message);
-      break;
-    case WorkerMessageType.RemoveComponent:
-      onRemoveComponent(state, message);
-      break;
-    case WorkerMessageType.SetComponentProperty:
-      onSetComponentProperty(state, message);
-      break;
-  }
-}
-
-function updateSelectedEntities(state: GameState, selectedEntities: number[]) {
-  const editor = getModule(state, EditorModule);
-  editor.selectedEntities = selectedEntities;
-
-  const activeEntity = editor.activeEntity;
-
-  let activeEntityComponents: number[] | undefined;
-  let activeEntityTripleBuffer: TripleBuffer | undefined;
-
-  if (editor.activeEntityChanged) {
-    // TODO: collect active entity components and construct activeEntityTripleBuffer
-  }
-
-  postMessage({
-    type: WorkerMessageType.SelectionChanged,
-    selectedEntities,
-    activeEntity,
-    activeEntityComponents,
-    activeEntityTripleBuffer,
-  } as SelectionChangedMessage);
-}
-
-// const editorRayId = 0;
-
-// export function EditorSelectionSystem(state: GameState) {
-//   const editor = getModule(state, EditorModule);
-
-//   if (!editor.editorLoaded) {
-//     return;
-//   }
-
-//   const raycastResults = getRaycastResults(state, editorRayId);
-
-//   if (raycastResults && raycastResults.length > 0) {
-//     const intersection = raycastResults[raycastResults.length - 1];
-
-//     const selectedEntities = editor.selectedEntities;
-
-//     for (let i = 0; i < selectedEntities.length; i++) {
-//       removeComponent(state.world, Selected, selectedEntities[i]);
-//     }
-
-//     addComponent(state.world, Selected, intersection.entity);
-
-//     if (intersection.entity !== editor.activeEntity) {
-//       editor.activeEntity = intersection.entity;
-//       editor.activeEntityChanged = true;
-//     }
-//   }
-
-//   const input = getModule(state, InputModule);
-
-//   const select = input.actions.get(EditorActions.select) as ButtonActionState;
-
-//   if (select.pressed) {
-//     const camera = getActiveCamera(state);
-//     const direction = getDirection(vec3.create(), Transform.worldMatrix[camera]);
-//     vec3.negate(direction, direction);
-//     raycast(state, editorRayId, mat4.getTranslation(vec3.create(), Transform.worldMatrix[camera]), direction);
-//   }
-// }
-
-/**
- * Component definitions (for editor, serialization/deserialization, and networking)
- */
-
-export interface ComponentPropertyDefinition<PropType extends ComponentPropertyType> {
-  type: PropType;
-  store: ComponentPropertyStore<PropType>;
-  // In the future add properties like min/max for component property editors
-}
-
-export interface ComponentPropertyMap {
-  [name: string]: ComponentPropertyDefinition<ComponentPropertyType>;
-}
-
-export type ComponentPropertyValues<Props extends ComponentPropertyMap = {}> = Partial<{
-  [PropName in keyof Props]: ComponentPropertyValue<Props[PropName]["type"]>;
-}>;
-
-export type ComponentAdder<Props extends ComponentPropertyMap = {}> = (
-  state: GameState,
-  eid: number,
-  props?: ComponentPropertyValues<Props>
-) => void;
-
-export type ComponentRemover = (state: GameState, eid: number) => void;
-
-export interface ComponentDefinition<Props extends ComponentPropertyMap = {}> {
-  name: string;
-  props: Props;
-  add: ComponentAdder<Props>;
-  remove: ComponentRemover;
-}
-
-export function registerEditorComponent<Props extends ComponentPropertyMap>(
-  state: GameState,
-  component: Component,
-  definition: ComponentDefinition<Props>
-) {
-  const editor = getModule(state, EditorModule);
-  const props: ComponentPropertyInfo[] = [];
-
-  for (const [name, { type, store }] of Object.entries(definition.props)) {
-    const propertyId = editor.nextPropertyId++;
-    const propInfo: ComponentPropertyInfo = {
-      id: propertyId,
-      name,
-      type,
-    };
-    props.push(propInfo);
-    editor.propertyIdMap.set(store, propertyId);
-    editor.propertyGetterMap.set(propertyId, ComponentPropertyGetters[type](store));
-    editor.propertySetterMap.set(propertyId, ComponentPropertySetters[type](store));
-  }
-
-  const componentId = editor.nextComponentId++;
-  editor.componentIdMap.set(component, componentId);
-  editor.componentInfoMap.set(componentId, {
-    name: definition.name,
-    props,
-  });
-  editor.componentAdderMap.set(componentId, definition.add);
-  editor.componentRemoverMap.set(componentId, definition.remove);
 }

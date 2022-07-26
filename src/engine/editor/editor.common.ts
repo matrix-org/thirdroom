@@ -1,58 +1,114 @@
-import { addViewByComponentPropertyType, createCursorBuffer } from "../allocator/CursorBuffer";
-import { TypedArray } from "../allocator/types";
-import { ComponentInfo } from "../component/types";
-import { maxEntities } from "../config.common";
-import { TripleBuffer } from "../allocator/TripleBuffer";
-import { ObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "../component/transform.common";
 
-export interface Selection {
-  activeEntity?: number;
-  activeEntityComponents?: number[];
-  selectedEntities: number[];
+/*********
+ * Types *
+ ********/
+
+export interface EditorNode {
+  id: number;
+  eid: number;
+  name: string;
+  children: EditorNode[];
 }
 
-export enum EditorEventType {
-  EditorLoaded = "editor-loaded",
-  SelectionChanged = "selection-changed",
-  ComponentInfoChanged = "component-info-changed",
-  ComponentPropertyChanged = "component-property-changed",
-}
-
-export interface ActiveEntityView {
-  [propertyId: number]: TypedArray | TypedArray[] | undefined;
-}
-
-export function createActiveEntityViews(
-  activeEntityTripleBuffer: TripleBuffer,
-  activeEntityComponents: number[],
-  componentInfoMap: Map<number, ComponentInfo>
-): ActiveEntityView[] {
-  return activeEntityTripleBuffer.buffers.map((sharedArrayBuffer) => {
-    const cursorBuffer = createCursorBuffer(sharedArrayBuffer);
-    const activeEntityView: ActiveEntityView = {};
-
-    for (const componentId of activeEntityComponents) {
-      const componentInfo = componentInfoMap.get(componentId);
-
-      if (componentInfo) {
-        for (const property of componentInfo.props) {
-          activeEntityView[property.id] = addViewByComponentPropertyType(cursorBuffer, property.type, maxEntities);
-        }
-      }
-    }
-    return activeEntityView;
-  });
+export enum ReparentEntityPosition {
+  Root = "root",
+  Before = "before",
+  After = "after",
+  On = "on",
 }
 
 export type HierarchyTripleBuffer = ObjectTripleBuffer<typeof hierarchyObjectBufferSchema>;
 
+export const editorStateSchema = defineObjectBufferSchema({
+  activeSceneEid: [Uint32Array, 1],
+  activeEntity: [Uint32Array, 1],
+});
+
+export type EditorStateTripleBuffer = ObjectTripleBuffer<typeof editorStateSchema>;
+
+/************
+ * Messages *
+ ************/
+
 export enum EditorMessageType {
-  InitializeEditorState = "InitializeEditorState",
+  InitializeEditorState = "init-editor-state",
+  LoadEditor = "load-editor",
+  EditorLoaded = "editor-loaded",
+  DisposeEditor = "dispose-editor",
+  NamesChanged = "names-changed",
+  SelectionChanged = "selection-changed",
+  ToggleSelectedEntity = "toggle-selected-entity",
+  SetSelectedEntity = "set-selected-entity",
+  AddSelectedEntity = "add-selected-entity",
+  FocusEntity = "focus-entity",
+  RenameEntity = "rename-entity",
+  ReparentEntities = "reparent-entities",
 }
 
 export interface InitializeEditorStateMessage {
+  editorStateTripleBuffer: EditorStateTripleBuffer;
   hierarchyTripleBuffer: HierarchyTripleBuffer;
 }
 
-export const editorModuleName = "editor";
+export interface LoadEditorMessage {
+  type: EditorMessageType.LoadEditor;
+}
+
+export interface EditorLoadedMessage {
+  type: EditorMessageType.EditorLoaded;
+  names: Map<number, string>;
+  activeEntity: number;
+  selectedEntities: number[];
+}
+
+export interface DisposeEditorMessage {
+  type: EditorMessageType.DisposeEditor;
+}
+
+export interface NamesChangedMessage {
+  type: EditorMessageType.NamesChanged;
+  created: [number, string][];
+  updated: [number, string][];
+  deleted: number[];
+}
+
+export interface SelectionChangedMessage {
+  type: EditorMessageType.SelectionChanged;
+  activeEntity: number;
+  selectedEntities: number[];
+}
+
+export interface ToggleSelectedEntityMessage {
+  type: EditorMessageType.ToggleSelectedEntity;
+  eid: number;
+}
+
+export interface SetSelectedEntityMessage {
+  type: EditorMessageType.SetSelectedEntity;
+  eid: number;
+}
+
+export interface AddSelectedEntityMessage {
+  type: EditorMessageType.AddSelectedEntity;
+  eid: number;
+}
+
+export interface FocusEntityMessage {
+  type: EditorMessageType.FocusEntity;
+  eid: number;
+}
+
+export interface RenameEntityMessage {
+  type: EditorMessageType.RenameEntity;
+  eid: number;
+  name: string;
+}
+
+export interface ReparentEntitiesMessage {
+  type: EditorMessageType.ReparentEntities;
+  entities: number[];
+  target: number | undefined;
+  position: ReparentEntityPosition;
+}

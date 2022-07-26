@@ -12,8 +12,6 @@ import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
 import { GameState, World } from "../GameTypes";
-import { registerEditorComponent } from "../editor/editor.game";
-import { ComponentPropertyType } from "./types";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "./transform.common";
 import { Networked } from "../network/network.game";
@@ -71,28 +69,6 @@ export const Transform: Transform = {
   nextSibling: hierarchyObjectBuffer.nextSibling,
   hierarchyUpdated: hierarchyObjectBuffer.hierarchyUpdated,
 };
-
-export function registerTransformComponent(state: GameState) {
-  registerEditorComponent(state, Transform, {
-    name: "Transform",
-    props: {
-      position: {
-        type: ComponentPropertyType.vec3,
-        store: Transform.position,
-      },
-    },
-    add(state, eid, props) {
-      addTransformComponent(state.world, eid);
-
-      if (props && props.position) {
-        Transform.position[eid].set(props.position);
-      }
-    },
-    remove(state, eid) {
-      removeComponent(state.world, Transform, eid);
-    },
-  });
-}
 
 export function addTransformComponent(world: World, eid: number) {
   addComponent(world, Transform, eid);
