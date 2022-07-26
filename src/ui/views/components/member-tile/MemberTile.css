@@ -1,0 +1,7 @@
+.MemberTile {
+  padding: var(--sp-sm) var(--sp-md);
+
+  & > * {
+    line-height: 0;
+  }
+}

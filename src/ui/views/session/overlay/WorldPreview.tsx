@@ -1,4 +1,4 @@
-import { MouseEventHandler, useEffect } from "react";
+import { MouseEventHandler, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
@@ -12,6 +12,7 @@ import { useRoomStatus } from "../../../hooks/useRoomStatus";
 import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
+import { MemberListDialog } from "../dialogs/MemberListDialog";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -70,6 +71,8 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
   const room = useRoom(session, previewWorldId);
   const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
 
+  const [isMemberDialog, setIsMemberDialog] = useState(false);
+
   const {
     loading: roomStatusLoading,
     error: roomStatusError,
@@ -87,6 +90,14 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
+      {room && (
+        <MemberListDialog
+          room={room}
+          isOpen={isMemberDialog}
+          onOpenChange={setIsMemberDialog}
+          requestClose={() => setIsMemberDialog(false)}
+        />
+      )}
       {(() => {
         if (roomStatus === undefined) {
           if (roomStatusLoading) {
@@ -122,6 +133,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
               <WorldPreviewCard
                 title={roomName}
                 memberCount={memberCount}
+                onMembersClick={() => setIsMemberDialog(true)}
                 options={
                   <Button size="lg" variant="secondary" onClick={onLoadWorld}>
                     Load World
@@ -137,6 +149,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="secondary" onClick={onLoadWorld}>
                       Load World
@@ -149,6 +162,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="secondary" disabled>
                       Loading...
@@ -161,6 +175,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="primary" onClick={onEnterWorld}>
                       Enter World
@@ -173,6 +188,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   desc={error ? error.message : "Unknown error"}
                   options={
                     <Button size="lg" variant="secondary" onClick={onReloadWorld}>
@@ -186,6 +202,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="secondary" disabled>
                       Entering...
@@ -198,6 +215,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 <WorldPreviewCard
                   title={roomName}
                   memberCount={memberCount}
+                  onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="secondary" onClick={closeOverlay}>
                       Close Overlay

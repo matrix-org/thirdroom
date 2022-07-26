@@ -10,10 +10,11 @@ export interface IWorldPreviewCard {
   title: string;
   desc?: string;
   memberCount?: number | string;
+  onMembersClick?: () => void;
   options?: ReactNode;
 }
 
-export function WorldPreviewCard({ title, desc, memberCount, options }: IWorldPreviewCard) {
+export function WorldPreviewCard({ title, desc, memberCount, onMembersClick, options }: IWorldPreviewCard) {
   return (
     <div className="WorldPreviewCard flex items-center">
       <div className="WorldPreviewCard__content grow">
@@ -28,7 +29,13 @@ export function WorldPreviewCard({ title, desc, memberCount, options }: IWorldPr
       </div>
 
       {memberCount !== undefined && (
-        <div className="WorldPreviewCard__memberCount flex items-center">
+        <div
+          role={onMembersClick ? "button" : undefined}
+          tabIndex={onMembersClick ? 0 : -1}
+          onClick={onMembersClick}
+          className="WorldPreviewCard__memberCount flex items-center"
+          style={{ cursor: onMembersClick ? "pointer" : "inherit" }}
+        >
           <Icon size="sm" src={PeoplesIC} />
           <Text variant="b3" weight="bold" type="span">
             {memberCount}
