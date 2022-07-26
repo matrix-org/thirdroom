@@ -507,7 +507,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get membership(): string;
   }
 
-  export class MemberList {}
+  export class RetainedValue {
+    constructor(freeCallback: () => void);
+    retain(): void;
+    release(): void;
+  }
+
+  export class MemberList extends RetainedValue {
+    constructor({ members, closeCallback }: { members: void; closeCallback: () => void });
+    afterSync(memberChanges: any): void;
+    get members(): ObservableMap<string, RoomMember>;
+  }
 
   export interface PowerLevelOptions {
     powerLevelEvent: any;
@@ -1898,6 +1908,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     invite(roomId: string, userId: string, options?: BaseRequestOptions): IHomeServerRequest;
     leave(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
     forget(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;
+    kick(roomId: string, userId: string, reason?: string, options?: BaseRequestOptions): IHomeServerRequest;
+    ban(roomId: string, userId: string, reason?: string, options?: BaseRequestOptions): IHomeServerRequest;
+    unban(roomId: string, userId: string, reason?: string, options?: BaseRequestOptions): IHomeServerRequest;
     logout(options?: BaseRequestOptions): IHomeServerRequest;
     getDehydratedDevice(options?: BaseRequestOptions): IHomeServerRequest;
     createDehydratedDevice(payload: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
