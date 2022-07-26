@@ -24,11 +24,6 @@ export interface SharedInstancedMeshResource {
   attributes: { [key: string]: ResourceId };
 }
 
-// export interface SkinnedMeshResourceProps {
-//   joints: ResourceId[];
-//   inverseBindMatrices?: ResourceId;
-// }
-
 export interface SharedSkinnedMeshResource {
   joints: ResourceId[];
   inverseBindMatrices?: ResourceId;

@@ -34,29 +34,29 @@ export function AnimationSystem(ctx: GameState) {
     const rigidBody = RigidBody.store.get(Transform.parent[eid] || eid);
     if (animation && rigidBody) {
       const linvel = rigidBody.linvel();
-      const manhattanLength = linvel.x ** 2 + linvel.z ** 2;
+      const len = linvel.x ** 2 + linvel.z ** 2;
 
       let speed = ctx.dt;
 
       if (linvel.y < -20) {
         const clip = animation.clips.find((c) => c.name === "Fall3");
         if (clip) animation.animator.setClip(clip);
-        speed = (manhattanLength / 40) * ctx.dt;
+        speed = (len / 40) * ctx.dt;
       } else if (Math.abs(linvel.y) > 0.2) {
         const clip = animation.clips.find((c) => c.name === "Fall1");
         if (clip) animation.animator.setClip(clip);
-        speed = (manhattanLength / 8) * ctx.dt;
-      } else if (manhattanLength < idleThreshold) {
+        speed = (len / 8) * ctx.dt;
+      } else if (len < idleThreshold) {
         const clip = animation.clips.find((c) => c.name === "Idle");
         if (clip) animation.animator.setClip(clip);
-      } else if (manhattanLength < walkThreshold) {
+      } else if (len < walkThreshold) {
         const clip = animation.clips.find((c) => c.name === "Walk");
         if (clip) animation.animator.setClip(clip);
-        speed = (manhattanLength / 4) * ctx.dt;
+        speed = (len / 4) * ctx.dt;
       } else {
         const clip = animation.clips.find((c) => c.name === "Run");
         if (clip) animation.animator.setClip(clip);
-        speed = (manhattanLength / 40) * ctx.dt;
+        speed = (len / 40) * ctx.dt;
       }
 
       animation.animator.update(speed);

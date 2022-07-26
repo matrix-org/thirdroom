@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 
 import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -86,7 +86,7 @@ const GrabComponent = defineComponent({
 });
 const grabQuery = defineQuery([GrabComponent]);
 
-const GRAB_DISTANCE = 3;
+const GRAB_DISTANCE = 2;
 const GRAB_MAX_DISTANCE = 1;
 const GRAB_MOVE_SPEED = 10;
 const CUBE_THROW_FORCE = 10;
@@ -98,10 +98,10 @@ const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 const _cameraWorldQuat = quat.create();
 
-// const shapeCastPosition = new Vector3();
-// const shapeCastRotation = new Quaternion();
+const shapeCastPosition = new Vector3();
+const shapeCastRotation = new Quaternion();
 
-// const colliderShape = new RAPIER.Ball(0.5);
+const colliderShape = new RAPIER.Ball(2);
 
 const collisionGroups = 0x00f0_000f;
 
@@ -155,15 +155,22 @@ export function GrabThrowSystem(ctx: GameState) {
     const s: Vector3 = new Vector3().fromArray(source);
     const t: Vector3 = new Vector3().fromArray(target);
 
-    const ray = new RAPIER.Ray(s, t);
-    const maxToi = 4.0;
-    const solid = true;
+    // const ray = new RAPIER.Ray(s, t);
+    // const maxToi = 4.0;
+    // const solid = true;
 
-    // shapeCastPosition.copy(s);
+    shapeCastPosition.copy(s);
 
-    // TODO: use shape for pickup and ray for things like constraint tools
-    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
-    // const hit = physicsWorld.castShape(shapeCastPosition, shapeCastRotation, t, colliderShape, ctx.dt, collisionGroups);
+    // TODO: use ray for things like constraint tools
+    // const hit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
+    const hit = physics.physicsWorld.castShape(
+      shapeCastPosition,
+      shapeCastRotation,
+      t,
+      colliderShape,
+      ctx.dt,
+      collisionGroups
+    );
 
     if (hit != null) {
       // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
