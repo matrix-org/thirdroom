@@ -912,7 +912,7 @@
     dompurify "^2.3.0"
     off-color "^2.0.0"
 
-"@thirdroom/manifold-editor-components@0.0.4":
+"@thirdroom/manifold-editor-components@^0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.4.tgz#4f5affc9b21a34b6ffc6d87d38dbcdda3d053285"
   integrity sha512-YCBrFyfiqLAf81Bbs0vpVIalCi8RUrpX7xp8JB5HeGcdQ5zHtzSUsRox7LtZCZ2/Onw6nEQP2iuNk851GG/Cmw==
