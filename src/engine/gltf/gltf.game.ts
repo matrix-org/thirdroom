@@ -1,12 +1,11 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
-import { Animator, Armature, Clip, Gltf2, Pose } from "ossos";
-import { Matrix4 } from "three";
+import { AnimationMixer, Bone, Matrix4 } from "three";
 import { degToRad } from "three/src/math/MathUtils";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
-import { addBoneToArmature } from "../animation/ossos";
 import { AudioEmitterOutput } from "../audio/audio.common";
 import {
   createRemoteAudioData,
@@ -58,7 +57,7 @@ import { hasCharacterControllerExtension, inflateSceneCharacterController } from
 import { hasSpawnPointExtension } from "./MX_spawn_point";
 import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
 import { RemoteNode } from "../node/node.game";
-import { addAnimationComponent } from "../animation";
+import { addAnimationComponent, BoneComponent } from "../animation";
 
 export interface GLTFResource {
   url: string;
@@ -102,11 +101,6 @@ export function createGLTFEntity(ctx: GameState, uri: string) {
   return eid;
 }
 
-export interface OssosParams {
-  gltf: Gltf2 | null;
-  armature: Armature;
-}
-
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
@@ -118,7 +112,6 @@ export async function inflateGLTFScene(
   addTransformComponent(ctx.world, sceneEid);
 
   const resource = await loadGLTFResource(uri);
-  const ossosGltf = await Gltf2.fetch(uri);
 
   if (sceneIndex === undefined) {
     sceneIndex = resource.root.scene;
@@ -133,23 +126,24 @@ export async function inflateGLTFScene(
 
   const scene = resource.root.scenes[sceneIndex];
 
-  const nodeInflators: Function[] = [];
-
-  const armatures: Armature[] = [];
-
-  let isMixamo = false;
-
   // animation pre-processing
-  if (resource.root.skins && resource.root.nodes && resource.root.meshes) {
+  if (resource.root.skins && resource.root.nodes && resource.root.meshes && resource.root.animations) {
+    const q = Transform.quaternion[sceneEid];
+    quat.rotateX(q, q, degToRad(90));
+    quat.rotateY(q, q, degToRad(90));
+
+    // TODO: don't fetch twice
+    const threeGltfLoader = new GLTFLoader();
+    const threeResource = await threeGltfLoader.loadAsync(uri);
+    const mixer = new AnimationMixer(threeResource.scene);
+    const clips = threeResource.animations;
+    const actions = clips.map((clip) => mixer.clipAction(clip));
+    addAnimationComponent(ctx.world, sceneEid, { threeResource, mixer, clips, actions });
+
     // iterate skins and pre-create entities and resources for joints
     for (const skin of resource.root.skins) {
-      const armature = new Armature();
-      armatures.push(armature);
-
       for (const jointIndex of skin.joints) {
         const jointNode = resource.root.nodes[jointIndex];
-
-        if (jointNode.name.includes("mixamo")) isMixamo = true;
 
         let remoteNode = resource.joints.get(jointIndex);
 
@@ -158,17 +152,19 @@ export async function inflateGLTFScene(
           remoteNode = addRemoteNodeComponent(ctx, eid);
           resource.joints.set(jointIndex, remoteNode);
 
-          addBoneToArmature(armature, jointNode, eid);
+          const bone = threeResource.scene.getObjectByName(jointNode.name.replace(":", "")) as Bone;
+          if (bone) {
+            addComponent(ctx.world, BoneComponent, eid);
+            BoneComponent.set(eid, bone);
+          } else {
+            throw new Error("bone not found");
+          }
         }
       }
     }
   }
 
-  if (isMixamo) {
-    const q = Transform.quaternion[sceneEid];
-    quat.rotateX(q, q, degToRad(90));
-    quat.rotateY(q, q, degToRad(90));
-  }
+  const nodeInflators: Function[] = [];
 
   let nodePromise: Promise<void[]> | undefined;
 
@@ -180,34 +176,30 @@ export async function inflateGLTFScene(
     );
   }
 
-  let animator: Animator;
-  if (resource.root.animations && ossosGltf) {
-    const armature = armatures[0];
-    // const pose = armature.newPose();
+  // let animationMixer: AnimationMixer;
+  // if (resource.root.animations) {
+  //   const skeleton = skeletons[0];
 
-    const pose = new Pose();
-    pose.bones = armature.bones;
+  //   const mesh = new SkinnedMesh();
+  //   mesh.bind(skeleton);
 
-    animator = new Animator();
-    animator.inPlace = true;
+  //   const clips: AnimationClip[] = [];
+  //   for (const animation of resource.root.animations) {
+  //     const a = ossosGltf.getAnimation(animation.name);
+  //     const clip = Clip.fromGLTF2(a);
+  //     clips.push(clip);
+  //   }
 
-    const clips: Clip[] = [];
-    for (const animation of resource.root.animations) {
-      const a = ossosGltf.getAnimation(animation.name);
-      const clip = Clip.fromGLTF2(a);
-      clips.push(clip);
-    }
+  //   const tposeClip = clips.find((c) => c.name === "TPose");
+  //   if (tposeClip) animationMixer.setClip(tposeClip);
 
-    const tposeClip = clips.find((c) => c.name === "TPose");
-    if (tposeClip) animator.setClip(tposeClip);
-
-    addAnimationComponent(ctx.world, sceneEid, {
-      clips,
-      animator,
-      armature,
-      pose,
-    });
-  }
+  //   addAnimationComponent(ctx.world, sceneEid, {
+  //     clips,
+  //     animator: animationMixer,
+  //     armature: skeleton,
+  //     pose,
+  //   });
+  // }
 
   const { audioEmitters } = await promiseObject({
     nodePromise,
