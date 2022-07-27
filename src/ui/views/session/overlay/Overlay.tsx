@@ -31,11 +31,13 @@ import { NowPlayingStatus } from "../../components/now-playing/NowPlayingStatus"
 import { IconButton } from "../../../atoms/button/IconButton";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
-import LogoutIC from "../../../../../res/ic/logout.svg";
+import CallCrossIC from "../../../../../res/ic/call-cross.svg";
+import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
+import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -164,14 +166,23 @@ export function Overlay({
                     }
                     leftControls={
                       <>
-                        <IconButton
-                          variant="surface-low"
-                          label="Mic"
-                          iconSrc={callMute ? MicOffIC : MicIC}
-                          onClick={toggleMute}
-                        />
-                        <IconButton variant="danger" label="Left world" iconSrc={LogoutIC} onClick={onExitWorld} />
+                        <Tooltip content={callMute ? "Unmute" : "Mute"}>
+                          <IconButton
+                            variant="surface-low"
+                            label="Mic"
+                            iconSrc={callMute ? MicOffIC : MicIC}
+                            onClick={toggleMute}
+                          />
+                        </Tooltip>
+                        <Tooltip content="Disconnect">
+                          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
+                        </Tooltip>
                       </>
+                    }
+                    rightControls={
+                      <Tooltip content="Options">
+                        <IconButton variant="surface-low" label="Options" iconSrc={MoreHorizontalIC} />
+                      </Tooltip>
                     }
                   />
                 )
