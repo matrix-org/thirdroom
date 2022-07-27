@@ -25,7 +25,7 @@ export function useUserProfile(client: Client, session?: Session) {
         .profile(session.userId)
         .response()
         .then((data) => {
-          if (!isMounted) return;
+          if (!isMounted()) return;
           updateProfile(session.userId, data.displayname, data.avatar_url);
         });
     },

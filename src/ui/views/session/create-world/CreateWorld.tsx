@@ -148,7 +148,7 @@ export function CreateWorld() {
 
   const debouncedAliasChange = useCallback(
     async (evt: ChangeEvent<HTMLInputElement>) => {
-      if (!isMounted) return;
+      if (!isMounted()) return;
       setAliasAvail(undefined);
       if (evt.target.value.trim() === "") return;
 
@@ -157,7 +157,7 @@ export function CreateWorld() {
       const isAvail = await isRoomAliasAvailable(homeserver, `#${value}:${userHSDomain}`);
 
       if (evt.target.value !== value) return;
-      if (!isMounted) return;
+      if (!isMounted()) return;
       setAliasAvail(isAvail);
     },
     [homeserver, userHSDomain, isMounted]

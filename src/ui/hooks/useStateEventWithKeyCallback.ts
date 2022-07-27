@@ -14,7 +14,7 @@ export function useStateEventWithKeyCallback(
   useEffect(() => {
     let unSub: () => void;
     room.observeStateTypeAndKey(eventType, stateKey).then((stateObservable) => {
-      if (!isMounted) return;
+      if (!isMounted()) return;
       const event = stateObservable.get();
       callback(event);
       unSub = stateObservable.subscribe(callback);
