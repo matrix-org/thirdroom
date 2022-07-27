@@ -1,7 +1,7 @@
 import { Room, StateEvent } from "@thirdroom/hydrogen-view-sdk";
 import { useCallback, useState } from "react";
 
-import { useStateEventWithKeyCallback } from "./useStateEventWithKeyCallback";
+import { useStateEventKeyCallback } from "./useStateEventKeyCallback";
 
 enum DefaultPowerLevels {
   usersDefault = 0,
@@ -41,7 +41,7 @@ export function usePowerLevels(room: Room) {
     }
   }, []);
 
-  useStateEventWithKeyCallback(room, "m.room.power_levels", "", callback);
+  useStateEventKeyCallback(room, "m.room.power_levels", "", callback);
 
   const getPowerLevel = useCallback(
     (userId: string) => {

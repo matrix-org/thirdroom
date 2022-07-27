@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Room, StateEvent } from "@thirdroom/hydrogen-view-sdk";
 
-import { useStateEventWithKeyCallback } from "./useStateEventWithKeyCallback";
+import { useStateEventKeyCallback } from "./useStateEventKeyCallback";
 
 export function use3DAvatar(profileRoom: Room) {
   const [avatarUrl, setAvatarUrl] = useState();
@@ -18,7 +18,7 @@ export function use3DAvatar(profileRoom: Room) {
     }
   }, []);
 
-  useStateEventWithKeyCallback(profileRoom, "org.matrix.msc3815.world.profile", "", callback);
+  useStateEventKeyCallback(profileRoom, "org.matrix.msc3815.world.profile", "", callback);
 
   return [avatarUrl, avatarPreviewUrl];
 }
