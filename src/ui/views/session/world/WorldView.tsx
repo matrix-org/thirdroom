@@ -31,6 +31,7 @@ export function WorldView() {
     (e) => {
       if (isEnteredWorld === false) return;
       const isEscape = e.key === "Escape";
+      const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
       if (isEscape && isChatOpen) {
         canvasRef.current?.requestPointerLock();
@@ -55,10 +56,10 @@ export function WorldView() {
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
-      if (e.code === "KeyM") {
+      if (!isTyping && e.code === "KeyM") {
         toggleMute();
       }
-      if (e.code === "Backquote") {
+      if (!isTyping && e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
       }
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
