@@ -1,8 +1,9 @@
 import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
-import { AnimationAction, AnimationClip, AnimationMixer, Bone, LoopRepeat } from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, Bone } from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 
-import { Transform } from "../component/transform";
+import { setEulerFromQuaternion, Transform } from "../component/transform";
+import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 
@@ -22,8 +23,14 @@ const animationQuery = defineQuery([AnimationComponent]);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
+const fadeTime = 0.5;
 const idleThreshold = 0.5;
 const walkThreshold = 10;
+const activityCounter = 20;
+
+const activityCounterObj: { [key: number]: number } = {};
+
+const lastYrot = new Float32Array(maxEntities);
 
 export function AnimationSystem(ctx: GameState) {
   // const entered = enterAnimationQuery(ctx.world);
@@ -43,28 +50,66 @@ export function AnimationSystem(ctx: GameState) {
       const linvel = rigidBody.linvel();
       const len = linvel.x ** 2 + linvel.z ** 2;
 
+      setEulerFromQuaternion(Transform.rotation[parent], Transform.quaternion[parent]);
+      const yRot = Transform.rotation[parent][1];
+      const xRot = Transform.rotation[parent][0];
+      const yRotLast = lastYrot[eid];
+
+      if (!activityCounterObj[eid]) activityCounterObj[eid] = 0;
+
+      const turningLeft = xRot === 0 ? yRot > yRotLast : yRot < yRotLast;
+      const turningRight = xRot === 0 ? yRot < yRotLast : yRot > yRotLast;
+
+      let speed = ctx.dt;
+
       // choose clip based on velocity
       // TODO: strafing & walking backwards
       let clip: AnimationClip | undefined;
-      if (linvel.y < -20) {
-        clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
-      } else if (Math.abs(linvel.y) > 0.2) {
-        clip = animation.threeResource.animations.find((c) => c.name === "Fall1");
-      } else if (len < idleThreshold) {
-        clip = animation.threeResource.animations.find((c) => c.name === "Idle");
-      } else if (len < walkThreshold) {
-        clip = animation.threeResource.animations.find((c) => c.name === "Walk");
-      } else {
-        clip = animation.threeResource.animations.find((c) => c.name === "Run");
+      if (activityCounterObj[eid] === 0) {
+        if (linvel.y < -20) {
+          clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
+        } else if (Math.abs(linvel.y) > 0.2) {
+          clip = animation.threeResource.animations.find((c) => c.name === "Fall1");
+        } else if (len < idleThreshold) {
+          if (turningLeft) {
+            clip = animation.threeResource.animations.find((c) => c.name === "LeftTurn");
+            speed *= 2.5;
+            activityCounterObj[eid] += activityCounter;
+          } else if (turningRight) {
+            clip = animation.threeResource.animations.find((c) => c.name === "RightTurn");
+            speed *= 2.5;
+            activityCounterObj[eid] -= activityCounter;
+          } else {
+            clip = animation.threeResource.animations.find((c) => c.name === "Idle");
+          }
+        } else if (len < walkThreshold) {
+          clip = animation.threeResource.animations.find((c) => c.name === "Walk");
+          activityCounterObj[eid] += activityCounter;
+        } else {
+          clip = animation.threeResource.animations.find((c) => c.name === "Run");
+          activityCounterObj[eid] += activityCounter;
+        }
+        if (clip && animation.lastClip !== clip) {
+          const lastClip = animation.lastClip;
+
+          const currentAction = animation.mixer.clipAction(clip);
+          if (lastClip) {
+            const lastAction = animation.mixer.clipAction(lastClip);
+            currentAction.reset();
+            lastAction.crossFadeTo(currentAction, fadeTime, true).play();
+          } else currentAction.fadeIn(fadeTime).play();
+        }
+        animation.lastClip = clip;
       }
 
-      if (clip && animation.lastClip !== clip && animation.lastClip) {
-        fadeToClip(animation, clip, animation.lastClip);
+      animation.mixer.update(speed);
+
+      if (activityCounterObj[eid] < 0) activityCounterObj[eid]++;
+      else if (activityCounterObj[eid] > 0) activityCounterObj[eid]--;
+
+      if (yRotLast !== yRot) {
+        lastYrot[eid] = yRot;
       }
-
-      animation.lastClip = clip;
-
-      animation.mixer.update(ctx.dt);
     }
   }
 
@@ -80,17 +125,6 @@ export function AnimationSystem(ctx: GameState) {
       q.set(bone.quaternion.toArray());
     }
   }
-}
-
-const FADE_TIME = 0.333;
-
-function fadeToClip(animation: IAnimationComponent, clip: AnimationClip, lastClip?: AnimationClip) {
-  const currentAction = animation.mixer.clipAction(clip);
-  if (lastClip) {
-    const lastAction = animation.mixer.clipAction(lastClip);
-    currentAction.reset();
-    lastAction.setLoop(LoopRepeat, Infinity).crossFadeTo(currentAction, FADE_TIME, true).play();
-  } else currentAction.setLoop(LoopRepeat, Infinity).fadeIn(FADE_TIME).play();
 }
 
 export function addAnimationComponent(world: IWorld, eid: number, props?: any) {
