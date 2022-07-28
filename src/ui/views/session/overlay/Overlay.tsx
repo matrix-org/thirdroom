@@ -115,6 +115,7 @@ export function Overlay({
       loadState === WorldLoadState.Entered
     );
 
+  const isChatOpen = selectedChat || selectedChatInvite;
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       {worldPreviewUrl && previewingWorld && (
@@ -158,34 +159,28 @@ export function Overlay({
         </div>
       ) : (
         <div className="Overlay__content grow">
-          <WorldPreview
-            onJoinWorld={onJoinWorld}
-            onLoadWorld={onLoadWorld}
-            onReloadWorld={onReloadWorld}
-            onEnterWorld={onEnterWorld}
-          />
+          {(worldId === selectedWorldId && loadState === WorldLoadState.Entered) || isChatOpen ? undefined : (
+            <WorldPreview
+              onJoinWorld={onJoinWorld}
+              onLoadWorld={onLoadWorld}
+              onReloadWorld={onReloadWorld}
+              onEnterWorld={onEnterWorld}
+            />
+          )}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={
-                (selectedChat || selectedChatInvite) && (
+                isChatOpen && (
                   <ChatView>
                     {selectedChat && (
                       <>
-                        <ChatViewHeader
-                          room={selectedChat || selectedChatInvite}
-                          onMinimize={minimizeChat}
-                          onClose={closeChat}
-                        />
+                        <ChatViewHeader room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />
                         <ChatViewContent room={selectedChat} />
                       </>
                     )}
                     {selectedChatInvite && (
                       <>
-                        <ChatViewHeader
-                          room={selectedChatInvite || selectedChatInvite}
-                          onMinimize={minimizeChat}
-                          onClose={closeChat}
-                        />
+                        <ChatViewHeader room={selectedChatInvite} onMinimize={minimizeChat} onClose={closeChat} />
                         <ChatViewInvite session={session} roomId={selectedChatInvite.id} />
                       </>
                     )}
