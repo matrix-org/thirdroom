@@ -79,7 +79,7 @@ export const GrabThrowActionMap: ActionMap = {
   ],
 };
 
-const GrabComponent = defineComponent({
+export const GrabComponent = defineComponent({
   handle1: Types.ui32,
   handle2: Types.ui32,
   joint: [Types.f32, 3],

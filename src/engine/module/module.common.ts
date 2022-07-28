@@ -350,12 +350,10 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
   };
 }
 
-type RegisterComponentFunction<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
-
 export interface Config<ThreadContext extends BaseThreadContext> {
   modules: Module<ThreadContext, any>[];
   systems: ThreadSystem<ThreadContext>[];
-  components?: RegisterComponentFunction<ThreadContext>[];
+  components?: any[];
 }
 
 export function defineConfig<ThreadContext extends BaseThreadContext>(

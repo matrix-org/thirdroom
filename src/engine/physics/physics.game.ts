@@ -60,7 +60,7 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
   init(ctx) {},
 });
 
-const RigidBodySoA = defineComponent({
+export const RigidBodySoA = defineComponent({
   velocity: [Types.f32, 3],
 });
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);

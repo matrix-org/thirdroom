@@ -99,7 +99,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
  * Queries *
  ***********/
 
-const Selected = defineComponent({});
+export const Selected = defineComponent({});
 const selectedQuery = defineQuery([Selected]);
 const selectedEnterQuery = enterQuery(selectedQuery);
 const selectedExitQuery = exitQuery(selectedQuery);
