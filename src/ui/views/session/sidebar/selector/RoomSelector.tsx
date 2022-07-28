@@ -11,6 +11,8 @@ import { RoomTile } from "../../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../../components/room-tile/RoomTileTitle";
 import { InviteDialog } from "../../dialogs/InviteDialog";
 import MoreHorizontalIC from "../../../../../../res/ic/more-horizontal.svg";
+import { Dialog } from "../../../../atoms/dialog/Dialog";
+import { MemberListDialog } from "../../dialogs/MemberListDialog";
 
 interface RoomSelectorProps {
   isSelected: boolean;
@@ -21,6 +23,7 @@ interface RoomSelectorProps {
 
 export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelectorProps) {
   const [focused, setFocused] = useState(false);
+  const [isMemberDialog, setIsMemberDialog] = useState(false);
 
   return (
     <RoomTile
@@ -44,31 +47,37 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
       onClick={() => onSelect(room.id)}
       content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
       options={
-        <InviteDialog
-          key={room.id}
-          roomId={room.id}
-          renderTrigger={(openDialog) => (
-            <DropdownMenu
-              side="right"
-              onOpenChange={setFocused}
-              content={
-                <>
-                  <DropdownMenuItem onSelect={openDialog}>Invite</DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="danger"
-                    onSelect={() => {
-                      if (confirm("Are you sure?")) room.leave();
-                    }}
-                  >
-                    Leave
-                  </DropdownMenuItem>
-                </>
-              }
-            >
-              <IconButton label="Options" iconSrc={MoreHorizontalIC} />
-            </DropdownMenu>
-          )}
-        />
+        <>
+          <Dialog open={isMemberDialog} onOpenChange={setIsMemberDialog}>
+            <MemberListDialog room={room} requestClose={() => setIsMemberDialog(false)} />
+          </Dialog>
+          <InviteDialog
+            key={room.id}
+            roomId={room.id}
+            renderTrigger={(openDialog) => (
+              <DropdownMenu
+                side="right"
+                onOpenChange={setFocused}
+                content={
+                  <>
+                    <DropdownMenuItem onSelect={openDialog}>Invite</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsMemberDialog(true)}>Members</DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="danger"
+                      onSelect={() => {
+                        if (confirm("Are you sure?")) room.leave();
+                      }}
+                    >
+                      Leave
+                    </DropdownMenuItem>
+                  </>
+                }
+              >
+                <IconButton label="Options" iconSrc={MoreHorizontalIC} />
+              </DropdownMenu>
+            )}
+          />
+        </>
       }
     />
   );
