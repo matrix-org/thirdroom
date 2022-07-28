@@ -23,12 +23,12 @@ const animationQuery = defineQuery([AnimationComponent]);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
-const fadeTime = 0.5;
+const fadeTime = 0.4;
 const idleThreshold = 0.5;
 const walkThreshold = 10;
-const activityCounter = 20;
+const turnCounterAmount = 16;
 
-const activityCounterObj: { [key: number]: number } = {};
+const turnCounterObj: { [key: number]: number } = {};
 
 const lastYrot = new Float32Array(maxEntities);
 
@@ -55,17 +55,17 @@ export function AnimationSystem(ctx: GameState) {
       const xRot = Transform.rotation[parent][0];
       const yRotLast = lastYrot[eid];
 
-      if (!activityCounterObj[eid]) activityCounterObj[eid] = 0;
+      if (!turnCounterObj[eid]) turnCounterObj[eid] = 0;
 
       const turningLeft = xRot === 0 ? yRot > yRotLast : yRot < yRotLast;
       const turningRight = xRot === 0 ? yRot < yRotLast : yRot > yRotLast;
 
-      let speed = ctx.dt;
+      let speed = 1;
 
       // choose clip based on velocity
       // TODO: strafing & walking backwards
       let clip: AnimationClip | undefined;
-      if (activityCounterObj[eid] === 0) {
+      if (turnCounterObj[eid] === 0) {
         if (linvel.y < -20) {
           clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
         } else if (Math.abs(linvel.y) > 0.2) {
@@ -73,21 +73,27 @@ export function AnimationSystem(ctx: GameState) {
         } else if (len < idleThreshold) {
           if (turningLeft) {
             clip = animation.threeResource.animations.find((c) => c.name === "LeftTurn");
-            speed *= 2.5;
-            activityCounterObj[eid] += activityCounter;
+            speed += Math.abs(yRot - yRotLast) * 42;
+            if (speed < 2) turnCounterObj[eid] += turnCounterAmount;
+            else {
+              turnCounterObj[eid] += Math.round(turnCounterAmount / 10);
+              speed *= 1.8;
+            }
           } else if (turningRight) {
             clip = animation.threeResource.animations.find((c) => c.name === "RightTurn");
-            speed *= 2.5;
-            activityCounterObj[eid] -= activityCounter;
+            speed += Math.abs(yRot - yRotLast) * 42;
+            if (speed < 2) turnCounterObj[eid] -= turnCounterAmount;
+            else {
+              turnCounterObj[eid] -= Math.round(turnCounterAmount / 10);
+              speed *= 1.8;
+            }
           } else {
             clip = animation.threeResource.animations.find((c) => c.name === "Idle");
           }
         } else if (len < walkThreshold) {
           clip = animation.threeResource.animations.find((c) => c.name === "Walk");
-          activityCounterObj[eid] += activityCounter;
         } else {
           clip = animation.threeResource.animations.find((c) => c.name === "Run");
-          activityCounterObj[eid] += activityCounter;
         }
         if (clip && animation.lastClip !== clip) {
           const lastClip = animation.lastClip;
@@ -95,17 +101,19 @@ export function AnimationSystem(ctx: GameState) {
           const currentAction = animation.mixer.clipAction(clip);
           if (lastClip) {
             const lastAction = animation.mixer.clipAction(lastClip);
-            currentAction.reset();
+            const ratio = clip.duration / lastClip.duration;
+            currentAction.enabled = true;
+            currentAction.time = lastAction.time * ratio;
             lastAction.crossFadeTo(currentAction, fadeTime, true).play();
           } else currentAction.fadeIn(fadeTime).play();
         }
         animation.lastClip = clip;
       }
 
-      animation.mixer.update(speed);
+      animation.mixer.update(ctx.dt * speed);
 
-      if (activityCounterObj[eid] < 0) activityCounterObj[eid]++;
-      else if (activityCounterObj[eid] > 0) activityCounterObj[eid]--;
+      if (turnCounterObj[eid] < 0) turnCounterObj[eid]++;
+      else if (turnCounterObj[eid] > 0) turnCounterObj[eid]--;
 
       if (yRotLast !== yRot) {
         lastYrot[eid] = yRot;
