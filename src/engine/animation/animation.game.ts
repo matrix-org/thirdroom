@@ -23,7 +23,7 @@ const animationQuery = defineQuery([AnimationComponent]);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
-const fadeTime = 0.4;
+const fadeTime = 0.33;
 const idleThreshold = 0.5;
 const walkThreshold = 10;
 const turnCounterAmount = 16;
@@ -101,10 +101,19 @@ export function AnimationSystem(ctx: GameState) {
           const currentAction = animation.mixer.clipAction(clip);
           if (lastClip) {
             const lastAction = animation.mixer.clipAction(lastClip);
-            const ratio = clip.duration / lastClip.duration;
+
+            currentAction.syncWith(lastAction);
             currentAction.enabled = true;
-            currentAction.time = lastAction.time * ratio;
             lastAction.crossFadeTo(currentAction, fadeTime, true).play();
+
+            // falling down
+            if (
+              linvel.y < 0 &&
+              clip.name === "Fall1" &&
+              (lastClip.name === "Idle" || lastClip.name === "Walk" || lastClip.name === "Run")
+            ) {
+              currentAction.fadeOut(fadeTime);
+            }
           } else currentAction.fadeIn(fadeTime).play();
         }
         animation.lastClip = clip;
