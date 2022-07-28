@@ -3,10 +3,9 @@ import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
-import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
+import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
 import { RoomListView } from "../sidebar/RoomListView";
@@ -25,19 +24,10 @@ import { useRoom } from "../../../hooks/useRoom";
 import { useStore, SidebarTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
-import { NowPlaying } from "../../components/now-playing/NowPlaying";
-import { NowPlayingTitle } from "../../components/now-playing/NowPlayingTitle";
-import { NowPlayingStatus } from "../../components/now-playing/NowPlayingStatus";
-import { IconButton } from "../../../atoms/button/IconButton";
-import MicIC from "../../../../../res/ic/mic.svg";
-import MicOffIC from "../../../../../res/ic/mic-off.svg";
-import CallCrossIC from "../../../../../res/ic/call-cross.svg";
-import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
-import { useCallMute } from "../../../hooks/useCallMute";
 import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
-import { Tooltip } from "../../../atoms/tooltip/Tooltip";
+import { NowPlayingWorld } from "./NowPlayingWorld";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -90,7 +80,6 @@ export function Overlay({
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
   const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
-  const { mute: callMute, toggleMute } = useCallMute(activeCall);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
@@ -145,45 +134,13 @@ export function Overlay({
                 </RoomListContent>
               }
               footer={
-                world && (
-                  <NowPlaying
-                    avatar={
-                      <AvatarOutline>
-                        <Avatar
-                          shape="circle"
-                          size="lg"
-                          name={world.name || "Unnamed World"}
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(world.id)})`}
-                          imageSrc={getAvatarHttpUrl(world.avatarUrl || "", 70, platform, world.mediaRepository)}
-                        />
-                      </AvatarOutline>
-                    }
-                    content={
-                      <>
-                        <NowPlayingStatus status="connected">Connected</NowPlayingStatus>
-                        <NowPlayingTitle>{world.name || "Unnamed World"}</NowPlayingTitle>
-                      </>
-                    }
-                    leftControls={
-                      <>
-                        <Tooltip content={callMute ? "Unmute" : "Mute"}>
-                          <IconButton
-                            variant="surface-low"
-                            label="Mic"
-                            iconSrc={callMute ? MicOffIC : MicIC}
-                            onClick={toggleMute}
-                          />
-                        </Tooltip>
-                        <Tooltip content="Disconnect">
-                          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
-                        </Tooltip>
-                      </>
-                    }
-                    rightControls={
-                      <Tooltip content="Options">
-                        <IconButton variant="surface-low" label="Options" iconSrc={MoreHorizontalIC} />
-                      </Tooltip>
-                    }
+                world &&
+                activeCall && (
+                  <NowPlayingWorld
+                    world={world}
+                    activeCall={activeCall}
+                    onExitWorld={onExitWorld}
+                    platform={platform}
                   />
                 )
               }
