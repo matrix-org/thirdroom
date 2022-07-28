@@ -24,7 +24,7 @@ import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
-import { AnimationSystem } from "./animation";
+import { AnimationSystem } from "./animation/animation.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -54,6 +54,7 @@ export default defineConfig<GameState>({
     FirstPersonCameraSystem,
     PlayerControllerSystem,
     FlyControlsSystem,
+    AnimationSystem,
     PhysicsSystem,
     CubeSpawnerSystem,
     GrabThrowSystem,
@@ -64,8 +65,6 @@ export default defineConfig<GameState>({
     //EditorSelectionSystem,
 
     OutboundNetworkSystem,
-
-    AnimationSystem,
 
     GameAudioSystem,
     RenderableSystem,

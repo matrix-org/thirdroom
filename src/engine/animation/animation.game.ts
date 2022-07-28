@@ -1,5 +1,5 @@
 import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
-import { AnimationAction, AnimationClip, AnimationMixer, Bone } from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, Bone, LoopRepeat } from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { Transform } from "../component/transform";
@@ -43,11 +43,8 @@ export function AnimationSystem(ctx: GameState) {
       const linvel = rigidBody.linvel();
       const len = linvel.x ** 2 + linvel.z ** 2;
 
-      animation.clips.forEach((clip) => {
-        if (animation.lastClip === clip) return;
-        animation.mixer.clipAction(clip).stop();
-      });
-
+      // choose clip based on velocity
+      // TODO: strafing & walking backwards
       let clip: AnimationClip | undefined;
       if (linvel.y < -20) {
         clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
@@ -61,11 +58,11 @@ export function AnimationSystem(ctx: GameState) {
         clip = animation.threeResource.animations.find((c) => c.name === "Run");
       }
 
-      if (clip && animation.lastClip !== clip) {
-        const action = animation.mixer.clipAction(clip);
-        action.play();
-        animation.lastClip = clip;
+      if (clip && animation.lastClip !== clip && animation.lastClip) {
+        fadeToClip(animation, clip, animation.lastClip);
       }
+
+      animation.lastClip = clip;
 
       animation.mixer.update(ctx.dt);
     }
@@ -83,6 +80,17 @@ export function AnimationSystem(ctx: GameState) {
       q.set(bone.quaternion.toArray());
     }
   }
+}
+
+const FADE_TIME = 0.333;
+
+function fadeToClip(animation: IAnimationComponent, clip: AnimationClip, lastClip?: AnimationClip) {
+  const currentAction = animation.mixer.clipAction(clip);
+  if (lastClip) {
+    const lastAction = animation.mixer.clipAction(lastClip);
+    currentAction.reset();
+    lastAction.setLoop(LoopRepeat, Infinity).crossFadeTo(currentAction, FADE_TIME, true).play();
+  } else currentAction.setLoop(LoopRepeat, Infinity).fadeIn(FADE_TIME).play();
 }
 
 export function addAnimationComponent(world: IWorld, eid: number, props?: any) {

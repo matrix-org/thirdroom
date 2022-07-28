@@ -57,7 +57,7 @@ import { hasCharacterControllerExtension, inflateSceneCharacterController } from
 import { hasSpawnPointExtension } from "./MX_spawn_point";
 import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
 import { RemoteNode } from "../node/node.game";
-import { addAnimationComponent, BoneComponent } from "../animation";
+import { addAnimationComponent, BoneComponent } from "../animation/animation.game";
 
 export interface GLTFResource {
   url: string;

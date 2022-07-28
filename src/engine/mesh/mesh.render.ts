@@ -13,9 +13,10 @@ import {
   Matrix4,
   Bone,
   MeshBasicMaterial,
-  BoxGeometry,
   SkinnedMesh,
   Skeleton,
+  MeshNormalMaterial,
+  SphereGeometry,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -274,10 +275,7 @@ function createMeshPrimitiveObject(
           scene.add(bone);
           setTransformFromNode(ctx, boneReadView, bone);
 
-          const debugBone = ((jointNode as any).debugBone = new Mesh(
-            new BoxGeometry(7, 7, 7),
-            new MeshBasicMaterial({ color: 0x777 })
-          ));
+          const debugBone = ((jointNode as any).debugBone = new Mesh(new SphereGeometry(7), new MeshNormalMaterial()));
           scene.add(debugBone);
           setTransformFromNode(ctx, boneReadView, debugBone);
 
