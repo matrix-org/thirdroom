@@ -3,7 +3,7 @@ import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
 import "./Overlay.css";
-import { getIdentifierColorNumber } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { SidebarView } from "../sidebar/SidebarView";
@@ -200,7 +200,11 @@ export function Overlay({
                     avatar={
                       <Avatar
                         size="sm"
-                        imageSrc={room.avatarUrl}
+                        imageSrc={
+                          room.avatarUrl
+                            ? getAvatarHttpUrl(room.avatarUrl, 50, platform, session.mediaRepository)
+                            : undefined
+                        }
                         name={roomName}
                         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
                       />

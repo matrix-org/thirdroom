@@ -39,7 +39,7 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
             size="lg"
             name={world.name || "Unnamed World"}
             bgColor={`var(--usercolor${getIdentifierColorNumber(world.id)})`}
-            imageSrc={getAvatarHttpUrl(world.avatarUrl || "", 70, platform, world.mediaRepository)}
+            imageSrc={world.avatarUrl && getAvatarHttpUrl(world.avatarUrl, 70, platform, world.mediaRepository)}
           />
         </AvatarOutline>
       }

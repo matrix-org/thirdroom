@@ -102,7 +102,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
           <Avatar
             shape="circle"
             name={name}
-            imageSrc={avatarUrl && getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository)}
+            imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
             bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
           />
         }
