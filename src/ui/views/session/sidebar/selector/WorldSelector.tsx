@@ -15,6 +15,7 @@ import { DropdownMenuItem } from "../../../../atoms/menu/DropdownMenuItem";
 import { useStore } from "../../../../hooks/useStore";
 import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
+import { useDialog } from "../../../../hooks/useDialog";
 
 interface WorldSelectorProps {
   isSelected: boolean;
@@ -28,8 +29,18 @@ interface WorldSelectorProps {
 export function WorldSelector({ isSelected, onSelect, room, groupCall, platform, session }: WorldSelectorProps) {
   const { selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
   const [focused, setFocused] = useState(false);
-
-  const [isMemberDialog, setIsMemberDialog] = useState(false);
+  const {
+    open: openMember,
+    setOpen: setMemberOpen,
+    openDialog: openMemberDialog,
+    closeDialog: closeMemberDialog,
+  } = useDialog(false);
+  const {
+    open: openInvite,
+    setOpen: setInviteOpen,
+    openDialog: openInviteDialog,
+    closeDialog: closeInviteDialog,
+  } = useDialog(false);
 
   return (
     <RoomTile
@@ -59,36 +70,33 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
       }
       options={
         <>
-          <Dialog open={isMemberDialog} onOpenChange={setIsMemberDialog}>
-            <MemberListDialog room={room} requestClose={() => setIsMemberDialog(false)} />
+          <Dialog open={openMember} onOpenChange={setMemberOpen}>
+            <MemberListDialog room={room} requestClose={closeMemberDialog} />
           </Dialog>
-          <InviteDialog
-            key={room.id}
-            roomId={room.id}
-            renderTrigger={(openDialog) => (
-              <DropdownMenu
-                side="right"
-                onOpenChange={setFocused}
-                content={
-                  <>
-                    <DropdownMenuItem onSelect={openDialog}>Invite</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setIsMemberDialog(true)}>Members</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => selectWorldSettingsWindow(room.id)}>Settings</DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="danger"
-                      onSelect={() => {
-                        if (confirm("Are you sure?")) room.leave();
-                      }}
-                    >
-                      Leave
-                    </DropdownMenuItem>
-                  </>
-                }
-              >
-                <IconButton label="Options" iconSrc={MoreHorizontalIC} />
-              </DropdownMenu>
-            )}
-          />
+          <Dialog open={openInvite} onOpenChange={setInviteOpen}>
+            <InviteDialog roomId={room.id} requestClose={closeInviteDialog} />
+          </Dialog>
+          <DropdownMenu
+            side="right"
+            onOpenChange={setFocused}
+            content={
+              <>
+                <DropdownMenuItem onSelect={openInviteDialog}>Invite</DropdownMenuItem>
+                <DropdownMenuItem onSelect={openMemberDialog}>Members</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => selectWorldSettingsWindow(room.id)}>Settings</DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="danger"
+                  onSelect={() => {
+                    if (confirm("Are you sure?")) room.leave();
+                  }}
+                >
+                  Leave
+                </DropdownMenuItem>
+              </>
+            }
+          >
+            <IconButton label="Options" iconSrc={MoreHorizontalIC} />
+          </DropdownMenu>
         </>
       }
     />

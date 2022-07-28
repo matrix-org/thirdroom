@@ -1,6 +1,5 @@
-import { ReactNode, useState, FormEvent, useEffect, useCallback, ChangeEvent } from "react";
+import { useState, FormEvent, useCallback, ChangeEvent } from "react";
 
-import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { Input } from "../../../atoms/input/Input";
@@ -22,27 +21,16 @@ import { isValidUserId } from "../../../utils/matrixUtils";
 
 interface InviteDialogProps {
   roomId: string;
-  renderTrigger: (openDialog: () => void) => ReactNode;
+  requestClose: () => void;
 }
 
-export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
+export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
   const { session } = useHydrogen(true);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const openDialog = () => setIsOpen(true);
-  const closeDialog = () => setIsOpen(false);
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string>();
 
   const { loading, value: searchResult, setSearchTerm } = useSearchProfile(session);
-
-  useEffect(() => {
-    if (isOpen === false) {
-      setInviting(false);
-      setError(undefined);
-      setSearchTerm(undefined);
-    }
-  }, [isOpen, setSearchTerm]);
 
   const inviteUser = async (userId: string) => {
     if (inviting) return;
@@ -55,7 +43,7 @@ export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
     }
     try {
       await session.hsApi.invite(roomId, userId).response();
-      closeDialog();
+      requestClose();
     } catch (err) {
       setError(`Failed to invite "${userId}".`);
     }
@@ -81,50 +69,45 @@ export function InviteDialog({ roomId, renderTrigger }: InviteDialogProps) {
   );
 
   return (
-    <>
-      {renderTrigger(openDialog)}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex flex-column">
-          <Header
-            className="shrink-0"
-            left={<HeaderTitle size="lg">Invite</HeaderTitle>}
-            right={<IconButton iconSrc={CrossIC} onClick={closeDialog} label="Close" />}
-          />
-          <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
-            <div className="flex flex-column gap-sm">
-              <SettingTile
-                label={
-                  <>
-                    <Label>User Id</Label>
-                    <Tooltip content="User id looks like @user:server.name" side="right">
-                      <Icon src={InfoIC} color="surface-low" size="sm" />
-                    </Tooltip>
-                  </>
-                }
-              >
-                <Input
-                  onChange={handleInputChange}
-                  name="input"
-                  maxLength={255}
-                  autoFocus
-                  placeholder="@user:server.name"
-                  required
-                />
-              </SettingTile>
-              {!inviting && error && (
-                <Text variant="b3" color="danger" weight="medium">
-                  {error}
-                </Text>
-              )}
-              <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={inviteUser} />
-            </div>
-            <Button size="lg" type="submit">
-              {inviting && <Dots color="on-primary" />}
-              {inviting ? "Inviting" : "Invite"}
-            </Button>
-          </form>
+    <div className="flex flex-column">
+      <Header
+        className="shrink-0"
+        left={<HeaderTitle size="lg">Invite</HeaderTitle>}
+        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+      />
+      <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
+        <div className="flex flex-column gap-sm">
+          <SettingTile
+            label={
+              <>
+                <Label>User Id</Label>
+                <Tooltip content="User id looks like @user:server.name" side="right">
+                  <Icon src={InfoIC} color="surface-low" size="sm" />
+                </Tooltip>
+              </>
+            }
+          >
+            <Input
+              onChange={handleInputChange}
+              name="input"
+              maxLength={255}
+              autoFocus
+              placeholder="@user:server.name"
+              required
+            />
+          </SettingTile>
+          {!inviting && error && (
+            <Text variant="b3" color="danger" weight="medium">
+              {error}
+            </Text>
+          )}
+          <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={inviteUser} />
         </div>
-      </Dialog>
-    </>
+        <Button size="lg" type="submit">
+          {inviting && <Dots color="on-primary" />}
+          {inviting ? "Inviting" : "Invite"}
+        </Button>
+      </form>
+    </div>
   );
 }
