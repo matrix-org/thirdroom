@@ -21,6 +21,7 @@ import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
+import { Dots } from "../../../atoms/loading/Dots";
 
 interface MemberListDialogProps {
   room: Room;
@@ -133,63 +134,69 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
         right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
       />
       <div className="flex" style={{ height: "600px" }}>
-        <Scroll type="hover" style={{ paddingBottom: "var(--sp-lg)" }}>
-          <div className="flex flex-column gap-sm">
-            {!!invited?.length && (
-              <Category
-                header={
-                  <CategoryHeader
-                    title="Invited"
-                    onClick={() => setInvitedCat(!invitedCat)}
-                    after={<Icon src={invitedCat ? ChevronBottomIC : ChevronRightIC} />}
-                  />
-                }
-              >
-                {invitedCat && invited.map(renderMemberTile)}
-              </Category>
-            )}
-            {!!joined?.length && (
-              <Category
-                header={
-                  <CategoryHeader
-                    title="Joined"
-                    onClick={() => setJoinedCat(!joinedCat)}
-                    after={<Icon src={joinedCat ? ChevronBottomIC : ChevronRightIC} />}
-                  />
-                }
-              >
-                {joinedCat && joined.map(renderMemberTile)}
-              </Category>
-            )}
-
-            {!!banned?.length && (
-              <Category
-                header={
-                  <CategoryHeader
-                    title="Banned"
-                    onClick={() => setBanCat(!banCat)}
-                    after={<Icon src={banCat ? ChevronBottomIC : ChevronRightIC} />}
-                  />
-                }
-              >
-                {banCat && banned.map(renderMemberTile)}
-              </Category>
-            )}
-            {!!leaved?.length && (
-              <Category
-                header={
-                  <CategoryHeader
-                    title="Archived"
-                    onClick={() => setLeaveCat(!leaveCat)}
-                    after={<Icon src={leaveCat ? ChevronBottomIC : ChevronRightIC} />}
-                  />
-                }
-              >
-                {leaveCat && leaved.map(renderMemberTile)}
-              </Category>
-            )}
+        {joined === undefined ? (
+          <div className="grow flex items-center justify-center">
+            <Dots size="lg" />
           </div>
-        </Scroll>
+        ) : (
+          <Scroll type="hover" style={{ paddingBottom: "var(--sp-lg)" }}>
+            <div className="flex flex-column gap-sm">
+              {!!invited?.length && (
+                <Category
+                  header={
+                    <CategoryHeader
+                      title="Invited"
+                      onClick={() => setInvitedCat(!invitedCat)}
+                      after={<Icon src={invitedCat ? ChevronBottomIC : ChevronRightIC} />}
+                    />
+                  }
+                >
+                  {invitedCat && invited.map(renderMemberTile)}
+                </Category>
+              )}
+              {!!joined?.length && (
+                <Category
+                  header={
+                    <CategoryHeader
+                      title="Joined"
+                      onClick={() => setJoinedCat(!joinedCat)}
+                      after={<Icon src={joinedCat ? ChevronBottomIC : ChevronRightIC} />}
+                    />
+                  }
+                >
+                  {joinedCat && joined.map(renderMemberTile)}
+                </Category>
+              )}
+
+              {!!banned?.length && (
+                <Category
+                  header={
+                    <CategoryHeader
+                      title="Banned"
+                      onClick={() => setBanCat(!banCat)}
+                      after={<Icon src={banCat ? ChevronBottomIC : ChevronRightIC} />}
+                    />
+                  }
+                >
+                  {banCat && banned.map(renderMemberTile)}
+                </Category>
+              )}
+              {!!leaved?.length && (
+                <Category
+                  header={
+                    <CategoryHeader
+                      title="Archived"
+                      onClick={() => setLeaveCat(!leaveCat)}
+                      after={<Icon src={leaveCat ? ChevronBottomIC : ChevronRightIC} />}
+                    />
+                  }
+                >
+                  {leaveCat && leaved.map(renderMemberTile)}
+                </Category>
+              )}
+            </div>
+          </Scroll>
+        )}
       </div>
     </>
   );
