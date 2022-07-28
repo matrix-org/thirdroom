@@ -172,18 +172,15 @@ export function Overlay({
               chat={
                 isChatOpen && (
                   <ChatView>
-                    {selectedChat && (
-                      <>
-                        <ChatViewHeader room={selectedChat} onMinimize={minimizeChat} onClose={closeChat} />
-                        <ChatViewContent room={selectedChat} />
-                      </>
-                    )}
-                    {selectedChatInvite && (
-                      <>
-                        <ChatViewHeader room={selectedChatInvite} onMinimize={minimizeChat} onClose={closeChat} />
-                        <ChatViewInvite session={session} roomId={selectedChatInvite.id} />
-                      </>
-                    )}
+                    <ChatViewHeader
+                      platform={platform}
+                      session={session}
+                      room={selectedChat || selectedChatInvite!}
+                      onMinimize={minimizeChat}
+                      onClose={closeChat}
+                    />
+                    {selectedChat && <ChatViewContent room={selectedChat} />}
+                    {selectedChatInvite && <ChatViewInvite session={session} roomId={selectedChatInvite.id} />}
                   </ChatView>
                 )
               }

@@ -1,26 +1,32 @@
-import { Invite, Room } from "@thirdroom/hydrogen-view-sdk";
+import { Invite, Platform, Room, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { ChatHeader } from "../../components/chat-header/ChatHeader";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
-import { getIdentifierColorNumber } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import MinusIC from "../../../../../res/ic/minus.svg";
 
 interface ChatViewHeaderProps {
   room: Room | Invite;
+  session: Session;
+  platform: Platform;
   onMinimize: (roomId: string) => void;
   onClose: (roomId: string) => void;
 }
 
-export function ChatViewHeader({ room, onMinimize, onClose }: ChatViewHeaderProps) {
+export function ChatViewHeader({ room, platform, session, onMinimize, onClose }: ChatViewHeaderProps) {
   const roomName = room.name || "Empty room";
+  console.log(room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, session.mediaRepository) : undefined);
+
   return (
     <ChatHeader
       className="shrink-0"
       avatar={
         <Avatar
-          imageSrc={room.avatarUrl}
+          imageSrc={
+            room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, session.mediaRepository) : undefined
+          }
           size="sm"
           name={roomName}
           bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
