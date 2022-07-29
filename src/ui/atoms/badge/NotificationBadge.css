@@ -1,7 +1,7 @@
 .NotificationBadge {
-  min-width: 10px;
-  height: 10px;
-  border-radius: 10px;
+  min-width: 5px;
+  height: 5px;
+  border-radius: 9999px;
 
   display: inline-flex;
   justify-content: center;

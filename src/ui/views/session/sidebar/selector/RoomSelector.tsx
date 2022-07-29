@@ -14,6 +14,7 @@ import MoreHorizontalIC from "../../../../../../res/ic/more-horizontal.svg";
 import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
+import { NotificationBadge } from "../../../../atoms/badge/NotificationBadge";
 
 interface RoomSelectorProps {
   isSelected: boolean;
@@ -57,7 +58,14 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
         return avatar;
       })(room)}
       onClick={() => onSelect(room.id)}
-      content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+      content={
+        <div className="flex items-center gap-xxs">
+          <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
+          {room.isUnread && (
+            <NotificationBadge content={room.notificationCount > 0 ? room.notificationCount : undefined} />
+          )}
+        </div>
+      }
       options={
         <>
           <Dialog open={openMember} onOpenChange={setMemberOpen}>
