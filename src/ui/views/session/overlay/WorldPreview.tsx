@@ -13,6 +13,7 @@ import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
+import { Dialog } from "../../../atoms/dialog/Dialog";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -91,12 +92,9 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
       {room && (
-        <MemberListDialog
-          room={room}
-          isOpen={isMemberDialog}
-          onOpenChange={setIsMemberDialog}
-          requestClose={() => setIsMemberDialog(false)}
-        />
+        <Dialog open={isMemberDialog} onOpenChange={setIsMemberDialog}>
+          <MemberListDialog room={room} requestClose={() => setIsMemberDialog(false)} />
+        </Dialog>
       )}
       {(() => {
         if (roomStatus === undefined) {

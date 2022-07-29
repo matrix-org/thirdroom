@@ -15,14 +15,14 @@ export function useInviteControl(session: Session, roomId: string) {
     // TODO: handle error when unable to join
     // when canonicalAlias is not available.
     await invite.accept();
-    if (!isMounted) return;
+    if (!isMounted()) return;
     forceUpdate();
   };
   const reject = async () => {
     if (!invite) return;
     forceUpdate();
     await invite.reject();
-    if (!isMounted) return;
+    if (!isMounted()) return;
     forceUpdate();
   };
 

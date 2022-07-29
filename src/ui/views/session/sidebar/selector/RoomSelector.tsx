@@ -11,6 +11,9 @@ import { RoomTile } from "../../../components/room-tile/RoomTile";
 import { RoomTileTitle } from "../../../components/room-tile/RoomTileTitle";
 import { InviteDialog } from "../../dialogs/InviteDialog";
 import MoreHorizontalIC from "../../../../../../res/ic/more-horizontal.svg";
+import { Dialog } from "../../../../atoms/dialog/Dialog";
+import { MemberListDialog } from "../../dialogs/MemberListDialog";
+import { useDialog } from "../../../../hooks/useDialog";
 
 interface RoomSelectorProps {
   isSelected: boolean;
@@ -21,6 +24,18 @@ interface RoomSelectorProps {
 
 export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelectorProps) {
   const [focused, setFocused] = useState(false);
+  const {
+    open: openMember,
+    setOpen: setMemberOpen,
+    openDialog: openMemberDialog,
+    closeDialog: closeMemberDialog,
+  } = useDialog(false);
+  const {
+    open: openInvite,
+    setOpen: setInviteOpen,
+    openDialog: openInviteDialog,
+    closeDialog: closeInviteDialog,
+  } = useDialog(false);
 
   return (
     <RoomTile
@@ -35,7 +50,7 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
             shape={room.isDirectMessage ? "circle" : "rounded"}
             className="shrink-0"
             bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-            imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
+            imageSrc={room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, room.mediaRepository) : undefined}
           />
         );
         if (isSelected) return <AvatarOutline>{avatar}</AvatarOutline>;
@@ -44,31 +59,34 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
       onClick={() => onSelect(room.id)}
       content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
       options={
-        <InviteDialog
-          key={room.id}
-          roomId={room.id}
-          renderTrigger={(openDialog) => (
-            <DropdownMenu
-              side="right"
-              onOpenChange={setFocused}
-              content={
-                <>
-                  <DropdownMenuItem onSelect={openDialog}>Invite</DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="danger"
-                    onSelect={() => {
-                      if (confirm("Are you sure?")) room.leave();
-                    }}
-                  >
-                    Leave
-                  </DropdownMenuItem>
-                </>
-              }
-            >
-              <IconButton label="Options" iconSrc={MoreHorizontalIC} />
-            </DropdownMenu>
-          )}
-        />
+        <>
+          <Dialog open={openMember} onOpenChange={setMemberOpen}>
+            <MemberListDialog room={room} requestClose={closeMemberDialog} />
+          </Dialog>
+          <Dialog open={openInvite} onOpenChange={setInviteOpen}>
+            <InviteDialog roomId={room.id} requestClose={closeInviteDialog} />
+          </Dialog>
+          <DropdownMenu
+            side="right"
+            onOpenChange={setFocused}
+            content={
+              <>
+                <DropdownMenuItem onSelect={openInviteDialog}>Invite</DropdownMenuItem>
+                <DropdownMenuItem onSelect={openMemberDialog}>Members</DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="danger"
+                  onSelect={() => {
+                    if (confirm("Are you sure?")) room.leave();
+                  }}
+                >
+                  Leave
+                </DropdownMenuItem>
+              </>
+            }
+          >
+            <IconButton label="Options" iconSrc={MoreHorizontalIC} />
+          </DropdownMenu>
+        </>
       }
     />
   );

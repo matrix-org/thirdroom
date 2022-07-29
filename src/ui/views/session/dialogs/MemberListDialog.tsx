@@ -1,7 +1,6 @@
 import { useState, ReactNode } from "react";
 import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
-import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
@@ -22,15 +21,14 @@ import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
+import { Dots } from "../../../atoms/loading/Dots";
 
 interface MemberListDialogProps {
   room: Room;
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
   requestClose: () => void;
 }
 
-export function MemberListDialog({ room, isOpen, onOpenChange, requestClose }: MemberListDialogProps) {
+export function MemberListDialog({ room, requestClose }: MemberListDialogProps) {
   const { session, platform } = useHydrogen(true);
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
@@ -104,7 +102,7 @@ export function MemberListDialog({ room, isOpen, onOpenChange, requestClose }: M
           <Avatar
             shape="circle"
             name={name}
-            imageSrc={avatarUrl && getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository)}
+            imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
             bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
           />
         }
@@ -131,12 +129,16 @@ export function MemberListDialog({ room, isOpen, onOpenChange, requestClose }: M
   };
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <Header
-          left={<HeaderTitle size="lg">Members</HeaderTitle>}
-          right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
-        />
-        <div className="flex" style={{ height: "600px" }}>
+      <Header
+        left={<HeaderTitle size="lg">Members</HeaderTitle>}
+        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+      />
+      <div className="flex" style={{ height: "600px" }}>
+        {joined === undefined ? (
+          <div className="grow flex items-center justify-center">
+            <Dots size="lg" />
+          </div>
+        ) : (
           <Scroll type="hover" style={{ paddingBottom: "var(--sp-lg)" }}>
             <div className="flex flex-column gap-sm">
               {!!invited?.length && (
@@ -194,8 +196,8 @@ export function MemberListDialog({ room, isOpen, onOpenChange, requestClose }: M
               )}
             </div>
           </Scroll>
-        </div>
-      </Dialog>
+        )}
+      </div>
     </>
   );
 }

@@ -12,10 +12,11 @@ import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
-import LogoutIC from "../../../../../res/ic/logout.svg";
+import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
+import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -31,6 +32,7 @@ export function WorldView() {
     (e) => {
       if (isEnteredWorld === false) return;
       const isEscape = e.key === "Escape";
+      const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
       if (isEscape && isChatOpen) {
         canvasRef.current?.requestPointerLock();
@@ -55,10 +57,10 @@ export function WorldView() {
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
-      if (e.code === "KeyM") {
+      if (!isTyping && e.code === "KeyM") {
         toggleMute();
       }
-      if (e.code === "Backquote") {
+      if (!isTyping && e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
       }
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
@@ -93,13 +95,17 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
-        <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
+        <Tooltip content={callMute ? "Unmute" : "Mute"}>
+          <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
+        </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           M
         </Text>
       </div>
       <div className="flex flex-column items-center">
-        <IconButton variant="danger" label="Logout" iconSrc={LogoutIC} onClick={onExitWorld} />
+        <Tooltip content="Disconnect">
+          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
+        </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           Alt + L
         </Text>
