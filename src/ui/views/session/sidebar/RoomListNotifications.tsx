@@ -30,7 +30,7 @@ export function RoomListNotifications() {
         shape={isWorld || room.isDirectMessage ? "circle" : "rounded"}
         className="shrink-0"
         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-        imageSrc={getAvatarHttpUrl(room.avatarUrl || "", 50, platform, room.mediaRepository)}
+        imageSrc={room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, room.mediaRepository) : undefined}
       />
     );
     if (selectedChatId === room.id || selectedWorldId === room.id) return <AvatarOutline>{avatar}</AvatarOutline>;

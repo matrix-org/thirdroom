@@ -1,4 +1,4 @@
-import { useState, CSSProperties, MouseEvent } from "react";
+import { useState, CSSProperties, MouseEvent, useEffect } from "react";
 import classNames from "classnames";
 import "./Avatar.css";
 
@@ -48,6 +48,10 @@ export function Avatar({
     "aria-label": name,
     style,
   };
+
+  useEffect(() => {
+    setIsFallback(false);
+  }, [imageSrc]);
 
   const content =
     !isFallback && imageSrc ? (

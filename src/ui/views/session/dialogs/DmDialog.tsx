@@ -1,7 +1,6 @@
-import { ReactNode, useState, FormEvent, useEffect, useCallback, ChangeEvent } from "react";
+import { useState, FormEvent, useCallback, ChangeEvent } from "react";
 import { RoomVisibility } from "@thirdroom/hydrogen-view-sdk";
 
-import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { Input } from "../../../atoms/input/Input";
@@ -22,27 +21,16 @@ import { ProfileSuggestion } from "./ProfileSuggestion";
 import { isValidUserId, waitToCreateRoom } from "../../../utils/matrixUtils";
 
 interface DmDialogProps {
-  renderTrigger: (openDialog: () => void) => ReactNode;
+  requestClose: () => void;
 }
 
-export function DmDialog({ renderTrigger }: DmDialogProps) {
+export function DmDialog({ requestClose }: DmDialogProps) {
   const { session } = useHydrogen(true);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const openDialog = () => setIsOpen(true);
-  const closeDialog = () => setIsOpen(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string>();
 
   const { loading, value: searchResult, setSearchTerm } = useSearchProfile(session);
-
-  useEffect(() => {
-    if (isOpen === false) {
-      setStarting(false);
-      setError(undefined);
-      setSearchTerm(undefined);
-    }
-  }, [isOpen, setSearchTerm]);
 
   const dmUser = async (userId: string) => {
     if (starting) return;
@@ -58,7 +46,7 @@ export function DmDialog({ renderTrigger }: DmDialogProps) {
       invites: [userId],
     });
     await waitToCreateRoom(session, roomBeingCreated);
-    closeDialog();
+    requestClose();
   };
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
@@ -80,50 +68,45 @@ export function DmDialog({ renderTrigger }: DmDialogProps) {
   );
 
   return (
-    <>
-      {renderTrigger(openDialog)}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex flex-column">
-          <Header
-            className="shrink-0"
-            left={<HeaderTitle size="lg">Direct Message</HeaderTitle>}
-            right={<IconButton iconSrc={CrossIC} onClick={closeDialog} label="Close" />}
-          />
-          <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
-            <div className="flex flex-column gap-sm">
-              <SettingTile
-                label={
-                  <>
-                    <Label>User Id</Label>
-                    <Tooltip content="User id looks like @user:server.name" side="right">
-                      <Icon src={InfoIC} color="surface-low" size="sm" />
-                    </Tooltip>
-                  </>
-                }
-              >
-                <Input
-                  onChange={handleInputChange}
-                  name="input"
-                  maxLength={255}
-                  autoFocus
-                  placeholder="@user:server.name"
-                  required
-                />
-              </SettingTile>
-              {!starting && error && (
-                <Text variant="b3" color="danger" weight="medium">
-                  {error}
-                </Text>
-              )}
-              <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={dmUser} />
-            </div>
-            <Button size="lg" type="submit">
-              {starting && <Dots color="on-primary" />}
-              {starting ? "Starting" : "Direct Message"}
-            </Button>
-          </form>
+    <div className="flex flex-column">
+      <Header
+        className="shrink-0"
+        left={<HeaderTitle size="lg">Direct Message</HeaderTitle>}
+        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+      />
+      <form onSubmit={handleSubmit} className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
+        <div className="flex flex-column gap-sm">
+          <SettingTile
+            label={
+              <>
+                <Label>User Id</Label>
+                <Tooltip content="User id looks like @user:server.name" side="right">
+                  <Icon src={InfoIC} color="surface-low" size="sm" />
+                </Tooltip>
+              </>
+            }
+          >
+            <Input
+              onChange={handleInputChange}
+              name="input"
+              maxLength={255}
+              autoFocus
+              placeholder="@user:server.name"
+              required
+            />
+          </SettingTile>
+          {!starting && error && (
+            <Text variant="b3" color="danger" weight="medium">
+              {error}
+            </Text>
+          )}
+          <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={dmUser} />
         </div>
-      </Dialog>
-    </>
+        <Button size="lg" type="submit">
+          {starting && <Dots color="on-primary" />}
+          {starting ? "Starting" : "Direct Message"}
+        </Button>
+      </form>
+    </div>
   );
 }

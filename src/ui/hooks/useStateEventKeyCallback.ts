@@ -3,7 +3,7 @@ import { Room, StateEvent } from "@thirdroom/hydrogen-view-sdk";
 
 import { useIsMounted } from "./useIsMounted";
 
-export function useStateEventWithKeyCallback(
+export function useStateEventKeyCallback(
   room: Room,
   eventType: string,
   stateKey: string,
@@ -14,7 +14,7 @@ export function useStateEventWithKeyCallback(
   useEffect(() => {
     let unSub: () => void;
     room.observeStateTypeAndKey(eventType, stateKey).then((stateObservable) => {
-      if (!isMounted) return;
+      if (!isMounted()) return;
       const event = stateObservable.get();
       callback(event);
       unSub = stateObservable.subscribe(callback);

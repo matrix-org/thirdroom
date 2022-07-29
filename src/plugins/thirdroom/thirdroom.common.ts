@@ -5,6 +5,7 @@ export enum ThirdRoomMessageType {
   WorldLoaded = "world-loaded",
   WorldLoadError = "world-load-error",
   PrintThreadState = "print-thread-state",
+  GLTFViewerLoadGLTF = "gltf-viewer-load-gltf",
 }
 
 export interface EnterWorldMessage {
@@ -36,4 +37,9 @@ export interface WorldLoadErrorMessage {
 
 export interface PrintThreadStateMessage {
   type: ThirdRoomMessageType.PrintThreadState;
+}
+
+export interface GLTFViewerLoadGLTFMessage {
+  type: ThirdRoomMessageType.GLTFViewerLoadGLTF;
+  url: string;
 }

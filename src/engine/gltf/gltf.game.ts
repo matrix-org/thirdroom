@@ -261,10 +261,16 @@ async function _inflateGLTFNode(
   addTransformComponent(ctx.world, nodeEid);
   addNameComponent(ctx.world, nodeEid, node.name || `Node ${nodeIndex}`);
 
-  if (node.matrix) Transform.worldMatrix[nodeEid].set(node.matrix);
-  if (node.translation) Transform.position[nodeEid].set(node.translation);
-  if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
-  if (node.scale) Transform.scale[nodeEid].set(node.scale);
+  if (node.matrix) {
+    Transform.localMatrix[nodeEid].set(node.matrix);
+    mat4.getTranslation(Transform.position[nodeEid], Transform.localMatrix[nodeEid]);
+    mat4.getRotation(Transform.quaternion[nodeEid], Transform.localMatrix[nodeEid]);
+    mat4.getScaling(Transform.scale[nodeEid], Transform.localMatrix[nodeEid]);
+  } else {
+    if (node.translation) Transform.position[nodeEid].set(node.translation);
+    if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
+    if (node.scale) Transform.scale[nodeEid].set(node.scale);
+  }
 
   setEulerFromQuaternion(Transform.rotation[nodeEid], Transform.quaternion[nodeEid]);
 

@@ -14,7 +14,7 @@ interface IChatHeader {
 export function ChatHeader({ className, avatar, title, options }: IChatHeader) {
   return (
     <header className={classNames("ChatHeader flex items-center", className)}>
-      <div className="shrink-0">{avatar}</div>
+      <div className="shrink-0 flex">{avatar}</div>
       <div className="ChatHeader__title grow">
         <Text className="truncate">{title}</Text>
       </div>
