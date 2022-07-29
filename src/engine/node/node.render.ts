@@ -107,6 +107,7 @@ export function updateTransformFromNode(
   object3D.scale.lerp(tempScale, lerpAlpha);
 
   object3D.visible = !!nodeReadView.visible[0];
+  object3D.layers.mask = nodeReadView.layers[0];
 }
 
 export function setTransformFromNode(

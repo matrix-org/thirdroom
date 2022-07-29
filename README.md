@@ -21,7 +21,7 @@ homeserver [here](https://app.element.io/#/register).
 
 Once you have a Matrix account, you can visit [thirdroom.io](https://thirdroom.io) to try out the latest Third Room
 client. You can create your own world or join our public testing world at
-[thirdroom.io/world/#thirdroom-test:matrix.org](https://thirdroom.io/world/#thirdroom-test:matrix.org).
+[https://thirdroom.io/world/#thirdroom-public:matrix.org](https://thirdroom.io/world/#thirdroom-public:matrix.org).
 
 ## About Third Room
 

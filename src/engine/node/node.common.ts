@@ -2,6 +2,23 @@ import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/Objec
 
 export const NodeResourceType = "node";
 
+export enum Layer {
+  Default,
+  EditorSelection,
+}
+
+export function addLayer(layers: number, layer: Layer): number {
+  return layers | (1 << layer);
+}
+
+export function removeLayer(layers: number, layer: Layer): number {
+  return layers & ~(1 << layer);
+}
+
+export function isInLayer(layers: number, layer: Layer): boolean {
+  return (layers & (1 << layer)) !== 0;
+}
+
 export const rendererNodeSchema = defineObjectBufferSchema({
   visible: [Uint8Array, 1],
   static: [Uint8Array, 1],
@@ -12,6 +29,7 @@ export const rendererNodeSchema = defineObjectBufferSchema({
   light: [Uint32Array, 1],
   camera: [Uint32Array, 1],
   tilesRenderer: [Uint32Array, 1],
+  layers: [Uint32Array, 1],
 });
 
 export const audioNodeSchema = defineObjectBufferSchema({

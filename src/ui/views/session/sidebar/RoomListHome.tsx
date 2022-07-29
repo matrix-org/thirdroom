@@ -85,6 +85,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
           {roomCat &&
             rooms.map((room) => (
               <RoomSelector
+                key={room.id}
                 isSelected={room.id === selectedChatId}
                 onSelect={selectChat}
                 room={room}

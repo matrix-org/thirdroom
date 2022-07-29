@@ -901,10 +901,10 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@thirdroom/hydrogen-view-sdk@0.0.13":
-  version "0.0.13"
-  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.13.tgz#8f20bd515d63a98d5b994a6c98283cd1115fd763"
-  integrity sha512-pRSrvwfskV3po2EIeLwNTdp9DsRRyD87hb4V1+pJOHKzPHCUlBCqxd5l/9DcTH3gIOVy41iTQWjJfXQMvKBqfQ==
+"@thirdroom/hydrogen-view-sdk@^0.0.14":
+  version "0.0.14"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.14.tgz#2026773674b4ce683a2366f7219b66906aba8c77"
+  integrity sha512-h7PD1C9cIlylg2NZ82UitRCN4ZJMQi7NRsy3nCgsVTGu6crANpqZ0lh5ZbtacidDMfqXwFQs6uo//wFde4mYDQ==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.8.tgz"
     another-json "^0.2.0"
@@ -912,10 +912,10 @@
     dompurify "^2.3.0"
     off-color "^2.0.0"
 
-"@thirdroom/manifold-editor-components@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.1.tgz#faa8c389db1ee694ef75937eb11d577dbc9fa0b3"
-  integrity sha512-wUY0yKCacG78OFrv34SPUsavQUNJWi2jTGwA9x6KRZ+opQhhCsdD/5R7C2KSdtkoYn2HK4xZZtyGcjymfkE2FA==
+"@thirdroom/manifold-editor-components@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.4.tgz#4f5affc9b21a34b6ffc6d87d38dbcdda3d053285"
+  integrity sha512-YCBrFyfiqLAf81Bbs0vpVIalCi8RUrpX7xp8JB5HeGcdQ5zHtzSUsRox7LtZCZ2/Onw6nEQP2iuNk851GG/Cmw==
 
 "@thirdroom/ringbuffer@^0.0.1":
   version "0.0.1"

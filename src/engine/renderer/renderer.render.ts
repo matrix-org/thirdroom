@@ -67,6 +67,7 @@ import { NodeResourceType } from "../node/node.common";
 import { ResourceId } from "../resource/resource.common";
 import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
+import { RenderPipeline } from "./RenderPipeline";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -81,6 +82,7 @@ export interface RendererModuleState {
   canvasWidth: number;
   canvasHeight: number;
   renderer: WebGLRenderer;
+  renderPipeline: RenderPipeline;
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
@@ -92,20 +94,25 @@ export interface RendererModuleState {
   meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
   nodes: LocalNode[]; // done
   prevCameraResource?: ResourceId;
+  prevSceneResource?: ResourceId;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
-  async create(ctx, { sendMessage, waitForMessage }) {
+  async create(ctx, { waitForMessage }) {
     const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
       Thread.Main,
       RendererMessageType.InitializeCanvas
     );
 
-    const renderer = new WebGLRenderer({ antialias: true, canvas: canvasTarget || ctx.canvas });
+    const renderer = new WebGLRenderer({
+      powerPreference: "high-performance",
+      canvas: canvasTarget || ctx.canvas,
+    });
+    renderer.outputEncoding = sRGBEncoding;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
-    renderer.outputEncoding = sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
@@ -118,6 +125,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return {
       needsResize: true,
       renderer,
+      renderPipeline: new RenderPipeline(renderer),
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
@@ -201,7 +209,7 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, renderer, canvasWidth, canvasHeight } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
 
   const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
@@ -229,7 +237,7 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     activeCameraNode.cameraObject.updateProjectionMatrix();
 
-    renderer.setSize(canvasWidth, canvasHeight, false);
+    renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
@@ -243,6 +251,6 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    rendererModule.renderer.render(activeSceneResource.scene, activeCameraNode.cameraObject);
+    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
   }
 }
