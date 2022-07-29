@@ -6,7 +6,6 @@ import "./Overlay.css";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
 import { SidebarView } from "../sidebar/SidebarView";
 import { SpacesView } from "../sidebar/SpacesView";
 import { RoomListView } from "../sidebar/RoomListView";
@@ -25,17 +24,10 @@ import { useRoom } from "../../../hooks/useRoom";
 import { useStore, SidebarTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
-import { NowPlaying } from "../../components/now-playing/NowPlaying";
-import { NowPlayingTitle } from "../../components/now-playing/NowPlayingTitle";
-import { NowPlayingStatus } from "../../components/now-playing/NowPlayingStatus";
-import { IconButton } from "../../../atoms/button/IconButton";
-import MicIC from "../../../../../res/ic/mic.svg";
-import MicOffIC from "../../../../../res/ic/mic-off.svg";
-import LogoutIC from "../../../../../res/ic/logout.svg";
-import { useCallMute } from "../../../hooks/useCallMute";
 import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
+import { NowPlayingWorld } from "./NowPlayingWorld";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -88,7 +80,6 @@ export function Overlay({
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
   const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
-  const { mute: callMute, toggleMute } = useCallMute(activeCall);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
@@ -124,6 +115,7 @@ export function Overlay({
       loadState === WorldLoadState.Entered
     );
 
+  const isChatOpen = selectedChat || selectedChatInvite;
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
       {worldPreviewUrl && previewingWorld && (
@@ -143,36 +135,13 @@ export function Overlay({
                 </RoomListContent>
               }
               footer={
-                world && (
-                  <NowPlaying
-                    avatar={
-                      <AvatarOutline>
-                        <Avatar
-                          shape="circle"
-                          size="lg"
-                          name={world.name || "Unnamed World"}
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(world.id)})`}
-                          imageSrc={getAvatarHttpUrl(world.avatarUrl || "", 70, platform, world.mediaRepository)}
-                        />
-                      </AvatarOutline>
-                    }
-                    content={
-                      <>
-                        <NowPlayingStatus status="connected">Connected</NowPlayingStatus>
-                        <NowPlayingTitle>{world.name || "Unnamed World"}</NowPlayingTitle>
-                      </>
-                    }
-                    leftControls={
-                      <>
-                        <IconButton
-                          variant="surface-low"
-                          label="Mic"
-                          iconSrc={callMute ? MicOffIC : MicIC}
-                          onClick={toggleMute}
-                        />
-                        <IconButton variant="danger" label="Left world" iconSrc={LogoutIC} onClick={onExitWorld} />
-                      </>
-                    }
+                world &&
+                activeCall && (
+                  <NowPlayingWorld
+                    world={world}
+                    activeCall={activeCall}
+                    onExitWorld={onExitWorld}
+                    platform={platform}
                   />
                 )
               }
@@ -190,37 +159,28 @@ export function Overlay({
         </div>
       ) : (
         <div className="Overlay__content grow">
-          <WorldPreview
-            onJoinWorld={onJoinWorld}
-            onLoadWorld={onLoadWorld}
-            onReloadWorld={onReloadWorld}
-            onEnterWorld={onEnterWorld}
-          />
+          {(worldId === selectedWorldId && loadState === WorldLoadState.Entered) || isChatOpen ? undefined : (
+            <WorldPreview
+              onJoinWorld={onJoinWorld}
+              onLoadWorld={onLoadWorld}
+              onReloadWorld={onReloadWorld}
+              onEnterWorld={onEnterWorld}
+            />
+          )}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={
-                (selectedChat || selectedChatInvite) && (
+                isChatOpen && (
                   <ChatView>
-                    {selectedChat && (
-                      <>
-                        <ChatViewHeader
-                          room={selectedChat || selectedChatInvite}
-                          onMinimize={minimizeChat}
-                          onClose={closeChat}
-                        />
-                        <ChatViewContent room={selectedChat} />
-                      </>
-                    )}
-                    {selectedChatInvite && (
-                      <>
-                        <ChatViewHeader
-                          room={selectedChatInvite || selectedChatInvite}
-                          onMinimize={minimizeChat}
-                          onClose={closeChat}
-                        />
-                        <ChatViewInvite session={session} roomId={selectedChatInvite.id} />
-                      </>
-                    )}
+                    <ChatViewHeader
+                      platform={platform}
+                      session={session}
+                      room={selectedChat || selectedChatInvite!}
+                      onMinimize={minimizeChat}
+                      onClose={closeChat}
+                    />
+                    {selectedChat && <ChatViewContent room={selectedChat} />}
+                    {selectedChatInvite && <ChatViewInvite session={session} roomId={selectedChatInvite.id} />}
                   </ChatView>
                 )
               }
@@ -237,7 +197,11 @@ export function Overlay({
                     avatar={
                       <Avatar
                         size="sm"
-                        imageSrc={room.avatarUrl}
+                        imageSrc={
+                          room.avatarUrl
+                            ? getAvatarHttpUrl(room.avatarUrl, 50, platform, session.mediaRepository)
+                            : undefined
+                        }
                         name={roomName}
                         bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
                       />

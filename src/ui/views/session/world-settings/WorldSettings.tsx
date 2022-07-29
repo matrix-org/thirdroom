@@ -62,12 +62,12 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   useEffect(() => {
     if (room) {
       room.getStateEvent("m.room.join_rules").then((event) => {
-        if (!isMounted) return;
+        if (!isMounted()) return;
         isPrivateRef.current = event?.event?.content.join_rule !== "public";
         setIsPrivate(event?.event?.content.join_rule !== "public");
       });
       room.getStateEvent("m.world").then((event) => {
-        if (!isMounted) return;
+        if (!isMounted()) return;
         const content = event?.event?.content;
         setWorldInfo({
           sceneUrl: content?.scene_url,

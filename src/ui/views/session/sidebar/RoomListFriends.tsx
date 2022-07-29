@@ -4,12 +4,15 @@ import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
 import { useStore } from "../../../hooks/useStore";
 import { EmptyState } from "../../components/empty-state/EmptyState";
 import { DmDialog } from "../dialogs/DmDialog";
+import { Dialog } from "../../../atoms/dialog/Dialog";
 import { RoomSelector } from "./selector/RoomSelector";
+import { useDialog } from "../../../hooks/useDialog";
 
 export function RoomListFriends() {
   const { session, platform } = useHydrogen(true);
 
   const [rooms] = useRoomsOfType(session, RoomTypes.Direct);
+  const { open, setOpen, openDialog, closeDialog } = useDialog(false);
 
   const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
 
@@ -19,7 +22,14 @@ export function RoomListFriends() {
         style={{ minHeight: "400px" }}
         heading="No Friends"
         text="You don't have any friend yet."
-        actions={<DmDialog renderTrigger={(openDialog) => <Button onClick={openDialog}>Direct Message</Button>} />}
+        actions={
+          <>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DmDialog requestClose={closeDialog} />
+            </Dialog>
+            <Button onClick={openDialog}>Direct Message</Button>
+          </>
+        }
       />
     );
   }
