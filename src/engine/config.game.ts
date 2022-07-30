@@ -55,8 +55,8 @@ export default defineConfig<GameState>({
     FirstPersonCameraSystem,
     PlayerControllerSystem,
     FlyControlsSystem,
-    AnimationSystem,
     PhysicsSystem,
+    AnimationSystem,
     CubeSpawnerSystem,
     GrabThrowSystem,
 
