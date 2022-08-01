@@ -16,7 +16,6 @@ import { useStore } from "../../../../hooks/useStore";
 import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
-import { NotificationBadge } from "../../../../atoms/badge/NotificationBadge";
 
 interface WorldSelectorProps {
   isSelected: boolean;
@@ -65,12 +64,7 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
       onClick={() => onSelect(room.id)}
       content={
         <>
-          <div className="flex items-center gap-xxs">
-            <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
-            {room.isUnread && (
-              <NotificationBadge content={room.notificationCount > 0 ? room.notificationCount : undefined} />
-            )}
-          </div>
+          <RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>
           {groupCall && <WorldTileMembers session={session} platform={platform} groupCall={groupCall} />}
         </>
       }

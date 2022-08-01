@@ -120,9 +120,6 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
 
   async load() {
     let timeline;
-    // TODO: We can remove below condition
-    // if we have worlds and chats filtering in room list.
-    // see: https://github.com/matrix-org/thirdroom/pull/48#issuecomment-1111626938
     if (this._room._timeline) {
       timeline = this._room._timeline;
     } else {
@@ -134,13 +131,14 @@ export class TRRoomViewModel extends ViewModel implements IRoomViewModel {
       timeline,
       tileClassForEntry: this._tileClassForEntry,
     });
-    this._timelineVM = this.track(
-      new TimelineViewModel(
-        this.childOptions({
-          tileOptions: this._tileOptions,
-          timeline,
-        })
-      )
+
+    // NOTE: We are not tracking TimelineViewModel to dispose
+    // Cause when it dispose it also closes timeline of current room
+    this._timelineVM = new TimelineViewModel(
+      this.childOptions({
+        tileOptions: this._tileOptions,
+        timeline,
+      })
     );
   }
 
