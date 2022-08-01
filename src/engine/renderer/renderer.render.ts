@@ -62,6 +62,7 @@ import { ResourceId } from "../resource/resource.common";
 import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
+import patchShaderChunks from "../material/patchShaderChunks";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -98,6 +99,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       Thread.Main,
       RendererMessageType.InitializeCanvas
     );
+
+    patchShaderChunks();
 
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",

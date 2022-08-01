@@ -172,6 +172,7 @@ export function createPrimitiveUnlitMaterial(
         ...baseParameters,
         color,
         map: material.baseColorTexture?.texture,
+        toneMapped: false,
       })
     );
   } else if (
@@ -179,13 +180,14 @@ export function createPrimitiveUnlitMaterial(
     mode === MeshPrimitiveMode.LINE_STRIP ||
     mode === MeshPrimitiveMode.LINE_LOOP
   ) {
-    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color }));
+    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color, toneMapped: false }));
   } else if (mode === MeshPrimitiveMode.POINTS) {
     return new PointsMaterial(
       removeUndefinedProperties({
         ...baseParameters,
         map: material.baseColorTexture?.texture,
         sizeAttenuation: false,
+        toneMapped: false,
       })
     );
   }
