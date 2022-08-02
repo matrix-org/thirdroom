@@ -101,17 +101,6 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
 export const PhysicsSystem = (state: GameState) => {
   const { world, dt } = state;
   const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(state, PhysicsModule);
-  // remove rigidbody from physics world
-  const exited = exitedPhysicsQuery(world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    const body = RigidBody.store.get(eid);
-    if (body) {
-      handleToEid.delete(body.handle);
-      physicsWorld.removeRigidBody(body);
-      RigidBody.store.delete(eid);
-    }
-  }
 
   // apply transform to rigidbody for new physics entities
   const entered = enteredPhysicsQuery(world);
@@ -129,6 +118,18 @@ export const PhysicsSystem = (state: GameState) => {
       }
 
       handleToEid.set(body.handle, eid);
+    }
+  }
+
+  // remove rigidbody from physics world
+  const exited = exitedPhysicsQuery(world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    const body = RigidBody.store.get(eid);
+    if (body) {
+      handleToEid.delete(body.handle);
+      physicsWorld.removeRigidBody(body);
+      RigidBody.store.delete(eid);
     }
   }
 

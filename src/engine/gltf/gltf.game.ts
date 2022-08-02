@@ -21,7 +21,13 @@ import { createRemoteBufferView, RemoteBufferView } from "../bufferView/bufferVi
 import { createRemoteOrthographicCamera, createRemotePerspectiveCamera, RemoteCamera } from "../camera/camera.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { addChild, addTransformComponent, setEulerFromQuaternion, Transform } from "../component/transform";
+import {
+  addChild,
+  addTransformComponent,
+  setEulerFromQuaternion,
+  Transform,
+  updateMatrixWorld,
+} from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteImage, createRemoteImageFromBufferView, RemoteImage } from "../image/image.game";
 import {
@@ -209,6 +215,8 @@ export async function inflateGLTFScene(
         ) as Promise<RemoteGlobalAudioEmitter[]>)
       : undefined,
   });
+
+  updateMatrixWorld(sceneEid, true);
 
   for (const inflator of nodeInflators) {
     inflator();
