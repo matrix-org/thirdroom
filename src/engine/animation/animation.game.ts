@@ -1,19 +1,10 @@
-// import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
 import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
-import {
-  AnimationAction,
-  AnimationClip,
-  AnimationMixer,
-  Bone,
-  // Object3D,
-  //  Quaternion,
-  //  Vector3
-} from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, Bone } from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { radToDeg } from "three/src/math/MathUtils";
 
-// import { createInteractionGroup, PhysicsGroups } from "../../plugins/PhysicsCharacterController";
+// TODO: remove dependency on plugin
 import { setEulerFromQuaternion, Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
@@ -36,6 +27,8 @@ const animationQuery = defineQuery([AnimationComponent]);
 const boneQuery = defineQuery([BoneComponent]);
 
 const _vec3 = vec3.create();
+const _forward = vec3.create();
+const _right = vec3.create();
 
 // TODO: grounded shapecast for simpler jump detection
 // export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~0b1);
@@ -44,10 +37,11 @@ const _vec3 = vec3.create();
 // const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 // const shapeCastPosition = new Vector3();
 // const shapeCastRotation = new Quaternion();
-// const obj = new Object3D();
+// const _obj = new Object3D();
+
 // const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
 //   shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
-//   shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
+//   shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
 
 //   const shapeCastResult = physicsWorld.castShape(
 //     shapeCastPosition,
@@ -58,12 +52,14 @@ const _vec3 = vec3.create();
 //     CharacterShapecastInteractionGroup
 //   );
 
+//   console.log(shapeCastResult);
+
 //   const isGrounded = !!shapeCastResult;
 
 //   return isGrounded;
 // };
 
-const fadeTime = 0.33;
+const fadeTime = 0.5;
 const idleThreshold = 0.5;
 const walkThreshold = 10;
 const turnCounterAmount = 16;
@@ -94,10 +90,10 @@ notes on calculating forward/up/right:
 */
 
 export function AnimationSystem(ctx: GameState) {
+  // const { physicsWorld } = getModule(ctx, PhysicsModule);
   // const entered = enterAnimationQuery(ctx.world);
   // for (let i = 0; i < entered.length; i++) {
   //   const eid = entered[i];
-
   //   const animation = AnimationComponent.get(eid);
   // }
 
@@ -117,6 +113,8 @@ export function AnimationSystem(ctx: GameState) {
       const rotation = Transform.rotation[parent];
 
       setEulerFromQuaternion(rotation, quaternion);
+
+      // console.log(isGrounded(ctx, physicsWorld, rigidBody));
 
       const linvel = rigidBody.linvel();
       const vel: Float32Array = new Float32Array([linvel.x, linvel.y, linvel.z]);
@@ -139,13 +137,13 @@ export function AnimationSystem(ctx: GameState) {
       const z = Math.cos(pitch) * Math.cos(yaw);
       */
       const forward = vec3.set(
-        vec3.create(),
+        _forward,
         -Math.cos(pitch) * Math.sin(roll),
         Math.sin(pitch),
         -Math.cos(pitch) * Math.cos(roll)
       );
 
-      const right = vec3.set(vec3.create(), Math.cos(roll), 0, -Math.sin(roll));
+      const right = vec3.set(_right, Math.cos(roll), 0, -Math.sin(roll));
 
       // set to parent position manually
       vec3.copy(_vec3, position);
@@ -156,7 +154,7 @@ export function AnimationSystem(ctx: GameState) {
       const angle = radToDeg(vec3.angle(vel, forward));
       const angle2 = radToDeg(vec3.angle(vel, right));
 
-      // TODO: blend walking with strafing
+      // TODO: blend walking with strafing when moving diagonally
       const movingForward = angle < 90;
       const movingBackward = angle > 100;
       const strafingLeft = angle2 > 120;
@@ -170,12 +168,11 @@ export function AnimationSystem(ctx: GameState) {
       let speed = 1;
 
       // choose clip based on velocity
-      // TODO: strafing
       let clip: AnimationClip | undefined;
       if (turnCounterObj[eid] === 0) {
         if (linvel.y < -20) {
           clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
-        } else if (Math.abs(linvel.y) > 0.2) {
+        } else if (Math.abs(linvel.y) > 0.5) {
           clip = animation.threeResource.animations.find((c) => c.name === "Fall1");
         } else if (len < idleThreshold) {
           if (turningLeft) {
@@ -240,7 +237,7 @@ export function AnimationSystem(ctx: GameState) {
               clip.name === "Fall1" &&
               (lastClip.name === "Idle" || lastClip.name === "Walk" || lastClip.name === "Run")
             ) {
-              currentAction.setEffectiveTimeScale(-1).fadeOut(fadeTime * 8);
+              currentAction.setEffectiveTimeScale(1).fadeOut(fadeTime * 8);
             }
           } else currentAction.fadeIn(fadeTime).play();
         }

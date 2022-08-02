@@ -2,7 +2,6 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 import { AnimationMixer, Bone, Matrix4 } from "three";
-import { degToRad } from "three/src/math/MathUtils";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -129,10 +128,6 @@ export async function inflateGLTFScene(
 
   // animation pre-processing
   if (resource.root.skins && resource.root.nodes && resource.root.meshes && resource.root.animations) {
-    const q = Transform.quaternion[sceneEid];
-    quat.rotateX(q, q, degToRad(90));
-    quat.rotateY(q, q, degToRad(90));
-
     // TODO: don't fetch twice
     const threeGltfLoader = new GLTFLoader();
     const threeResource = await threeGltfLoader.loadAsync(uri);

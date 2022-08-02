@@ -163,7 +163,6 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   network.peerIdToEntityId.set(network.peerId, playerRig);
 
   addComponent(world, PlayerRig, playerRig);
-  Transform.position[playerRig][2] = 50;
 
   addCameraYawTargetComponent(world, playerRig);
 
