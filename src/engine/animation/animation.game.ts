@@ -1,5 +1,5 @@
 // import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery, enterQuery, IWorld, removeComponent } from "bitecs";
+import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
 import {
   AnimationAction,
@@ -14,10 +14,9 @@ import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { radToDeg } from "three/src/math/MathUtils";
 
 // import { createInteractionGroup, PhysicsGroups } from "../../plugins/PhysicsCharacterController";
-import { addChild, setEulerFromQuaternion, Transform } from "../component/transform";
+import { setEulerFromQuaternion, Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
-import { createSimpleCube } from "../mesh/mesh.game";
 import { RigidBody } from "../physics/physics.game";
 
 export interface IAnimationComponent {
@@ -32,7 +31,7 @@ export const AnimationComponent = new Map<number, IAnimationComponent>();
 export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
-const enterAnimationQuery = enterQuery(animationQuery);
+// const enterAnimationQuery = enterQuery(animationQuery);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
@@ -95,16 +94,12 @@ notes on calculating forward/up/right:
 */
 
 export function AnimationSystem(ctx: GameState) {
-  const entered = enterAnimationQuery(ctx.world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
+  // const entered = enterAnimationQuery(ctx.world);
+  // for (let i = 0; i < entered.length; i++) {
+  //   const eid = entered[i];
 
-    const animation = AnimationComponent.get(eid);
-
-    animation.debugEid = createSimpleCube(ctx, 0.333);
-    // addChild(eid, animation.debugEid);
-    addChild(ctx.activeScene, animation.debugEid);
-  }
+  //   const animation = AnimationComponent.get(eid);
+  // }
 
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
@@ -157,8 +152,6 @@ export function AnimationSystem(ctx: GameState) {
 
       // add forward vector
       vec3.add(_vec3, _vec3, forward);
-
-      vec3.copy(Transform.position[animation.debugEid], _vec3);
 
       const angle = radToDeg(vec3.angle(vel, forward));
       const angle2 = radToDeg(vec3.angle(vel, right));
