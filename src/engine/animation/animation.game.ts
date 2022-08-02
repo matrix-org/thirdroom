@@ -1,6 +1,6 @@
 // import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
-// import { mat4, quat, vec3 } from "gl-matrix";
+import { addComponent, defineQuery, enterQuery, IWorld, removeComponent } from "bitecs";
+import { vec3 } from "gl-matrix";
 import {
   AnimationAction,
   AnimationClip,
@@ -11,11 +11,13 @@ import {
   //  Vector3
 } from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
+import { radToDeg } from "three/src/math/MathUtils";
 
 // import { createInteractionGroup, PhysicsGroups } from "../../plugins/PhysicsCharacterController";
-import { setEulerFromQuaternion, Transform } from "../component/transform";
+import { addChild, setEulerFromQuaternion, Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
+import { createSimpleCube } from "../mesh/mesh.game";
 import { RigidBody } from "../physics/physics.game";
 
 export interface IAnimationComponent {
@@ -30,19 +32,13 @@ export const AnimationComponent = new Map<number, IAnimationComponent>();
 export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
-// const enterAnimationQuery = enterQuery(animationQuery);
+const enterAnimationQuery = enterQuery(animationQuery);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
+const _vec3 = vec3.create();
+
 // TODO: grounded shapecast for simpler jump detection
-
-// const _vec3 = vec3.create();
-// const _pos = vec3.create();
-// const _rot = vec3.create();
-// const _vel = vec3.create();
-// const _quat = quat.create();
-// const _mat4 = mat4.create();
-
 // export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~0b1);
 // const colliderShape = new Capsule(0.5, 0.5);
 // const shapeTranslationOffset = new Vector3(0, 0, 0);
@@ -77,36 +73,106 @@ const turnCounterObj: { [key: number]: number } = {};
 
 const lastYrot = new Float32Array(maxEntities);
 
-export function AnimationSystem(ctx: GameState) {
-  // const entered = enterAnimationQuery(ctx.world);
-  // for (let i = 0; i < entered.length; i++) {
-  //   const eid = entered[i];
+/*
 
-  //   const animation = AnimationComponent.get(eid);
-  // }
+notes on calculating forward/up/right:
+
+  forward.x =  cos(pitch) * sin(yaw);
+  forward.y = -sin(pitch);
+  forward.z =  cos(pitch) * cos(yaw);
+
+  right.x =  cos(yaw);
+  right.y =  0;
+  right.z = -sin(yaw);
+
+  up = cross(forward, right);
+
+  equivalent:
+  up.x = sin(pitch) * sin(yaw);
+  up.y = cos(pitch);
+  up.z = sin(pitch) * cos(yaw);
+
+*/
+
+export function AnimationSystem(ctx: GameState) {
+  const entered = enterAnimationQuery(ctx.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+
+    const animation = AnimationComponent.get(eid);
+
+    animation.debugEid = createSimpleCube(ctx, 0.333);
+    // addChild(eid, animation.debugEid);
+    addChild(ctx.activeScene, animation.debugEid);
+  }
 
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
-    const parent = Transform.parent[eid];
+    // animation component exists on the inner avatar entity
     const animation = AnimationComponent.get(eid);
-    const rigidBody = RigidBody.store.get(parent || eid);
+
+    // avatars exist within a parent container which has all other components for this entity
+    const parent = Transform.parent[eid] || eid;
+    const rigidBody = RigidBody.store.get(parent);
+
     if (animation && rigidBody) {
+      const position = Transform.position[parent];
+      const quaternion = Transform.quaternion[parent];
+      const rotation = Transform.rotation[parent];
+
+      setEulerFromQuaternion(rotation, quaternion);
+
       const linvel = rigidBody.linvel();
+      const vel: Float32Array = new Float32Array([linvel.x, linvel.y, linvel.z]);
       const len = linvel.x ** 2 + linvel.z ** 2;
 
-      setEulerFromQuaternion(Transform.rotation[parent], Transform.quaternion[parent]);
-      const yRot = Transform.rotation[parent][1];
-      const xRot = Transform.rotation[parent][0];
+      const yRot = rotation[1];
+      const xRot = rotation[0];
       const yRotLast = lastYrot[eid];
+
+      const [x, y, z, w] = quaternion;
+      const roll = Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
+      const pitch = Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
+      // const yaw = Math.asin(2 * x * y + 2 * z * w);
+
+      // TODO: figure out why roll is yaw and algo is inverted
+      /* 
+      correct algo:
+      const x = Math.cos(pitch) * Math.sin(yaw);
+      const y = -Math.sin(pitch);
+      const z = Math.cos(pitch) * Math.cos(yaw);
+      */
+      const forward = vec3.set(
+        vec3.create(),
+        -Math.cos(pitch) * Math.sin(roll),
+        Math.sin(pitch),
+        -Math.cos(pitch) * Math.cos(roll)
+      );
+
+      const right = vec3.set(vec3.create(), Math.cos(roll), 0, -Math.sin(roll));
+
+      // set to parent position manually
+      vec3.copy(_vec3, position);
+
+      // add forward vector
+      vec3.add(_vec3, _vec3, forward);
+
+      vec3.copy(Transform.position[animation.debugEid], _vec3);
+
+      const angle = radToDeg(vec3.angle(vel, forward));
+      const angle2 = radToDeg(vec3.angle(vel, right));
+
+      // TODO: blend walking with strafing
+      const movingForward = angle < 90;
+      const movingBackward = angle > 100;
+      const strafingLeft = angle2 > 120;
+      const strafingRight = angle2 < 50;
 
       if (!turnCounterObj[eid]) turnCounterObj[eid] = 0;
 
       const turningLeft = xRot === 0 ? yRot > yRotLast : yRot < yRotLast;
       const turningRight = xRot === 0 ? yRot < yRotLast : yRot > yRotLast;
-
-      const movingForward = yRot < 0 ? linvel.x > 0 : linvel.x < 0;
-      const movingBackward = yRot < 0 ? linvel.x < 0 : linvel.x > 0;
 
       let speed = 1;
 
@@ -139,13 +205,25 @@ export function AnimationSystem(ctx: GameState) {
             clip = animation.threeResource.animations.find((c) => c.name === "Idle");
           }
         } else if (len < walkThreshold) {
-          if (movingForward) {
+          if (strafingLeft) {
+            clip = animation.threeResource.animations.find((c) => c.name === "StrafeLeft");
+          } else if (strafingRight) {
+            clip = animation.threeResource.animations.find((c) => c.name === "StrafeRight");
+          } else if (movingForward) {
             clip = animation.threeResource.animations.find((c) => c.name === "Walk");
           } else if (movingBackward) {
             clip = animation.threeResource.animations.find((c) => c.name === "WalkBack");
           }
         } else {
-          clip = animation.threeResource.animations.find((c) => c.name === "Run");
+          if (strafingLeft) {
+            clip = animation.threeResource.animations.find((c) => c.name === "StrafeLeftRun");
+          } else if (strafingRight) {
+            clip = animation.threeResource.animations.find((c) => c.name === "StrafeRightRun");
+          } else if (movingForward) {
+            clip = animation.threeResource.animations.find((c) => c.name === "Run");
+          } else if (movingBackward) {
+            clip = animation.threeResource.animations.find((c) => c.name === "RunBack");
+          }
         }
 
         // crossfade to new clip

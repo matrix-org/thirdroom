@@ -22,7 +22,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../engine/material/material.game";
-import { createCube, createSphereMesh } from "../engine/mesh/mesh.game";
+import { createPhysicsCube, createSphereMesh } from "../engine/mesh/mesh.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
@@ -63,7 +63,7 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
     registerPrefab(ctx, {
       name: "crate",
       create: () => {
-        const eid = createCube(ctx, 1, cubeMaterial);
+        const eid = createPhysicsCube(ctx, 1, cubeMaterial);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,

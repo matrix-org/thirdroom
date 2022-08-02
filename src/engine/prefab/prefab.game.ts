@@ -1,7 +1,7 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { createCube } from "../mesh/mesh.game";
+import { createPhysicsCube } from "../mesh/mesh.game";
 import { defineModule, getModule } from "../module/module.common";
 
 interface PrefabModuleState {
@@ -65,7 +65,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
 
 // TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
 // add component+system for loading and swapping the prefab
-export const createLoadingEntity = createCube;
+export const createLoadingEntity = createPhysicsCube;
 
 export const createPrefabEntity = (state: GameState, prefab: string) => {
   const prefabModule = getModule(state, PrefabModule);

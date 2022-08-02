@@ -387,7 +387,7 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
 
 const COLLISION_GROUPS = 0xffff_ffff;
 
-export const createCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = ctx;
   const { physicsWorld } = getModule(ctx, PhysicsModule);
   const eid = addEntity(world);
@@ -414,6 +414,24 @@ export const createCube = (ctx: GameState, size: number, material?: RemoteMateri
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
+
+  return eid;
+};
+
+export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+  const { world } = ctx;
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+
+  createRemoteStandardMaterial(ctx, {
+    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+    roughnessFactor: 0.8,
+    metallicFactor: 0.8,
+  });
+
+  addRemoteNodeComponent(ctx, eid, {
+    mesh: createCubeMesh(ctx, size, material),
+  });
 
   return eid;
 };
