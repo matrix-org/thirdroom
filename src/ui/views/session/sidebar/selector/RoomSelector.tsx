@@ -28,6 +28,7 @@ interface RoomSelectorProps {
 export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelectorProps) {
   const [focused, setFocused] = useState(false);
   const eventEntry = useRecentMessage(room);
+
   const {
     open: openMember,
     setOpen: setMemberOpen,
@@ -69,9 +70,9 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
               <NotificationBadge content={room.notificationCount > 0 ? room.notificationCount : undefined} />
             )}
           </div>
-          {eventEntry?.event.content?.body && (
+          {eventEntry?.content?.body && (
             <Text variant="b3" className="truncate">
-              {`${eventEntry.displayName}: ${eventEntry.event.content.body}`}
+              {`${eventEntry.displayName}: ${eventEntry.content.body}`}
             </Text>
           )}
         </>

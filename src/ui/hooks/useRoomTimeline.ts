@@ -3,10 +3,11 @@ import { Room, Timeline } from "@thirdroom/hydrogen-view-sdk";
 
 export type TimelineType = Array<any>;
 
-export function useRoomTimeline(room: Room) {
+export function useRoomTimeline(room?: Room) {
   const [timeline, setTimeline] = useState<TimelineType>([]);
 
   useEffect(() => {
+    if (!room) return;
     let unSub: () => void;
     const handleLoad = (timeline: Timeline) => {
       const entries = timeline.entries;
