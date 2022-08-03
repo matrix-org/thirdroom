@@ -18,7 +18,7 @@ function useRecentMessages(room?: Room, maxCount = 5) {
   const eventEntry = useRecentMessage(room);
   const prevEventEntry = usePreviousState(eventEntry);
 
-  if (eventEntry && eventEntry !== prevEventEntry) {
+  if (prevEventEntry && eventEntry && eventEntry !== prevEventEntry) {
     if (eventsRef.current.length >= maxCount) {
       eventsRef.current.shift();
     }
