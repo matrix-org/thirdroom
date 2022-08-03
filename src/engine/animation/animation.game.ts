@@ -5,8 +5,6 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quatern
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { radToDeg } from "three/src/math/MathUtils";
 
-// TODO: remove dependency on plugin
-import { createInteractionGroup, PhysicsGroups } from "../../plugins/PhysicsCharacterController";
 import { Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
@@ -76,7 +74,7 @@ const _vel = vec3.create();
 const _forward = vec3.create();
 const _right = vec3.create();
 
-export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~0b1);
+export const CharacterShapecastInteractionGroup = 0xf00f_f00f;
 const colliderShape = new Capsule(0.5, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
@@ -98,7 +96,8 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
   );
 
   // TODO: tune collider group instead of detecting self
-  const isGrounded = !!shapeCastResult && shapeCastResult.colliderHandle !== body.handle;
+  const colliderHandle = body.collider(0);
+  const isGrounded = !!shapeCastResult && shapeCastResult.colliderHandle !== colliderHandle;
 
   return isGrounded;
 };
@@ -106,7 +105,8 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
 const idleThreshold = 0.5;
 const walkThreshold = 10;
 
-const fadeWeightAmount = 0.1;
+const fadeInAmount = 0.1;
+const fadeOutAmount = fadeInAmount / 2;
 
 const lastYrot = new Float32Array(maxEntities);
 
@@ -154,13 +154,13 @@ function processAnimations(ctx: GameState) {
     const rigidBody = RigidBody.store.get(parent);
 
     if (animation && rigidBody) {
-      reduceClipActionWeights(animation.actions.values(), fadeWeightAmount / 2);
+      reduceClipActionWeights(animation.actions.values(), fadeOutAmount);
 
       const actions = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, eid, animation);
 
       synchronizeClipActions(actions);
 
-      increaseClipActionWeights(actions, fadeWeightAmount);
+      increaseClipActionWeights(actions, fadeInAmount);
 
       animation.mixer.update(ctx.dt);
     }
