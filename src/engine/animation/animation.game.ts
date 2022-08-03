@@ -290,7 +290,8 @@ function getClipActionsUsingVelocity(
       clipsToPlay.push(AnimationClipType.StrafeLeftRun);
     } else if (strafingRight) {
       clipsToPlay.push(AnimationClipType.StrafeRightRun);
-    } else if (movingForward) {
+    }
+    if (movingForward) {
       clipsToPlay.push(AnimationClipType.Run);
     } else if (movingBackward) {
       clipsToPlay.push(AnimationClipType.RunBack);
