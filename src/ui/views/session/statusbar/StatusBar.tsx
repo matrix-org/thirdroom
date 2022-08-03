@@ -48,7 +48,6 @@ function useNotifications(session: Session) {
     }, 5000);
   }
 
-  console.log(notifCount, { ...prevDataRef.current });
   const prevCount = prevDataRef.current.count;
   return {
     notifCount: notifCount,
