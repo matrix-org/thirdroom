@@ -66,7 +66,7 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
         <>
           <div className="flex items-center gap-xxs">
             <RoomTileTitle className="grow">{room.name || "Empty room"}</RoomTileTitle>
-            {room.isUnread && (
+            {(room.isUnread || room.notificationCount > 0) && (
               <NotificationBadge content={room.notificationCount > 0 ? room.notificationCount : undefined} />
             )}
           </div>
