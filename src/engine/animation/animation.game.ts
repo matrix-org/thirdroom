@@ -95,9 +95,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
     CharacterShapecastInteractionGroup
   );
 
-  // TODO: tune collider group instead of detecting self
-  const colliderHandle = body.collider(0);
-  const isGrounded = !!shapeCastResult && shapeCastResult.colliderHandle !== colliderHandle;
+  const isGrounded = !!shapeCastResult;
 
   return isGrounded;
 };
