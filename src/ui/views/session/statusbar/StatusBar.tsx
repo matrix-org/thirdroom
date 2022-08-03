@@ -48,17 +48,22 @@ function useNotifications(session: Session) {
     }, 5000);
   }
 
+  console.log(notifCount, { ...prevDataRef.current });
+  const prevCount = prevDataRef.current.count;
   return {
     notifCount: notifCount,
-    eventEntry: prevDataRef.current.count ? prevDataRef.current.eventEntry : undefined,
+    eventEntry: prevCount !== undefined && notifCount > prevCount ? prevDataRef.current.eventEntry : undefined,
+    roomId: rooms[0]?.id,
   };
 }
 export function NotificationButton({ onClick }: { onClick: () => void }) {
   const { session, platform } = useHydrogen(true);
-  const { notifCount, eventEntry } = useNotifications(session);
+  const { notifCount, eventEntry, roomId } = useNotifications(session);
+  const { selectChat } = useStore((state) => state.overlayChat);
 
   const handleNotificationClick = () => {
     onClick();
+    if (eventEntry) selectChat(roomId);
   };
 
   return (
