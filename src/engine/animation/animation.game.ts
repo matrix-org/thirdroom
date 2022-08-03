@@ -1,72 +1,49 @@
-import { addComponent, defineQuery, IWorld, removeComponent } from "bitecs";
+import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
+import { addComponent, defineQuery, enterQuery, IWorld, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
-import { AnimationAction, AnimationClip, AnimationMixer, Bone } from "three";
+import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { radToDeg } from "three/src/math/MathUtils";
 
 // TODO: remove dependency on plugin
-import { setEulerFromQuaternion, Transform } from "../component/transform";
+import { createInteractionGroup, PhysicsGroups } from "../../plugins/PhysicsCharacterController";
+import { Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
-import { RigidBody } from "../physics/physics.game";
+import { getModule } from "../module/module.common";
+import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
 export interface IAnimationComponent {
   threeResource: GLTF;
   mixer: AnimationMixer;
   clips: AnimationClip[];
   lastClip?: AnimationClip;
-  actions: AnimationAction[];
+  actions: Map<String, AnimationAction>;
+}
+
+export enum AnimationClipType {
+  Fall2 = "Fall2",
+  Fall1 = "Fall1",
+  TurnLeft = "TurnLeft",
+  TurnRight = "TurnRight",
+  Idle = "Idle",
+  StrafeLeft = "StrafeLeft",
+  StrafeRight = "StrafeRight",
+  Walk = "Walk",
+  WalkBack = "WalkBack",
+  StrafeLeftRun = "StrafeLeftRun",
+  StrafeRightRun = "StrafeRightRun",
+  Run = "Run",
+  RunBack = "RunBack",
 }
 
 export const AnimationComponent = new Map<number, IAnimationComponent>();
 export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
-// const enterAnimationQuery = enterQuery(animationQuery);
+const enterAnimationQuery = enterQuery(animationQuery);
 // const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
-
-const _vec3 = vec3.create();
-const _forward = vec3.create();
-const _right = vec3.create();
-
-// TODO: grounded shapecast for simpler jump detection
-// export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~0b1);
-// const colliderShape = new Capsule(0.5, 0.5);
-// const shapeTranslationOffset = new Vector3(0, 0, 0);
-// const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
-// const shapeCastPosition = new Vector3();
-// const shapeCastRotation = new Quaternion();
-// const _obj = new Object3D();
-
-// const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
-//   shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
-//   shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
-
-//   const shapeCastResult = physicsWorld.castShape(
-//     shapeCastPosition,
-//     shapeCastRotation,
-//     physicsWorld.gravity,
-//     colliderShape,
-//     ctx.dt,
-//     CharacterShapecastInteractionGroup
-//   );
-
-//   console.log(shapeCastResult);
-
-//   const isGrounded = !!shapeCastResult;
-
-//   return isGrounded;
-// };
-
-const fadeTime = 0.5;
-const idleThreshold = 0.5;
-const walkThreshold = 10;
-const turnCounterAmount = 16;
-
-const turnCounterObj: { [key: number]: number } = {};
-
-const lastYrot = new Float32Array(maxEntities);
 
 /*
 
@@ -90,13 +67,82 @@ notes on calculating forward/up/right:
 */
 
 export function AnimationSystem(ctx: GameState) {
-  // const { physicsWorld } = getModule(ctx, PhysicsModule);
-  // const entered = enterAnimationQuery(ctx.world);
-  // for (let i = 0; i < entered.length; i++) {
-  //   const eid = entered[i];
+  initializeAnimations(ctx);
+  processAnimations(ctx);
+  syncBones(ctx);
+}
+
+const _vel = vec3.create();
+const _forward = vec3.create();
+const _right = vec3.create();
+
+export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~0b1);
+const colliderShape = new Capsule(0.5, 0.5);
+const shapeTranslationOffset = new Vector3(0, 0, 0);
+const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
+const shapeCastPosition = new Vector3();
+const shapeCastRotation = new Quaternion();
+const _obj = new Object3D();
+
+const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
+  shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
+  shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
+
+  const shapeCastResult = physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    physicsWorld.gravity,
+    colliderShape,
+    ctx.dt,
+    CharacterShapecastInteractionGroup
+  );
+
+  // TODO: tune collider group instead of detecting self
+  const isGrounded = !!shapeCastResult && shapeCastResult.colliderHandle !== body.handle;
+
+  return isGrounded;
+};
+
+const idleThreshold = 0.5;
+const walkThreshold = 10;
+
+const fadeWeightAmount = 0.1;
+
+const lastYrot = new Float32Array(maxEntities);
+
+function syncBones(ctx: GameState) {
+  // for (let i = 0; i < ents.length; i++) {
+  //   const eid = ents[i];
+  //   const node = RemoteNodeComponent.get(eid);
   //   const animation = AnimationComponent.get(eid);
+
+  //   if (animation) {
+  //     const skinnedMesh = animation.threeResource.scene.children[1];
+  //   }
+
+  //   if (node && node.skinnedMesh) {
+  //     // const boneMatrices = node.skinnedMesh.object3D.boneMatrices;
+  //     // Copy boneMatrices to skinnedMesh triple buffer
+  //   }
   // }
 
+  // sync bone positions
+  // TODO: Remove this once copying to boneMatrices
+  const bones = boneQuery(ctx.world);
+  for (let i = 0; i < bones.length; i++) {
+    const eid = bones[i];
+    const bone = BoneComponent.get(eid);
+    if (bone) {
+      const p = Transform.position[eid];
+      const q = Transform.quaternion[eid];
+      bone.position.toArray(p);
+      bone.quaternion.toArray(q);
+    }
+  }
+}
+
+function processAnimations(ctx: GameState) {
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
@@ -108,165 +154,156 @@ export function AnimationSystem(ctx: GameState) {
     const rigidBody = RigidBody.store.get(parent);
 
     if (animation && rigidBody) {
-      const position = Transform.position[parent];
-      const quaternion = Transform.quaternion[parent];
-      const rotation = Transform.rotation[parent];
+      reduceClipActionWeights(animation.actions.values(), fadeWeightAmount / 2);
 
-      setEulerFromQuaternion(rotation, quaternion);
+      const actions = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, eid, animation);
 
-      // console.log(isGrounded(ctx, physicsWorld, rigidBody));
+      synchronizeClipActions(actions);
 
-      const linvel = rigidBody.linvel();
-      const vel: Float32Array = new Float32Array([linvel.x, linvel.y, linvel.z]);
-      const len = linvel.x ** 2 + linvel.z ** 2;
+      increaseClipActionWeights(actions, fadeWeightAmount);
 
-      const yRot = rotation[1];
-      const xRot = rotation[0];
-      const yRotLast = lastYrot[eid];
+      animation.mixer.update(ctx.dt);
+    }
+  }
+  return ents;
+}
 
-      const [x, y, z, w] = quaternion;
-      const roll = Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
-      const pitch = Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
-      // const yaw = Math.asin(2 * x * y + 2 * z * w);
+function initializeAnimations(ctx: GameState) {
+  const entered = enterAnimationQuery(ctx.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    const animation = AnimationComponent.get(eid);
 
-      // TODO: figure out why roll is yaw and algo is inverted
-      /* 
-      correct algo:
-      const x = Math.cos(pitch) * Math.sin(yaw);
-      const y = -Math.sin(pitch);
-      const z = Math.cos(pitch) * Math.cos(yaw);
-      */
-      const forward = vec3.set(
-        _forward,
-        -Math.cos(pitch) * Math.sin(roll),
-        Math.sin(pitch),
-        -Math.cos(pitch) * Math.cos(roll)
-      );
+    if (animation) {
+      animation.actions = animation.clips.reduce((map, clip) => {
+        const action = animation.mixer.clipAction(clip).play();
+        map.set(clip.name, action);
+        return map;
+      }, new Map<String, AnimationAction>());
 
-      const right = vec3.set(_right, Math.cos(roll), 0, -Math.sin(roll));
+      // TODO: construct threejs scene graph by traversing entity
+    }
+  }
+}
 
-      // set to parent position manually
-      vec3.copy(_vec3, position);
+function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
+  for (const action of actions) {
+    if (action.weight < 1) {
+      action.weight += amount;
+    }
+  }
+}
 
-      // add forward vector
-      vec3.add(_vec3, _vec3, forward);
+function reduceClipActionWeights(actions: IterableIterator<AnimationAction>, amount: number) {
+  for (const action of actions) {
+    if (action.weight > 0) {
+      action.weight -= amount;
+    }
+  }
+}
 
-      const angle = radToDeg(vec3.angle(vel, forward));
-      const angle2 = radToDeg(vec3.angle(vel, right));
+function synchronizeClipActions(actions: AnimationAction[]) {
+  for (let i = 0; i < actions.length; i++) {
+    const actionA = actions[i];
+    const actionB = actions[i - 1];
+    if (actionA && actionB) actionA.syncWith(actionB);
+  }
+}
 
-      // TODO: blend walking with strafing when moving diagonally
-      const movingForward = angle < 90;
-      const movingBackward = angle > 100;
-      const strafingLeft = angle2 > 120;
-      const strafingRight = angle2 < 50;
+function getClipActionsUsingVelocity(
+  ctx: GameState,
+  physicsWorld: RAPIER.World,
+  parent: number,
+  rigidBody: RAPIER.RigidBody,
+  eid: number,
+  animation: IAnimationComponent
+): AnimationAction[] {
+  const quaternion = Transform.quaternion[parent];
 
-      if (!turnCounterObj[eid]) turnCounterObj[eid] = 0;
+  const linvel = rigidBody.linvel();
+  const vel = vec3.set(_vel, linvel.x, linvel.y, linvel.z);
+  const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
-      const turningLeft = xRot === 0 ? yRot > yRotLast : yRot < yRotLast;
-      const turningRight = xRot === 0 ? yRot < yRotLast : yRot > yRotLast;
+  const [x, y, z, w] = quaternion;
+  const roll = Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
+  const pitch = Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
+  // const yaw = Math.asin(2 * x * y + 2 * z * w);
 
-      let speed = 1;
+  // TODO: figure out why roll is yaw and algo is inverted
+  /*
+  correct algo:
+  const x = Math.cos(pitch) * Math.sin(yaw);
+  const y = -Math.sin(pitch);
+  const z = Math.cos(pitch) * Math.cos(yaw);
+  */
+  const forward = vec3.set(
+    _forward,
+    -Math.cos(pitch) * Math.sin(roll),
+    Math.sin(pitch),
+    -Math.cos(pitch) * Math.cos(roll)
+  );
 
-      // choose clip based on velocity
-      let clip: AnimationClip | undefined;
-      if (turnCounterObj[eid] === 0) {
-        if (linvel.y < -20) {
-          clip = animation.threeResource.animations.find((c) => c.name === "Fall2");
-        } else if (Math.abs(linvel.y) > 0.5) {
-          clip = animation.threeResource.animations.find((c) => c.name === "Fall1");
-        } else if (len < idleThreshold) {
-          if (turningLeft) {
-            clip = animation.threeResource.animations.find((c) => c.name === "TurnLeft");
-            speed += Math.abs(yRot - yRotLast) * 42;
-            if (speed < 2) turnCounterObj[eid] += turnCounterAmount;
-            else {
-              turnCounterObj[eid] += Math.round(turnCounterAmount / 10);
-              speed *= 1.8;
-            }
-          } else if (turningRight) {
-            clip = animation.threeResource.animations.find((c) => c.name === "TurnRight");
-            speed += Math.abs(yRot - yRotLast) * 42;
-            if (speed < 2) turnCounterObj[eid] -= turnCounterAmount;
-            else {
-              turnCounterObj[eid] -= Math.round(turnCounterAmount / 10);
-              speed *= 1.8;
-            }
-          } else {
-            clip = animation.threeResource.animations.find((c) => c.name === "Idle");
-          }
-        } else if (len < walkThreshold) {
-          if (strafingLeft) {
-            clip = animation.threeResource.animations.find((c) => c.name === "StrafeLeft");
-          } else if (strafingRight) {
-            clip = animation.threeResource.animations.find((c) => c.name === "StrafeRight");
-          } else if (movingForward) {
-            clip = animation.threeResource.animations.find((c) => c.name === "Walk");
-          } else if (movingBackward) {
-            clip = animation.threeResource.animations.find((c) => c.name === "WalkBack");
-          }
-        } else {
-          if (strafingLeft) {
-            clip = animation.threeResource.animations.find((c) => c.name === "StrafeLeftRun");
-          } else if (strafingRight) {
-            clip = animation.threeResource.animations.find((c) => c.name === "StrafeRightRun");
-          } else if (movingForward) {
-            clip = animation.threeResource.animations.find((c) => c.name === "Run");
-          } else if (movingBackward) {
-            clip = animation.threeResource.animations.find((c) => c.name === "RunBack");
-          }
-        }
+  const right = vec3.set(_right, Math.cos(roll), 0, -Math.sin(roll));
 
-        // crossfade to new clip
-        if (clip && animation.lastClip !== clip) {
-          const lastClip = animation.lastClip;
+  const angle = radToDeg(vec3.angle(vel, forward));
+  const angle2 = radToDeg(vec3.angle(vel, right));
 
-          const currentAction = animation.mixer.clipAction(clip);
-          if (lastClip) {
-            const lastAction = animation.mixer.clipAction(lastClip);
+  const movingForward = angle < 50;
+  const movingBackward = angle > 120;
+  const strafingLeft = angle2 > 120;
+  const strafingRight = angle2 < 50;
 
-            currentAction.syncWith(lastAction);
-            const ratio = clip.duration / lastClip.duration;
-            currentAction.time = lastAction.time * ratio;
+  const yRot = roll;
+  const yRotLast = lastYrot[eid];
+  const turningLeft = yRot - yRotLast > 0.0001;
+  const turningRight = yRot - yRotLast < -0.0001;
 
-            currentAction.enabled = true;
-            lastAction.crossFadeTo(currentAction, fadeTime, true).play();
+  const jumping = !isGrounded(ctx, physicsWorld, rigidBody);
 
-            // falling down
-            if (
-              linvel.y < 0 &&
-              clip.name === "Fall1" &&
-              (lastClip.name === "Idle" || lastClip.name === "Walk" || lastClip.name === "Run")
-            ) {
-              currentAction.setEffectiveTimeScale(1).fadeOut(fadeTime * 8);
-            }
-          } else currentAction.fadeIn(fadeTime).play();
-        }
-        animation.lastClip = clip;
-      }
-
-      animation.mixer.update(ctx.dt * speed);
-
-      if (turnCounterObj[eid] < 0) turnCounterObj[eid]++;
-      else if (turnCounterObj[eid] > 0) turnCounterObj[eid]--;
-
-      if (yRotLast !== yRot) {
-        lastYrot[eid] = yRot;
-      }
+  // choose clip based on velocity
+  const clipsToPlay: string[] = [];
+  if (linvel.y < -20) {
+    clipsToPlay.push(AnimationClipType.Fall2);
+  } else if (jumping) {
+    clipsToPlay.push(AnimationClipType.Fall1);
+  } else if (totalSpeed < idleThreshold) {
+    if (turningLeft) {
+      clipsToPlay.push(AnimationClipType.TurnLeft);
+    } else if (turningRight) {
+      clipsToPlay.push(AnimationClipType.TurnRight);
+    } else {
+      clipsToPlay.push(AnimationClipType.Idle);
+    }
+  } else if (totalSpeed < walkThreshold) {
+    if (strafingLeft) {
+      clipsToPlay.push(AnimationClipType.StrafeLeft);
+    } else if (strafingRight) {
+      clipsToPlay.push(AnimationClipType.StrafeRight);
+    }
+    if (movingForward) {
+      clipsToPlay.push(AnimationClipType.Walk);
+    } else if (movingBackward) {
+      clipsToPlay.push(AnimationClipType.WalkBack);
+    }
+  } else {
+    if (strafingLeft) {
+      clipsToPlay.push(AnimationClipType.StrafeLeftRun);
+    } else if (strafingRight) {
+      clipsToPlay.push(AnimationClipType.StrafeRightRun);
+    } else if (movingForward) {
+      clipsToPlay.push(AnimationClipType.Run);
+    } else if (movingBackward) {
+      clipsToPlay.push(AnimationClipType.RunBack);
     }
   }
 
-  // sync bone positions
-  const bones = boneQuery(ctx.world);
-  for (let i = 0; i < bones.length; i++) {
-    const eid = bones[i];
-    const bone = BoneComponent.get(eid);
-    if (bone) {
-      const p = Transform.position[eid];
-      const q = Transform.quaternion[eid];
-      p.set(bone.position.toArray());
-      q.set(bone.quaternion.toArray());
-    }
+  if (yRotLast !== yRot) {
+    lastYrot[eid] = yRot;
   }
+
+  return animation.threeResource.animations
+    .filter((clip) => clipsToPlay.includes(clip.name))
+    .map((clip) => animation.actions.get(clip.name)!);
 }
 
 export function addAnimationComponent(world: IWorld, eid: number, props?: any) {
