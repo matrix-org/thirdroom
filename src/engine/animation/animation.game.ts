@@ -74,7 +74,8 @@ const _vel = vec3.create();
 const _forward = vec3.create();
 const _right = vec3.create();
 
-export const CharacterShapecastInteractionGroup = 0xf00f_f00f;
+// TODO: reuse isGrounded for char controller
+const interactionGroup = 0xf00f_f00f;
 const colliderShape = new Capsule(0.5, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
@@ -92,7 +93,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
     physicsWorld.gravity,
     colliderShape,
     ctx.dt,
-    CharacterShapecastInteractionGroup
+    interactionGroup
   );
 
   const isGrounded = !!shapeCastResult;
@@ -103,10 +104,59 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
 const idleThreshold = 0.5;
 const walkThreshold = 10;
 
-const fadeInAmount = 0.1;
+const fadeInAmount = 8;
 const fadeOutAmount = fadeInAmount / 2;
 
 const lastYrot = new Float32Array(maxEntities);
+
+function initializeAnimations(ctx: GameState) {
+  const entered = enterAnimationQuery(ctx.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    const animation = AnimationComponent.get(eid);
+
+    if (animation) {
+      animation.actions = animation.clips.reduce((map, clip) => {
+        const action = animation.mixer.clipAction(clip).play();
+        map.set(clip.name, action);
+        return map;
+      }, new Map<String, AnimationAction>());
+
+      // TODO: construct threejs scene graph by traversing entity
+      // traverseRecursive(eid, (e) => {});
+    }
+  }
+}
+
+function processAnimations(ctx: GameState) {
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const ents = animationQuery(ctx.world);
+  for (let i = 0; i < ents.length; i++) {
+    const eid = ents[i];
+    // animation component exists on the inner avatar entity
+    const animation = AnimationComponent.get(eid);
+
+    // avatars exist within a parent container which has all other components for this entity
+    const parent = Transform.parent[eid] || eid;
+    const rigidBody = RigidBody.store.get(parent);
+
+    if (animation && rigidBody) {
+      // collectively fade all animations out each frame
+      const allActions = animation.actions.values();
+      reduceClipActionWeights(allActions, fadeOutAmount * ctx.dt);
+
+      // select actions to play based on velocity
+      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, eid, animation);
+      // synchronize selected clip action times
+      synchronizeClipActions(actionsToPlay);
+      // fade in selected animations
+      increaseClipActionWeights(actionsToPlay, fadeInAmount * ctx.dt);
+
+      animation.mixer.update(ctx.dt);
+    }
+  }
+  return ents;
+}
 
 function syncBones(ctx: GameState) {
   // for (let i = 0; i < ents.length; i++) {
@@ -135,51 +185,6 @@ function syncBones(ctx: GameState) {
       const q = Transform.quaternion[eid];
       bone.position.toArray(p);
       bone.quaternion.toArray(q);
-    }
-  }
-}
-
-function processAnimations(ctx: GameState) {
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
-  const ents = animationQuery(ctx.world);
-  for (let i = 0; i < ents.length; i++) {
-    const eid = ents[i];
-    // animation component exists on the inner avatar entity
-    const animation = AnimationComponent.get(eid);
-
-    // avatars exist within a parent container which has all other components for this entity
-    const parent = Transform.parent[eid] || eid;
-    const rigidBody = RigidBody.store.get(parent);
-
-    if (animation && rigidBody) {
-      reduceClipActionWeights(animation.actions.values(), fadeOutAmount);
-
-      const actions = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, eid, animation);
-
-      synchronizeClipActions(actions);
-
-      increaseClipActionWeights(actions, fadeInAmount);
-
-      animation.mixer.update(ctx.dt);
-    }
-  }
-  return ents;
-}
-
-function initializeAnimations(ctx: GameState) {
-  const entered = enterAnimationQuery(ctx.world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-    const animation = AnimationComponent.get(eid);
-
-    if (animation) {
-      animation.actions = animation.clips.reduce((map, clip) => {
-        const action = animation.mixer.clipAction(clip).play();
-        map.set(clip.name, action);
-        return map;
-      }, new Map<String, AnimationAction>());
-
-      // TODO: construct threejs scene graph by traversing entity
     }
   }
 }
@@ -253,13 +258,14 @@ function getClipActionsUsingVelocity(
 
   const yRot = roll;
   const yRotLast = lastYrot[eid];
-  const turningLeft = yRot - yRotLast > 0.0001;
-  const turningRight = yRot - yRotLast < -0.0001;
+  const turningLeft = yRot - yRotLast > 0.1 * ctx.dt;
+  const turningRight = yRot - yRotLast < -0.1 * ctx.dt;
 
   const jumping = !isGrounded(ctx, physicsWorld, rigidBody);
 
   // choose clip based on velocity
   const clipsToPlay: string[] = [];
+
   if (linvel.y < -20) {
     clipsToPlay.push(AnimationClipType.Fall2);
   } else if (jumping) {
