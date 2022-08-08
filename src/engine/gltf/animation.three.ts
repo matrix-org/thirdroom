@@ -109,8 +109,6 @@ class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
   }
 }
 
-// type NumberKeyframeTrack = ThreeNumberKeyframeTrack & { createInterpolant: (result: any) => void };
-
 function getNormalizedComponentScale(constructor: Function) {
   // Reference:
   // https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_mesh_quantization#encoding-quantized-data
@@ -156,7 +154,10 @@ export async function loadGLTFAnimationClip(
     if (target.node !== undefined) {
       const obj3d = indexToObject3D.get(target.node);
       if (obj3d) nodes.push(obj3d);
-      else throw new Error("glTF animation channel parse error: target node's object3d not found for " + target.node);
+      else
+        throw new Error(
+          "glTF animation channel parse error: target node's object3d not found for index " + target.node
+        );
     }
 
     pendingInputAccessors.push(loadGLTFAccessor(ctx, resource, input));
@@ -236,9 +237,6 @@ export async function loadGLTFAnimationClip(
     }
 
     for (let j = 0, jl = targetNames.length; j < jl; j++) {
-      // Map<nodeIndex, { eid: number remoteNode: RemoteNode, bone: Bne }>;
-      // bone.name = `bone-${nodeIndex}`
-
       const track = new TypedKeyframeTrack(
         targetNames[j] + "." + PATH_PROPERTIES[target.path as PATH_PROPERTIES_KEY],
         inputAccessor.attribute.array as any[],
