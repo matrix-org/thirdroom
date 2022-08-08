@@ -118,9 +118,6 @@ function initializeAnimations(ctx: GameState) {
         map.set(clip.name, action);
         return map;
       }, new Map<String, AnimationAction>());
-
-      // TODO: construct threejs scene graph by traversing entity
-      // traverseRecursive(eid, (e) => {});
     }
   }
 }

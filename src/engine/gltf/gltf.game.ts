@@ -244,13 +244,13 @@ async function _inflateGLTFNode(
   const nodeEid = joint ? joint.eid : addEntity(ctx.world);
 
   // create Object3D
-  let obj3d;
+  let obj3d: Object3D;
   if (node.mesh !== undefined && node.skin !== undefined) {
     obj3d = new SkinnedMesh();
   } else if (joint) {
     obj3d = new Bone();
     addComponent(ctx.world, BoneComponent, nodeEid);
-    BoneComponent.set(nodeEid, obj3d);
+    BoneComponent.set(nodeEid, obj3d as Bone);
   } else {
     obj3d = new Object3D();
   }
@@ -333,7 +333,7 @@ async function _inflateGLTFNode(
 
   nodeInflators.push(() => {
     if (parentEid !== undefined) {
-      const childObj3d = eidToObject3D.get(nodeEid);
+      const childObj3d = obj3d;
       const parentObj3d = eidToObject3D.get(parentEid);
       if (!childObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
       if (!parentObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
