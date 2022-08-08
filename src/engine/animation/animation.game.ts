@@ -37,29 +37,7 @@ export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
 const enterAnimationQuery = enterQuery(animationQuery);
-// const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
-
-/*
-
-notes on calculating forward/up/right:
-
-  forward.x =  cos(pitch) * sin(yaw);
-  forward.y = -sin(pitch);
-  forward.z =  cos(pitch) * cos(yaw);
-
-  right.x =  cos(yaw);
-  right.y =  0;
-  right.z = -sin(yaw);
-
-  up = cross(forward, right);
-
-  equivalent:
-  up.x = sin(pitch) * sin(yaw);
-  up.y = cos(pitch);
-  up.z = sin(pitch) * cos(yaw);
-
-*/
 
 export function AnimationSystem(ctx: GameState) {
   initializeAnimations(ctx);
@@ -115,6 +93,7 @@ function initializeAnimations(ctx: GameState) {
     if (animation) {
       animation.actions = animation.clips.reduce((map, clip) => {
         const action = animation.mixer.clipAction(clip).play();
+        action.enabled = false;
         map.set(clip.name, action);
         return map;
       }, new Map<String, AnimationAction>());
@@ -169,6 +148,7 @@ function syncBones(ctx: GameState) {
 
 function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
   for (const action of actions) {
+    action.enabled = true;
     if (action.weight < 1) {
       action.weight += amount;
     }
@@ -179,6 +159,8 @@ function reduceClipActionWeights(actions: IterableIterator<AnimationAction>, amo
   for (const action of actions) {
     if (action.weight > 0) {
       action.weight -= amount;
+    } else {
+      action.enabled = false;
     }
   }
 }
@@ -191,6 +173,24 @@ function synchronizeClipActions(actions: AnimationAction[]) {
   }
 }
 
+/*
+notes on calculating forward/up/right:
+
+  forward.x =  cos(pitch) * sin(yaw);
+  forward.y = -sin(pitch);
+  forward.z =  cos(pitch) * cos(yaw);
+
+  right.x =  cos(yaw);
+  right.y =  0;
+  right.z = -sin(yaw);
+
+  up = cross(forward, right);
+
+  equivalent:
+  up.x = sin(pitch) * sin(yaw);
+  up.y = cos(pitch);
+  up.z = sin(pitch) * cos(yaw);
+*/
 function getClipActionsUsingVelocity(
   ctx: GameState,
   physicsWorld: RAPIER.World,

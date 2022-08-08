@@ -202,7 +202,6 @@ const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
-  // const module = getModule(ctx, CubeSpawnerModule);
   const input = getModule(ctx, InputModule);
 
   const spawnCube = input.actions.get("SpawnCube") as ButtonActionState;
