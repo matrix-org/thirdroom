@@ -195,8 +195,6 @@ export async function inflateGLTFScene(
     inflator();
   }
 
-  console.log("internal loader", group);
-
   if (resource.root.animations) {
     const mixer = new AnimationMixer(group);
     const clips = await Promise.all(
