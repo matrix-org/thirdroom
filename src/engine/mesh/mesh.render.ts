@@ -12,11 +12,8 @@ import {
   Quaternion,
   Matrix4,
   Bone,
-  MeshBasicMaterial,
   SkinnedMesh,
   Skeleton,
-  MeshNormalMaterial,
-  SphereGeometry,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -94,8 +91,8 @@ const ThreeAttributes: { [key: string]: string } = {
   [MeshPrimitiveAttribute.TEXCOORD_0]: "uv",
   [MeshPrimitiveAttribute.TEXCOORD_1]: "uv2",
   [MeshPrimitiveAttribute.COLOR_0]: "color",
-  [MeshPrimitiveAttribute.JOINTS_0]: "skinWeight",
-  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinIndex",
+  [MeshPrimitiveAttribute.JOINTS_0]: "skinIndex",
+  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinWeight",
 };
 
 export async function onLoadLocalMeshPrimitiveResource(
@@ -264,6 +261,7 @@ function createMeshPrimitiveObject(
       const bones = [];
       const boneInverses = [];
 
+      // TODO: remove this and use boneMatrices instead
       for (let j = 0, jl = skinnedMesh.joints.length; j < jl; j++) {
         const jointNode = skinnedMesh.joints[j];
 
@@ -275,41 +273,37 @@ function createMeshPrimitiveObject(
           scene.add(bone);
           setTransformFromNode(ctx, boneReadView, bone);
 
-          const debugBone = ((jointNode as any).debugBone = new Mesh(new SphereGeometry(7), new MeshNormalMaterial()));
-          scene.add(debugBone);
-          setTransformFromNode(ctx, boneReadView, debugBone);
-
-          const mat = new Matrix4();
+          const inverseMatrix = new Matrix4();
 
           if (skinnedMesh.inverseBindMatrices !== undefined) {
-            mat.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
+            inverseMatrix.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
           }
 
-          boneInverses.push(mat);
+          boneInverses.push(inverseMatrix);
         } else {
           throw new Error(`Joint ${skinnedMesh.joints[j]} not found`);
         }
       }
 
-      mesh = new SkinnedMesh(geometryObj, materialObj);
+      const sm = new SkinnedMesh(geometryObj, materialObj);
+
+      mesh = sm;
 
       setTransformFromNode(ctx, nodeReadView, mesh);
 
       const skeleton = new Skeleton(bones, boneInverses);
 
-      (mesh as SkinnedMesh).bind(skeleton, mesh.matrixWorld);
+      sm.bind(skeleton, sm.matrixWorld);
 
-      if (!mesh.geometry.attributes.skinWeight.normalized) {
+      if (!sm.geometry.attributes.skinWeight.normalized) {
         // we normalize floating point skin weight array to fix malformed assets (see #15319)
         // it's important to skip this for non-float32 data since normalizeSkinWeights assumes non-normalized inputs
-        (mesh as SkinnedMesh).normalizeSkinWeights();
+        sm.normalizeSkinWeights();
       }
 
-      if (Object.keys(mesh.geometry.morphAttributes).length > 0) {
-        updateMorphTargets(mesh, primitive as unknown as GLTFMesh);
+      if (Object.keys(sm.geometry.morphAttributes).length > 0) {
+        updateMorphTargets(sm, primitive as unknown as GLTFMesh);
       }
-
-      mesh = new Mesh(new BufferGeometry(), new MeshBasicMaterial({ wireframe: true }));
     } else if (instancedMesh) {
       const attributes = Object.entries(instancedMesh.attributes);
       const count = attributes[0][1].attribute.count;
@@ -492,7 +486,6 @@ export function updateNodeMesh(
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
             updateTransformFromNode(ctx, boneReadView, joint.bone);
-            updateTransformFromNode(ctx, boneReadView, (joint as any).debugBone);
           }
         }
       }
