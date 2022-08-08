@@ -133,17 +133,15 @@ export async function inflateGLTFScene(
   const scene = resource.root.scenes[sceneIndex];
 
   // animation pre-processing
-  if (resource.root.skins && resource.root.nodes && resource.root.meshes && resource.root.animations) {
-    // iterate skins and pre-create entities and resources for joints
+  if (resource.root.skins && resource.root.nodes) {
+    // iterate skins and pre-create entities and resources for joints so bones are available at the creation of the skinnedmesh
     for (const skin of resource.root.skins) {
       for (const jointIndex of skin.joints) {
         let remoteNode = resource.joints.get(jointIndex);
-
         if (!remoteNode) {
           const eid = addEntity(ctx.world);
           remoteNode = addRemoteNodeComponent(ctx, eid);
           resource.joints.set(jointIndex, remoteNode);
-          addComponent(ctx.world, BoneComponent, eid);
         }
       }
     }
@@ -251,6 +249,7 @@ async function _inflateGLTFNode(
     obj3d = new SkinnedMesh();
   } else if (joint) {
     obj3d = new Bone();
+    addComponent(ctx.world, BoneComponent, nodeEid);
     BoneComponent.set(nodeEid, obj3d);
   } else {
     obj3d = new Object3D();
@@ -259,6 +258,9 @@ async function _inflateGLTFNode(
   if (obj3d) {
     eidToObject3D.set(nodeEid, obj3d);
     indexToObject3D.set(nodeIndex, obj3d);
+    if (node.translation) obj3d.position.fromArray(node.translation);
+    if (node.rotation) obj3d.quaternion.fromArray(node.rotation);
+    if (node.scale) obj3d.scale.fromArray(node.scale);
   }
 
   addTransformComponent(ctx.world, nodeEid);
