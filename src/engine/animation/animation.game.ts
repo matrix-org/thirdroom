@@ -2,7 +2,6 @@ import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
 import { addComponent, defineQuery, enterQuery, IWorld, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
-import { GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { radToDeg } from "three/src/math/MathUtils";
 
 import { Transform } from "../component/transform";
@@ -12,10 +11,8 @@ import { getModule } from "../module/module.common";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
 export interface IAnimationComponent {
-  threeResource: GLTF;
   mixer: AnimationMixer;
   clips: AnimationClip[];
-  lastClip?: AnimationClip;
   actions: Map<String, AnimationAction>;
 }
 
@@ -159,23 +156,7 @@ function processAnimations(ctx: GameState) {
 }
 
 function syncBones(ctx: GameState) {
-  // for (let i = 0; i < ents.length; i++) {
-  //   const eid = ents[i];
-  //   const node = RemoteNodeComponent.get(eid);
-  //   const animation = AnimationComponent.get(eid);
-
-  //   if (animation) {
-  //     const skinnedMesh = animation.threeResource.scene.children[1];
-  //   }
-
-  //   if (node && node.skinnedMesh) {
-  //     // const boneMatrices = node.skinnedMesh.object3D.boneMatrices;
-  //     // Copy boneMatrices to skinnedMesh triple buffer
-  //   }
-  // }
-
   // sync bone positions
-  // TODO: Remove this once copying to boneMatrices
   const bones = boneQuery(ctx.world);
   for (let i = 0; i < bones.length; i++) {
     const eid = bones[i];
@@ -306,7 +287,7 @@ function getClipActionsUsingVelocity(
     lastYrot[eid] = yRot;
   }
 
-  return animation.threeResource.animations
+  return animation.clips
     .filter((clip) => clipsToPlay.includes(clip.name))
     .map((clip) => animation.actions.get(clip.name)!);
 }
