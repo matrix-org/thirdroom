@@ -485,7 +485,6 @@ export function updateNodeMesh(
       updateTransformFromNode(ctx, nodeReadView, primitiveObject);
 
       if (node.skinnedMesh) {
-        console.log(node);
         for (const joint of node.skinnedMesh.joints) {
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
