@@ -290,9 +290,10 @@ function createMeshPrimitiveObject(
         skinnedMesh.skeleton = new Skeleton(bones, boneInverses);
       }
 
-      const sm = new SkinnedMesh(geometryObj, materialObj);
+      const sm = (mesh = new SkinnedMesh(geometryObj, materialObj));
 
-      mesh = sm;
+      // TODO: figure out why frustum culling of skinned meshes is affected by the pitch of the camera
+      sm.frustumCulled = false;
 
       setTransformFromNode(ctx, nodeReadView, mesh);
 
