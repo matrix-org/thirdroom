@@ -183,6 +183,7 @@ export interface LocalSkinnedMesh {
   resourceId: ResourceId;
   joints: LocalNode[];
   inverseBindMatrices?: LocalAccessor;
+  skeleton?: Skeleton;
 }
 
 export async function onLoadLocalInstancedMeshResource(
@@ -258,31 +259,35 @@ function createMeshPrimitiveObject(
     let mesh: Mesh | InstancedMesh;
 
     if (skinnedMesh) {
-      const bones = [];
-      const boneInverses = [];
+      if (!skinnedMesh.skeleton) {
+        const bones = [];
+        const boneInverses = [];
 
-      // TODO: remove this and use boneMatrices instead
-      for (let j = 0, jl = skinnedMesh.joints.length; j < jl; j++) {
-        const jointNode = skinnedMesh.joints[j];
+        // TODO: remove this and use boneMatrices instead
+        for (let j = 0, jl = skinnedMesh.joints.length; j < jl; j++) {
+          const jointNode = skinnedMesh.joints[j];
 
-        if (jointNode) {
-          const boneReadView = getReadObjectBufferView(jointNode.rendererNodeTripleBuffer);
+          if (jointNode) {
+            const boneReadView = getReadObjectBufferView(jointNode.rendererNodeTripleBuffer);
 
-          const bone = (jointNode.bone = new Bone());
-          bones.push(bone);
-          scene.add(bone);
-          setTransformFromNode(ctx, boneReadView, bone);
+            const bone = (jointNode.bone = new Bone());
+            bones.push(bone);
+            scene.add(bone);
+            setTransformFromNode(ctx, boneReadView, bone);
 
-          const inverseMatrix = new Matrix4();
+            const inverseMatrix = new Matrix4();
 
-          if (skinnedMesh.inverseBindMatrices !== undefined) {
-            inverseMatrix.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
+            if (skinnedMesh.inverseBindMatrices !== undefined) {
+              inverseMatrix.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
+            }
+
+            boneInverses.push(inverseMatrix);
+          } else {
+            throw new Error(`Joint ${skinnedMesh.joints[j]} not found`);
           }
-
-          boneInverses.push(inverseMatrix);
-        } else {
-          throw new Error(`Joint ${skinnedMesh.joints[j]} not found`);
         }
+
+        skinnedMesh.skeleton = new Skeleton(bones, boneInverses);
       }
 
       const sm = new SkinnedMesh(geometryObj, materialObj);
@@ -291,9 +296,7 @@ function createMeshPrimitiveObject(
 
       setTransformFromNode(ctx, nodeReadView, mesh);
 
-      const skeleton = new Skeleton(bones, boneInverses);
-
-      sm.bind(skeleton, sm.matrixWorld);
+      sm.bind(skinnedMesh.skeleton, sm.matrixWorld);
 
       if (!sm.geometry.attributes.skinWeight.normalized) {
         // we normalize floating point skin weight array to fix malformed assets (see #15319)
@@ -482,6 +485,7 @@ export function updateNodeMesh(
       updateTransformFromNode(ctx, nodeReadView, primitiveObject);
 
       if (node.skinnedMesh) {
+        console.log(node);
         for (const joint of node.skinnedMesh.joints) {
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
