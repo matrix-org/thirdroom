@@ -117,9 +117,11 @@ export const CharacterShapecastInteractionGroup = createInteractionGroup(Physics
 
 const obj = new Object3D();
 
-const walkSpeed = 50;
-const drag = 10;
+const walkSpeed = 60;
+const drag = 30;
 const maxWalkSpeed = 100;
+const maxSprintSpeed = 100;
+const sprintModifier = 3;
 const jumpForce = 10;
 const inAirModifier = 0.5;
 const inAirDrag = 8;
@@ -129,8 +131,6 @@ const minSlideSpeed = 3;
 const slideModifier = 50;
 const slideDrag = 150;
 const slideCooldown = 1;
-const sprintModifier = 1.8;
-const maxSprintSpeed = 25;
 
 const moveForce = new Vector3();
 const dragForce = new Vector3();
@@ -163,7 +163,6 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   network.peerIdToEntityId.set(network.peerId, playerRig);
 
   addComponent(world, PlayerRig, playerRig);
-  Transform.position[playerRig][2] = 50;
 
   addCameraYawTargetComponent(world, playerRig);
 
