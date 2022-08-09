@@ -146,15 +146,6 @@ function syncBones(ctx: GameState) {
   }
 }
 
-function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
-  for (const action of actions) {
-    action.enabled = true;
-    if (action.weight < 1) {
-      action.weight += amount;
-    }
-  }
-}
-
 function reduceClipActionWeights(actions: IterableIterator<AnimationAction>, amount: number) {
   for (const action of actions) {
     if (action.weight > 0) {
@@ -168,8 +159,25 @@ function reduceClipActionWeights(actions: IterableIterator<AnimationAction>, amo
 function synchronizeClipActions(actions: AnimationAction[]) {
   for (let i = 0; i < actions.length; i++) {
     const actionA = actions[i];
-    const actionB = actions[i - 1];
-    if (actionA && actionB) actionA.syncWith(actionB);
+    const actionB = actions[i + 1];
+    if (actionA && actionB) {
+      const ratio = actionA.getClip().duration / actionB.getClip().duration;
+      if (actionA.timeScale < 0 || actionB.timeScale < 0) {
+        actionA.time = 1 - actionB.time * ratio;
+      } else {
+        actionA.time = actionB.time * ratio;
+      }
+    }
+  }
+}
+
+function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
+  for (const action of actions) {
+    action.enabled = true;
+    if (action.weight < 1) {
+      // console.log(action.timeScale);
+      action.weight += amount;
+    }
   }
 }
 
@@ -242,41 +250,59 @@ function getClipActionsUsingVelocity(
   const jumping = !isGrounded(ctx, physicsWorld, rigidBody);
 
   // choose clip based on velocity
-  const clipsToPlay: string[] = [];
+  const actions: AnimationAction[] = [];
 
   if (linvel.y < -20) {
-    clipsToPlay.push(AnimationClipType.Fall2);
+    actions.push(animation.actions.get(AnimationClipType.Fall2)!);
   } else if (jumping) {
-    clipsToPlay.push(AnimationClipType.Fall1);
+    actions.push(animation.actions.get(AnimationClipType.Fall1)!);
   } else if (totalSpeed < idleThreshold) {
     if (turningLeft) {
-      clipsToPlay.push(AnimationClipType.TurnLeft);
+      actions.push(animation.actions.get(AnimationClipType.TurnLeft)!);
     } else if (turningRight) {
-      clipsToPlay.push(AnimationClipType.TurnRight);
+      actions.push(animation.actions.get(AnimationClipType.TurnRight)!);
     } else {
-      clipsToPlay.push(AnimationClipType.Idle);
+      actions.push(animation.actions.get(AnimationClipType.Idle)!);
     }
   } else if (totalSpeed < walkThreshold) {
     if (strafingLeft) {
-      clipsToPlay.push(AnimationClipType.StrafeLeft);
+      actions.push(animation.actions.get(AnimationClipType.StrafeLeft)!);
+      actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      clipsToPlay.push(AnimationClipType.StrafeRight);
+      actions.push(animation.actions.get(AnimationClipType.StrafeRight)!);
+      actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      clipsToPlay.push(AnimationClipType.Walk);
+      actions.push(animation.actions.get(AnimationClipType.Walk)!);
     } else if (movingBackward) {
-      clipsToPlay.push(AnimationClipType.WalkBack);
+      if (strafingLeft) {
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRight)!;
+        actions[actions.length - 1].setEffectiveTimeScale(-1);
+      } else if (strafingRight) {
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeft)!;
+        actions[actions.length - 1].setEffectiveTimeScale(-1);
+      }
+      actions.push(animation.actions.get(AnimationClipType.WalkBack)!);
     }
   } else {
     if (strafingLeft) {
-      clipsToPlay.push(AnimationClipType.StrafeLeftRun);
+      actions.push(animation.actions.get(AnimationClipType.StrafeLeftRun)!);
+      actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      clipsToPlay.push(AnimationClipType.StrafeRightRun);
+      actions.push(animation.actions.get(AnimationClipType.StrafeRightRun)!);
+      actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      clipsToPlay.push(AnimationClipType.Run);
+      actions.push(animation.actions.get(AnimationClipType.Run)!);
     } else if (movingBackward) {
-      clipsToPlay.push(AnimationClipType.RunBack);
+      if (strafingLeft) {
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRightRun)!;
+        actions[actions.length - 1].setEffectiveTimeScale(-1);
+      } else if (strafingRight) {
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeftRun)!;
+        actions[actions.length - 1].setEffectiveTimeScale(-1);
+      }
+      actions.push(animation.actions.get(AnimationClipType.RunBack)!);
     }
   }
 
@@ -284,9 +310,7 @@ function getClipActionsUsingVelocity(
     lastYrot[eid] = yRot;
   }
 
-  return animation.clips
-    .filter((clip) => clipsToPlay.includes(clip.name))
-    .map((clip) => animation.actions.get(clip.name)!);
+  return actions;
 }
 
 export function addAnimationComponent(world: IWorld, eid: number, props?: any) {
