@@ -150,7 +150,13 @@ export function updateLocalNodeResources(
 
       if (node.mesh) {
         if (activeSceneResource && node.meshPrimitiveObjects) {
-          activeSceneResource.scene.remove(...node.meshPrimitiveObjects);
+          for (const primitive of node.meshPrimitiveObjects) {
+            if (primitive instanceof SkinnedMesh) {
+              primitive.skeleton.bones.forEach((bone) => activeSceneResource.scene.remove(bone));
+              primitive.skeleton.dispose();
+            }
+            activeSceneResource.scene.remove(primitive);
+          }
         }
 
         const primitives = node.mesh.primitives;
@@ -169,9 +175,9 @@ export function updateLocalNodeResources(
         node.mesh = undefined;
       }
 
-      // TODO: skinned mesh disposal
-      // if (node.skinnedMesh) {
-      // }
+      if (node.skinnedMesh) {
+        node.skinnedMesh = undefined;
+      }
 
       if (node.light) {
         if (activeSceneResource && node.lightObject) {
