@@ -2,15 +2,16 @@
   publish = "dist/"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
   from = "/.well-known/matrix/client"
   to = "https://matrix.thirdroom.io/.well-known/matrix/client"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 
 [[headers]]
 for = "/*"
