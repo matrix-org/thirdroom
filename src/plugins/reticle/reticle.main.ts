@@ -46,13 +46,13 @@ export const ReticleModule = defineModule<IMainThreadContext, ReticleModuleState
     };
   },
   init(ctx) {
-    const thirdroom = getModule(ctx, ReticleModule);
+    const reticle = getModule(ctx, ReticleModule);
 
     const onReticleFocus = (ctx: IMainThreadContext, message: ReticleFocusMessageType) => {
       if (message.focused) {
-        thirdroom.reticleElement.setAttribute("style", reticleFocusedCss);
+        reticle.reticleElement.setAttribute("style", reticleFocusedCss);
       } else {
-        thirdroom.reticleElement.setAttribute("style", reticleCss);
+        reticle.reticleElement.setAttribute("style", reticleCss);
       }
     };
 
