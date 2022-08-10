@@ -3,7 +3,7 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
-import { hideReticle, showReticle } from "../reticle/reticle.main";
+// import { hideReticle, showReticle } from "../reticle/reticle.main";
 import {
   WorldLoadedMessage,
   WorldLoadErrorMessage,
@@ -85,7 +85,7 @@ export function loadWorld(ctx: IMainThreadContext, url: string) {
 }
 
 export function enterWorld(context: IMainThreadContext) {
-  showReticle(context);
+  // showReticle(context);
 
   context.sendMessage(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
@@ -93,7 +93,7 @@ export function enterWorld(context: IMainThreadContext) {
 }
 
 export function exitWorld(context: IMainThreadContext) {
-  hideReticle(context);
+  // hideReticle(context);
 
   context.sendMessage(Thread.Game, {
     type: ThirdRoomMessageType.ExitWorld,
