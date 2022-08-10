@@ -75,7 +75,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
   const pitchEntities = cameraPitchTargetQuery(world);
 
-  if (Math.abs(lookY) > 1) {
+  if (Math.abs(lookY) >= 1) {
     pitchEntities.forEach((eid) => {
       const rotation = Transform.rotation[eid];
       const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
@@ -97,7 +97,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
   const yawEntities = cameraYawTargetQuery(world);
 
-  if (Math.abs(lookX) > 1) {
+  if (Math.abs(lookX) >= 1) {
     yawEntities.forEach((eid) => {
       const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
       Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
