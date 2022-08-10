@@ -14,7 +14,7 @@ const focusQuery = defineQuery([FocusComponent]);
 const enterFocusQuery = enterQuery(focusQuery);
 const exitFocusQuery = exitQuery(focusQuery);
 
-const MAX_FOCUS_DISTANCE = 100;
+const MAX_FOCUS_DISTANCE = 1.8;
 
 const _target = vec3.create();
 const _cameraWorldQuat = quat.create();
@@ -48,13 +48,10 @@ export function ReticleFocusSystem(ctx: GameState) {
   const solid = true;
   const raycastHit = physics.physicsWorld.castRay(ray, MAX_FOCUS_DISTANCE, solid, collisionGroups);
 
-  let entityNotFound;
-
   if (raycastHit !== null) {
     const eid = physics.handleToEid.get(raycastHit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${raycastHit.colliderHandle}`);
-      entityNotFound = true;
     } else {
       addComponent(ctx.world, FocusComponent, eid);
     }
@@ -65,8 +62,7 @@ export function ReticleFocusSystem(ctx: GameState) {
 
   const entered = enterFocusQuery(ctx.world);
   if (entered[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: true });
-  else if (entityNotFound) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: true, error: true });
 
   const exited = exitFocusQuery(ctx.world);
-  if (exited[0] || entityNotFound == false) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: false });
+  if (exited[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: false });
 }
