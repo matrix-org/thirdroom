@@ -21,7 +21,7 @@ export function RoomTile({ avatar, content, options, isActive = false, isFocused
 
   return (
     <div className={roomTileClass}>
-      <button onClick={onClick} className="grow flex items-center">
+      <button onClick={onClick} className="grow flex items-center gap-sm">
         <div className="RoomTile__avatar shrink-0 flex">{avatar}</div>
         <div className="RoomTile__content grow">{content}</div>
       </button>

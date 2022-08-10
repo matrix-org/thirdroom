@@ -13,20 +13,15 @@
   }
 }
 
-.OpenOverlay {
-  padding: var(--sp-xxs);
-  padding-right: var(--sp-xs);
-  border-radius: var(--br-md);
+.OverlayButton {
+  padding: 0 var(--sp-xs);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+  border-radius: var(--br-xs);
   cursor: pointer;
 
-  & > .Text span {
-    padding: 2px var(--sp-xxs);
-    margin-right: var(--sp-xs);
-    border: 1px solid var(--bg-world-border);
-    border-radius: var(--br-xs);
-    font-size: 8px;
-    line-height: 14px;
-  }
   &:hover {
     background-color: var(--bg-world-hover);
   }

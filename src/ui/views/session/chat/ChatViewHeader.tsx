@@ -17,7 +17,6 @@ interface ChatViewHeaderProps {
 
 export function ChatViewHeader({ room, platform, session, onMinimize, onClose }: ChatViewHeaderProps) {
   const roomName = room.name || "Empty room";
-  console.log(room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, session.mediaRepository) : undefined);
 
   return (
     <ChatHeader
