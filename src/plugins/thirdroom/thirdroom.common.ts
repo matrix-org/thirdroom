@@ -42,4 +42,5 @@ export interface PrintThreadStateMessage {
 export interface GLTFViewerLoadGLTFMessage {
   type: ThirdRoomMessageType.GLTFViewerLoadGLTF;
   url: string;
+  fileMap: Map<string, string>;
 }

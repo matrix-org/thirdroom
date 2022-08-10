@@ -1,3 +1,4 @@
+import { vec2 } from "gl-matrix";
 import {
   Mesh,
   BufferGeometry,
@@ -12,6 +13,10 @@ import {
   Vector3,
   Quaternion,
   Matrix4,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Matrix3,
+  Uniform,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -33,6 +38,7 @@ import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
@@ -41,6 +47,7 @@ import {
   MeshPrimitiveMode,
   MeshPrimitiveTripleBuffer,
   SharedInstancedMeshResource,
+  SharedLightMapResource,
   SharedMeshPrimitiveResource,
   SharedMeshResource,
 } from "./mesh.common";
@@ -199,15 +206,38 @@ export async function onLoadLocalInstancedMeshResource(
   return localInstancedMesh;
 }
 
+export interface LocalLightMap {
+  resourceId: ResourceId;
+  texture: LocalTextureResource;
+  offset: vec2;
+  scale: vec2;
+  intensity: number;
+}
+
+export async function onLoadLocalLightMapResource(
+  ctx: RenderThreadState,
+  resourceId: ResourceId,
+  props: SharedLightMapResource
+): Promise<LocalLightMap> {
+  const lightMapResource = await waitForLocalResource<LocalTextureResource>(ctx, props.texture, "light-map");
+
+  const localLightMap: LocalLightMap = {
+    resourceId,
+    texture: lightMapResource,
+    offset: props.offset,
+    scale: props.scale,
+    intensity: props.intensity,
+  };
+
+  return localLightMap;
+}
+
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 const tempMatrix = new Matrix4();
 
-function createMeshPrimitiveObject(
-  primitive: LocalMeshPrimitive,
-  instancedMesh?: LocalInstancedMesh
-): PrimitiveObject3D {
+function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitive): PrimitiveObject3D {
   let object: PrimitiveObject3D;
 
   const { mode, geometryObj, materialObj } = primitive;
@@ -219,6 +249,7 @@ function createMeshPrimitiveObject(
   ) {
     // todo: skinned mesh
     const isSkinnedMesh = false;
+    const { instancedMesh, lightMap } = node;
 
     let mesh: Mesh | InstancedMesh | SkinnedMesh;
 
@@ -264,6 +295,40 @@ function createMeshPrimitiveObject(
       mesh = instancedMeshObject;
     } else {
       mesh = new Mesh(geometryObj, materialObj);
+
+      if (lightMap) {
+        const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
+
+        const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+
+        if (!material.userData.lightMapTransform) {
+          const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
+          const lightMapTransform = new Uniform(lightMapTransformMatrix);
+
+          material.onBeforeCompile = (shader) => {
+            shader.uniforms.lightMapTransform = lightMapTransform;
+          };
+
+          material.needsUpdate = true;
+
+          material.userData.lightMapTransform = lightMapTransform;
+        }
+
+        // TODO: This still isn't working because the uniforms aren't refreshing in-between draws
+        mesh.onBeforeRender = () => {
+          material.lightMapIntensity = intensity * Math.PI;
+          material.lightMap = lightMapTexture.texture;
+          ((material.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
+            offset[0],
+            offset[1],
+            scale[0],
+            scale[1],
+            0,
+            0,
+            0
+          );
+        };
+      }
     }
 
     if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
@@ -349,7 +414,11 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     }
 
     if (nextMaterialResource && nextMaterialResource.type === MaterialType.Standard) {
-      updateMeshPrimitiveStandardMaterial(meshPrimitive.materialObj as PrimitiveStandardMaterial, nextMaterialResource);
+      updateMeshPrimitiveStandardMaterial(
+        meshPrimitive,
+        meshPrimitive.materialObj as PrimitiveStandardMaterial,
+        nextMaterialResource
+      );
     } else if (nextMaterialResource && nextMaterialResource.type === MaterialType.Unlit) {
       updateMeshPrimitiveUnlitMaterial(meshPrimitive.materialObj as PrimitiveUnlitMaterial, nextMaterialResource);
     }
@@ -388,9 +457,7 @@ export function updateNodeMesh(
   }
 
   if (!node.meshPrimitiveObjects) {
-    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(primitive, node.instancedMesh)
-    );
+    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) => createMeshPrimitiveObject(node, primitive));
     scene.add(...node.meshPrimitiveObjects);
   }
 

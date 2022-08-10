@@ -25,6 +25,7 @@ export const rendererNodeSchema = defineObjectBufferSchema({
   worldMatrix: [Float32Array, 16],
   mesh: [Uint32Array, 1],
   instancedMesh: [Uint32Array, 1],
+  lightMap: [Uint32Array, 1],
   light: [Uint32Array, 1],
   camera: [Uint32Array, 1],
   tilesRenderer: [Uint32Array, 1],

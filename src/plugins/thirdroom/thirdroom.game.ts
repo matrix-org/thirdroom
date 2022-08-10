@@ -227,16 +227,19 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
   try {
-    await loadEnvironment(ctx, message.url);
+    await loadEnvironment(ctx, message.url, message.fileMap);
     loadPlayerRig(ctx);
   } catch (error) {
     console.error(error);
   } finally {
-    URL.revokeObjectURL(message.url);
+    // URL.revokeObjectURL(message.url);
+    // for (const objectUrl of message.fileMap.values()) {
+    //   URL.revokeObjectURL(objectUrl);
+    // }
   }
 }
 
-async function loadEnvironment(ctx: GameState, url: string) {
+async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string, string>) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (ctx.activeScene) {
@@ -266,7 +269,7 @@ async function loadEnvironment(ctx: GameState, url: string) {
     }),
   });
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url);
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap });
 
   thirdroom.sceneGLTF = sceneGltf;
 

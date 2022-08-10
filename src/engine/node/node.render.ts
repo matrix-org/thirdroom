@@ -20,7 +20,7 @@ import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
-import { LocalInstancedMesh, LocalMesh, updateNodeMesh } from "../mesh/mesh.render";
+import { LocalInstancedMesh, LocalLightMap, LocalMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -38,6 +38,7 @@ export interface LocalNode {
   rendererNodeTripleBuffer: RendererNodeTripleBuffer;
   mesh?: LocalMesh;
   instancedMesh?: LocalInstancedMesh;
+  lightMap?: LocalLightMap;
   meshPrimitiveObjects?: PrimitiveObject3D[];
   camera?: LocalCameraResource;
   cameraObject?: PerspectiveCamera | OrthographicCamera;
@@ -60,6 +61,7 @@ export async function onLoadLocalNode(
     instancedMesh: nodeView.instancedMesh[0]
       ? waitForLocalResource<LocalInstancedMesh>(ctx, nodeView.instancedMesh[0])
       : undefined,
+    lightMap: nodeView.lightMap[0] ? waitForLocalResource<LocalLightMap>(ctx, nodeView.lightMap[0]) : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
   });
@@ -69,6 +71,7 @@ export async function onLoadLocalNode(
     rendererNodeTripleBuffer,
     mesh: resources.mesh,
     instancedMesh: resources.instancedMesh,
+    lightMap: resources.lightMap,
     camera: resources.camera,
     light: resources.light,
   };

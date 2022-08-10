@@ -1,5 +1,6 @@
-import { ACESFilmicToneMapping, ImageBitmapLoader, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
+import { ImageBitmapLoader, LinearToneMapping, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { RGBMLoader } from "three/examples/jsm/loaders/RGBMLoader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
@@ -48,13 +49,19 @@ import {
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
-import { InstancedMeshResourceType, MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import {
+  InstancedMeshResourceType,
+  LightMapResourceType,
+  MeshPrimitiveResourceType,
+  MeshResourceType,
+} from "../mesh/mesh.common";
 import {
   LocalMeshPrimitive,
   onLoadLocalMeshPrimitiveResource,
   onLoadLocalMeshResource,
   onLoadLocalInstancedMeshResource,
   updateLocalMeshPrimitiveResources,
+  onLoadLocalLightMapResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
@@ -80,6 +87,7 @@ export interface RendererModuleState {
   renderPipeline: RenderPipeline;
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
+  rgbmLoader: RGBMLoader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
   unlitMaterials: LocalUnlitMaterialResource[]; // done
@@ -107,7 +115,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvas: canvasTarget || ctx.canvas,
     });
     renderer.outputEncoding = sRGBEncoding;
-    renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMapping = LinearToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
@@ -136,6 +144,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       spotLights: [],
       imageBitmapLoader: new ImageBitmapLoader(),
       rgbeLoader: new RGBELoader(),
+      rgbmLoader: new RGBMLoader().setMaxRange(5),
       meshPrimitives: [],
       nodes: [],
       tilesRenderers: [],
@@ -160,6 +169,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
       registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
+      registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
     ]);

@@ -1,6 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
-import { mat4, quat, vec3 } from "gl-matrix";
+import { mat4, quat, vec2, vec3 } from "gl-matrix";
 import { Matrix4 } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -39,9 +39,11 @@ import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import {
   createRemoteInstancedMesh,
+  createRemoteLightMap,
   createRemoteMesh,
   MeshPrimitiveProps,
   RemoteInstancedMesh,
+  RemoteLightMap,
   RemoteMesh,
 } from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
@@ -54,7 +56,14 @@ import { TextureEncoding } from "../texture/texture.common";
 import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
-import { GLTFRoot, GLTFMeshPrimitive, GLTFLightType, GLTFInstancedMeshExtension, GLTFNode } from "./GLTF";
+import {
+  GLTFRoot,
+  GLTFMeshPrimitive,
+  GLTFLightType,
+  GLTFInstancedMeshExtension,
+  GLTFNode,
+  GLTFLightmapExtension,
+} from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
@@ -63,6 +72,7 @@ import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer
 export interface GLTFResource {
   url: string;
   baseUrl: string;
+  fileMap: Map<string, string>;
   root: GLTFRoot;
   binaryChunk?: ArrayBuffer;
   cameras: Map<number, RemoteCamera>;
@@ -99,17 +109,22 @@ export function createGLTFEntity(ctx: GameState, uri: string) {
   return eid;
 }
 
+interface GLTFSceneOptions {
+  fileMap?: Map<string, string>;
+  sceneIndex?: number;
+  // TODO: temporary hack for spawning avatars without static trimesh
+  createTrimesh?: boolean;
+}
+
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  sceneIndex?: number,
-  // TODO: temporary hack for spawning avatars without static trimesh
-  createTrimesh = true
+  { fileMap, sceneIndex, createTrimesh = true }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
-  const resource = await loadGLTFResource(uri);
+  const resource = await loadGLTFResource(uri, fileMap);
 
   if (sceneIndex === undefined) {
     sceneIndex = resource.root.scene;
@@ -218,6 +233,10 @@ async function _inflateGLTFNode(
     instancedMesh:
       node.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined
         ? _loadGLTFInstancedMesh(ctx, resource, node, node.extensions?.EXT_mesh_gpu_instancing)
+        : undefined,
+    lightMap:
+      node.extensions?.MX_lightmap !== undefined
+        ? _loadGLTFLightMap(ctx, resource, node, node.extensions.MX_lightmap)
         : undefined,
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
@@ -400,7 +419,7 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
   return true;
 }
 
-export async function loadGLTFResource(uri: string): Promise<GLTFResource> {
+export async function loadGLTFResource(uri: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
   // TODO: Add gltfResource pinning
@@ -411,7 +430,7 @@ export async function loadGLTFResource(uri: string): Promise<GLTFResource> {
   //   return cachedGltf.promise;
   // }
 
-  const promise = _loadGLTFResource(url.href);
+  const promise = _loadGLTFResource(url.href, fileMap);
 
   // gltfCache.set(url.href, {
   //   refCount: 1,
@@ -421,7 +440,7 @@ export async function loadGLTFResource(uri: string): Promise<GLTFResource> {
   return promise;
 }
 
-async function _loadGLTFResource(url: string) {
+async function _loadGLTFResource(url: string, fileMap?: Map<string, string>) {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
 
@@ -435,11 +454,11 @@ async function _loadGLTFResource(url: string) {
   }
 
   if (isGLB) {
-    return loadGLB(buffer, url);
+    return loadGLB(buffer, url, fileMap);
   } else {
     const jsonStr = new TextDecoder().decode(buffer);
     const json = JSON.parse(jsonStr);
-    return loadGLTF(json, url);
+    return loadGLTF(json, url, undefined, fileMap);
   }
 }
 
@@ -450,7 +469,7 @@ const ChunkType = {
 
 const CHUNK_HEADER_BYTE_LENGTH = 8;
 
-async function loadGLB(buffer: ArrayBuffer, url: string): Promise<GLTFResource> {
+async function loadGLB(buffer: ArrayBuffer, url: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
   let jsonChunkData: string | undefined;
   let binChunkData: ArrayBuffer | undefined;
 
@@ -484,10 +503,15 @@ async function loadGLB(buffer: ArrayBuffer, url: string): Promise<GLTFResource> 
     throw new Error("Invalid glb. Glb has no JSON chunk.");
   }
 
-  return loadGLTF(jsonChunkData, url, binChunkData);
+  return loadGLTF(jsonChunkData, url, binChunkData, fileMap);
 }
 
-async function loadGLTF(json: unknown, url: string, binaryChunk?: ArrayBuffer): Promise<GLTFResource> {
+async function loadGLTF(
+  json: unknown,
+  url: string,
+  binaryChunk?: ArrayBuffer,
+  fileMap?: Map<string, string>
+): Promise<GLTFResource> {
   const root = json as GLTFRoot;
 
   if (!root.asset) {
@@ -513,6 +537,7 @@ async function loadGLTF(json: unknown, url: string, binaryChunk?: ArrayBuffer): 
 
   const resource: GLTFResource = {
     url,
+    fileMap: fileMap || new Map(),
     baseUrl,
     root,
     binaryChunk,
@@ -571,7 +596,8 @@ async function _loadGLTFBuffer(resource: GLTFResource, index: number) {
   let bufferData: ArrayBuffer;
 
   if (buffer.uri) {
-    const url = resolveURL(buffer.uri, resource.baseUrl);
+    const uri = resource.fileMap.get(buffer.uri) || buffer.uri;
+    const url = resolveURL(uri, resource.baseUrl);
     const response = await fetch(url);
     bufferData = await response.arrayBuffer();
   } else if (index === 0 && resource.binaryChunk) {
@@ -646,21 +672,35 @@ async function _loadGLTFBufferView<T extends Thread, S extends boolean>(
   return remoteBufferView as RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>;
 }
 
-export async function loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
+interface ImageOptions {
+  isRGBM?: boolean;
+}
+
+export async function loadGLTFImage(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: ImageOptions
+): Promise<RemoteImage> {
   let imagePromise = resource.imagePromises.get(index);
 
   if (imagePromise) {
     return imagePromise;
   }
 
-  imagePromise = _loadGLTFImage(ctx, resource, index);
+  imagePromise = _loadGLTFImage(ctx, resource, index, options);
 
   resource.imagePromises.set(index, imagePromise);
 
   return imagePromise;
 }
 
-async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
+async function _loadGLTFImage(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: ImageOptions
+): Promise<RemoteImage> {
   if (!resource.root.images || !resource.root.images[index]) {
     throw new Error(`Image ${index} not found`);
   }
@@ -670,7 +710,9 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
   let remoteImage: RemoteImage;
 
   if (image.uri) {
-    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolveURL(image.uri, resource.baseUrl) });
+    const uri = resource.fileMap.get(image.uri) || image.uri;
+    const resolvedUri = resolveURL(uri, resource.baseUrl);
+    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri, ...options });
   } else if (image.bufferView !== undefined) {
     if (!image.mimeType) {
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
@@ -682,6 +724,7 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
       name: image.name,
       bufferView: remoteBufferView,
       mimeType: image.mimeType,
+      ...options,
     });
   } else {
     throw new Error(`image[${index}] has no uri or bufferView`);
@@ -726,11 +769,16 @@ export async function _loadGLTFSampler(ctx: GameState, resource: GLTFResource, i
   return remoteSampler;
 }
 
+interface TextureOptions {
+  encoding?: TextureEncoding;
+  isRGBM?: boolean;
+}
+
 export async function loadGLTFTexture(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  encoding?: TextureEncoding
+  options?: TextureOptions
 ): Promise<RemoteTexture> {
   let texturePromise = resource.texturePromises.get(index);
 
@@ -738,7 +786,7 @@ export async function loadGLTFTexture(
     return texturePromise;
   }
 
-  texturePromise = _loadGLTFTexture(ctx, resource, index, encoding);
+  texturePromise = _loadGLTFTexture(ctx, resource, index, options);
 
   resource.texturePromises.set(index, texturePromise);
 
@@ -749,7 +797,7 @@ async function _loadGLTFTexture(
   ctx: GameState,
   resource: GLTFResource,
   index: number,
-  encoding?: TextureEncoding
+  options?: TextureOptions
 ): Promise<RemoteTexture> {
   if (!resource.root.textures || !resource.root.textures[index]) {
     throw new Error(`Texture ${index} not found`);
@@ -766,14 +814,14 @@ async function _loadGLTFTexture(
   }
 
   const { image, sampler } = await promiseObject({
-    image: loadGLTFImage(ctx, resource, texture.source),
+    image: loadGLTFImage(ctx, resource, texture.source, { isRGBM: options?.isRGBM }),
     sampler: loadGLTFSampler(ctx, resource, texture.sampler),
   });
 
   const remoteTexture = createRemoteTexture(ctx, {
     name: texture.name,
     image,
-    encoding,
+    encoding: options?.encoding,
     sampler,
   });
 
@@ -826,9 +874,12 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     const { baseColorTexture } = await promiseObject({
       baseColorTexture:
         pbrMetallicRoughness?.baseColorTexture?.index !== undefined
-          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness?.baseColorTexture?.index, TextureEncoding.sRGB)
+          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness.baseColorTexture.index, {
+              encoding: TextureEncoding.sRGB,
+            })
           : undefined,
     });
+
     remoteMaterial = createRemoteUnlitMaterial(ctx, {
       name,
       doubleSided,
@@ -847,7 +898,9 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     } = await promiseObject({
       baseColorTexture:
         pbrMetallicRoughness?.baseColorTexture?.index !== undefined
-          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness?.baseColorTexture?.index, TextureEncoding.sRGB)
+          ? loadGLTFTexture(ctx, resource, pbrMetallicRoughness?.baseColorTexture?.index, {
+              encoding: TextureEncoding.sRGB,
+            })
           : undefined,
       metallicRoughnessTexture:
         pbrMetallicRoughness?.metallicRoughnessTexture?.index !== undefined
@@ -859,7 +912,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
         occlusionTexture?.index !== undefined ? loadGLTFTexture(ctx, resource, occlusionTexture?.index) : undefined,
       emissiveTexture:
         emissiveTexture?.index !== undefined
-          ? loadGLTFTexture(ctx, resource, emissiveTexture?.index, TextureEncoding.sRGB)
+          ? loadGLTFTexture(ctx, resource, emissiveTexture?.index, { encoding: TextureEncoding.sRGB })
           : undefined,
     });
     remoteMaterial = createRemoteStandardMaterial(ctx, {
@@ -1212,6 +1265,26 @@ async function _loadGLTFInstancedMesh(
   return createRemoteInstancedMesh(ctx, { name: `${node.name} Instanced Mesh`, attributes });
 }
 
+async function _loadGLTFLightMap(
+  ctx: GameState,
+  resource: GLTFResource,
+  node: GLTFNode,
+  extension: GLTFLightmapExtension
+): Promise<RemoteLightMap> {
+  const texture = await loadGLTFTexture(ctx, resource, extension.index, {
+    encoding: TextureEncoding.sRGB,
+    isRGBM: true,
+  });
+
+  return createRemoteLightMap(ctx, {
+    name: `${node.name} Light Map`,
+    texture,
+    scale: extension.scale as vec2 | undefined,
+    offset: extension.offset as vec2 | undefined,
+    intensity: extension.intensity,
+  });
+}
+
 export async function loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteCamera> {
   let cameraPromise = resource.cameraPromises.get(index);
 
@@ -1298,6 +1371,7 @@ async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: num
       name: light.name,
       color,
       intensity,
+      castShadow: true,
     });
   } else if (light.type === GLTFLightType.Point) {
     remoteLight = createPointLightResource(ctx, {
@@ -1305,6 +1379,7 @@ async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: num
       color,
       intensity,
       range,
+      castShadow: true,
     });
   } else if (light.type === GLTFLightType.Spot) {
     remoteLight = createSpotLightResource(ctx, {
@@ -1314,6 +1389,7 @@ async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: num
       range,
       innerConeAngle: light.spot?.innerConeAngle,
       outerConeAngle: light.spot?.outerConeAngle,
+      castShadow: true,
     });
   } else {
     throw new Error("Light was of unknown type");

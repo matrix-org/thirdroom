@@ -14,6 +14,7 @@ import {
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { MeshPrimitiveAttribute, MeshPrimitiveMode } from "../mesh/mesh.common";
+import { LocalMeshPrimitive } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -229,7 +230,7 @@ export function createPrimitiveStandardMaterial(
         normalMap: normalTexture?.texture,
         metalness: materialView.metallicFactor[0], // 🤘
         roughness: materialView.roughnessFactor[0],
-        normalScale: new Vector2().setScalar(materialView.normalTextureScale[0]),
+        normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
         aoMapIntensity: materialView.occlusionTextureStrength[0],
         emissive: new Color().fromArray(materialView.emissiveFactor),
         flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
@@ -356,7 +357,20 @@ export function updatePrimitiveUnlitMaterial(
   }
 }
 
+function updateNormalScale(attributes: PrimitiveAttributes, normalScale: Vector2, value: number): Vector2 {
+  normalScale.setScalar(value);
+
+  const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
+
+  if (useDerivativeTangents) {
+    normalScale.y *= -1;
+  }
+
+  return normalScale;
+}
+
 export function updatePrimitiveStandardMaterial(
+  meshPrimitive: LocalMeshPrimitive,
   material: PrimitiveStandardMaterial,
   materialResource: LocalStandardMaterialResource
 ) {
@@ -367,7 +381,7 @@ export function updatePrimitiveStandardMaterial(
   if ("isMeshStandardMaterial" in material) {
     material.metalness = materialView.metallicFactor[0]; // 🤘
     material.roughness = materialView.roughnessFactor[0];
-    material.normalScale.setScalar(materialView.normalTextureScale[0]);
+    updateNormalScale(meshPrimitive.attributes, material.normalScale, materialView.normalTextureScale[0]);
     material.aoMapIntensity = materialView.occlusionTextureStrength[0];
     material.emissive.fromArray(materialView.emissiveFactor);
   }
