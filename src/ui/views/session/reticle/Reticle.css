@@ -20,6 +20,13 @@
   margin-left: -4px;
 }
 
+.Reticle--mousedown {
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  margin-left: -3px;
+}
+
 .Reticle__blue {
   background: cornflowerblue;
 }
