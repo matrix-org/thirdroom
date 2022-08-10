@@ -2,10 +2,9 @@
   publish = "dist/"
 
 [[redirects]]
-  from = "/.well-known/matrix/client"
-  to = "https://matrix.thirdroom.io/.well-known/matrix/client"
+  from = "/.well-known/*"
+  to = "/well-known/:splat"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/*"
