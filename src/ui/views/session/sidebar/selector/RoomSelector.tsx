@@ -14,6 +14,9 @@ import MoreHorizontalIC from "../../../../../../res/ic/more-horizontal.svg";
 import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
+import { NotificationBadge } from "../../../../atoms/badge/NotificationBadge";
+import { useRecentMessage } from "../../../../hooks/useRecentMessage";
+import { Text } from "../../../../atoms/text/Text";
 
 interface RoomSelectorProps {
   isSelected: boolean;
@@ -24,6 +27,8 @@ interface RoomSelectorProps {
 
 export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelectorProps) {
   const [focused, setFocused] = useState(false);
+  const eventEntry = useRecentMessage(room);
+
   const {
     open: openMember,
     setOpen: setMemberOpen,
@@ -57,7 +62,21 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
         return avatar;
       })(room)}
       onClick={() => onSelect(room.id)}
-      content={<RoomTileTitle>{room.name || "Empty room"}</RoomTileTitle>}
+      content={
+        <>
+          <div className="flex items-center gap-xxs">
+            <RoomTileTitle className="grow">{room.name || "Empty room"}</RoomTileTitle>
+            {(room.isUnread || room.notificationCount > 0) && (
+              <NotificationBadge content={room.notificationCount > 0 ? room.notificationCount : undefined} />
+            )}
+          </div>
+          {eventEntry?.content?.body && (
+            <Text variant="b3" className="truncate">
+              {`${eventEntry.displayName}: ${eventEntry.content.body}`}
+            </Text>
+          )}
+        </>
+      }
       options={
         <>
           <Dialog open={openMember} onOpenChange={setMemberOpen}>

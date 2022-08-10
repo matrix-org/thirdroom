@@ -30,6 +30,7 @@ export function ChatComposer({ composerViewModel }: ChatComposerProps) {
           type="text"
           placeholder="Send a message..."
           autoComplete="off"
+          autoFocus
         />
         <IconButton iconSrc={SendIC} label="Send Message" type="submit" />
       </form>
