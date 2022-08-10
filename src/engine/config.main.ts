@@ -8,6 +8,7 @@ import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
 import { ResourceModule, ResourceDisposalSystem } from "./resource/resource.main";
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.main";
+import { ReticleModule } from "../plugins/reticle/reticle.main";
 
 export default defineConfig<IMainThreadContext>({
   modules: [
@@ -19,6 +20,7 @@ export default defineConfig<IMainThreadContext>({
     StatsModule,
     RendererModule,
     ThirdroomModule,
+    ReticleModule,
   ],
   systems: [MainThreadAudioSystem, MainThreadEditorSystem, ResourceDisposalSystem],
 });
