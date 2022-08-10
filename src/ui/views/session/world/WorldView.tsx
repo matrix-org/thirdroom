@@ -122,7 +122,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      <Reticle />
+      {!isOverlayOpen && <Reticle />}
     </div>
   );
 }
