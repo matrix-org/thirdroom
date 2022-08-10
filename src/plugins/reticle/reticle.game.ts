@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { defineComponent, defineQuery, enterQuery, exitQuery, addComponent, removeComponent } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 
 import { Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
@@ -14,14 +14,17 @@ const focusQuery = defineQuery([FocusComponent]);
 const enterFocusQuery = enterQuery(focusQuery);
 const exitFocusQuery = exitQuery(focusQuery);
 
-const MAX_FOCUS_DISTANCE = 1.8;
+const MAX_FOCUS_DISTANCE = 2;
 
 const _target = vec3.create();
 const _cameraWorldQuat = quat.create();
 
-const collisionGroups = 0x00f0_000f;
+const shapeCastPosition = new Vector3();
+const shapeCastRotation = new Quaternion();
 
-const ray = new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0));
+const colliderShape = new RAPIER.Ball(0.7);
+
+const collisionGroups = 0x00f0_000f;
 
 const _s = new Vector3();
 const _t = new Vector3();
@@ -42,16 +45,21 @@ export function ReticleFocusSystem(ctx: GameState) {
   const s: Vector3 = _s.fromArray(source);
   const t: Vector3 = _t.fromArray(target);
 
-  ray.origin = s;
-  ray.dir = t;
+  shapeCastPosition.copy(s);
 
-  const solid = true;
-  const raycastHit = physics.physicsWorld.castRay(ray, MAX_FOCUS_DISTANCE, solid, collisionGroups);
+  const hit = physics.physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    t,
+    colliderShape,
+    1.0,
+    collisionGroups
+  );
 
-  if (raycastHit !== null) {
-    const eid = physics.handleToEid.get(raycastHit.colliderHandle);
+  if (hit !== null) {
+    const eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
-      console.warn(`Could not find entity for physics handle ${raycastHit.colliderHandle}`);
+      console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
     } else {
       addComponent(ctx.world, FocusComponent, eid);
     }
