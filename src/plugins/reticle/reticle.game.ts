@@ -14,12 +14,14 @@ const focusQuery = defineQuery([FocusComponent]);
 const enterFocusQuery = enterQuery(focusQuery);
 const exitFocusQuery = exitQuery(focusQuery);
 
-const MAX_FOCUS_DISTANCE = 10;
+const MAX_FOCUS_DISTANCE = 100000;
 
 const _target = vec3.create();
 const _cameraWorldQuat = quat.create();
 
 const collisionGroups = 0x00f0_000f;
+
+const ray = new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0));
 
 export function ReticleFocusSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
@@ -37,10 +39,11 @@ export function ReticleFocusSystem(ctx: GameState) {
   const s: Vector3 = new Vector3().fromArray(source);
   const t: Vector3 = new Vector3().fromArray(target);
 
-  const ray = new RAPIER.Ray(s, t);
+  ray.origin = s;
+  ray.dir = t;
+
   const solid = true;
-  const maxToi = 4.0;
-  const raycastHit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
+  const raycastHit = physics.physicsWorld.castRay(ray, MAX_FOCUS_DISTANCE, solid, collisionGroups);
 
   if (raycastHit !== null) {
     const eid = physics.handleToEid.get(raycastHit.colliderHandle);
@@ -56,6 +59,7 @@ export function ReticleFocusSystem(ctx: GameState) {
 
   const entered = enterFocusQuery(ctx.world);
   if (entered[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: true });
+
   const exited = exitFocusQuery(ctx.world);
   if (exited[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: false });
 }
