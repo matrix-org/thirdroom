@@ -13,6 +13,7 @@ import {
   Quaternion,
   SkinnedMesh,
   Vector3,
+  Bone,
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
@@ -20,7 +21,7 @@ import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
-import { LocalInstancedMesh, LocalMesh, updateNodeMesh } from "../mesh/mesh.render";
+import { LocalInstancedMesh, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -38,6 +39,8 @@ export interface LocalNode {
   rendererNodeTripleBuffer: RendererNodeTripleBuffer;
   mesh?: LocalMesh;
   instancedMesh?: LocalInstancedMesh;
+  skinnedMesh?: LocalSkinnedMesh;
+  bone?: Bone;
   meshPrimitiveObjects?: PrimitiveObject3D[];
   camera?: LocalCameraResource;
   cameraObject?: PerspectiveCamera | OrthographicCamera;
@@ -60,6 +63,9 @@ export async function onLoadLocalNode(
     instancedMesh: nodeView.instancedMesh[0]
       ? waitForLocalResource<LocalInstancedMesh>(ctx, nodeView.instancedMesh[0])
       : undefined,
+    skinnedMesh: nodeView.skinnedMesh[0]
+      ? waitForLocalResource<LocalSkinnedMesh>(ctx, nodeView.skinnedMesh[0])
+      : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
   });
@@ -69,6 +75,7 @@ export async function onLoadLocalNode(
     rendererNodeTripleBuffer,
     mesh: resources.mesh,
     instancedMesh: resources.instancedMesh,
+    skinnedMesh: resources.skinnedMesh,
     camera: resources.camera,
     light: resources.light,
   };
@@ -103,6 +110,25 @@ export function updateTransformFromNode(
   object3D.layers.mask = nodeReadView.layers[0];
 }
 
+export function setTransformFromNode(
+  ctx: RenderThreadState,
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
+  object3D: Object3D,
+  inverseMatrix?: Matrix4
+) {
+  tempMatrix4.fromArray(nodeReadView.worldMatrix);
+
+  if (inverseMatrix) tempMatrix4.premultiply(inverseMatrix);
+
+  tempMatrix4.decompose(tempPosition, tempQuaternion, tempScale);
+
+  object3D.position.copy(tempPosition);
+  object3D.quaternion.copy(tempQuaternion);
+  object3D.scale.copy(tempScale);
+
+  object3D.visible = !!nodeReadView.visible[0];
+}
+
 export function updateLocalNodeResources(
   ctx: RenderThreadState,
   rendererModule: RendererModuleState,
@@ -124,7 +150,13 @@ export function updateLocalNodeResources(
 
       if (node.mesh) {
         if (activeSceneResource && node.meshPrimitiveObjects) {
-          activeSceneResource.scene.remove(...node.meshPrimitiveObjects);
+          for (const primitive of node.meshPrimitiveObjects) {
+            if (primitive instanceof SkinnedMesh) {
+              primitive.skeleton.bones.forEach((bone) => activeSceneResource.scene.remove(bone));
+              primitive.skeleton.dispose();
+            }
+            activeSceneResource.scene.remove(primitive);
+          }
         }
 
         const primitives = node.mesh.primitives;
@@ -141,6 +173,10 @@ export function updateLocalNodeResources(
 
         node.meshPrimitiveObjects = undefined;
         node.mesh = undefined;
+      }
+
+      if (node.skinnedMesh) {
+        node.skinnedMesh = undefined;
       }
 
       if (node.light) {

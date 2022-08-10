@@ -4,6 +4,7 @@ import { ResourceId } from "../resource/resource.common";
 export const MeshResourceType = "mesh";
 export const MeshPrimitiveResourceType = "mesh-primitive";
 export const InstancedMeshResourceType = "instanced-mesh";
+export const SkinnedMeshResourceType = "skinned-mesh";
 
 export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
@@ -21,6 +22,11 @@ export interface SharedMeshResource {
 
 export interface SharedInstancedMeshResource {
   attributes: { [key: string]: ResourceId };
+}
+
+export interface SharedSkinnedMeshResource {
+  joints: ResourceId[];
+  inverseBindMatrices?: ResourceId;
 }
 
 export const meshPrimitiveSchema = defineObjectBufferSchema({
