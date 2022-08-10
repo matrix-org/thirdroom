@@ -105,6 +105,9 @@ const colliderShape = new RAPIER.Ball(0.7);
 
 const collisionGroups = 0x00f0_000f;
 
+const _s = new Vector3();
+const _t = new Vector3();
+
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
@@ -151,8 +154,8 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
-    const s: Vector3 = new Vector3().fromArray(source);
-    const t: Vector3 = new Vector3().fromArray(target);
+    const s: Vector3 = _s.fromArray(source);
+    const t: Vector3 = _t.fromArray(target);
 
     shapeCastPosition.copy(s);
 
