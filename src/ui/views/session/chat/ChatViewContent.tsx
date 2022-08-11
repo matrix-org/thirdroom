@@ -10,6 +10,7 @@ interface ChatViewContentProps {
 }
 
 export function ChatViewContent({ room }: ChatViewContentProps) {
+  setTimeout(() => room.clearUnread(), 1000);
   const { loading, roomViewModel, error } = useRoomViewModel(room, chatTileClassForEntry);
 
   return (

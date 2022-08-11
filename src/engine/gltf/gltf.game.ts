@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
-import { Matrix4 } from "three";
+import { AnimationMixer, Bone, Group, Matrix4, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { AudioEmitterOutput } from "../audio/audio.common";
@@ -40,9 +40,11 @@ import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial
 import {
   createRemoteInstancedMesh,
   createRemoteMesh,
+  createRemoteSkinnedMesh,
   MeshPrimitiveProps,
   RemoteInstancedMesh,
   RemoteMesh,
+  RemoteSkinnedMesh,
 } from "../mesh/mesh.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
@@ -59,6 +61,9 @@ import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from ".
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
 import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
+import { RemoteNode } from "../node/node.game";
+import { addAnimationComponent, BoneComponent } from "../animation/animation.game";
+import { loadGLTFAnimationClip } from "./animation.three";
 
 export interface GLTFResource {
   url: string;
@@ -70,6 +75,8 @@ export interface GLTFResource {
   bufferViews: Map<number, RemoteBufferView<Thread, any>>;
   buffers: Map<number, ArrayBuffer>;
   meshes: Map<number, RemoteMesh>;
+  skins: Map<number, RemoteSkinnedMesh>;
+  joints: Map<number, RemoteNode>;
   lights: Map<number, RemoteLight>;
   images: Map<number, RemoteImage>;
   textures: Map<number, RemoteTexture>;
@@ -83,6 +90,7 @@ export interface GLTFResource {
   bufferViewPromises: Map<number, { thread: Thread; shared: boolean; promise: Promise<RemoteBufferView<Thread, any>> }>;
   bufferPromises: Map<number, Promise<ArrayBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
+  skinPromises: Map<number, Promise<RemoteSkinnedMesh>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
   imagePromises: Map<number, Promise<RemoteImage>>;
   texturePromises: Map<number, Promise<RemoteTexture>>;
@@ -124,7 +132,28 @@ export async function inflateGLTFScene(
 
   const scene = resource.root.scenes[sceneIndex];
 
+  // animation pre-processing
+  if (resource.root.skins && resource.root.nodes) {
+    // iterate skins and pre-create entities and resources for joints so bones are available at the creation of the skinnedmesh
+    for (const skin of resource.root.skins) {
+      for (const jointIndex of skin.joints) {
+        let remoteNode = resource.joints.get(jointIndex);
+        if (!remoteNode) {
+          const eid = addEntity(ctx.world);
+          remoteNode = addRemoteNodeComponent(ctx, eid);
+          resource.joints.set(jointIndex, remoteNode);
+        }
+      }
+    }
+  }
+
   addNameComponent(ctx.world, sceneEid, scene.name || `Scene ${sceneIndex}`);
+
+  const group = new Group();
+  const indexToObject3D = new Map<number, Object3D>();
+  indexToObject3D.set(sceneIndex, group);
+  const eidToObject3D = new Map<number, Object3D>();
+  eidToObject3D.set(sceneEid, group);
 
   const nodeInflators: Function[] = [];
 
@@ -133,7 +162,16 @@ export async function inflateGLTFScene(
   if (scene.nodes) {
     nodePromise = Promise.all(
       scene.nodes.map((nodeIndex) =>
-        _inflateGLTFNode(ctx, resource, nodeInflators, nodeIndex, sceneEid, createTrimesh && !hasInstancedMeshExtension)
+        _inflateGLTFNode(
+          ctx,
+          resource,
+          eidToObject3D,
+          indexToObject3D,
+          nodeInflators,
+          nodeIndex,
+          sceneEid,
+          createTrimesh && !hasInstancedMeshExtension
+        )
       )
     );
   }
@@ -149,10 +187,19 @@ export async function inflateGLTFScene(
       : undefined,
   });
 
-  updateMatrixWorld(sceneEid);
+  updateMatrixWorld(sceneEid, true);
 
   for (const inflator of nodeInflators) {
     inflator();
+  }
+
+  if (resource.root.animations) {
+    const mixer = new AnimationMixer(group);
+    const clips = await Promise.all(
+      resource.root.animations.map((a, i) => loadGLTFAnimationClip(ctx, resource, a, i, indexToObject3D))
+    );
+    const actions = clips.map((clip) => mixer.clipAction(clip));
+    addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions });
   }
 
   addRemoteSceneComponent(ctx, sceneEid, {
@@ -179,25 +226,44 @@ const TRIMESH_COLLISION_GROUPS = 0xf000_000f;
 async function _inflateGLTFNode(
   ctx: GameState,
   resource: GLTFResource,
+  eidToObject3D: Map<number, Object3D>,
+  indexToObject3D: Map<number, Object3D>,
   nodeInflators: Function[],
   nodeIndex: number,
-  parentEid?: number,
+  parentEid: number,
   createTrimesh = true
 ) {
-  const nodeEid = addEntity(ctx.world);
-
-  addTransformComponent(ctx.world, nodeEid);
-
-  if (parentEid !== undefined) {
-    addChild(parentEid, nodeEid);
-  }
-
   if (!resource.root.nodes || !resource.root.nodes[nodeIndex]) {
     throw new Error(`Node ${nodeIndex} not found`);
   }
 
   const node = resource.root.nodes[nodeIndex];
 
+  // use pre-generated eid if it exists (for bones)
+  const joint = resource.joints.get(nodeIndex);
+  const nodeEid = joint ? joint.eid : addEntity(ctx.world);
+
+  // create Object3D
+  let obj3d: Object3D;
+  if (node.mesh !== undefined && node.skin !== undefined) {
+    obj3d = new SkinnedMesh();
+  } else if (joint) {
+    obj3d = new Bone();
+    addComponent(ctx.world, BoneComponent, nodeEid);
+    BoneComponent.set(nodeEid, obj3d as Bone);
+  } else {
+    obj3d = new Object3D();
+  }
+
+  if (obj3d) {
+    eidToObject3D.set(nodeEid, obj3d);
+    indexToObject3D.set(nodeIndex, obj3d);
+    if (node.translation) obj3d.position.fromArray(node.translation);
+    if (node.rotation) obj3d.quaternion.fromArray(node.rotation);
+    if (node.scale) obj3d.scale.fromArray(node.scale);
+  }
+
+  addTransformComponent(ctx.world, nodeEid);
   addNameComponent(ctx.world, nodeEid, node.name || `Node ${nodeIndex}`);
 
   if (node.matrix) {
@@ -213,12 +279,18 @@ async function _inflateGLTFNode(
 
   setEulerFromQuaternion(Transform.rotation[nodeEid], Transform.quaternion[nodeEid]);
 
+  if (parentEid !== undefined) {
+    addChild(parentEid, nodeEid);
+  }
+
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,
     instancedMesh:
       node.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined
         ? _loadGLTFInstancedMesh(ctx, resource, node, node.extensions?.EXT_mesh_gpu_instancing)
         : undefined,
+    skinnedMesh:
+      node.mesh !== undefined && node.skin !== undefined ? loadGLTFSkinnedMesh(ctx, resource, node) : undefined,
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
       node.extensions?.KHR_lights_punctual?.light !== undefined
@@ -243,7 +315,16 @@ async function _inflateGLTFNode(
   if (node.children && node.children.length) {
     await Promise.all(
       node.children.map((childIndex: number) =>
-        _inflateGLTFNode(ctx, resource, nodeInflators, childIndex, nodeEid, createTrimesh)
+        _inflateGLTFNode(
+          ctx,
+          resource,
+          eidToObject3D,
+          indexToObject3D,
+          nodeInflators,
+          childIndex,
+          nodeEid,
+          createTrimesh
+        )
       )
     );
   }
@@ -251,14 +332,27 @@ async function _inflateGLTFNode(
   const results = await promises;
 
   nodeInflators.push(() => {
-    if (results.mesh || results.camera || results.light || results.audioEmitter || hasTilesRendererExtension(node)) {
+    if (parentEid !== undefined) {
+      const childObj3d = obj3d;
+      const parentObj3d = eidToObject3D.get(parentEid);
+      if (!childObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
+      if (!parentObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
+      if (parentObj3d && childObj3d) {
+        parentObj3d.add(childObj3d);
+      }
+    }
+
+    if (
+      !joint &&
+      (results.mesh || results.camera || results.light || results.audioEmitter || hasTilesRendererExtension(node))
+    ) {
       addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name });
     }
 
     if (hasHubsComponentsExtension(resource.root)) {
       inflateHubsNode(ctx, resource, nodeIndex, nodeEid);
     } else {
-      if (node.camera) {
+      if (node.camera !== undefined) {
         ctx.activeCamera = nodeEid;
       }
 
@@ -289,7 +383,8 @@ async function _inflateGLTFNode(
     if (node.extensions?.OMI_collider) {
       const index = node.extensions.OMI_collider.collider;
       const collider = resource.root.extensions!.OMI_collider.colliders[index];
-      const { physicsWorld } = getModule(ctx, PhysicsModule);
+      const physics = getModule(ctx, PhysicsModule);
+      const { physicsWorld } = physics;
 
       if (collider.type === "box") {
         const worldMatrix = Transform.worldMatrix[nodeEid];
@@ -371,7 +466,7 @@ function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
     const primitiveEid = addEntity(ctx.world);
     addTransformComponent(ctx.world, primitiveEid);
     addChild(nodeEid, primitiveEid);
-    addRigidBody(ctx.world, nodeEid, rigidBody);
+    addRigidBody(ctx.world, primitiveEid, rigidBody);
 
     disposeResource(ctx, primitive.resourceId);
   }
@@ -524,6 +619,8 @@ async function loadGLTF(json: unknown, url: string, binaryChunk?: ArrayBuffer): 
     materials: new Map(),
     accessors: new Map(),
     meshes: new Map(),
+    skins: new Map(),
+    joints: new Map(),
     lights: new Map(),
     cameras: new Map(),
     audio: new Map(),
@@ -534,6 +631,7 @@ async function loadGLTF(json: unknown, url: string, binaryChunk?: ArrayBuffer): 
     bufferViewPromises: new Map(),
     bufferPromises: new Map(),
     meshPromises: new Map(),
+    skinPromises: new Map(),
     lightPromises: new Map(),
     imagePromises: new Map(),
     texturePromises: new Map(),
@@ -1210,6 +1308,63 @@ async function _loadGLTFInstancedMesh(
   const attributes = await promiseObject(attributesPromises);
 
   return createRemoteInstancedMesh(ctx, { name: `${node.name} Instanced Mesh`, attributes });
+}
+
+async function loadGLTFSkinnedMesh(ctx: GameState, resource: GLTFResource, node: GLTFNode): Promise<RemoteSkinnedMesh> {
+  const index = node.skin;
+
+  if (index === undefined || !resource.root.skins || !resource.root.skins[index]) {
+    throw new Error("glTF file has no skins");
+  }
+
+  let skinPromise = resource.skinPromises.get(index);
+
+  if (skinPromise) {
+    return skinPromise;
+  }
+
+  skinPromise = _loadGLTFSkinnedMesh(ctx, resource, node);
+
+  resource.skinPromises.set(index, skinPromise);
+
+  return skinPromise;
+}
+
+async function _loadGLTFSkinnedMesh(
+  ctx: GameState,
+  resource: GLTFResource,
+  node: GLTFNode
+): Promise<RemoteSkinnedMesh> {
+  const index = node.skin;
+
+  if (index === undefined || !resource.root.skins || !resource.root.skins[index]) {
+    throw new Error("glTF file has no skins");
+  }
+
+  const skin = resource.root.skins[index];
+
+  const inverseBindMatrices = skin.inverseBindMatrices
+    ? await loadGLTFAccessor(ctx, resource, skin.inverseBindMatrices)
+    : undefined;
+
+  const joints: RemoteNode[] = [];
+
+  for (let i = 0; i < skin.joints.length; i++) {
+    const jointIndex = skin.joints[i];
+    const jointResource = resource.joints.get(jointIndex);
+    if (jointResource) joints.push(jointResource);
+    else throw new Error("glTF skin joint had no remote node resourceId");
+  }
+
+  const remoteSkinnedMesh = createRemoteSkinnedMesh(ctx, {
+    name: `${node.name} Skinned Mesh`,
+    joints,
+    inverseBindMatrices,
+  });
+
+  resource.skins.set(index, remoteSkinnedMesh);
+
+  return remoteSkinnedMesh;
 }
 
 export async function loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteCamera> {

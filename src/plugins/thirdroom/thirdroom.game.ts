@@ -153,14 +153,14 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     registerPrefab(ctx, {
       name: "mixamo-x",
       create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/mixamo-x-noanim.glb");
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
       },
     });
 
     registerPrefab(ctx, {
       name: "mixamo-y",
       create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/mixamo-y-noanim.glb");
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
       },
     });
 
