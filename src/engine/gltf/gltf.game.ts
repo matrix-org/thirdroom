@@ -406,7 +406,7 @@ async function _inflateGLTFNode(
         colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx.world, physics, nodeEid, rigidBody);
+        addRigidBody(ctx.world, nodeEid, rigidBody);
       } else if (collider.type === "mesh" && results.colliderMesh) {
         addTrimeshFromMesh(ctx, nodeEid, results.colliderMesh);
       }
