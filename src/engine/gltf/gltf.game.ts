@@ -403,7 +403,8 @@ async function _inflateGLTFNode(
     if (node.extensions?.OMI_collider) {
       const index = node.extensions.OMI_collider.collider;
       const collider = resource.root.extensions!.OMI_collider.colliders[index];
-      const { physicsWorld } = getModule(ctx, PhysicsModule);
+      const physics = getModule(ctx, PhysicsModule);
+      const { physicsWorld } = physics;
 
       if (collider.type === "box") {
         const worldMatrix = Transform.worldMatrix[nodeEid];
@@ -450,11 +451,11 @@ function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
   // the resource is expensive.
   addResourceRef(ctx, mesh.resourceId);
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
   for (const primitive of mesh.primitives) {
     addResourceRef(ctx, primitive.resourceId);
+
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+    const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
     const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
     const worldMatrix = new Matrix4().fromArray(Transform.worldMatrix[nodeEid]);
@@ -485,7 +486,7 @@ function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
     const primitiveEid = addEntity(ctx.world);
     addTransformComponent(ctx.world, primitiveEid);
     addChild(nodeEid, primitiveEid);
-    addRigidBody(ctx.world, nodeEid, rigidBody);
+    addRigidBody(ctx.world, primitiveEid, rigidBody);
 
     disposeResource(ctx, primitive.resourceId);
   }
