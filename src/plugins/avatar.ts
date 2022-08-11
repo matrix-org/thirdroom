@@ -21,7 +21,7 @@ export function createContainerizedAvatar(ctx: GameState, uri: string, height = 
   addRemoteNodeComponent(ctx, container);
 
   const eid = addEntity(ctx.world);
-  inflateGLTFScene(ctx, eid, uri, undefined, false);
+  inflateGLTFScene(ctx, eid, uri, { createTrimesh: false });
 
   Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
