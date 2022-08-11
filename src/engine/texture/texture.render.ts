@@ -45,7 +45,7 @@ export async function onLoadLocalTextureResource(
     texture.wrapT = RepeatWrapping;
   }
 
-  if (image.format === ImageFormat.RGBA || image.format === ImageFormat.RGBM) {
+  if (image.format === ImageFormat.RGBA) {
     texture.flipY = false;
     // TODO: Can we determine texture encoding when applying to the material?
     texture.encoding = initialProps.encoding as unknown as TextureEncoding;

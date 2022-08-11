@@ -673,35 +673,21 @@ async function _loadGLTFBufferView<T extends Thread, S extends boolean>(
   return remoteBufferView as RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>;
 }
 
-interface ImageOptions {
-  isRGBM?: boolean;
-}
-
-export async function loadGLTFImage(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number,
-  options?: ImageOptions
-): Promise<RemoteImage> {
+export async function loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
   let imagePromise = resource.imagePromises.get(index);
 
   if (imagePromise) {
     return imagePromise;
   }
 
-  imagePromise = _loadGLTFImage(ctx, resource, index, options);
+  imagePromise = _loadGLTFImage(ctx, resource, index);
 
   resource.imagePromises.set(index, imagePromise);
 
   return imagePromise;
 }
 
-async function _loadGLTFImage(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number,
-  options?: ImageOptions
-): Promise<RemoteImage> {
+async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
   if (!resource.root.images || !resource.root.images[index]) {
     throw new Error(`Image ${index} not found`);
   }
@@ -713,7 +699,7 @@ async function _loadGLTFImage(
   if (image.uri) {
     const uri = resource.fileMap.get(image.uri) || image.uri;
     const resolvedUri = resolveURL(uri, resource.baseUrl);
-    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri, ...options });
+    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri });
   } else if (image.bufferView !== undefined) {
     if (!image.mimeType) {
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
@@ -725,7 +711,6 @@ async function _loadGLTFImage(
       name: image.name,
       bufferView: remoteBufferView,
       mimeType: image.mimeType,
-      ...options,
     });
   } else {
     throw new Error(`image[${index}] has no uri or bufferView`);
@@ -772,7 +757,6 @@ export async function _loadGLTFSampler(ctx: GameState, resource: GLTFResource, i
 
 interface TextureOptions {
   encoding?: TextureEncoding;
-  isRGBM?: boolean;
 }
 
 export async function loadGLTFTexture(
@@ -815,7 +799,7 @@ async function _loadGLTFTexture(
   }
 
   const { image, sampler } = await promiseObject({
-    image: loadGLTFImage(ctx, resource, texture.source, { isRGBM: options?.isRGBM }),
+    image: loadGLTFImage(ctx, resource, texture.source),
     sampler: loadGLTFSampler(ctx, resource, texture.sampler),
   });
 
@@ -1274,7 +1258,6 @@ async function _loadGLTFLightMap(
 ): Promise<RemoteLightMap> {
   const texture = await loadGLTFTexture(ctx, resource, extension.index, {
     encoding: TextureEncoding.sRGB,
-    isRGBM: true,
   });
 
   return createRemoteLightMap(ctx, {

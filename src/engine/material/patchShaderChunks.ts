@@ -44,4 +44,15 @@ export default function patchShaderChunks() {
     "#if defined( USE_ENVMAP ) && defined( STANDARD ) && defined( ENVMAP_TYPE_CUBE_UV )",
     "#if defined( USE_ENVMAP ) && defined( STANDARD ) && defined( ENVMAP_TYPE_CUBE_UV ) && !defined(USE_LIGHTMAP)"
   );
+
+  // Decode Unity's RGBM lightmaps which are encoded in non-linear space
+  // https://blog.karthisoftek.com/a?ID=00700-75580c91-4379-46bf-8797-cfdad5dcbc6f
+  ShaderChunk.lights_fragment_maps = ShaderChunk.lights_fragment_maps.replace(
+    "vec4 lightMapTexel = texture2D( lightMap, vUv2 );",
+    `
+    vec4 lightMapTexel = texture2D( lightMap, vUv2 );
+    lightMapTexel.rgb = 34.49 * pow(lightMapTexel.a, 2.2) * lightMapTexel.rgb;
+    lightMapTexel.a = 1.0;
+    `
+  );
 }

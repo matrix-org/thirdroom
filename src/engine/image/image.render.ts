@@ -13,7 +13,6 @@ const HDRExtension = ".hdr";
 export enum ImageFormat {
   RGBA = "rgba",
   RGBE = "rgbe",
-  RGBM = "rgbm",
 }
 
 export interface RGBELocalImageResource {
@@ -28,20 +27,14 @@ export interface RGBALocalImageResource {
   image: ImageBitmap;
 }
 
-export interface RGBMLocalImageResource {
-  resourceId: ResourceId;
-  format: ImageFormat.RGBM;
-  texture: DataTexture;
-}
-
-export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource | RGBMLocalImageResource;
+export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource;
 
 export async function onLoadLocalImageResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
   props: ImageResourceProps
 ): Promise<LocalImageResource> {
-  const { rgbeLoader, rgbmLoader, imageBitmapLoader, images } = getModule(ctx, RendererModule);
+  const { rgbeLoader, imageBitmapLoader, images } = getModule(ctx, RendererModule);
 
   let uri: string;
   let isObjectUrl = false;
@@ -70,14 +63,6 @@ export async function onLoadLocalImageResource(
       localImageResource = {
         resourceId,
         format: ImageFormat.RGBE,
-        texture,
-      };
-    } else if (props.isRGBM) {
-      const texture = await rgbmLoader.loadAsync(uri);
-
-      localImageResource = {
-        resourceId,
-        format: ImageFormat.RGBM,
         texture,
       };
     } else {

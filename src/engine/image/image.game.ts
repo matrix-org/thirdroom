@@ -17,13 +17,11 @@ export interface BufferViewRemoteImageProps {
   name?: string;
   bufferView: RemoteBufferView<Thread.Render, undefined>;
   mimeType: string;
-  isRGBM?: boolean;
 }
 
 export interface RemoteImageProps {
   name?: string;
   uri: string;
-  isRGBM?: boolean;
 }
 
 const DEFAULT_IMAGE_NAME = "Image";
@@ -43,7 +41,6 @@ export function createRemoteImageFromBufferView(ctx: GameState, props: BufferVie
       {
         bufferView: bufferViewResourceId,
         mimeType: props.mimeType,
-        isRGBM: props.isRGBM || false,
       },
       {
         name,
@@ -66,7 +63,7 @@ export function createRemoteImage(ctx: GameState, props: RemoteImageProps): Remo
       ctx,
       Thread.Render,
       ImageResourceType,
-      { uri: props.uri, isRGBM: props.isRGBM || false },
+      { uri: props.uri },
       {
         name,
       }

@@ -1,6 +1,5 @@
 import { ImageBitmapLoader, LinearToneMapping, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
-import { RGBMLoader } from "three/examples/jsm/loaders/RGBMLoader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
@@ -87,7 +86,6 @@ export interface RendererModuleState {
   renderPipeline: RenderPipeline;
   imageBitmapLoader: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
-  rgbmLoader: RGBMLoader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
   unlitMaterials: LocalUnlitMaterialResource[]; // done
@@ -144,7 +142,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       spotLights: [],
       imageBitmapLoader: new ImageBitmapLoader(),
       rgbeLoader: new RGBELoader(),
-      rgbmLoader: new RGBMLoader().setMaxRange(5),
       meshPrimitives: [],
       nodes: [],
       tilesRenderers: [],

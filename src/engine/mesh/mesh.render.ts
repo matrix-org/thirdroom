@@ -17,6 +17,9 @@ import {
   MeshStandardMaterial,
   Matrix3,
   Uniform,
+  FloatType,
+  LinearFilter,
+  LinearEncoding,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -298,6 +301,11 @@ function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitiv
 
       if (lightMap) {
         const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
+
+        lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
+        lightMapTexture.texture.type = FloatType;
+        lightMapTexture.texture.minFilter = LinearFilter;
+        lightMapTexture.texture.generateMipmaps = false;
 
         const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
 
