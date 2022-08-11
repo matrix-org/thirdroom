@@ -327,6 +327,7 @@ function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitiv
             0,
             0
           );
+          (material as any).uniformsNeedUpdate = true;
         };
       }
     }
