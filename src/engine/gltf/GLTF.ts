@@ -769,3 +769,11 @@ export interface GLTFInstancedMeshExtension {
     [k: string]: GLTFId;
   };
 }
+
+export interface GLTFLightmapExtension {
+  index: number;
+  texCoord: number;
+  scale?: number[];
+  offset?: number[];
+  intensity?: number;
+}

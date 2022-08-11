@@ -1,5 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
+import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxBufferGeometry, SphereBufferGeometry } from "three";
 
 import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
@@ -19,6 +20,7 @@ import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
+import { RemoteTexture } from "../texture/texture.game";
 import {
   SharedMeshResource,
   MeshResourceType,
@@ -32,6 +34,8 @@ import {
   InstancedMeshResourceType,
   SharedInstancedMeshResource,
   MeshPrimitiveAttribute,
+  SharedLightMapResource,
+  LightMapResourceType,
   SharedSkinnedMeshResource,
   SkinnedMeshResourceType,
 } from "./mesh.common";
@@ -92,8 +96,23 @@ export interface RemoteSkinnedMeshProps {
   inverseBindMatrices?: RemoteAccessor<any, any>;
 }
 
+export interface RemoteLightMap {
+  name: string;
+  resourceId: number;
+  texture: RemoteTexture;
+}
+
+export interface RemoteLightMapProps {
+  name?: string;
+  texture: RemoteTexture;
+  offset?: vec2;
+  scale?: vec2;
+  intensity?: number;
+}
+
 const DEFAULT_MESH_NAME = "Mesh";
 const DEFAULT_INSTANCED_MESH_NAME = "Instanced Mesh";
+const DEFAULT_LIGHT_MAP_NAME = "Light Map";
 const DEFAULT_SKINNED_MESH_NAME = "Skinned Mesh";
 
 export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): RemoteMesh {
@@ -297,6 +316,34 @@ export function createRemoteSkinnedMesh(ctx: GameState, props: RemoteSkinnedMesh
     resourceId,
     joints,
     inverseBindMatrices,
+  };
+}
+
+export function createRemoteLightMap(ctx: GameState, props: RemoteLightMapProps): RemoteLightMap {
+  const name = props.name || DEFAULT_LIGHT_MAP_NAME;
+
+  const textureResourceId = props.texture.resourceId;
+
+  const sharedResource: SharedLightMapResource = {
+    texture: textureResourceId,
+    offset: props.offset || [0, 0],
+    scale: props.scale || [1, 1],
+    intensity: props.intensity === undefined ? 1 : props.intensity,
+  };
+
+  addResourceRef(ctx, textureResourceId);
+
+  const resourceId = createResource<SharedLightMapResource>(ctx, Thread.Render, LightMapResourceType, sharedResource, {
+    name,
+    dispose() {
+      disposeResource(ctx, textureResourceId);
+    },
+  });
+
+  return {
+    name,
+    resourceId,
+    texture: props.texture,
   };
 }
 

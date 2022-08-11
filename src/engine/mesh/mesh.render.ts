@@ -1,3 +1,4 @@
+import { vec2 } from "gl-matrix";
 import {
   Mesh,
   BufferGeometry,
@@ -14,6 +15,13 @@ import {
   Bone,
   SkinnedMesh,
   Skeleton,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Matrix3,
+  Uniform,
+  FloatType,
+  LinearFilter,
+  LinearEncoding,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -37,6 +45,7 @@ import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../nod
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
@@ -45,6 +54,7 @@ import {
   MeshPrimitiveMode,
   MeshPrimitiveTripleBuffer,
   SharedInstancedMeshResource,
+  SharedLightMapResource,
   SharedMeshPrimitiveResource,
   SharedMeshResource,
   SharedSkinnedMeshResource,
@@ -211,6 +221,32 @@ export async function onLoadLocalInstancedMeshResource(
   return localInstancedMesh;
 }
 
+export interface LocalLightMap {
+  resourceId: ResourceId;
+  texture: LocalTextureResource;
+  offset: vec2;
+  scale: vec2;
+  intensity: number;
+}
+
+export async function onLoadLocalLightMapResource(
+  ctx: RenderThreadState,
+  resourceId: ResourceId,
+  props: SharedLightMapResource
+): Promise<LocalLightMap> {
+  const lightMapResource = await waitForLocalResource<LocalTextureResource>(ctx, props.texture, "light-map");
+
+  const localLightMap: LocalLightMap = {
+    resourceId,
+    texture: lightMapResource,
+    offset: props.offset,
+    scale: props.scale,
+    intensity: props.intensity,
+  };
+
+  return localLightMap;
+}
+
 export async function onLoadLocalSkinnedMeshResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
@@ -240,15 +276,14 @@ const tempMatrix4 = new Matrix4();
 
 function createMeshPrimitiveObject(
   ctx: RenderThreadState,
-  primitive: LocalMeshPrimitive,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
   scene: Scene,
-  instancedMesh?: LocalInstancedMesh,
-  skinnedMesh?: LocalSkinnedMesh
+  primitive: LocalMeshPrimitive
 ): PrimitiveObject3D {
   let object: PrimitiveObject3D;
 
+  const { instancedMesh, skinnedMesh, lightMap } = node;
   const { mode, geometryObj, materialObj } = primitive;
 
   if (
@@ -348,6 +383,47 @@ function createMeshPrimitiveObject(
       mesh = instancedMeshObject;
     } else {
       mesh = new Mesh(geometryObj, materialObj);
+
+      if (lightMap) {
+        const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
+
+        lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
+        lightMapTexture.texture.type = FloatType;
+        lightMapTexture.texture.minFilter = LinearFilter;
+        lightMapTexture.texture.generateMipmaps = false;
+
+        const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+
+        if (!material.userData.lightMapTransform) {
+          const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
+          const lightMapTransform = new Uniform(lightMapTransformMatrix);
+
+          material.onBeforeCompile = (shader) => {
+            shader.uniforms.lightMapTransform = lightMapTransform;
+          };
+
+          material.needsUpdate = true;
+
+          material.userData.lightMapTransform = lightMapTransform;
+        }
+
+        mesh.onBeforeRender = () => {
+          material.lightMapIntensity = intensity * Math.PI;
+          material.lightMap = lightMapTexture.texture;
+          ((material.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
+            offset[0],
+            offset[1],
+            scale[0],
+            scale[1],
+            0,
+            0,
+            0
+          );
+
+          // This is currently added via a patch to Three.js
+          (material as any).uniformsNeedUpdate = true;
+        };
+      }
     }
 
     object = mesh;
@@ -393,7 +469,6 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
 
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
-
     const sharedMeshPrimitive = getReadObjectBufferView(meshPrimitive.meshPrimitiveTripleBuffer);
 
     const currentMaterialResourceId = meshPrimitive.material?.resourceId || 0;
@@ -428,7 +503,11 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     }
 
     if (nextMaterialResource && nextMaterialResource.type === MaterialType.Standard) {
-      updateMeshPrimitiveStandardMaterial(meshPrimitive.materialObj as PrimitiveStandardMaterial, nextMaterialResource);
+      updateMeshPrimitiveStandardMaterial(
+        meshPrimitive,
+        meshPrimitive.materialObj as PrimitiveStandardMaterial,
+        nextMaterialResource
+      );
     } else if (nextMaterialResource && nextMaterialResource.type === MaterialType.Unlit) {
       updateMeshPrimitiveUnlitMaterial(meshPrimitive.materialObj as PrimitiveUnlitMaterial, nextMaterialResource);
     }
@@ -468,7 +547,7 @@ export function updateNodeMesh(
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, primitive, node, nodeReadView, scene, node.instancedMesh, node.skinnedMesh)
+      createMeshPrimitiveObject(ctx, node, nodeReadView, scene, primitive)
     );
     scene.add(...node.meshPrimitiveObjects);
   }

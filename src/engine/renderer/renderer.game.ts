@@ -18,7 +18,7 @@ import {
   RemoteSceneComponent,
   updateRendererRemoteScenes,
 } from "../scene/scene.game";
-import { RemoteTexture, updateRemoteTextures } from "../texture/texture.game";
+import { RemoteTexture } from "../texture/texture.game";
 import {
   InitializeRendererTripleBuffersMessage,
   RendererMessageType,
@@ -104,7 +104,6 @@ export const RenderableSystem = (state: GameState) => {
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
 
   updateRendererRemoteScenes(renderer.scenes);
-  updateRemoteTextures(renderer.textures);
   updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
   updateRemotePointLights(renderer.pointLights);

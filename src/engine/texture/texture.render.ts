@@ -1,25 +1,23 @@
 import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, TextureEncoding } from "three";
 
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { ImageFormat, LocalImageResource } from "../image/image.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { LocalSamplerResource } from "../sampler/sampler.render";
-import { TextureTripleBuffer, SharedTextureResource } from "./texture.common";
+import { SharedTextureResource } from "./texture.common";
 
 export interface LocalTextureResource {
   resourceId: ResourceId;
   image: LocalImageResource;
   texture: Texture;
-  textureTripleBuffer: TextureTripleBuffer;
 }
 
 export async function onLoadLocalTextureResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
-  { initialProps, textureTripleBuffer }: SharedTextureResource
+  { initialProps }: SharedTextureResource
 ): Promise<LocalTextureResource> {
   const rendererModule = getModule(ctx, RendererModule);
 
@@ -32,7 +30,7 @@ export async function onLoadLocalTextureResource(
   const texture = image.format === ImageFormat.RGBA ? new Texture(image.image as any) : image.texture;
 
   if (sampler) {
-    if (image.format !== ImageFormat.RGBE) {
+    if (image.format === ImageFormat.RGBA) {
       texture.magFilter = sampler.magFilter;
       texture.minFilter = sampler.minFilter;
       texture.wrapS = sampler.wrapS || RepeatWrapping;
@@ -63,7 +61,6 @@ export async function onLoadLocalTextureResource(
     resourceId,
     image,
     texture,
-    textureTripleBuffer,
   };
 
   rendererModule.textures.push(localTexture);
@@ -84,14 +81,5 @@ export function updateLocalTextureResources(ctx: RenderThreadState, textures: Lo
 
       textures.splice(i, 1);
     }
-  }
-
-  for (let i = 0; i < textures.length; i++) {
-    const { texture, textureTripleBuffer } = textures[i];
-    const textureBufferView = getReadObjectBufferView(textureTripleBuffer);
-
-    texture.offset.fromArray(textureBufferView.offset);
-    texture.rotation = textureBufferView.rotation[0];
-    texture.repeat.fromArray(textureBufferView.scale);
   }
 }
