@@ -105,9 +105,11 @@ const colliderShape = new RAPIER.Ball(0.7);
 
 const collisionGroups = 0x00f0_000f;
 
+const _s = new Vector3();
+const _t = new Vector3();
+
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
-  // const { physicsWorld } = physics;
   const input = getModule(ctx, InputModule);
 
   let heldEntity = grabQuery(ctx.world)[0];
@@ -152,18 +154,17 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const source = mat4.getTranslation(vec3.create(), cameraMatrix);
 
-    const s: Vector3 = new Vector3().fromArray(source);
-    const t: Vector3 = new Vector3().fromArray(target);
+    const s: Vector3 = _s.fromArray(source);
+    const t: Vector3 = _t.fromArray(target);
+
+    shapeCastPosition.copy(s);
 
     // const ray = new RAPIER.Ray(s, t);
     // const solid = true;
     // const maxToi = 4.0;
+    // const raycastHit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
 
-    shapeCastPosition.copy(s);
-
-    // TODO: use ray for things like constraint tools
-    // const hit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
-    const hit = physics.physicsWorld.castShape(
+    const shapecastHit = physics.physicsWorld.castShape(
       shapeCastPosition,
       shapeCastRotation,
       t,
@@ -172,11 +173,11 @@ export function GrabThrowSystem(ctx: GameState) {
       collisionGroups
     );
 
-    if (hit != null) {
+    if (shapecastHit !== null) {
       // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
-      const eid = physics.handleToEid.get(hit.colliderHandle);
+      const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
       if (!eid) {
-        console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
+        console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
         addComponent(ctx.world, GrabComponent, eid);

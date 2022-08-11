@@ -1,0 +1,32 @@
+.Reticle {
+  position: absolute;
+  top: 50vh;
+  left: 50vw;
+  background: white;
+  width: 6px;
+  height: 6px;
+  border-radius: 10px;
+  border-style: solid;
+  border-width: 1px;
+  margin-top: -3px;
+  margin-left: -3px;
+  transition: all 0.05s linear;
+}
+
+.Reticle--focused {
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  margin-left: -4px;
+}
+
+.Reticle--mousedown {
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  margin-left: -3px;
+}
+
+.Reticle__blue {
+  background: cornflowerblue;
+}
