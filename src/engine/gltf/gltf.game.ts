@@ -430,11 +430,11 @@ function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
   // the resource is expensive.
   addResourceRef(ctx, mesh.resourceId);
 
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
   for (const primitive of mesh.primitives) {
     addResourceRef(ctx, primitive.resourceId);
-
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
-    const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
     const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
     const worldMatrix = new Matrix4().fromArray(Transform.worldMatrix[nodeEid]);
