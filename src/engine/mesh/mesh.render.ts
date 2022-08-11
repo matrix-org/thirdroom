@@ -7,12 +7,14 @@ import {
   LineSegments,
   Points,
   LineLoop,
-  SkinnedMesh,
   Scene,
   InstancedMesh,
   Vector3,
   Quaternion,
   Matrix4,
+  Bone,
+  SkinnedMesh,
+  Skeleton,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Matrix3,
@@ -24,6 +26,8 @@ import {
 
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+// import { Skeleton, SkinnedMesh } from "../animation/Skeleton";
+import { GLTFMesh } from "../gltf/GLTF";
 import { MaterialType } from "../material/material.common";
 import {
   createDefaultMaterial,
@@ -37,7 +41,7 @@ import {
 } from "../material/material.render";
 import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode, updateTransformFromNode } from "../node/node.render";
+import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
@@ -53,6 +57,7 @@ import {
   SharedLightMapResource,
   SharedMeshPrimitiveResource,
   SharedMeshResource,
+  SharedSkinnedMeshResource,
 } from "./mesh.common";
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
@@ -96,8 +101,8 @@ const ThreeAttributes: { [key: string]: string } = {
   [MeshPrimitiveAttribute.TEXCOORD_0]: "uv",
   [MeshPrimitiveAttribute.TEXCOORD_1]: "uv2",
   [MeshPrimitiveAttribute.COLOR_0]: "color",
-  [MeshPrimitiveAttribute.JOINTS_0]: "skinWeight",
-  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinIndex",
+  [MeshPrimitiveAttribute.JOINTS_0]: "skinIndex",
+  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinWeight",
 };
 
 export async function onLoadLocalMeshPrimitiveResource(
@@ -184,6 +189,13 @@ export interface LocalInstancedMesh {
   attributes: { [key: string]: LocalAccessor };
 }
 
+export interface LocalSkinnedMesh {
+  resourceId: ResourceId;
+  joints: LocalNode[];
+  inverseBindMatrices?: LocalAccessor;
+  skeleton?: Skeleton;
+}
+
 export async function onLoadLocalInstancedMeshResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
@@ -235,14 +247,43 @@ export async function onLoadLocalLightMapResource(
   return localLightMap;
 }
 
+export async function onLoadLocalSkinnedMeshResource(
+  ctx: RenderThreadState,
+  resourceId: ResourceId,
+  props: SharedSkinnedMeshResource
+): Promise<LocalSkinnedMesh> {
+  const inverseBindMatrices = props.inverseBindMatrices
+    ? await waitForLocalResource<LocalAccessor>(ctx, props.inverseBindMatrices)
+    : undefined;
+
+  const jointPromises = props.joints.map((rid: ResourceId) => waitForLocalResource<LocalNode>(ctx, rid));
+
+  const joints = await Promise.all(jointPromises);
+
+  const localSkinnedMesh: LocalSkinnedMesh = {
+    resourceId,
+    joints,
+    inverseBindMatrices,
+  };
+
+  return localSkinnedMesh;
+}
+
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
-const tempMatrix = new Matrix4();
+const tempMatrix4 = new Matrix4();
 
-function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitive): PrimitiveObject3D {
+function createMeshPrimitiveObject(
+  ctx: RenderThreadState,
+  node: LocalNode,
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
+  scene: Scene,
+  primitive: LocalMeshPrimitive
+): PrimitiveObject3D {
   let object: PrimitiveObject3D;
 
+  const { instancedMesh, skinnedMesh, lightMap } = node;
   const { mode, geometryObj, materialObj } = primitive;
 
   if (
@@ -250,14 +291,58 @@ function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitiv
     mode === MeshPrimitiveMode.TRIANGLE_FAN ||
     mode === MeshPrimitiveMode.TRIANGLE_STRIP
   ) {
-    // todo: skinned mesh
-    const isSkinnedMesh = false;
-    const { instancedMesh, lightMap } = node;
+    let mesh: Mesh | InstancedMesh;
 
-    let mesh: Mesh | InstancedMesh | SkinnedMesh;
+    if (skinnedMesh) {
+      if (!skinnedMesh.skeleton) {
+        const bones = [];
+        const boneInverses = [];
 
-    if (isSkinnedMesh) {
-      mesh = new SkinnedMesh(geometryObj, materialObj);
+        // TODO: remove this and use boneMatrices instead
+        for (let j = 0, jl = skinnedMesh.joints.length; j < jl; j++) {
+          const jointNode = skinnedMesh.joints[j];
+
+          if (jointNode) {
+            const boneReadView = getReadObjectBufferView(jointNode.rendererNodeTripleBuffer);
+
+            const bone = (jointNode.bone = new Bone());
+            bones.push(bone);
+            scene.add(bone);
+            setTransformFromNode(ctx, boneReadView, bone);
+
+            const inverseMatrix = new Matrix4();
+
+            if (skinnedMesh.inverseBindMatrices !== undefined) {
+              inverseMatrix.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
+            }
+
+            boneInverses.push(inverseMatrix);
+          } else {
+            throw new Error(`Joint ${skinnedMesh.joints[j]} not found`);
+          }
+        }
+
+        skinnedMesh.skeleton = new Skeleton(bones, boneInverses);
+      }
+
+      const sm = (mesh = new SkinnedMesh(geometryObj, materialObj));
+
+      // TODO: figure out why frustum culling of skinned meshes is affected by the pitch of the camera
+      sm.frustumCulled = false;
+
+      setTransformFromNode(ctx, nodeReadView, mesh);
+
+      sm.bind(skinnedMesh.skeleton, sm.matrixWorld);
+
+      if (!sm.geometry.attributes.skinWeight.normalized) {
+        // we normalize floating point skin weight array to fix malformed assets (see #15319)
+        // it's important to skip this for non-float32 data since normalizeSkinWeights assumes non-normalized inputs
+        sm.normalizeSkinWeights();
+      }
+
+      if (Object.keys(sm.geometry.morphAttributes).length > 0) {
+        updateMorphTargets(sm, primitive as unknown as GLTFMesh);
+      }
     } else if (instancedMesh) {
       const attributes = Object.entries(instancedMesh.attributes);
       const count = attributes[0][1].attribute.count;
@@ -292,7 +377,7 @@ function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitiv
           );
         }
 
-        instancedMeshObject.setMatrixAt(instanceIndex, tempMatrix.compose(tempPosition, tempQuaternion, tempScale));
+        instancedMeshObject.setMatrixAt(instanceIndex, tempMatrix4.compose(tempPosition, tempQuaternion, tempScale));
       }
 
       mesh = instancedMeshObject;
@@ -338,12 +423,6 @@ function createMeshPrimitiveObject(node: LocalNode, primitive: LocalMeshPrimitiv
           (material as any).uniformsNeedUpdate = true;
         };
       }
-    }
-
-    if (mesh instanceof SkinnedMesh && !mesh.geometry.attributes.skinWeight.normalized) {
-      // we normalize floating point skin weight array to fix malformed assets (see #15319)
-      // it's important to skip this for non-float32 data since normalizeSkinWeights assumes non-normalized inputs
-      mesh.normalizeSkinWeights();
     }
 
     object = mesh;
@@ -466,19 +545,42 @@ export function updateNodeMesh(
   }
 
   if (!node.meshPrimitiveObjects) {
-    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) => createMeshPrimitiveObject(node, primitive));
+    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
+      createMeshPrimitiveObject(ctx, node, nodeReadView, scene, primitive)
+    );
     scene.add(...node.meshPrimitiveObjects);
   }
 
-  for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
-    const primitiveObject = node.meshPrimitiveObjects[i];
+  if (node.meshPrimitiveObjects) {
+    for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
+      const primitiveObject = node.meshPrimitiveObjects[i];
 
-    const nextMaterial = node.mesh.primitives[i].materialObj;
+      const nextMaterial = node.mesh.primitives[i].materialObj;
 
-    if (primitiveObject.material !== nextMaterial) {
-      primitiveObject.material = nextMaterial;
+      if (!node.skinnedMesh && primitiveObject.material !== nextMaterial) {
+        primitiveObject.material = nextMaterial;
+      }
+
+      updateTransformFromNode(ctx, nodeReadView, primitiveObject);
+
+      if (node.skinnedMesh) {
+        for (const joint of node.skinnedMesh.joints) {
+          if (joint.bone) {
+            const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
+            updateTransformFromNode(ctx, boneReadView, joint.bone);
+          }
+        }
+      }
     }
+  }
+}
 
-    updateTransformFromNode(ctx, nodeReadView, primitiveObject);
+function updateMorphTargets(mesh: Mesh, gltfMesh: GLTFMesh) {
+  mesh.updateMorphTargets();
+
+  if (gltfMesh.weights !== undefined && mesh.morphTargetInfluences) {
+    for (let i = 0, il = gltfMesh.weights.length; i < il; i++) {
+      mesh.morphTargetInfluences[i] = gltfMesh.weights[i];
+    }
   }
 }

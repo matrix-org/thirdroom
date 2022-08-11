@@ -17,7 +17,6 @@
 }
 
 .RoomTile__content {
-  padding: 0 var(--sp-sm);
   & > *:not(:first-child) {
     margin-top: 2px;
   }

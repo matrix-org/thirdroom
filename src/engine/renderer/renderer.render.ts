@@ -50,9 +50,10 @@ import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
 import {
   InstancedMeshResourceType,
-  LightMapResourceType,
   MeshPrimitiveResourceType,
   MeshResourceType,
+  SkinnedMeshResourceType,
+  LightMapResourceType,
 } from "../mesh/mesh.common";
 import {
   LocalMeshPrimitive,
@@ -60,6 +61,7 @@ import {
   onLoadLocalMeshResource,
   onLoadLocalInstancedMeshResource,
   updateLocalMeshPrimitiveResources,
+  onLoadLocalSkinnedMeshResource,
   onLoadLocalLightMapResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
@@ -167,6 +169,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
       registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
       registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
+      registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
     ]);

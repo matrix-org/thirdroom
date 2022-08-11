@@ -114,6 +114,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type SubscriptionHandle = () => undefined;
 
   export abstract class BaseObservable<T> {
+
     onSubscribeFirst(): void;
     onUnsubscribeLast(): void;
     subscribe(handler: T): SubscriptionHandle;
@@ -128,8 +129,10 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableValue<T> extends BaseObservable<(value: T) => void> {
+
     emit(argument: T): void;
     abstract get(): T;
+
     waitFor(predicate: (value: T) => boolean): IWaitHandle<T>;
   }
 
@@ -151,13 +154,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableMap<K, V> extends BaseObservable<IMapObserver<K, V>> {
+
     emitReset(): void;
     emitAdd(key: K, value: V): void;
     emitUpdate(key: K, value: V, params: any): void;
     emitRemove(key: K, value: V): void;
     abstract [Symbol.iterator](): Iterator<[K, V]>;
+
     abstract get size(): number;
+
     abstract get(key: K): V | undefined;
+
     sortValues(comparator: ListComparator<V>): SortedMapList<V>;
     mapValues<K, V, M>(mapper: Mapper<K, V, M>, updater?: Updater<V, M>): MappedMap<K, V, M>;
     filterValues(filter: (value: V, key: K) => boolean): FilteredMap<K, V>;
@@ -226,13 +233,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableList<T> extends BaseObservable<IListObserver<T>> implements Iterable<T> {
+
     emitReset(): void;
     emitAdd(index: number, value: T): void;
     emitUpdate(index: number, value: T, params?: any): void;
     emitRemove(index: number, value: T): void;
     emitMove(fromIdx: number, toIdx: number, value: T): void;
     abstract [Symbol.iterator](): Iterator<T>;
+
     abstract get length(): number;
+
   }
 
   export class ObservableArray<T> extends BaseObservableList<T> {
@@ -258,6 +268,19 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     onUpdate(key: any, value: T, params: any): void;
     onReset(): void;
     get(index: number): T;
+    get length(): number;
+    [Symbol.iterator](): IterableIterator<T>;
+  }
+
+  export class ConcatList<T> extends BaseObservableList<T> implements IListObserver<T> {
+    constructor(sourceList: BaseObservableList<T>[]);
+    onSubscribeFirst(): void;
+    onUnsubscribeLast(): void;
+    onReset(): void;
+    onAdd(index: number, value: T, list: BaseObservableList<T>): void;
+    onUpdate(index: number, value: T, params: any, list: BaseObservableList<T>): void;
+    onRemove(index: number, value: T, list: BaseObservableList<T>): void;
+    onMove(from: number, to: number, value: T, list: BaseObservableList<T>): void;
     get length(): number;
     [Symbol.iterator](): IterableIterator<T>;
   }
@@ -496,7 +519,136 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     updateEvents(eventEntries: any[]): void;
   }
 
-  export class Timeline {}
+  export interface FragmentIdComparer {
+    compare: (a: number, b: number) => number
+  }
+
+  export abstract class BaseEntry {
+    constructor(fragmentIdComparer: FragmentIdComparer);
+    abstract get fragmentId(): number;
+    abstract get entryIndex(): number;
+    compare(otherEntry: BaseEntry): number;
+    asEventKey(): any;
+  }
+  export class BaseEventEntry extends BaseEntry {
+    constructor(fragmentIdComparer: FragmentIdComparer);
+    get fragmentId(): number;
+    get entryIndex(): number;
+    get isReply(): boolean;
+    get isRedacting(): boolean;
+    get isRedacted(): boolean;
+    get isRedaction(): boolean;
+    get redactionReason(): string | null;
+    setContextEntry(entry: any): void;
+    get contextForEntries(): any;
+    get contextEntry(): any;
+    addLocalRelation(entry: any): undefined | string;
+    removeLocalRelation(entry: any): undefined | string;
+    abortPendingRedaction(): Promise<void>
+    get pendingRedaction(): any;
+    annotate(key: string): any;
+    reply(msgtype: string, body: string): string;
+    isRelatedToId(id: string): boolean;
+    haveAnnotation(key: string): boolean;
+    get relation(): boolean;
+    get pendingAnnotations(): any;
+    get annotations(): null;
+  }
+
+  export class EventEntry extends BaseEventEntry {
+    constructor(eventEntry: any, fragmentIdComparer: FragmentIdComparer);
+    clone(): EventEntry;
+    updateFrom(other: BaseEntry): void;
+    get event(): any;
+    get fragmentId(): number;
+    get entryIndex(): number;
+    get content(): any;
+    get prevContent(): any;
+    get eventType(): string;
+    get stateKey(): string;
+    get sender(): string;
+    get displayName(): string | undefined;
+    get avatarUrl(): string | undefined;
+    get timestamp(): number;
+    get id(): string;
+    setDecryptionResult(result: any): void;
+    get isEncrypted(): boolean;
+    get isDecrypted(): boolean;
+    get isVerified(): boolean;
+    get isUnverified(): boolean;
+    setDecryptionError(err: any): void;
+    get decryptionError(): any;
+    get relatedEventId(): string;
+    get isRedacted(): boolean;
+    get redactionReason(): string | null;
+    get annotations(): any;
+    get relation(): any;
+    get contextEventId(): string | null;
+  }
+
+  export class PendingEventEntry extends BaseEventEntry {
+    constructor(options: any);
+    get fragmentId(): number;
+    get entryIndex(): number;
+    get content(): any
+    get event(): null;
+    get eventType(): string;
+    get stateKey(): null;
+    get sender(): string | undefined;
+    get displayName(): string | undefined;
+    get avatarUrl(): string | undefined;
+    get timestamp(): number;
+    get isPending(): true;
+    get id(): string;
+    get pendingEvent(): any;
+    notifyUpdate(): void;
+    isRelatedToId(id: any): boolean;
+    get relatedEventId(): string;
+    get redactingEntry(): any;
+    get contextEventId(): string | null;
+}
+
+  export class Direction {
+    constructor(isForward: boolean);
+    private readonly isForward: boolean;
+    get isBackward(): boolean;
+    asApiString(): string;
+    reverse(): Direction;
+    static get Forward(): Direction;
+    static get Backward(): Direction;
+}
+  export class FragmentBoundaryEntry extends BaseEntry {
+    constructor(fragment: any, isFragmentStart: boolean, fragmentIdComparer: FragmentIdComparer);
+    static start(fragment: any, fragmentIdComparer: FragmentIdComparer): FragmentBoundaryEntry;
+    static end(fragment: any, fragmentIdComparer: FragmentIdComparer): FragmentBoundaryEntry;
+    get started(): boolean;
+    get hasEnded(): boolean;
+    get fragment(): any;
+    get fragmentId(): number;
+    get entryIndex(): number;
+    get isGap(): boolean;
+    get token(): string | null;
+    set token(token);
+    get edgeReached(): boolean;
+    set edgeReached(reached);
+    get linkedFragmentId(): null | number;
+    set linkedFragmentId(id);
+    get hasLinkedFragment(): boolean;
+    get direction(): Direction;
+    withUpdatedFragment(fragment: any): FragmentBoundaryEntry;
+    createNeighbourEntry(neighbour: any): FragmentBoundaryEntry;
+
+    addLocalRelation(): void;
+    removeLocalRelation(): void;
+  }
+
+  export class Timeline {
+    constructor(options: any);
+    initializePowerLevels(observable: any): void;
+    loadAtTop(amount: number): boolean;
+    getByEventId(eventId: string): EventEntry;
+    get entries(): ConcatList<EventEntry | PendingEventEntry | FragmentBoundaryEntry>;
+  }
 
   export class RoomMember {
     get roomId(): string;
@@ -534,15 +686,24 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class RoomKey {
+
     isForSession(roomId: string, senderKey: string, sessionId: string): boolean;
     abstract get roomId(): string;
+
     abstract get senderKey(): string;
+
     abstract get sessionId(): string;
+
     abstract get claimedEd25519Key(): string;
+
     abstract get serializationKey(): string;
+
     abstract get serializationType(): string;
+
     abstract get eventIds(): string[] | undefined;
+
     abstract loadInto(session: any, pickleKey: string): void;
+
     get isBetter(): boolean | undefined;
     set isBetter(value: boolean | undefined);
   }
@@ -980,12 +1141,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseUpdateView<T extends IObservableValue> implements IView {
+
     protected _value: T;
     protected _boundUpdateFromValue: ((props?: string[]) => void) | null;
 
     abstract mount(args?: IMountArgs): ViewNode;
+
     abstract root(): ViewNode | undefined;
+
     abstract update(...args: any[]): void;
+
     constructor(value: T);
     subscribeOnMount(options?: IMountArgs): void;
     unmount(): void;
@@ -1006,7 +1171,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type ViewClassForEntryFn<T extends SimpleTile = SimpleTile> = (tile: T) => TileViewConstructor<T>;
 
   export abstract class TemplateView<T extends IObservableValue> extends BaseUpdateView<T> {
+
     abstract render(t: Builder<T>, value: T): ViewNode;
+
     mount(options?: IMountArgs): ViewNode;
     unmount(): void;
     root(): ViewNode | undefined;

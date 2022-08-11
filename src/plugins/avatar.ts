@@ -10,7 +10,10 @@ import { PhysicsModule, addRigidBody } from "../engine/physics/physics.game";
 
 const AVATAR_COLLISION_GROUPS = 0x0ff0_f00f;
 
-export function createContainerizedAvatar(ctx: GameState, uri: string) {
+const AVATAR_HEIGHT = 1;
+const AVATAR_RADIUS = 0.5;
+
+export function createContainerizedAvatar(ctx: GameState, uri: string, height = AVATAR_HEIGHT, radius = AVATAR_RADIUS) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
@@ -23,13 +26,16 @@ export function createContainerizedAvatar(ctx: GameState, uri: string) {
   Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
+
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
   addChild(container, eid);
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5).setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+  const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius).setActiveEvents(
+    RAPIER.ActiveEvents.CONTACT_EVENTS
+  );
 
   colliderDesc.setCollisionGroups(AVATAR_COLLISION_GROUPS);
   colliderDesc.setSolverGroups(AVATAR_COLLISION_GROUPS);

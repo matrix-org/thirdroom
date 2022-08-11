@@ -16,7 +16,7 @@ import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -36,6 +36,8 @@ import {
   MeshPrimitiveAttribute,
   SharedLightMapResource,
   LightMapResourceType,
+  SharedSkinnedMeshResource,
+  SkinnedMeshResourceType,
 } from "./mesh.common";
 
 export type MeshPrimitiveBufferView = ObjectBufferView<typeof meshPrimitiveSchema, ArrayBuffer>;
@@ -81,6 +83,19 @@ export interface RemoteInstancedMeshProps {
   attributes: { [key: string]: RemoteAccessor<any, any> };
 }
 
+export interface RemoteSkinnedMesh {
+  name: string;
+  resourceId: number;
+  joints: RemoteNode[];
+  inverseBindMatrices?: RemoteAccessor<any, any>;
+}
+
+export interface RemoteSkinnedMeshProps {
+  name?: string;
+  joints: RemoteNode[];
+  inverseBindMatrices?: RemoteAccessor<any, any>;
+}
+
 export interface RemoteLightMap {
   name: string;
   resourceId: number;
@@ -98,6 +113,7 @@ export interface RemoteLightMapProps {
 const DEFAULT_MESH_NAME = "Mesh";
 const DEFAULT_INSTANCED_MESH_NAME = "Instanced Mesh";
 const DEFAULT_LIGHT_MAP_NAME = "Light Map";
+const DEFAULT_SKINNED_MESH_NAME = "Skinned Mesh";
 
 export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): RemoteMesh {
   const name = props.name || DEFAULT_MESH_NAME;
@@ -272,6 +288,37 @@ export function createRemoteInstancedMesh(ctx: GameState, props: RemoteInstanced
   };
 }
 
+export function createRemoteSkinnedMesh(ctx: GameState, props: RemoteSkinnedMeshProps): RemoteSkinnedMesh {
+  const name = props.name || DEFAULT_SKINNED_MESH_NAME;
+  const joints = props.joints;
+  const inverseBindMatrices = props.inverseBindMatrices;
+
+  const sharedResource: SharedSkinnedMeshResource = {
+    joints: joints.map((j) => j.rendererResourceId),
+    inverseBindMatrices: props.inverseBindMatrices?.resourceId,
+  };
+
+  const resourceId = createResource<SharedSkinnedMeshResource>(
+    ctx,
+    Thread.Render,
+    SkinnedMeshResourceType,
+    sharedResource,
+    {
+      name,
+      dispose() {
+        if (props.inverseBindMatrices) disposeResource(ctx, props.inverseBindMatrices.resourceId);
+      },
+    }
+  );
+
+  return {
+    name,
+    resourceId,
+    joints,
+    inverseBindMatrices,
+  };
+}
+
 export function createRemoteLightMap(ctx: GameState, props: RemoteLightMapProps): RemoteLightMap {
   const name = props.name || DEFAULT_LIGHT_MAP_NAME;
 
@@ -387,7 +434,7 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
 
 const COLLISION_GROUPS = 0xffff_ffff;
 
-export const createCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = ctx;
   const { physicsWorld } = getModule(ctx, PhysicsModule);
   const eid = addEntity(world);
@@ -414,6 +461,24 @@ export const createCube = (ctx: GameState, size: number, material?: RemoteMateri
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(world, eid, rigidBody);
+
+  return eid;
+};
+
+export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+  const { world } = ctx;
+  const eid = addEntity(world);
+  addTransformComponent(world, eid);
+
+  createRemoteStandardMaterial(ctx, {
+    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
+    roughnessFactor: 0.8,
+    metallicFactor: 0.8,
+  });
+
+  addRemoteNodeComponent(ctx, eid, {
+    mesh: createCubeMesh(ctx, size, material),
+  });
 
   return eid;
 };
