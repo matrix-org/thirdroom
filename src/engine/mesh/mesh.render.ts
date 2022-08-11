@@ -407,7 +407,6 @@ function createMeshPrimitiveObject(
           material.userData.lightMapTransform = lightMapTransform;
         }
 
-        // TODO: This still isn't working because the uniforms aren't refreshing in-between draws
         mesh.onBeforeRender = () => {
           material.lightMapIntensity = intensity * Math.PI;
           material.lightMap = lightMapTexture.texture;
@@ -420,6 +419,8 @@ function createMeshPrimitiveObject(
             0,
             0
           );
+
+          // This is currently added via a patch to Three.js
           (material as any).uniformsNeedUpdate = true;
         };
       }

@@ -56,7 +56,6 @@ export function GLTFViewer() {
       }
 
       if (mainThread && url) {
-        console.log(fileMap);
         mainThread.sendMessage(Thread.Game, {
           type: "gltf-viewer-load-gltf",
           url,

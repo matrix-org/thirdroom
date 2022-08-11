@@ -231,11 +231,12 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     loadPlayerRig(ctx);
   } catch (error) {
     console.error(error);
-  } finally {
-    // URL.revokeObjectURL(message.url);
-    // for (const objectUrl of message.fileMap.values()) {
-    //   URL.revokeObjectURL(objectUrl);
-    // }
+
+    URL.revokeObjectURL(message.url);
+
+    for (const objectUrl of message.fileMap.values()) {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 }
 

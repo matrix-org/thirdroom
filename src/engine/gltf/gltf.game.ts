@@ -501,17 +501,27 @@ const gltfCache: Map<string, { refCount: number; promise: Promise<GLTFResource> 
 export function disposeGLTFResource(resource: GLTFResource): boolean {
   const cachedGltf = gltfCache.get(resource.url);
 
-  if (!cachedGltf) {
-    return false;
+  let revoke = !cachedGltf;
+
+  if (cachedGltf) {
+    cachedGltf.refCount--;
+
+    if (cachedGltf.refCount <= 0) {
+      gltfCache.delete(resource.url);
+
+      revoke = true;
+    }
   }
 
-  cachedGltf.refCount--;
+  if (revoke) {
+    URL.revokeObjectURL(resource.url);
 
-  if (cachedGltf.refCount <= 0) {
-    gltfCache.delete(resource.url);
+    for (const objectUrl of resource.fileMap.values()) {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
-  return true;
+  return revoke;
 }
 
 export async function loadGLTFResource(uri: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
