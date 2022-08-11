@@ -282,9 +282,10 @@ async function _inflateGLTFNode(
       }
 
       if (node.extras && node.extras["directional-light"]) {
-        const remoteNode = RemoteNodeComponent.get(nodeEid);
+        const remoteNode =
+          RemoteNodeComponent.get(nodeEid) || addRemoteNodeComponent(ctx, nodeEid, { name: node.name });
 
-        if (remoteNode && !remoteNode.light) {
+        if (!remoteNode.light) {
           remoteNode.light = createDirectionalLightResource(ctx, {
             castShadow: true,
             intensity: 0.8,
