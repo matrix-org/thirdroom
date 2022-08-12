@@ -6,7 +6,7 @@ import { Quaternion, Vector3 } from "three";
 import { Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { getModule, Thread } from "../../engine/module/module.common";
-import { Networked, NetworkModule } from "../../engine/network/network.game";
+import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../../engine/network/network.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { ReticleFocusMessage } from "./reticle.common";
@@ -60,17 +60,25 @@ export function ReticleFocusSystem(ctx: GameState) {
     collisionGroups
   );
 
-  let eid;
-  let peerId;
   if (hit !== null) {
-    eid = physics.handleToEid.get(hit.colliderHandle);
+    const eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
     } else {
       addComponent(ctx.world, FocusComponent, eid);
+
+      let peerId;
       for (const [p, e] of network.peerIdToEntityId.entries()) {
         if (eid === e) {
           peerId = p;
+        }
+      }
+
+      const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+      let ownerId;
+      for (const [p, i] of network.peerIdToIndex.entries()) {
+        if (ownerIdIndex === i) {
+          ownerId = p;
         }
       }
       ctx.sendMessage(Thread.Main, {
@@ -79,6 +87,7 @@ export function ReticleFocusSystem(ctx: GameState) {
         entityId: eid,
         networkId: eid ? Networked.networkId[eid] : undefined,
         prefab: eid ? Prefab.get(eid) : undefined,
+        ownerId,
         peerId,
       });
     }

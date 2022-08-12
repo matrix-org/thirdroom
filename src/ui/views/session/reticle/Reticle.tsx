@@ -15,6 +15,7 @@ export interface EntityData {
   entityId?: number;
   networkId?: number;
   prefab?: string;
+  ownerId?: string;
   peerId?: string;
 }
 

@@ -26,7 +26,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
 
   useEffect(() => {
     if (entity?.entityId) {
-      const peer = !!entity?.peerId;
+      const peer = entity?.peerId !== undefined;
       setIsPeer(peer);
     }
   }, [entity, isPeer]);
@@ -40,6 +40,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
     >
       <span hidden={isPeer}>
         <div className="Text Text--bold Text-b1">{entity?.prefab}</div>
+        <div className="Text Text-b3 Text--world Text--regular">{entity?.ownerId}</div>
         <div className="Text Text-b3 Text--world Text--regular">
           <span className="BoxedKey">{!entity?.peerId && "E"}</span> /
           <Icon src={MouseIC} className="MouseIcon Icon--world" />
