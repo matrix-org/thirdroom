@@ -120,6 +120,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
+    renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
     const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
