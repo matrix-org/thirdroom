@@ -92,6 +92,7 @@ const GRAB_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
 
 const _direction = vec3.create();
+const _source = vec3.create();
 const _target = vec3.create();
 
 const _impulse = new RAPIER.Vector3(0, 0, 0);
@@ -152,7 +153,7 @@ export function GrabThrowSystem(ctx: GameState) {
     vec3.transformQuat(target, target, _cameraWorldQuat);
     vec3.scale(target, target, GRAB_DISTANCE);
 
-    const source = mat4.getTranslation(vec3.create(), cameraMatrix);
+    const source = mat4.getTranslation(_source, cameraMatrix);
 
     const s: Vector3 = _s.fromArray(source);
     const t: Vector3 = _t.fromArray(target);

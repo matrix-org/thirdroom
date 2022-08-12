@@ -1,0 +1,12 @@
+.EntitySelected {
+  position: absolute;
+  bottom: 100px;
+  right: 15px;
+
+  padding: var(--sp-md);
+  background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
+  border-radius: var(--br-xs);
+
+  gap: var(--sp-md);
+}

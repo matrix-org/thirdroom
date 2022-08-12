@@ -18,6 +18,7 @@ import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Reticle } from "../reticle/Reticle";
+import { EntitySelected } from "../entity-selected/EntitySelected";
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -28,6 +29,34 @@ export function WorldView() {
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
+
+  const [entityId, setEntityId] = useState<number>();
+  const [networkId, setNetworkId] = useState<number>();
+  const [peerId, setPeerId] = useState<string>();
+
+  const onEntityClicked = ({
+    entityId,
+    networkId,
+    peerId,
+  }: {
+    entityId?: number;
+    networkId?: number;
+    peerId?: string;
+  }) => {};
+
+  const onEntityFocused = ({
+    entityId,
+    networkId,
+    peerId,
+  }: {
+    entityId?: number;
+    networkId?: number;
+    peerId?: string;
+  }) => {
+    setEntityId(entityId);
+    setNetworkId(networkId);
+    setPeerId(peerId);
+  };
 
   useKeyDown(
     (e) => {
@@ -122,7 +151,8 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!isOverlayOpen && <Reticle />}
+      {!isOverlayOpen && entityId && <EntitySelected entityId={entityId} networkId={networkId} peerId={peerId} />}
+      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>
   );
 }
