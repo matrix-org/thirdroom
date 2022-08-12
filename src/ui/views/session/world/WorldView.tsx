@@ -10,7 +10,8 @@ import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
-import PeopleIC from "../../../../../res/ic/peoples.svg";
+import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
+import SubtitlesOffIC from "../../../../../res/ic/subtitles-off.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
@@ -124,7 +125,12 @@ export function WorldView() {
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
         <Tooltip content={showFocusedEntity ? "Show Names" : "Hide Names"}>
-          <IconButton variant="world" label="focusedEntity" iconSrc={PeopleIC} onClick={toggleShowFocusedEnity} />
+          <IconButton
+            variant="world"
+            label="focusedEntity"
+            iconSrc={showFocusedEntity ? SubtitlesIC : SubtitlesOffIC}
+            onClick={toggleShowFocusedEnity}
+          />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           O

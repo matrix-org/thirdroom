@@ -1,19 +1,30 @@
 .EntitySelected {
-  position: relative;
-  top: 8vh;
-  margin: auto;
-  max-width: 33vw;
-  text-align: center;
-  padding: var(--sp-xs);
+  position: absolute;
+  top: 50vh;
+  left: 50vw;
+  margin-top: 15px;
+  margin-left: 15px;
+  padding: 5px 8px;
   background-color: var(--bg-world-overlay);
-  border-radius: var(--br-xs);
+  border-radius: 0px var(--br-xs) var(--br-xs) var(--br-xs);
   color: white;
   opacity: 1;
   gap: var(--sp-md);
-  transition: all 0.2s ease;
 }
 
-.EntitySelected--hide {
-  top: 6vh;
-  opacity: 0;
+.MouseIcon {
+  margin-bottom: -2px;
+  width: 12px;
+  height: 12px;
+}
+
+.BoxedKey {
+  position: relative;
+  font-size: 8px;
+  border-radius: 2px;
+  border-color: #ffffff;
+  border-style: solid;
+  border-width: 1px;
+  padding: 0px 2px;
+  bottom: 1px;
 }
