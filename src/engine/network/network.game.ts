@@ -36,7 +36,7 @@ import {
   SetHostMessage,
   SetPeerIdMessage,
 } from "./network.common";
-import { createPrefabEntity, Prefab } from "../prefab/prefab.game";
+import { addPrefabComponent, createPrefabEntity, Prefab } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { RemoteNodeComponent } from "../node/node.game";
 import {
@@ -480,8 +480,7 @@ export function createRemoteNetworkedEntity(state: GameState, nid: number, prefa
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  addComponent(state.world, Prefab, eid);
-  Prefab.set(eid, prefab);
+  addPrefabComponent(state.world, eid, prefab);
 
   addChild(state.activeScene, eid);
 

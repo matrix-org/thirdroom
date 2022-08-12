@@ -18,7 +18,7 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { Prefab } from "../engine/prefab/prefab.game";
+import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
@@ -158,7 +158,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  Prefab.set(playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
+  addPrefabComponent(world, playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
   network.peerIdToEntityId.set(network.peerId, playerRig);
 
