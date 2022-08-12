@@ -1,12 +1,19 @@
 .EntitySelected {
-  position: absolute;
-  bottom: 100px;
-  right: 15px;
-
-  padding: var(--sp-md);
-  background-color: var(--bg-surface);
-  box-shadow: var(--bs-surface);
+  position: relative;
+  top: 8vh;
+  margin: auto;
+  max-width: 33vw;
+  text-align: center;
+  padding: var(--sp-xs);
+  background-color: var(--bg-world-overlay);
   border-radius: var(--br-xs);
-
+  color: white;
+  opacity: 1;
   gap: var(--sp-md);
+  transition: all 0.2s ease;
+}
+
+.EntitySelected--hide {
+  top: 6vh;
+  opacity: 0;
 }

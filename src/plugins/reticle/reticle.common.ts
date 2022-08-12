@@ -5,5 +5,6 @@ export interface ReticleFocusMessageType {
   focused: boolean;
   entityId?: number;
   networkId?: number;
+  prefab?: string;
   peerId?: string;
 }

@@ -8,6 +8,7 @@ import { GameState } from "../../engine/GameTypes";
 import { getModule, Thread } from "../../engine/module/module.common";
 import { Networked, NetworkModule } from "../../engine/network/network.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
+import { Prefab } from "../../engine/prefab/prefab.game";
 import { ReticleFocusMessage } from "./reticle.common";
 
 const FocusComponent = defineComponent();
@@ -85,6 +86,7 @@ export function ReticleFocusSystem(ctx: GameState) {
       focused: true,
       entityId: eid,
       networkId: eid ? Networked.networkId[eid] : undefined,
+      prefab: eid ? Prefab.get(eid) : undefined,
       peerId,
     });
 

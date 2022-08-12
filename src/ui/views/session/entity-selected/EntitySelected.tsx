@@ -1,19 +1,37 @@
 import classNames from "classnames";
+import { useEffect, useRef } from "react";
+
+import { EntityData } from "../reticle/Reticle";
 
 import "./EntitySelected.css";
 
-interface ISelectedProps {
-  entityId?: number;
-  networkId?: number;
-  peerId?: string;
+function usePrevious(value: any) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current;
 }
+export default usePrevious;
 
-export function EntitySelected({ entityId, networkId, peerId }: ISelectedProps) {
+export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
+  const lastRef = useRef<EntityData>();
+  useEffect(() => {
+    lastRef.current = entity;
+  }, [entity]);
+
   return (
-    <div className={classNames("EntitySelected", {})}>
-      <div>{entityId ? `EntityId: ${entityId}` : ""}</div>
-      <div>{networkId ? `NetworkId: ${networkId}` : ""}</div>
-      <div>{peerId ? `PeerId: ${peerId}` : ""}</div>
+    <div
+      className={classNames("EntitySelected Text Text-b2 Text--world Text--regular", {
+        "EntitySelected--hide": !entity || !entity.entityId,
+      })}
+    >
+      <div>
+        {entity && entity.peerId ? entity.peerId : entity && entity.prefab && `${entity.prefab}-${entity.networkId}`}
+        {lastRef.current && lastRef.current.peerId
+          ? lastRef.current.peerId
+          : lastRef.current && lastRef.current.prefab && `${lastRef.current.prefab}-${lastRef.current.networkId}`}
+      </div>
     </div>
   );
 }

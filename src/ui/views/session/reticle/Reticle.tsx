@@ -11,9 +11,16 @@ import { SessionOutletContext } from "../SessionView";
 
 import "./Reticle.css";
 
+export interface EntityData {
+  entityId?: number;
+  networkId?: number;
+  prefab?: string;
+  peerId?: string;
+}
+
 interface IReticleProps {
-  onEntityFocused: (o: { entityId?: number; networkId?: number; peerId?: string }) => void;
-  onEntityClicked: (o: { entityId?: number; networkId?: number; peerId?: string }) => void;
+  onEntityFocused: (o: EntityData) => void;
+  onEntityClicked: (o: EntityData) => void;
 }
 
 export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
@@ -21,30 +28,26 @@ export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
 
   const ctx = useMainThreadContext();
   const [focused, setFocused] = useState<boolean>(false);
-  const [mouseDown, setMouseDown] = useState<boolean>(false);
-  const [entityId, setEntityId] = useState<number>();
-  const [networkId, setNetworkId] = useState<number>();
-  const [peerId, setPeerId] = useState<string>();
+  const [entity, setEntity] = useState<EntityData>();
+  const [mouseDown, setMouseDown] = useState<boolean>();
 
   useEffect(() => {
     const onReticleFocus = (ctx: IMainThreadContext, message: ReticleFocusMessageType) => {
       setFocused(message.focused);
-      setPeerId(message.peerId);
-      setEntityId(message.entityId);
-      setNetworkId(message.networkId);
-      onEntityFocused({ entityId: message.entityId, networkId: message.networkId, peerId: message.peerId });
+      setEntity(message);
+      onEntityFocused(message);
     };
     return registerMessageHandler(ctx, ReticleFocusMessage, onReticleFocus);
-  }, [ctx, onEntityFocused]);
+  }, [ctx, entity, onEntityFocused]);
 
   useEvent(
     "mousedown",
     () => {
-      if (entityId || peerId || networkId) onEntityClicked({ entityId, peerId });
+      if (entity) onEntityClicked(entity);
       setMouseDown(true);
     },
     canvasRef.current,
-    [entityId, peerId]
+    [entity]
   );
   useEvent(
     "mouseup",
@@ -61,7 +64,7 @@ export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
         "Reticle--focused": focused,
         "Reticle--mousedown": mouseDown,
         Reticle__blue: focused,
-        Reticle__yellow: focused && peerId,
+        Reticle__yellow: focused && entity?.peerId,
       })}
     />
   );

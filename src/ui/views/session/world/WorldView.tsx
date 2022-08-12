@@ -17,7 +17,7 @@ import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
-import { Reticle } from "../reticle/Reticle";
+import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
 
 export function WorldView() {
@@ -30,32 +30,12 @@ export function WorldView() {
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
-  const [entityId, setEntityId] = useState<number>();
-  const [networkId, setNetworkId] = useState<number>();
-  const [peerId, setPeerId] = useState<string>();
+  const [entity, setEntity] = useState<EntityData>();
 
-  const onEntityClicked = ({
-    entityId,
-    networkId,
-    peerId,
-  }: {
-    entityId?: number;
-    networkId?: number;
-    peerId?: string;
-  }) => {};
+  const onEntityClicked = (entity: EntityData) => {};
 
-  const onEntityFocused = ({
-    entityId,
-    networkId,
-    peerId,
-  }: {
-    entityId?: number;
-    networkId?: number;
-    peerId?: string;
-  }) => {
-    setEntityId(entityId);
-    setNetworkId(networkId);
-    setPeerId(peerId);
+  const onEntityFocused = (entity: EntityData) => {
+    setEntity(entity);
   };
 
   useKeyDown(
@@ -151,7 +131,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!isOverlayOpen && entityId && <EntitySelected entityId={entityId} networkId={networkId} peerId={peerId} />}
+      {!isOverlayOpen && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>
   );
