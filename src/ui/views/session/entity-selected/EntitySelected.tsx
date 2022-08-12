@@ -20,18 +20,18 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
     lastRef.current = entity;
   }, [entity]);
 
+  const displayName = (e: EntityData | undefined) => {
+    if (e && e.peerId) return e.peerId;
+    else if (e && e.prefab && e.networkId) return e.prefab + "-" + e.networkId;
+  };
+
   return (
     <div
       className={classNames("EntitySelected Text Text-b2 Text--world Text--regular", {
         "EntitySelected--hide": !entity || !entity.entityId,
       })}
     >
-      <div>
-        {entity && entity.peerId ? entity.peerId : entity && entity.prefab && `${entity.prefab}-${entity.networkId}`}
-        {lastRef.current && lastRef.current.peerId
-          ? lastRef.current.peerId
-          : lastRef.current && lastRef.current.prefab && `${lastRef.current.prefab}-${lastRef.current.networkId}`}
-      </div>
+      <div>{displayName(entity || lastRef.current)}</div>
     </div>
   );
 }

@@ -63,7 +63,7 @@ export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
       className={classNames("Reticle", {
         "Reticle--focused": focused,
         "Reticle--mousedown": mouseDown,
-        Reticle__blue: focused,
+        Reticle__blue: focused && !entity?.peerId,
         Reticle__yellow: focused && entity?.peerId,
       })}
     />
