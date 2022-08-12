@@ -31,7 +31,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
         "EntitySelected--hide": !entity || !entity.entityId,
       })}
     >
-      <div>{displayName(entity || lastRef.current)}</div>
+      <div>{displayName(entity?.prefab || entity?.prefab || entity?.networkId ? entity : lastRef.current)}</div>
     </div>
   );
 }
