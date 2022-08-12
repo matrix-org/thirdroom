@@ -4,7 +4,7 @@ export interface Deferred<T> {
   reject(error: any): void;
 }
 
-export function createDeferred<T>(timeout: number | false = 3000, timeoutMessage?: string): Deferred<T> {
+export function createDeferred<T>(timeout: number | false = 30000, timeoutMessage?: string): Deferred<T> {
   const deferred: any = {};
 
   deferred.promise = new Promise<T>((resolve, reject) => {
