@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import MouseIC from "../../../../../res/ic/mouse.svg";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -22,24 +22,36 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
     lastRef.current = entity;
   }, [entity]);
 
-  const displayName = (e: EntityData | undefined) => {
-    if (e && e.peerId) return e.peerId;
-    else if (e && e.prefab) return e.prefab;
-  };
+  const [isPeer, setIsPeer] = useState<boolean>();
+
+  useEffect(() => {
+    if (entity?.entityId) {
+      const peer = !!entity?.peerId;
+      setIsPeer(peer);
+    }
+  }, [entity, isPeer]);
+
+  const getUsername = (s: string | undefined) => (s ? s.split("@")[1]?.split(":")[0] : "");
 
   return (
     <div
       hidden={!entity || !entity.entityId}
       className={classNames("EntitySelected Text Text-b2 Text--world Text--regular")}
     >
-      <div className="Text--bold">{displayName(entity?.prefab || entity?.prefab ? entity : lastRef.current)}</div>
-      <div className="Text Text-b3 Text--world Text--regular">
-        <span hidden={!!entity?.peerId}>
+      <span hidden={isPeer}>
+        <div className="Text Text--bold Text-b1">{entity?.prefab}</div>
+        <div className="Text Text-b3 Text--world Text--regular">
           <span className="BoxedKey">{!entity?.peerId && "E"}</span> /
           <Icon src={MouseIC} className="MouseIcon Icon--world" />
-        </span>
-        {!entity?.peerId && entity?.prefab && " Grab"}
-      </div>
+          <span className="Text Text-b3"> Grab</span>
+        </div>
+      </span>
+      <span hidden={!isPeer}>
+        <div className="Text Text--bold Text-b1">{getUsername(entity?.peerId)}</div>
+        <div className="Text Text-b3 Text--world Text--regular">{entity?.peerId}</div>
+        <Icon src={MouseIC} className="MouseIcon Icon--world" />
+        <span className="Text Text-b3"> More Info</span>
+      </span>
     </div>
   );
 }
