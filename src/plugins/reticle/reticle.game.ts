@@ -27,7 +27,7 @@ const shapeCastRotation = new Quaternion();
 
 const colliderShape = new RAPIER.Ball(0.7);
 
-const collisionGroups = 0x00ff_ffff;
+const collisionGroups = 0x000f_0f00;
 
 const _s = new Vector3();
 const _t = new Vector3();
