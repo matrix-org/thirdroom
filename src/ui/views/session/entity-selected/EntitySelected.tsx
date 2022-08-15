@@ -1,4 +1,3 @@
-import { RoomMember } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 
