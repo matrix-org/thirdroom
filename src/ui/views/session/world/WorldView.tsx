@@ -159,7 +159,7 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
-        <Tooltip content={showActiveMembers ? "Show Active Members" : "Hide Active Members"}>
+        <Tooltip content={showActiveMembers ? "Show Members" : "Hide Members"}>
           <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
