@@ -1,12 +1,14 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, defineQuery, enterQuery, exitQuery, addComponent, removeComponent } from "bitecs";
+import { defineComponent, defineQuery, exitQuery, addComponent, removeComponent, enterQuery } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 import { Quaternion, Vector3 } from "three";
 
 import { Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { getModule, Thread } from "../../engine/module/module.common";
+import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../../engine/network/network.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
+import { Prefab } from "../../engine/prefab/prefab.game";
 import { ReticleFocusMessage } from "./reticle.common";
 
 const FocusComponent = defineComponent();
@@ -16,6 +18,7 @@ const exitFocusQuery = exitQuery(focusQuery);
 
 const MAX_FOCUS_DISTANCE = 2;
 
+const _source = vec3.create();
 const _target = vec3.create();
 const _cameraWorldQuat = quat.create();
 
@@ -24,12 +27,13 @@ const shapeCastRotation = new Quaternion();
 
 const colliderShape = new RAPIER.Ball(0.7);
 
-const collisionGroups = 0x00f0_000f;
+const collisionGroups = 0x000f_0f00;
 
 const _s = new Vector3();
 const _t = new Vector3();
 
 export function ReticleFocusSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
 
   // raycast outward from camera
@@ -40,7 +44,7 @@ export function ReticleFocusSystem(ctx: GameState) {
   vec3.transformQuat(target, target, _cameraWorldQuat);
   vec3.scale(target, target, MAX_FOCUS_DISTANCE);
 
-  const source = mat4.getTranslation(vec3.create(), cameraMatrix);
+  const source = mat4.getTranslation(_source, cameraMatrix);
 
   const s: Vector3 = _s.fromArray(source);
   const t: Vector3 = _t.fromArray(target);
@@ -56,12 +60,31 @@ export function ReticleFocusSystem(ctx: GameState) {
     collisionGroups
   );
 
+  let eid;
+  let peerId;
+  let ownerId;
   if (hit !== null) {
-    const eid = physics.handleToEid.get(hit.colliderHandle);
+    eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
-    } else {
+    } else if (eid !== focusQuery(ctx.world)[0]) {
+      focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
       addComponent(ctx.world, FocusComponent, eid);
+
+      for (const [p, e] of network.peerIdToEntityId.entries()) {
+        if (eid === e) {
+          peerId = p;
+          break;
+        }
+      }
+
+      const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+      for (const [p, i] of network.peerIdToIndex.entries()) {
+        if (ownerIdIndex === i) {
+          ownerId = p;
+          break;
+        }
+      }
     }
   } else {
     // clear focus
@@ -69,8 +92,18 @@ export function ReticleFocusSystem(ctx: GameState) {
   }
 
   const entered = enterFocusQuery(ctx.world);
-  if (entered[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: true });
+  if (entered[0])
+    ctx.sendMessage(Thread.Main, {
+      type: ReticleFocusMessage,
+      focused: true,
+      entityId: eid,
+      networkId: eid ? Networked.networkId[eid] : undefined,
+      prefab: eid ? Prefab.get(eid) : undefined,
+      ownerId,
+      peerId,
+    });
 
   const exited = exitFocusQuery(ctx.world);
-  if (exited[0]) ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: false });
+  if (exited[0] && focusQuery(ctx.world).length === 0)
+    ctx.sendMessage(Thread.Main, { type: ReticleFocusMessage, focused: false });
 }

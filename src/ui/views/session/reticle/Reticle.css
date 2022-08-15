@@ -14,10 +14,10 @@
 }
 
 .Reticle--focused {
-  width: 8px;
-  height: 8px;
-  margin-top: -4px;
-  margin-left: -4px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  margin-left: -5px;
 }
 
 .Reticle--mousedown {
@@ -28,5 +28,9 @@
 }
 
 .Reticle__blue {
-  background: cornflowerblue;
+  background: var(--usercolor1);
+}
+
+.Reticle__yellow {
+  background: var(--usercolor8);
 }

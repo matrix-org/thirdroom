@@ -1,6 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
-import { GameState } from "../GameTypes";
+import { GameState, World } from "../GameTypes";
 import { createPhysicsCube } from "../mesh/mesh.game";
 import { defineModule, getModule } from "../module/module.common";
 
@@ -40,8 +40,7 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
 
   template.create = () => {
     const eid = create();
-    Prefab.set(eid, template.name);
-    addComponent(state.world, Prefab, eid);
+    addPrefabComponent(state.world, eid, template.name);
     return eid;
   };
 }
@@ -75,4 +74,14 @@ export const createPrefabEntity = (state: GameState, prefab: string) => {
   } else {
     return createLoadingEntity(state, 1);
   }
+};
+
+export const addPrefabComponent = (world: World, eid: number, prefab: string) => {
+  addComponent(world, Prefab, eid);
+  Prefab.set(eid, prefab);
+};
+
+export const removePrefabComponent = (world: World, eid: number) => {
+  addComponent(world, Prefab, eid);
+  Prefab.delete(eid);
 };
