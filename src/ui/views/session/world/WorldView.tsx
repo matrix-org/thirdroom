@@ -50,10 +50,13 @@ export function WorldView() {
     localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
   }, [showFocusedEntity]);
 
-  const [showActiveMembers, setShowActiveMembers] = useState<boolean>();
+  const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
-  const onEntityClicked = (entity: EntityData) => {
-    if (entity.peerId) toggleShowActiveMembers();
+  const onEntitySelected = (entity: EntityData) => {
+    if (entity.peerId) {
+      setShowActiveMembers(true);
+      document.exitPointerLock();
+    }
   };
 
   const onEntityFocused = (entity: EntityData) => {
@@ -61,12 +64,11 @@ export function WorldView() {
   };
 
   const toggleShowFocusedEnity = () => {
-    setShowFocusedEntity(!showFocusedEntity);
+    setShowFocusedEntity((e) => !e);
   };
 
   const toggleShowActiveMembers = () => {
-    document.exitPointerLock();
-    setShowActiveMembers(!showActiveMembers);
+    setShowActiveMembers((e) => !e);
   };
 
   useKeyDown(
@@ -75,19 +77,24 @@ export function WorldView() {
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
+      if (isEscape && showActiveMembers) {
+        canvasRef.current?.requestPointerLock();
+        setShowActiveMembers(false);
+        return;
+      }
       if (isEscape && isChatOpen) {
         canvasRef.current?.requestPointerLock();
         closeWorldChat();
         return;
       }
-      if (isEscape && isOverlayOpen === false) {
-        document.exitPointerLock();
-        openOverlay();
-        return;
-      }
       if (isEscape && isOverlayOpen) {
         canvasRef.current?.requestPointerLock();
         closeOverlay();
+        return;
+      }
+      if (isEscape && isOverlayOpen === false) {
+        document.exitPointerLock();
+        openOverlay();
         return;
       }
       if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
@@ -119,6 +126,7 @@ export function WorldView() {
       isChatOpen,
       isOverlayOpen,
       showFocusedEntity,
+      showActiveMembers,
       openWorldChat,
       closeWorldChat,
       openOverlay,
@@ -199,15 +207,12 @@ export function WorldView() {
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
       {!("isBeingCreated" in world) && (
-        <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
-          <MemberListDialog
-            room={world}
-            requestClose={() => canvasRef.current?.requestPointerLock() && setShowActiveMembers(false)}
-          />
+        <Dialog open={showActiveMembers}>
+          <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
         </Dialog>
       )}
       {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
-      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
+      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
     </div>
   );
 }
