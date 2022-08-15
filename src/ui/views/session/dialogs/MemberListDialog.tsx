@@ -50,10 +50,11 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
     if (activeCall) {
       const me = joined?.find((m) => m.userId === session.userId);
       setActive(
-        Array.from(new Map(activeCall.members).values())
-          .filter((m) => m.isConnected)
-          .map((m) => m.member)
-          .concat(me ? [me] : [])
+        (me ? [me] : []).concat(
+          Array.from(new Map(activeCall.members).values())
+            .filter((m) => m.isConnected)
+            .map((m) => m.member)
+        )
       );
     }
   }, [activeCall, joined, session]);
@@ -84,8 +85,8 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
     const { userId, name, avatarUrl, membership } = member;
     const userPL = getPowerLevel(userId);
 
-    // todo: how to get this to rerender?
     const menuItems: ReactNode[] = [
+      // todo: how to get this to rerender right away?
       <DropdownMenuItem key="mute" onSelect={() => mute(userId)}>
         {isPeerMuted(engine, userId) ? "Unmute" : "Mute"}
       </DropdownMenuItem>,
