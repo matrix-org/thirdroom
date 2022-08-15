@@ -45,10 +45,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
 
   const getUsername = (peerId: string | undefined) => {
     if (activeCall) {
-      const m = Array.from(new Map(activeCall.members).values()).find((m) => {
-        console.log(m.member.userId === peerId);
-        return m.member.userId === peerId;
-      });
+      const m = Array.from(new Map(activeCall.members).values()).find((m) => m.member.userId === peerId);
       return m?.member.displayName || peerId?.split(":")[0]?.split("@")[1];
     }
   };
