@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -22,6 +22,8 @@ import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
 
+const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
+
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
@@ -33,7 +35,17 @@ export function WorldView() {
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
   const [entity, setEntity] = useState<EntityData>();
-  const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>();
+
+  const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
+    const store = localStorage.getItem(FOCUSED_ENT_STORE_NAME);
+    if (!store) return true;
+    const json = JSON.parse(store);
+    return json.showFocusedEntity;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
+  }, [showFocusedEntity]);
 
   const onEntityClicked = (entity: EntityData) => {};
 
