@@ -10,6 +10,7 @@ import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
+import PeopleIC from "../../../../../res/ic/peoples.svg";
 import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
 import SubtitlesOffIC from "../../../../../res/ic/subtitles-off.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
@@ -21,6 +22,8 @@ import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { MemberListDialog } from "../dialogs/MemberListDialog";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
@@ -47,7 +50,11 @@ export function WorldView() {
     localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
   }, [showFocusedEntity]);
 
-  const onEntityClicked = (entity: EntityData) => {};
+  const [showActiveMembers, setShowActiveMembers] = useState<boolean>();
+
+  const onEntityClicked = (entity: EntityData) => {
+    if (entity.peerId) toggleShowActiveMembers();
+  };
 
   const onEntityFocused = (entity: EntityData) => {
     setEntity(entity);
@@ -55,6 +62,11 @@ export function WorldView() {
 
   const toggleShowFocusedEnity = () => {
     setShowFocusedEntity(!showFocusedEntity);
+  };
+
+  const toggleShowActiveMembers = () => {
+    document.exitPointerLock();
+    setShowActiveMembers(!showActiveMembers);
   };
 
   useKeyDown(
@@ -98,6 +110,9 @@ export function WorldView() {
       if (e.code === "KeyO") {
         toggleShowFocusedEnity();
       }
+      if (e.code === "KeyP") {
+        toggleShowActiveMembers();
+      }
     },
     [
       isEnteredWorld,
@@ -135,6 +150,14 @@ export function WorldView() {
 
   const renderControl = () => (
     <div className="WorldView__controls flex">
+      <div className="flex flex-column items-center">
+        <Tooltip content={showActiveMembers ? "Show Active Members" : "Hide Active Members"}>
+          <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
+        </Tooltip>
+        <Text variant="b3" color="world" weight="bold">
+          P
+        </Text>
+      </div>
       <div className="flex flex-column items-center">
         <Tooltip content={showFocusedEntity ? "Show Names" : "Hide Names"}>
           <IconButton
@@ -175,6 +198,14 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
+      {!("isBeingCreated" in world) && (
+        <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
+          <MemberListDialog
+            room={world}
+            requestClose={() => canvasRef.current?.requestPointerLock() && setShowActiveMembers(false)}
+          />
+        </Dialog>
+      )}
       {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>
