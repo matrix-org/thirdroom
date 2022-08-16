@@ -1421,7 +1421,7 @@ async function _loadGLTFLightMap(
   node: GLTFNode,
   extension: GLTFLightmapExtension
 ): Promise<RemoteLightMap> {
-  const texture = await loadGLTFTexture(ctx, resource, extension.index, {
+  const texture = await loadGLTFTexture(ctx, resource, extension.lightMapTexture.index, {
     encoding: TextureEncoding.sRGB,
   });
 

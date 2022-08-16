@@ -10,6 +10,7 @@ import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
 import { HomeView } from "./views/session/home/HomeView";
 import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
+import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
 
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
@@ -50,6 +51,7 @@ export function App() {
           </Route>
         </Route>
         <Route path="/viewer" element={<GLTFViewer />} />
+        <Route path="/pipeline" element={<AssetPipeline />} />
         {storybookRoute}
       </Routes>
     </>
