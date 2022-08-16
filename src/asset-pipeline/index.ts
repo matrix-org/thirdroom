@@ -1,7 +1,9 @@
 import { Document, WebIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 
+import { downloadFile } from "../engine/utils/downloadFile";
 import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
+import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
 
 class ObjectURLWebIO extends WebIO {
   fileMap: Map<string, string> = new Map();
@@ -18,7 +20,9 @@ class ObjectURLWebIO extends WebIO {
 }
 
 export async function transformGLTF(url: string, fileMap: Map<string, string>) {
-  const io = new ObjectURLWebIO().registerExtensions([...ALL_EXTENSIONS, MXLightmapExtension]);
-  const document = await io.readGLTF(url, fileMap);
-  console.log(document);
+  const io = new ObjectURLWebIO().registerExtensions([...ALL_EXTENSIONS, MXLightmapExtension, OMIColliderExtension]);
+  const doc = await io.readGLTF(url, fileMap);
+  const glbBuffer = await io.writeBinary(doc);
+
+  downloadFile(glbBuffer, `${doc.getRoot().getName() || "scene"}.glb`, "model/gltf-binary");
 }

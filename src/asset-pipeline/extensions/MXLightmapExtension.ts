@@ -91,7 +91,7 @@ export class MXLightmapExtension extends Extension {
           }
 
           if (!eq(lightMap.getScale(), [1, 1])) {
-            lightMapDef.offset = lightMap.getScale();
+            lightMapDef.scale = lightMap.getScale();
           }
 
           if (lightMap.getLightMapTexture()) {

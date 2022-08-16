@@ -1,7 +1,6 @@
-import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
-import { mat4, quat, vec2, vec3 } from "gl-matrix";
-import { AnimationMixer, Bone, Group, Matrix4, Object3D, SkinnedMesh } from "three";
+import { mat4, vec2, vec3 } from "gl-matrix";
+import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { AudioEmitterOutput } from "../audio/audio.common";
@@ -48,10 +47,8 @@ import {
   RemoteMesh,
   RemoteSkinnedMesh,
 } from "../mesh/mesh.game";
-import { getModule, Thread } from "../module/module.common";
+import { Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
-import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { addResourceRef, disposeResource } from "../resource/resource.game";
 import { createRemoteSampler, RemoteSampler } from "../sampler/sampler.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { TextureEncoding } from "../texture/texture.common";
@@ -73,6 +70,14 @@ import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer
 import { RemoteNode } from "../node/node.game";
 import { addAnimationComponent, BoneComponent } from "../animation/animation.game";
 import { loadGLTFAnimationClip } from "./animation.three";
+import {
+  addCollider,
+  addTrimesh,
+  getColliderMesh,
+  hasColliderExtension,
+  hasMeshCollider,
+  nodeHasCollider,
+} from "./OMI_collider";
 
 export interface GLTFResource {
   url: string;
@@ -185,7 +190,7 @@ export async function inflateGLTFScene(
           nodeInflators,
           nodeIndex,
           sceneEid,
-          createTrimesh && !hasInstancedMeshExtension
+          createTrimesh && !hasInstancedMeshExtension && !hasColliderExtension(resource.root)
         )
       )
     );
@@ -231,12 +236,6 @@ export async function inflateGLTFScene(
 
   return resource;
 }
-
-const tempPosition = vec3.create();
-const tempRotation = quat.create();
-const tempScale = vec3.create();
-
-const TRIMESH_COLLISION_GROUPS = 0xf000_000f;
 
 async function _inflateGLTFNode(
   ctx: GameState,
@@ -319,16 +318,9 @@ async function _inflateGLTFNode(
       node.extensions?.KHR_audio?.emitter !== undefined
         ? loadGLTFAudioEmitter(ctx, resource, node.extensions.KHR_audio.emitter)
         : undefined,
-    colliderMesh:
-      node.extensions?.OMI_collider !== undefined &&
-      resource.root.extensions?.OMI_collider &&
-      resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh !== undefined
-        ? loadGLTFMesh(
-            ctx,
-            resource,
-            resource.root.extensions.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh
-          )
-        : undefined,
+    colliderMesh: hasMeshCollider(resource.root, node)
+      ? loadGLTFMesh(ctx, resource, getColliderMesh(resource.root, node))
+      : undefined,
   });
 
   if (node.children && node.children.length) {
@@ -363,7 +355,12 @@ async function _inflateGLTFNode(
 
     if (
       !joint &&
-      (results.mesh || results.camera || results.light || results.audioEmitter || hasTilesRendererExtension(node))
+      (results.mesh ||
+        results.colliderMesh ||
+        results.camera ||
+        results.light ||
+        results.audioEmitter ||
+        hasTilesRendererExtension(node))
     ) {
       addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name });
     }
@@ -400,98 +397,10 @@ async function _inflateGLTFNode(
       addTilesRenderer(ctx, resource, nodeIndex, nodeEid);
     }
 
-    if (node.extensions?.OMI_collider) {
-      const index = node.extensions.OMI_collider.collider;
-      const collider = resource.root.extensions!.OMI_collider.colliders[index];
-      const physics = getModule(ctx, PhysicsModule);
-      const { physicsWorld } = physics;
-
-      if (collider.type === "box") {
-        const worldMatrix = Transform.worldMatrix[nodeEid];
-        mat4.getTranslation(tempPosition, worldMatrix);
-        mat4.getRotation(tempRotation, worldMatrix);
-        mat4.getScaling(tempScale, worldMatrix);
-
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
-        rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
-        rigidBodyDesc.setRotation(
-          new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
-        );
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        vec3.mul(tempScale, tempScale, collider.extents);
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
-        colliderDesc.setTranslation(collider.center[0], collider.center[1], collider.center[2]);
-        colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
-        colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-
-        addRigidBody(ctx.world, nodeEid, rigidBody);
-      } else if (collider.type === "mesh" && results.colliderMesh) {
-        addTrimeshFromMesh(ctx, nodeEid, results.colliderMesh);
-      }
+    if (nodeHasCollider(node)) {
+      addCollider(ctx, resource, node, nodeEid, results.colliderMesh);
     }
   });
-}
-
-export function addTrimesh(ctx: GameState, nodeEid: number) {
-  const remoteNode = RemoteNodeComponent.get(nodeEid);
-
-  if (!remoteNode || !remoteNode.mesh) {
-    return;
-  }
-
-  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh);
-}
-
-function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-  // TODO: We don't really need the whole RemoteMesh just for a trimesh and tracking
-  // the resource is expensive.
-  addResourceRef(ctx, mesh.resourceId);
-
-  for (const primitive of mesh.primitives) {
-    addResourceRef(ctx, primitive.resourceId);
-
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
-    const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-    const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
-    const worldMatrix = new Matrix4().fromArray(Transform.worldMatrix[nodeEid]);
-    positionsAttribute.applyMatrix4(worldMatrix);
-
-    const indicesAttribute = primitive.indices?.attribute;
-
-    let indicesArr: Uint32Array;
-
-    if (!indicesAttribute) {
-      indicesArr = new Uint32Array(positionsAttribute.count);
-
-      for (let i = 0; i < indicesArr.length; i++) {
-        indicesArr[i] = i;
-      }
-    } else {
-      indicesArr = new Uint32Array(indicesAttribute.count);
-      indicesArr.set(indicesAttribute.array);
-    }
-
-    const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
-
-    colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
-    colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
-
-    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-
-    const primitiveEid = addEntity(ctx.world);
-    addTransformComponent(ctx.world, primitiveEid);
-    addChild(nodeEid, primitiveEid);
-    addRigidBody(ctx.world, primitiveEid, rigidBody);
-
-    disposeResource(ctx, primitive.resourceId);
-  }
-
-  disposeResource(ctx, mesh.resourceId);
 }
 
 const GLB_HEADER_BYTE_LENGTH = 12;
