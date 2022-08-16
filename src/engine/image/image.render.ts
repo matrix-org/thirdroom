@@ -56,30 +56,28 @@ export async function onLoadLocalImageResource(
 
   let localImageResource: LocalImageResource;
 
-  if (isRGBE) {
-    const texture = await rgbeLoader.loadAsync(uri);
+  try {
+    if (isRGBE) {
+      const texture = await rgbeLoader.loadAsync(uri);
 
+      localImageResource = {
+        resourceId,
+        format: ImageFormat.RGBE,
+        texture,
+      };
+    } else {
+      const image = await imageBitmapLoader.loadAsync(uri);
+
+      localImageResource = {
+        resourceId,
+        format: ImageFormat.RGBA,
+        image,
+      };
+    }
+  } finally {
     if (isObjectUrl) {
       URL.revokeObjectURL(uri);
     }
-
-    localImageResource = {
-      resourceId,
-      format: ImageFormat.RGBE,
-      texture,
-    };
-  } else {
-    const image = await imageBitmapLoader.loadAsync(uri);
-
-    if (isObjectUrl) {
-      URL.revokeObjectURL(uri);
-    }
-
-    localImageResource = {
-      resourceId,
-      format: ImageFormat.RGBA,
-      image,
-    };
   }
 
   images.push(localImageResource);

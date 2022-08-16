@@ -1,9 +1,13 @@
+import { vec2 } from "gl-matrix";
+
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 
 export const MeshResourceType = "mesh";
 export const MeshPrimitiveResourceType = "mesh-primitive";
 export const InstancedMeshResourceType = "instanced-mesh";
+export const LightMapResourceType = "light-map";
+export const SkinnedMeshResourceType = "skinned-mesh";
 
 export interface PrimitiveResourceProps {
   attributes: { [key: string]: ResourceId };
@@ -21,6 +25,18 @@ export interface SharedMeshResource {
 
 export interface SharedInstancedMeshResource {
   attributes: { [key: string]: ResourceId };
+}
+
+export interface SharedLightMapResource {
+  texture: ResourceId;
+  offset: vec2;
+  scale: vec2;
+  intensity: number;
+}
+
+export interface SharedSkinnedMeshResource {
+  joints: ResourceId[];
+  inverseBindMatrices?: ResourceId;
 }
 
 export const meshPrimitiveSchema = defineObjectBufferSchema({

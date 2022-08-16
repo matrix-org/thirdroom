@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, ImageBitmapLoader, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
+import { ImageBitmapLoader, LinearToneMapping, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
@@ -48,13 +48,21 @@ import {
 import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
-import { InstancedMeshResourceType, MeshPrimitiveResourceType, MeshResourceType } from "../mesh/mesh.common";
+import {
+  InstancedMeshResourceType,
+  MeshPrimitiveResourceType,
+  MeshResourceType,
+  SkinnedMeshResourceType,
+  LightMapResourceType,
+} from "../mesh/mesh.common";
 import {
   LocalMeshPrimitive,
   onLoadLocalMeshPrimitiveResource,
   onLoadLocalMeshResource,
   onLoadLocalInstancedMeshResource,
   updateLocalMeshPrimitiveResources,
+  onLoadLocalSkinnedMeshResource,
+  onLoadLocalLightMapResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
@@ -62,6 +70,7 @@ import { ResourceId } from "../resource/resource.common";
 import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
+import patchShaderChunks from "../material/patchShaderChunks";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -99,12 +108,14 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       RendererMessageType.InitializeCanvas
     );
 
+    patchShaderChunks();
+
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
     });
     renderer.outputEncoding = sRGBEncoding;
-    renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMapping = LinearToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
@@ -157,6 +168,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
       registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
+      registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
+      registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
     ]);

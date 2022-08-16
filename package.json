@@ -20,7 +20,8 @@
     "prepare": "husky install",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
@@ -32,7 +33,7 @@
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
     "@react-aria/interactions": "^3.9.1",
-    "@thirdroom/hydrogen-view-sdk": "^0.0.14",
+    "@thirdroom/hydrogen-view-sdk": "0.0.15",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
     "bitecs": "^0.3.38",
@@ -82,8 +83,10 @@
     "eslint-plugin-react-hooks": "^4.4.0",
     "husky": "^7.0.0",
     "jsdom": "^19.0.0",
+    "patch-package": "^6.4.7",
     "postcss": "^8.4.12",
     "postcss-preset-env": "^7.4.3",
+    "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.6.1",
     "stylelint": "^14.6.1",
     "stylelint-config-prettier": "^9.0.3",

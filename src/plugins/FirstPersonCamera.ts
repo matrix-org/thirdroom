@@ -50,16 +50,18 @@ export const FirstPersonCameraYawTarget = defineComponent({
   sensitivity: Types.f32,
 });
 
+const DEFAULT_SENSITIVITY = 100;
+
 export function addCameraPitchTargetComponent(world: World, eid: number) {
   addComponent(world, FirstPersonCameraPitchTarget, eid);
   FirstPersonCameraPitchTarget.maxAngle[eid] = 89;
   FirstPersonCameraPitchTarget.minAngle[eid] = -89;
-  FirstPersonCameraPitchTarget.sensitivity[eid] = 1;
+  FirstPersonCameraPitchTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
 }
 
 export function addCameraYawTargetComponent(world: World, eid: number) {
   addComponent(world, FirstPersonCameraYawTarget, eid);
-  FirstPersonCameraYawTarget.sensitivity[eid] = 1;
+  FirstPersonCameraYawTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
 }
 
 export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
@@ -73,15 +75,15 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
   const pitchEntities = cameraPitchTargetQuery(world);
 
-  if (Math.abs(lookY) > 1) {
+  if (Math.abs(lookY) >= 1) {
     pitchEntities.forEach((eid) => {
       const rotation = Transform.rotation[eid];
-      const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || 1;
+      const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
       const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
       const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
       const maxAngleRads = glm.toRadian(maxAngle || 89);
       const minAngleRads = glm.toRadian(minAngle || -89);
-      rotation[0] -= lookY / (1000 / (sensitivity || 1));
+      rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
       if (rotation[0] > maxAngleRads) {
         rotation[0] = maxAngleRads;
@@ -95,10 +97,10 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
   const yawEntities = cameraYawTargetQuery(world);
 
-  if (Math.abs(lookX) > 1) {
+  if (Math.abs(lookX) >= 1) {
     yawEntities.forEach((eid) => {
       const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-      Transform.rotation[eid][1] -= lookX / (1000 / (sensitivity || 1));
+      Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
       setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
     });
   }

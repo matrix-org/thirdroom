@@ -38,19 +38,29 @@ export function GLTFViewer() {
         return;
       }
 
+      let url: string | undefined = undefined;
+      const fileMap: Map<string, string> = new Map();
+
       for (const item of e.dataTransfer.items) {
         const file = item.getAsFile();
 
         if (file) {
-          const url = URL.createObjectURL(file);
+          const fileUrl = URL.createObjectURL(file);
 
-          mainThread?.sendMessage(Thread.Game, {
-            type: "gltf-viewer-load-gltf",
-            url,
-          });
-
-          return;
+          if (file.name.match(/\.gl(?:tf|b)$/)) {
+            url = fileUrl;
+          } else {
+            fileMap.set(file.name, fileUrl);
+          }
         }
+      }
+
+      if (mainThread && url) {
+        mainThread.sendMessage(Thread.Game, {
+          type: "gltf-viewer-load-gltf",
+          url,
+          fileMap,
+        });
       }
     },
     [mainThread]

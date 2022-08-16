@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -10,6 +10,8 @@ import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
+import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
+import SubtitlesOffIC from "../../../../../res/ic/subtitles-off.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
@@ -17,6 +19,10 @@ import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
+import { EntityData, Reticle } from "../reticle/Reticle";
+import { EntitySelected } from "../entity-selected/EntitySelected";
+
+const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -27,6 +33,29 @@ export function WorldView() {
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
+
+  const [entity, setEntity] = useState<EntityData>();
+
+  const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
+    const store = localStorage.getItem(FOCUSED_ENT_STORE_NAME);
+    if (!store) return true;
+    const json = JSON.parse(store);
+    return json.showFocusedEntity;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
+  }, [showFocusedEntity]);
+
+  const onEntityClicked = (entity: EntityData) => {};
+
+  const onEntityFocused = (entity: EntityData) => {
+    setEntity(entity);
+  };
+
+  const toggleShowFocusedEnity = () => {
+    setShowFocusedEntity(!showFocusedEntity);
+  };
 
   useKeyDown(
     (e) => {
@@ -66,8 +95,20 @@ export function WorldView() {
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
         setStatsEnabled((enabled) => !enabled);
       }
+      if (e.code === "KeyO") {
+        toggleShowFocusedEnity();
+      }
     },
-    [isEnteredWorld, isChatOpen, isOverlayOpen, openWorldChat, closeWorldChat, openOverlay, closeOverlay]
+    [
+      isEnteredWorld,
+      isChatOpen,
+      isOverlayOpen,
+      showFocusedEntity,
+      openWorldChat,
+      closeWorldChat,
+      openOverlay,
+      closeOverlay,
+    ]
   );
 
   useEvent(
@@ -95,6 +136,19 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
+        <Tooltip content={showFocusedEntity ? "Show Names" : "Hide Names"}>
+          <IconButton
+            variant="world"
+            label="focusedEntity"
+            iconSrc={showFocusedEntity ? SubtitlesIC : SubtitlesOffIC}
+            onClick={toggleShowFocusedEnity}
+          />
+        </Tooltip>
+        <Text variant="b3" color="world" weight="bold">
+          O
+        </Text>
+      </div>
+      <div className="flex flex-column items-center">
         <Tooltip content={callMute ? "Unmute" : "Mute"}>
           <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
         </Tooltip>
@@ -121,6 +175,8 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
+      {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
+      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 
 import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -86,28 +86,31 @@ const GrabComponent = defineComponent({
 });
 const grabQuery = defineQuery([GrabComponent]);
 
-const GRAB_DISTANCE = 3;
-const GRAB_MAX_DISTANCE = 1;
+const HELD_DISTANCE = 2;
+const GRAB_DISTANCE = 2;
 const GRAB_MOVE_SPEED = 10;
-const CUBE_THROW_FORCE = 10;
+const THROW_FORCE = 10;
 
 const _direction = vec3.create();
+const _source = vec3.create();
 const _target = vec3.create();
 
 const _impulse = new RAPIER.Vector3(0, 0, 0);
 
 const _cameraWorldQuat = quat.create();
 
-// const shapeCastPosition = new Vector3();
-// const shapeCastRotation = new Quaternion();
+const shapeCastPosition = new Vector3();
+const shapeCastRotation = new Quaternion();
 
-// const colliderShape = new RAPIER.Ball(0.5);
+const colliderShape = new RAPIER.Ball(0.7);
 
 const collisionGroups = 0x00f0_000f;
 
+const _s = new Vector3();
+const _t = new Vector3();
+
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
-  // const { physicsWorld } = physics;
   const input = getModule(ctx, InputModule);
 
   let heldEntity = grabQuery(ctx.world)[0];
@@ -127,7 +130,7 @@ export function GrabThrowSystem(ctx: GameState) {
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
-    vec3.scale(direction, direction, CUBE_THROW_FORCE);
+    vec3.scale(direction, direction, THROW_FORCE);
 
     // fire!
     _impulse.x = direction[0];
@@ -148,28 +151,34 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const target = vec3.set(_target, 0, 0, -1);
     vec3.transformQuat(target, target, _cameraWorldQuat);
-    vec3.scale(target, target, GRAB_MAX_DISTANCE);
+    vec3.scale(target, target, GRAB_DISTANCE);
 
-    const source = mat4.getTranslation(vec3.create(), cameraMatrix);
+    const source = mat4.getTranslation(_source, cameraMatrix);
 
-    const s: Vector3 = new Vector3().fromArray(source);
-    const t: Vector3 = new Vector3().fromArray(target);
+    const s: Vector3 = _s.fromArray(source);
+    const t: Vector3 = _t.fromArray(target);
 
-    const ray = new RAPIER.Ray(s, t);
-    const maxToi = 4.0;
-    const solid = true;
+    shapeCastPosition.copy(s);
 
-    // shapeCastPosition.copy(s);
+    // const ray = new RAPIER.Ray(s, t);
+    // const solid = true;
+    // const maxToi = 4.0;
+    // const raycastHit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
 
-    // TODO: use shape for pickup and ray for things like constraint tools
-    const hit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
-    // const hit = physicsWorld.castShape(shapeCastPosition, shapeCastRotation, t, colliderShape, ctx.dt, collisionGroups);
+    const shapecastHit = physics.physicsWorld.castShape(
+      shapeCastPosition,
+      shapeCastRotation,
+      t,
+      colliderShape,
+      1.0,
+      collisionGroups
+    );
 
-    if (hit != null) {
+    if (shapecastHit !== null) {
       // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
-      const eid = physics.handleToEid.get(hit.colliderHandle);
+      const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
       if (!eid) {
-        console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
+        console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
         addComponent(ctx.world, GrabComponent, eid);
@@ -178,7 +187,7 @@ export function GrabThrowSystem(ctx: GameState) {
     }
   }
 
-  // if still holding entity, move towards the grab point
+  // if still holding entity, move towards the held point
   heldEntity = grabQuery(ctx.world)[0];
   if (heldEntity) {
     const heldPosition = Transform.position[heldEntity];
@@ -189,7 +198,7 @@ export function GrabThrowSystem(ctx: GameState) {
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
-    vec3.scale(direction, direction, GRAB_DISTANCE);
+    vec3.scale(direction, direction, HELD_DISTANCE);
 
     vec3.sub(target, target, direction);
 

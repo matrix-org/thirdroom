@@ -24,7 +24,9 @@ import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
+import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
+import { ReticleFocusSystem } from "../plugins/reticle/reticle.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -55,7 +57,9 @@ export default defineConfig<GameState>({
     PlayerControllerSystem,
     FlyControlsSystem,
     PhysicsSystem,
+    AnimationSystem,
     CubeSpawnerSystem,
+    ReticleFocusSystem,
     GrabThrowSystem,
 
     UpdateMatrixWorldSystem,
