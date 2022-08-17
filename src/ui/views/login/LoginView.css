@@ -11,7 +11,7 @@
   border-radius: var(--br-md);
 }
 .LoginView__form {
-  & > .Text,
+  & > .Text-s1,
   & > .Button {
     margin-top: var(--sp-md);
   }
