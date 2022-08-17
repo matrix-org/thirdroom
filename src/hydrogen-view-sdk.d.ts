@@ -114,7 +114,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type SubscriptionHandle = () => undefined;
 
   export abstract class BaseObservable<T> {
-
     onSubscribeFirst(): void;
     onUnsubscribeLast(): void;
     subscribe(handler: T): SubscriptionHandle;
@@ -129,7 +128,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableValue<T> extends BaseObservable<(value: T) => void> {
-
     emit(argument: T): void;
     abstract get(): T;
 
@@ -154,7 +152,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableMap<K, V> extends BaseObservable<IMapObserver<K, V>> {
-
     emitReset(): void;
     emitAdd(key: K, value: V): void;
     emitUpdate(key: K, value: V, params: any): void;
@@ -233,7 +230,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseObservableList<T> extends BaseObservable<IListObserver<T>> implements Iterable<T> {
-
     emitReset(): void;
     emitAdd(index: number, value: T): void;
     emitUpdate(index: number, value: T, params?: any): void;
@@ -242,7 +238,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     abstract [Symbol.iterator](): Iterator<T>;
 
     abstract get length(): number;
-
   }
 
   export class ObservableArray<T> extends BaseObservableList<T> {
@@ -345,9 +340,19 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     readAsBuffer(): BufferSource;
     dispose(): void;
   }
-
+  export class SettingsStorage {
+    constructor(prefix: string);
+    setInt(key: string, value: number): Promise<void>;
+    getInt(keyL: string, defaultValue?: number): Promise<number | null>;
+    setBool(key: string, value: boolean): Promise<void>;
+    getBool(key: string, defaultValue?: boolean): Promise<boolean | null>;
+    setString(key: string, value: string): Promise<string>;
+    getString(key: string): Promise<string | null>;
+    remove(key: string): Promise<void>;
+  }
   export class Platform {
     sessionInfoStorage: ISessionInfoStorage;
+    settingsStorage: SettingsStorage;
     devicePixelRatio: number;
     logger: ILogger;
 
@@ -357,6 +362,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       defaultHomeServer: string;
       [key: string]: any;
     };
+    encoding: any;
+    request: any;
+    crypto?: any;
 
     constructor(options: { container: HTMLElement; assetPaths: any; config: any; options?: any; cryptoExtras?: any });
 
@@ -368,8 +376,87 @@ declare module "@thirdroom/hydrogen-view-sdk" {
         }
       | undefined
     >;
+    openUrl(url: string): void;
 
     dispose(): void;
+  }
+
+  type AuthorizationParams = {
+    state: string;
+    scope: string;
+    redirectUri: string;
+    nonce?: string;
+    codeVerifier?: string;
+  };
+  type BearerToken = {
+    token_type: "Bearer";
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
+
+  export class OidcApi {
+    constructor(options: {
+      issuer: string;
+      request: RequestFunction;
+      encoding: any;
+      crypto: any;
+      urlCreator: URLRouter;
+      clientId?: string;
+    });
+    get clientMetadata(): {
+      client_name: string;
+      logo_uri: string;
+      client_uri: string;
+      tos_uri: string;
+      policy_uri: string;
+      response_types: string[];
+      grant_types: string[];
+      redirect_uris: string[];
+      id_token_signed_response_alg: string;
+      token_endpoint_auth_method: string;
+    };
+    get metadataUrl(): string;
+    get issuer(): string;
+    clientId(): Promise<string>;
+    registration(): Promise<any>;
+    metadata(): Promise<any>;
+    validate(): Promise<void>;
+    authorizationEndpoint(prams: AuthorizationParams): Promise<string>;
+    tokenEndpoint(): Promise<string>;
+    registrationEndpoint(): Promise<string>;
+    revocationEndpoint(): Promise<string | undefined>;
+    generateDeviceScope(): string;
+    generateParams({ scope, redirectUri }: { scope: string; redirectUri: string }): AuthorizationParams;
+    completeAuthorizationCodeGrant({
+      codeVerifier,
+      code,
+      redirectUri,
+    }: {
+      codeVerifier: string;
+      code: string;
+      redirectUri: string;
+    }): Promise<BearerToken>;
+    refreshToken({ refreshToken }: { refreshToken: string }): Promise<BearerToken>;
+    revokeToken({ token, type }: { token: string; type: "refresh" | "access" }): Promise<void>;
+  }
+
+  interface ILoginMethod {
+    homeserver: string;
+    login(hsApi: HomeServerApi, deviceName: string, log: ILogItem): Promise<Record<string, any>>;
+  }
+  export class OIDCLoginMethod implements ILoginMethod {
+    public readonly homeserver: string;
+    constructor(options: {
+      nonce: string;
+      code: string;
+      codeVerifier: string;
+      homeserver: string;
+      redirectUri: string;
+      oidcApi: OidcApi;
+      accountManagementUrl?: string;
+    });
+    login(hsApi: HomeServerApi, _deviceName: string, log: ILogItem): Promise<Record<string, any>>;
   }
 
   export class MediaRepository {
@@ -520,7 +607,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export interface FragmentIdComparer {
-    compare: (a: number, b: number) => number
+    compare: (a: number, b: number) => number;
   }
 
   export abstract class BaseEntry {
@@ -544,7 +631,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get contextEntry(): any;
     addLocalRelation(entry: any): undefined | string;
     removeLocalRelation(entry: any): undefined | string;
-    abortPendingRedaction(): Promise<void>
+    abortPendingRedaction(): Promise<void>;
     get pendingRedaction(): any;
     annotate(key: string): any;
     reply(msgtype: string, body: string): string;
@@ -590,7 +677,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     constructor(options: any);
     get fragmentId(): number;
     get entryIndex(): number;
-    get content(): any
+    get content(): any;
     get event(): null;
     get eventType(): string;
     get stateKey(): null;
@@ -606,7 +693,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get relatedEventId(): string;
     get redactingEntry(): any;
     get contextEventId(): string | null;
-}
+  }
 
   export class Direction {
     constructor(isForward: boolean);
@@ -616,7 +703,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     reverse(): Direction;
     static get Forward(): Direction;
     static get Backward(): Direction;
-}
+  }
   export class FragmentBoundaryEntry extends BaseEntry {
     constructor(fragment: any, isFragmentStart: boolean, fragmentIdComparer: FragmentIdComparer);
     static start(fragment: any, fragmentIdComparer: FragmentIdComparer): FragmentBoundaryEntry;
@@ -686,7 +773,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class RoomKey {
-
     isForSession(roomId: string, senderKey: string, sessionId: string): boolean;
     abstract get roomId(): string;
 
@@ -818,6 +904,31 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     dispose(): void;
   }
 
+  export interface IAbortable {
+    abort(): void;
+  }
+  type SetAbortableFn = (a: IAbortable) => typeof a;
+  type SetProgressFn<P> = (progress: P) => void;
+  type RunFn<T, P> = (setAbortable: SetAbortableFn, setProgress: SetProgressFn<P>) => T;
+
+  export class AbortableOperation<T, P = void> implements IAbortable {
+    readonly result: T;
+    constructor(run: RunFn<T, P>);
+    get progress(): BaseObservableValue<P | undefined>;
+    abort(): void;
+  }
+
+  export interface QueryOIDCResult {
+    account: string;
+    issuer: string;
+  }
+  export interface QueryLoginResult {
+    homeserver: string;
+    oidc?: QueryOIDCResult;
+    password?: (username: string, password: string) => ILoginMethod;
+    token?: (loginToken: string) => ILoginMethod;
+  }
+
   export class Client {
     sessionId: string;
 
@@ -832,9 +943,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     startWithExistingSession(sessionId: string): Promise<void>;
 
-    queryLogin(homeserver: string): any;
+    queryLogin(homeserver: string): AbortableOperation<QueryLoginResult>;
 
-    startWithLogin(loginMethod: any, options?: { inspectAccountSetup: boolean }): Promise<void>;
+    startWithLogin(loginMethod: ILoginMethod, options?: { inspectAccountSetup: boolean }): Promise<void>;
 
     startLogout(sessionId: string): Promise<void>;
 
@@ -903,6 +1014,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     openRoomActionUrl(roomId: string): string;
     createSSOCallbackURL(): string;
     normalizeUrl(): void;
+    createOIDCRedirectURL(): string;
+    absoluteAppUrl(): string;
+    absoluteUrlForAsset(asset: string): string;
   }
 
   export type ViewModelOptions = {
@@ -1141,7 +1255,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export abstract class BaseUpdateView<T extends IObservableValue> implements IView {
-
     protected _value: T;
     protected _boundUpdateFromValue: ((props?: string[]) => void) | null;
 
@@ -1171,7 +1284,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type ViewClassForEntryFn<T extends SimpleTile = SimpleTile> = (tile: T) => TileViewConstructor<T>;
 
   export abstract class TemplateView<T extends IObservableValue> extends BaseUpdateView<T> {
-
     abstract render(t: Builder<T>, value: T): ViewNode;
 
     mount(options?: IMountArgs): ViewNode;
