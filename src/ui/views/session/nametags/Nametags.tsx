@@ -20,6 +20,8 @@ import VolumeUpIC from "../../../../../res/ic/volume-up.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { isPeerMuted } from "../../../../engine/network/network.main";
+import { Avatar } from "../../../atoms/avatar/Avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 
 const DIST_HIDE = 10;
 const DIST_SHOW = 8;
@@ -27,7 +29,10 @@ const DIST_SHOW = 8;
 const MIN_OPACITY = 0;
 const MAX_OPACITY = 1;
 
-type SpeakingRoomMember = Member & { volumeDetector: any };
+const SPEAKING_OPACITY = 0.75;
+const SILENT_OPACITY = 0.4;
+
+type SpeakingRoomMember = Member & { volumeDetector: { isSpeaking: boolean } };
 
 export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
   const engine = useMainThreadContext();
@@ -35,12 +40,14 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
 
   engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
 
+  if (!enabled) setNametags([]);
+
   useEffect(() => {
     const onNametagsMessage = (ctx: IMainThreadContext, message: NametagsMessageType) => {
       setNametags(message.nametags);
     };
     return registerMessageHandler(engine, NametagsMessage, onNametagsMessage);
-  }, [engine]);
+  }, [engine, nametags]);
 
   const { joined } = useRoomMembers(room) ?? {};
 
@@ -66,6 +73,9 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
       ? Array.from(new Map(groupCall.members).values()).find((m) => m.userId === member?.userId && m.isConnected)
       : undefined;
 
+    const avatarUrl = member?.avatarUrl;
+    const userId = member?.userId || name;
+
     const volumeDetector =
       (memberCall as SpeakingRoomMember).volumeDetector ||
       ((memberCall as SpeakingRoomMember).volumeDetector = (platform.mediaDevices as any).createVolumeMeasurer(
@@ -85,10 +95,18 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
         }}
         className="Nametag"
       >
-        <div className="Nametag--inner">
+        <div className="Nametag--inner Text-b3">
+          <Avatar
+            size="xxs"
+            shape="circle"
+            name={member?.displayName?.toUpperCase() || name.replace("@", "").toUpperCase()}
+            imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 25, platform, session.mediaRepository) : undefined}
+            bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
+          />
           {member?.displayName || name}
           <span>
             <object
+              style={{ opacity: `${speaking ? SPEAKING_OPACITY : SILENT_OPACITY}` }}
               className="Icon"
               type="image/svg+xml"
               data={isPeerMuted(engine, name) ? VolumeOffIC : speaking ? VolumeUpIC : VolumeMuteIC}

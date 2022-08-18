@@ -102,7 +102,7 @@ const _cameraWorldQuat = quat.create();
 const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
 
-const colliderShape = new RAPIER.Ball(0.7);
+const colliderShape = new RAPIER.Ball(0.1);
 
 const collisionGroups = 0x00f0_000f;
 
