@@ -26,11 +26,11 @@ export const NametagModule = defineModule<GameState, NametagState>({
     };
   },
   init(ctx) {
-    return registerMessageHandler(ctx, NametagsEnableMessage, onNametagsInitMessage);
+    return registerMessageHandler(ctx, NametagsEnableMessage, onNametagsEnabledMessage);
   },
 });
 
-function onNametagsInitMessage(ctx: GameState, message: NametagsEnableMessageType) {
+function onNametagsEnabledMessage(ctx: GameState, message: NametagsEnableMessageType) {
   const nametagModule = getModule(ctx, NametagModule);
   nametagModule.enabled = message.enabled;
 }

@@ -299,12 +299,9 @@ export function createCamera(state: GameState, setActive = true): number {
 const _pm = mat4.create();
 const _icm = mat4.create();
 export function projectPerspective(ctx: GameState, cameraEid: number, v3: vec3) {
-  // const renderer = getModule(ctx, RendererModule);
   const cameraNode = RemoteNodeComponent.get(cameraEid);
   const cameraMatrix = Transform.worldMatrix[cameraEid];
   if (cameraNode?.camera) {
-    // const { znear: near, zfar: far, yfov: fov } = cameraNode?.camera as RemotePerspectiveCamera;
-    // const projectionMatrix = mat4.perspective(_pm, fov, renderer.canvasWidth / renderer.canvasHeight, near, far);
     const projectionMatrix = calculateProjectionMatrix(ctx, cameraNode.camera as RemotePerspectiveCamera);
     const cameraMatrixWorldInverse = mat4.invert(_icm, cameraMatrix);
     const v = vec3.clone(v3);
