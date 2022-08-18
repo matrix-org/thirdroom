@@ -136,6 +136,7 @@ export function LoginView() {
       const { issuer } = result.oidc;
       const oidcApi = new OidcApi({
         issuer,
+        clientConfigs: platform.config.oidc.clientConfigs,
         request: platform.request,
         encoding: platform.encoding,
         crypto: platform.crypto,

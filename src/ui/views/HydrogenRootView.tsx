@@ -132,6 +132,14 @@ function initHydrogen() {
 
   const config = {
     defaultHomeServer,
+    oidc: {
+      clientConfigs: {
+        "https://id.thirdroom.io/realms/thirdroom/": {
+          client_id: "thirdroom",
+          uris: ["http://localhost:3000", "https://thirdroom.io"],
+        },
+      },
+    },
   };
 
   const options = {
@@ -210,6 +218,7 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   return new OIDCLoginMethod({
     oidcApi: new OidcApi({
       issuer,
+      clientConfigs: platform.config.oidc.clientConfigs,
       clientId,
       urlCreator,
       request: platform.request,

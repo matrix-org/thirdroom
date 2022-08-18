@@ -394,10 +394,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     refresh_token?: string;
     expires_in?: number;
   };
-
+  type IssuerUri = string;
+  interface ClientConfig {
+    client_id: string;
+    client_secret?: string;
+    uris: string[];
+  }
   export class OidcApi {
     constructor(options: {
       issuer: string;
+      clientConfigs: Record<IssuerUri, ClientConfig>;
       request: RequestFunction;
       encoding: any;
       crypto: any;
