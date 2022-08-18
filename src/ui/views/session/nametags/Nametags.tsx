@@ -76,13 +76,12 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
         key={name}
         style={{
           position: "absolute",
-          top: `${top}px`,
-          left: `${left}px`,
+          transform: `translate(${left}px, ${top}px)`,
           opacity: `${opacity}`,
         }}
         className="Nametag"
       >
-        <div>
+        <div className="Nametag--inner">
           {member?.displayName || name}
           <object className="Icon" type="image/svg+xml" data={speaking ? VolumeUpIC : VolumeOffIC} />
         </div>

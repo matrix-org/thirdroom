@@ -4,6 +4,9 @@
   border-radius: 5px;
   padding: 0px 5px;
   font-size: 12px;
+}
+
+.Nametag--inner {
   transform: translate(-50%, -50%);
 }
 
