@@ -1,6 +1,6 @@
 // @refresh reset
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Outlet, useMatch } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import {
   Platform,
   Segment,
@@ -12,6 +12,9 @@ import {
   CallIntent,
   ILogger,
   LoginFailure,
+  OidcApi,
+  OIDCLoginMethod,
+  ILoginMethod,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -28,7 +31,7 @@ import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 
-const defaultHomeServer = "matrix.org";
+const defaultHomeServer = "thirdroom.io";
 
 function allowsChild(parent: Segment, child: Segment) {
   const parentType = parent.type;
@@ -79,6 +82,18 @@ class MockRouter {
 
   createSSOCallbackURL() {
     return "";
+  }
+
+  createOIDCRedirectURL() {
+    return window.location.origin;
+  }
+
+  absoluteAppUrl() {
+    return window.location.origin;
+  }
+
+  absoluteUrlForAsset(asset: string) {
+    return new URL("/assets/" + asset, window.location.origin).toString();
   }
 
   normalizeUrl() {}
@@ -167,8 +182,47 @@ async function loadSession(client: Client, session: Session) {
 
 function loginFailureToMsg(loginFailure: LoginFailure) {
   if (loginFailure === LoginFailure.Connection) return "Connection timeout. Please try again.";
-  if (loginFailure === LoginFailure.Credentials) return "Invalid password. Please try again.";
+  if (loginFailure === LoginFailure.Credentials) return "Invalid credentials. Please try again.";
   if (loginFailure === LoginFailure.Unknown) return "Unknown error. Please try again.";
+}
+
+async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, state: string, code: string) {
+  const { settingsStorage } = platform;
+  const storageKeys = [
+    `oidc_${state}_nonce`,
+    `oidc_${state}_code_verifier`,
+    `oidc_${state}_redirect_uri`,
+    `oidc_${state}_homeserver`,
+    `oidc_${state}_issuer`,
+    `oidc_${state}_client_id`,
+    `oidc_${state}_account_management_url`,
+  ];
+  const [nonce, codeVerifier, redirectUri, homeserver, issuer, clientId, accountManagementUrl] = await Promise.all(
+    storageKeys.map((key) => settingsStorage.getString(key))
+  );
+  settingsStorage.remove(`oidc_${state}_started_at`);
+  storageKeys.forEach((key) => settingsStorage.remove(key));
+
+  if (!nonce || !codeVerifier || !redirectUri || !homeserver || !issuer || !clientId || !accountManagementUrl) {
+    return;
+  }
+
+  return new OIDCLoginMethod({
+    oidcApi: new OidcApi({
+      issuer,
+      clientId,
+      urlCreator,
+      request: platform.request,
+      encoding: platform.encoding,
+      crypto: platform.crypto,
+    }),
+    nonce,
+    codeVerifier,
+    code,
+    homeserver,
+    redirectUri,
+    accountManagementUrl,
+  });
 }
 
 export function HydrogenRootView() {
@@ -209,13 +263,9 @@ export function HydrogenRootView() {
     loading: loggingIn,
     error: errorLoggingIn,
     callback: login,
-  } = useAsyncCallback<(homeserverUrl: string, username: string, password: string) => Promise<void>, void>(
-    async (homeserverUrl, username, password) => {
-      const loginOptions = await client.queryLogin(homeserverUrl).result;
-
-      // TODO: Handle other login types
-
-      await client.startWithLogin(loginOptions.password(username, password));
+  } = useAsyncCallback<(loginMethod: ILoginMethod) => Promise<void>, void>(
+    async (loginMethod) => {
+      await client.startWithLogin(loginMethod);
 
       if (client.session) {
         await loadSession(client, client.session);
@@ -239,6 +289,14 @@ export function HydrogenRootView() {
     }
   }, [client, session]);
 
+  const navigate = useNavigate();
+  const completeOidc = async (state: string, code: string) => {
+    const loginMethod = await getOidcLoginMethod(platform, urlRouter, state, code);
+    if (!loginMethod) return;
+    login(loginMethod);
+    navigate("/");
+  };
+
   const profileRoom = useUserProfile(client, session);
 
   const context = useMemo<HydrogenContext>(
@@ -259,9 +317,24 @@ export function HydrogenRootView() {
 
   const loginPathMatch = useMatch({ path: "/login" });
   const hasProfileRoom = session && profileRoom;
+  const location = useLocation();
+  let oidcError: string | null = null;
+  if (location.hash !== "") {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const code = params.get("code");
+    const state = params.get("state");
+    if (params.get("error")) {
+      oidcError = params.get("error_description");
+    }
+    if (code && state) {
+      completeOidc(state, code);
+    }
+  }
 
   const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
+  let errorMsg = errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error?.message;
+  if (oidcError) errorMsg = oidcError;
 
   if (loading) {
     return (
@@ -273,11 +346,11 @@ export function HydrogenRootView() {
     );
   }
 
-  if (error) {
+  if (errorMsg) {
     return (
       <LoadingScreen className="gap-md">
         <Text variant="b1" weight="semi-bold">
-          {errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error.message}
+          {errorMsg}
         </Text>
         <Button onClick={() => window.location.reload()}>Refresh</Button>
       </LoadingScreen>
