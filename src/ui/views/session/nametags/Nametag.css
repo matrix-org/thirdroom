@@ -4,10 +4,15 @@
   border-radius: 5px;
   padding: 0px 5px;
   font-size: 12px;
+  pointer-events: none;
 }
 
 .Nametag--inner {
   transform: translate(-50%, -50%);
+}
+
+.Nametag--inner span {
+  margin-left: 3px;
 }
 
 .Nametag .Icon {
@@ -15,4 +20,5 @@
   position: relative;
   top: 6px;
   width: 19px;
+  pointer-events: none;
 }

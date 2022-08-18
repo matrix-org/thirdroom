@@ -2,6 +2,7 @@ import { GroupCall, Member, Room } from "@thirdroom/hydrogen-view-sdk";
 import { vec2 } from "gl-matrix";
 import { useEffect, useState } from "react";
 
+import "./Nametag.css";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { range } from "../../../../engine/utils/interpolation";
@@ -13,12 +14,12 @@ import {
 } from "../../../../plugins/nametags/nametags.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoomMembers } from "../../../hooks/useRoomMembers";
+import VolumeMuteIC from "../../../../../res/ic/volume-mute.svg";
 import VolumeOffIC from "../../../../../res/ic/volume-off.svg";
 import VolumeUpIC from "../../../../../res/ic/volume-up.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useWorld } from "../../../hooks/useRoomIdFromAlias";
-
-import "./Nametag.css";
+import { isPeerMuted } from "../../../../engine/network/network.main";
 
 const DIST_HIDE = 10;
 const DIST_SHOW = 8;
@@ -29,17 +30,17 @@ const MAX_OPACITY = 1;
 type SpeakingRoomMember = Member & { volumeDetector: any };
 
 export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
-  const ctx = useMainThreadContext();
+  const engine = useMainThreadContext();
   const [nametags, setNametags] = useState<[string, vec2, number][]>([]);
 
-  ctx.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
+  engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
 
   useEffect(() => {
     const onNametagsMessage = (ctx: IMainThreadContext, message: NametagsMessageType) => {
       setNametags(message.nametags);
     };
-    return registerMessageHandler(ctx, NametagsMessage, onNametagsMessage);
-  }, [ctx]);
+    return registerMessageHandler(engine, NametagsMessage, onNametagsMessage);
+  }, [engine]);
 
   const { joined } = useRoomMembers(room) ?? {};
 
@@ -86,7 +87,13 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
       >
         <div className="Nametag--inner">
           {member?.displayName || name}
-          <object className="Icon" type="image/svg+xml" data={speaking ? VolumeUpIC : VolumeOffIC} />
+          <span>
+            <object
+              className="Icon"
+              type="image/svg+xml"
+              data={isPeerMuted(engine, name) ? VolumeOffIC : speaking ? VolumeUpIC : VolumeMuteIC}
+            />
+          </span>
         </div>
       </div>
     );

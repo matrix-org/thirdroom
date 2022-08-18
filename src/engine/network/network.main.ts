@@ -219,6 +219,26 @@ export function removePeer(mainThread: IMainThreadContext, peerId: string) {
   onPeerLeft(mainThread, peerId);
 }
 
+export function toggleMutePeer(mainThread: IMainThreadContext, peerId: string) {
+  console.log("toggleMutePeer");
+  const audio = getModule(mainThread, AudioModule);
+  const mediaStream = audio.mediaStreams.get(peerId);
+  if (mediaStream) {
+    const tracks = mediaStream.getAudioTracks();
+    if (tracks[0].enabled) tracks.forEach((t) => (t.enabled = false));
+    else tracks.forEach((t) => (t.enabled = true));
+  }
+}
+
+export function isPeerMuted(mainThread: IMainThreadContext, peerId: string) {
+  const audio = getModule(mainThread, AudioModule);
+  const mediaStream = audio.mediaStreams.get(peerId);
+  if (mediaStream) {
+    const tracks = mediaStream.getAudioTracks();
+    return !tracks[0].enabled;
+  }
+}
+
 export function disconnect(mainThread: IMainThreadContext) {
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels } = network;
