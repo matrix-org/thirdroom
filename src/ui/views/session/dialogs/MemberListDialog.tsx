@@ -78,8 +78,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const unban = (roomId: string, userId: string) => session.hsApi.unban(roomId, userId);
 
   const engine = useMainThreadContext();
-  const mute = (userId: string) => toggleMutePeer(engine, userId);
-  const ignore = (userId: string) => removePeer(engine, userId);
+  const toggleMute = (userId: string) => toggleMutePeer(engine, userId);
 
   const renderMemberTile = (member: RoomMember) => {
     const { userId, name, avatarUrl, membership } = member;
@@ -87,10 +86,10 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
 
     const menuItems: ReactNode[] = [
       // todo: how to get this to rerender right away?
-      <DropdownMenuItem key="mute" onSelect={() => mute(userId)}>
+      <DropdownMenuItem key="mute" onSelect={() => toggleMute(userId)}>
         {isPeerMuted(engine, userId) ? "Unmute" : "Mute"}
       </DropdownMenuItem>,
-      <DropdownMenuItem key="ignore" onSelect={() => ignore(userId)}>
+      <DropdownMenuItem key="ignore" onSelect={() => removePeer(engine, userId)}>
         Ignore
       </DropdownMenuItem>,
     ];
