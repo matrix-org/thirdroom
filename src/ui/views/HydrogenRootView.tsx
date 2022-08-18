@@ -31,7 +31,7 @@ import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 
-const defaultHomeServer = "matrix.thirdroom.io";
+const defaultHomeServer = "thirdroom.io";
 
 function allowsChild(parent: Segment, child: Segment) {
   const parentType = parent.type;
