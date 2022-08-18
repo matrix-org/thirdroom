@@ -1,4 +1,4 @@
-import { Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 import { vec2 } from "gl-matrix";
 import { useEffect, useState } from "react";
 
@@ -13,11 +13,18 @@ import {
 } from "../../../../plugins/nametags/nametags.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoomMembers } from "../../../hooks/useRoomMembers";
+import VolumeOffIC from "../../../../../res/ic/volume-off.svg";
+import VolumeUpIC from "../../../../../res/ic/volume-up.svg";
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 
 import "./Nametag.css";
 
 const DIST_HIDE = 10;
 const DIST_SHOW = 8;
+
+const MIN_OPACITY = 0;
+const MAX_OPACITY = 1;
 
 export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
   const ctx = useMainThreadContext();
@@ -34,10 +41,36 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
 
   const { joined } = useRoomMembers(room) ?? {};
 
+  const { platform, session } = useHydrogen(true);
+  const [, world] = useWorld();
+
+  let groupCall: GroupCall;
+  if (world) {
+    for (const [, call] of Array.from(session.callHandler.calls)) {
+      if (call.roomId === world.id) {
+        groupCall = call;
+        break;
+      }
+    }
+  }
+
   const Nametag = (nametag: [string, vec2, number]) => {
     const [name, [left, top], dist] = nametag;
-    const opacity = range(DIST_HIDE, DIST_SHOW, 0, 1, dist);
+    const opacity = range(DIST_HIDE, DIST_SHOW, MIN_OPACITY, MAX_OPACITY, dist);
     const member = joined?.find((m) => m.userId === name);
+
+    const memberCall = member
+      ? Array.from(new Map(groupCall.members).values()).find((m) => m.userId === member?.userId && m.isConnected)
+      : undefined;
+
+    if (memberCall && !(memberCall as any).audioDetector)
+      (memberCall as any).audioDetector = (platform.mediaDevices as any).createVolumeMeasurer(
+        memberCall?.remoteMedia?.userMedia,
+        () => {}
+      );
+
+    const speaking = memberCall && (memberCall as any).audioDetector.isSpeaking;
+
     return (
       <div
         key={name}
@@ -49,7 +82,10 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
         }}
         className="Nametag"
       >
-        <div>{member?.displayName || name}</div>
+        <div>
+          {member?.displayName || name}
+          <object className="Icon" type="image/svg+xml" data={speaking ? VolumeUpIC : VolumeOffIC} />
+        </div>
       </div>
     );
   };

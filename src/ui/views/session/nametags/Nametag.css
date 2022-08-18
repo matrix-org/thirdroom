@@ -6,3 +6,10 @@
   font-size: 12px;
   transform: translate(-50%, -50%);
 }
+
+.Nametag .Icon {
+  filter: invert(100%) drop-shadow(1px 1px 1px rgb(0 0 0 / 40%)) drop-shadow(0px 0px 2px rgb(0 0 0 / 60%));
+  position: relative;
+  top: 6px;
+  width: 19px;
+}
