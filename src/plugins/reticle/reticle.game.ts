@@ -16,7 +16,7 @@ const focusQuery = defineQuery([FocusComponent]);
 const enterFocusQuery = enterQuery(focusQuery);
 const exitFocusQuery = exitQuery(focusQuery);
 
-const MAX_FOCUS_DISTANCE = 2;
+const MAX_FOCUS_DISTANCE = 3.3;
 
 const _source = vec3.create();
 const _target = vec3.create();
@@ -25,7 +25,7 @@ const _cameraWorldQuat = quat.create();
 const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
 
-const colliderShape = new RAPIER.Ball(0.1);
+const colliderShape = new RAPIER.Ball(0.01);
 
 const collisionGroups = 0x000f_0f00;
 
