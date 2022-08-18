@@ -1,4 +1,4 @@
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Member, Room } from "@thirdroom/hydrogen-view-sdk";
 import { vec2 } from "gl-matrix";
 import { useEffect, useState } from "react";
 
@@ -25,6 +25,8 @@ const DIST_SHOW = 8;
 
 const MIN_OPACITY = 0;
 const MAX_OPACITY = 1;
+
+type SpeakingRoomMember = Member & { volumeDetector: any };
 
 export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
   const ctx = useMainThreadContext();
@@ -63,13 +65,14 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
       ? Array.from(new Map(groupCall.members).values()).find((m) => m.userId === member?.userId && m.isConnected)
       : undefined;
 
-    if (memberCall && !(memberCall as any).audioDetector)
-      (memberCall as any).audioDetector = (platform.mediaDevices as any).createVolumeMeasurer(
+    const volumeDetector =
+      (memberCall as SpeakingRoomMember).volumeDetector ||
+      ((memberCall as SpeakingRoomMember).volumeDetector = (platform.mediaDevices as any).createVolumeMeasurer(
         memberCall?.remoteMedia?.userMedia,
         () => {}
-      );
+      ));
 
-    const speaking = memberCall && (memberCall as any).audioDetector.isSpeaking;
+    const speaking = volumeDetector.isSpeaking;
 
     return (
       <div
