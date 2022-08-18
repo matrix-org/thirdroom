@@ -6,7 +6,8 @@ import { Hidden, setQuaternionFromEuler, Transform } from "../component/transfor
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { GLTFRoot } from "./GLTF";
-import { addTrimesh, GLTFResource } from "./gltf.game";
+import { GLTFResource } from "./gltf.game";
+import { addTrimesh } from "./OMI_collider";
 
 export function hasHubsComponentsExtension(root: GLTFRoot) {
   return root.extensions?.MOZ_hubs_components !== undefined;

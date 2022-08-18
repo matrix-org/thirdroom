@@ -771,8 +771,7 @@ export interface GLTFInstancedMeshExtension {
 }
 
 export interface GLTFLightmapExtension {
-  index: number;
-  texCoord: number;
+  lightMapTexture: GLTFTextureInfo;
   scale?: number[];
   offset?: number[];
   intensity?: number;
