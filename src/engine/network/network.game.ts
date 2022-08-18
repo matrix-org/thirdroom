@@ -690,6 +690,10 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
       throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
     }
 
+    addComponent(state.world, Player, peid);
+
+    remoteNode.name = peerId;
+
     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
       sources: [
         createRemoteMediaStreamSource(state, {

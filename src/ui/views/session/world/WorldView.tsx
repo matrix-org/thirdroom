@@ -21,6 +21,7 @@ import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Nametags } from "../nametags/Nametags";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
@@ -175,6 +176,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
+      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} />}
       {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>

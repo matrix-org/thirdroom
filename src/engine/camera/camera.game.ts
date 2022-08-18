@@ -1,4 +1,6 @@
 import { addEntity } from "bitecs";
+import { mat4, vec3 } from "gl-matrix";
+import { degToRad } from "three/src/math/MathUtils";
 
 import {
   commitToObjectTripleBuffer,
@@ -6,10 +8,10 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { addTransformComponent } from "../component/transform";
+import { addTransformComponent, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { createResource } from "../resource/resource.game";
@@ -290,4 +292,79 @@ export function createCamera(state: GameState, setActive = true): number {
   }
 
   return eid;
+}
+
+// export function
+
+const _pm = mat4.create();
+const _icm = mat4.create();
+export function projectPerspective(ctx: GameState, cameraEid: number, v3: vec3) {
+  // const renderer = getModule(ctx, RendererModule);
+  const cameraNode = RemoteNodeComponent.get(cameraEid);
+  const cameraMatrix = Transform.worldMatrix[cameraEid];
+  if (cameraNode?.camera) {
+    // const { znear: near, zfar: far, yfov: fov } = cameraNode?.camera as RemotePerspectiveCamera;
+    // const projectionMatrix = mat4.perspective(_pm, fov, renderer.canvasWidth / renderer.canvasHeight, near, far);
+    const projectionMatrix = calculateProjectionMatrix(ctx, cameraNode.camera as RemotePerspectiveCamera);
+    const cameraMatrixWorldInverse = mat4.invert(_icm, cameraMatrix);
+    const v = vec3.clone(v3);
+    vec3.transformMat4(v, v3, cameraMatrixWorldInverse);
+    vec3.transformMat4(v, v, projectionMatrix);
+    return v;
+  } else {
+    throw new Error("no active camera found to project with");
+  }
+}
+
+export function calculateProjectionMatrix(ctx: GameState, camera: RemotePerspectiveCamera) {
+  const renderer = getModule(ctx, RendererModule);
+  const { znear: near, zfar: far, yfov: fov } = camera;
+
+  const zoom = 1;
+  const aspect = renderer.canvasWidth / renderer.canvasHeight;
+
+  const top = (near * Math.tan(degToRad(0.5 * fov))) / zoom;
+  const height = 2 * top;
+  const width = aspect * height;
+  const left = -0.5 * width;
+
+  return makePerspective(_pm, left, left + width, top, top - height, near, far);
+}
+
+function makePerspective(
+  matrix: mat4,
+  left: number,
+  right: number,
+  top: number,
+  bottom: number,
+  near: number,
+  far: number
+) {
+  const m = matrix;
+  const x = (2 * near) / (right - left);
+  const y = (2 * near) / (top - bottom);
+
+  const a = (right + left) / (right - left);
+  const b = (top + bottom) / (top - bottom);
+  const c = -(far + near) / (far - near);
+  const d = (-2 * far * near) / (far - near);
+
+  m[0] = x;
+  m[4] = 0;
+  m[8] = a;
+  m[12] = 0;
+  m[1] = 0;
+  m[5] = y;
+  m[9] = b;
+  m[13] = 0;
+  m[2] = 0;
+  m[6] = 0;
+  m[10] = c;
+  m[14] = d;
+  m[3] = 0;
+  m[7] = 0;
+  m[11] = -1;
+  m[15] = 0;
+
+  return m;
 }

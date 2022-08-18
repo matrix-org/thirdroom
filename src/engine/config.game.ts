@@ -27,6 +27,7 @@ import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
 import { ReticleFocusSystem } from "../plugins/reticle/reticle.game";
+import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -45,6 +46,7 @@ export default defineConfig<GameState>({
     FlyCharacterControllerModule,
     CubeSpawnerModule,
     GrabThrowModule,
+    NametagModule,
   ],
   systems: [
     ApplyInputSystem,
@@ -61,6 +63,7 @@ export default defineConfig<GameState>({
     CubeSpawnerSystem,
     ReticleFocusSystem,
     GrabThrowSystem,
+    NametagSystem,
 
     UpdateMatrixWorldSystem,
 

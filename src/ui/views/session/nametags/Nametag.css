@@ -1,0 +1,8 @@
+.Nametag {
+  color: white;
+  text-shadow: 1px 1px 1px rgb(0 0 0 / 40%), 0px 0px 2px rgb(0 0 0 / 60%);
+  border-radius: 5px;
+  padding: 0px 5px;
+  font-size: 12px;
+  transform: translate(-50%, -50%);
+}
