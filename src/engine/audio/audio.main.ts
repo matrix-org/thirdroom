@@ -87,12 +87,14 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   async create(ctx, { waitForMessage }) {
     const audioContext = new AudioContext();
 
-    // hack - must play something thru the audio context for media streams to activate
-    const osc = audioContext.createOscillator();
-    osc.frequency.value = 0;
-    osc.connect(audioContext.destination);
-    osc.start();
-    osc.stop();
+    setTimeout(() => {
+      // hack - must play something thru the audio context for media streams to activate
+      const osc = audioContext.createOscillator();
+      osc.frequency.value = 0;
+      osc.connect(audioContext.destination);
+      osc.start();
+      osc.stop();
+    }, 1000);
 
     const mainLimiter = new DynamicsCompressorNode(audioContext);
     mainLimiter.threshold.value = -0.01;
