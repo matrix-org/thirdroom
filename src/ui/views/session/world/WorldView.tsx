@@ -136,7 +136,7 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
-        <Tooltip content={showFocusedEntity ? "Show Names" : "Hide Names"}>
+        <Tooltip content={showFocusedEntity ? "Hide Names" : "Show Names"}>
           <IconButton
             variant="world"
             label="focusedEntity"
