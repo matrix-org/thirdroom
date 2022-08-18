@@ -6,6 +6,11 @@
   pointer-events: none;
 }
 
+.Nametag--image {
+  position: relative;
+  top: 5px;
+}
+
 .Nametag--inner {
   transform: translate(-50%, -50%);
 }
