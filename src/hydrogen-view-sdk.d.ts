@@ -548,9 +548,16 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     onUnsubscribeLast(): void;
   }
 
+  export interface IFilteredSessionInfo {
+    id: string;
+    deviceId: string;
+    userId: string;
+    homeserver: string;
+    accountManagementUrl?: string;
+  }
   export class Session {
     userId: string;
-    sessionInfo: ISessionInfo;
+    sessionInfo: IFilteredSessionInfo;
     hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
     rooms: ObservableMap<string, Room>;
