@@ -222,6 +222,10 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, cameraWorldQuat);
+
+    // place object at direction
+    vec3.add(Transform.position[cube], Transform.position[cube], direction);
+
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
     _impulse.x = direction[0];
