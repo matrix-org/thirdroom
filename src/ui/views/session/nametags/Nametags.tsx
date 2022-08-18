@@ -3,10 +3,14 @@ import { vec2 } from "gl-matrix";
 import { useEffect, useState } from "react";
 
 import { IMainThreadContext } from "../../../../engine/MainThread";
-import { registerMessageHandler } from "../../../../engine/module/module.common";
+import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { range } from "../../../../engine/utils/interpolation";
-import { NametagsMessage, NametagsMessageType } from "../../../../plugins/nametags/nametags.common";
-import { useKeyDown } from "../../../hooks/useKeyDown";
+import {
+  NametagsEnableMessage,
+  NametagsEnableMessageType,
+  NametagsMessage,
+  NametagsMessageType,
+} from "../../../../plugins/nametags/nametags.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoomMembers } from "../../../hooks/useRoomMembers";
 
@@ -15,10 +19,11 @@ import "./Nametag.css";
 const DIST_HIDE = 10;
 const DIST_SHOW = 8;
 
-export function Nametags({ room }: { room: Room }) {
+export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
   const ctx = useMainThreadContext();
   const [nametags, setNametags] = useState<[string, vec2, number][]>([]);
-  const [showNametags, setShowNametags] = useState<boolean>(false);
+
+  ctx.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
 
   useEffect(() => {
     const onNametagsMessage = (ctx: IMainThreadContext, message: NametagsMessageType) => {
@@ -26,15 +31,6 @@ export function Nametags({ room }: { room: Room }) {
     };
     return registerMessageHandler(ctx, NametagsMessage, onNametagsMessage);
   }, [ctx]);
-
-  useKeyDown(
-    (e) => {
-      if (e.code === "KeyN") {
-        setShowNametags(!showNametags);
-      }
-    },
-    [showNametags]
-  );
 
   const { joined } = useRoomMembers(room) ?? {};
 
@@ -58,5 +54,5 @@ export function Nametags({ room }: { room: Room }) {
     );
   };
 
-  return <div>{showNametags && nametags.map(Nametag)}</div>;
+  return <div>{enabled && nametags.map(Nametag)}</div>;
 }

@@ -176,7 +176,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} />}
+      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
       {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
     </div>

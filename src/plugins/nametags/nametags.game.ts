@@ -3,52 +3,37 @@ import { mat4, vec2, vec3 } from "gl-matrix";
 
 import { Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
-import {
-  enableActionMap,
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-} from "../../engine/input/ActionMappingSystem";
-import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import { InputModule } from "../../engine/input/input.game";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
 import { NetworkModule, ownedPlayerQuery } from "../../engine/network/network.game";
-import { NametagsMessage, NametagsMessageType } from "./nametags.common";
+import {
+  NametagsEnableMessage,
+  NametagsEnableMessageType,
+  NametagsMessage,
+  NametagsMessageType,
+} from "./nametags.common";
 import { RendererModule } from "../../engine/renderer/renderer.game";
 
 type NametagState = {
-  show: boolean;
+  enabled: boolean;
 };
 
 export const NametagModule = defineModule<GameState, NametagState>({
-  name: "nametag",
+  name: "nametags",
   create() {
     return {
-      show: false,
+      enabled: false,
     };
   },
   init(ctx) {
-    enableActionMap(ctx, ShowNametagsActionMap);
+    return registerMessageHandler(ctx, NametagsEnableMessage, onNametagsInitMessage);
   },
 });
 
-export const ShowNametagsActionMap: ActionMap = {
-  id: "toggle-nametags",
-  actions: [
-    {
-      id: "toggleNametags",
-      path: "ToggleNametags",
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyN",
-        },
-      ],
-    },
-  ],
-};
+function onNametagsInitMessage(ctx: GameState, message: NametagsEnableMessageType) {
+  const nametagModule = getModule(ctx, NametagModule);
+  nametagModule.enabled = message.enabled;
+}
 
 export const NametagComponent = defineComponent({
   entity: Types.eid,
@@ -58,17 +43,11 @@ const nametagQuery = defineQuery([NametagComponent]);
 const _v = vec3.create();
 
 export function NametagSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
   const renderer = getModule(ctx, RendererModule);
   const nametagModule = getModule(ctx, NametagModule);
 
-  const toggleNametags = input.actions.get("ToggleNametags") as ButtonActionState;
-  if (toggleNametags.pressed) {
-    nametagModule.show = !nametagModule.show;
-  }
-
-  if (nametagModule.show) {
+  if (nametagModule.enabled) {
     const ourPlayer = ownedPlayerQuery(ctx.world)[0];
     const ourWorldPosition = Transform.position[ourPlayer];
 
