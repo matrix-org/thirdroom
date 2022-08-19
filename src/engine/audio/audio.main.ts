@@ -38,6 +38,8 @@ import {
 import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
 import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
+import { LocalNametag, onLoadMainNametag, updateNametag } from "../nametag/nametag.main";
+import { NametagResourceType } from "../nametag/nametag.common";
 
 /*********
  * Types *
@@ -59,6 +61,7 @@ export interface MainAudioModule {
   nodes: MainNode[];
   scenes: MainScene[];
   activeScene?: MainScene;
+  nametags: LocalNametag[];
 }
 
 /******************
@@ -135,6 +138,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       emitters: [],
       nodes: [],
       scenes: [],
+      nametags: [],
     };
   },
   init(ctx) {
@@ -148,6 +152,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       registerResourceLoader(ctx, AudioResourceType.MediaStreamId, onLoadMediaStreamId),
       registerResourceLoader(ctx, AudioResourceType.MediaStreamSource, onLoadMediaStreamSource),
       registerResourceLoader(ctx, AudioResourceType.AudioEmitter, onLoadAudioEmitter),
+      registerResourceLoader(ctx, NametagResourceType, onLoadMainNametag),
     ];
 
     return () => {
@@ -422,6 +427,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
     const nodeView = getReadObjectBufferView(node.audioNodeTripleBuffer);
 
     updateNodeAudioEmitter(ctx, audioModule, node, nodeView);
+    updateNametag(ctx, audioModule, node, nodeView);
 
     if (node.resourceId === activeAudioListener) {
       setAudioListenerTransform(audioModule.context.listener, nodeView.worldMatrix);

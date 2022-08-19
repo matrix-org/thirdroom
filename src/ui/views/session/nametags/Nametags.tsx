@@ -1,24 +1,45 @@
 import { GroupCall, Member, Room } from "@thirdroom/hydrogen-view-sdk";
 import { vec2 } from "gl-matrix";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
 import "./Nametag.css";
-import { IMainThreadContext } from "../../../../engine/MainThread";
-import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
+import { getModule, Thread } from "../../../../engine/module/module.common";
 import { range } from "../../../../engine/utils/interpolation";
-import {
-  NametagsEnableMessage,
-  NametagsEnableMessageType,
-  NametagsMessage,
-  NametagsMessageType,
-} from "../../../../plugins/nametags/nametags.common";
+import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoomMembers } from "../../../hooks/useRoomMembers";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
+import { AudioModule } from "../../../../engine/audio/audio.main";
+import { getReadObjectBufferView } from "../../../../engine/allocator/ObjectBufferView";
+
+// src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
+const useAnimationFrame = (callback: Function, enabled = true) => {
+  const requestRef = useRef<number>();
+  const previousTimeRef = useRef<number>();
+
+  const animate = useCallback(
+    (time: number) => {
+      if (previousTimeRef.current != undefined) {
+        const deltaTime = time - previousTimeRef.current;
+        callback(deltaTime);
+      }
+      previousTimeRef.current = time;
+      requestRef.current = requestAnimationFrame(animate);
+    },
+    [callback]
+  );
+
+  useEffect(() => {
+    if (enabled) {
+      requestRef.current = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(requestRef.current || 0);
+    }
+  }, [enabled, animate]);
+};
 
 const opacityRange = (a: number) => range(30, 10, 0, 1, a);
 const scaleRange = (a: number) => range(40, 5, 0.1, 1, a);
@@ -82,12 +103,27 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
 
   engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
 
-  useEffect(() => {
-    const onNametagsMessage = (ctx: IMainThreadContext, message: NametagsMessageType) => {
-      setNametags(message.nametags);
-    };
-    registerMessageHandler(engine, NametagsMessage, onNametagsMessage);
-  }, [engine, nametags]);
+  const audioModule = getModule(engine, AudioModule);
+
+  useAnimationFrame(() => {
+    const arr = [];
+
+    for (const nametag of audioModule.nametags) {
+      const nametagView = getReadObjectBufferView(nametag.tripleBuffer);
+
+      const name = nametag.name;
+      const screenX = nametagView.screenX[0];
+      const screenY = nametagView.screenY[0];
+      const distanceFromCamera = nametagView.distanceFromCamera[0];
+      const inFrustum = nametagView.inFrustum[0];
+
+      if (inFrustum) {
+        arr.push([name, [screenX, screenY], distanceFromCamera] as [string, vec2, number]);
+      }
+    }
+
+    setNametags(arr);
+  }, enabled);
 
   const { session } = useHydrogen(true);
   const [, world] = useWorld();
