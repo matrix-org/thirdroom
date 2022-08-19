@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useMemo, useEffect } from "react";
 import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
 import { Header } from "../../../atoms/header/Header";
@@ -22,6 +22,10 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { Dots } from "../../../atoms/loading/Dots";
+import { useWorld } from "../../../hooks/useRoomIdFromAlias";
+import { useCalls } from "../../../hooks/useCalls";
+import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
 
 interface MemberListDialogProps {
   room: Room;
@@ -32,12 +36,36 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const { session, platform } = useHydrogen(true);
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+
+  const [, world] = useWorld();
+
+  const calls = useCalls(session);
+  const activeCall = useMemo(() => {
+    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
+    return roomCalls.length ? roomCalls[0] : undefined;
+  }, [calls, world]);
+
+  const [active, setActive] = useState<RoomMember[]>();
+  useEffect(() => {
+    if (activeCall) {
+      const me = joined?.find((m) => m.userId === session.userId);
+      setActive(
+        (me ? [me] : []).concat(
+          Array.from(new Map(activeCall.members).values())
+            .filter((m) => m.isConnected)
+            .map((m) => m.member)
+        )
+      );
+    }
+  }, [activeCall, joined, session]);
+
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
   const canInvite = canDoAction("invite", myPL);
   const canKick = canDoAction("kick", myPL);
   const canBan = canDoAction("ban", myPL);
 
+  const [activeCat, setActiveCat] = useState(true);
   const [joinedCat, setJoinedCat] = useState(true);
   const [invitedCat, setInvitedCat] = useState(true);
   const [leaveCat, setLeaveCat] = useState(true);
@@ -49,11 +77,22 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const ban = (roomId: string, userId: string) => session.hsApi.ban(roomId, userId);
   const unban = (roomId: string, userId: string) => session.hsApi.unban(roomId, userId);
 
+  const engine = useMainThreadContext();
+  const toggleMute = (userId: string) => toggleMutePeer(engine, userId);
+
   const renderMemberTile = (member: RoomMember) => {
     const { userId, name, avatarUrl, membership } = member;
     const userPL = getPowerLevel(userId);
 
-    const menuItems: ReactNode[] = [];
+    const menuItems: ReactNode[] = [
+      // todo: how to get this to rerender right away?
+      <DropdownMenuItem key="mute" onSelect={() => toggleMute(userId)}>
+        {isPeerMuted(engine, userId) ? "Unmute" : "Mute"}
+      </DropdownMenuItem>,
+      <DropdownMenuItem key="ignore" onSelect={() => removePeer(engine, userId)}>
+        Ignore
+      </DropdownMenuItem>,
+    ];
     switch (membership) {
       case "join":
         if (canKick && myPL > userPL)
@@ -154,6 +193,21 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                   {invitedCat && invited.map(renderMemberTile)}
                 </Category>
               )}
+
+              {!!active?.length && (
+                <Category
+                  header={
+                    <CategoryHeader
+                      title="Active"
+                      onClick={() => setActiveCat(!activeCat)}
+                      after={<Icon src={activeCat ? ChevronBottomIC : ChevronRightIC} />}
+                    />
+                  }
+                >
+                  {activeCat && active.map(renderMemberTile)}
+                </Category>
+              )}
+
               {!!joined?.length && (
                 <Category
                   header={
