@@ -1,6 +1,6 @@
 import { Document, WebIO, Logger, Verbosity } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-// import { textureResize } from "@gltf-transform/functions";
+import { textureResize } from "@gltf-transform/functions";
 
 import { downloadFile } from "../engine/utils/downloadFile";
 import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
@@ -33,9 +33,7 @@ export async function transformGLTF(url: string, fileMap: Map<string, string>) {
 
   doc.setLogger(logger);
 
-  // await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize());
-
-  await doc.transform(dedupeProperties(), extensionAwareInstance());
+  await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize());
 
   const glbBuffer = await io.writeBinary(doc);
 

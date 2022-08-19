@@ -41,7 +41,7 @@ export function createContainerizedAvatar(ctx: GameState, uri: string, height = 
   colliderDesc.setSolverGroups(AVATAR_COLLISION_GROUPS);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(ctx.world, container, rigidBody);
+  addRigidBody(ctx, container, rigidBody);
 
   return container;
 }

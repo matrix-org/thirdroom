@@ -16,6 +16,8 @@ import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
+import { ResourceId } from "../resource/resource.common";
+import { addResourceRef, disposeResource } from "../resource/resource.game";
 
 interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
@@ -64,6 +66,8 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
 
 const RigidBodySoA = defineComponent({
   velocity: [Types.f32, 3],
+  meshResourceId: Types.ui32,
+  primitiveResourceId: Types.ui32,
 });
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
 
@@ -130,6 +134,14 @@ export const PhysicsSystem = (state: GameState) => {
       handleToEid.delete(body.handle);
       physicsWorld.removeRigidBody(body);
       RigidBody.store.delete(eid);
+
+      if (RigidBody.meshResourceId[eid]) {
+        disposeResource(state, RigidBody.meshResourceId[eid]);
+      }
+
+      if (RigidBody.primitiveResourceId[eid]) {
+        disposeResource(state, RigidBody.primitiveResourceId[eid]);
+      }
     }
   }
 
@@ -168,9 +180,26 @@ export const PhysicsSystem = (state: GameState) => {
   });
 };
 
-export function addRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {
-  addComponent(world, RigidBody, eid);
+export function addRigidBody(
+  ctx: GameState,
+  eid: number,
+  rigidBody: RapierRigidBody,
+  meshResourceId?: ResourceId,
+  primitiveResourceId?: ResourceId
+) {
+  addComponent(ctx.world, RigidBody, eid);
   RigidBody.store.set(eid, rigidBody);
+
+  if (meshResourceId) {
+    addResourceRef(ctx, meshResourceId);
+  }
+
+  if (primitiveResourceId) {
+    addResourceRef(ctx, primitiveResourceId);
+  }
+
+  RigidBody.meshResourceId[eid] = meshResourceId || 0;
+  RigidBody.primitiveResourceId[eid] = primitiveResourceId || 0;
 }
 
 export function removeRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {

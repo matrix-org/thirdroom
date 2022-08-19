@@ -73,7 +73,7 @@ export interface RemoteUnlitMaterial {
 export interface RemoteStandardMaterial {
   name: string;
   resourceId: ResourceId;
-  type: MaterialType.Unlit;
+  type: MaterialType.Standard;
   materialBufferView: StandardMaterialBufferView;
   materialTripleBuffer: UnlitMaterialTripleBuffer;
   get doubleSided(): boolean;
@@ -134,7 +134,7 @@ export function createRemoteUnlitMaterial(ctx: GameState, props: UnlitMaterialPr
   materialBufferView.baseColorFactor.set(props.baseColorFactor || [1, 1, 1, 1]);
   materialBufferView.baseColorTexture[0] = props.baseColorTexture ? props.baseColorTexture.resourceId : 0;
 
-  const materialTripleBuffer = createObjectTripleBuffer(unlitMaterialSchema, ctx.gameToMainTripleBufferFlags);
+  const materialTripleBuffer = createObjectTripleBuffer(unlitMaterialSchema, ctx.gameToRenderTripleBufferFlags);
 
   let _baseColorTexture: RemoteTexture | undefined = props.baseColorTexture;
 
@@ -237,7 +237,7 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
   materialBufferView.emissiveFactor.set(props.emissiveFactor || [0, 0, 0]);
   materialBufferView.emissiveTexture[0] = props.emissiveTexture ? props.emissiveTexture.resourceId : 0;
 
-  const materialTripleBuffer = createObjectTripleBuffer(standardMaterialSchema, ctx.gameToMainTripleBufferFlags);
+  const materialTripleBuffer = createObjectTripleBuffer(standardMaterialSchema, ctx.gameToRenderTripleBufferFlags);
 
   let _baseColorTexture: RemoteTexture | undefined = props.baseColorTexture;
   let _metallicRoughnessTexture: RemoteTexture | undefined = props.metallicRoughnessTexture;
@@ -312,7 +312,7 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
     resourceId,
     materialBufferView,
     materialTripleBuffer,
-    type: MaterialType.Unlit,
+    type: MaterialType.Standard,
     get doubleSided(): boolean {
       return !!materialBufferView.doubleSided[0];
     },

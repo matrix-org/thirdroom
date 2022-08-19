@@ -96,7 +96,11 @@ export function extensionAwareInstance(): Transform {
         const batchRotation = batch.getAttribute("ROTATION")!;
         const batchScale = batch.getAttribute("SCALE")!;
 
-        const batchNode = doc.createNode().setMesh(mesh).setExtension("EXT_mesh_gpu_instancing", batch);
+        const batchNode = doc
+          .createNode()
+          .setName(nodesArr[0].getName() + "-instanced")
+          .setMesh(mesh)
+          .setExtension("EXT_mesh_gpu_instancing", batch);
 
         if (lightMap) {
           batchNode.setExtension(MXLightmapExtension.EXTENSION_NAME, lightMap);
