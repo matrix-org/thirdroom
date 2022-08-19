@@ -294,8 +294,6 @@ export function createCamera(state: GameState, setActive = true): number {
   return eid;
 }
 
-// export function
-
 const _pm = mat4.create();
 const _icm = mat4.create();
 export function projectPerspective(ctx: GameState, cameraEid: number, v3: vec3) {

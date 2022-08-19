@@ -220,7 +220,6 @@ export function removePeer(mainThread: IMainThreadContext, peerId: string) {
 }
 
 export function toggleMutePeer(mainThread: IMainThreadContext, peerId: string) {
-  console.log("toggleMutePeer");
   const audio = getModule(mainThread, AudioModule);
   const mediaStream = audio.mediaStreams.get(peerId);
   if (mediaStream) {

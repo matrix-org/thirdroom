@@ -60,7 +60,7 @@ export interface GameRendererModuleState {
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
   name: rendererModuleName,
-  async create({ gameToRenderTripleBufferFlags }, { sendMessage, waitForMessage }) {
+  async create({ gameToRenderTripleBufferFlags }, { sendMessage }) {
     const rendererStateBufferView = createObjectBufferView(rendererStateSchema, ArrayBuffer);
     const rendererStateTripleBuffer = createObjectTripleBuffer(rendererStateSchema, gameToRenderTripleBufferFlags);
 
