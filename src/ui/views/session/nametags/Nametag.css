@@ -1,9 +1,10 @@
 .Nametag {
   color: white;
-  text-shadow: 1px 1px 1px rgb(0 0 0 / 40%), 0px 0px 2px rgb(0 0 0 / 60%);
+  text-shadow: 1px 1px 1px rgb(0 0 0 / 60%), 0px 0px 3px rgb(0 0 0 / 33%);
   border-radius: 5px;
   padding: 0px 5px;
   pointer-events: none;
+  transform-origin: top left;
 }
 
 .Nametag--image {
@@ -15,16 +16,9 @@
   transform: translate(-50%, -50%);
 }
 .Nametag--inner .Avatar {
-  margin-right: 8px;
+  margin-right: 12px;
+  box-shadow: 1px 1px 1px rgb(0 0 0 / 40%), 0px 0px 2px rgb(0 0 0 / 60%);
 }
-.Nametag--inner > span {
-  margin-left: 6px;
-}
-
-.Nametag .Icon {
-  filter: invert(100%) drop-shadow(1px 1px 1px rgb(0 0 0 / 40%)) drop-shadow(0px 0px 2px rgb(0 0 0 / 60%));
-  position: relative;
-  top: 4px;
-  width: 16px;
-  pointer-events: none;
+.Nametag--inner .Avatar.Speaking {
+  outline: 3px solid var(--usercolor1);
 }

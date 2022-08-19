@@ -2,7 +2,7 @@ import { defineComponent, defineQuery, Types } from "bitecs";
 import { mat4, vec2, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { Transform } from "../../engine/component/transform";
+import { getForwardVector, getPitch, getRoll, Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -14,9 +14,6 @@ import {
   NametagsMessageType,
 } from "./nametags.common";
 import { RendererModule } from "../../engine/renderer/renderer.game";
-
-// import { degToRad, radToDeg } from "three/src/math/MathUtils";
-// import { RigidBody } from "../../engine/physics/physics.game";
 
 type NametagState = {
   enabled: boolean;
@@ -77,19 +74,10 @@ export function NametagSystem(ctx: GameState) {
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
-      // TODO
-      // const forward = getForwardVector(Transform.quaternion[ourPlayer])
-
-      const [x, y, z, w] = Transform.quaternion[ourPlayer];
-      const roll = Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
-      const pitch = Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
-
-      const forward = vec3.set(
-        _forward,
-        -Math.cos(pitch) * Math.sin(roll),
-        Math.sin(pitch),
-        -Math.cos(pitch) * Math.cos(roll)
-      );
+      const quaternion = Transform.quaternion[ourPlayer];
+      const pitch = getPitch(quaternion);
+      const roll = getRoll(quaternion);
+      const forward = getForwardVector(_forward, pitch, roll);
 
       const target = vec3.sub(vec3.create(), nametagWorldPosition, ourWorldPosition);
       vec3.normalize(target, target);
@@ -104,7 +92,6 @@ export function NametagSystem(ctx: GameState) {
         nametags.push([peerId, [screenX, screenY] as vec2, dist]);
       }
     }
-    if (nametags.length) console.log("YO");
     if (nametags.length)
       ctx.sendMessage<NametagsMessageType>(Thread.Main, {
         type: NametagsMessage,
