@@ -10,6 +10,7 @@ import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
+import PeopleIC from "../../../../../res/ic/peoples.svg";
 import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
 import SubtitlesOffIC from "../../../../../res/ic/subtitles-off.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
@@ -21,6 +22,8 @@ import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { MemberListDialog } from "../dialogs/MemberListDialog";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
@@ -47,14 +50,25 @@ export function WorldView() {
     localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
   }, [showFocusedEntity]);
 
-  const onEntityClicked = (entity: EntityData) => {};
+  const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
+
+  const onEntitySelected = (entity: EntityData) => {
+    if (entity.peerId) {
+      setShowActiveMembers(true);
+      document.exitPointerLock();
+    }
+  };
 
   const onEntityFocused = (entity: EntityData) => {
     setEntity(entity);
   };
 
   const toggleShowFocusedEnity = () => {
-    setShowFocusedEntity(!showFocusedEntity);
+    setShowFocusedEntity((e) => !e);
+  };
+
+  const toggleShowActiveMembers = () => {
+    setShowActiveMembers((e) => !e);
   };
 
   useKeyDown(
@@ -63,19 +77,24 @@ export function WorldView() {
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
+      if (isEscape && showActiveMembers) {
+        canvasRef.current?.requestPointerLock();
+        setShowActiveMembers(false);
+        return;
+      }
       if (isEscape && isChatOpen) {
         canvasRef.current?.requestPointerLock();
         closeWorldChat();
         return;
       }
-      if (isEscape && isOverlayOpen === false) {
-        document.exitPointerLock();
-        openOverlay();
-        return;
-      }
       if (isEscape && isOverlayOpen) {
         canvasRef.current?.requestPointerLock();
         closeOverlay();
+        return;
+      }
+      if (isEscape && isOverlayOpen === false) {
+        document.exitPointerLock();
+        openOverlay();
         return;
       }
       if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
@@ -98,12 +117,16 @@ export function WorldView() {
       if (e.code === "KeyO") {
         toggleShowFocusedEnity();
       }
+      if (e.code === "KeyP") {
+        toggleShowActiveMembers();
+      }
     },
     [
       isEnteredWorld,
       isChatOpen,
       isOverlayOpen,
       showFocusedEntity,
+      showActiveMembers,
       openWorldChat,
       closeWorldChat,
       openOverlay,
@@ -135,6 +158,14 @@ export function WorldView() {
 
   const renderControl = () => (
     <div className="WorldView__controls flex">
+      <div className="flex flex-column items-center">
+        <Tooltip content={showActiveMembers ? "Show Members" : "Hide Members"}>
+          <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
+        </Tooltip>
+        <Text variant="b3" color="world" weight="bold">
+          P
+        </Text>
+      </div>
       <div className="flex flex-column items-center">
         <Tooltip content={showFocusedEntity ? "Show Names" : "Hide Names"}>
           <IconButton
@@ -175,8 +206,13 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
+      {!("isBeingCreated" in world) && (
+        <Dialog open={showActiveMembers}>
+          <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
+        </Dialog>
+      )}
       {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
-      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntityClicked={onEntityClicked} />}
+      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
     </div>
   );
 }
