@@ -70,7 +70,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
           <span>
             <div className="Text Text--bold Text-b1">{getUsername(entity?.peerId)}</div>
             <div className="Text Text-b3 Text--world Text--regular">{entity?.peerId}</div>
-            <Icon src={MouseIC} className="MouseIcon Icon--world" />
+            <span className="BoxedKey">E</span>
             <span className="Text Text-b3"> More Info</span>
           </span>
         </div>

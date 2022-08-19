@@ -6,6 +6,7 @@ import { IMainThreadContext } from "../../../../engine/MainThread";
 import { registerMessageHandler } from "../../../../engine/module/module.common";
 import { ReticleFocusMessageType, ReticleFocusMessage } from "../../../../plugins/reticle/reticle.common";
 import { useEvent } from "../../../hooks/useEvent";
+import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { SessionOutletContext } from "../SessionView";
 
@@ -21,10 +22,10 @@ export interface EntityData {
 
 interface IReticleProps {
   onEntityFocused: (o: EntityData) => void;
-  onEntityClicked: (o: EntityData) => void;
+  onEntitySelected: (o: EntityData) => void;
 }
 
-export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
+export function Reticle({ onEntityFocused, onEntitySelected }: IReticleProps) {
   const { canvasRef } = useOutletContext<SessionOutletContext>();
 
   const ctx = useMainThreadContext();
@@ -41,10 +42,21 @@ export function Reticle({ onEntityFocused, onEntityClicked }: IReticleProps) {
     return registerMessageHandler(ctx, ReticleFocusMessage, onReticleFocus);
   }, [ctx, entity, onEntityFocused]);
 
+  useKeyDown(
+    (e) => {
+      if (e.code === "KeyE" && entity) {
+        setMouseDown(true);
+        onEntitySelected(entity);
+      } else {
+        setMouseDown(false);
+      }
+    },
+    [entity]
+  );
+
   useEvent(
     "mousedown",
     () => {
-      if (entity) onEntityClicked(entity);
       setMouseDown(true);
     },
     canvasRef.current,
