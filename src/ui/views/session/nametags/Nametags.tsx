@@ -21,7 +21,7 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 
 const opacityRange = (a: number) => range(30, 10, 0, 1, a);
-const scaleRange = (a: number) => range(30, 5, 0.1, 1, a);
+const scaleRange = (a: number) => range(40, 5, 0.1, 1, a);
 
 type SpeakingRoomMember = Member & { volumeDetector: { isSpeaking: boolean } };
 
