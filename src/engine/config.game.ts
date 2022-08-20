@@ -63,10 +63,10 @@ export default defineConfig<GameState>({
     CubeSpawnerSystem,
     ReticleFocusSystem,
     GrabThrowSystem,
-    NametagSystem,
 
     UpdateMatrixWorldSystem,
 
+    NametagSystem,
     EditorStateSystem,
     //EditorSelectionSystem,
 
