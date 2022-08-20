@@ -30,6 +30,8 @@ export async function onLoadMainNametag(
 
   audioModule.nametags.push(nametag);
 
+  audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
+
   return nametag;
 }
 

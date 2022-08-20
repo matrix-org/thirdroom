@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -25,6 +25,9 @@ import { EntitySelected } from "../entity-selected/EntitySelected";
 import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { Thread } from "../../../../engine/module/module.common";
+import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
@@ -64,12 +67,17 @@ export function WorldView() {
     setEntity(entity);
   };
 
-  const toggleShowFocusedEnity = () => {
-    setShowFocusedEntity((e) => !e);
-  };
+  const engine = useMainThreadContext();
+
+  const toggleShowFocusedEnity = useCallback(() => {
+    const enabled = !showFocusedEntity;
+    setShowFocusedEntity(enabled);
+    engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
+  }, [setShowFocusedEntity, showFocusedEntity, engine]);
 
   const toggleShowActiveMembers = () => {
-    setShowActiveMembers((e) => !e);
+    const enabled = !showActiveMembers;
+    setShowActiveMembers(enabled);
   };
 
   useKeyDown(

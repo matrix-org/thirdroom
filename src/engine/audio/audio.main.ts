@@ -1,4 +1,5 @@
 import { vec3, mat4 } from "gl-matrix";
+import EventEmitter from "events";
 
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
@@ -62,6 +63,7 @@ export interface MainAudioModule {
   scenes: MainScene[];
   activeScene?: MainScene;
   nametags: LocalNametag[];
+  eventEmitter: EventEmitter;
 }
 
 /******************
@@ -139,6 +141,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       nodes: [],
       scenes: [],
       nametags: [],
+      eventEmitter: new EventEmitter(),
     };
   },
   init(ctx) {
@@ -419,6 +422,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
       }
       if (node.nametag) {
         audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag));
+        audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
       }
 
       nodes.splice(i, 1);
