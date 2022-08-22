@@ -36,7 +36,7 @@
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
     "@react-aria/interactions": "^3.9.1",
-    "@thirdroom/hydrogen-view-sdk": "0.0.17",
+    "@thirdroom/hydrogen-view-sdk": "^0.0.18",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
     "bitecs": "^0.3.38",
