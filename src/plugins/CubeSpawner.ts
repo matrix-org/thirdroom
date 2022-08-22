@@ -259,7 +259,7 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(world, eid, rigidBody);
+  addRigidBody(state, eid, rigidBody);
 
   return eid;
 };

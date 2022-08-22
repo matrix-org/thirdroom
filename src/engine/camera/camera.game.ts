@@ -91,7 +91,7 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
   cameraBufferView.yfov[0] = props?.yfov === undefined ? 50 : props.yfov;
   cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
 
-  const cameraTripleBuffer = createObjectTripleBuffer(perspectiveCameraSchema, ctx.gameToMainTripleBufferFlags);
+  const cameraTripleBuffer = createObjectTripleBuffer(perspectiveCameraSchema, ctx.gameToRenderTripleBufferFlags);
 
   const name = props?.name || DEFAULT_PERSPECTIVE_CAMERA_NAME;
 
@@ -187,7 +187,7 @@ export function createRemoteOrthographicCamera(
   cameraBufferView.xmag[0] = props.xmag;
   cameraBufferView.ymag[0] = props.ymag;
 
-  const cameraTripleBuffer = createObjectTripleBuffer(orthographicCameraSchema, ctx.gameToMainTripleBufferFlags);
+  const cameraTripleBuffer = createObjectTripleBuffer(orthographicCameraSchema, ctx.gameToRenderTripleBufferFlags);
 
   const name = props.name || DEFAULT_ORTHOGRAPHIC_CAMERA_NAME;
 

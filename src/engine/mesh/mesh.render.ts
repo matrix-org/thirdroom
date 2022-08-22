@@ -22,6 +22,8 @@ import {
   FloatType,
   LinearFilter,
   LinearEncoding,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -70,6 +72,7 @@ export interface LocalMeshPrimitive {
   material?: LocalMaterialResource;
   targets?: number[] | Float32Array;
   geometryObj: BufferGeometry;
+  instancedGeometryObj?: InstancedBufferGeometry;
   materialObj: Material;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
@@ -347,7 +350,22 @@ function createMeshPrimitiveObject(
       const attributes = Object.entries(instancedMesh.attributes);
       const count = attributes[0][1].attribute.count;
 
-      const instancedMeshObject = new InstancedMesh(geometryObj, materialObj, count);
+      const instancedGeometry = new InstancedBufferGeometry();
+      instancedGeometry.instanceCount = count;
+
+      instancedGeometry.setIndex(geometryObj.getIndex());
+
+      for (const semanticName in MeshPrimitiveAttribute) {
+        const attributeName = ThreeAttributes[semanticName];
+
+        if (geometryObj.hasAttribute(attributeName)) {
+          instancedGeometry.setAttribute(attributeName, geometryObj.getAttribute(attributeName));
+        }
+      }
+
+      primitive.instancedGeometryObj = instancedGeometry;
+
+      const instancedMeshObject = new InstancedMesh(instancedGeometry, materialObj, count);
       instancedMeshObject.frustumCulled = false;
 
       tempPosition.set(0, 0, 0);
@@ -380,37 +398,60 @@ function createMeshPrimitiveObject(
         instancedMeshObject.setMatrixAt(instanceIndex, tempMatrix4.compose(tempPosition, tempQuaternion, tempScale));
       }
 
+      if (instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_OFFSET]) {
+        const lightMapOffset = instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_OFFSET].attribute;
+
+        instancedGeometry.setAttribute(
+          "lightMapOffset",
+          new InstancedBufferAttribute(lightMapOffset.array, lightMapOffset.itemSize, lightMapOffset.normalized, 1)
+        );
+      }
+
+      if (instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_SCALE]) {
+        const lightMapScale = instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_SCALE].attribute;
+
+        instancedGeometry.setAttribute(
+          "lightMapScale",
+          new InstancedBufferAttribute(lightMapScale.array, lightMapScale.itemSize, lightMapScale.normalized, 1)
+        );
+      }
+
       mesh = instancedMeshObject;
     } else {
       mesh = new Mesh(geometryObj, materialObj);
+    }
 
-      if (lightMap) {
-        const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
+    if (lightMap) {
+      const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
 
-        lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
-        lightMapTexture.texture.type = FloatType;
-        lightMapTexture.texture.minFilter = LinearFilter;
-        lightMapTexture.texture.generateMipmaps = false;
+      lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
+      lightMapTexture.texture.type = FloatType;
+      lightMapTexture.texture.minFilter = LinearFilter;
+      lightMapTexture.texture.generateMipmaps = false;
 
-        const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+      const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
 
-        if (!material.userData.lightMapTransform) {
-          const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
-          const lightMapTransform = new Uniform(lightMapTransformMatrix);
+      if (!material.userData.lightMapTransform) {
+        const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
+        const lightMapTransform = new Uniform(lightMapTransformMatrix);
 
-          material.onBeforeCompile = (shader) => {
-            shader.uniforms.lightMapTransform = lightMapTransform;
-          };
+        material.onBeforeCompile = (shader) => {
+          shader.uniforms.lightMapTransform = lightMapTransform;
+        };
 
-          material.needsUpdate = true;
+        material.needsUpdate = true;
 
-          material.userData.lightMapTransform = lightMapTransform;
-        }
+        material.userData.lightMapTransform = lightMapTransform;
+      }
 
-        mesh.onBeforeRender = () => {
-          material.lightMapIntensity = intensity * Math.PI;
-          material.lightMap = lightMapTexture.texture;
-          ((material.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
+      mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
+        const meshMaterial = material as MeshBasicMaterial | MeshStandardMaterial;
+
+        if ("isMeshBasicMaterial" in material || "isMeshStandardMaterial" in material) {
+          meshMaterial.lightMapIntensity = intensity * Math.PI;
+          meshMaterial.lightMap = lightMapTexture.texture;
+
+          ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
             offset[0],
             offset[1],
             scale[0],
@@ -421,9 +462,9 @@ function createMeshPrimitiveObject(
           );
 
           // This is currently added via a patch to Three.js
-          (material as any).uniformsNeedUpdate = true;
-        };
-      }
+          (meshMaterial as any).uniformsNeedUpdate = true;
+        }
+      };
     }
 
     object = mesh;
@@ -461,6 +502,10 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     const meshPrimitiveResource = meshPrimitives[i];
 
     if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
+      if (meshPrimitiveResource.instancedGeometryObj) {
+        meshPrimitiveResource.instancedGeometryObj.dispose();
+      }
+
       meshPrimitiveResource.geometryObj.dispose();
       meshPrimitiveResource.materialObj.dispose();
       meshPrimitives.splice(i, 1);

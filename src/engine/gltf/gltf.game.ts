@@ -277,8 +277,10 @@ async function _inflateGLTFNode(
     if (node.scale) obj3d.scale.fromArray(node.scale);
   }
 
+  node.name = node.name || `Node ${nodeIndex}`;
+
   addTransformComponent(ctx.world, nodeEid);
-  addNameComponent(ctx.world, nodeEid, node.name || `Node ${nodeIndex}`);
+  addNameComponent(ctx.world, nodeEid, node.name);
 
   if (node.matrix) {
     Transform.localMatrix[nodeEid].set(node.matrix);
