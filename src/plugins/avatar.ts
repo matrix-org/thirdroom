@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity } from "bitecs";
+import { addComponent, addEntity } from "bitecs";
 
 import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
@@ -7,6 +7,7 @@ import { inflateGLTFScene } from "../engine/gltf/gltf.game";
 import { getModule } from "../engine/module/module.common";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { PhysicsModule, addRigidBody } from "../engine/physics/physics.game";
+import { NametagComponent } from "./nametags/nametags.game";
 
 const AVATAR_COLLISION_GROUPS = 0x0ff0_f00f;
 
@@ -19,6 +20,13 @@ export function createContainerizedAvatar(ctx: GameState, uri: string, height = 
   const container = addEntity(ctx.world);
   addTransformComponent(ctx.world, container);
   addRemoteNodeComponent(ctx, container);
+
+  const nametagAnchor = addEntity(ctx.world);
+  addTransformComponent(ctx.world, nametagAnchor);
+  addComponent(ctx.world, NametagComponent, nametagAnchor);
+  Transform.position[nametagAnchor].set([0, height + height / 1.5, 0]);
+  addChild(container, nametagAnchor);
+  NametagComponent.entity[nametagAnchor] = container;
 
   const eid = addEntity(ctx.world);
   inflateGLTFScene(ctx, eid, uri, { createTrimesh: false });

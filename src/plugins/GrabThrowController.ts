@@ -86,8 +86,8 @@ const GrabComponent = defineComponent({
 });
 const grabQuery = defineQuery([GrabComponent]);
 
-const HELD_DISTANCE = 2;
-const GRAB_DISTANCE = 2;
+const HELD_DISTANCE = 2.5;
+const GRAB_DISTANCE = 3.3;
 const GRAB_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
 
@@ -102,7 +102,7 @@ const _cameraWorldQuat = quat.create();
 const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
 
-const colliderShape = new RAPIER.Ball(0.7);
+const colliderShape = new RAPIER.Ball(0.01);
 
 const collisionGroups = 0x00f0_000f;
 
