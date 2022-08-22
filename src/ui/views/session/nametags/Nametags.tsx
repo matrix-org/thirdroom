@@ -109,7 +109,7 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
           bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
           className={classNames("", { ["Nametag--image"]: avatarUrl, ["Speaking"]: speaking })}
         />
-        {member?.displayName || name}
+        {member?.displayName || nametag.name}
       </div>
     </div>
   );
@@ -120,15 +120,22 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
 
   const [nametags, setNametags] = useState<LocalNametag[]>([]);
 
+  const onNametagsChanged = useCallback(
+    (nametags: LocalNametag[]) => {
+      setNametags([...nametags]);
+    },
+    [setNametags]
+  );
+
   useEffect(() => {
     const audioModule = getModule(engine, AudioModule);
 
-    audioModule.eventEmitter.addListener("nametags-changed", setNametags);
+    audioModule.eventEmitter.addListener("nametags-changed", onNametagsChanged);
 
     return () => {
-      audioModule.eventEmitter.removeListener("nametags-changed", setNametags);
+      audioModule.eventEmitter.removeListener("nametags-changed", onNametagsChanged);
     };
-  }, [engine, setNametags]);
+  }, [engine, onNametagsChanged]);
 
   const { session } = useHydrogen(true);
   const [, world] = useWorld();
