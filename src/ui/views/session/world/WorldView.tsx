@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { SessionOutletContext } from "../SessionView";
@@ -22,8 +22,12 @@ import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { EntityData, Reticle } from "../reticle/Reticle";
 import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { Thread } from "../../../../engine/module/module.common";
+import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
@@ -37,6 +41,8 @@ export function WorldView() {
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
+  const engine = useMainThreadContext();
+
   const [entity, setEntity] = useState<EntityData>();
 
   const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
@@ -48,7 +54,12 @@ export function WorldView() {
 
   useEffect(() => {
     localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
-  }, [showFocusedEntity]);
+
+    engine.sendMessage<NametagsEnableMessageType>(Thread.Game, {
+      type: NametagsEnableMessage,
+      enabled: showFocusedEntity,
+    });
+  }, [engine, showFocusedEntity]);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
@@ -63,12 +74,15 @@ export function WorldView() {
     setEntity(entity);
   };
 
-  const toggleShowFocusedEnity = () => {
-    setShowFocusedEntity((e) => !e);
-  };
+  const toggleShowFocusedEnity = useCallback(() => {
+    const enabled = !showFocusedEntity;
+    setShowFocusedEntity(enabled);
+    engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
+  }, [setShowFocusedEntity, showFocusedEntity, engine]);
 
   const toggleShowActiveMembers = () => {
-    setShowActiveMembers((e) => !e);
+    const enabled = !showActiveMembers;
+    setShowActiveMembers(enabled);
   };
 
   useKeyDown(
@@ -206,6 +220,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
+      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
       {!("isBeingCreated" in world) && (
         <Dialog open={showActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />

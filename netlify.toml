@@ -18,6 +18,11 @@ for = "/*"
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Embedder-Policy = "require-corp"
 
+[[headers]]
+for = "/.well-known/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
 [context.production.environment]
   VITE_NETLIFY_DEPLOY_CONTEXT = "production"
 
