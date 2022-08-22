@@ -26,6 +26,7 @@ import {
   RendererSharedNodeResource,
 } from "./node.common";
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
+import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -49,6 +50,8 @@ export interface RemoteNode {
   set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined);
   get light(): RemoteLight | undefined;
   set light(light: RemoteLight | undefined);
+  get reflectionProbe(): RemoteReflectionProbe | undefined;
+  set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined);
   get camera(): RemoteCamera | undefined;
   set camera(camera: RemoteCamera | undefined);
   get tilesRenderer(): RemoteTilesRenderer | undefined;
@@ -70,6 +73,7 @@ interface NodeProps {
   lightMap?: RemoteLightMap;
   skinnedMesh?: RemoteSkinnedMesh;
   light?: RemoteLight;
+  reflectionProbe?: RemoteReflectionProbe;
   camera?: RemoteCamera;
   audioEmitter?: RemotePositionalAudioEmitter;
   tilesRenderer?: RemoteTilesRenderer;
@@ -89,6 +93,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     if (props?.lightMap) remoteNode.lightMap = props.lightMap;
     if (props?.skinnedMesh) remoteNode.skinnedMesh = props.skinnedMesh;
     if (props?.light) remoteNode.light = props.light;
+    if (props?.reflectionProbe) remoteNode.reflectionProbe = props.reflectionProbe;
     if (props?.camera) remoteNode.camera = props.camera;
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
     if (props?.tilesRenderer) remoteNode.tilesRenderer = props.tilesRenderer;
@@ -104,6 +109,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   rendererNodeBufferView.skinnedMesh[0] = props?.skinnedMesh?.resourceId || 0;
   rendererNodeBufferView.lightMap[0] = props?.lightMap?.resourceId || 0;
   rendererNodeBufferView.light[0] = props?.light?.resourceId || 0;
+  rendererNodeBufferView.reflectionProbe[0] = props?.reflectionProbe?.resourceId || 0;
   rendererNodeBufferView.camera[0] = props?.camera?.resourceId || 0;
   rendererNodeBufferView.tilesRenderer[0] = props?.tilesRenderer?.resourceId || 0;
   rendererNodeBufferView.static[0] = props?.static ? 1 : 0;
@@ -121,6 +127,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _lightMap: RemoteLightMap | undefined = props?.lightMap;
   let _skinnedMesh: RemoteSkinnedMesh | undefined = props?.skinnedMesh;
   let _light: RemoteLight | undefined = props?.light;
+  let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
   let _camera: RemoteCamera | undefined = props?.camera;
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
   let _tilesRenderer: RemoteTilesRenderer | undefined = props?.tilesRenderer;
@@ -155,6 +162,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
         if (_light) {
           disposeResource(ctx, _light.resourceId);
+        }
+
+        if (_reflectionProbe) {
+          disposeResource(ctx, _reflectionProbe.resourceId);
         }
 
         if (_camera) {
@@ -203,6 +214,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   if (_light) {
     addResourceRef(ctx, _light.resourceId);
+  }
+
+  if (_reflectionProbe) {
+    addResourceRef(ctx, _reflectionProbe.resourceId);
   }
 
   if (_camera) {
@@ -300,6 +315,21 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
       _light = light;
       rendererNodeBufferView.light[0] = light?.resourceId || 0;
+    },
+    get reflectionProbe() {
+      return _reflectionProbe;
+    },
+    set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined) {
+      if (reflectionProbe) {
+        addResourceRef(ctx, reflectionProbe.resourceId);
+      }
+
+      if (_reflectionProbe) {
+        disposeResource(ctx, _reflectionProbe.resourceId);
+      }
+
+      _reflectionProbe = reflectionProbe;
+      rendererNodeBufferView.reflectionProbe[0] = reflectionProbe?.resourceId || 0;
     },
     get camera() {
       return _camera;

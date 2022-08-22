@@ -71,6 +71,8 @@ import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.comm
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
+import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
+import { onLoadLocalReflectionProbeResource } from "../reflection-probe/reflection-probe.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -161,6 +163,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, DirectionalLightResourceType, onLoadLocalDirectionalLightResource),
       registerResourceLoader(ctx, PointLightResourceType, onLoadLocalPointLightResource),
       registerResourceLoader(ctx, SpotLightResourceType, onLoadLocalSpotLightResource),
+      registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
       registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),

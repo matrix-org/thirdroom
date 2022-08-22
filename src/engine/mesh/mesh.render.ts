@@ -434,9 +434,15 @@ function createMeshPrimitiveObject(
       if (!material.userData.lightMapTransform) {
         const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
         const lightMapTransform = new Uniform(lightMapTransformMatrix);
+        const reflectionProbeMix = new Uniform(0);
+        const reflectionProbe1 = new Uniform(null);
+        const reflectionProbe2 = new Uniform(null);
 
         material.onBeforeCompile = (shader) => {
           shader.uniforms.lightMapTransform = lightMapTransform;
+          shader.uniforms.reflectionProbeMix = reflectionProbeMix;
+          shader.uniforms.reflectionProbe1 = reflectionProbe1;
+          shader.uniforms.reflectionProbe2 = reflectionProbe2;
         };
 
         material.needsUpdate = true;

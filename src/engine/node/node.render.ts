@@ -14,6 +14,7 @@ import {
   SkinnedMesh,
   Vector3,
   Bone,
+  Box3,
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
@@ -23,6 +24,11 @@ import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
 import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
+import {
+  LocalReflectionProbeResource,
+  updateNodeReflectionProbe,
+  updateNodeReflections,
+} from "../reflection-probe/reflection-probe.render";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed } from "../resource/resource.render";
@@ -48,6 +54,8 @@ export interface LocalNode {
   light?: LocalLightResource;
   lightObject?: Light;
   tilesRenderer?: LocalTilesRendererResource;
+  reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbeBox?: Box3;
 }
 
 export async function onLoadLocalNode(
@@ -70,6 +78,9 @@ export async function onLoadLocalNode(
       : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
+    reflectionProbe: nodeView.reflectionProbe[0]
+      ? waitForLocalResource<LocalReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])
+      : undefined,
   });
 
   const localNode: LocalNode = {
@@ -81,6 +92,8 @@ export async function onLoadLocalNode(
     skinnedMesh: resources.skinnedMesh,
     camera: resources.camera,
     light: resources.light,
+    reflectionProbe: resources.reflectionProbe,
+    reflectionProbeBox: resources.reflectionProbe ? new Box3() : undefined,
   };
 
   rendererModule.nodes.push(localNode);
@@ -191,6 +204,10 @@ export function updateLocalNodeResources(
         node.light = undefined;
       }
 
+      if (node.reflectionProbe) {
+        node.reflectionProbe = undefined;
+      }
+
       if (node.tilesRenderer) {
         if (activeSceneResource) {
           activeSceneResource.scene.remove(node.tilesRenderer.tilesRenderer.group);
@@ -213,7 +230,9 @@ export function updateLocalNodeResources(
     const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
     updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeReflectionProbe(ctx, node, nodeView);
     updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
+    updateNodeReflections(ctx, node, nodeView);
   }
 }

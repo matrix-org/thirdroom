@@ -28,6 +28,7 @@ export const rendererNodeSchema = defineObjectBufferSchema({
   lightMap: [Uint32Array, 1],
   skinnedMesh: [Uint32Array, 1],
   light: [Uint32Array, 1],
+  reflectionProbe: [Uint32Array, 1],
   camera: [Uint32Array, 1],
   tilesRenderer: [Uint32Array, 1],
   layers: [Uint32Array, 1],

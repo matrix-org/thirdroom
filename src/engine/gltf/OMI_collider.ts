@@ -27,7 +27,7 @@ export function hasMeshCollider(root: GLTFRoot, node: GLTFNode): boolean {
 }
 
 export function getColliderMesh(root: GLTFRoot, node: GLTFNode): number {
-  return root.extensions!.OMI_collider.colliders[node.extensions.OMI_collider.collider].mesh;
+  return root.extensions!.OMI_collider.colliders[node.extensions!.OMI_collider.collider].mesh;
 }
 
 export function nodeHasCollider(node: GLTFNode): boolean {
@@ -49,7 +49,7 @@ export function addCollider(
   nodeEid: number,
   colliderMesh?: RemoteMesh
 ) {
-  const index = node.extensions.OMI_collider.collider;
+  const index = node.extensions!.OMI_collider.collider;
   const collider = resource.root.extensions!.OMI_collider.colliders[index];
   const physics = getModule(ctx, PhysicsModule);
   const { physicsWorld } = physics;

@@ -78,6 +78,9 @@ import {
   hasMeshCollider,
   nodeHasCollider,
 } from "./OMI_collider";
+import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_reflection_probes";
+import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
+import { SamplerMapping } from "../sampler/sampler.common";
 
 export interface GLTFResource {
   url: string;
@@ -93,6 +96,7 @@ export interface GLTFResource {
   skins: Map<number, RemoteSkinnedMesh>;
   joints: Map<number, RemoteNode>;
   lights: Map<number, RemoteLight>;
+  reflectionProbes: Map<number, RemoteReflectionProbe>;
   images: Map<number, RemoteImage>;
   textures: Map<number, RemoteTexture>;
   samplers: Map<number, RemoteSampler>;
@@ -107,6 +111,7 @@ export interface GLTFResource {
   meshPromises: Map<number, Promise<RemoteMesh>>;
   skinPromises: Map<number, Promise<RemoteSkinnedMesh>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
+  reflectionProbePromises: Map<number, Promise<RemoteReflectionProbe>>;
   imagePromises: Map<number, Promise<RemoteImage>>;
   texturePromises: Map<number, Promise<RemoteTexture>>;
   samplerPromises: Map<number, Promise<RemoteSampler>>;
@@ -196,7 +201,7 @@ export async function inflateGLTFScene(
     );
   }
 
-  const { audioEmitters } = await promiseObject({
+  const { audioEmitters, reflectionProbe } = await promiseObject({
     nodePromise,
     audioEmitters: scene.extensions?.KHR_audio?.emitters
       ? (Promise.all(
@@ -205,6 +210,7 @@ export async function inflateGLTFScene(
           )
         ) as Promise<RemoteGlobalAudioEmitter[]>)
       : undefined,
+    reflectionProbe: hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
 
   updateMatrixWorld(sceneEid, true);
@@ -224,6 +230,7 @@ export async function inflateGLTFScene(
 
   addRemoteSceneComponent(ctx, sceneEid, {
     audioEmitters,
+    reflectionProbe,
   });
 
   if (hasHubsComponentsExtension(resource.root)) {
@@ -323,6 +330,7 @@ async function _inflateGLTFNode(
     colliderMesh: hasMeshCollider(resource.root, node)
       ? loadGLTFMesh(ctx, resource, getColliderMesh(resource.root, node))
       : undefined,
+    reflectionProbe: hasReflectionProbeExtension(node) ? loadGLTFReflectionProbe(ctx, resource, node) : undefined,
   });
 
   if (node.children && node.children.length) {
@@ -362,6 +370,7 @@ async function _inflateGLTFNode(
         results.camera ||
         results.light ||
         results.audioEmitter ||
+        results.reflectionProbe ||
         hasTilesRendererExtension(node))
     ) {
       addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name });
@@ -569,6 +578,7 @@ async function loadGLTF(
     skins: new Map(),
     joints: new Map(),
     lights: new Map(),
+    reflectionProbes: new Map(),
     cameras: new Map(),
     audio: new Map(),
     audioSources: new Map(),
@@ -580,6 +590,7 @@ async function loadGLTF(
     meshPromises: new Map(),
     skinPromises: new Map(),
     lightPromises: new Map(),
+    reflectionProbePromises: new Map(),
     imagePromises: new Map(),
     texturePromises: new Map(),
     samplerPromises: new Map(),
@@ -740,21 +751,35 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
   return remoteImage;
 }
 
-export async function loadGLTFSampler(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteSampler> {
+interface SamplerOptions {
+  mapping?: SamplerMapping;
+}
+
+export async function loadGLTFSampler(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: SamplerOptions
+): Promise<RemoteSampler> {
   let samplerPromise = resource.samplerPromises.get(index);
 
   if (samplerPromise) {
     return samplerPromise;
   }
 
-  samplerPromise = _loadGLTFSampler(ctx, resource, index);
+  samplerPromise = _loadGLTFSampler(ctx, resource, index, options);
 
   resource.samplerPromises.set(index, samplerPromise);
 
   return samplerPromise;
 }
 
-export async function _loadGLTFSampler(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteSampler> {
+export async function _loadGLTFSampler(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: SamplerOptions
+): Promise<RemoteSampler> {
   if (!resource.root.samplers || !resource.root.samplers[index]) {
     throw new Error(`Sampler ${index} not found`);
   }
@@ -767,6 +792,7 @@ export async function _loadGLTFSampler(ctx: GameState, resource: GLTFResource, i
     minFilter: sampler.minFilter,
     wrapS: sampler.wrapS,
     wrapT: sampler.wrapT,
+    mapping: options?.mapping || undefined,
   });
 
   resource.samplers.set(index, remoteSampler);
@@ -776,6 +802,7 @@ export async function _loadGLTFSampler(ctx: GameState, resource: GLTFResource, i
 
 interface TextureOptions {
   encoding?: TextureEncoding;
+  mapping?: SamplerMapping;
 }
 
 export async function loadGLTFTexture(
@@ -819,7 +846,7 @@ async function _loadGLTFTexture(
 
   const { image, sampler } = await promiseObject({
     image: loadGLTFImage(ctx, resource, texture.source),
-    sampler: loadGLTFSampler(ctx, resource, texture.sampler),
+    sampler: loadGLTFSampler(ctx, resource, texture.sampler, { mapping: options?.mapping }),
   });
 
   const remoteTexture = createRemoteTexture(ctx, {

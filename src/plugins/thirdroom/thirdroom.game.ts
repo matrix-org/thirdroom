@@ -37,6 +37,7 @@ import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
+import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -263,6 +264,12 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap });
+
+  thirdroom.sceneGLTF = sceneGltf;
+
+  const newSceneResource = RemoteSceneComponent.get(newScene)!;
+
   const environmentMapTexture = createRemoteTexture(ctx, {
     name: "Environment Map Texture",
     image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
@@ -271,14 +278,13 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     }),
   });
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap });
-
-  thirdroom.sceneGLTF = sceneGltf;
-
-  const newSceneResource = RemoteSceneComponent.get(newScene)!;
-
   newSceneResource.backgroundTexture = environmentMapTexture;
-  newSceneResource.environmentTexture = environmentMapTexture;
+
+  if (!newSceneResource.reflectionProbe) {
+    newSceneResource.reflectionProbe = createReflectionProbeResource(ctx, {
+      reflectionProbeTexture: environmentMapTexture,
+    });
+  }
 
   ctx.activeScene = newScene;
 
