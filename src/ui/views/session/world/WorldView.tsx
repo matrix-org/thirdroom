@@ -41,6 +41,8 @@ export function WorldView() {
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
 
+  const engine = useMainThreadContext();
+
   const [entity, setEntity] = useState<EntityData>();
 
   const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
@@ -52,7 +54,12 @@ export function WorldView() {
 
   useEffect(() => {
     localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
-  }, [showFocusedEntity]);
+
+    engine.sendMessage<NametagsEnableMessageType>(Thread.Game, {
+      type: NametagsEnableMessage,
+      enabled: showFocusedEntity,
+    });
+  }, [engine, showFocusedEntity]);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
@@ -66,8 +73,6 @@ export function WorldView() {
   const onEntityFocused = (entity: EntityData) => {
     setEntity(entity);
   };
-
-  const engine = useMainThreadContext();
 
   const toggleShowFocusedEnity = useCallback(() => {
     const enabled = !showFocusedEntity;

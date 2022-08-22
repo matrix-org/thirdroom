@@ -5,6 +5,7 @@
   padding: 0px 5px;
   pointer-events: none;
   transform-origin: top left;
+  position: absolute;
 }
 
 .Nametag--image {

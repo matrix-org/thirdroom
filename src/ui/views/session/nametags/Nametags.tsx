@@ -2,7 +2,7 @@ import { GroupCall, Member, Room } from "@thirdroom/hydrogen-view-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
-import "./Nametag.css";
+import "./Nametags.css";
 import { getModule } from "../../../../engine/module/module.common";
 import { range } from "../../../../engine/utils/interpolation";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
@@ -55,27 +55,7 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
   const { joined } = useRoomMembers(room) ?? {};
 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useAnimationFrame(() => {
-    if (containerRef.current) {
-      const nametagView = getReadObjectBufferView(nametag.tripleBuffer);
-      const screenX = nametagView.screenX[0];
-      const screenY = nametagView.screenY[0];
-      const distanceFromCamera = nametagView.distanceFromCamera[0];
-      const inFrustum = nametagView.inFrustum[0];
-
-      const el = containerRef.current;
-
-      if (inFrustum) {
-        const opacity = opacityRange(distanceFromCamera);
-        const scale = scaleRange(distanceFromCamera);
-        el.style.transform = `translate(${screenX}px, ${screenY}px) scale(${scale})`;
-        el.style.opacity = `${opacity}`;
-      } else {
-        el.style.opacity = "0";
-      }
-    }
-  });
+  const [speaking, setSpeaking] = useState<boolean>(false);
 
   const member = joined?.find((m) => m.userId === nametag.name);
 
@@ -95,16 +75,31 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
         () => {}
       )));
 
-  const speaking = volumeDetector?.isSpeaking;
+  useAnimationFrame(() => {
+    if (containerRef.current) {
+      const nametagView = getReadObjectBufferView(nametag.tripleBuffer);
+      const screenX = nametagView.screenX[0];
+      const screenY = nametagView.screenY[0];
+      const distanceFromCamera = nametagView.distanceFromCamera[0];
+      const inFrustum = nametagView.inFrustum[0];
+
+      const el = containerRef.current;
+
+      if (inFrustum) {
+        const opacity = opacityRange(distanceFromCamera);
+        const scale = scaleRange(distanceFromCamera);
+        el.style.transform = `translate(${screenX}px, ${screenY}px) scale(${scale})`;
+        el.style.opacity = `${opacity}`;
+      } else {
+        el.style.opacity = "0";
+      }
+
+      setSpeaking(volumeDetector?.isSpeaking);
+    }
+  });
 
   return (
-    <div
-      style={{
-        position: "absolute",
-      }}
-      className="Nametag"
-      ref={containerRef}
-    >
+    <div className="Nametag" ref={containerRef}>
       <div className="Nametag--inner Text-b1">
         <Avatar
           size="xxs"
@@ -133,7 +128,7 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
     return () => {
       audioModule.eventEmitter.removeListener("nametags-changed", setNametags);
     };
-  }, [engine]);
+  }, [engine, setNametags]);
 
   const { session } = useHydrogen(true);
   const [, world] = useWorld();
@@ -151,23 +146,9 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
   return (
     <div>
       {enabled &&
-        groupCall &&
         nametags.map((nametag) => (
-          <div key={nametag.resourceId}>
-            <Nametag room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
-          </div>
+          <Nametag key={nametag.resourceId} room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
         ))}
     </div>
   );
-
-  // return (
-  //   <div>
-  //     {enabled &&
-  //       groupCall &&
-  //       nametags.length &&
-  //       nametags.map((nametag) => (
-  //         <Nametag key={nametag[0]} room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
-  //       ))}
-  //   </div>
-  // );
 }
