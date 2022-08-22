@@ -544,3 +544,40 @@ export function getDirection(out: vec3, matrix: mat4): vec3 {
 export function UpdateMatrixWorldSystem(ctx: GameState) {
   updateMatrixWorld(ctx.activeScene);
 }
+
+/*
+notes on calculating forward/up/right:
+
+  forward.x =  cos(pitch) * sin(yaw);
+  forward.y = -sin(pitch);
+  forward.z =  cos(pitch) * cos(yaw);
+
+  right.x =  cos(yaw);
+  right.y =  0;
+  right.z = -sin(yaw);
+
+  up = cross(forward, right);
+
+  equivalent:
+  up.x = sin(pitch) * sin(yaw);
+  up.y = cos(pitch);
+  up.z = sin(pitch) * cos(yaw);
+*/
+export const getPitch = ([x, y, z, w]: quat) => Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
+export const getRoll = ([x, y, z, w]: quat) => Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
+export const getYaw = ([x, y, z, w]: quat) => Math.asin(2 * x * y + 2 * z * w);
+
+// TODO: figure out why roll is yaw and algo is inverted
+/*
+correct algo:
+const x = Math.cos(pitch) * Math.sin(yaw);
+const y = -Math.sin(pitch);
+const z = Math.cos(pitch) * Math.cos(yaw);
+*/
+export function getForwardVector(out: vec3, pitch: number, roll: number) {
+  return vec3.set(out, -Math.cos(pitch) * Math.sin(roll), Math.sin(pitch), -Math.cos(pitch) * Math.cos(roll));
+}
+
+export function getRightVector(out: vec3, roll: number) {
+  return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
+}

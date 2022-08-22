@@ -4,7 +4,7 @@ import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { Transform } from "../component/transform";
+import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -198,24 +198,6 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
   }
 }
 
-/*
-notes on calculating forward/up/right:
-
-  forward.x =  cos(pitch) * sin(yaw);
-  forward.y = -sin(pitch);
-  forward.z =  cos(pitch) * cos(yaw);
-
-  right.x =  cos(yaw);
-  right.y =  0;
-  right.z = -sin(yaw);
-
-  up = cross(forward, right);
-
-  equivalent:
-  up.x = sin(pitch) * sin(yaw);
-  up.y = cos(pitch);
-  up.z = sin(pitch) * cos(yaw);
-*/
 function getClipActionsUsingVelocity(
   ctx: GameState,
   physicsWorld: RAPIER.World,
@@ -230,26 +212,10 @@ function getClipActionsUsingVelocity(
   const vel = vec3.set(_vel, linvel.x, linvel.y, linvel.z);
   const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
-  const [x, y, z, w] = quaternion;
-  const roll = Math.atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
-  const pitch = Math.atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
-  // const yaw = Math.asin(2 * x * y + 2 * z * w);
-
-  // TODO: figure out why roll is yaw and algo is inverted
-  /*
-  correct algo:
-  const x = Math.cos(pitch) * Math.sin(yaw);
-  const y = -Math.sin(pitch);
-  const z = Math.cos(pitch) * Math.cos(yaw);
-  */
-  const forward = vec3.set(
-    _forward,
-    -Math.cos(pitch) * Math.sin(roll),
-    Math.sin(pitch),
-    -Math.cos(pitch) * Math.cos(roll)
-  );
-
-  const right = vec3.set(_right, Math.cos(roll), 0, -Math.sin(roll));
+  const pitch = getPitch(quaternion);
+  const roll = getRoll(quaternion);
+  const forward = getForwardVector(_forward, pitch, roll);
+  const right = getRightVector(_right, roll);
 
   const angle = radToDeg(vec3.angle(vel, forward));
   const angle2 = radToDeg(vec3.angle(vel, right));
