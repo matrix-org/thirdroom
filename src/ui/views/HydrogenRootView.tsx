@@ -239,7 +239,6 @@ export function HydrogenRootView() {
 
   const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
-  window.client = client;
   useEffect(() => {
     return () => {
       client.dispose();
