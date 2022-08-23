@@ -183,6 +183,7 @@ async function loadSession(client: Client, session: Session) {
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
     await client.startLogout(client.sessionId);
+    localStorage.clear();
   }
 
   await session.callHandler.loadCalls("m.room" as CallIntent);
