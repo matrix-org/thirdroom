@@ -9,7 +9,6 @@ import { RemoteMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { addResourceRef, disposeResource } from "../resource/resource.game";
 import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 
@@ -90,7 +89,7 @@ export function addCollider(
   colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(ctx.world, nodeEid, rigidBody);
+  addRigidBody(ctx, nodeEid, rigidBody);
 }
 
 export function addTrimesh(ctx: GameState, nodeEid: number) {
@@ -108,11 +107,8 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
 
   // TODO: We don't really need the whole RemoteMesh just for a trimesh and tracking
   // the resource is expensive.
-  addResourceRef(ctx, mesh.resourceId);
 
   for (const primitive of mesh.primitives) {
-    addResourceRef(ctx, primitive.resourceId);
-
     const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -145,10 +141,6 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     const primitiveEid = addEntity(ctx.world);
     addTransformComponent(ctx.world, primitiveEid);
     addChild(nodeEid, primitiveEid);
-    addRigidBody(ctx.world, primitiveEid, rigidBody);
-
-    disposeResource(ctx, primitive.resourceId);
+    addRigidBody(ctx, primitiveEid, rigidBody, mesh.resourceId, primitive.resourceId);
   }
-
-  disposeResource(ctx, mesh.resourceId);
 }

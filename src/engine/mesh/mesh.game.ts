@@ -170,7 +170,7 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
 
   meshPrimitiveBufferView.material[0] = props.material?.resourceId || 0;
 
-  const meshPrimitiveTripleBuffer = createObjectTripleBuffer(meshPrimitiveSchema, ctx.gameToMainTripleBufferFlags);
+  const meshPrimitiveTripleBuffer = createObjectTripleBuffer(meshPrimitiveSchema, ctx.gameToRenderTripleBufferFlags);
 
   if (props.indices) {
     addResourceRef(ctx, props.indices.resourceId);
@@ -460,7 +460,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(world, eid, rigidBody);
+  addRigidBody(ctx, eid, rigidBody);
 
   return eid;
 };

@@ -175,7 +175,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   // colliderDesc.setTranslation(0, -1, 0);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(world, playerRig, rigidBody);
+  addRigidBody(state, playerRig, rigidBody);
 
   const camera = createCamera(state, setActiveCamera);
   addCameraPitchTargetComponent(world, camera);

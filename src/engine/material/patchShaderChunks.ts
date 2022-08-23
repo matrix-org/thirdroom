@@ -25,12 +25,25 @@ export default function patchShaderChunks() {
   // of the WebGLRenderer always using the aoMap's texture transform
   ShaderChunk.uv2_pars_vertex = ShaderChunk.uv2_pars_vertex.replace(
     "uniform mat3 uv2Transform;",
-    "uniform mat3 lightMapTransform;"
+    `
+    #ifdef USE_INSTANCING
+      attribute vec2 lightMapOffset;
+      attribute vec2 lightMapScale;
+    #else
+      uniform mat3 lightMapTransform;
+    #endif
+    `
   );
 
   ShaderChunk.uv2_vertex = ShaderChunk.uv2_vertex.replace(
     "vUv2 = ( uv2Transform * vec3( uv2, 1 ) ).xy;",
-    "vUv2 = ( lightMapTransform * vec3( uv2, 1 ) ).xy;"
+    `
+    #ifdef USE_INSTANCING
+      vUv2 = uv2 * lightMapScale + lightMapOffset;
+    #else
+      vUv2 = ( lightMapTransform * vec3( uv2, 1 ) ).xy;
+    #endif
+    `
   );
 
   // Use vUv for aoMap

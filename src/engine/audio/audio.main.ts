@@ -1,4 +1,5 @@
 import { vec3, mat4 } from "gl-matrix";
+import EventEmitter from "events";
 
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
@@ -38,6 +39,8 @@ import {
 import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
 import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
+import { LocalNametag, onLoadMainNametag, updateNametag } from "../nametag/nametag.main";
+import { NametagResourceType } from "../nametag/nametag.common";
 
 /*********
  * Types *
@@ -59,6 +62,8 @@ export interface MainAudioModule {
   nodes: MainNode[];
   scenes: MainScene[];
   activeScene?: MainScene;
+  nametags: LocalNametag[];
+  eventEmitter: EventEmitter;
 }
 
 /******************
@@ -87,12 +92,14 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   async create(ctx, { waitForMessage }) {
     const audioContext = new AudioContext();
 
-    // hack - must play something thru the audio context for media streams to activate
-    const osc = audioContext.createOscillator();
-    osc.frequency.value = 0;
-    osc.connect(audioContext.destination);
-    osc.start();
-    osc.stop();
+    setTimeout(() => {
+      // hack - must play something thru the audio context for media streams to activate
+      const osc = audioContext.createOscillator();
+      osc.frequency.value = 0;
+      osc.connect(audioContext.destination);
+      osc.start();
+      osc.stop();
+    }, 1000);
 
     const mainLimiter = new DynamicsCompressorNode(audioContext);
     mainLimiter.threshold.value = -0.01;
@@ -133,6 +140,8 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       emitters: [],
       nodes: [],
       scenes: [],
+      nametags: [],
+      eventEmitter: new EventEmitter(),
     };
   },
   init(ctx) {
@@ -146,6 +155,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       registerResourceLoader(ctx, AudioResourceType.MediaStreamId, onLoadMediaStreamId),
       registerResourceLoader(ctx, AudioResourceType.MediaStreamSource, onLoadMediaStreamSource),
       registerResourceLoader(ctx, AudioResourceType.AudioEmitter, onLoadAudioEmitter),
+      registerResourceLoader(ctx, NametagResourceType, onLoadMainNametag),
     ];
 
     return () => {
@@ -410,6 +420,10 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
       if (node.audioEmitter) {
         node.emitterPannerNode?.disconnect();
       }
+      if (node.nametag) {
+        audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag));
+        audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
+      }
 
       nodes.splice(i, 1);
     }
@@ -420,6 +434,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
     const nodeView = getReadObjectBufferView(node.audioNodeTripleBuffer);
 
     updateNodeAudioEmitter(ctx, audioModule, node, nodeView);
+    updateNametag(ctx, audioModule, node, nodeView);
 
     if (node.resourceId === activeAudioListener) {
       setAudioListenerTransform(audioModule.context.listener, nodeView.worldMatrix);
