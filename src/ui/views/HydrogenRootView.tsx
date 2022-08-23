@@ -239,6 +239,7 @@ export function HydrogenRootView() {
 
   const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
+  window.client = client;
   useEffect(() => {
     return () => {
       client.dispose();
@@ -292,7 +293,15 @@ export function HydrogenRootView() {
     callback: logout,
   } = useAsyncCallback<() => Promise<void>, void>(async () => {
     if (client && client.session) {
-      await client.startLogout(client.session.sessionInfo.id);
+      const availSessions = await platform.sessionInfoStorage.getAll();
+      const logoutChain = availSessions.map((session) => client.startLogout(session.id));
+      try {
+        await Promise.allSettled(logoutChain);
+      } catch (err) {
+        console.error(err);
+      }
+      localStorage.clear();
+
       client.loadStatus.set(LoadStatus.NotLoading);
       setSession(undefined);
     }
