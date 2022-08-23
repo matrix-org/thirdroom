@@ -125,7 +125,7 @@ export function createDirectionalLightResource(ctx: GameState, props?: Direction
   lightBufferView.intensity[0] = props?.intensity === undefined ? 1 : props.intensity;
   lightBufferView.castShadow[0] = props?.castShadow ? 1 : 0;
 
-  const lightTripleBuffer = createObjectTripleBuffer(directionalLightSchema, ctx.gameToMainTripleBufferFlags);
+  const lightTripleBuffer = createObjectTripleBuffer(directionalLightSchema, ctx.gameToRenderTripleBufferFlags);
 
   const name = props?.name || DEFAULT_DIRECTIONAL_LIGHT_NAME;
 
@@ -286,7 +286,7 @@ export function createSpotLightResource(ctx: GameState, props?: SpotLightProps):
   lightBufferView.outerConeAngle[0] = props?.outerConeAngle === undefined ? 0.7853981633974483 : props.outerConeAngle;
   lightBufferView.castShadow[0] = props?.castShadow ? 1 : 0;
 
-  const lightTripleBuffer = createObjectTripleBuffer(spotLightSchema, ctx.gameToMainTripleBufferFlags);
+  const lightTripleBuffer = createObjectTripleBuffer(spotLightSchema, ctx.gameToRenderTripleBufferFlags);
 
   const name = props?.name || DEFAULT_SPOT_LIGHT_NAME;
 
