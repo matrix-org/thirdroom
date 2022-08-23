@@ -1,4 +1,4 @@
-import { Box3, Matrix4, Vector3 } from "three";
+import { Matrix4, Scene, Vector3 } from "three";
 
 import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
@@ -11,6 +11,7 @@ import { RendererSceneTripleBuffer } from "../scene/scene.common";
 import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { SharedReflectionProbeResource } from "./reflection-probe.common";
+import { ReflectionProbe } from "./ReflectionProbe";
 
 export interface LocalReflectionProbeResource {
   resourceId: ResourceId;
@@ -39,27 +40,25 @@ const tempPosition = new Vector3();
 
 export function updateNodeReflectionProbe(
   ctx: RenderThreadState,
+  scene: Scene,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
   const currentReflectionProbeResourceId = node.reflectionProbe?.resourceId || 0;
 
   if (nodeReadView.reflectionProbe[0] !== currentReflectionProbeResourceId) {
-    if (node.reflectionProbe) {
-      node.reflectionProbe = undefined;
-      node.reflectionProbeBox = undefined;
+    if (node.reflectionProbeObject) {
+      scene.remove(node.reflectionProbeObject);
+      node.reflectionProbeObject = undefined;
     }
 
     if (nodeReadView.reflectionProbe[0]) {
-      const nextReflectionProbe = getLocalResource<LocalReflectionProbeResource>(
+      node.reflectionProbe = getLocalResource<LocalReflectionProbeResource>(
         ctx,
         nodeReadView.reflectionProbe[0]
       )?.resource;
-
-      if (nextReflectionProbe) {
-        node.reflectionProbe = nextReflectionProbe;
-        node.reflectionProbeBox = new Box3();
-      }
+    } else {
+      node.reflectionProbe = undefined;
     }
   }
 
@@ -67,9 +66,12 @@ export function updateNodeReflectionProbe(
     return;
   }
 
-  tempMatrix4.fromArray(nodeReadView.worldMatrix);
-  tempPosition.setFromMatrixPosition(tempMatrix4);
-  node.reflectionProbeBox!.setFromCenterAndSize(tempPosition, node.reflectionProbe.size!);
+  if (!node.reflectionProbeObject) {
+    node.reflectionProbeObject = new ReflectionProbe();
+    scene.add(node.reflectionProbeObject);
+  }
+
+  node.reflectionProbeObject.update(ctx, node, nodeReadView);
 }
 
 export function updateSceneReflectionProbe(
@@ -110,11 +112,9 @@ export function updateNodeReflections(
   for (let i = 0; i < rendererModule.nodes.length; i++) {
     const reflectionProbeNode = rendererModule.nodes[i];
 
-    if (reflectionProbeNode.reflectionProbe && reflectionProbeNode.reflectionProbeBox) {
-      console.log(reflectionProbeNode.reflectionProbeBox, tempPosition);
-
-      if (reflectionProbeNode.reflectionProbeBox.containsPoint(tempPosition)) {
-        console.log(node);
+    if (reflectionProbeNode.reflectionProbeObject) {
+      if (reflectionProbeNode.reflectionProbeObject.box.containsPoint(tempPosition)) {
+        //console.log(node);
       }
     }
   }

@@ -14,7 +14,6 @@ import {
   SkinnedMesh,
   Vector3,
   Bone,
-  Box3,
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
@@ -29,6 +28,7 @@ import {
   updateNodeReflectionProbe,
   updateNodeReflections,
 } from "../reflection-probe/reflection-probe.render";
+import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed } from "../resource/resource.render";
@@ -55,7 +55,7 @@ export interface LocalNode {
   lightObject?: Light;
   tilesRenderer?: LocalTilesRendererResource;
   reflectionProbe?: LocalReflectionProbeResource;
-  reflectionProbeBox?: Box3;
+  reflectionProbeObject?: ReflectionProbe;
 }
 
 export async function onLoadLocalNode(
@@ -93,7 +93,6 @@ export async function onLoadLocalNode(
     camera: resources.camera,
     light: resources.light,
     reflectionProbe: resources.reflectionProbe,
-    reflectionProbeBox: resources.reflectionProbe ? new Box3() : undefined,
   };
 
   rendererModule.nodes.push(localNode);
@@ -205,6 +204,10 @@ export function updateLocalNodeResources(
       }
 
       if (node.reflectionProbe) {
+        if (activeSceneResource && node.reflectionProbeObject) {
+          activeSceneResource.scene.remove(node.reflectionProbeObject);
+        }
+
         node.reflectionProbe = undefined;
       }
 
@@ -230,7 +233,7 @@ export function updateLocalNodeResources(
     const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
     updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
-    updateNodeReflectionProbe(ctx, node, nodeView);
+    updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
     updateNodeReflections(ctx, node, nodeView);
