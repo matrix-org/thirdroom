@@ -236,6 +236,6 @@ export function updateLocalNodeResources(
     updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
-    updateNodeReflections(ctx, node, nodeView);
+    updateNodeReflections(ctx, activeSceneResource, node);
   }
 }

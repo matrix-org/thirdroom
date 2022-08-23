@@ -421,6 +421,14 @@ function createMeshPrimitiveObject(
       mesh = new Mesh(geometryObj, materialObj);
     }
 
+    mesh.geometry.computeBoundingBox();
+    mesh.userData.envMap = null;
+    mesh.userData.envMap2 = null;
+    mesh.userData.envMapMix = 0;
+
+    const envMap2 = new Uniform(null);
+    const envMapMix = new Uniform(0);
+
     if (lightMap) {
       const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
 
@@ -434,20 +442,17 @@ function createMeshPrimitiveObject(
       if (!material.userData.lightMapTransform) {
         const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
         const lightMapTransform = new Uniform(lightMapTransformMatrix);
-        const reflectionProbeMix = new Uniform(0);
-        const reflectionProbe1 = new Uniform(null);
-        const reflectionProbe2 = new Uniform(null);
 
         material.onBeforeCompile = (shader) => {
           shader.uniforms.lightMapTransform = lightMapTransform;
-          shader.uniforms.reflectionProbeMix = reflectionProbeMix;
-          shader.uniforms.reflectionProbe1 = reflectionProbe1;
-          shader.uniforms.reflectionProbe2 = reflectionProbe2;
+          shader.uniforms.envMap2 = envMap2;
+          shader.uniforms.envMapMix = envMapMix;
         };
 
         material.needsUpdate = true;
 
         material.userData.lightMapTransform = lightMapTransform;
+        material.userData.reflections = true;
       }
 
       mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
@@ -466,6 +471,36 @@ function createMeshPrimitiveObject(
             0,
             0
           );
+
+          meshMaterial.envMap = mesh.userData.envMap;
+          envMap2.value = mesh.userData.envMap2;
+          envMapMix.value = mesh.userData.envMapMix;
+
+          // This is currently added via a patch to Three.js
+          (meshMaterial as any).uniformsNeedUpdate = true;
+        }
+      };
+    } else {
+      const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+
+      if (!material.userData.reflections) {
+        material.onBeforeCompile = (shader) => {
+          shader.uniforms.envMap2 = envMap2;
+          shader.uniforms.envMapMix = envMapMix;
+        };
+
+        material.needsUpdate = true;
+
+        material.userData.reflections = true;
+      }
+
+      mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
+        const meshMaterial = material as MeshBasicMaterial | MeshStandardMaterial;
+
+        if ("isMeshBasicMaterial" in material || "isMeshStandardMaterial" in material) {
+          meshMaterial.envMap = mesh.userData.envMap;
+          envMap2.value = mesh.userData.envMap2;
+          envMapMix.value = mesh.userData.envMapMix;
 
           // This is currently added via a patch to Three.js
           (meshMaterial as any).uniformsNeedUpdate = true;

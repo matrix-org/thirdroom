@@ -1,4 +1,4 @@
-import { Matrix4, Scene, Vector3 } from "three";
+import { Box3, Scene, Vector3 } from "three";
 
 import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
@@ -34,9 +34,6 @@ export async function onLoadLocalReflectionProbeResource(
     size: size ? new Vector3().fromArray(size as Float32Array) : undefined,
   };
 }
-
-const tempMatrix4 = new Matrix4();
-const tempPosition = new Vector3();
 
 export function updateNodeReflectionProbe(
   ctx: RenderThreadState,
@@ -83,38 +80,80 @@ export function updateSceneReflectionProbe(
 
   if (sceneReadView.reflectionProbe[0] !== currentReflectionProbeResourceId) {
     if (sceneReadView.reflectionProbe[0]) {
-      const nextReflectionProbe = getLocalResource<LocalReflectionProbeResource>(
+      sceneResource.reflectionProbe = getLocalResource<LocalReflectionProbeResource>(
         ctx,
         sceneReadView.reflectionProbe[0]
       )?.resource;
-
-      sceneResource.reflectionProbe = nextReflectionProbe;
     } else {
       sceneResource.reflectionProbe = undefined;
     }
   }
 }
 
-export function updateNodeReflections(
-  ctx: RenderThreadState,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
+const intersectionBox = new Box3();
+const boundingBoxSize = new Vector3();
+const intersectionSize = new Vector3();
+
+export function updateNodeReflections(ctx: RenderThreadState, scene: LocalSceneResource, node: LocalNode) {
   if (!node.meshPrimitiveObjects) {
     return;
   }
 
-  tempMatrix4.fromArray(nodeReadView.worldMatrix);
-  tempPosition.setFromMatrixPosition(tempMatrix4);
-
   const rendererModule = getModule(ctx, RendererModule);
 
-  for (let i = 0; i < rendererModule.nodes.length; i++) {
-    const reflectionProbeNode = rendererModule.nodes[i];
+  for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
+    let foundFirstReflectionProbe = false;
+    let foundSecondReflectionProbe = false;
 
-    if (reflectionProbeNode.reflectionProbeObject) {
-      if (reflectionProbeNode.reflectionProbeObject.box.containsPoint(tempPosition)) {
-        //console.log(node);
+    const primitive = node.meshPrimitiveObjects[i];
+    intersectionBox.setFromObject(primitive);
+    intersectionBox.getSize(boundingBoxSize);
+
+    const boundingBoxVolume = boundingBoxSize.x * boundingBoxSize.y * boundingBoxSize.z;
+
+    let intersectionRatio = 0;
+
+    primitive.userData.envMapMix = 0;
+
+    for (let i = 0; i < rendererModule.nodes.length; i++) {
+      const reflectionProbeNode = rendererModule.nodes[i];
+
+      if (reflectionProbeNode.reflectionProbeObject) {
+        if (reflectionProbeNode.reflectionProbeObject.box.intersectsBox(intersectionBox)) {
+          if (!foundFirstReflectionProbe) {
+            intersectionBox.intersect(reflectionProbeNode.reflectionProbeObject.box);
+            intersectionBox.getSize(intersectionSize);
+            const intersectionVolume = intersectionSize.x * intersectionSize.y * intersectionSize.z;
+            intersectionRatio = intersectionVolume / boundingBoxVolume;
+
+            primitive.userData.envMap = reflectionProbeNode.reflectionProbe?.reflectionProbeTexture.texture || null;
+            primitive.userData.envMapMix = 1 - intersectionRatio;
+
+            foundFirstReflectionProbe = true;
+
+            if (intersectionRatio === 1) {
+              // We're completely inside the reflection volume so stop searching.
+              break;
+            }
+
+            // Reset intersection box for second probe
+            intersectionBox.setFromObject(primitive);
+          } else {
+            primitive.userData.envMap2 = reflectionProbeNode.reflectionProbe?.reflectionProbeTexture.texture || null;
+            foundSecondReflectionProbe = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!foundFirstReflectionProbe) {
+      if (scene.reflectionProbe) {
+        primitive.userData.envMap = scene.reflectionProbe.reflectionProbeTexture.texture || null;
+      }
+    } else if (!foundSecondReflectionProbe && intersectionRatio !== 1) {
+      if (scene.reflectionProbe) {
+        primitive.userData.envMap2 = scene.reflectionProbe.reflectionProbeTexture.texture || null;
       }
     }
   }

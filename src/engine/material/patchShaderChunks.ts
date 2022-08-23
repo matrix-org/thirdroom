@@ -68,4 +68,24 @@ export default function patchShaderChunks() {
     lightMapTexel.a = 1.0;
     `
   );
+
+  // Add envMap2 and envMapMix for supporting reflection probes and blending between them
+  ShaderChunk.envmap_common_pars_fragment = ShaderChunk.envmap_common_pars_fragment.replace(
+    "uniform sampler2D envMap;",
+    `
+    uniform sampler2D envMap;
+    uniform sampler2D envMap2;
+    uniform float envMapMix;
+    `
+  );
+
+  ShaderChunk.envmap_physical_pars_fragment = ShaderChunk.envmap_physical_pars_fragment.replace(
+    "vec4 envMapColor = textureCubeUV( envMap, worldNormal, 1.0 );",
+    "vec4 envMapColor = mix(textureCubeUV( envMap, worldNormal, 1.0 ), textureCubeUV( envMap2, worldNormal, 1.0 ), envMapMix);"
+  );
+
+  ShaderChunk.envmap_physical_pars_fragment = ShaderChunk.envmap_physical_pars_fragment.replace(
+    "vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );",
+    "vec4 envMapColor = mix(textureCubeUV( envMap, reflectVec, roughness ), textureCubeUV( envMap2, reflectVec, roughness ), envMapMix);"
+  );
 }
