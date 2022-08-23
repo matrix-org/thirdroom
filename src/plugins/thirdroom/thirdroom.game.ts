@@ -270,20 +270,24 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
-  const environmentMapTexture = createRemoteTexture(ctx, {
-    name: "Environment Map Texture",
-    image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
-    sampler: createRemoteSampler(ctx, {
-      mapping: SamplerMapping.EquirectangularReflectionMapping,
-    }),
-  });
-
-  newSceneResource.backgroundTexture = environmentMapTexture;
-
-  if (!newSceneResource.reflectionProbe) {
-    newSceneResource.reflectionProbe = createReflectionProbeResource(ctx, {
-      reflectionProbeTexture: environmentMapTexture,
+  if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
+    const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
+      name: "Environment Map Texture",
+      image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
+      sampler: createRemoteSampler(ctx, {
+        mapping: SamplerMapping.EquirectangularReflectionMapping,
+      }),
     });
+
+    if (!newSceneResource.reflectionProbe) {
+      newSceneResource.reflectionProbe = createReflectionProbeResource(ctx, {
+        reflectionProbeTexture: defaultEnvironmentMapTexture,
+      });
+    }
+
+    if (!newSceneResource.backgroundTexture) {
+      newSceneResource.backgroundTexture = defaultEnvironmentMapTexture;
+    }
   }
 
   ctx.activeScene = newScene;

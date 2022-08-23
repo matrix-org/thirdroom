@@ -3,6 +3,7 @@ import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { textureResize } from "@gltf-transform/functions";
 
 import { downloadFile } from "../engine/utils/downloadFile";
+import { MXBackgroundExtension } from "./extensions/MXBackgroundExtension";
 import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
@@ -33,6 +34,7 @@ export async function transformGLTF(url: string, fileMap: Map<string, string>) {
       ...ALL_EXTENSIONS,
       MXLightmapExtension,
       MXReflectionProbesExtension,
+      MXBackgroundExtension,
       MXSpawnPointExtension,
       OMIColliderExtension,
     ]);

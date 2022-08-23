@@ -81,6 +81,7 @@ import {
 import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_reflection_probes";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { SamplerMapping } from "../sampler/sampler.common";
+import { hasBackgroundExtension, loadGLTFBackgroundTexture } from "./MX_background";
 
 export interface GLTFResource {
   url: string;
@@ -201,7 +202,7 @@ export async function inflateGLTFScene(
     );
   }
 
-  const { audioEmitters, reflectionProbe } = await promiseObject({
+  const { audioEmitters, backgroundTexture, reflectionProbe } = await promiseObject({
     nodePromise,
     audioEmitters: scene.extensions?.KHR_audio?.emitters
       ? (Promise.all(
@@ -210,6 +211,7 @@ export async function inflateGLTFScene(
           )
         ) as Promise<RemoteGlobalAudioEmitter[]>)
       : undefined,
+    backgroundTexture: hasBackgroundExtension(scene) ? loadGLTFBackgroundTexture(ctx, resource, scene) : undefined,
     reflectionProbe: hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
 
@@ -231,6 +233,7 @@ export async function inflateGLTFScene(
   addRemoteSceneComponent(ctx, sceneEid, {
     audioEmitters,
     reflectionProbe,
+    backgroundTexture,
   });
 
   if (hasHubsComponentsExtension(resource.root)) {

@@ -152,12 +152,12 @@ export class MXReflectionProbe extends ExtensionProperty<IMXReflectionProbe> {
   public static readonly EXTENSION_NAME = EXTENSION_NAME;
   public declare extensionName: typeof EXTENSION_NAME;
   public declare propertyType: typeof PROPERTY_TYPE;
-  public declare parentTypes: [PropertyType.NODE];
+  public declare parentTypes: [PropertyType.SCENE, PropertyType.NODE];
 
   protected init(): void {
     this.extensionName = EXTENSION_NAME;
     this.propertyType = PROPERTY_TYPE;
-    this.parentTypes = [PropertyType.NODE];
+    this.parentTypes = [PropertyType.SCENE, PropertyType.NODE];
   }
 
   protected getDefaults(): Nullable<IMXReflectionProbe> {
