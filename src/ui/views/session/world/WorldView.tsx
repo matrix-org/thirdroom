@@ -88,6 +88,8 @@ export function WorldView() {
   useKeyDown(
     (e) => {
       if (isEnteredWorld === false) return;
+      if (isChatOpen) return;
+
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
