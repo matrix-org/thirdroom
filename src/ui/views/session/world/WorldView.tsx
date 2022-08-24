@@ -88,6 +88,7 @@ export function WorldView() {
   useKeyDown(
     (e) => {
       if (isEnteredWorld === false) return;
+
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
@@ -116,6 +117,9 @@ export function WorldView() {
         openWorldChat();
         return;
       }
+
+      if (isChatOpen) return;
+
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
