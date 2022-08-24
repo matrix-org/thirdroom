@@ -111,23 +111,26 @@ export function UserProfileOverview() {
           <ScenePreviewOverlay
             className="grow flex"
             overlay={
-              <Content
-                className="grow"
-                children=" "
-                bottom={
-                  <Footer
-                    center={
-                      <Edit3DAvatar
-                        renderTrigger={(openModal) => (
-                          <Button onClick={openModal}>
-                            {tDAvatarPreviewUrl ? "Edit 3D Avatar" : "Upload 3D Avatar"}
-                          </Button>
-                        )}
-                      />
-                    }
-                  />
-                }
-              />
+              /* DISABLED FEATURE */
+              false && (
+                <Content
+                  className="grow"
+                  children=" "
+                  bottom={
+                    <Footer
+                      center={
+                        <Edit3DAvatar
+                          renderTrigger={(openModal) => (
+                            <Button onClick={openModal}>
+                              {tDAvatarPreviewUrl ? "Edit 3D Avatar" : "Upload 3D Avatar"}
+                            </Button>
+                          )}
+                        />
+                      }
+                    />
+                  }
+                />
+              )
             }
           >
             <ScenePreview
@@ -135,9 +138,12 @@ export function UserProfileOverview() {
               src={getHttpUrl(session, tDAvatarPreviewUrl)}
               alt="3D Avatar preview"
               fallback={
-                <Text variant="b3" color="surface-low" weight="medium">
-                  Your 3D avatar preview will appear here.
-                </Text>
+                /* DISABLED FEATURE */
+                false && (
+                  <Text variant="b3" color="surface-low" weight="medium">
+                    Your 3D avatar preview will appear here.
+                  </Text>
+                )
               }
             />
           </ScenePreviewOverlay>
