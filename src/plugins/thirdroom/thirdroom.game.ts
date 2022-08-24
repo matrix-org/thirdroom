@@ -341,7 +341,7 @@ function loadPlayerRig(ctx: GameState) {
   }
 
   if (spawnPoints.length > 0) {
-    const spawnPointIndex = Math.foor(Math.random() * (spawnPoints.length - 1));
+    const spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1));
     const worldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
     const worldPosition = mat4.getTranslation(vec3.create(), worldMatrix);
     const worldQuaternion = mat4.getRotation(quat.create(), worldMatrix);
