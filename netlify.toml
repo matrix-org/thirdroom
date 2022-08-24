@@ -19,7 +19,7 @@ for = "/*"
     Cross-Origin-Embedder-Policy = "require-corp"
 
 [[headers]]
-for = "/.well-known/*"
+for = "/.well-known"
   [headers.values]
     Access-Control-Allow-Origin = "*"
 
