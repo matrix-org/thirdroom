@@ -4,6 +4,7 @@ import { textureResize } from "@gltf-transform/functions";
 
 import { downloadFile } from "../engine/utils/downloadFile";
 import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
+import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
 import { dedupeProperties } from "./functions/dedupeProperties";
 import { extensionAwareInstance } from "./functions/extensionAwareInstance";
@@ -27,7 +28,7 @@ export async function transformGLTF(url: string, fileMap: Map<string, string>) {
 
   const io = new ObjectURLWebIO()
     .setLogger(logger)
-    .registerExtensions([...ALL_EXTENSIONS, MXLightmapExtension, OMIColliderExtension]);
+    .registerExtensions([...ALL_EXTENSIONS, MXLightmapExtension, MXSpawnPointExtension, OMIColliderExtension]);
 
   const doc = await io.readGLTF(url, fileMap);
 
