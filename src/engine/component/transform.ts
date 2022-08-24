@@ -393,7 +393,7 @@ const tempVec3 = vec3.create();
 const tempQuat = quat.create();
 const defaultUp = vec3.set(vec3.create(), 0, 1, 0);
 
-export function setEulerFromQuaternion(rotation: Float32Array | vec3, quaternion: Float32Array | quat) {
+export function setEulerFromQuaternion(rotation: Float32Array, quaternion: Float32Array) {
   mat4.fromQuat(tempMat4, quaternion);
   setEulerFromTransformMatrix(rotation, tempMat4);
 }

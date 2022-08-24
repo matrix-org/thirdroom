@@ -1,5 +1,5 @@
 import { addEntity, defineQuery } from "bitecs";
-import { vec3, mat4, quat } from "gl-matrix";
+import { vec3 } from "gl-matrix";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -7,7 +7,6 @@ import {
   addTransformComponent,
   removeRecursive,
   setEulerFromQuaternion,
-  setQuaternionFromEuler,
   Transform,
 } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
@@ -341,17 +340,9 @@ function loadPlayerRig(ctx: GameState) {
   }
 
   if (spawnPoints.length > 0) {
-    const spawnPointIndex = Math.random() * (spawnPoints.length - 1);
-    const worldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
-    const worldPosition = mat4.getTranslation(vec3.create(), worldMatrix);
-    const worldQuaternion = mat4.getRotation(quat.create(), worldMatrix);
-
-    vec3.copy(Transform.position[playerRig], worldPosition);
-    Transform.position[playerRig][1] += 1.6;
-    setEulerFromQuaternion(Transform.rotation[playerRig], worldQuaternion);
-    Transform.rotation[playerRig][0] = 0;
-    Transform.rotation[playerRig][2] = 0;
-    setQuaternionFromEuler(Transform.quaternion[playerRig], Transform.rotation[playerRig]);
+    vec3.copy(Transform.position[playerRig], Transform.position[spawnPoints[0]]);
+    vec3.copy(Transform.quaternion[playerRig], Transform.quaternion[spawnPoints[0]]);
+    setEulerFromQuaternion(Transform.rotation[playerRig], Transform.quaternion[playerRig]);
   }
 
   addChild(ctx.activeScene, playerRig);
