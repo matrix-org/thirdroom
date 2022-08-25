@@ -10,15 +10,6 @@ import { EntityData } from "../reticle/Reticle";
 
 import "./EntitySelected.css";
 
-function usePrevious(value: any) {
-  const ref = useRef();
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
-}
-export default usePrevious;
-
 export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
   const lastRef = useRef<EntityData>();
   useEffect(() => {
