@@ -706,21 +706,35 @@ async function _loadGLTFBufferView<T extends Thread, S extends boolean>(
   return remoteBufferView as RemoteBufferView<T, S extends true ? SharedArrayBuffer : undefined>;
 }
 
-export async function loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
+interface ImageOptions {
+  flipY?: boolean;
+}
+
+export async function loadGLTFImage(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: ImageOptions
+): Promise<RemoteImage> {
   let imagePromise = resource.imagePromises.get(index);
 
   if (imagePromise) {
     return imagePromise;
   }
 
-  imagePromise = _loadGLTFImage(ctx, resource, index);
+  imagePromise = _loadGLTFImage(ctx, resource, index, options);
 
   resource.imagePromises.set(index, imagePromise);
 
   return imagePromise;
 }
 
-async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteImage> {
+async function _loadGLTFImage(
+  ctx: GameState,
+  resource: GLTFResource,
+  index: number,
+  options?: ImageOptions
+): Promise<RemoteImage> {
   if (!resource.root.images || !resource.root.images[index]) {
     throw new Error(`Image ${index} not found`);
   }
@@ -732,7 +746,7 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
   if (image.uri) {
     const uri = resource.fileMap.get(image.uri) || image.uri;
     const resolvedUri = resolveURL(uri, resource.baseUrl);
-    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri });
+    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri, flipY: options?.flipY });
   } else if (image.bufferView !== undefined) {
     if (!image.mimeType) {
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
@@ -744,6 +758,7 @@ async function _loadGLTFImage(ctx: GameState, resource: GLTFResource, index: num
       name: image.name,
       bufferView: remoteBufferView,
       mimeType: image.mimeType,
+      flipY: options?.flipY,
     });
   } else {
     throw new Error(`image[${index}] has no uri or bufferView`);
@@ -806,6 +821,7 @@ export async function _loadGLTFSampler(
 interface TextureOptions {
   encoding?: TextureEncoding;
   mapping?: SamplerMapping;
+  flipY?: boolean;
 }
 
 export async function loadGLTFTexture(
@@ -848,7 +864,7 @@ async function _loadGLTFTexture(
   }
 
   const { image, sampler } = await promiseObject({
-    image: loadGLTFImage(ctx, resource, texture.source),
+    image: loadGLTFImage(ctx, resource, texture.source, { flipY: options?.flipY }),
     sampler: loadGLTFSampler(ctx, resource, texture.sampler, { mapping: options?.mapping }),
   });
 

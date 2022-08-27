@@ -273,7 +273,11 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
     const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
       name: "Environment Map Texture",
-      image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
+      image: createRemoteImage(ctx, {
+        name: "Environment Map Image",
+        uri: "/cubemap/venice_sunset_1k.hdr",
+        flipY: true,
+      }),
       sampler: createRemoteSampler(ctx, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
       }),

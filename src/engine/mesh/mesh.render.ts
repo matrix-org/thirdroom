@@ -24,6 +24,7 @@ import {
   LinearEncoding,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
+  DynamicDrawUsage,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -284,6 +285,8 @@ function createMeshPrimitiveObject(
   scene: Scene,
   primitive: LocalMeshPrimitive
 ): PrimitiveObject3D {
+  const rendererModule = getModule(ctx, RendererModule);
+
   let object: PrimitiveObject3D;
 
   const { instancedMesh, skinnedMesh, lightMap } = node;
@@ -363,6 +366,11 @@ function createMeshPrimitiveObject(
         }
       }
 
+      instancedGeometry.setAttribute(
+        "instanceReflectionProbeParams",
+        new InstancedBufferAttribute(new Float32Array(count * 3), 3).setUsage(DynamicDrawUsage)
+      );
+
       primitive.instancedGeometryObj = instancedGeometry;
 
       const instancedMeshObject = new InstancedMesh(instancedGeometry, materialObj, count);
@@ -422,91 +430,89 @@ function createMeshPrimitiveObject(
     }
 
     mesh.geometry.computeBoundingBox();
-    mesh.userData.envMap = null;
-    mesh.userData.envMap2 = null;
-    mesh.userData.envMapMix = 0;
 
-    const envMap2 = new Uniform(null);
-    const envMapMix = new Uniform(0);
+    mesh.userData.reflectionProbeParams = new Vector3();
 
     if (lightMap) {
-      const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
-
+      const lightMapTexture = lightMap.texture;
       lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
       lightMapTexture.texture.type = FloatType;
       lightMapTexture.texture.minFilter = LinearFilter;
       lightMapTexture.texture.generateMipmaps = false;
 
-      const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
-
-      if (!material.userData.lightMapTransform) {
-        const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
-        const lightMapTransform = new Uniform(lightMapTransformMatrix);
-
-        material.onBeforeCompile = (shader) => {
-          shader.uniforms.lightMapTransform = lightMapTransform;
-          shader.uniforms.envMap2 = envMap2;
-          shader.uniforms.envMapMix = envMapMix;
-        };
-
-        material.needsUpdate = true;
-
-        material.userData.lightMapTransform = lightMapTransform;
-        material.userData.reflections = true;
-      }
-
-      mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
-        const meshMaterial = material as MeshBasicMaterial | MeshStandardMaterial;
-
-        if ("isMeshBasicMaterial" in material || "isMeshStandardMaterial" in material) {
-          meshMaterial.lightMapIntensity = intensity * Math.PI;
-          meshMaterial.lightMap = lightMapTexture.texture;
-
-          ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
-            offset[0],
-            offset[1],
-            scale[0],
-            scale[1],
-            0,
-            0,
-            0
-          );
-
-          meshMaterial.envMap = mesh.userData.envMap;
-          envMap2.value = mesh.userData.envMap2;
-          envMapMix.value = mesh.userData.envMapMix;
-
-          // This is currently added via a patch to Three.js
-          (meshMaterial as any).uniformsNeedUpdate = true;
-        }
-      };
-    } else {
-      const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
-
-      if (!material.userData.reflections) {
-        material.onBeforeCompile = (shader) => {
-          shader.uniforms.envMap2 = envMap2;
-          shader.uniforms.envMapMix = envMapMix;
-        };
-
-        material.needsUpdate = true;
-
-        material.userData.reflections = true;
-      }
-
-      mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
-        const meshMaterial = material as MeshBasicMaterial | MeshStandardMaterial;
-
-        if ("isMeshBasicMaterial" in material || "isMeshStandardMaterial" in material) {
-          meshMaterial.envMap = mesh.userData.envMap;
-          envMap2.value = mesh.userData.envMap2;
-          envMapMix.value = mesh.userData.envMapMix;
-
-          // This is currently added via a patch to Three.js
-          (meshMaterial as any).uniformsNeedUpdate = true;
-        }
-      };
+      mesh.userData.lightMap = lightMap;
     }
+
+    // Patch material with per-mesh uniforms
+
+    const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+
+    if (!material.defines) {
+      material.defines = {};
+    }
+
+    material.defines.USE_ENVMAP = "";
+    material.defines.ENVMAP_MODE_REFLECTION = "";
+    material.defines.ENVMAP_TYPE_CUBE_UV = "";
+    material.defines.ENVMAP_BLENDING_NONE = "";
+    material.defines.USE_REFLECTION_PROBES = "";
+    const envMapHeight = 256;
+    const maxMip = Math.log2(envMapHeight) - 2;
+    material.defines.CUBEUV_MAX_MIP = maxMip + ".0";
+    material.defines.CUBEUV_TEXEL_HEIGHT = 1 / envMapHeight;
+    material.defines.CUBEUV_TEXEL_WIDTH = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
+
+    if (!material.userData.beforeCompileHook) {
+      const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
+      const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
+      const reflectionProbeParams = new Uniform(new Vector3());
+
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.lightMapTransform = lightMapTransform;
+        shader.uniforms.reflectionProbesMap = reflectionProbesMap;
+        shader.uniforms.reflectionProbeParams = reflectionProbeParams;
+      };
+
+      material.userData.beforeCompileHook = true;
+      material.userData.lightMapTransform = lightMapTransform;
+      material.userData.reflectionProbesMap = reflectionProbesMap;
+      material.userData.reflectionProbeParams = reflectionProbeParams;
+
+      material.needsUpdate = true;
+    }
+
+    mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
+      const meshMaterial = material as MeshStandardMaterial;
+
+      if (!meshMaterial.isMeshStandardMaterial) {
+        return;
+      }
+
+      const lightMap = mesh.userData.lightMap as LocalLightMap | undefined;
+
+      if (lightMap) {
+        meshMaterial.lightMapIntensity = lightMap.intensity * Math.PI;
+        meshMaterial.lightMap = lightMap.texture.texture;
+
+        ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
+          lightMap.offset[0],
+          lightMap.offset[1],
+          lightMap.scale[0],
+          lightMap.scale[1],
+          0,
+          0,
+          0
+        );
+      }
+
+      material.userData.reflectionProbesMap = rendererModule.reflectionProbesMap;
+
+      const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
+      reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);
+
+      // This is currently added via a patch to Three.js
+      (meshMaterial as any).uniformsNeedUpdate = true;
+    };
 
     object = mesh;
   } else if (mode === MeshPrimitiveMode.LINES) {

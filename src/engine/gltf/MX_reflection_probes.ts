@@ -48,6 +48,7 @@ async function _loadGLTFReflectionProbe(
   const reflectionProbe = createReflectionProbeResource(ctx, {
     reflectionProbeTexture: await loadGLTFTexture(ctx, resource, reflectionProbeDef.reflectionProbeTexture.index, {
       mapping: SamplerMapping.EquirectangularReflectionMapping,
+      flipY: true,
     }),
     size: reflectionProbeDef.size ? new Float32Array(reflectionProbeDef.size) : undefined,
   });

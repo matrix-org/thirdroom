@@ -17,5 +17,6 @@ export async function loadGLTFBackgroundTexture(
 
   return loadGLTFTexture(ctx, resource, index, {
     mapping: SamplerMapping.EquirectangularReflectionMapping,
+    flipY: true,
   });
 }
