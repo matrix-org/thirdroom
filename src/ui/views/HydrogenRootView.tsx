@@ -132,6 +132,14 @@ function initHydrogen() {
 
   const config = {
     defaultHomeServer,
+    oidc: {
+      clientConfigs: {
+        "https://id.thirdroom.io/realms/thirdroom/": {
+          client_id: "thirdroom",
+          uris: ["http://localhost:3000", "https://thirdroom.io"],
+        },
+      },
+    },
   };
 
   const options = {
@@ -175,6 +183,7 @@ async function loadSession(client: Client, session: Session) {
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
     await client.startLogout(client.sessionId);
+    localStorage.clear();
   }
 
   await session.callHandler.loadCalls("m.room" as CallIntent);
@@ -210,6 +219,7 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   return new OIDCLoginMethod({
     oidcApi: new OidcApi({
       issuer,
+      clientConfigs: platform.config.oidc.clientConfigs,
       clientId,
       urlCreator,
       request: platform.request,
@@ -283,7 +293,15 @@ export function HydrogenRootView() {
     callback: logout,
   } = useAsyncCallback<() => Promise<void>, void>(async () => {
     if (client && client.session) {
-      await client.startLogout(client.session.sessionInfo.id);
+      const availSessions = await platform.sessionInfoStorage.getAll();
+      const logoutChain = availSessions.map((session) => client.startLogout(session.id));
+      try {
+        await Promise.allSettled(logoutChain);
+      } catch (err) {
+        console.error(err);
+      }
+      localStorage.clear();
+
       client.loadStatus.set(LoadStatus.NotLoading);
       setSession(undefined);
     }

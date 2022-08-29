@@ -27,6 +27,7 @@ import {
 } from "./node.common";
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
+import { RemoteNametag } from "../nametag/nametag.game";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -62,6 +63,8 @@ export interface RemoteNode {
   set static(value: boolean);
   get layers(): number;
   set layers(value: number);
+  get nametag(): RemoteNametag | undefined;
+  set nametag(nametag: RemoteNametag | undefined);
 }
 
 const DEFAULT_NODE_NAME = "Node";
@@ -79,6 +82,7 @@ interface NodeProps {
   tilesRenderer?: RemoteTilesRenderer;
   static?: boolean;
   layers?: number;
+  nametag?: RemoteNametag;
 }
 
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
@@ -97,6 +101,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     if (props?.camera) remoteNode.camera = props.camera;
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
     if (props?.tilesRenderer) remoteNode.tilesRenderer = props.tilesRenderer;
+    if (props?.nametag) remoteNode.nametag = props.nametag;
 
     return remoteNode;
   }
@@ -117,6 +122,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   audioNodeBufferView.audioEmitter[0] = props?.audioEmitter?.resourceId || 0;
   audioNodeBufferView.static[0] = props?.static ? 1 : 0;
+  audioNodeBufferView.nametag[0] = props?.nametag?.resourceId || 0;
 
   const audioNodeTripleBuffer = createObjectTripleBuffer(audioNodeSchema, ctx.gameToMainTripleBufferFlags);
 
@@ -131,6 +137,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _camera: RemoteCamera | undefined = props?.camera;
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
   let _tilesRenderer: RemoteTilesRenderer | undefined = props?.tilesRenderer;
+  let _nametag: RemoteNametag | undefined = props?.nametag;
 
   const name = props?.name || DEFAULT_NODE_NAME;
 
@@ -192,6 +199,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
         if (_audioEmitter) {
           disposeResource(ctx, _audioEmitter.resourceId);
         }
+
+        if (_nametag) {
+          disposeResource(ctx, _nametag.resourceId);
+        }
       },
     }
   );
@@ -230,6 +241,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   if (_tilesRenderer) {
     addResourceRef(ctx, _tilesRenderer.resourceId);
+  }
+
+  if (_nametag) {
+    addResourceRef(ctx, _nametag.resourceId);
   }
 
   const remoteNode: RemoteNode = {
@@ -375,6 +390,21 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
       _audioEmitter = audioEmitter;
       audioNodeBufferView.audioEmitter[0] = audioEmitter?.resourceId || 0;
+    },
+    get nametag() {
+      return _nametag;
+    },
+    set nametag(nametag: RemoteNametag | undefined) {
+      if (nametag) {
+        addResourceRef(ctx, nametag.resourceId);
+      }
+
+      if (_nametag) {
+        disposeResource(ctx, _nametag.resourceId);
+      }
+
+      _nametag = nametag;
+      audioNodeBufferView.nametag[0] = nametag?.resourceId || 0;
     },
     get static() {
       return !!rendererNodeBufferView.static[0];

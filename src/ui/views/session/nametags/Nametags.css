@@ -1,0 +1,25 @@
+.Nametag {
+  color: white;
+  text-shadow: 1px 1px 1px rgb(0 0 0 / 60%), 0px 0px 3px rgb(0 0 0 / 33%);
+  border-radius: 5px;
+  padding: 0px 5px;
+  pointer-events: none;
+  transform-origin: top left;
+  position: absolute;
+}
+
+.Nametag--image {
+  position: relative;
+  top: 5px;
+}
+
+.Nametag--inner {
+  transform: translate(-50%, -50%);
+}
+.Nametag--inner .Avatar {
+  margin-right: 12px;
+  box-shadow: 1px 1px 1px rgb(0 0 0 / 40%), 0px 0px 2px rgb(0 0 0 / 60%);
+}
+.Nametag--inner .Avatar.Speaking {
+  outline: 3px solid var(--usercolor1);
+}
