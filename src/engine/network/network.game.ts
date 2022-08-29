@@ -48,7 +48,7 @@ import randomRange from "../utils/randomRange";
 import { RigidBody } from "../physics/physics.game";
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createRemoteNametag } from "../nametag/nametag.game";
-import { createHistorian, Historian, removeEntityFromHistorian } from "./Historian";
+import { createHistorian, Historian } from "./Historian";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -204,7 +204,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     if (eid2) network.entityIdToPeerId.delete(eid2);
     network.peerIdToEntityId.delete(peerId);
 
-    removeEntityFromHistorian(network.historian, peerId);
+    const historian = network.peerIdToHistorian.get(peerId);
+    if (historian) historian.entities.clear();
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }

@@ -141,7 +141,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
           peerId: d.setPeerId,
         });
 
-        ws?.addEventListener("message", onPeerMessage(gameWorker));
+        ws?.addEventListener("message", onPeerMessage(gameWorker, d.setPeerId));
 
         ws?.removeEventListener("message", setPeerIdFn);
       }
