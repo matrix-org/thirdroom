@@ -37,7 +37,7 @@ type PermissionName =
   | "clipboard-write"
   | "payment-handler";
 
-export default function usePermissionStatus(name: PermissionName) {
+export default function usePermissionState(name: PermissionName) {
   const [state, setState] = useState<PermissionState>("prompt");
 
   useEffect(() => {

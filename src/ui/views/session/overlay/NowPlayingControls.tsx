@@ -5,10 +5,10 @@ import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import "./NowPlayingControls.css";
-import usePermissionStatus from "../../../hooks/usePermissionStatus";
+import usePermissionState from "../../../hooks/usePermissionState";
 
 export function NowPlayingControls() {
-  const micPermission = usePermissionStatus("microphone");
+  const micPermission = usePermissionState("microphone");
 
   return (
     <div className="NowPlayingControls shrink-0 flex items-center">

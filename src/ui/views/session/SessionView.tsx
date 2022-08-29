@@ -227,7 +227,7 @@ export function SessionView() {
     }
 
     try {
-      // FIXME: this will error if mic prem is
+      // FIXME: this will error if mic prem is rejected or mic is not connected to device
       // we either prompt for/about mic permission/status earlier
       // or make h-v-sdk to work without it.
       const stream = await platform.mediaDevices.getMediaTracks(true, false);
