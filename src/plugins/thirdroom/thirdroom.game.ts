@@ -264,7 +264,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap });
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true });
 
   thirdroom.sceneGLTF = sceneGltf;
 
@@ -303,7 +303,9 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
   ) {
     const collisionGeo = addEntity(ctx.world);
-    thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
+    thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb", {
+      isStatic: true,
+    });
     addChild(newScene, collisionGeo);
   }
 }

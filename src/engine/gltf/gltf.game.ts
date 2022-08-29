@@ -133,13 +133,14 @@ interface GLTFSceneOptions {
   sceneIndex?: number;
   // TODO: temporary hack for spawning avatars without static trimesh
   createTrimesh?: boolean;
+  isStatic?: boolean;
 }
 
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  { fileMap, sceneIndex, createTrimesh = true }: GLTFSceneOptions = {}
+  { fileMap, sceneIndex, createTrimesh = true, isStatic }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
@@ -196,7 +197,8 @@ export async function inflateGLTFScene(
           nodeInflators,
           nodeIndex,
           sceneEid,
-          createTrimesh && !hasInstancedMeshExtension && !hasColliderExtension(resource.root)
+          createTrimesh && !hasInstancedMeshExtension && !hasColliderExtension(resource.root),
+          isStatic
         )
       )
     );
@@ -255,7 +257,8 @@ async function _inflateGLTFNode(
   nodeInflators: Function[],
   nodeIndex: number,
   parentEid: number,
-  createTrimesh = true
+  createTrimesh = true,
+  isStatic = false
 ) {
   if (!resource.root.nodes || !resource.root.nodes[nodeIndex]) {
     throw new Error(`Node ${nodeIndex} not found`);
@@ -347,7 +350,8 @@ async function _inflateGLTFNode(
           nodeInflators,
           childIndex,
           nodeEid,
-          createTrimesh
+          createTrimesh,
+          isStatic
         )
       )
     );
@@ -376,7 +380,7 @@ async function _inflateGLTFNode(
         results.reflectionProbe ||
         hasTilesRendererExtension(node))
     ) {
-      addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name });
+      addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name, static: isStatic });
     }
 
     if (hasHubsComponentsExtension(resource.root)) {
@@ -388,7 +392,8 @@ async function _inflateGLTFNode(
 
       if (node.extras && node.extras["directional-light"]) {
         const remoteNode =
-          RemoteNodeComponent.get(nodeEid) || addRemoteNodeComponent(ctx, nodeEid, { name: node.name });
+          RemoteNodeComponent.get(nodeEid) ||
+          addRemoteNodeComponent(ctx, nodeEid, { name: node.name, static: isStatic });
 
         if (!remoteNode.light) {
           remoteNode.light = createDirectionalLightResource(ctx, {

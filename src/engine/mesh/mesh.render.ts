@@ -24,7 +24,6 @@ import {
   LinearEncoding,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
-  DynamicDrawUsage,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
@@ -366,11 +365,6 @@ function createMeshPrimitiveObject(
         }
       }
 
-      instancedGeometry.setAttribute(
-        "instanceReflectionProbeParams",
-        new InstancedBufferAttribute(new Float32Array(count * 3), 3).setUsage(DynamicDrawUsage)
-      );
-
       primitive.instancedGeometryObj = instancedGeometry;
 
       const instancedMeshObject = new InstancedMesh(instancedGeometry, materialObj, count);
@@ -424,6 +418,11 @@ function createMeshPrimitiveObject(
         );
       }
 
+      instancedGeometry.setAttribute(
+        "instanceReflectionProbeParams",
+        new InstancedBufferAttribute(new Float32Array(count * 3), 3, false, 1)
+      );
+
       mesh = instancedMeshObject;
     } else {
       mesh = new Mesh(geometryObj, materialObj);
@@ -462,6 +461,10 @@ function createMeshPrimitiveObject(
     material.defines.CUBEUV_TEXEL_HEIGHT = 1 / envMapHeight;
     material.defines.CUBEUV_TEXEL_WIDTH = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
 
+    if (instancedMesh) {
+      material.defines.USE_INSTANCING = "";
+    }
+
     if (!material.userData.beforeCompileHook) {
       const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
       const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
@@ -492,6 +495,11 @@ function createMeshPrimitiveObject(
 
       if (lightMap) {
         meshMaterial.lightMapIntensity = lightMap.intensity * Math.PI;
+
+        if (meshMaterial.lightMap === null && lightMap.texture.texture) {
+          meshMaterial.needsUpdate = true;
+        }
+
         meshMaterial.lightMap = lightMap.texture.texture;
 
         ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
@@ -505,7 +513,7 @@ function createMeshPrimitiveObject(
         );
       }
 
-      material.userData.reflectionProbesMap = rendererModule.reflectionProbesMap;
+      material.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
 
       const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
       reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);

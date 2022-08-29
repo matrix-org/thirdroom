@@ -16,6 +16,7 @@ export interface LocalSceneResource {
   scene: Scene;
   backgroundTexture?: LocalTextureResource;
   reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbeNeedsUpdate: boolean;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
 }
 
@@ -40,6 +41,7 @@ export async function onLoadLocalSceneResource(
     resourceId,
     scene,
     rendererSceneTripleBuffer,
+    reflectionProbeNeedsUpdate: false,
   };
 
   rendererModule.scenes.push(localSceneResource);

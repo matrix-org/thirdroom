@@ -82,6 +82,7 @@ import patchShaderChunks from "../material/patchShaderChunks";
 import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
 import {
   onLoadLocalReflectionProbeResource,
+  updateNodeReflections,
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
@@ -286,7 +287,9 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
+
   updateReflectionProbeTextureArray(ctx, activeSceneResource);
+  updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);

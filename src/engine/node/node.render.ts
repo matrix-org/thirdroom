@@ -23,11 +23,7 @@ import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
 import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
-import {
-  LocalReflectionProbeResource,
-  updateNodeReflectionProbe,
-  updateNodeReflections,
-} from "../reflection-probe/reflection-probe.render";
+import { LocalReflectionProbeResource, updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -236,6 +232,5 @@ export function updateLocalNodeResources(
     updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
-    updateNodeReflections(ctx, activeSceneResource, node);
   }
 }

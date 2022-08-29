@@ -70,25 +70,26 @@ export default function patchShaderChunks() {
   );
 
   // Add envMap2 and envMapMix for supporting reflection probes and blending between them
-  ShaderChunk.envmap_pars_vertex = ShaderChunk.envmap_pars_vertex.replace(
-    "#ifdef USE_ENVMAP",
-    `#ifdef USE_ENVMAP
-
-    #if defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
+  ShaderChunk.uv2_pars_vertex = ShaderChunk.uv2_pars_vertex.replace(
+    "#if defined( USE_LIGHTMAP )",
+    `
+    #if defined( USE_ENVMAP ) && defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
       attribute vec3 instanceReflectionProbeParams;
       varying vec3 vInstanceReflectionProbeParams;
     #endif
 
-  `
+    #if defined( USE_LIGHTMAP )
+    `
   );
 
-  ShaderChunk.envmap_vertex = ShaderChunk.envmap_vertex.replace(
-    "#ifdef USE_ENVMAP",
-    `#ifdef USE_ENVMAP
-      
-      #if defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
-        vInstanceReflectionProbeParams = instanceReflectionProbeParams;
-      #endif
+  ShaderChunk.uv2_vertex = ShaderChunk.uv2_vertex.replace(
+    "#if defined( USE_LIGHTMAP )",
+    `
+    #if defined( USE_ENVMAP ) && defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
+      vInstanceReflectionProbeParams = instanceReflectionProbeParams;
+    #endif
+
+    #if defined( USE_LIGHTMAP )
     `
   );
 
