@@ -46,9 +46,9 @@ export const NetworkModule = defineModule<IMainThreadContext, NetworkModuleState
  *******************/
 
 const onPeerMessage =
-  (gameWorker: Worker) =>
+  (gameWorker: Worker, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: NetworkMessageType.NetworkMessage, packet: data }, [data]);
+    gameWorker.postMessage({ type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
   };
 
 const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
@@ -197,7 +197,7 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    network.onPeerMessage = onPeerMessage(gameWorker);
+    network.onPeerMessage = onPeerMessage(gameWorker, peerId);
     dataChannel.addEventListener("message", network.onPeerMessage);
     dataChannel.addEventListener("close", onClose);
 

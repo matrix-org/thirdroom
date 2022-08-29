@@ -5,19 +5,19 @@ import { removeRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import {
-  writeMessageType,
   Networked,
   NetPipeData,
   NetworkModule,
   NetworkAction,
   broadcastReliable,
   Owned,
+  writeMetadata,
 } from "./network.game";
 
-const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 2));
+const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 
 export const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
-  writeMessageType(messageView, NetworkAction.RemoveOwnershipMessage);
+  writeMetadata(NetworkAction.RemoveOwnershipMessage)([ctx, messageView]);
   serializeRemoveOwnership(messageView, eid);
   return sliceCursorView(messageView);
 };

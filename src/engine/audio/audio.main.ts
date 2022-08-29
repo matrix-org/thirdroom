@@ -871,6 +871,8 @@ export function updateNodeAudioEmitter(
 
   mat4.getTranslation(tempPosition, nodeView.worldMatrix);
 
+  if (isNaN(tempPosition[0])) return;
+
   pannerNode.positionX.setValueAtTime(tempPosition[0], currentTime);
   pannerNode.positionY.setValueAtTime(tempPosition[1], currentTime);
   pannerNode.positionZ.setValueAtTime(tempPosition[2], currentTime);
