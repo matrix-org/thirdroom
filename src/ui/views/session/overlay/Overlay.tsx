@@ -28,6 +28,7 @@ import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
+import { NowPlayingControls } from "./NowPlayingControls";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -135,14 +136,15 @@ export function Overlay({
                 </RoomListContent>
               }
               footer={
-                world &&
-                activeCall && (
+                world && activeCall ? (
                   <NowPlayingWorld
                     world={world}
                     activeCall={activeCall}
                     onExitWorld={onExitWorld}
                     platform={platform}
                   />
+                ) : (
+                  <NowPlayingControls />
                 )
               }
             />

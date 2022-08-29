@@ -226,9 +226,16 @@ export function SessionView() {
       groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
     }
 
-    const stream = await platform.mediaDevices.getMediaTracks(true, false);
-    const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
-    await groupCall.join(localMedia);
+    try {
+      // FIXME: this will error if mic prem is
+      // we either prompt for/about mic permission/status earlier
+      // or make h-v-sdk to work without it.
+      const stream = await platform.mediaDevices.getMediaTracks(true, false);
+      const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
+      await groupCall.join(localMedia);
+    } catch (err) {
+      console.error(err);
+    }
 
     const profileRoom = getProfileRoom(session.rooms);
 
