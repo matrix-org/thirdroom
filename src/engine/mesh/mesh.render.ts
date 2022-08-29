@@ -7,7 +7,6 @@ import {
   LineSegments,
   Points,
   LineLoop,
-  Scene,
   InstancedMesh,
   Vector3,
   Quaternion,
@@ -47,6 +46,7 @@ import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../nod
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
@@ -281,7 +281,7 @@ function createMeshPrimitiveObject(
   ctx: RenderThreadState,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
-  scene: Scene,
+  sceneResource: LocalSceneResource,
   primitive: LocalMeshPrimitive
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
@@ -312,7 +312,7 @@ function createMeshPrimitiveObject(
 
             const bone = (jointNode.bone = new Bone());
             bones.push(bone);
-            scene.add(bone);
+            sceneResource.scene.add(bone);
             setTransformFromNode(ctx, boneReadView, bone);
 
             const inverseMatrix = new Matrix4();
@@ -453,13 +453,9 @@ function createMeshPrimitiveObject(
     material.defines.USE_ENVMAP = "";
     material.defines.ENVMAP_MODE_REFLECTION = "";
     material.defines.ENVMAP_TYPE_CUBE_UV = "";
+    material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
     material.defines.ENVMAP_BLENDING_NONE = "";
     material.defines.USE_REFLECTION_PROBES = "";
-    const envMapHeight = 256;
-    const maxMip = Math.log2(envMapHeight) - 2;
-    material.defines.CUBEUV_MAX_MIP = maxMip + ".0";
-    material.defines.CUBEUV_TEXEL_HEIGHT = 1 / envMapHeight;
-    material.defines.CUBEUV_TEXEL_WIDTH = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
 
     if (instancedMesh) {
       material.defines.USE_INSTANCING = "";
@@ -469,17 +465,20 @@ function createMeshPrimitiveObject(
       const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
       const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
       const reflectionProbeParams = new Uniform(new Vector3());
+      const reflectionProbeSampleParams = new Uniform(new Vector3());
 
       material.onBeforeCompile = (shader) => {
         shader.uniforms.lightMapTransform = lightMapTransform;
         shader.uniforms.reflectionProbesMap = reflectionProbesMap;
         shader.uniforms.reflectionProbeParams = reflectionProbeParams;
+        shader.uniforms.reflectionProbeSampleParams = reflectionProbeSampleParams;
       };
 
       material.userData.beforeCompileHook = true;
       material.userData.lightMapTransform = lightMapTransform;
       material.userData.reflectionProbesMap = reflectionProbesMap;
       material.userData.reflectionProbeParams = reflectionProbeParams;
+      material.userData.reflectionProbeSampleParams = reflectionProbeSampleParams;
 
       material.needsUpdate = true;
     }
@@ -517,6 +516,13 @@ function createMeshPrimitiveObject(
 
       const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
       reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);
+
+      const reflectionProbeSampleParams = material.userData.reflectionProbeSampleParams.value as Vector3;
+      const envMapHeight = rendererModule.reflectionProbesMap?.image.height || 256;
+      const maxMip = Math.log2(envMapHeight) - 2;
+      const texelWidth = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
+      const texelHeight = 1 / envMapHeight;
+      reflectionProbeSampleParams.set(maxMip, texelWidth, texelHeight);
 
       // This is currently added via a patch to Three.js
       (meshMaterial as any).uniformsNeedUpdate = true;
@@ -616,7 +622,7 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
 
 export function updateNodeMesh(
   ctx: RenderThreadState,
-  scene: Scene,
+  sceneResource: LocalSceneResource,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
@@ -627,7 +633,7 @@ export function updateNodeMesh(
     if (node.meshPrimitiveObjects) {
       for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
         const primitiveObject = node.meshPrimitiveObjects[i];
-        scene.remove(primitiveObject);
+        sceneResource.scene.remove(primitiveObject);
       }
 
       node.meshPrimitiveObjects = undefined;
@@ -647,9 +653,9 @@ export function updateNodeMesh(
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, nodeReadView, scene, primitive)
+      createMeshPrimitiveObject(ctx, node, nodeReadView, sceneResource, primitive)
     );
-    scene.add(...node.meshPrimitiveObjects);
+    sceneResource.scene.add(...node.meshPrimitiveObjects);
   }
 
   if (node.meshPrimitiveObjects) {

@@ -1,4 +1,4 @@
-import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4 } from "three";
+import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
@@ -110,6 +110,8 @@ export function updateSceneReflectionProbe(
   }
 }
 
+const reflectionProbeMapRenderTargets = new WeakMap<Texture, WebGLArrayRenderTarget>();
+
 export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene: LocalSceneResource | undefined) {
   if (!scene) {
     return;
@@ -153,12 +155,21 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
 
     if (reflectionProbeTextures.length > 0) {
       const renderTarget = (rendererModule.pmremGenerator as any).fromEquirectangularArray(reflectionProbeTextures);
+      reflectionProbeMapRenderTargets.set(renderTarget.texture, renderTarget);
       rendererModule.reflectionProbesMap = renderTarget.texture;
 
-      const onReflectionProbeTextureDisposed = () => {
-        renderTarget.texture.removeEventListener("dispose", onReflectionProbeTextureDisposed);
-        // Ensure render target is disposed when the texture is disposed.
-        renderTarget.dispose();
+      const onReflectionProbeTextureDisposed = (event: Event) => {
+        const texture = event.target as Texture;
+
+        const renderTarget = reflectionProbeMapRenderTargets.get(texture);
+
+        if (renderTarget) {
+          reflectionProbeMapRenderTargets.delete(texture);
+          // Ensure render target is disposed when the texture is disposed.
+          renderTarget.dispose();
+        }
+
+        texture.removeEventListener("dispose", onReflectionProbeTextureDisposed);
       };
 
       renderTarget.texture.addEventListener("dispose", onReflectionProbeTextureDisposed);

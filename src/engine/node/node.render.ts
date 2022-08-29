@@ -204,6 +204,14 @@ export function updateLocalNodeResources(
           activeSceneResource.scene.remove(node.reflectionProbeObject);
         }
 
+        if (node.reflectionProbeObject) {
+          const index = rendererModule.reflectionProbes.indexOf(node.reflectionProbeObject);
+
+          if (index !== -1) {
+            rendererModule.reflectionProbes.splice(index, 1);
+          }
+        }
+
         node.reflectionProbe = undefined;
       }
 
@@ -230,7 +238,7 @@ export function updateLocalNodeResources(
     updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
-    updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeMesh(ctx, activeSceneResource, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
   }
 }

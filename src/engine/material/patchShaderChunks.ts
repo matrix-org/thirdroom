@@ -99,6 +99,7 @@ export default function patchShaderChunks() {
 
     #ifdef USE_REFLECTION_PROBES
       uniform mediump sampler2DArray reflectionProbesMap;
+      uniform vec3 reflectionProbeSampleParams;
 
       #ifdef USE_INSTANCING
         varying vec3 vInstanceReflectionProbeParams;
@@ -116,14 +117,14 @@ export default function patchShaderChunks() {
     #ifdef USE_REFLECTION_PROBES
       #ifdef USE_INSTANCING
         vec4 envMapColor = mix(
-          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, worldNormal, 1.0 ),
-          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, reflectionProbeSampleParams, worldNormal, 1.0 ),
           vInstanceReflectionProbeParams.z
         );
       #else
         vec4 envMapColor = mix(
-          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, worldNormal, 1.0 ),
-          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, reflectionProbeSampleParams, worldNormal, 1.0 ),
           reflectionProbeParams.z
         );
       #endif
@@ -140,14 +141,14 @@ export default function patchShaderChunks() {
     #ifdef USE_REFLECTION_PROBES
       #ifdef USE_INSTANCING
         vec4 envMapColor = mix(
-          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, reflectVec, roughness ),
-          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, reflectionProbeSampleParams, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, reflectionProbeSampleParams, reflectVec, roughness ),
           vInstanceReflectionProbeParams.z
         );
       #else
         vec4 envMapColor = mix(
-          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, reflectVec, roughness ),
-          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, reflectionProbeSampleParams, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, reflectionProbeSampleParams, reflectVec, roughness ),
           reflectionProbeParams.z
         );
       #endif
