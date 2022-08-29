@@ -26,6 +26,7 @@
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
     "@dimforge/rapier3d-compat": "0.7.6",
+    "@fontsource/inter": "^4.5.12",
     "@gltf-transform/core": "^2.3.0",
     "@gltf-transform/extensions": "^2.3.0",
     "@gltf-transform/functions": "^2.3.0",
