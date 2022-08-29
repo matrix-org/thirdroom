@@ -5081,10 +5081,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-"three@npm:@thirdroom/three@^0.143.0":
-  version "0.143.0"
-  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.143.0.tgz#761cc26df7f26fe1122b19dec37491fb0aa40e7e"
-  integrity sha512-EayGYY3J1roMw2Hgfa7F+ZC1uZ3U1xB77K+0K3DBQGQVf+IA92F8IIY35CobKvIWHfhkNGeNpMrnWTn+1J4cOQ==
+"three@npm:@thirdroom/three@^0.143.1":
+  version "0.143.1"
+  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.143.1.tgz#b7f80a002cb58b8c12bcd6f4f8d84252ecc9ceac"
+  integrity sha512-5Oq/6lMnqnaq7S62xXxgEY7zOBLRI1GQZpriY9DBdl9kivDnRTs8XTbumXfxVlKwAyGBhTefqLZvIdeLrimSZg==
 
 through@^2.3.4:
   version "2.3.8"
