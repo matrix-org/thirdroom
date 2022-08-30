@@ -374,6 +374,11 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
+"@fontsource/inter@^4.5.12":
+  version "4.5.12"
+  resolved "https://registry.yarnpkg.com/@fontsource/inter/-/inter-4.5.12.tgz#a6236379bf710658db048d7087ec588754962cb6"
+  integrity sha512-bGKk4/8tube/nCk8hav0ZDBVbzJzc7m0Vt4xF5p15IN4YImwGdtKG38Oq5bU8xHNS+VfvbFFCepgQNj7Pr/Lvg==
+
 "@gltf-transform/core@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.3.0.tgz#0a449822319d7ead2296688095ebba7029a625f6"
