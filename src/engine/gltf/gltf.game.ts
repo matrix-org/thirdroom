@@ -82,6 +82,7 @@ import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_refle
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { SamplerMapping } from "../sampler/sampler.common";
 import { hasBackgroundExtension, loadGLTFBackgroundTexture } from "./MX_background";
+import { getEmissiveStrength } from "./KHR_materials_emissive_strength";
 
 export interface GLTFResource {
   url: string;
@@ -910,6 +911,8 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     throw new Error(`Material ${index} not found`);
   }
 
+  const materialDef = resource.root.materials[index];
+
   const {
     name,
     doubleSided,
@@ -921,7 +924,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
     occlusionTexture,
     emissiveFactor,
     emissiveTexture,
-  } = resource.root.materials[index];
+  } = materialDef;
 
   let remoteMaterial: RemoteMaterial;
 
@@ -985,6 +988,7 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
       occlusionTextureStrength: occlusionTexture?.strength,
       occlusionTexture: _occlusionTexture,
       emissiveFactor,
+      emissiveStrength: getEmissiveStrength(materialDef),
       emissiveTexture: _emissiveTexture,
     });
   }
