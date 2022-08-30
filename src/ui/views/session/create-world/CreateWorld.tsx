@@ -26,12 +26,15 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Content } from "../../../atoms/content/Content";
 import CrossIC from "../../../../../res/ic/cross.svg";
-import UploadIC from "../../../../../res/ic/upload.svg";
 import "./CreateWorld.css";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
-import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
+import defaultWorlds from "../../../../../res/defaultWorlds.json";
+import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
+import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
+import { getHttpUrl } from "../../../utils/avatar";
+import { UploadScene } from "./UploadScene";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -51,10 +54,9 @@ export function CreateWorld() {
 
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
 
-  const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
-  const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
-
   const [isAliasAvail, setAliasAvail] = useState<boolean>();
+  const [uploadScene, setUploadScene] = useState<{ url: string; previewUrl: string }>();
+  const [selectedScene, setSelectedScene] = useState<{ url: string; previewUrl: string }>();
   const isMounted = useIsMounted();
   const [creatingRoom, setCreatingRoom] = useState(false);
 
@@ -128,7 +130,7 @@ export function CreateWorld() {
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    if (isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc) return;
+    if (isAliasAvail === false || !selectedScene) return;
     const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
@@ -138,8 +140,8 @@ export function CreateWorld() {
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
-      sceneMxc: sceneInfo.mxc,
-      scenePrevMxc: previewInfo.mxc,
+      sceneMxc: selectedScene.url,
+      scenePrevMxc: selectedScene.previewUrl,
       topic: topicInput.value || undefined,
       avatar: avatarData.blob,
       alias: aliasInput.value || undefined,
@@ -165,6 +167,20 @@ export function CreateWorld() {
 
   const handleAliasChange = useDebounce(debouncedAliasChange, { wait: 300, immediate: true });
 
+  const renderSceneSelector = (sceneUrl: string, previewUrl: string, roomAvatarUrl?: string) => (
+    <button
+      key={sceneUrl}
+      className="flex"
+      style={{ cursor: "pointer" }}
+      onClick={() => setSelectedScene({ url: sceneUrl, previewUrl })}
+      type="button"
+    >
+      <Thumbnail outlined={selectedScene?.url === sceneUrl} className="shrink-0" size="sm">
+        <ThumbnailImg src={getHttpUrl(session, roomAvatarUrl ?? previewUrl)!} />
+      </Thumbnail>
+    </button>
+  );
+
   return (
     <Window onRequestClose={closeWindow}>
       <Content
@@ -186,35 +202,26 @@ export function CreateWorld() {
               children={
                 <Scroll>
                   <div className="CreateWorld__content">
-                    <SettingTile label={<Label>World Avatar</Label>}>
-                      <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
+                    <SettingTile label={<Label>Scenes *</Label>}>
+                      <Scroll orientation="horizontal" type="hover">
+                        <div className="flex items-center gap-md">
+                          {uploadScene && renderSceneSelector(uploadScene.url, uploadScene.previewUrl)}
+                          <UploadScene
+                            onSave={(sceneUrl, previewUrl) => {
+                              setUploadScene({ url: sceneUrl, previewUrl });
+                              setSelectedScene({ url: sceneUrl, previewUrl });
+                            }}
+                            renderTrigger={(openModal) => (
+                              <AvatarPicker onAvatarPick={openModal} onAvatarDrop={() => false} />
+                            )}
+                          />
+                          <div style={{ backgroundColor: "var(--bg-surface-border)", height: "40px", width: "2px" }} />
+                          {defaultWorlds.scenes.map((scene) =>
+                            renderSceneSelector(scene.sceneUrl, scene.scenePreviewUrl, scene.defaultRoomAvatarUrl)
+                          )}
+                        </div>
+                      </Scroll>
                     </SettingTile>
-                    <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
-                        <AutoFileUpload
-                          mimeType=".glb"
-                          onUploadInfo={setSceneInfo}
-                          renderButton={(pickFile) => (
-                            <Button onClick={pickFile}>
-                              <Icon src={UploadIC} color="on-primary" />
-                              Upload Scene
-                            </Button>
-                          )}
-                        />
-                      </SettingTile>
-                      <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
-                        <AutoFileUpload
-                          mimeType="image/*"
-                          onUploadInfo={setPreviewInfo}
-                          renderButton={(pickFile) => (
-                            <Button onClick={pickFile}>
-                              <Icon src={UploadIC} color="on-primary" />
-                              Upload Preview
-                            </Button>
-                          )}
-                        />
-                      </SettingTile>
-                    </div>
                     <div className="flex gap-lg">
                       <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
                         <Input name="nameInput" required />
@@ -249,6 +256,9 @@ export function CreateWorld() {
                         <Switch name="isPrivateInput" defaultChecked={true} />
                       </SettingTile>
                     </div>
+                    <SettingTile label={<Label>World Avatar</Label>}>
+                      <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
+                    </SettingTile>
                   </div>
                 </Scroll>
               }
@@ -260,11 +270,7 @@ export function CreateWorld() {
                     </Button>
                   }
                   right={
-                    <Button
-                      size="lg"
-                      type="submit"
-                      disabled={isAliasAvail === false || !sceneInfo.mxc || !previewInfo.mxc || creatingRoom}
-                    >
+                    <Button size="lg" type="submit" disabled={isAliasAvail === false || !selectedScene || creatingRoom}>
                       {creatingRoom ? "Creating World..." : "Create World"}
                     </Button>
                   }
@@ -276,10 +282,10 @@ export function CreateWorld() {
             <WindowAside className="flex">
               <ScenePreview
                 className="grow"
-                src={previewInfo.url}
+                src={getHttpUrl(session, selectedScene?.previewUrl)}
                 fallback={
                   <Text variant="b3" color="surface-low" weight="medium">
-                    Your uploaded scene preview will appear here.
+                    Your scene preview will appear here.
                   </Text>
                 }
               />

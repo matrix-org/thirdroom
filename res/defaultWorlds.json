@@ -1,0 +1,16 @@
+{
+  "scenes": [
+    {
+      "sceneName": "UK City",
+      "sceneUrl": "mxc://thirdroom.dev/BvsVzxxhINjugBuzvUanzxuH",
+      "scenePreviewUrl": "mxc://thirdroom.dev/zTIRxVyHwDNetUMphuMqttyv",
+      "defaultRoomAvatarUrl": "mxc://thirdroom.dev/jLzmUOUVrKrvKWmzrPvDsOSE"
+    },
+    {
+      "sceneName": "City",
+      "sceneUrl": "mxc://thirdroom.dev/IMHZpLrVOmYHyxRJxRnuyhuE",
+      "scenePreviewUrl": "mxc://thirdroom.dev/KbtGoCcqBLBFtqUqvjmqaqKM",
+      "defaultRoomAvatarUrl": "mxc://thirdroom.dev/lRugyDfMhIrtTPFROZmIyrAx"
+    }
+  ]
+}
