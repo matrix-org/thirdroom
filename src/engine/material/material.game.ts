@@ -50,6 +50,13 @@ export interface StandardMaterialProps {
   emissiveStrength?: number;
   emissiveFactor?: ArrayLike<number>; // default [0, 0, 0]
   emissiveTexture?: RemoteTexture;
+  ior?: number; // default 1.5
+  transmissionFactor?: number; // default 0
+  transmissionTexture?: RemoteTexture;
+  thicknessFactor?: number; // default 0
+  thicknessTexture?: RemoteTexture;
+  attenuationDistance?: number; // default +Infinity (represented as 0)
+  attenuationColor?: vec3; // default [1, 1, 1]
 }
 
 export type UnlitMaterialBufferView = ObjectBufferView<typeof unlitMaterialSchema, ArrayBuffer>;
@@ -105,6 +112,20 @@ export interface RemoteStandardMaterial {
   set emissiveStrength(value: number);
   get emissiveTexture(): RemoteTexture | undefined;
   set emissiveTexture(texture: RemoteTexture | undefined);
+  get ior(): number;
+  set ior(value: number);
+  get transmissionFactor(): number;
+  set transmissionFactor(value: number);
+  get transmissionTexture(): RemoteTexture | undefined;
+  set transmissionTexture(texture: RemoteTexture | undefined);
+  get thicknessFactor(): number;
+  set thicknessFactor(value: number);
+  get thicknessTexture(): RemoteTexture | undefined;
+  set thicknessTexture(texture: RemoteTexture | undefined);
+  get attenuationDistance(): number;
+  set attenuationDistance(value: number);
+  get attenuationColor(): vec3;
+  set attenuationColor(value: vec3);
 }
 
 const DEFAULT_UNLIT_MATERIAL_NAME = "Unlit Matrial";
@@ -240,6 +261,13 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
   materialBufferView.emissiveFactor.set(props.emissiveFactor || [0, 0, 0]);
   materialBufferView.emissiveStrength[0] = props.emissiveStrength || 1;
   materialBufferView.emissiveTexture[0] = props.emissiveTexture ? props.emissiveTexture.resourceId : 0;
+  materialBufferView.ior[0] = props.ior === undefined ? 1.5 : props.ior;
+  materialBufferView.transmissionFactor[0] = props.transmissionFactor || 0;
+  materialBufferView.transmissionTexture[0] = props.transmissionTexture ? props.transmissionTexture.resourceId : 0;
+  materialBufferView.thicknessFactor[0] = props.thicknessFactor || 0;
+  materialBufferView.thicknessTexture[0] = props.thicknessTexture ? props.thicknessTexture.resourceId : 0;
+  materialBufferView.attenuationDistance[0] = props.attenuationDistance || 0;
+  materialBufferView.attenuationColor.set(props.attenuationColor || [0, 0, 0]);
 
   const materialTripleBuffer = createObjectTripleBuffer(standardMaterialSchema, ctx.gameToRenderTripleBufferFlags);
 
@@ -248,6 +276,8 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
   let _normalTexture: RemoteTexture | undefined = props.normalTexture;
   let _occlusionTexture: RemoteTexture | undefined = props.occlusionTexture;
   let _emissiveTexture: RemoteTexture | undefined = props.emissiveTexture;
+  let _transmissionTexture: RemoteTexture | undefined = props.transmissionTexture;
+  let _thicknessTexture: RemoteTexture | undefined = props.thicknessTexture;
 
   if (_baseColorTexture) {
     addResourceRef(ctx, _baseColorTexture.resourceId);
@@ -267,6 +297,14 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
 
   if (_emissiveTexture) {
     addResourceRef(ctx, _emissiveTexture.resourceId);
+  }
+
+  if (_transmissionTexture) {
+    addResourceRef(ctx, _transmissionTexture.resourceId);
+  }
+
+  if (_thicknessTexture) {
+    addResourceRef(ctx, _thicknessTexture.resourceId);
   }
 
   const name = props.name || DEFAULT_STANDARD_MATERIAL_NAME;
@@ -300,6 +338,14 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
 
         if (_emissiveTexture) {
           disposeResource(ctx, _emissiveTexture.resourceId);
+        }
+
+        if (_transmissionTexture) {
+          disposeResource(ctx, _transmissionTexture.resourceId);
+        }
+
+        if (_thicknessTexture) {
+          disposeResource(ctx, _thicknessTexture.resourceId);
         }
 
         const index = rendererModule.standardMaterials.findIndex((material) => material.resourceId === resourceId);
@@ -445,6 +491,66 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
 
       _emissiveTexture = texture;
       materialBufferView.emissiveTexture[0] = texture ? texture.resourceId : 0;
+    },
+    get ior(): number {
+      return materialBufferView.ior[0];
+    },
+    set ior(value: number) {
+      materialBufferView.ior[0] = value;
+    },
+    get transmissionFactor(): number {
+      return materialBufferView.transmissionFactor[0];
+    },
+    set transmissionFactor(value: number) {
+      materialBufferView.transmissionFactor[0] = value;
+    },
+    get transmissionTexture(): RemoteTexture | undefined {
+      return _transmissionTexture;
+    },
+    set transmissionTexture(texture: RemoteTexture | undefined) {
+      if (texture) {
+        addResourceRef(ctx, texture.resourceId);
+      }
+
+      if (_transmissionTexture) {
+        disposeResource(ctx, _transmissionTexture.resourceId);
+      }
+
+      _transmissionTexture = texture;
+      materialBufferView.transmissionTexture[0] = texture ? texture.resourceId : 0;
+    },
+    get thicknessFactor(): number {
+      return materialBufferView.thicknessFactor[0];
+    },
+    set thicknessFactor(value: number) {
+      materialBufferView.thicknessFactor[0] = value;
+    },
+    get thicknessTexture(): RemoteTexture | undefined {
+      return _thicknessTexture;
+    },
+    set thicknessTexture(texture: RemoteTexture | undefined) {
+      if (texture) {
+        addResourceRef(ctx, texture.resourceId);
+      }
+
+      if (_thicknessTexture) {
+        disposeResource(ctx, _thicknessTexture.resourceId);
+      }
+
+      _thicknessTexture = texture;
+      materialBufferView.thicknessTexture[0] = texture ? texture.resourceId : 0;
+    },
+    get attenuationDistance(): number {
+      return materialBufferView.attenuationDistance[0];
+    },
+    set attenuationDistance(value: number) {
+      materialBufferView.attenuationDistance[0] = value;
+    },
+    get attenuationColor(): vec3 {
+      return materialBufferView.attenuationColor;
+    },
+    set attenuationColor(value: vec3) {
+      materialBufferView.attenuationColor.set(value);
     },
   };
 

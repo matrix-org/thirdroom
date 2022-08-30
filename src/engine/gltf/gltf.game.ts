@@ -83,6 +83,9 @@ import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game
 import { SamplerMapping } from "../sampler/sampler.common";
 import { hasBackgroundExtension, loadGLTFBackgroundTexture } from "./MX_background";
 import { getEmissiveStrength } from "./KHR_materials_emissive_strength";
+import { getTransmissionFactor, getTransmissionTextureInfo } from "./KHR_materials_transmission";
+import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_materials_volume";
+import { getMaterialIOR } from "./KHR_materials_ior";
 
 export interface GLTFResource {
   url: string;
@@ -947,12 +950,17 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
       baseColorTexture,
     });
   } else {
+    const transmissionTextureInfo = getTransmissionTextureInfo(materialDef);
+    const thicknessTextureInfo = getThicknessTextureInfo(materialDef);
+
     const {
       baseColorTexture,
       metallicRoughnessTexture,
       normalTexture: _normalTexture,
       occlusionTexture: _occlusionTexture,
       emissiveTexture: _emissiveTexture,
+      transmissionTexture,
+      thicknessTexture,
     } = await promiseObject({
       baseColorTexture:
         pbrMetallicRoughness?.baseColorTexture?.index !== undefined
@@ -972,6 +980,10 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
         emissiveTexture?.index !== undefined
           ? loadGLTFTexture(ctx, resource, emissiveTexture?.index, { encoding: TextureEncoding.sRGB })
           : undefined,
+      transmissionTexture: transmissionTextureInfo
+        ? loadGLTFTexture(ctx, resource, transmissionTextureInfo.index)
+        : undefined,
+      thicknessTexture: thicknessTextureInfo ? loadGLTFTexture(ctx, resource, thicknessTextureInfo.index) : undefined,
     });
     remoteMaterial = createRemoteStandardMaterial(ctx, {
       name,
@@ -990,6 +1002,11 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
       emissiveFactor,
       emissiveStrength: getEmissiveStrength(materialDef),
       emissiveTexture: _emissiveTexture,
+      transmissionTexture,
+      thicknessTexture,
+      ior: getMaterialIOR(materialDef),
+      transmissionFactor: getTransmissionFactor(materialDef),
+      ...getVolumeMaterialProperties(materialDef),
     });
   }
 
