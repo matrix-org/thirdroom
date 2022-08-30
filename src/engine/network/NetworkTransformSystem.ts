@@ -8,7 +8,7 @@ import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
 import { getModule } from "../module/module.common";
-import { addEntityToHistorian, getEntityHistory, INTERP_BUFFER_MS, removeEntityFromHistorian } from "./Historian";
+import { addEntityToHistorian, getEntityHistory, removeEntityFromHistorian } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 
@@ -130,13 +130,13 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
       // add timestamp to historian
       historian.timestamps.unshift(historian.latestElapsed);
       // trim history
-      const trimTimestamp = historian.localElapsed - INTERP_BUFFER_MS;
+      const trimTimestamp = historian.localElapsed - historian.interpolationBufferMs;
       while ((historian.timestamps.at(-1) || 0) < trimTimestamp) {
         historian.timestamps.pop();
       }
     }
 
-    const targetElapsed = (historian.targetElapsed = historian.localElapsed - INTERP_BUFFER_MS);
+    const targetElapsed = (historian.targetElapsed = historian.localElapsed - historian.interpolationBufferMs);
 
     const fromTime = historian.timestamps.at(-1) || 0;
     const toTime = historian.timestamps.at(-2) || 0;
