@@ -10,7 +10,6 @@ import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule
 import { getModule } from "../module/module.common";
 import { addEntityToHistorian, getEntityHistory, removeEntityFromHistorian } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
-import { tickRate } from "../config.common";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
@@ -21,8 +20,6 @@ const getPeerIdFromEntityId = (network: GameNetworkState, eid: number) => {
   const peerId = network.indexToPeerId.get(pidx) || network.entityIdToPeerId.get(eid);
   return peerId;
 };
-
-const FRAME_MS = 1000 / tickRate;
 
 const _vec = new Vector3();
 const _quat = new Quaternion();
@@ -74,9 +71,10 @@ export function NetworkTransformSystem(ctx: GameState) {
       if (historian.needsUpdate) {
         // append current network values to interpolation buffer
         addEntityHistory(history, netPosition, netVelocity, netQuaternion);
-        // drop old history
-        syncWithHistorian(history, historian);
       }
+
+      // drop old history
+      syncWithHistorian(history, historian);
 
       const pFrom = history.position.at(-1);
       const pTo = history.position.at(-2);
@@ -133,10 +131,10 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     if (historian.needsUpdate) {
       // add timestamp to historian
       historian.timestamps.unshift(historian.latestElapsed);
-      // trim history
-      while ((historian.timestamps.at(-1) || 0) + FRAME_MS < targetElapsed) {
-        historian.timestamps.pop();
-      }
+    }
+    // trim history
+    while (historian.timestamps.length > 2 && (historian.timestamps.at(-1) || 0) < targetElapsed) {
+      historian.timestamps.pop();
     }
 
     const fromTime = historian.timestamps.at(-1) || 0;

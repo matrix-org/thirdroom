@@ -1,6 +1,7 @@
 import { Historian } from "./Historian";
 
-// TODO: make generic
+// TODO: make generic & optimize
+
 export interface InterpolationBuffer {
   position: Float32Array[];
   velocity: Float32Array[];
@@ -13,8 +14,10 @@ export const createInterpolationBuffer = (): InterpolationBuffer => ({
   quaternion: [],
 });
 
-// TODO: optimize
 export const syncWithHistorian = (history: InterpolationBuffer, historian: Historian) => {
+  if (historian.timestamps.length === history.position.length) {
+    return;
+  }
   const i = historian.timestamps.length;
   history.position.splice(i);
   history.velocity.splice(i);
