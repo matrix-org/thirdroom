@@ -38,7 +38,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
         style={{ minHeight: "400px" }}
         heading="No Worlds"
         text="You haven’t joined any worlds yet."
-        actions={<Button onClick={() => selectWindow(OverlayWindow.CreateWorld)}>CreateWorld</Button>}
+        actions={<Button onClick={() => selectWindow(OverlayWindow.CreateWorld)}>Create World</Button>}
       />
     );
   }
