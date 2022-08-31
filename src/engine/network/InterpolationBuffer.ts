@@ -15,10 +15,7 @@ export const createInterpolationBuffer = (): InterpolationBuffer => ({
 });
 
 export const syncWithHistorian = (history: InterpolationBuffer, historian: Historian) => {
-  if (historian.timestamps.length === history.position.length) {
-    return;
-  }
-  const i = historian.timestamps.length;
+  const i = historian.timestamps.length + 1;
   history.position.splice(i);
   history.velocity.splice(i);
   history.quaternion.splice(i);

@@ -1,7 +1,7 @@
 import { createInterpolationBuffer, InterpolationBuffer } from "./InterpolationBuffer";
 
 // larger interp buffer, larger latency, smoother gameplay at higher latencies
-export const INTERP_BUFFER_MS = 100;
+export const INTERP_BUFFER_MS = 120;
 
 export interface Historian {
   entities: Map<number, InterpolationBuffer>;
@@ -17,6 +17,8 @@ export interface Historian {
   timestamps: number[];
   // flag for indicating that a new packet has arrived and the historian needs updated
   needsUpdate: boolean;
+  toIndex?: number;
+  fromIndex?: number;
 }
 
 export const createHistorian = (interpolationBufferMs = INTERP_BUFFER_MS): Historian => ({

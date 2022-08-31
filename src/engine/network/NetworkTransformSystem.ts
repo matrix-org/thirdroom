@@ -10,6 +10,7 @@ import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule
 import { getModule } from "../module/module.common";
 import { addEntityToHistorian, getEntityHistory, removeEntityFromHistorian } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
+import { clamp } from "../utils/interpolation";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
@@ -72,19 +73,25 @@ export function NetworkTransformSystem(ctx: GameState) {
         // append current network values to interpolation buffer
         addEntityHistory(history, netPosition, netVelocity, netQuaternion);
       }
-
       // drop old history
       syncWithHistorian(history, historian);
 
-      const pFrom = history.position.at(-1);
-      const pTo = history.position.at(-2);
+      const from = historian.fromIndex;
+      const to = historian.toIndex;
+
+      if (!from || !to) {
+        continue;
+      }
+
+      const pFrom = history.position.at(from);
+      const pTo = history.position.at(to);
       if (pFrom && pTo) {
         vec3.lerp(position, pFrom, pTo, historian.fractionOfTimePassed);
         body.setTranslation(_vec.fromArray(position), true);
       }
 
-      const vFrom = history.velocity.at(-1);
-      const vTo = history.velocity.at(-2);
+      const vFrom = history.velocity.at(from);
+      const vTo = history.velocity.at(to);
       if (vFrom && vTo) {
         vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
         body.setLinvel(_vec.fromArray(velocity), true);
@@ -100,8 +107,8 @@ export function NetworkTransformSystem(ctx: GameState) {
       //   console.log(position[0], position[1], position[2]);
       // }
 
-      const qFrom = history.quaternion.at(-1);
-      const qTo = history.quaternion.at(-2);
+      const qFrom = history.quaternion.at(from);
+      const qTo = history.quaternion.at(to);
       if (qFrom && qTo) {
         quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
         body.setRotation(_quat.fromArray(quaternion), true);
@@ -132,15 +139,30 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
       // add timestamp to historian
       historian.timestamps.unshift(historian.latestElapsed);
     }
-    // trim history
-    while (historian.timestamps.length > 2 && (historian.timestamps.at(-1) || 0) < targetElapsed) {
-      historian.timestamps.pop();
-    }
 
-    const fromTime = historian.timestamps.at(-1) || 0;
-    const toTime = historian.timestamps.at(-2) || 0;
+    let fromTime = 0;
+    let fromIndex;
+    let toTime = 0;
+    let toIndex;
+    if (historian.timestamps.length > 2)
+      for (let i = historian.timestamps.length - 2; i >= 0; --i) {
+        toTime = historian.timestamps[i];
+        fromTime = historian.timestamps[i + 1];
+        if (toTime && fromTime && targetElapsed < toTime && targetElapsed > fromTime) {
+          toIndex = i;
+          fromIndex = i + 1;
+          break;
+        }
+      }
 
-    historian.fractionOfTimePassed = (targetElapsed - fromTime) / (toTime - fromTime);
+    historian.timestamps.splice((fromIndex || 0) + 5);
+
+    const ratio = (targetElapsed - fromTime) / (toTime - fromTime);
+
+    historian.fractionOfTimePassed = clamp(-1, 1, ratio || 0.1);
+
+    historian.toIndex = toIndex;
+    historian.fromIndex = fromIndex;
 
     // step forward local elapsed
     historian.localElapsed += ctx.dt * 1000;
