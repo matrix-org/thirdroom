@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { Platform, Stream } from "@thirdroom/hydrogen-view-sdk";
 
 import { IconButton } from "../../atoms/button/IconButton";
 import { Dialog } from "../../atoms/dialog/Dialog";
@@ -8,39 +9,48 @@ import { useIsMounted } from "../../hooks/useIsMounted";
 import CrossIC from "../../../../res/ic/cross.svg";
 import { Text } from "../../atoms/text/Text";
 
-interface MicPermissionRequestProps {
+export type RequestStream = () => Promise<Stream | undefined>;
+interface MicStreamRequestProps {
+  platform: Platform;
   permissionState: PermissionState;
-  render: (requestPermission: () => void) => ReactNode;
+  render: (requestStream: RequestStream) => ReactNode;
 }
 
-enum RequestException {
+export enum RequestException {
   NotAllowed = "NotAllowedError",
   NotFound = "NotFoundError",
   Unknown = "Unknown",
 }
 
-export function MicPermissionRequest({ permissionState, render }: MicPermissionRequestProps) {
+export function MicStreamRequest({ platform, permissionState, render }: MicStreamRequestProps) {
   const [exception, setException] = useState<RequestException>();
   const isMounted = useIsMounted();
 
-  const requestPermission = () => {
-    if (permissionState === "denied") {
-      setException(RequestException.NotAllowed);
-      return;
-    }
-    navigator.mediaDevices.getUserMedia({ audio: true }).catch((e) => {
-      if (!isMounted()) return;
-      if (e.name === RequestException.NotAllowed) {
+  const requestStream = () =>
+    new Promise<Stream | undefined>((resolve) => {
+      if (permissionState === "denied") {
         setException(RequestException.NotAllowed);
         return;
       }
-      if (e.name === RequestException.NotFound) {
-        setException(RequestException.NotFound);
-        return;
-      }
-      setException(RequestException.Unknown);
+      platform.mediaDevices
+        .getMediaTracks(true, false)
+        .then((stream) => {
+          resolve(stream);
+        })
+        .catch((e) => {
+          resolve(undefined);
+          if (!isMounted()) return;
+          if (e.name === RequestException.NotAllowed) {
+            setException(RequestException.NotAllowed);
+            return;
+          }
+          if (e.name === RequestException.NotFound) {
+            setException(RequestException.NotFound);
+            return;
+          }
+          setException(RequestException.Unknown);
+        });
     });
-  };
 
   return (
     <>
@@ -64,7 +74,7 @@ export function MicPermissionRequest({ permissionState, render }: MicPermissionR
           </Text>
         </Dialog>
       )}
-      {render(requestPermission)}
+      {render(requestStream)}
     </>
   );
 }

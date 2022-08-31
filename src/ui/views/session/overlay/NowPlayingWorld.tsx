@@ -18,6 +18,9 @@ import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
+import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
+import { usePermissionState } from "../../../hooks/usePermissionState";
+import { MicStreamRequest } from "../../components/MicStreamRequest";
 
 interface NowPlayingWorldProps {
   world: Room;
@@ -27,7 +30,13 @@ interface NowPlayingWorldProps {
 }
 
 export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: NowPlayingWorldProps) {
-  const { mute: callMute, toggleMute } = useCallMute(activeCall);
+  const micPermission = usePermissionState("microphone");
+  const [microphone, toggleMicrophone] = useMicrophoneState(micPermission);
+  const { mute: callMute, handleMute } = useCallMute(activeCall);
+
+  if (callMute && microphone) toggleMicrophone();
+  else if (!callMute && !microphone) toggleMicrophone();
+
   const [isMemberDialog, setIsMemberDialog] = useState(false);
 
   return (
@@ -51,9 +60,20 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
       }
       leftControls={
         <>
-          <Tooltip content={callMute ? "Unmute" : "Mute"}>
-            <IconButton variant="surface-low" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
-          </Tooltip>
+          <MicStreamRequest
+            platform={platform}
+            permissionState={micPermission}
+            render={(requestStream) => (
+              <Tooltip content={callMute ? "Unmute" : "Mute"}>
+                <IconButton
+                  variant="surface-low"
+                  label="Mic"
+                  iconSrc={callMute ? MicOffIC : MicIC}
+                  onClick={() => handleMute(requestStream)}
+                />
+              </Tooltip>
+            )}
+          />
           <Tooltip content="Disconnect">
             <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
           </Tooltip>

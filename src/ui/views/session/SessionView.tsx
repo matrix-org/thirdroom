@@ -228,13 +228,16 @@ export function SessionView() {
 
     let stream;
     try {
-      stream = await platform.mediaDevices.getMediaTracks(true, false);
+      if (localStorage.getItem("microphone") === "true") {
+        stream = await platform.mediaDevices.getMediaTracks(true, false);
+      }
     } catch (err) {
       console.error(err);
     }
     const localMedia = stream
       ? new LocalMedia().withUserMedia(stream).withDataChannel({})
       : new LocalMedia().withDataChannel({});
+
     await groupCall.join(localMedia);
 
     const profileRoom = getProfileRoom(session.rooms);

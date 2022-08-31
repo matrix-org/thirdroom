@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 
-export function useMicrophone(permissionState: PermissionState): [boolean, () => void] {
+export function useMicrophoneState(permissionState: PermissionState): [isUsable: boolean, toggleState: () => void] {
   const [mic, setMic] = useState(localStorage.getItem("microphone") === "true");
   const isUsable = mic && permissionState === "granted";
 
-  const toggleMicrophone = useCallback(() => {
+  const toggleState = useCallback(() => {
     if (permissionState === "granted") {
       const nextState = !mic;
       setMic(nextState);
@@ -12,5 +12,5 @@ export function useMicrophone(permissionState: PermissionState): [boolean, () =>
     }
   }, [mic, permissionState]);
 
-  return [isUsable, toggleMicrophone];
+  return [isUsable, toggleState];
 }

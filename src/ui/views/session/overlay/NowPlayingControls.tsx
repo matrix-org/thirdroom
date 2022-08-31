@@ -4,18 +4,21 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import "./NowPlayingControls.css";
 import { usePermissionState } from "../../../hooks/usePermissionState";
-import { useMicrophone } from "../../../hooks/useMicrophone";
-import { MicPermissionRequest } from "../../components/MicPermissionRequest";
+import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
+import { MicStreamRequest } from "../../components/MicStreamRequest";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 
 export function NowPlayingControls() {
+  const { platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
-  const [microphone, toggleMicrophone] = useMicrophone(micPermission);
+  const [microphone, toggleMicrophone] = useMicrophoneState(micPermission);
 
   return (
     <div className="NowPlayingControls shrink-0 flex items-center">
-      <MicPermissionRequest
+      <MicStreamRequest
+        platform={platform}
         permissionState={micPermission}
-        render={(requestPerm) => (
+        render={(requestStream) => (
           <Tooltip content={microphone ? "Mute" : "Unmute"}>
             <IconButton
               variant="surface-low"
@@ -23,7 +26,7 @@ export function NowPlayingControls() {
               iconSrc={microphone ? MicIC : MicOffIC}
               onClick={() => {
                 if (micPermission == "granted") toggleMicrophone();
-                else requestPerm();
+                else requestStream();
               }}
             />
           </Tooltip>
