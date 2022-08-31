@@ -130,13 +130,24 @@ function initHydrogen() {
     },
   };
 
+
+  const oidcClientId = document.location.hostname === "thirdroom.io" ? "thirdroom" : "thirdroom_dev";
+  const oidcUris = ((): string[] => {
+    if (document.location.hostname === "thirdroom.io") {
+      return ["https://thirdroom.io"];
+    }
+
+    const { protocol, hostname, port } = document.location;
+    return [`${protocol}//${hostname}${port ? `:${port}` : ''}`];
+  })();
+
   const config = {
     defaultHomeServer,
     oidc: {
       clientConfigs: {
         "https://id.thirdroom.io/realms/thirdroom/": {
-          client_id: "thirdroom",
-          uris: ["http://localhost:3000", "https://thirdroom.io"],
+          client_id: oidcClientId,
+          uris: oidcUris,
         },
       },
     },
