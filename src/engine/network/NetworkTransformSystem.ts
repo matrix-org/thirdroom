@@ -73,15 +73,12 @@ export function NetworkTransformSystem(ctx: GameState) {
         // append current network values to interpolation buffer
         addEntityHistory(history, netPosition, netVelocity, netQuaternion);
       }
+
       // drop old history
       syncWithHistorian(history, historian);
 
-      const from = historian.fromIndex;
-      const to = historian.toIndex;
-
-      if (!from || !to) {
-        continue;
-      }
+      const from = -1;
+      const to = -2;
 
       const pFrom = history.position.at(from);
       const pTo = history.position.at(to);
@@ -97,6 +94,13 @@ export function NetworkTransformSystem(ctx: GameState) {
         body.setLinvel(_vec.fromArray(velocity), true);
       }
 
+      const qFrom = history.quaternion.at(from);
+      const qTo = history.quaternion.at(to);
+      if (qFrom && qTo) {
+        quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
+        body.setRotation(_quat.fromArray(quaternion), true);
+      }
+
       // TODO: figure out why hermite interpolation snaps entity to 0,0 every so often
       // if (pFrom && pTo && vFrom && vTo) {
       //   vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
@@ -104,15 +108,7 @@ export function NetworkTransformSystem(ctx: GameState) {
 
       //   vec3.hermite(position, pFrom, pTo, vFrom, vTo, historian.fractionOfTimePassed);
       //   body.setTranslation(_vec.fromArray(position), true);
-      //   console.log(position[0], position[1], position[2]);
       // }
-
-      const qFrom = history.quaternion.at(from);
-      const qTo = history.quaternion.at(to);
-      if (qFrom && qTo) {
-        quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
-        body.setRotation(_quat.fromArray(quaternion), true);
-      }
     }
   }
 
@@ -140,29 +136,19 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
       historian.timestamps.unshift(historian.latestElapsed);
     }
 
-    let fromTime = 0;
-    let fromIndex;
-    let toTime = 0;
-    let toIndex;
-    if (historian.timestamps.length > 2)
-      for (let i = historian.timestamps.length - 2; i >= 0; --i) {
-        toTime = historian.timestamps[i];
-        fromTime = historian.timestamps[i + 1];
-        if (toTime && fromTime && targetElapsed < toTime && targetElapsed > fromTime) {
-          toIndex = i;
-          fromIndex = i + 1;
-          break;
-        }
-      }
+    let t;
+    while (historian.timestamps.length > 2 && (historian.timestamps.at(-1) || 0) < targetElapsed) {
+      t = historian.timestamps.pop();
+    }
+    // put back the last timestamp that was before the target that was popped off
+    if (t) historian.timestamps.push(t);
 
-    historian.timestamps.splice((fromIndex || 0) + 5);
+    const fromTime = historian.timestamps.at(-1) || 0;
+    const toTime = historian.timestamps.at(-2) || 0;
 
     const ratio = (targetElapsed - fromTime) / (toTime - fromTime);
 
     historian.fractionOfTimePassed = clamp(-1, 1, ratio || 0.1);
-
-    historian.toIndex = toIndex;
-    historian.fromIndex = fromIndex;
 
     // step forward local elapsed
     historian.localElapsed += ctx.dt * 1000;

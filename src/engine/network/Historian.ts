@@ -17,8 +17,6 @@ export interface Historian {
   timestamps: number[];
   // flag for indicating that a new packet has arrived and the historian needs updated
   needsUpdate: boolean;
-  toIndex?: number;
-  fromIndex?: number;
 }
 
 export const createHistorian = (interpolationBufferMs = INTERP_BUFFER_MS): Historian => ({
