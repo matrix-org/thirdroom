@@ -996,11 +996,11 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
   const { messageHandlers } = getModule(state, NetworkModule);
 
   const historian = network.peerIdToHistorian.get(peerId);
-  if (!historian) throw new Error("could not find historian for peerId: " + peerId);
-
-  historian.latestElapsed = elapsed;
-  historian.localElapsed = elapsed;
-  historian.needsUpdate = true;
+  if (historian) {
+    historian.latestElapsed = elapsed;
+    historian.localElapsed = elapsed;
+    historian.needsUpdate = true;
+  }
 
   const handler = messageHandlers[messageType];
   if (!handler) {

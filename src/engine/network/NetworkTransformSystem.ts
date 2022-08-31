@@ -131,6 +131,8 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     const elapsedSinceLastUpdate = historian.localElapsed - (historian.timestamps.at(0) || 0);
 
+    historian.localElapsed += elapsedSinceLastUpdate;
+
     const targetElapsed = (historian.targetElapsed = historian.localElapsed - historian.interpolationBufferMs);
 
     if (historian.needsUpdate) {
@@ -141,7 +143,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     let t;
     while (
       historian.timestamps.length > 2 &&
-      (historian.timestamps.at(-1) || 0) - elapsedSinceLastUpdate < targetElapsed
+      (historian.timestamps.at(-1) || 0) + elapsedSinceLastUpdate < targetElapsed
     ) {
       t = historian.timestamps.pop();
     }
@@ -156,7 +158,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     historian.fractionOfTimePassed = clamp(-1, 1, ratio || 0.1);
 
     // step forward local elapsed
-    historian.localElapsed += ctx.dt * 1000;
+    // historian.localElapsed += ctx.dt * 1000;
   }
 }
 
