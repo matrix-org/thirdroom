@@ -103,7 +103,7 @@ export function createRemoteAudioFromBufferView(ctx: GameState, props: BufferVie
     resourceId: createResource<AudioResourceProps>(
       ctx,
       Thread.Main,
-      AudioResourceType.AudioSource,
+      AudioResourceType.AudioData,
       {
         bufferView: props.bufferView.resourceId,
         mimeType: props.mimeType,
