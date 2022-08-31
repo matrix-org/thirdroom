@@ -14,17 +14,12 @@ import {
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { Layer } from "../node/node.common";
-
-// TODO: Add samples property to official three types package
-declare module "three" {
-  interface WebGLRenderTargetOptions {
-    samples: number;
-  }
-}
+import { SMAAPass } from "./SMAAPass";
 
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
@@ -35,7 +30,9 @@ export class RenderPipeline {
   effectComposer: EffectComposer;
   renderPass: RenderPass;
   outlinePass: OutlinePass;
+  bloomPass: UnrealBloomPass;
   gammaCorrectionPass: ShaderPass;
+  smaaPass: SMAAPass;
   outlineLayers: Layers;
 
   constructor(private renderer: WebGLRenderer) {
@@ -46,7 +43,6 @@ export class RenderPipeline {
       magFilter: LinearFilter,
       format: RGBAFormat,
       encoding: sRGBEncoding,
-      samples: 16,
     });
 
     const scene = new Scene();
@@ -55,11 +51,15 @@ export class RenderPipeline {
     this.effectComposer = new EffectComposer(renderer, target);
     this.renderPass = new RenderPass(scene, camera);
     this.outlinePass = new OutlinePass(rendererSize, scene, camera);
+    this.bloomPass = new UnrealBloomPass(rendererSize, 0.5, 0.4, 0.9);
     this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+    this.smaaPass = new SMAAPass(rendererSize.width, rendererSize.height);
 
     this.effectComposer.addPass(this.renderPass);
     this.effectComposer.addPass(this.outlinePass);
+    this.effectComposer.addPass(this.bloomPass);
     this.effectComposer.addPass(this.gammaCorrectionPass);
+    this.effectComposer.addPass(this.smaaPass);
 
     this.outlineLayers = new Layers();
     this.outlineLayers.set(Layer.EditorSelection);
