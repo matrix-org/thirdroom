@@ -526,7 +526,10 @@ export interface GLTFNode {
    */
   weights?: number[];
   name?: any;
-  extensions?: any;
+  extensions?: {
+    [key: string]: any;
+    MX_reflection_probes?: GLTFReflectionProbeRef;
+  };
   extras?: any;
   [k: string]: any;
 }
@@ -564,7 +567,10 @@ export interface GLTFScene {
    */
   nodes?: GLTFId[];
   name?: any;
-  extensions?: any;
+  extensions?: {
+    [key: string]: any;
+    MX_reflection_probes?: GLTFReflectionProbeRef;
+  };
   extras?: any;
   [k: string]: any;
 }
@@ -680,8 +686,9 @@ export interface GLTFRoot {
   textures?: GLTFTexture[];
   extensions?: {
     [key: string]: any;
-    KHR_audio: GLTFKHRAudioExtension;
-    KHR_lights_punctual: GLTFKHRLightsExtension;
+    KHR_audio?: GLTFKHRAudioExtension;
+    KHR_lights_punctual?: GLTFKHRLightsExtension;
+    MX_reflection_probes?: GLTFRootReflectionProbesExtension;
   };
   extras?: any;
   [k: string]: any;
@@ -775,4 +782,17 @@ export interface GLTFLightmapExtension {
   scale?: number[];
   offset?: number[];
   intensity?: number;
+}
+
+export interface GLTFReflectionProbeRef {
+  reflectionProbe: number;
+}
+
+export interface GLTFReflectionProbe {
+  size?: number[];
+  reflectionProbeTexture: GLTFTextureInfo;
+}
+
+export interface GLTFRootReflectionProbesExtension {
+  reflectionProbes: GLTFReflectionProbe[];
 }

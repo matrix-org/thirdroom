@@ -11,7 +11,7 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 export function NowPlayingControls() {
   const { platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
-  const [microphone, toggleMicrophone] = useMicrophoneState(micPermission);
+  const [microphone, setMicrophone] = useMicrophoneState();
 
   return (
     <div className="NowPlayingControls shrink-0 flex items-center">
@@ -24,9 +24,18 @@ export function NowPlayingControls() {
               variant="surface-low"
               label="Mic"
               iconSrc={microphone ? MicIC : MicOffIC}
-              onClick={() => {
-                if (micPermission == "granted") toggleMicrophone();
-                else requestStream();
+              onClick={async () => {
+                if (micPermission == "granted") {
+                  setMicrophone(!microphone);
+                } else if (microphone) {
+                  setMicrophone(false);
+                } else {
+                  const stream = await requestStream();
+                  setMicrophone(!!stream);
+                  stream?.getAudioTracks().forEach((track) => {
+                    track.stop();
+                  });
+                }
               }}
             />
           </Tooltip>

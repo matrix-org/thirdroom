@@ -1,5 +1,3 @@
-import type { OffscreenCanvas } from "three";
-
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
   GameWorkerInitialized = "game-worker-initialized",

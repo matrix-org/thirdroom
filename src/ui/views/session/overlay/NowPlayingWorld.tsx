@@ -31,11 +31,12 @@ interface NowPlayingWorldProps {
 
 export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: NowPlayingWorldProps) {
   const micPermission = usePermissionState("microphone");
-  const [microphone, toggleMicrophone] = useMicrophoneState(micPermission);
+  const [microphone, setMicrophone] = useMicrophoneState();
   const { mute: callMute, handleMute } = useCallMute(activeCall);
 
-  if (callMute && microphone) toggleMicrophone();
-  else if (!callMute && !microphone) toggleMicrophone();
+  if (callMute === microphone) {
+    setMicrophone(!microphone);
+  }
 
   const [isMemberDialog, setIsMemberDialog] = useState(false);
 

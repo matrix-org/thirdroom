@@ -39,10 +39,11 @@ const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall }>(({ activeCall }, ref) => {
   const { platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
-  const [microphone, toggleMicrophone] = useMicrophoneState(micPermission);
+  const [microphone, setMicrophone] = useMicrophoneState();
   const { mute: callMute, handleMute } = useCallMute(activeCall);
-  if (callMute && microphone) toggleMicrophone();
-  else if (!callMute && !microphone) toggleMicrophone();
+  if (callMute === microphone) {
+    setMicrophone(!microphone);
+  }
 
   return (
     <MicStreamRequest
