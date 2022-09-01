@@ -924,7 +924,10 @@ function disposeNetworkedEntities(state: GameState) {
   }
 }
 
+// rate limiting outbound data reduces bandwidth and smoothes the interpolation
+let ticks = 0;
 const sendUpdates = (ctx: GameState) => {
+  if (ticks++ % 3 !== 0) return;
   const network = getModule(ctx, NetworkModule);
   const data: NetPipeData = [ctx, network.cursorView];
 

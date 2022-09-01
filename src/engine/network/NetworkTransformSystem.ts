@@ -11,6 +11,9 @@ import { getModule } from "../module/module.common";
 import { addEntityToHistorian, getEntityHistory, removeEntityFromHistorian } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
+import { tickRate } from "../config.common";
+
+const FRAME_MS = 1000 / tickRate;
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
@@ -77,8 +80,8 @@ export function NetworkTransformSystem(ctx: GameState) {
       // drop old history
       syncWithHistorian(history, historian);
 
-      const from = -1;
-      const to = -2;
+      const from = historian.index;
+      const to = historian.index - 1;
 
       const pFrom = history.position.at(from);
       const pTo = history.position.at(to);
@@ -129,36 +132,46 @@ export function NetworkTransformSystem(ctx: GameState) {
 
 function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
-    const elapsedSinceLastUpdate = historian.localElapsed - (historian.timestamps.at(0) || 0);
-
-    historian.localElapsed += elapsedSinceLastUpdate;
-
-    const targetElapsed = (historian.targetElapsed = historian.localElapsed - historian.interpolationBufferMs);
-
     if (historian.needsUpdate) {
       // add timestamp to historian
       historian.timestamps.unshift(historian.latestElapsed);
     }
 
-    let t;
-    while (
-      historian.timestamps.length > 2 &&
-      (historian.timestamps.at(-1) || 0) + elapsedSinceLastUpdate < targetElapsed
-    ) {
-      t = historian.timestamps.pop();
-    }
-    // put back the last timestamp that was before the target that was popped off
-    if (t) historian.timestamps.push(t);
+    // step forward local elapsed
+    historian.localElapsed += ctx.dt * 1000;
 
-    const fromTime = historian.timestamps.at(-1) || 0;
-    const toTime = historian.timestamps.at(-2) || 0;
+    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 1.5;
+
+    const targetElapsed = (historian.targetElapsed =
+      historian.localElapsed - historian.interpolationBufferMs + FRAME_MS);
+
+    let index = -1;
+    if (historian.timestamps.length > 2) {
+      while ((historian.timestamps.at(-1) || 0) < trimElapsed) {
+        historian.timestamps.pop();
+      }
+      for (let i = historian.timestamps.length - 1; i >= 0; i--) {
+        const t = historian.timestamps[i];
+        const tt = historian.timestamps[i - 1];
+        if (t < targetElapsed && tt > targetElapsed) {
+          index = i;
+          break;
+        }
+      }
+    }
+
+    if (index === -1) {
+      console.warn("increase network interpolation buffer");
+    }
+
+    historian.index = index;
+
+    const fromTime = historian.timestamps.at(index) || 0;
+    const toTime = historian.timestamps.at(index - 1) || 0;
 
     const ratio = (targetElapsed - fromTime) / (toTime - fromTime);
 
     historian.fractionOfTimePassed = clamp(-1, 1, ratio || 0.1);
-
-    // step forward local elapsed
-    // historian.localElapsed += ctx.dt * 1000;
   }
 }
 
