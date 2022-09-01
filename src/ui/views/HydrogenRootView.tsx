@@ -130,8 +130,27 @@ function initHydrogen() {
     },
   };
 
+
+  const oidcClientId = document.location.hostname === "thirdroom.io" ? "thirdroom" : "thirdroom_dev";
+  const oidcUris = ((): string[] => {
+    if (document.location.hostname === "thirdroom.io") {
+      return ["https://thirdroom.io"];
+    }
+
+    const { protocol, hostname, port } = document.location;
+    return [`${protocol}//${hostname}${port ? `:${port}` : ''}`];
+  })();
+
   const config = {
     defaultHomeServer,
+    oidc: {
+      clientConfigs: {
+        "https://id.thirdroom.io/realms/thirdroom/": {
+          client_id: oidcClientId,
+          uris: oidcUris,
+        },
+      },
+    },
   };
 
   const options = {
@@ -175,6 +194,7 @@ async function loadSession(client: Client, session: Session) {
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
     await client.startLogout(client.sessionId);
+    localStorage.clear();
   }
 
   await session.callHandler.loadCalls("m.room" as CallIntent);
@@ -210,6 +230,7 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   return new OIDCLoginMethod({
     oidcApi: new OidcApi({
       issuer,
+      clientConfigs: platform.config.oidc.clientConfigs,
       clientId,
       urlCreator,
       request: platform.request,
@@ -283,7 +304,15 @@ export function HydrogenRootView() {
     callback: logout,
   } = useAsyncCallback<() => Promise<void>, void>(async () => {
     if (client && client.session) {
-      await client.startLogout(client.session.sessionInfo.id);
+      const availSessions = await platform.sessionInfoStorage.getAll();
+      const logoutChain = availSessions.map((session) => client.startLogout(session.id));
+      try {
+        await Promise.allSettled(logoutChain);
+      } catch (err) {
+        console.error(err);
+      }
+      localStorage.clear();
+
       client.loadStatus.set(LoadStatus.NotLoading);
       setSession(undefined);
     }

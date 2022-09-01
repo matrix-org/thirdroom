@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
 
 import "./App.css";
+import "@fontsource/inter/variable.css";
 
 import { HydrogenRootView } from "./views/HydrogenRootView";
 import { LoginView } from "./views/login/LoginView";

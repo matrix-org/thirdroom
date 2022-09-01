@@ -23,10 +23,14 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       },
       useOffscreenCanvas ? [canvasTarget as OffscreenCanvas] : undefined
     );
-
     return {};
   },
   init(ctx) {
+    ctx.gameWorker.postMessage({
+      type: WorkerMessageType.RenderWorkerResize,
+      canvasWidth: ctx.canvas.clientWidth,
+      canvasHeight: ctx.canvas.clientHeight,
+    });
     return createDisposables([
       registerResizeEventHandler(ctx),
       registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
@@ -37,6 +41,11 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
 const registerResizeEventHandler = (ctx: IMainThreadContext) => {
   function onResize() {
     ctx.renderWorker.postMessage({
+      type: WorkerMessageType.RenderWorkerResize,
+      canvasWidth: ctx.canvas.clientWidth,
+      canvasHeight: ctx.canvas.clientHeight,
+    });
+    ctx.gameWorker.postMessage({
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,

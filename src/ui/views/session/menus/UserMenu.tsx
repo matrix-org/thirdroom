@@ -15,6 +15,7 @@ import "./UserMenu.css";
 
 export function UserMenu() {
   const { session, platform, logout } = useHydrogen(true);
+  const { accountManagementUrl } = session.sessionInfo;
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
   const [copied, setCopied] = useState(false);
@@ -50,6 +51,9 @@ export function UserMenu() {
           </div>
           <div>
             <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserProfile)}>View Profile</DropdownMenuItem>
+            {accountManagementUrl && (
+              <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onSelect={() => {
                 if (confirm("Are you sure?")) logout();

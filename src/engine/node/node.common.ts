@@ -39,6 +39,7 @@ export const audioNodeSchema = defineObjectBufferSchema({
   static: [Uint8Array, 1],
   worldMatrix: [Float32Array, 16],
   audioEmitter: [Uint32Array, 1],
+  nametag: [Uint32Array, 1],
 });
 
 export type RendererNodeTripleBuffer = ObjectTripleBuffer<typeof rendererNodeSchema>;
