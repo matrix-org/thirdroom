@@ -233,6 +233,7 @@ export function createPrimitiveStandardMaterial(
         normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
         aoMapIntensity: materialView.occlusionTextureStrength[0],
         emissive: new Color().fromArray(materialView.emissiveFactor),
+        emissiveIntensity: materialView.emissiveStrength[0],
         flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
       })
     );
@@ -384,6 +385,7 @@ export function updatePrimitiveStandardMaterial(
     updateNormalScale(meshPrimitive.attributes, material.normalScale, materialView.normalTextureScale[0]);
     material.aoMapIntensity = materialView.occlusionTextureStrength[0];
     material.emissive.fromArray(materialView.emissiveFactor);
+    material.emissiveIntensity = materialView.emissiveStrength[0];
   }
 }
 
