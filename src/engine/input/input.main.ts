@@ -44,8 +44,6 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
         if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseButtons, buttons)) {
           console.warn("input ring buffer full");
         }
-      } else {
-        canvas.requestPointerLock();
       }
     }
 
