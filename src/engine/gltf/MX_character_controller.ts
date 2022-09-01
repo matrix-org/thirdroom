@@ -33,6 +33,6 @@ export function inflateSceneCharacterController(
 
   addComponent(ctx.world, SceneCharacterControllerComponent, sceneEid);
   SceneCharacterControllerComponent.set(sceneEid, {
-    type: scene.extensions.MX_character_controller.type,
+    type: scene.extensions!.MX_character_controller.type,
   });
 }

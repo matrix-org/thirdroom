@@ -24,6 +24,7 @@ export interface LoadResourcesMessage {
   resources: {
     resourceType: string;
     id: ResourceId;
+    name: string;
     props: any;
     statusView: Uint8Array;
   }[];
@@ -44,6 +45,7 @@ export interface ResourceDisposedMessage {
 
 interface LocalResource<Resource = unknown> {
   id: number;
+  name: string;
   loaded: boolean;
   error?: string;
   resourceType: string;
@@ -110,10 +112,11 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     resourceModule: ResourceModuleState<ThreadContext>,
     resourceMessage: any
   ) {
-    const { id, resourceType, props, statusView } = resourceMessage;
+    const { id, name, resourceType, props, statusView } = resourceMessage;
 
     const resource: LocalResource = {
       id,
+      name,
       loaded: false,
       resourceType,
       props,

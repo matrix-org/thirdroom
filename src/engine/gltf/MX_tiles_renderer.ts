@@ -17,7 +17,7 @@ export function addTilesRenderer(ctx: GameState, resource: GLTFResource, nodeInd
     return;
   }
 
-  const tilesetUrl = node.extensions.MX_tiles_renderer.tilesetUrl;
+  const tilesetUrl = node.extensions!.MX_tiles_renderer.tilesetUrl;
 
   remoteNode.tilesRenderer = createRemoteTilesRenderer(ctx, { tilesetUrl: resolveURL(tilesetUrl, resource.baseUrl) });
 }

@@ -11,17 +11,20 @@ export interface RemoteImage {
   uri?: string;
   bufferView?: RemoteBufferView<Thread.Render, undefined>;
   mimeType?: string;
+  flipY: boolean;
 }
 
 export interface BufferViewRemoteImageProps {
   name?: string;
   bufferView: RemoteBufferView<Thread.Render, undefined>;
   mimeType: string;
+  flipY?: boolean;
 }
 
 export interface RemoteImageProps {
   name?: string;
   uri: string;
+  flipY?: boolean;
 }
 
 const DEFAULT_IMAGE_NAME = "Image";
@@ -41,6 +44,7 @@ export function createRemoteImageFromBufferView(ctx: GameState, props: BufferVie
       {
         bufferView: bufferViewResourceId,
         mimeType: props.mimeType,
+        flipY: props.flipY,
       },
       {
         name,
@@ -51,6 +55,7 @@ export function createRemoteImageFromBufferView(ctx: GameState, props: BufferVie
     ),
     bufferView: props.bufferView,
     mimeType: props.mimeType,
+    flipY: props.flipY || false,
   };
 }
 
@@ -63,10 +68,11 @@ export function createRemoteImage(ctx: GameState, props: RemoteImageProps): Remo
       ctx,
       Thread.Render,
       ImageResourceType,
-      { uri: props.uri },
+      { uri: props.uri, flipY: props.flipY },
       {
         name,
       }
     ),
+    flipY: props.flipY || false,
   };
 }
