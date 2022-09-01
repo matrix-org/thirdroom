@@ -39,8 +39,8 @@ export function RenderThreadStatsSystem(state: RenderThreadState) {
 
   const frameDuration = (end - state.elapsed) / 1000;
 
-  statsBuffer.f32[Stats.fps] = (1 / state.dt) * 1000;
-  statsBuffer.f32[Stats.frameTime] = state.dt;
+  statsBuffer.f32[Stats.fps] = 1 / state.dt;
+  statsBuffer.f32[Stats.frameTime] = state.dt * 1000;
   statsBuffer.f32[Stats.frameDuration] = frameDuration;
   statsBuffer.u32[Stats.frame] = frame;
   statsBuffer.u32[Stats.staleFrames] = staleFrameCounter;
