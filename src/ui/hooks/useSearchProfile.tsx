@@ -3,13 +3,15 @@ import { useState } from "react";
 
 import { useAsync } from "./useAsync";
 
+export interface UserProfile {
+  userId: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
 export interface SearchProfileResult {
   limited: boolean;
-  results: {
-    userId: string;
-    displayName?: string;
-    avatarUrl?: string;
-  }[];
+  results: UserProfile[];
 }
 
 export function useSearchProfile(session: Session, limit?: number) {
