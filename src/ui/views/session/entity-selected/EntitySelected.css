@@ -4,28 +4,23 @@
   left: 50vw;
   margin-top: 15px;
   margin-left: 15px;
-  padding: 5px 8px;
+  padding: var(--sp-xxs) var(--sp-xs);
   background-color: var(--bg-world-overlay);
   border-radius: 0px var(--br-xs) var(--br-xs) var(--br-xs);
-  color: white;
+  color: var(--tc-world);
   opacity: 1;
-  gap: var(--sp-md);
   pointer-events: none;
 }
 
-.MouseIcon {
+.EntitySelected__mouseIcon {
   margin-bottom: -3px;
-  width: 15px;
-  height: 15px;
 }
 
-.BoxedKey {
+.EntitySelected__boxedKey {
   position: relative;
   font-size: 10px;
+  border: 1px solid var(--bg-world-border);
   border-radius: 2px;
-  border-color: #ffffff;
-  border-style: solid;
-  border-width: 1px;
   padding: 0px 3px;
   bottom: 1px;
 }

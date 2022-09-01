@@ -47,6 +47,7 @@ import {
 import randomRange from "../utils/randomRange";
 import { RigidBody } from "../physics/physics.game";
 import { deserializeRemoveOwnership } from "./ownership.game";
+import { createRemoteNametag } from "../nametag/nametag.game";
 
 // type hack for postMessage(data, transfers) signature in worker
 const worker: Worker = self as any;
@@ -690,12 +691,20 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
       throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
     }
 
+    addComponent(state.world, Player, peid);
+
+    remoteNode.name = peerId;
+
     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
       sources: [
         createRemoteMediaStreamSource(state, {
           stream: createRemoteMediaStream(state, { streamId: peerId }),
         }),
       ],
+    });
+
+    remoteNode.nametag = createRemoteNametag(state, {
+      name: peerId,
     });
   } else {
     console.error("could not find peer's entityId within network.networkIdToEntityId");
