@@ -9,6 +9,7 @@ import {
 import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
+import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -39,8 +40,8 @@ export interface RemoteScene {
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
   get backgroundTexture(): RemoteTexture | undefined;
   set backgroundTexture(texture: RemoteTexture | undefined);
-  get environmentTexture(): RemoteTexture | undefined;
-  set environmentTexture(texture: RemoteTexture | undefined);
+  get reflectionProbe(): RemoteReflectionProbe | undefined;
+  set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined);
   get audioEmitters(): RemoteGlobalAudioEmitter[];
   set audioEmitters(emitters: RemoteGlobalAudioEmitter[]);
 }
@@ -49,7 +50,7 @@ export interface SceneProps {
   name?: string;
   audioEmitters?: RemoteGlobalAudioEmitter[];
   backgroundTexture?: RemoteTexture;
-  environmentTexture?: RemoteTexture;
+  reflectionProbe?: RemoteReflectionProbe;
 }
 
 export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: SceneProps): RemoteScene {
@@ -60,7 +61,7 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
   const audioSceneBufferView = createObjectBufferView(audioSceneSchema, ArrayBuffer);
 
   rendererSceneBufferView.backgroundTexture[0] = props?.backgroundTexture ? props.backgroundTexture.resourceId : 0;
-  rendererSceneBufferView.environmentTexture[0] = props?.environmentTexture ? props.environmentTexture.resourceId : 0;
+  rendererSceneBufferView.reflectionProbe[0] = props?.reflectionProbe ? props.reflectionProbe.resourceId : 0;
 
   audioSceneBufferView.audioEmitters.set(props?.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : []);
 
@@ -69,7 +70,7 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
   const rendererSceneTripleBuffer = createObjectTripleBuffer(rendererSceneSchema, ctx.gameToRenderTripleBufferFlags);
 
   let _backgroundTexture: RemoteTexture | undefined = props?.backgroundTexture;
-  let _environmentTexture: RemoteTexture | undefined = props?.environmentTexture;
+  let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
   let _audioEmitters: RemoteGlobalAudioEmitter[] = props?.audioEmitters || [];
 
   const name = props?.name || DEFAULT_SCENE_NAME;
@@ -88,8 +89,8 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
           disposeResource(ctx, _backgroundTexture.resourceId);
         }
 
-        if (_environmentTexture) {
-          disposeResource(ctx, _environmentTexture.resourceId);
+        if (_reflectionProbe) {
+          disposeResource(ctx, _reflectionProbe.resourceId);
         }
       },
     }
@@ -116,8 +117,8 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
     addResourceRef(ctx, _backgroundTexture.resourceId);
   }
 
-  if (_environmentTexture) {
-    addResourceRef(ctx, _environmentTexture.resourceId);
+  if (_reflectionProbe) {
+    addResourceRef(ctx, _reflectionProbe.resourceId);
   }
 
   for (const audioEmitter of _audioEmitters) {
@@ -148,20 +149,20 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
       _backgroundTexture = texture;
       rendererSceneBufferView.backgroundTexture[0] = texture ? texture.resourceId : 0;
     },
-    get environmentTexture(): RemoteTexture | undefined {
-      return _environmentTexture;
+    get reflectionProbe(): RemoteReflectionProbe | undefined {
+      return _reflectionProbe;
     },
-    set environmentTexture(texture: RemoteTexture | undefined) {
-      if (texture) {
-        addResourceRef(ctx, texture.resourceId);
+    set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined) {
+      if (reflectionProbe) {
+        addResourceRef(ctx, reflectionProbe.resourceId);
       }
 
-      if (_environmentTexture) {
-        disposeResource(ctx, _environmentTexture.resourceId);
+      if (_reflectionProbe) {
+        disposeResource(ctx, _reflectionProbe.resourceId);
       }
 
-      _environmentTexture = texture;
-      rendererSceneBufferView.environmentTexture[0] = texture ? texture.resourceId : 0;
+      _reflectionProbe = reflectionProbe;
+      rendererSceneBufferView.reflectionProbe[0] = reflectionProbe ? reflectionProbe.resourceId : 0;
     },
     get audioEmitters(): RemoteGlobalAudioEmitter[] {
       return _audioEmitters;

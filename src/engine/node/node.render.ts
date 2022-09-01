@@ -23,6 +23,8 @@ import { tickRate } from "../config.common";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
 import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
+import { LocalReflectionProbeResource, updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
+import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed } from "../resource/resource.render";
@@ -48,6 +50,8 @@ export interface LocalNode {
   light?: LocalLightResource;
   lightObject?: Light;
   tilesRenderer?: LocalTilesRendererResource;
+  reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbeObject?: ReflectionProbe;
 }
 
 export async function onLoadLocalNode(
@@ -70,6 +74,9 @@ export async function onLoadLocalNode(
       : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
+    reflectionProbe: nodeView.reflectionProbe[0]
+      ? waitForLocalResource<LocalReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])
+      : undefined,
   });
 
   const localNode: LocalNode = {
@@ -81,6 +88,7 @@ export async function onLoadLocalNode(
     skinnedMesh: resources.skinnedMesh,
     camera: resources.camera,
     light: resources.light,
+    reflectionProbe: resources.reflectionProbe,
   };
 
   rendererModule.nodes.push(localNode);
@@ -191,6 +199,22 @@ export function updateLocalNodeResources(
         node.light = undefined;
       }
 
+      if (node.reflectionProbe) {
+        if (activeSceneResource && node.reflectionProbeObject) {
+          activeSceneResource.scene.remove(node.reflectionProbeObject);
+        }
+
+        if (node.reflectionProbeObject) {
+          const index = rendererModule.reflectionProbes.indexOf(node.reflectionProbeObject);
+
+          if (index !== -1) {
+            rendererModule.reflectionProbes.splice(index, 1);
+          }
+        }
+
+        node.reflectionProbe = undefined;
+      }
+
       if (node.tilesRenderer) {
         if (activeSceneResource) {
           activeSceneResource.scene.remove(node.tilesRenderer.tilesRenderer.group);
@@ -213,7 +237,8 @@ export function updateLocalNodeResources(
     const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
     updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
-    updateNodeMesh(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
+    updateNodeMesh(ctx, activeSceneResource, node, nodeView);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
   }
 }

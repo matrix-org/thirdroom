@@ -24,10 +24,12 @@ import { Dots } from "../../atoms/loading/Dots";
 function useQueryHomeserver(client: Client, homeserver: string) {
   const queryRef = useRef<AbortableOperation<QueryLoginResult>>();
   const [data, setData] = useState<{
+    homeserver: string;
     result: undefined | QueryLoginResult;
     error: string | undefined;
     loading: boolean;
   }>({
+    homeserver,
     result: undefined,
     error: undefined,
     loading: false,
@@ -36,6 +38,7 @@ function useQueryHomeserver(client: Client, homeserver: string) {
   const queryCallback = useCallback(
     async (homeserver: string) => {
       setData({
+        homeserver,
         result: undefined,
         loading: true,
         error: undefined,
@@ -45,12 +48,14 @@ function useQueryHomeserver(client: Client, homeserver: string) {
       try {
         const result = await queryOperation.result;
         setData({
+          homeserver,
           result,
           loading: false,
           error: undefined,
         });
       } catch (e: any) {
         setData({
+          homeserver,
           result: undefined,
           loading: false,
           error: e.name === "AbortError" ? undefined : "Unable to find homeserver.",
@@ -116,8 +121,19 @@ export function LoginView() {
   const { platform, urlRouter, login, client } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
   const [oidcError, setOidcError] = useState<string>();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const { loading, error, result, queryHomeserver } = useQueryHomeserver(client, platform.config.defaultHomeServer);
+  const { homeserver, loading, error, result, queryHomeserver } = useQueryHomeserver(
+    client,
+    platform.config.defaultHomeServer
+  );
+  useEffect(() => {
+    if (!formRef.current) return;
+    const form = formRef.current.elements as typeof formRef.current.elements & {
+      homeserver: HTMLInputElement;
+    };
+    form.homeserver.value = platform.config.defaultHomeServer;
+  }, [platform]);
 
   const handleHomeserverChange = (event: ChangeEvent<HTMLInputElement>) => {
     const hs = event.target.value.trim();
@@ -128,6 +144,16 @@ export function LoginView() {
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!result) return;
+
+    const form = event.currentTarget.elements as typeof event.currentTarget.elements & {
+      homeserver: HTMLInputElement;
+      username: HTMLInputElement;
+      password: HTMLInputElement;
+    };
+    if (form.homeserver.value !== homeserver) {
+      return;
+    }
+
     let loginMethod;
     setAuthenticating(true);
     setOidcError(undefined);
@@ -154,11 +180,6 @@ export function LoginView() {
       setAuthenticating(false);
       return;
     } else if (result.password) {
-      const form = event.currentTarget.elements as typeof event.currentTarget.elements & {
-        homeserver: HTMLInputElement;
-        username: HTMLInputElement;
-        password: HTMLInputElement;
-      };
       const username = form.username.value.trim();
       const password = form.password.value;
       if (!username || !password || !result) return;
@@ -216,7 +237,7 @@ export function LoginView() {
             Third Room
           </Text>
         </div>
-        <form className="LoginView__form flex flex-column gap-md" onSubmit={handleLogin}>
+        <form ref={formRef} className="LoginView__form flex flex-column gap-md" onSubmit={handleLogin}>
           <SettingTile
             label={
               <Label color="surface-low" htmlFor="homeserver">
