@@ -17,7 +17,6 @@ import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useSearchProfile } from "../../../hooks/useSearchProfile";
 import { ProfileSuggestion } from "./ProfileSuggestion";
-import { isValidUserId } from "../../../utils/matrixUtils";
 
 interface InviteDialogProps {
   roomId: string;
@@ -36,7 +35,7 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
     if (inviting) return;
     setError(undefined);
     setInviting(true);
-    if ((await isValidUserId(session.hsApi, userId)) === false) {
+    if (userId.match(/^@\S+:\S+$/) === null) {
       setError(`User id "${userId}" is invalid. Failed to invite.`);
       setInviting(false);
       return;
