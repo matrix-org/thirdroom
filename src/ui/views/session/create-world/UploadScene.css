@@ -1,0 +1,10 @@
+.UploadScene__content {
+  padding: var(--sp-xs) var(--sp-md);
+
+  & > * {
+    margin-top: var(--sp-lg);
+  }
+}
+.UploadScene__info-text {
+  margin-bottom: var(--sp-xs);
+}

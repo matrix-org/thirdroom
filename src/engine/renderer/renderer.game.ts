@@ -11,7 +11,7 @@ import {
   updateRemoteCameras,
 } from "../camera/camera.game";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   addRemoteSceneComponent,
   RemoteScene,
@@ -37,6 +37,7 @@ import {
 } from "../light/light.game";
 import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
+import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 
 export type RendererStateBufferView = ObjectBufferView<typeof rendererStateSchema, ArrayBuffer>;
 
@@ -53,6 +54,8 @@ export interface GameRendererModuleState {
   perspectiveCameras: RemotePerspectiveCamera[];
   orthographicCameras: RemoteOrthographicCamera[];
   meshPrimitives: RemoteMeshPrimitive[];
+  canvasWidth: number;
+  canvasHeight: number;
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
@@ -82,6 +85,8 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       perspectiveCameras: [],
       orthographicCameras: [],
       meshPrimitives: [],
+      canvasWidth: 0,
+      canvasHeight: 0,
     };
   },
   async init(ctx) {
@@ -89,8 +94,16 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
     addRemoteNodeComponent(ctx, ctx.activeCamera, {
       camera: createRemotePerspectiveCamera(ctx),
     });
+
+    return registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize);
   },
 });
+
+function onResize(state: GameState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+  const renderer = getModule(state, RendererModule);
+  renderer.canvasWidth = canvasWidth;
+  renderer.canvasHeight = canvasHeight;
+}
 
 export const RenderableSystem = (state: GameState) => {
   const renderer = getModule(state, RendererModule);
