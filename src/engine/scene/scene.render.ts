@@ -2,6 +2,7 @@ import { Scene } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
+import { LocalReflectionProbeResource, updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -14,7 +15,8 @@ export interface LocalSceneResource {
   resourceId: ResourceId;
   scene: Scene;
   backgroundTexture?: LocalTextureResource;
-  environmentTexture?: LocalTextureResource;
+  reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbeNeedsUpdate: boolean;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
 }
 
@@ -31,9 +33,6 @@ export async function onLoadLocalSceneResource(
     backgroundTexture: sceneView.backgroundTexture[0]
       ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])
       : undefined,
-    environmentTexture: sceneView.environmentTexture[0]
-      ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.environmentTexture[0])
-      : undefined,
   });
 
   const scene = new Scene();
@@ -42,6 +41,7 @@ export async function onLoadLocalSceneResource(
     resourceId,
     scene,
     rendererSceneTripleBuffer,
+    reflectionProbeNeedsUpdate: false,
   };
 
   rendererModule.scenes.push(localSceneResource);
@@ -60,12 +60,11 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
   for (let i = 0; i < scenes.length; i++) {
     const sceneResource = scenes[i];
-    const { scene, rendererSceneTripleBuffer, backgroundTexture, environmentTexture } = sceneResource;
+    const { scene, rendererSceneTripleBuffer, backgroundTexture } = sceneResource;
 
     const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
 
     const currentBackgroundTextureResourceId = backgroundTexture?.resourceId || 0;
-    const currentEnvironmentTextureResourceId = environmentTexture?.resourceId || 0;
 
     if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
       if (sceneView.backgroundTexture[0]) {
@@ -85,22 +84,6 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
       }
     }
 
-    if (sceneView.environmentTexture[0] !== currentEnvironmentTextureResourceId) {
-      if (sceneView.environmentTexture[0]) {
-        const nextEnvironmentTexture = getLocalResource<LocalTextureResource>(
-          ctx,
-          sceneView.environmentTexture[0]
-        )?.resource;
-
-        if (nextEnvironmentTexture) {
-          scene.environment = nextEnvironmentTexture.texture;
-        }
-
-        sceneResource.environmentTexture = nextEnvironmentTexture;
-      } else {
-        sceneResource.environmentTexture = undefined;
-        scene.environment = null;
-      }
-    }
+    updateSceneReflectionProbe(ctx, sceneResource, sceneView);
   }
 }

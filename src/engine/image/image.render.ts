@@ -34,7 +34,7 @@ export async function onLoadLocalImageResource(
   resourceId: ResourceId,
   props: ImageResourceProps
 ): Promise<LocalImageResource> {
-  const { rgbeLoader, imageBitmapLoader, images } = getModule(ctx, RendererModule);
+  const { rgbeLoader, imageBitmapLoader, imageBitmapLoaderFlipY, images } = getModule(ctx, RendererModule);
 
   let uri: string;
   let isObjectUrl = false;
@@ -66,7 +66,8 @@ export async function onLoadLocalImageResource(
         texture,
       };
     } else {
-      const image = await imageBitmapLoader.loadAsync(uri);
+      const loader = props.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
+      const image = await loader.loadAsync(uri);
 
       localImageResource = {
         resourceId,

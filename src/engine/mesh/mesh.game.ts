@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 import { vec2 } from "gl-matrix";
-import { BufferGeometry, BoxBufferGeometry, SphereBufferGeometry } from "three";
+import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -423,12 +423,12 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
 };
 
 export const createCubeMesh = (ctx: GameState, size: number, material?: RemoteMaterial) => {
-  const geometry = new BoxBufferGeometry(size, size, size);
+  const geometry = new BoxGeometry(size, size, size);
   return createMesh(ctx, geometry, material);
 };
 
 export const createSphereMesh = (ctx: GameState, radius: number, material?: RemoteMaterial) => {
-  const geometry = new SphereBufferGeometry(radius / 2);
+  const geometry = new SphereGeometry(radius / 2);
   return createMesh(ctx, geometry, material);
 };
 
