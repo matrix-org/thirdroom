@@ -120,9 +120,11 @@ export function createResource<Props>(
   const statusView = new Uint8Array(statusBuffer);
   statusView[0] = ResourceStatus.Loading;
 
+  const name = options?.name || UNKNOWN_RESOURCE_NAME;
+
   resourceModule.resources.set(id, {
     id,
-    name: options?.name || UNKNOWN_RESOURCE_NAME,
+    name,
     thread,
     resourceType,
     props,
@@ -152,6 +154,7 @@ export function createResource<Props>(
   const message = {
     resourceType,
     id,
+    name,
     props,
     statusView,
   };

@@ -7,7 +7,6 @@ import {
   LineSegments,
   Points,
   LineLoop,
-  Scene,
   InstancedMesh,
   Vector3,
   Quaternion,
@@ -47,6 +46,7 @@ import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../nod
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
@@ -281,9 +281,11 @@ function createMeshPrimitiveObject(
   ctx: RenderThreadState,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
-  scene: Scene,
+  sceneResource: LocalSceneResource,
   primitive: LocalMeshPrimitive
 ): PrimitiveObject3D {
+  const rendererModule = getModule(ctx, RendererModule);
+
   let object: PrimitiveObject3D;
 
   const { instancedMesh, skinnedMesh, lightMap } = node;
@@ -310,7 +312,7 @@ function createMeshPrimitiveObject(
 
             const bone = (jointNode.bone = new Bone());
             bones.push(bone);
-            scene.add(bone);
+            sceneResource.scene.add(bone);
             setTransformFromNode(ctx, boneReadView, bone);
 
             const inverseMatrix = new Matrix4();
@@ -416,56 +418,115 @@ function createMeshPrimitiveObject(
         );
       }
 
+      instancedGeometry.setAttribute(
+        "instanceReflectionProbeParams",
+        new InstancedBufferAttribute(new Float32Array(count * 3), 3, false, 1)
+      );
+
       mesh = instancedMeshObject;
     } else {
       mesh = new Mesh(geometryObj, materialObj);
     }
 
-    if (lightMap) {
-      const { offset, scale, intensity, texture: lightMapTexture } = lightMap;
+    mesh.geometry.computeBoundingBox();
 
+    mesh.userData.reflectionProbeParams = new Vector3();
+
+    if (lightMap) {
+      const lightMapTexture = lightMap.texture;
       lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
       lightMapTexture.texture.type = FloatType;
       lightMapTexture.texture.minFilter = LinearFilter;
       lightMapTexture.texture.generateMipmaps = false;
 
-      const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
+      mesh.userData.lightMap = lightMap;
+    }
 
-      if (!material.userData.lightMapTransform) {
-        const lightMapTransformMatrix = new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0);
-        const lightMapTransform = new Uniform(lightMapTransformMatrix);
+    // Patch material with per-mesh uniforms
 
-        material.onBeforeCompile = (shader) => {
-          shader.uniforms.lightMapTransform = lightMapTransform;
-        };
+    const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
 
-        material.needsUpdate = true;
+    if (!material.defines) {
+      material.defines = {};
+    }
 
-        material.userData.lightMapTransform = lightMapTransform;
+    material.defines.USE_ENVMAP = "";
+    material.defines.ENVMAP_MODE_REFLECTION = "";
+    material.defines.ENVMAP_TYPE_CUBE_UV = "";
+    material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
+    material.defines.ENVMAP_BLENDING_NONE = "";
+    material.defines.USE_REFLECTION_PROBES = "";
+
+    if (instancedMesh) {
+      material.defines.USE_INSTANCING = "";
+    }
+
+    if (!material.userData.beforeCompileHook) {
+      const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
+      const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
+      const reflectionProbeParams = new Uniform(new Vector3());
+      const reflectionProbeSampleParams = new Uniform(new Vector3());
+
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.lightMapTransform = lightMapTransform;
+        shader.uniforms.reflectionProbesMap = reflectionProbesMap;
+        shader.uniforms.reflectionProbeParams = reflectionProbeParams;
+        shader.uniforms.reflectionProbeSampleParams = reflectionProbeSampleParams;
+      };
+
+      material.userData.beforeCompileHook = true;
+      material.userData.lightMapTransform = lightMapTransform;
+      material.userData.reflectionProbesMap = reflectionProbesMap;
+      material.userData.reflectionProbeParams = reflectionProbeParams;
+      material.userData.reflectionProbeSampleParams = reflectionProbeSampleParams;
+
+      material.needsUpdate = true;
+    }
+
+    mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
+      const meshMaterial = material as MeshStandardMaterial;
+
+      if (!meshMaterial.isMeshStandardMaterial) {
+        return;
       }
 
-      mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
-        const meshMaterial = material as MeshBasicMaterial | MeshStandardMaterial;
+      const lightMap = mesh.userData.lightMap as LocalLightMap | undefined;
 
-        if ("isMeshBasicMaterial" in material || "isMeshStandardMaterial" in material) {
-          meshMaterial.lightMapIntensity = intensity * Math.PI;
-          meshMaterial.lightMap = lightMapTexture.texture;
+      if (lightMap) {
+        meshMaterial.lightMapIntensity = lightMap.intensity * Math.PI;
 
-          ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
-            offset[0],
-            offset[1],
-            scale[0],
-            scale[1],
-            0,
-            0,
-            0
-          );
-
-          // This is currently added via a patch to Three.js
-          (meshMaterial as any).uniformsNeedUpdate = true;
+        if (meshMaterial.lightMap === null && lightMap.texture.texture) {
+          meshMaterial.needsUpdate = true;
         }
-      };
-    }
+
+        meshMaterial.lightMap = lightMap.texture.texture;
+
+        ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
+          lightMap.offset[0],
+          lightMap.offset[1],
+          lightMap.scale[0],
+          lightMap.scale[1],
+          0,
+          0,
+          0
+        );
+      }
+
+      material.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
+
+      const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
+      reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);
+
+      const reflectionProbeSampleParams = material.userData.reflectionProbeSampleParams.value as Vector3;
+      const envMapHeight = rendererModule.reflectionProbesMap?.image.height || 256;
+      const maxMip = Math.log2(envMapHeight) - 2;
+      const texelWidth = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
+      const texelHeight = 1 / envMapHeight;
+      reflectionProbeSampleParams.set(maxMip, texelWidth, texelHeight);
+
+      // This is currently added via a patch to Three.js
+      (meshMaterial as any).uniformsNeedUpdate = true;
+    };
 
     object = mesh;
   } else if (mode === MeshPrimitiveMode.LINES) {
@@ -561,7 +622,7 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
 
 export function updateNodeMesh(
   ctx: RenderThreadState,
-  scene: Scene,
+  sceneResource: LocalSceneResource,
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
@@ -572,7 +633,7 @@ export function updateNodeMesh(
     if (node.meshPrimitiveObjects) {
       for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
         const primitiveObject = node.meshPrimitiveObjects[i];
-        scene.remove(primitiveObject);
+        sceneResource.scene.remove(primitiveObject);
       }
 
       node.meshPrimitiveObjects = undefined;
@@ -592,9 +653,9 @@ export function updateNodeMesh(
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, nodeReadView, scene, primitive)
+      createMeshPrimitiveObject(ctx, node, nodeReadView, sceneResource, primitive)
     );
-    scene.add(...node.meshPrimitiveObjects);
+    sceneResource.scene.add(...node.meshPrimitiveObjects);
   }
 
   if (node.meshPrimitiveObjects) {
