@@ -57,7 +57,7 @@ export function usePermissionState(name: PermissionName) {
         permStatus.addEventListener("change", handlePermissionChange);
       })
       .catch((err) => {
-        console.error(err);
+        console.warn(err);
       });
 
     return () => {
