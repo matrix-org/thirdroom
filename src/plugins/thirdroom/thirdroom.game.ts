@@ -37,6 +37,7 @@ import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
+import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -263,22 +264,35 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const environmentMapTexture = createRemoteTexture(ctx, {
-    name: "Environment Map Texture",
-    image: createRemoteImage(ctx, { name: "Environment Map Image", uri: "/cubemap/venice_sunset_1k.hdr" }),
-    sampler: createRemoteSampler(ctx, {
-      mapping: SamplerMapping.EquirectangularReflectionMapping,
-    }),
-  });
-
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap });
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true });
 
   thirdroom.sceneGLTF = sceneGltf;
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
-  newSceneResource.backgroundTexture = environmentMapTexture;
-  newSceneResource.environmentTexture = environmentMapTexture;
+  if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
+    const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
+      name: "Environment Map Texture",
+      image: createRemoteImage(ctx, {
+        name: "Environment Map Image",
+        uri: "/cubemap/venice_sunset_1k.hdr",
+        flipY: true,
+      }),
+      sampler: createRemoteSampler(ctx, {
+        mapping: SamplerMapping.EquirectangularReflectionMapping,
+      }),
+    });
+
+    if (!newSceneResource.reflectionProbe) {
+      newSceneResource.reflectionProbe = createReflectionProbeResource(ctx, {
+        reflectionProbeTexture: defaultEnvironmentMapTexture,
+      });
+    }
+
+    if (!newSceneResource.backgroundTexture) {
+      newSceneResource.backgroundTexture = defaultEnvironmentMapTexture;
+    }
+  }
 
   ctx.activeScene = newScene;
 
@@ -289,7 +303,9 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
   ) {
     const collisionGeo = addEntity(ctx.world);
-    thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb");
+    thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb", {
+      isStatic: true,
+    });
     addChild(newScene, collisionGeo);
   }
 }

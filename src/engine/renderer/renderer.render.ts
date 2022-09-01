@@ -1,4 +1,12 @@
-import { ImageBitmapLoader, LinearToneMapping, PCFSoftShadowMap, sRGBEncoding, WebGLRenderer } from "three";
+import {
+  ImageBitmapLoader,
+  LinearToneMapping,
+  PCFSoftShadowMap,
+  sRGBEncoding,
+  WebGLRenderer,
+  DataArrayTexture,
+  PMREMGenerator,
+} from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
@@ -71,6 +79,13 @@ import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.comm
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
+import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
+import {
+  onLoadLocalReflectionProbeResource,
+  updateNodeReflections,
+  updateReflectionProbeTextureArray,
+} from "../reflection-probe/reflection-probe.render";
+import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -87,6 +102,7 @@ export interface RendererModuleState {
   renderer: WebGLRenderer;
   renderPipeline: RenderPipeline;
   imageBitmapLoader: ImageBitmapLoader;
+  imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
@@ -96,6 +112,9 @@ export interface RendererModuleState {
   textures: LocalTextureResource[]; // done
   meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
   nodes: LocalNode[]; // done
+  reflectionProbes: ReflectionProbe[];
+  reflectionProbesMap: DataArrayTexture | null;
+  pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
 }
@@ -114,6 +133,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
     });
+    renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
     renderer.toneMapping = LinearToneMapping;
     renderer.toneMappingExposure = 1;
@@ -127,6 +147,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       Thread.Game,
       RendererMessageType.InitializeRendererTripleBuffers
     );
+
+    const pmremGenerator = new PMREMGenerator(renderer);
+
+    pmremGenerator.compileEquirectangularShader();
 
     return {
       needsResize: true,
@@ -144,9 +168,15 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       pointLights: [],
       spotLights: [],
       imageBitmapLoader: new ImageBitmapLoader(),
+      imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
+        imageOrientation: "flipY",
+      }),
       rgbeLoader: new RGBELoader(),
       meshPrimitives: [],
       nodes: [],
+      reflectionProbes: [],
+      reflectionProbesMap: null,
+      pmremGenerator,
       tilesRenderers: [],
     };
   },
@@ -161,6 +191,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, DirectionalLightResourceType, onLoadLocalDirectionalLightResource),
       registerResourceLoader(ctx, PointLightResourceType, onLoadLocalPointLightResource),
       registerResourceLoader(ctx, SpotLightResourceType, onLoadLocalSpotLightResource),
+      registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
       registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
@@ -186,9 +217,8 @@ function onUpdate(state: RenderThreadState) {
   const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
 
   const now = performance.now();
-  const dt = (state.dt = now - state.elapsed);
+  state.dt = (now - state.elapsed) / 1000;
   state.elapsed = now;
-  state.dt = dt;
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
@@ -256,6 +286,9 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
+
+  updateReflectionProbeTextureArray(ctx, activeSceneResource);
+  updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);

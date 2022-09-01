@@ -7,38 +7,37 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getMxIdUsername } from "../../../utils/matrixUtils";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Scroll } from "../../../atoms/scroll/Scroll";
-import { SearchProfileResult } from "../../../hooks/useSearchProfile";
+import { UserProfile } from "../../../hooks/useSearchProfile";
 
 export function ProfileSuggestion({
   loading,
-  searchResult,
+  suggestion,
   onSelect,
 }: {
   loading: boolean;
-  onSelect: (userId: string) => void;
-  searchResult?: SearchProfileResult;
+  onSelect: (userProfile: UserProfile) => void;
+  suggestion?: UserProfile[];
 }) {
   const { session, platform } = useHydrogen(true);
   return (
     <SettingTile label={<Label>Suggestions</Label>}>
       {loading ? (
         <Text variant="b3">Looking for suggestion...</Text>
-      ) : !searchResult ? (
-        <Text variant="b3">User suggestion will appear here.</Text>
-      ) : searchResult.results.length === 0 ? (
+      ) : !suggestion ? (
+        <Text variant="b3">Type username for suggestions.</Text>
+      ) : suggestion.length === 0 ? (
         <Text variant="b3">No suggestion found.</Text>
       ) : (
         <Scroll type="hover" orientation="horizontal">
           <div style={{ paddingBottom: "var(--sp-sm)" }} className="flex items-center gap-xs">
             {(() => {
-              const profiles = searchResult.results;
-              return profiles.map((profile) => {
+              return suggestion.map((profile) => {
                 const name = profile.displayName ?? getMxIdUsername(profile.userId);
                 const avatarHttpUrl = profile.avatarUrl
                   ? getAvatarHttpUrl(profile.avatarUrl, 16, platform, session.mediaRepository)
                   : undefined;
                 return (
-                  <Chip key={profile.userId} onClick={(e) => onSelect(profile.userId)}>
+                  <Chip key={profile.userId} onClick={(e) => onSelect(profile)}>
                     <Avatar
                       imageSrc={avatarHttpUrl}
                       name={name}

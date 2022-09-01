@@ -31,6 +31,7 @@ export const standardMaterialSchema = defineObjectBufferSchema({
   occlusionTextureStrength: [Float32Array, 1],
   occlusionTexture: [Uint32Array, 1], // TODO: Add support for texCoord
   emissiveFactor: [Float32Array, 3], // [r, g, b],
+  emissiveStrength: [Float32Array, 1],
   emissiveTexture: [Uint32Array, 1], // TODO: Add support for texCoord
 });
 

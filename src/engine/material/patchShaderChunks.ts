@@ -68,4 +68,93 @@ export default function patchShaderChunks() {
     lightMapTexel.a = 1.0;
     `
   );
+
+  // Add envMap2 and envMapMix for supporting reflection probes and blending between them
+  ShaderChunk.uv2_pars_vertex = ShaderChunk.uv2_pars_vertex.replace(
+    "#if defined( USE_LIGHTMAP )",
+    `
+    #if defined( USE_ENVMAP ) && defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
+      attribute vec3 instanceReflectionProbeParams;
+      varying vec3 vInstanceReflectionProbeParams;
+    #endif
+
+    #if defined( USE_LIGHTMAP )
+    `
+  );
+
+  ShaderChunk.uv2_vertex = ShaderChunk.uv2_vertex.replace(
+    "#if defined( USE_LIGHTMAP )",
+    `
+    #if defined( USE_ENVMAP ) && defined( USE_INSTANCING ) && defined( USE_REFLECTION_PROBES )
+      vInstanceReflectionProbeParams = instanceReflectionProbeParams;
+    #endif
+
+    #if defined( USE_LIGHTMAP )
+    `
+  );
+
+  ShaderChunk.envmap_common_pars_fragment = ShaderChunk.envmap_common_pars_fragment.replace(
+    "uniform sampler2D envMap;",
+    `uniform sampler2D envMap;
+
+    #ifdef USE_REFLECTION_PROBES
+      uniform mediump sampler2DArray reflectionProbesMap;
+      uniform vec3 reflectionProbeSampleParams;
+
+      #ifdef USE_INSTANCING
+        varying vec3 vInstanceReflectionProbeParams;
+      #else
+        uniform vec3 reflectionProbeParams;
+      #endif
+    #endif
+    `
+  );
+
+  // getIBLIrradiance
+  ShaderChunk.envmap_physical_pars_fragment = ShaderChunk.envmap_physical_pars_fragment.replace(
+    "vec4 envMapColor = textureCubeUV( envMap, worldNormal, 1.0 );",
+    `
+    #ifdef USE_REFLECTION_PROBES
+      #ifdef USE_INSTANCING
+        vec4 envMapColor = mix(
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          vInstanceReflectionProbeParams.z
+        );
+      #else
+        vec4 envMapColor = mix(
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, reflectionProbeSampleParams, worldNormal, 1.0 ),
+          reflectionProbeParams.z
+        );
+      #endif
+    #else
+      vec4 envMapColor = textureCubeUV( envMap, worldNormal, 1.0 );
+    #endif
+    `
+  );
+
+  // getIBLRadiance
+  ShaderChunk.envmap_physical_pars_fragment = ShaderChunk.envmap_physical_pars_fragment.replace(
+    "vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );",
+    `
+    #ifdef USE_REFLECTION_PROBES
+      #ifdef USE_INSTANCING
+        vec4 envMapColor = mix(
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.x, reflectionProbeSampleParams, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, vInstanceReflectionProbeParams.y, reflectionProbeSampleParams, reflectVec, roughness ),
+          vInstanceReflectionProbeParams.z
+        );
+      #else
+        vec4 envMapColor = mix(
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.x, reflectionProbeSampleParams, reflectVec, roughness ),
+          textureCubeUVArray( reflectionProbesMap, reflectionProbeParams.y, reflectionProbeSampleParams, reflectVec, roughness ),
+          reflectionProbeParams.z
+        );
+      #endif
+    #else
+      vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );
+    #endif
+    `
+  );
 }
