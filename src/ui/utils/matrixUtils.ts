@@ -75,7 +75,7 @@ export function getProfileRoom(rooms: ObservableMap<string, Room>) {
 }
 
 export async function isValidUserId(hsApi: HomeServerApi, userId: string) {
-  if (!userId.match(/^@.+:.+$/)) return false;
+  if (!userId.match(/^@\S+:\S+$/)) return false;
 
   try {
     await hsApi.profile(userId).response();

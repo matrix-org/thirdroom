@@ -100,7 +100,11 @@ export function DmDialog({ requestClose }: DmDialogProps) {
               {error}
             </Text>
           )}
-          <ProfileSuggestion loading={loading} searchResult={searchResult} onSelect={dmUser} />
+          <ProfileSuggestion
+            loading={loading}
+            suggestion={searchResult?.results}
+            onSelect={(profile) => dmUser(profile.userId)}
+          />
         </div>
         <Button size="lg" type="submit">
           {starting && <Dots color="on-primary" />}
