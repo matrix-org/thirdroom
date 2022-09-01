@@ -80,8 +80,8 @@ export function NetworkTransformSystem(ctx: GameState) {
       // drop old history
       syncWithHistorian(history, historian);
 
-      const from = historian.index;
-      const to = historian.index - 1;
+      const from = historian.index || 0;
+      const to = (historian.index || 0) - 1;
 
       const pFrom = history.position.at(from);
       const pTo = history.position.at(to);
