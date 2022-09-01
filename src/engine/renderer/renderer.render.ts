@@ -217,9 +217,8 @@ function onUpdate(state: RenderThreadState) {
   const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
 
   const now = performance.now();
-  const dt = (state.dt = now - state.elapsed);
+  state.dt = (now - state.elapsed) / 1000;
   state.elapsed = now;
-  state.dt = dt;
 
   for (let i = 0; i < state.systems.length; i++) {
     state.systems[i](state);
