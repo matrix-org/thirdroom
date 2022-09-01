@@ -47,6 +47,7 @@ export interface StandardMaterialProps {
   normalTexture?: RemoteTexture;
   occlusionTextureStrength?: number; // default 1
   occlusionTexture?: RemoteTexture;
+  emissiveStrength?: number;
   emissiveFactor?: ArrayLike<number>; // default [0, 0, 0]
   emissiveTexture?: RemoteTexture;
 }
@@ -100,6 +101,8 @@ export interface RemoteStandardMaterial {
   set occlusionTexture(texture: RemoteTexture | undefined);
   get emissiveFactor(): vec3;
   set emissiveFactor(value: vec3);
+  get emissiveStrength(): number;
+  set emissiveStrength(value: number);
   get emissiveTexture(): RemoteTexture | undefined;
   set emissiveTexture(texture: RemoteTexture | undefined);
 }
@@ -235,6 +238,7 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
     props.occlusionTextureStrength === undefined ? 1 : props.occlusionTextureStrength;
   materialBufferView.occlusionTexture[0] = props.occlusionTexture ? props.occlusionTexture.resourceId : 0;
   materialBufferView.emissiveFactor.set(props.emissiveFactor || [0, 0, 0]);
+  materialBufferView.emissiveStrength[0] = props.emissiveStrength || 1;
   materialBufferView.emissiveTexture[0] = props.emissiveTexture ? props.emissiveTexture.resourceId : 0;
 
   const materialTripleBuffer = createObjectTripleBuffer(standardMaterialSchema, ctx.gameToRenderTripleBufferFlags);
@@ -420,6 +424,12 @@ export function createRemoteStandardMaterial(ctx: GameState, props: StandardMate
     },
     set emissiveFactor(value: vec3) {
       materialBufferView.emissiveFactor.set(value);
+    },
+    get emissiveStrength(): number {
+      return materialBufferView.emissiveStrength[0];
+    },
+    set emissiveStrength(value: number) {
+      materialBufferView.emissiveStrength[0] = value;
     },
     get emissiveTexture(): RemoteTexture | undefined {
       return _emissiveTexture;
