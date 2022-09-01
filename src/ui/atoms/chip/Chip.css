@@ -6,6 +6,7 @@
   padding: var(--sp-xxs);
   background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
+  box-shadow: var(--bs-surface-border);
 }
 
 .Chip > .Text {
