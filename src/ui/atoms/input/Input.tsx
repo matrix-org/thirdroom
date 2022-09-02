@@ -1,4 +1,4 @@
-import { ReactNode, ChangeEvent } from "react";
+import { ReactNode, ChangeEvent, KeyboardEvent } from "react";
 import classNames from "classnames";
 
 import "./Input.css";
@@ -14,6 +14,8 @@ interface IInput {
   value?: string | number;
   defaultValue?: string;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
+  onKeyUp?: (event: KeyboardEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   required?: boolean;
   autoComplete?: "on" | "off";
@@ -36,6 +38,8 @@ export function Input({
   value,
   defaultValue,
   onChange,
+  onKeyDown,
+  onKeyUp,
   disabled,
   required,
   autoComplete = "off",
@@ -63,6 +67,8 @@ export function Input({
         value={value}
         defaultValue={defaultValue}
         onChange={onChange}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
         disabled={disabled}
         required={required}
         autoComplete={autoComplete}
