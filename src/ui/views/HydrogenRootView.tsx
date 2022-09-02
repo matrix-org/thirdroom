@@ -148,6 +148,7 @@ function initHydrogen() {
         "https://id.thirdroom.io/realms/thirdroom/": {
           client_id: oidcClientId,
           uris: oidcUris,
+          guestKeycloakIdpHint: 'guest',
         },
       },
     },
