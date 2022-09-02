@@ -80,6 +80,10 @@ export function NetworkTransformSystem(ctx: GameState) {
       // drop old history
       syncWithHistorian(history, historian);
 
+      if (historian.index === -1) {
+        continue;
+      }
+
       const from = historian.index || 0;
       const to = (historian.index || 0) - 1;
 
@@ -140,7 +144,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     // step forward local elapsed
     historian.localElapsed += ctx.dt * 1000;
 
-    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 1.5;
+    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 2;
 
     const targetElapsed = (historian.targetElapsed =
       historian.localElapsed - historian.interpolationBufferMs + FRAME_MS);
@@ -161,7 +165,8 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     }
 
     if (index === -1) {
-      console.warn("increase network interpolation buffer");
+      console.warn("interpolation buffer full");
+      continue;
     }
 
     historian.index = index;
