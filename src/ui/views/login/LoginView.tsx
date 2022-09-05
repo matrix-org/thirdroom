@@ -338,7 +338,7 @@ export function LoginView() {
                         type="submit"
                         disabled={authenticating}
                       >
-                        {authenticating ? <Dots color="on-primary" /> : "Continue as Guest"}
+                        {authenticating ? <Dots color="primary" /> : "Continue as Guest"}
                       </Button>
                     </>
                   ) : (
