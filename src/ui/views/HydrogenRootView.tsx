@@ -130,7 +130,6 @@ function initHydrogen() {
     },
   };
 
-
   const oidcClientId = document.location.hostname === "thirdroom.io" ? "thirdroom" : "thirdroom_dev";
   const oidcUris = ((): string[] => {
     if (document.location.hostname === "thirdroom.io") {
@@ -138,17 +137,18 @@ function initHydrogen() {
     }
 
     const { protocol, hostname, port } = document.location;
-    return [`${protocol}//${hostname}${port ? `:${port}` : ''}`];
+    return [`${protocol}//${hostname}${port ? `:${port}` : ""}`];
   })();
 
   const config = {
     defaultHomeServer,
+    homeserverList: ["thirdroom.io", "matrix.org"],
     oidc: {
       clientConfigs: {
         "https://id.thirdroom.io/realms/thirdroom/": {
           client_id: oidcClientId,
           uris: oidcUris,
-          guestKeycloakIdpHint: 'guest',
+          guestKeycloakIdpHint: "guest",
         },
       },
     },

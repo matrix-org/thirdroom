@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, KeyboardEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   AbortableOperation,
   Client,
@@ -20,6 +20,10 @@ import PlanetIC from "../../../../res/ic/planet.svg";
 import "./LoginView.css";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Dots } from "../../atoms/loading/Dots";
+import { IconButton } from "../../atoms/button/IconButton";
+import ChevronBottom from "../../../../res/ic/chevron-bottom.svg";
+import { DropdownMenu } from "../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../atoms/menu/DropdownMenuItem";
 
 function useQueryHomeserver(client: Client, homeserver: string) {
   const queryRef = useRef<AbortableOperation<QueryLoginResult>>();
@@ -132,6 +136,7 @@ export function LoginView() {
   const [authenticating, setAuthenticating] = useState(false);
   const [oidcError, setOidcError] = useState<string>();
   const formRef = useRef<HTMLFormElement>(null);
+  const [open, setOpen] = useState(false);
 
   const { homeserver, loading, error, result, queryHomeserver } = useQueryHomeserver(
     client,
@@ -144,6 +149,23 @@ export function LoginView() {
     };
     form.homeserver.value = platform.config.defaultHomeServer;
   }, [platform]);
+
+  const handleHomeserverSelect = (hs: string) => {
+    if (!formRef.current) return;
+    const form = formRef.current.elements as typeof formRef.current.elements & {
+      homeserver: HTMLInputElement;
+    };
+    form.homeserver.value = hs;
+    setOidcError(undefined);
+    queryHomeserver(hs);
+  };
+
+  const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
+    if (evt.key === "ArrowDown") {
+      evt.preventDefault();
+      setOpen(true);
+    }
+  };
 
   const handleHomeserverChange = (event: ChangeEvent<HTMLInputElement>) => {
     const hs = event.target.value.trim();
@@ -262,6 +284,22 @@ export function LoginView() {
               disabled={authenticating}
               onChange={handleHomeserverChange}
               required
+              onKeyDown={handleKeyDown}
+              after={
+                platform.config.homeserverList.length > 0 && (
+                  <DropdownMenu
+                    open={open}
+                    onOpenChange={setOpen}
+                    content={platform.config.homeserverList.map((hs: string) => (
+                      <DropdownMenuItem key={hs} onSelect={() => handleHomeserverSelect(hs)}>
+                        {hs}
+                      </DropdownMenuItem>
+                    ))}
+                  >
+                    <IconButton iconSrc={ChevronBottom} label="More Homeserver" tabIndex={-1} />
+                  </DropdownMenu>
+                )
+              }
             />
           </SettingTile>
           {oidcError && (
