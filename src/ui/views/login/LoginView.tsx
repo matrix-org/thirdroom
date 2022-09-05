@@ -92,7 +92,7 @@ async function startOIDCLogin(
   homeserver: string,
   oidc: QueryOIDCResult,
   oidcApi: OidcApi,
-  guest: boolean,
+  guest: boolean
 ) {
   const { openUrl, settingsStorage } = platform;
   const deviceScope = oidcApi.generateDeviceScope();
@@ -116,14 +116,14 @@ async function startOIDCLogin(
 
   let link = await oidcApi.authorizationEndpoint(param);
   if (guest) {
-    link += `&kc_idp_hint=${getMatchingClientConfig(platform, oidc.issuer)?.guestKeycloakIdpHint ?? 'guest'}`;
+    link += `&kc_idp_hint=${getMatchingClientConfig(platform, oidc.issuer)?.guestKeycloakIdpHint ?? "guest"}`;
   }
 
   openUrl(link);
 }
 
 function getMatchingClientConfig(platform: Platform, issuer: string) {
-  const normalisedIssuer = `${issuer}${issuer.endsWith('/') ? '' : '/'}`;
+  const normalisedIssuer = `${issuer}${issuer.endsWith("/") ? "" : "/"}`;
   return platform.config.oidc.clientConfigs[normalisedIssuer];
 }
 
@@ -167,7 +167,7 @@ export function LoginView() {
     let loginMethod;
     setAuthenticating(true);
     setOidcError(undefined);
-    const guest = (event.nativeEvent as SubmitEvent).submitter?.id === 'guest';
+    const guest = (event.nativeEvent as SubmitEvent).submitter?.id === "guest";
 
     if (result.oidc) {
       const { issuer } = result.oidc;
@@ -282,15 +282,30 @@ export function LoginView() {
                   getMatchingClientConfig(platform, result.oidc.issuer)?.guestKeycloakIdpHint ? (
                     <>
                       <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
-                        {authenticating ? <Dots color="on-primary" /> : 'Continue as User'}
+                        {authenticating ? <Dots color="on-primary" /> : "Continue as User"}
                       </Button>
-                      <Button id="guest" size="lg" variant="primary" type="submit" disabled={authenticating}>
+                      <Text
+                        className="LoginView__orDivider flex items-center gap-sm"
+                        variant="b3"
+                        color="surface-low"
+                        weight="bold"
+                      >
+                        OR
+                      </Text>
+                      <Button
+                        id="guest"
+                        size="lg"
+                        variant="primary"
+                        fill="outline"
+                        type="submit"
+                        disabled={authenticating}
+                      >
                         {authenticating ? <Dots color="on-primary" /> : "Continue as Guest"}
                       </Button>
-                      </>
+                    </>
                   ) : (
                     <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
-                      {authenticating ? <Dots color="on-primary" /> : 'Continue'}
+                      {authenticating ? <Dots color="on-primary" /> : "Continue"}
                     </Button>
                   )
                 ) : (
