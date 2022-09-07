@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, KeyboardEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   AbortableOperation,
   Client,
@@ -20,6 +20,10 @@ import PlanetIC from "../../../../res/ic/planet.svg";
 import "./LoginView.css";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Dots } from "../../atoms/loading/Dots";
+import { IconButton } from "../../atoms/button/IconButton";
+import ChevronBottom from "../../../../res/ic/chevron-bottom.svg";
+import { DropdownMenu } from "../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../atoms/menu/DropdownMenuItem";
 
 function useQueryHomeserver(client: Client, homeserver: string) {
   const queryRef = useRef<AbortableOperation<QueryLoginResult>>();
@@ -92,7 +96,7 @@ async function startOIDCLogin(
   homeserver: string,
   oidc: QueryOIDCResult,
   oidcApi: OidcApi,
-  guest: boolean,
+  guest: boolean
 ) {
   const { openUrl, settingsStorage } = platform;
   const deviceScope = oidcApi.generateDeviceScope();
@@ -116,14 +120,14 @@ async function startOIDCLogin(
 
   let link = await oidcApi.authorizationEndpoint(param);
   if (guest) {
-    link += `&kc_idp_hint=${getMatchingClientConfig(platform, oidc.issuer)?.guestKeycloakIdpHint ?? 'guest'}`;
+    link += `&kc_idp_hint=${getMatchingClientConfig(platform, oidc.issuer)?.guestKeycloakIdpHint ?? "guest"}`;
   }
 
   openUrl(link);
 }
 
 function getMatchingClientConfig(platform: Platform, issuer: string) {
-  const normalisedIssuer = `${issuer}${issuer.endsWith('/') ? '' : '/'}`;
+  const normalisedIssuer = `${issuer}${issuer.endsWith("/") ? "" : "/"}`;
   return platform.config.oidc.clientConfigs[normalisedIssuer];
 }
 
@@ -132,6 +136,7 @@ export function LoginView() {
   const [authenticating, setAuthenticating] = useState(false);
   const [oidcError, setOidcError] = useState<string>();
   const formRef = useRef<HTMLFormElement>(null);
+  const [open, setOpen] = useState(false);
 
   const { homeserver, loading, error, result, queryHomeserver } = useQueryHomeserver(
     client,
@@ -144,6 +149,23 @@ export function LoginView() {
     };
     form.homeserver.value = platform.config.defaultHomeServer;
   }, [platform]);
+
+  const handleHomeserverSelect = (hs: string) => {
+    if (!formRef.current) return;
+    const form = formRef.current.elements as typeof formRef.current.elements & {
+      homeserver: HTMLInputElement;
+    };
+    form.homeserver.value = hs;
+    setOidcError(undefined);
+    queryHomeserver(hs);
+  };
+
+  const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
+    if (evt.key === "ArrowDown") {
+      evt.preventDefault();
+      setOpen(true);
+    }
+  };
 
   const handleHomeserverChange = (event: ChangeEvent<HTMLInputElement>) => {
     const hs = event.target.value.trim();
@@ -167,7 +189,7 @@ export function LoginView() {
     let loginMethod;
     setAuthenticating(true);
     setOidcError(undefined);
-    const guest = (event.nativeEvent as SubmitEvent).submitter?.id === 'guest';
+    const guest = (event.nativeEvent as SubmitEvent).submitter?.id === "guest";
 
     if (result.oidc) {
       const { issuer } = result.oidc;
@@ -262,6 +284,22 @@ export function LoginView() {
               disabled={authenticating}
               onChange={handleHomeserverChange}
               required
+              onKeyDown={handleKeyDown}
+              after={
+                platform.config.homeserverList.length > 0 && (
+                  <DropdownMenu
+                    open={open}
+                    onOpenChange={setOpen}
+                    content={platform.config.homeserverList.map((hs: string) => (
+                      <DropdownMenuItem key={hs} onSelect={() => handleHomeserverSelect(hs)}>
+                        {hs}
+                      </DropdownMenuItem>
+                    ))}
+                  >
+                    <IconButton iconSrc={ChevronBottom} label="More Homeserver" tabIndex={-1} />
+                  </DropdownMenu>
+                )
+              }
             />
           </SettingTile>
           {oidcError && (
@@ -282,15 +320,30 @@ export function LoginView() {
                   getMatchingClientConfig(platform, result.oidc.issuer)?.guestKeycloakIdpHint ? (
                     <>
                       <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
-                        {authenticating ? <Dots color="on-primary" /> : 'Continue as User'}
+                        {authenticating ? <Dots color="on-primary" /> : "Continue as User"}
                       </Button>
-                      <Button id="guest" size="lg" variant="primary" type="submit" disabled={authenticating}>
-                        {authenticating ? <Dots color="on-primary" /> : "Continue as Guest"}
+                      <Text
+                        className="LoginView__orDivider flex items-center gap-sm"
+                        variant="b3"
+                        color="surface-low"
+                        weight="bold"
+                      >
+                        OR
+                      </Text>
+                      <Button
+                        id="guest"
+                        size="lg"
+                        variant="primary"
+                        fill="outline"
+                        type="submit"
+                        disabled={authenticating}
+                      >
+                        {authenticating ? <Dots color="primary" /> : "Continue as Guest"}
                       </Button>
-                      </>
+                    </>
                   ) : (
                     <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
-                      {authenticating ? <Dots color="on-primary" /> : 'Continue'}
+                      {authenticating ? <Dots color="on-primary" /> : "Continue"}
                     </Button>
                   )
                 ) : (
