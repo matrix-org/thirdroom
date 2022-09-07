@@ -1,9 +1,7 @@
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { AudioModule, LocalGlobalAudioEmitter } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
-import { waitForLocalResource } from "../resource/resource.main";
 import { AudioSceneTripleBuffer, AudioSharedSceneResource } from "./scene.common";
 
 export interface MainScene {
@@ -19,16 +17,10 @@ export async function onLoadMainSceneResource(
 ): Promise<MainScene> {
   const audioModule = getModule(ctx, AudioModule);
 
-  const sceneView = getReadObjectBufferView(audioSceneTripleBuffer);
-
   const mainScene: MainScene = {
     resourceId,
     audioSceneTripleBuffer,
-    audioEmitters: await Promise.all(
-      Array.from(sceneView.audioEmitters)
-        .filter((rid) => rid !== 0)
-        .map((resourceId) => waitForLocalResource<LocalGlobalAudioEmitter>(ctx, resourceId))
-    ),
+    audioEmitters: [],
   };
 
   audioModule.scenes.push(mainScene);
