@@ -175,13 +175,13 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
     const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.newStatic());
     const size = 10000;
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 100, size)
+    const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
       .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
       .setCollisionGroups(0xf000_000f)
       .setSolverGroups(0xf000_000f);
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-    rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -120, size / 2), true);
+    rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
 
     collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
       const player =
