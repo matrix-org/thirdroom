@@ -91,7 +91,8 @@ async function startOIDCLogin(
   urlCreator: URLRouter,
   homeserver: string,
   oidc: QueryOIDCResult,
-  oidcApi: OidcApi
+  oidcApi: OidcApi,
+  guest: boolean,
 ) {
   const { openUrl, settingsStorage } = platform;
   const deviceScope = oidcApi.generateDeviceScope();
@@ -113,8 +114,17 @@ async function startOIDCLogin(
     settingsStorage.setString(`oidc_${param.state}_account_management_url`, oidc.account),
   ]);
 
-  const link = await oidcApi.authorizationEndpoint(param);
+  let link = await oidcApi.authorizationEndpoint(param);
+  if (guest) {
+    link += `&kc_idp_hint=${getMatchingClientConfig(platform, oidc.issuer)?.guestKeycloakIdpHint ?? 'guest'}`;
+  }
+
   openUrl(link);
+}
+
+function getMatchingClientConfig(platform: Platform, issuer: string) {
+  const normalisedIssuer = `${issuer}${issuer.endsWith('/') ? '' : '/'}`;
+  return platform.config.oidc.clientConfigs[normalisedIssuer];
 }
 
 export function LoginView() {
@@ -157,6 +167,7 @@ export function LoginView() {
     let loginMethod;
     setAuthenticating(true);
     setOidcError(undefined);
+    const guest = (event.nativeEvent as SubmitEvent).submitter?.id === 'guest';
 
     if (result.oidc) {
       const { issuer } = result.oidc;
@@ -171,7 +182,7 @@ export function LoginView() {
       try {
         await oidcApi.registration();
         await oidcApi.metadata();
-        await startOIDCLogin(platform, urlRouter, result.homeserver, result.oidc, oidcApi);
+        await startOIDCLogin(platform, urlRouter, result.homeserver, result.oidc, oidcApi, guest);
       } catch (e) {
         console.error(e);
         setOidcError("This client is not registered by the homeserver.");
@@ -268,9 +279,20 @@ export function LoginView() {
             (result.oidc || result.password ? (
               <>
                 {result.oidc && !oidcError ? (
-                  <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
-                    {authenticating ? <Dots color="on-primary" /> : "Continue"}
-                  </Button>
+                  getMatchingClientConfig(platform, result.oidc.issuer)?.guestKeycloakIdpHint ? (
+                    <>
+                      <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
+                        {authenticating ? <Dots color="on-primary" /> : 'Continue as User'}
+                      </Button>
+                      <Button id="guest" size="lg" variant="primary" type="submit" disabled={authenticating}>
+                        {authenticating ? <Dots color="on-primary" /> : "Continue as Guest"}
+                      </Button>
+                      </>
+                  ) : (
+                    <Button size="lg" variant="primary" type="submit" disabled={authenticating}>
+                      {authenticating ? <Dots color="on-primary" /> : 'Continue'}
+                    </Button>
+                  )
                 ) : (
                   result.password && renderPasswordLogin()
                 )}
