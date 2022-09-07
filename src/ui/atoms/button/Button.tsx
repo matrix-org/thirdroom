@@ -16,6 +16,7 @@ interface IButton {
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
   disabled?: boolean;
+  id?: string;
 }
 
 export function Button({
@@ -27,6 +28,7 @@ export function Button({
   onClick,
   children,
   disabled = false,
+  id,
 }: IButton) {
   const btnClass = classNames(`Button Button--${variant} Button--${fill} Button--${size}`, className);
   const textColor: "primary" | "on-primary" | "secondary" | "on-secondary" | "danger" | "on-danger" =
@@ -50,7 +52,7 @@ export function Button({
   } else renderChild = children;
 
   return (
-    <button className={btnClass} type={type} onClick={onClick} disabled={disabled}>
+    <button id={id} className={btnClass} type={type} onClick={onClick} disabled={disabled}>
       {renderChild}
     </button>
   );
