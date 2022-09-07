@@ -4,17 +4,7 @@ import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { AudioEmitterOutput } from "../audio/audio.common";
-import {
-  createRemoteAudioData,
-  createRemoteAudioFromBufferView,
-  createRemoteAudioSource,
-  createRemoteGlobalAudioEmitter,
-  createRemotePositionalAudioEmitter,
-  RemoteAudioData,
-  RemoteAudioEmitter,
-  RemoteAudioSource,
-  RemoteGlobalAudioEmitter,
-} from "../audio/audio.game";
+import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { createRemoteBufferView, RemoteBufferView } from "../bufferView/bufferView.game";
 import { createRemoteOrthographicCamera, createRemotePerspectiveCamera, RemoteCamera } from "../camera/camera.game";
 import { addNameComponent } from "../component/Name";
@@ -86,6 +76,7 @@ import { getEmissiveStrength } from "./KHR_materials_emissive_strength";
 import { getTransmissionFactor, getTransmissionTextureInfo } from "./KHR_materials_transmission";
 import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_materials_volume";
 import { getMaterialIOR } from "./KHR_materials_ior";
+import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 
 export interface GLTFResource {
   url: string;
@@ -210,13 +201,7 @@ export async function inflateGLTFScene(
 
   const { audioEmitters, backgroundTexture, reflectionProbe } = await promiseObject({
     nodePromise,
-    audioEmitters: scene.extensions?.KHR_audio?.emitters
-      ? (Promise.all(
-          scene.extensions.KHR_audio.emitters.map((emitterIndex: number) =>
-            loadGLTFAudioEmitter(ctx, resource, emitterIndex)
-          )
-        ) as Promise<RemoteGlobalAudioEmitter[]>)
-      : undefined,
+    audioEmitters: loadSceneAudioEmitters(ctx, resource, scene),
     backgroundTexture: hasBackgroundExtension(scene) ? loadGLTFBackgroundTexture(ctx, resource, scene) : undefined,
     reflectionProbe: hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
@@ -333,10 +318,7 @@ async function _inflateGLTFNode(
       node.extensions?.KHR_lights_punctual?.light !== undefined
         ? loadGLTFLight(ctx, resource, node.extensions.KHR_lights_punctual.light)
         : undefined,
-    audioEmitter:
-      node.extensions?.KHR_audio?.emitter !== undefined
-        ? loadGLTFAudioEmitter(ctx, resource, node.extensions.KHR_audio.emitter)
-        : undefined,
+    audioEmitter: loadNodeAudioEmitter(ctx, resource, node),
     colliderMesh: hasMeshCollider(resource.root, node)
       ? loadGLTFMesh(ctx, resource, getColliderMesh(resource.root, node))
       : undefined,
@@ -1015,179 +997,6 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
   return remoteMaterial;
 }
 
-export async function loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAudioData> {
-  let audioPromise = resource.audioPromises.get(index);
-
-  if (audioPromise) {
-    return audioPromise;
-  }
-
-  audioPromise = _loadGLTFAudio(ctx, resource, index);
-
-  resource.audioPromises.set(index, audioPromise);
-
-  return audioPromise;
-}
-
-async function _loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAudioData> {
-  if (!resource.root.extensions?.KHR_audio) {
-    throw new Error("glTF file has no KHR_audio extension");
-  }
-
-  const audioExtension = resource.root.extensions?.KHR_audio;
-
-  if (!audioExtension.audio || !audioExtension.audio[index]) {
-    throw new Error(`Audio ${index} not found`);
-  }
-
-  const audio = audioExtension.audio[index];
-
-  let remoteAudio: RemoteAudioData;
-
-  if (audio.uri) {
-    remoteAudio = createRemoteAudioData(ctx, { name: audio.name, uri: resolveURL(audio.uri, resource.baseUrl) });
-  } else if (audio.bufferView !== undefined) {
-    if (!audio.mimeType) {
-      throw new Error(`audio[${index}] has a bufferView but no mimeType`);
-    }
-
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main, false);
-
-    remoteAudio = createRemoteAudioFromBufferView(ctx, {
-      name: audio.name,
-      bufferView: remoteBufferView,
-      mimeType: audio.mimeType,
-    });
-  } else {
-    throw new Error(`audio[${index}] has no uri or bufferView`);
-  }
-
-  resource.audio.set(index, remoteAudio);
-
-  return remoteAudio;
-}
-
-export async function loadGLTFAudioSource(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number
-): Promise<RemoteAudioSource> {
-  let audioSourcePromise = resource.audioSourcePromises.get(index);
-
-  if (audioSourcePromise) {
-    return audioSourcePromise;
-  }
-
-  audioSourcePromise = _loadGLTFAudioSource(ctx, resource, index);
-
-  resource.audioSourcePromises.set(index, audioSourcePromise);
-
-  return audioSourcePromise;
-}
-
-async function _loadGLTFAudioSource(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAudioSource> {
-  if (!resource.root.extensions?.KHR_audio) {
-    throw new Error("glTF file has no KHR_audio extension");
-  }
-
-  const audioExtension = resource.root.extensions?.KHR_audio;
-
-  if (!audioExtension.sources || !audioExtension.sources[index]) {
-    throw new Error(`AudioSource ${index} not found`);
-  }
-
-  const audioSource = audioExtension.sources[index];
-
-  const remoteAudioSource = createRemoteAudioSource(ctx, {
-    name: audioSource.name,
-    gain: audioSource.gain,
-    loop: audioSource.loop,
-    autoPlay: audioSource.autoPlay,
-    audio: audioSource.audio !== undefined ? await loadGLTFAudio(ctx, resource, audioSource.audio) : undefined,
-  });
-
-  resource.audioSources.set(index, remoteAudioSource);
-
-  return remoteAudioSource;
-}
-
-export async function loadGLTFAudioEmitter(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number,
-  output: AudioEmitterOutput = AudioEmitterOutput.Environment
-): Promise<RemoteAudioEmitter> {
-  const result = resource.audioEmitterPromises.get(index);
-
-  if (result) {
-    if (result.output !== output) {
-      throw new Error(`AudioEmitter output ${output} does not match output ${result.output} of existing emitter.`);
-    }
-
-    return result.promise;
-  }
-
-  const promise = _loadGLTFAudioEmitter(ctx, resource, index, output);
-
-  resource.audioEmitterPromises.set(index, { output, promise });
-
-  return promise;
-}
-
-async function _loadGLTFAudioEmitter(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number,
-  output: AudioEmitterOutput
-): Promise<RemoteAudioEmitter> {
-  if (!resource.root.extensions?.KHR_audio) {
-    throw new Error("glTF file has no KHR_audio extension");
-  }
-
-  const audioExtension = resource.root.extensions?.KHR_audio;
-
-  if (!audioExtension.emitters || !audioExtension.emitters[index]) {
-    throw new Error(`AudioEmitter ${index} not found`);
-  }
-
-  const audioEmitter = audioExtension.emitters[index];
-
-  let remoteAudioEmitter: RemoteAudioEmitter;
-
-  const sources = audioEmitter.sources
-    ? await Promise.all(audioEmitter.sources.map((sourceIndex) => loadGLTFAudioSource(ctx, resource, sourceIndex)))
-    : [];
-
-  if (audioEmitter.type === "global") {
-    remoteAudioEmitter = createRemoteGlobalAudioEmitter(ctx, {
-      name: audioEmitter.name,
-      gain: audioEmitter.gain,
-      sources,
-      output,
-    });
-  } else if (audioEmitter.type === "positional") {
-    remoteAudioEmitter = createRemotePositionalAudioEmitter(ctx, {
-      name: audioEmitter.name,
-      coneInnerAngle: audioEmitter.coneInnerAngle,
-      coneOuterAngle: audioEmitter.coneOuterAngle,
-      coneOuterGain: audioEmitter.coneOuterGain,
-      distanceModel: audioEmitter.distanceModel,
-      maxDistance: audioEmitter.maxDistance,
-      refDistance: audioEmitter.refDistance,
-      rolloffFactor: audioEmitter.rolloffFactor,
-      gain: audioEmitter.gain,
-      sources,
-      output,
-    });
-  } else {
-    throw new Error(`Unknown audio emitter type ${audioEmitter.type}`);
-  }
-
-  resource.audioEmitters.set(index, remoteAudioEmitter);
-
-  return remoteAudioEmitter;
-}
-
 export async function loadGLTFAccessor(
   ctx: GameState,
   resource: GLTFResource,
@@ -1481,7 +1290,7 @@ export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, inde
 
 async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
   if (!resource.root.extensions?.KHR_lights_punctual) {
-    throw new Error("glTF file has no KHR_audio extension");
+    throw new Error("glTF file has no KHR_lights_punctual extension");
   }
 
   const lightExtension = resource.root.extensions?.KHR_lights_punctual;

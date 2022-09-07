@@ -300,6 +300,7 @@ interface LocalAudioSource {
   writeAudioSourceTripleBuffer: ReadAudioSourceTripleBuffer;
   sourceNode?: MediaElementAudioSourceNode | AudioBufferSourceNode;
   gainNode: GainNode;
+  autoPlay: boolean;
 }
 
 export const onLoadAudioSource = async (
@@ -311,6 +312,8 @@ export const onLoadAudioSource = async (
 
   const audioSourceView = getReadObjectBufferView(writeAudioSourceTripleBuffer);
 
+  const autoPlay = !!audioSourceView.play[0];
+
   const data = audioSourceView.audio[0]
     ? await waitForLocalResource<LocalAudioData>(ctx, audioSourceView.audio[0])
     : undefined;
@@ -321,6 +324,7 @@ export const onLoadAudioSource = async (
     resourceId,
     data,
     gainNode,
+    autoPlay,
     readAudioSourceTripleBuffer: writeAudioSourceTripleBuffer,
     writeAudioSourceTripleBuffer: readAudioSourceTripleBuffer,
   };
@@ -622,7 +626,11 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
       const audioBuffer = currentAudioData as AudioBuffer;
       if (audioBuffer) {
         // One-shot audio buffer source
-        if (readSourceView.play[0] && !readSourceView.loop[0] && audioCount < MAX_AUDIO_COUNT) {
+        if (
+          (readSourceView.play[0] || localAudioSource.autoPlay) &&
+          !readSourceView.loop[0] &&
+          audioCount < MAX_AUDIO_COUNT
+        ) {
           const sampleSource = audioModule.context.createBufferSource();
           sampleSource.connect(localAudioSource.gainNode);
           sampleSource.buffer = audioBuffer;
@@ -639,10 +647,12 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
           // For one-shots don't update the current time or playing state.
           writeSourceView.playing[0] = 0;
           writeSourceView.currentTime[0] = 0;
+          localAudioSource.autoPlay = false;
 
           // playing and looping
-        } else if (readSourceView.play[0] && readSourceView.loop[0]) {
+        } else if ((readSourceView.play[0] || localAudioSource.autoPlay) && readSourceView.loop[0]) {
           writeSourceView.playing[0] = 1;
+          localAudioSource.autoPlay = false;
 
           if (localAudioSource.sourceNode) {
             (localAudioSource.sourceNode as AudioBufferSourceNode).stop();
@@ -946,6 +956,9 @@ function updateGlobalAudioEmitters(
     if (emitter && !audioModule.activeScene.audioEmitters.includes(emitter)) {
       const audioEmitterView = getReadObjectBufferView(emitter?.emitterTripleBuffer);
       const output: AudioEmitterOutput = audioEmitterView.output[0];
+
+      emitter.inputGain.connect(emitter.outputGain);
+
       // connect emitter to appropriate output
       if (output === AudioEmitterOutput.Voice) {
         emitter.outputGain.connect(audioModule.voiceGain);
