@@ -13,9 +13,11 @@ import {
   ButtonActionState,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { defineModule, getModule } from "../engine/module/module.common";
+import { defineModule, getModule, Thread } from "../engine/module/module.common";
+import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../engine/network/network.game";
 import { takeOwnership } from "../engine/network/ownership.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
+import { Prefab } from "../engine/prefab/prefab.game";
 
 type GrabThrow = {};
 
@@ -28,6 +30,8 @@ export const GrabThrowModule = defineModule<GameState, GrabThrow>({
     enableActionMap(ctx, GrabThrowActionMap);
   },
 });
+
+export const EntityGrabbedMessage = "entity-grabbed";
 
 export const GrabThrowActionMap: ActionMap = {
   id: "grab-throw",
@@ -112,6 +116,7 @@ const _t = new Vector3();
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
 
   let heldEntity = grabQuery(ctx.world)[0];
 
@@ -122,6 +127,25 @@ export function GrabThrowSystem(ctx: GameState) {
 
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
+
+  let peerId;
+  let ownerId;
+  if (heldEntity) {
+    for (const [p, e] of network.peerIdToEntityId.entries()) {
+      if (heldEntity === e) {
+        peerId = p;
+        break;
+      }
+    }
+
+    const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[heldEntity]);
+    for (const [p, i] of network.peerIdToIndex.entries()) {
+      if (ownerIdIndex === i) {
+        ownerId = p;
+        break;
+      }
+    }
+  }
 
   // if holding and entity and throw is pressed
   if (heldEntity && throwPressed) {
@@ -138,10 +162,14 @@ export function GrabThrowSystem(ctx: GameState) {
     _impulse.z = direction[2];
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
+    notifyUiEntityReleased(ctx, heldEntity, peerId, ownerId);
+
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
     removeComponent(ctx.world, GrabComponent, heldEntity);
+
+    notifyUiEntityReleased(ctx, heldEntity, peerId, ownerId);
 
     // if grab is pressed
   } else if (grabPressed) {
@@ -183,6 +211,7 @@ export function GrabThrowSystem(ctx: GameState) {
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
         addComponent(ctx.world, GrabComponent, eid);
         takeOwnership(ctx, eid);
+        notifyUiEntityGrabbed(ctx, eid, ownerId, peerId);
       }
     }
   }
@@ -214,4 +243,28 @@ export function GrabThrowSystem(ctx: GameState) {
       body.setLinvel(_impulse, true);
     }
   }
+}
+
+function notifyUiEntityReleased(ctx: GameState, heldEntity: number, peerId?: string, ownerId?: string) {
+  ctx.sendMessage(Thread.Main, {
+    type: EntityGrabbedMessage,
+    held: false,
+    entityId: heldEntity,
+    networkId: heldEntity ? Networked.networkId[heldEntity] : undefined,
+    prefab: heldEntity ? Prefab.get(heldEntity) : undefined,
+    ownerId,
+    peerId,
+  });
+}
+
+function notifyUiEntityGrabbed(ctx: GameState, eid: number, peerId?: string, ownerId?: string) {
+  ctx.sendMessage(Thread.Main, {
+    type: EntityGrabbedMessage,
+    held: true,
+    entityId: eid,
+    networkId: eid ? Networked.networkId[eid] : undefined,
+    prefab: eid ? Prefab.get(eid) : undefined,
+    ownerId,
+    peerId,
+  });
 }

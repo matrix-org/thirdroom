@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import MouseIC from "../../../../../res/ic/mouse-left.svg";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -11,19 +11,20 @@ import { EntityData } from "../reticle/Reticle";
 import "./EntitySelected.css";
 
 export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
-  const lastRef = useRef<EntityData>();
-  useEffect(() => {
-    lastRef.current = entity;
-  }, [entity]);
-
   const [isPeer, setIsPeer] = useState<boolean>();
+  const [isHeld, setIsHeld] = useState<boolean>(false);
 
   useEffect(() => {
     if (entity?.entityId) {
       const peer = entity?.peerId !== undefined;
       setIsPeer(peer);
+      if (entity?.held) {
+        setIsHeld(true);
+      } else {
+        setIsHeld(false);
+      }
     }
-  }, [entity, isPeer]);
+  }, [entity, isPeer, isHeld]);
 
   const { session } = useHydrogen(true);
   const [, world] = useWorld();
@@ -61,13 +62,26 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
         ) : (
           <div className="flex flex-column gap-xxs">
             <Text variant="b3" color="world">
-              {entity?.ownerId}
+              {entity.ownerId && getUsername(entity?.ownerId)}
             </Text>
-            <Text variant="b3" color="world">
-              <span className="EntitySelected__boxedKey">{!entity?.peerId && "E"}</span> /
-              <Icon src={MouseIC} size="sm" className="EntitySelected__mouseIcon" color="world" />
-              <span> Grab</span>
-            </Text>
+            {isHeld ? (
+              <>
+                <Text variant="b3" color="world">
+                  <span className="EntitySelected__boxedKey">E</span>
+                  <span> Drop</span>
+                </Text>
+                <Text variant="b3" color="world">
+                  <Icon src={MouseIC} size="sm" className="EntitySelected__mouseIcon" color="world" />
+                  <span> Throw</span>
+                </Text>
+              </>
+            ) : (
+              <Text variant="b3" color="world">
+                <span className="EntitySelected__boxedKey">E</span> /
+                <Icon src={MouseIC} size="sm" className="EntitySelected__mouseIcon" color="world" />
+                <span> Grab</span>
+              </Text>
+            )}
           </div>
         )}
       </div>
