@@ -8,6 +8,7 @@ import { EntityGrabbedMessage } from "../../../../plugins/GrabThrowController";
 import { ReticleFocusMessageType, ReticleFocusMessage } from "../../../../plugins/reticle/reticle.common";
 import { useEvent } from "../../../hooks/useEvent";
 import { useKeyDown } from "../../../hooks/useKeyDown";
+import { useKeyUp } from "../../../hooks/useKeyUp";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { SessionOutletContext } from "../SessionView";
 
@@ -48,26 +49,36 @@ export function Reticle({ onEntityFocused, onEntitySelected }: IReticleProps) {
 
   useEffect(() => {
     const onEntityGrabbed = (ctx: IMainThreadContext, message: any) => {
+      delete entity?.held;
+      const e = Object.assign(message, entity);
       if (message.held) {
-        const e = Object.assign(message, entity);
         setEntity(e);
         onEntityFocused(e);
       } else {
-        setEntity({ ...entity, held: false });
-        setFocused(true);
+        setEntity(e);
+        onEntityFocused(e);
       }
     };
     return registerMessageHandler(ctx, EntityGrabbedMessage, onEntityGrabbed);
-  }, [ctx, entity, setEntity, onEntityFocused]);
+  }, [ctx, entity, onEntityFocused]);
 
   useKeyDown(
     (e) => {
       if (e.code === "KeyE" && entity) {
-        onEntitySelected(entity);
+        if (entity.held) {
+          onEntitySelected(entity);
+          onEntityFocused(entity);
+        } else {
+          onEntitySelected(entity);
+        }
       }
+      setMouseDown(true);
     },
     [entity]
   );
+  useKeyUp(() => {
+    setMouseDown(false);
+  }, []);
 
   useEvent(
     "mousedown",
