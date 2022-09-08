@@ -24,17 +24,36 @@ interface IIconButton {
   type?: "button" | "submit" | "reset";
   onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
+  tabIndex?: number;
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IIconButton>(
   (
-    { className, variant = "surface", size = "md", iconSrc, label, type = "button", onClick, disabled = false },
+    {
+      className,
+      variant = "surface",
+      size = "md",
+      iconSrc,
+      label,
+      type = "button",
+      onClick,
+      disabled = false,
+      tabIndex,
+    },
     ref
   ) => {
     const btnClass = classNames(`IconButton IconButton--${variant}`, className);
 
     return (
-      <button ref={ref} className={btnClass} type={type} onClick={onClick} disabled={disabled} aria-label={label}>
+      <button
+        ref={ref}
+        className={btnClass}
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        tabIndex={tabIndex}
+      >
         <Icon color={variant} size={size} src={iconSrc} />
       </button>
     );
