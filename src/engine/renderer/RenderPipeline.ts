@@ -19,7 +19,13 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { Layer } from "../node/node.common";
-import { SMAAPass } from "./SMAAPass";
+
+// TODO: Add samples property to official three types package
+declare module "three" {
+  interface WebGLRenderTargetOptions {
+    samples: number;
+  }
+}
 
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
@@ -32,7 +38,6 @@ export class RenderPipeline {
   outlinePass: OutlinePass;
   bloomPass: UnrealBloomPass;
   gammaCorrectionPass: ShaderPass;
-  smaaPass: SMAAPass;
   outlineLayers: Layers;
 
   constructor(private renderer: WebGLRenderer) {
@@ -43,6 +48,7 @@ export class RenderPipeline {
       magFilter: LinearFilter,
       format: RGBAFormat,
       encoding: sRGBEncoding,
+      samples: 16,
     });
 
     const scene = new Scene();
@@ -53,13 +59,11 @@ export class RenderPipeline {
     this.outlinePass = new OutlinePass(rendererSize, scene, camera);
     this.bloomPass = new UnrealBloomPass(rendererSize, 0.5, 0.4, 0.9);
     this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
-    this.smaaPass = new SMAAPass(rendererSize.width, rendererSize.height);
 
     this.effectComposer.addPass(this.renderPass);
     this.effectComposer.addPass(this.outlinePass);
     this.effectComposer.addPass(this.bloomPass);
     this.effectComposer.addPass(this.gammaCorrectionPass);
-    this.effectComposer.addPass(this.smaaPass);
 
     this.outlineLayers = new Layers();
     this.outlineLayers.set(Layer.EditorSelection);
