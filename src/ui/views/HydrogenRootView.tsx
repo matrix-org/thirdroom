@@ -30,6 +30,7 @@ import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
+import { Dots } from "../atoms/loading/Dots";
 
 const defaultHomeServer = "thirdroom.io";
 
@@ -368,9 +369,10 @@ export function HydrogenRootView() {
 
   if (loading) {
     return (
-      <LoadingScreen>
-        <Text variant="b1" weight="semi-bold">
-          Loading...
+      <LoadingScreen className="gap-md">
+        <Dots size="lg" />
+        <Text variant="b3" weight="semi-bold">
+          Loading
         </Text>
       </LoadingScreen>
     );
