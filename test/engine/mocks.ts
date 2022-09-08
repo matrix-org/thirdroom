@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { createWorld } from "bitecs";
+import { addEntity, createWorld } from "bitecs";
 
 import { PostMessageTarget } from "../../src/engine/WorkerMessage";
 import { PrefabModule, registerPrefab } from "../../src/engine/prefab/prefab.game";
@@ -12,27 +12,27 @@ import { ResourceModule } from "../../src/engine/resource/resource.game";
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
     name: "random-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
   registerPrefab(state, {
     name: "red-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
   registerPrefab(state, {
     name: "musical-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
   registerPrefab(state, {
     name: "green-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
   registerPrefab(state, {
     name: "blue-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
   registerPrefab(state, {
     name: "player-cube",
-    create: () => {},
+    create: () => addEntity(state.world),
   });
 }
 
