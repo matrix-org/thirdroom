@@ -1,5 +1,6 @@
-import { addEntity, defineQuery } from "bitecs";
+import { addEntity, defineQuery, hasComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -38,6 +39,8 @@ import { CharacterControllerType, SceneCharacterControllerComponent } from "../.
 import { createFlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
+import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { Player } from "../../engine/component/Player";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -167,6 +170,29 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     });
 
     // await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
+
+    // create out of bounds floor check
+    const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
+    const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.newStatic());
+    const size = 10000;
+    const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
+      .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+      .setCollisionGroups(0xf000_000f)
+      .setSolverGroups(0xf000_000f);
+    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+
+    rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
+
+    collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
+      const player =
+        (hasComponent(ctx.world, Player, eid1 || 0) && eid1) || (hasComponent(ctx.world, Player, eid2 || 0) && eid2);
+
+      const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
+
+      if (player && floor) {
+        spawnPlayer(spawnPointQuery(ctx.world), player);
+      }
+    });
 
     return () => {
       for (const dispose of disposables) {
@@ -357,17 +383,7 @@ function loadPlayerRig(ctx: GameState) {
   }
 
   if (spawnPoints.length > 0) {
-    const spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1));
-    const worldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
-    const worldPosition = mat4.getTranslation(vec3.create(), worldMatrix);
-    const worldQuaternion = mat4.getRotation(quat.create(), worldMatrix);
-
-    vec3.copy(Transform.position[playerRig], worldPosition);
-    Transform.position[playerRig][1] += 1.6;
-    setEulerFromQuaternion(Transform.rotation[playerRig], worldQuaternion);
-    Transform.rotation[playerRig][0] = 0;
-    Transform.rotation[playerRig][2] = 0;
-    setQuaternionFromEuler(Transform.quaternion[playerRig], Transform.rotation[playerRig]);
+    spawnPlayer(spawnPoints, playerRig);
   }
 
   addChild(ctx.activeScene, playerRig);
@@ -382,3 +398,25 @@ const waitUntil = (fn: Function) =>
       }
     }, 100);
   });
+
+function spawnPlayer(
+  spawnPoints: number[],
+  playerRig: number,
+  spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1))
+) {
+  const worldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
+  const worldPosition = mat4.getTranslation(vec3.create(), worldMatrix);
+  const worldQuaternion = mat4.getRotation(quat.create(), worldMatrix);
+
+  vec3.copy(Transform.position[playerRig], worldPosition);
+  Transform.position[playerRig][1] += 1.6;
+  setEulerFromQuaternion(Transform.rotation[playerRig], worldQuaternion);
+  Transform.rotation[playerRig][0] = 0;
+  Transform.rotation[playerRig][2] = 0;
+  setQuaternionFromEuler(Transform.quaternion[playerRig], Transform.rotation[playerRig]);
+
+  const body = RigidBody.store.get(playerRig);
+  if (body) {
+    applyTransformToRigidBody(body, playerRig);
+  }
+}
