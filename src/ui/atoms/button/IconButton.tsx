@@ -24,6 +24,7 @@ interface IIconButton {
   type?: "button" | "submit" | "reset";
   onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
+  tabIndex?: number;
 }
 
 export function IconButton({
@@ -35,11 +36,19 @@ export function IconButton({
   type = "button",
   onClick,
   disabled = false,
+  tabIndex,
 }: IIconButton) {
   const btnClass = classNames(`IconButton IconButton--${variant}`, className);
 
   return (
-    <button className={btnClass} type={type} onClick={onClick} disabled={disabled} aria-label={label}>
+    <button
+      className={btnClass}
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      tabIndex={tabIndex}
+    >
       <Icon color={variant} size={size} src={iconSrc} />
     </button>
   );
