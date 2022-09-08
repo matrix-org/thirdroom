@@ -18,13 +18,9 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
     if (entity?.entityId) {
       const peer = entity?.peerId !== undefined;
       setIsPeer(peer);
-      if (entity?.held) {
-        setIsHeld(true);
-      } else {
-        setIsHeld(false);
-      }
+      setIsHeld(entity?.held || false);
     }
-  }, [entity, isPeer, isHeld]);
+  }, [entity, setIsPeer, setIsHeld]);
 
   const { session } = useHydrogen(true);
   const [, world] = useWorld();
