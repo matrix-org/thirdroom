@@ -925,9 +925,7 @@ function disposeNetworkedEntities(state: GameState) {
 }
 
 // rate limiting outbound data reduces bandwidth and smoothes the interpolation
-let ticks = 0;
 const sendUpdates = (ctx: GameState) => {
-  if (ticks++ % 3 !== 0) return;
   const network = getModule(ctx, NetworkModule);
   const data: NetPipeData = [ctx, network.cursorView];
 
@@ -1000,6 +998,13 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
 
   const historian = network.peerIdToHistorian.get(peerId);
   if (historian) {
+    historian.timestamps.forEach((t) => {
+      if (elapsed < t) {
+        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
+        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
+        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
+      }
+    });
     historian.latestElapsed = elapsed;
     historian.localElapsed = elapsed;
     historian.needsUpdate = true;
