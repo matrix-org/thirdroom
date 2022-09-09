@@ -94,11 +94,13 @@ export function NetworkTransformSystem(ctx: GameState) {
         body.setTranslation(_vec.fromArray(position), true);
       }
 
-      const vFrom = history.velocity.at(from);
-      const vTo = history.velocity.at(to);
-      if (vFrom && vTo) {
-        vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
-        body.setLinvel(_vec.fromArray(velocity), true);
+      if (body.isDynamic()) {
+        const vFrom = history.velocity.at(from);
+        const vTo = history.velocity.at(to);
+        if (vFrom && vTo) {
+          vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
+          body.setLinvel(_vec.fromArray(velocity), true);
+        }
       }
 
       const qFrom = history.quaternion.at(from);
@@ -162,11 +164,10 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
           break;
         }
       }
-    }
-
-    if (index === -1) {
-      console.warn("interpolation buffer full");
-      continue;
+      if (index === -1) {
+        console.warn("interpolation buffer full");
+        continue;
+      }
     }
 
     historian.index = index;
