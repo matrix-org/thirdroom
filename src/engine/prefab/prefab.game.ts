@@ -22,10 +22,10 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 export interface PrefabTemplate {
   name: string;
-  create: Function;
-  delete?: Function;
-  serialize?: Function;
-  deserialize?: Function;
+  create: (ctx: GameState) => number;
+  delete?: (ctx: GameState) => number;
+  serialize?: (ctx: GameState) => number;
+  deserialize?: (ctx: GameState) => number;
 }
 
 export const Prefab: Map<number, string> = new Map();
@@ -38,8 +38,8 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = () => {
-    const eid = create();
+  template.create = (ctx: GameState) => {
+    const eid = create(ctx);
     addPrefabComponent(state.world, eid, template.name);
     return eid;
   };

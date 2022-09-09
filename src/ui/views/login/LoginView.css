@@ -16,3 +16,14 @@
     margin-top: var(--sp-md);
   }
 }
+.LoginView__orDivider {
+  &::before,
+  &::after {
+    content: "";
+    width: 100%;
+    border-bottom: 1px solid var(--bg-surface-border);
+  }
+  & + .Button {
+    margin-top: 0;
+  }
+}

@@ -30,6 +30,7 @@ import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
+import { Dots } from "../atoms/loading/Dots";
 
 const defaultHomeServer = "thirdroom.io";
 
@@ -130,7 +131,6 @@ function initHydrogen() {
     },
   };
 
-
   const oidcClientId = document.location.hostname === "thirdroom.io" ? "thirdroom" : "thirdroom_dev";
   const oidcUris = ((): string[] => {
     if (document.location.hostname === "thirdroom.io") {
@@ -138,16 +138,18 @@ function initHydrogen() {
     }
 
     const { protocol, hostname, port } = document.location;
-    return [`${protocol}//${hostname}${port ? `:${port}` : ''}`];
+    return [`${protocol}//${hostname}${port ? `:${port}` : ""}`];
   })();
 
   const config = {
     defaultHomeServer,
+    homeserverList: ["thirdroom.io", "matrix.org"],
     oidc: {
       clientConfigs: {
         "https://id.thirdroom.io/realms/thirdroom/": {
           client_id: oidcClientId,
           uris: oidcUris,
+          guestKeycloakIdpHint: "guest",
         },
       },
     },
@@ -367,9 +369,10 @@ export function HydrogenRootView() {
 
   if (loading) {
     return (
-      <LoadingScreen>
-        <Text variant="b1" weight="semi-bold">
-          Loading...
+      <LoadingScreen className="gap-md">
+        <Dots size="lg" />
+        <Text variant="b3" weight="semi-bold">
+          Loading
         </Text>
       </LoadingScreen>
     );

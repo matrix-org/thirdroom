@@ -1,3 +1,4 @@
+import { vec3 } from "gl-matrix";
 import {
   Color,
   DoubleSide,
@@ -6,6 +7,7 @@ import {
   Material,
   MaterialParameters,
   MeshBasicMaterial,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PointsMaterial,
   Vector2,
@@ -48,6 +50,8 @@ export interface LocalStandardMaterialResource {
   normalTexture?: LocalTextureResource;
   occlusionTexture?: LocalTextureResource;
   emissiveTexture?: LocalTextureResource;
+  transmissionTexture?: LocalTextureResource;
+  thicknessTexture?: LocalTextureResource;
   materialTripleBuffer: StandardMaterialTripleBuffer;
 }
 
@@ -55,7 +59,11 @@ export type LocalMaterialResource = LocalUnlitMaterialResource | LocalStandardMa
 
 export type PrimitiveUnlitMaterial = MeshBasicMaterial | LineBasicMaterial | PointsMaterial;
 
-export type PrimitiveStandardMaterial = MeshStandardMaterial | LineBasicMaterial | PointsMaterial;
+export type PrimitiveStandardMaterial =
+  | MeshStandardMaterial
+  | MeshPhysicalMaterial
+  | LineBasicMaterial
+  | PointsMaterial;
 
 export type PrimitiveMaterial = PrimitiveStandardMaterial | PrimitiveUnlitMaterial;
 
@@ -104,6 +112,8 @@ export async function onLoadLocalStandardMaterialResource(
   const normalTextureResourceId = materialView.normalTexture[0];
   const occlusionTextureResourceId = materialView.occlusionTexture[0];
   const emissiveTextureResourceId = materialView.emissiveTexture[0];
+  const transmissionTextureResourceId = materialView.transmissionTexture[0];
+  const thicknessTextureResourceId = materialView.thicknessTexture[0];
 
   const textures = await promiseObject({
     baseColorTexture: baseColorTextureResourceId
@@ -120,6 +130,12 @@ export async function onLoadLocalStandardMaterialResource(
       : undefined,
     emissiveTexture: emissiveTextureResourceId
       ? waitForLocalResource<LocalTextureResource>(ctx, emissiveTextureResourceId)
+      : undefined,
+    transmissionTexture: transmissionTextureResourceId
+      ? waitForLocalResource<LocalTextureResource>(ctx, transmissionTextureResourceId)
+      : undefined,
+    thicknessTexture: thicknessTextureResourceId
+      ? waitForLocalResource<LocalTextureResource>(ctx, thicknessTextureResourceId)
       : undefined,
   });
 
@@ -208,6 +224,8 @@ export function createPrimitiveStandardMaterial(
     occlusionTexture,
     emissiveTexture,
     normalTexture,
+    transmissionTexture,
+    thicknessTexture,
   } = materialResource;
   const materialView = getReadObjectBufferView(materialTripleBuffer);
   const baseParameters = getLocalMaterialBaseParameters(attributes, materialView);
@@ -218,25 +236,54 @@ export function createPrimitiveStandardMaterial(
     mode === MeshPrimitiveMode.TRIANGLE_FAN ||
     mode === MeshPrimitiveMode.TRIANGLE_STRIP
   ) {
-    return new MeshStandardMaterial(
-      removeUndefinedProperties({
-        ...baseParameters,
-        color,
-        map: baseColorTexture?.texture,
-        metalnessMap: metallicRoughnessTexture?.texture,
-        roughnessMap: metallicRoughnessTexture?.texture,
-        aoMap: occlusionTexture?.texture,
-        emissiveMap: emissiveTexture?.texture,
-        normalMap: normalTexture?.texture,
-        metalness: materialView.metallicFactor[0], // 🤘
-        roughness: materialView.roughnessFactor[0],
-        normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
-        aoMapIntensity: materialView.occlusionTextureStrength[0],
-        emissive: new Color().fromArray(materialView.emissiveFactor),
-        emissiveIntensity: materialView.emissiveStrength[0],
-        flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
-      })
-    );
+    if (isPhysicalMaterial(materialResource, materialView)) {
+      return new MeshPhysicalMaterial(
+        removeUndefinedProperties({
+          ...baseParameters,
+          color,
+          map: baseColorTexture?.texture,
+          metalnessMap: metallicRoughnessTexture?.texture,
+          roughnessMap: metallicRoughnessTexture?.texture,
+          aoMap: occlusionTexture?.texture,
+          emissiveMap: emissiveTexture?.texture,
+          normalMap: normalTexture?.texture,
+          metalness: materialView.metallicFactor[0], // 🤘
+          roughness: materialView.roughnessFactor[0],
+          normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
+          aoMapIntensity: materialView.occlusionTextureStrength[0],
+          emissive: new Color().fromArray(materialView.emissiveFactor),
+          emissiveIntensity: materialView.emissiveStrength[0],
+          flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
+          ior: materialView.ior[0],
+          thickness: materialView.thicknessFactor[0],
+          thicknessMap: thicknessTexture?.texture,
+          attenuationDistance: materialView.attenuationDistance[0],
+          attenuationColor: new Color().fromArray(materialView.attenuationColor),
+          transmission: materialView.transmissionFactor[0],
+          transmissionMap: transmissionTexture?.texture,
+        })
+      );
+    } else {
+      return new MeshStandardMaterial(
+        removeUndefinedProperties({
+          ...baseParameters,
+          color,
+          map: baseColorTexture?.texture,
+          metalnessMap: metallicRoughnessTexture?.texture,
+          roughnessMap: metallicRoughnessTexture?.texture,
+          aoMap: occlusionTexture?.texture,
+          emissiveMap: emissiveTexture?.texture,
+          normalMap: normalTexture?.texture,
+          metalness: materialView.metallicFactor[0], // 🤘
+          roughness: materialView.roughnessFactor[0],
+          normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
+          aoMapIntensity: materialView.occlusionTextureStrength[0],
+          emissive: new Color().fromArray(materialView.emissiveFactor),
+          emissiveIntensity: materialView.emissiveStrength[0],
+          flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
+        })
+      );
+    }
   } else if (
     mode === MeshPrimitiveMode.LINES ||
     mode === MeshPrimitiveMode.LINE_STRIP ||
@@ -255,6 +302,27 @@ export function createPrimitiveStandardMaterial(
   }
 
   throw new Error(`Unsupported mesh mode ${mode}`);
+}
+
+const defaultAttenuationColor = vec3.fromValues(1, 1, 1);
+
+function isPhysicalMaterial(
+  materialResource: LocalStandardMaterialResource,
+  materialView: ReadObjectTripleBufferView<StandardMaterialTripleBuffer>
+) {
+  if (
+    materialResource.transmissionTexture ||
+    materialResource.thicknessTexture ||
+    materialView.ior[0] !== 1.5 ||
+    materialView.transmissionFactor[0] !== 0 ||
+    materialView.thicknessFactor[0] !== 0 ||
+    materialView.attenuationDistance[0] !== 0 ||
+    vec3.equals(materialView.attenuationColor, defaultAttenuationColor)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function getLocalMaterialBaseParameters(
@@ -321,6 +389,8 @@ export function updateLocalStandardMaterialResources(
     updateSharedTextureResource(ctx, standardMaterial, materialView, "occlusionTexture");
     updateSharedTextureResource(ctx, standardMaterial, materialView, "emissiveTexture");
     updateSharedTextureResource(ctx, standardMaterial, materialView, "normalTexture");
+    updateSharedTextureResource(ctx, standardMaterial, materialView, "transmissionTexture");
+    updateSharedTextureResource(ctx, standardMaterial, materialView, "thicknessTexture");
   }
 }
 
@@ -386,6 +456,15 @@ export function updatePrimitiveStandardMaterial(
     material.aoMapIntensity = materialView.occlusionTextureStrength[0];
     material.emissive.fromArray(materialView.emissiveFactor);
     material.emissiveIntensity = materialView.emissiveStrength[0];
+  }
+
+  if ("isMeshPhysicalMaterial" in material) {
+    const physicalMaterial = material as MeshPhysicalMaterial;
+    physicalMaterial.ior = materialView.ior[0];
+    physicalMaterial.thickness = materialView.thicknessFactor[0];
+    physicalMaterial.attenuationDistance = materialView.attenuationDistance[0];
+    physicalMaterial.attenuationColor.fromArray(materialView.attenuationColor);
+    physicalMaterial.transmission = materialView.transmissionFactor[0];
   }
 }
 
