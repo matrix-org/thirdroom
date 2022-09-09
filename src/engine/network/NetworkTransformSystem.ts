@@ -43,6 +43,6 @@ function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
   Transform.quaternion[eid].set(netQuaternion);
 
   body.setTranslation(_vec.fromArray(netPosition), true);
-  body.setLinvel(_vec.fromArray(netVelocity), true);
+  if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);
   body.setRotation(_quat.fromArray(netQuaternion), true);
 }
