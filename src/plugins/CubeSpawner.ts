@@ -100,8 +100,8 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
 
     registerPrefab(ctx, {
       name: "bouncy-ball",
-      create: () => {
-        const eid = createBouncyBall(ctx, 1, ballMaterial);
+      create: (ctx, remote) => {
+        const eid = createBouncyBall(ctx, 1, ballMaterial, remote);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: ballAudioData,
@@ -246,6 +246,8 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
   const mesh = createSphereMesh(state, 1, material);
 
   addRemoteNodeComponent(state, eid, { mesh });
+
+  console.log("REMOTE?", remote);
 
   const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);

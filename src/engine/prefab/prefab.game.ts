@@ -38,8 +38,8 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = (ctx: GameState) => {
-    const eid = create(ctx);
+  template.create = (ctx: GameState, remote = false) => {
+    const eid = create(ctx, remote);
     addPrefabComponent(state.world, eid, template.name);
     return eid;
   };
