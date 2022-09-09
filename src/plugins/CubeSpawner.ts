@@ -247,8 +247,6 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
 
   addRemoteNodeComponent(state, eid, { mesh });
 
-  console.log("REMOTE?", remote);
-
   const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
