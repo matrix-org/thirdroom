@@ -450,12 +450,14 @@ function createMeshPrimitiveObject(
       material.defines = {};
     }
 
-    material.defines.USE_ENVMAP = "";
-    material.defines.ENVMAP_MODE_REFLECTION = "";
-    material.defines.ENVMAP_TYPE_CUBE_UV = "";
-    material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
-    material.defines.ENVMAP_BLENDING_NONE = "";
-    material.defines.USE_REFLECTION_PROBES = "";
+    if (!material.isMeshBasicMaterial) {
+      material.defines.USE_ENVMAP = "";
+      material.defines.ENVMAP_MODE_REFLECTION = "";
+      material.defines.ENVMAP_TYPE_CUBE_UV = "";
+      material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
+      material.defines.ENVMAP_BLENDING_NONE = "";
+      material.defines.USE_REFLECTION_PROBES = "";
+    }
 
     if (instancedMesh) {
       material.defines.USE_INSTANCING = "";
