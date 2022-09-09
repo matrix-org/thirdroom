@@ -499,7 +499,7 @@ export function serializeCreates(input: NetPipeData) {
 }
 
 export function createRemoteNetworkedEntity(state: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(state, prefab);
+  const eid = createPrefabEntity(state, prefab, true);
 
   // assign networkId
   addComponent(state.world, Networked, eid, true);
