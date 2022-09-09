@@ -468,7 +468,7 @@ export function serializeCreates(input: NetPipeData) {
 
 export function createRemoteNetworkedEntity(state: GameState, nid: number, prefab: string) {
   const network = getModule(state, NetworkModule);
-  const eid = createPrefabEntity(state, prefab);
+  const eid = createPrefabEntity(state, prefab, true);
 
   // remote entity not owned by default so lock the rigidbody
   // const body = RigidBody.store.get(eid);

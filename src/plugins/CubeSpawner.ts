@@ -62,8 +62,8 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
 
     registerPrefab(ctx, {
       name: "crate",
-      create: () => {
-        const eid = createPhysicsCube(ctx, 1, cubeMaterial);
+      create: (ctx, remote) => {
+        const eid = createPhysicsCube(ctx, 1, cubeMaterial, remote);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,
@@ -237,7 +237,7 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   }
 };
 
-export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial) => {
+export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
@@ -247,7 +247,7 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
 
   addRemoteNodeComponent(state, eid, { mesh });
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.ball(size / 2)

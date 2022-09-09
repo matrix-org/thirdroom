@@ -22,7 +22,7 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 export interface PrefabTemplate {
   name: string;
-  create: (ctx: GameState) => number;
+  create: (ctx: GameState, remote?: boolean) => number;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;
   deserialize?: (ctx: GameState) => number;
@@ -66,11 +66,11 @@ export function getPrefabTemplate(state: GameState, name: string) {
 // add component+system for loading and swapping the prefab
 export const createLoadingEntity = createPhysicsCube;
 
-export const createPrefabEntity = (state: GameState, prefab: string) => {
+export const createPrefabEntity = (state: GameState, prefab: string, remote = false) => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
   if (create) {
-    return create(state);
+    return create(state, remote);
   } else {
     return createLoadingEntity(state, 1);
   }
