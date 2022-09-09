@@ -31,7 +31,15 @@ export const standardMaterialSchema = defineObjectBufferSchema({
   occlusionTextureStrength: [Float32Array, 1],
   occlusionTexture: [Uint32Array, 1], // TODO: Add support for texCoord
   emissiveFactor: [Float32Array, 3], // [r, g, b],
+  emissiveStrength: [Float32Array, 1],
   emissiveTexture: [Uint32Array, 1], // TODO: Add support for texCoord
+  ior: [Float32Array, 1],
+  transmissionFactor: [Float32Array, 3],
+  transmissionTexture: [Uint32Array, 1],
+  thicknessFactor: [Float32Array, 1],
+  thicknessTexture: [Uint32Array, 1],
+  attenuationDistance: [Float32Array, 1],
+  attenuationColor: [Float32Array, 3],
 });
 
 export type UnlitMaterialTripleBuffer = ObjectTripleBuffer<typeof unlitMaterialSchema>;

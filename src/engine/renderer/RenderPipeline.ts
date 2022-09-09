@@ -14,6 +14,7 @@ import {
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
@@ -35,6 +36,7 @@ export class RenderPipeline {
   effectComposer: EffectComposer;
   renderPass: RenderPass;
   outlinePass: OutlinePass;
+  bloomPass: UnrealBloomPass;
   gammaCorrectionPass: ShaderPass;
   outlineLayers: Layers;
 
@@ -55,10 +57,12 @@ export class RenderPipeline {
     this.effectComposer = new EffectComposer(renderer, target);
     this.renderPass = new RenderPass(scene, camera);
     this.outlinePass = new OutlinePass(rendererSize, scene, camera);
+    this.bloomPass = new UnrealBloomPass(rendererSize, 0.5, 0.4, 0.9);
     this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
 
     this.effectComposer.addPass(this.renderPass);
     this.effectComposer.addPass(this.outlinePass);
+    this.effectComposer.addPass(this.bloomPass);
     this.effectComposer.addPass(this.gammaCorrectionPass);
 
     this.outlineLayers = new Layers();
