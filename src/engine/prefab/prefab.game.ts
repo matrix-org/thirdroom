@@ -59,7 +59,11 @@ export function PrefabDisposalSystem(state: GameState) {
 
 export function getPrefabTemplate(state: GameState, name: string) {
   const prefabModule = getModule(state, PrefabModule);
-  return prefabModule.prefabTemplateMap.get(name);
+
+  const template = prefabModule.prefabTemplateMap.get(name);
+  if (!template) throw new Error("could not find template for prefab name: " + name);
+
+  return template;
 }
 
 // TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
