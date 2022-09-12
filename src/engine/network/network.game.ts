@@ -998,13 +998,6 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
 
   const historian = network.peerIdToHistorian.get(peerId);
   if (historian) {
-    historian.timestamps.forEach((t) => {
-      if (elapsed < t) {
-        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
-        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
-        console.warn("SDL:KFJ:DLSKFJ:LDSKJF:LSDKJF:D");
-      }
-    });
     historian.latestElapsed = elapsed;
     historian.localElapsed = elapsed;
     historian.needsUpdate = true;
@@ -1023,11 +1016,15 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
 };
 
 const processNetworkMessages = (state: GameState) => {
-  const network = getModule(state, NetworkModule);
-  while (network.incomingPackets.length) {
-    const peerId = network.incomingPeerIds.pop();
-    const msg = network.incomingPackets.pop();
-    if (peerId && msg) processNetworkMessage(state, peerId, msg);
+  try {
+    const network = getModule(state, NetworkModule);
+    while (network.incomingPackets.length) {
+      const peerId = network.incomingPeerIds.pop();
+      const msg = network.incomingPackets.pop();
+      if (peerId && msg) processNetworkMessage(state, peerId, msg);
+    }
+  } catch (e) {
+    console.error(e);
   }
 };
 
