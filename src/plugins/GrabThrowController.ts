@@ -213,11 +213,11 @@ export function GrabThrowSystem(ctx: GameState) {
         const newEid = takeOwnership(ctx, eid);
         if (newEid !== NOOP) {
           addComponent(ctx.world, GrabComponent, newEid);
-          notifyUiEntityGrabbed(ctx, newEid, network.peerId, network.peerId);
+          notifyUiEntityGrabbed(ctx, newEid, undefined, network.peerId);
           heldEntity = newEid;
         } else {
           addComponent(ctx.world, GrabComponent, eid);
-          notifyUiEntityGrabbed(ctx, eid, ownerId, peerId);
+          notifyUiEntityGrabbed(ctx, eid, peerId, ownerId);
         }
       }
     }
