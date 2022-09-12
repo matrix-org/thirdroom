@@ -9,7 +9,7 @@ import { EditorView } from "../session/editor/EditorView";
 import { Stats } from "../session/stats/Stats";
 import "./GLTFViewer.css";
 
-export function GLTFViewer() {
+export default function GLTFViewer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const [editorEnabled, setEditorEnabled] = useState(false);

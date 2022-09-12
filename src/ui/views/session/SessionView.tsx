@@ -36,7 +36,7 @@ export interface SessionOutletContext {
   onExitWorld: () => void;
 }
 
-export function SessionView() {
+export default function SessionView() {
   const { client, session, platform } = useHydrogen(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);

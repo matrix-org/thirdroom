@@ -6,12 +6,9 @@ import "./App.css";
 import "@fontsource/inter/variable.css";
 
 import { HydrogenRootView } from "./views/HydrogenRootView";
-import { LoginView } from "./views/login/LoginView";
-import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
 import { HomeView } from "./views/session/home/HomeView";
-import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
-import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
+import { SplashScreen } from "./views/components/splash-screen/SplashScreen";
 
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
@@ -38,21 +35,62 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
   );
 }
 
+const Site = lazy(() => import("./site/Site"));
+const LoginView = lazy(() => import("./views/login/LoginView"));
+const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
+const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
+const SessionView = lazy(() => import("./views/session/SessionView"));
+
 export function App() {
   return (
     <>
       <FocusOutlineManager />
       <Routes>
         <Route element={<HydrogenRootView />}>
-          <Route path="/login" element={<LoginView />} />
-          <Route element={<SessionView />}>
+          <Route
+            path="/preview"
+            element={
+              <Suspense fallback={<SplashScreen />}>
+                <Site />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<SplashScreen />}>
+                <LoginView />
+              </Suspense>
+            }
+          />
+          <Route
+            element={
+              <Suspense fallback={<SplashScreen />}>
+                <SessionView />
+              </Suspense>
+            }
+          >
             <Route path="world/:worldId" element={<WorldView />} />
             <Route path="world/" element={<WorldView />} />
             <Route path="/" element={<HomeView />} />
           </Route>
         </Route>
-        <Route path="/viewer" element={<GLTFViewer />} />
-        <Route path="/pipeline" element={<AssetPipeline />} />
+        <Route
+          path="/viewer"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <GLTFViewer />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/pipeline"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <AssetPipeline />
+            </Suspense>
+          }
+        />
         {storybookRoute}
       </Routes>
     </>

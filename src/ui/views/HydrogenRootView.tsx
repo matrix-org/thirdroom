@@ -1,5 +1,5 @@
 // @refresh reset
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import {
   Platform,
@@ -15,6 +15,7 @@ import {
   OidcApi,
   OIDCLoginMethod,
   ILoginMethod,
+  ISessionInfo,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -24,7 +25,6 @@ import olmLegacyJsPath from "@matrix-org/olm/olm_legacy.js?url";
 
 import { Text } from "../atoms/text/Text";
 import { HydrogenContext, HydrogenContextProvider } from "../hooks/useHydrogen";
-import { useAsync } from "../hooks/useAsync";
 import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
@@ -180,6 +180,17 @@ function initHydrogen() {
   return hydrogenInstance;
 }
 
+function getSessionInfo(): ISessionInfo | undefined {
+  const sessionsJson = localStorage.getItem("hydrogen_sessions_v1");
+  if (sessionsJson) {
+    const sessions = JSON.parse(sessionsJson);
+    if (Array.isArray(sessions)) {
+      return sessions[0];
+    }
+  }
+  return undefined;
+}
+
 async function loadSession(client: Client, session: Session) {
   await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
     const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
@@ -248,39 +259,62 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   });
 }
 
-export function HydrogenRootView() {
-  const [session, setSession] = useState<Session>();
+function useOidcComplete(
+  platform: Platform,
+  urlRouter: URLRouter,
+  login: (loginMethod: ILoginMethod) => Promise<void>
+) {
+  const navigate = useNavigate();
+  const completeOidc = async (state: string, code: string) => {
+    const loginMethod = await getOidcLoginMethod(platform, urlRouter, state, code);
+    if (!loginMethod) return;
+    login(loginMethod);
+    navigate("/");
+  };
+  const location = useLocation();
 
-  const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
-
-  useEffect(() => {
-    return () => {
-      client.dispose();
-      containerEl.remove();
-    };
-  }, [client, containerEl]);
-
-  const { loading: loadingInitialSession, error: initialSessionLoadError } = useAsync(async () => {
-    const availableSessions = await platform.sessionInfoStorage.getAll();
-
-    if (availableSessions.length === 0) {
-      setSession(undefined);
-      return;
+  if (location.hash !== "") {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const code = params.get("code");
+    const state = params.get("state");
+    if (params.get("error")) {
+      return params.get("error_description");
     }
+    if (code && state) {
+      completeOidc(state, code);
+    }
+  }
+  return null;
+}
 
-    const sessionId = availableSessions[0].id;
-    await client.startWithExistingSession(sessionId);
+function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
+  const sessionRef = useRef<Session>();
+  const session = sessionRef.current ?? undefined;
 
-    if (client.session) {
-      try {
-        await loadSession(client, client.session);
-      } catch (error) {
-        console.error("Error loading initial session", error);
+  const {
+    loading: loadingInitialSession,
+    error: initialSessionLoadError,
+    callback: loadInitialSession,
+  } = useAsyncCallback(
+    async (sessionInfo: ISessionInfo) => {
+      console.log(sessionInfo);
+      await client.startWithExistingSession(sessionInfo.id);
+
+      if (client.session) {
+        try {
+          await loadSession(client, client.session);
+        } catch (error) {
+          console.error("Error loading initial session", error);
+        }
+      } else {
+        localStorage.clear();
+        return;
       }
-    }
 
-    setSession(client.session);
-  }, [platform, client]);
+      sessionRef.current = client.session;
+    },
+    [platform, client]
+  );
 
   const {
     loading: loggingIn,
@@ -292,7 +326,7 @@ export function HydrogenRootView() {
 
       if (client.session) {
         await loadSession(client, client.session);
-        setSession(client.session);
+        sessionRef.current = client.session;
       } else {
         throw Error("Unknown error logging in.");
       }
@@ -316,19 +350,46 @@ export function HydrogenRootView() {
       localStorage.clear();
 
       client.loadStatus.set(LoadStatus.NotLoading);
-      setSession(undefined);
+      sessionRef.current = undefined;
     }
   }, [client, session]);
 
-  const navigate = useNavigate();
-  const completeOidc = async (state: string, code: string) => {
-    const loginMethod = await getOidcLoginMethod(platform, urlRouter, state, code);
-    if (!loginMethod) return;
-    login(loginMethod);
-    navigate("/");
-  };
-
+  const oidcCompleteError = useOidcComplete(platform, urlRouter, login);
   const profileRoom = useUserProfile(client, session);
+
+  const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
+  const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
+  let errorMsg = errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error?.message;
+  if (oidcCompleteError) errorMsg = oidcCompleteError;
+
+  return {
+    session,
+    profileRoom,
+    loadInitialSession,
+    login,
+    logout,
+    loading,
+    errorMsg,
+  };
+}
+
+export function HydrogenRootView() {
+  const sessionInfo = getSessionInfo();
+
+  const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
+
+  const { session, profileRoom, loadInitialSession, login, logout, loading, errorMsg } = useSession(
+    client,
+    platform,
+    urlRouter
+  );
+
+  useEffect(() => {
+    return () => {
+      client.dispose();
+      containerEl.remove();
+    };
+  }, [client, containerEl]);
 
   const context = useMemo<HydrogenContext>(
     () => ({
@@ -346,26 +407,21 @@ export function HydrogenRootView() {
     [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
   );
 
-  const loginPathMatch = useMatch({ path: "/login" });
-  const hasProfileRoom = session && profileRoom;
-  const location = useLocation();
-  let oidcError: string | null = null;
-  if (location.hash !== "") {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const code = params.get("code");
-    const state = params.get("state");
-    if (params.get("error")) {
-      oidcError = params.get("error_description");
-    }
-    if (code && state) {
-      completeOidc(state, code);
-    }
-  }
+  const rootPath = useMatch({ path: "/" });
+  const loginPath = useMatch({ path: "/login" });
 
-  const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
-  const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
-  let errorMsg = errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error?.message;
-  if (oidcError) errorMsg = oidcError;
+  console.log("##############");
+  console.log(`Session Info: ${!!sessionInfo}`);
+  console.log(`Session: ${session}`);
+  console.log(`Loading: ${loading}`);
+  console.log(`Error: ${errorMsg}`);
+  console.log(`Login Path: ${!!loginPath}`);
+  console.log(`Root Path: ${!!rootPath}`);
+
+  if (sessionInfo && !loading && !session && (rootPath || loginPath)) {
+    console.log("-------> loading session");
+    loadInitialSession(sessionInfo);
+  }
 
   if (loading) {
     return (
@@ -389,9 +445,11 @@ export function HydrogenRootView() {
     );
   }
 
-  if (!session && !loginPathMatch && !hasProfileRoom) {
-    return <Navigate to="/login" />;
-  } else if (session && loginPathMatch && hasProfileRoom) {
+  if (rootPath && !session && !sessionInfo) {
+    return <Navigate to="/preview" />;
+  }
+
+  if (loginPath && sessionInfo) {
     return <Navigate to="/" />;
   }
 
