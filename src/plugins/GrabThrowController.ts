@@ -4,6 +4,7 @@ import { vec3, mat4, quat } from "gl-matrix";
 import { Quaternion, Vector3 } from "three";
 
 import { Transform } from "../engine/component/transform";
+import { NOOP } from "../engine/config.common";
 import { GameState } from "../engine/GameTypes";
 import {
   enableActionMap,
@@ -209,9 +210,15 @@ export function GrabThrowSystem(ctx: GameState) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
         // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
-        addComponent(ctx.world, GrabComponent, eid);
-        takeOwnership(ctx, eid);
-        notifyUiEntityGrabbed(ctx, eid, ownerId, peerId);
+        const newEid = takeOwnership(ctx, eid);
+        if (newEid !== NOOP) {
+          addComponent(ctx.world, GrabComponent, newEid);
+          notifyUiEntityGrabbed(ctx, newEid, network.peerId, network.peerId);
+          heldEntity = newEid;
+        } else {
+          addComponent(ctx.world, GrabComponent, eid);
+          notifyUiEntityGrabbed(ctx, eid, ownerId, peerId);
+        }
       }
     }
   }

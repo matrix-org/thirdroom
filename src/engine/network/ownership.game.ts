@@ -2,6 +2,7 @@ import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
 import { addChild, removeRecursive, Transform } from "../component/transform";
+import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
@@ -38,7 +39,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   }
 };
 
-export const takeOwnership = (ctx: GameState, eid: number) => {
+export const takeOwnership = (ctx: GameState, eid: number): number => {
   if (!hasComponent(ctx.world, Owned, eid)) {
     removeRecursive(ctx.world, eid);
 
@@ -61,5 +62,9 @@ export const takeOwnership = (ctx: GameState, eid: number) => {
 
     // send message to remove on other side
     broadcastReliable(ctx, createRemoveOwnershipMessage(ctx, eid));
+
+    return newEid;
   }
+
+  return NOOP;
 };
