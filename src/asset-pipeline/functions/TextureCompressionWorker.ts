@@ -2,6 +2,7 @@ import { vec2 } from "@gltf-transform/core";
 import optipng from "optipng-js";
 
 import basisEncoderWasmUrl from "../vendor/basis/basis_encoder.wasm?url";
+import { BasisModule } from "../vendor/basis/basis_encoder";
 
 const jobs: Job[] = [];
 let processingJob = false;
@@ -13,8 +14,6 @@ self.onmessage = (event) => {
 };
 
 async function main() {
-  const { BasisModule } = (await import("../vendor/basis/basis_encoder.js" as any)) as any;
-
   const Basis = await BasisModule({
     locateFile(path: string) {
       if (path.endsWith(".wasm")) {
