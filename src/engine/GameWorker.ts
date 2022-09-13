@@ -1,6 +1,6 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent } from "./component/transform";
+import { addChild, addTransformComponent, SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
@@ -105,30 +105,39 @@ async function onInit({
 
   console.log("GameWorker initialized");
 
-  update(state);
+  let interval: any;
+
+  const gameLoop = () => {
+    interval = setInterval(() => {
+      const then = performance.now();
+      update(state);
+      const elapsed = performance.now() - then;
+      if (elapsed > 1000 / tickRate) {
+        console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
+        clearInterval(interval);
+        update(state);
+        interval = gameLoop();
+      }
+    }, 1000 / tickRate);
+    return interval;
+  };
+
+  gameLoop();
 }
 
-// timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
-// ex. Our game loop should be called every 16.666ms, it took 3ms this frame.
-// We could schedule the timeout for 13.666ms, but it would likely be scheduled about  3ms later.
-// So subtract 3-4ms from that timeout to make sure it always swaps the buffers in under 16.666ms.
-const timeoutOffset = 4;
-
-function update(state: GameState) {
+function update(ctx: GameState) {
   const now = performance.now();
-  state.dt = (now - state.elapsed) / 1000;
-  state.elapsed = now;
+  ctx.dt = (now - ctx.elapsed) / 1000;
+  ctx.elapsed = now;
 
-  swapReadBufferFlags(state.mainToGameTripleBufferFlags);
+  swapReadBufferFlags(ctx.mainToGameTripleBufferFlags);
 
-  for (let i = 0; i < state.systems.length; i++) {
-    state.systems[i](state);
+  for (let i = 0; i < ctx.systems.length; i++) {
+    ctx.systems[i](ctx);
   }
 
-  swapWriteBufferFlags(state.gameToMainTripleBufferFlags);
-  swapWriteBufferFlags(state.gameToRenderTripleBufferFlags);
+  swapWriteBufferFlags(ctx.gameToMainTripleBufferFlags);
+  swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);
 
-  const frameDuration = performance.now() - state.elapsed;
-  const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
-  setTimeout(() => update(state), remainder);
+  SkipRenderLerpSystem(ctx);
 }

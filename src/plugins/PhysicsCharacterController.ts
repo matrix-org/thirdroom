@@ -15,7 +15,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { Networked, Owned } from "../engine/network/network.game";
+import { associatePeerWithEntity, Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
@@ -160,7 +160,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   // how this player looks to others
   addPrefabComponent(world, playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
-  network.peerIdToEntityId.set(network.peerId, playerRig);
+  associatePeerWithEntity(network, network.peerId, playerRig);
 
   addComponent(world, PlayerRig, playerRig);
 
