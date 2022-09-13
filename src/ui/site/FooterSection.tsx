@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "../atoms/button/Button";
 import { Logo } from "./NavigationBar";
@@ -16,12 +17,14 @@ function FotterMenu({ children }: { children: ReactNode }) {
 }
 
 export function FooterSection() {
+  const navigate = useNavigate();
+
   return (
     <footer className="FooterSection flex flex-column items-center">
       <div className="FooterSection__content">
         <div className="FooterSection__branding flex justify-between items-center gap-md">
           <Logo />
-          <Button>
+          <Button onClick={() => navigate("/login")}>
             Get Started
             <Icon color="on-primary" src={ArrowForwardIC} />
           </Button>
