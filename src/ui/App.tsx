@@ -6,9 +6,9 @@ import "./App.css";
 import "@fontsource/inter/variable.css";
 
 import { HydrogenRootView } from "./views/HydrogenRootView";
-import { WorldView } from "./views/session/world/WorldView";
-import { HomeView } from "./views/session/home/HomeView";
 import { SplashScreen } from "./views/components/splash-screen/SplashScreen";
+import { PageNotFound } from "./views/components/page-not-found/PageNotFound";
+import { LoadingScreen } from "./views/components/loading-screen/LoadingScreen";
 
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
@@ -40,6 +40,8 @@ const LoginView = lazy(() => import("./views/login/LoginView"));
 const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
 const SessionView = lazy(() => import("./views/session/SessionView"));
+const WorldView = lazy(() => import("./views/session/world/WorldView"));
+const HomeView = lazy(() => import("./views/session/home/HomeView"));
 
 export function App() {
   return (
@@ -58,21 +60,42 @@ export function App() {
           <Route
             path="/login"
             element={
-              <Suspense fallback={<SplashScreen />}>
+              <Suspense fallback={<LoadingScreen />}>
                 <LoginView />
               </Suspense>
             }
           />
           <Route
             element={
-              <Suspense fallback={<SplashScreen />}>
+              <Suspense fallback={<LoadingScreen />}>
                 <SessionView />
               </Suspense>
             }
           >
-            <Route path="world/:worldId" element={<WorldView />} />
-            <Route path="world/" element={<WorldView />} />
-            <Route path="/" element={<HomeView />} />
+            <Route
+              path="world/:worldId"
+              element={
+                <Suspense fallback={<></>}>
+                  <WorldView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="world/"
+              element={
+                <Suspense fallback={<></>}>
+                  <WorldView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/"
+              element={
+                <Suspense fallback={<></>}>
+                  <HomeView />
+                </Suspense>
+              }
+            />
           </Route>
         </Route>
         <Route
@@ -92,6 +115,7 @@ export function App() {
           }
         />
         {storybookRoute}
+        <Route path="*" element={<PageNotFound />} />
       </Routes>
     </>
   );

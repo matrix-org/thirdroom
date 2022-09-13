@@ -1,6 +1,6 @@
 // import { useEngine } from "../../../hooks/useEngine";
 
-export function HomeView() {
+export default function HomeView() {
   // TODO: Load user's avatar into engine
   // const { loadGLTF } = useEngine();
 

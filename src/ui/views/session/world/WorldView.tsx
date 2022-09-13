@@ -31,7 +31,7 @@ import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../pl
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
-export function WorldView() {
+export default function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);

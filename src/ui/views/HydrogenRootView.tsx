@@ -30,7 +30,7 @@ import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
-import { Dots } from "../atoms/loading/Dots";
+import { CoverScreen } from "./components/cover-screen/CoverScreen";
 
 const defaultHomeServer = "thirdroom.io";
 
@@ -410,38 +410,22 @@ export function HydrogenRootView() {
   const rootPath = useMatch({ path: "/" });
   const loginPath = useMatch({ path: "/login" });
 
-  console.log("##############");
-  console.log(`Session Info: ${!!sessionInfo}`);
-  console.log(`Session: ${session}`);
-  console.log(`Loading: ${loading}`);
-  console.log(`Error: ${errorMsg}`);
-  console.log(`Login Path: ${!!loginPath}`);
-  console.log(`Root Path: ${!!rootPath}`);
-
   if (sessionInfo && !loading && !session && (rootPath || loginPath)) {
-    console.log("-------> loading session");
     loadInitialSession(sessionInfo);
   }
 
   if (loading) {
-    return (
-      <LoadingScreen className="gap-md">
-        <Dots size="lg" />
-        <Text variant="b3" weight="semi-bold">
-          Loading
-        </Text>
-      </LoadingScreen>
-    );
+    return <LoadingScreen />;
   }
 
   if (errorMsg) {
     return (
-      <LoadingScreen className="gap-md">
+      <CoverScreen className="gap-md">
         <Text variant="b1" weight="semi-bold">
           {errorMsg}
         </Text>
         <Button onClick={() => window.location.reload()}>Refresh</Button>
-      </LoadingScreen>
+      </CoverScreen>
     );
   }
 

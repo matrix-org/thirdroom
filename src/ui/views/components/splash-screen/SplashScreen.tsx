@@ -1,11 +1,10 @@
-import "./SplashScreen.css";
-
 import LogoFullSVG from "../../../../../res/svg/logo-full.svg";
+import { CoverScreen } from "../cover-screen/CoverScreen";
 
 export function SplashScreen() {
   return (
-    <div className="SplashScreen flex flex-column justify-center items-center">
+    <CoverScreen>
       <img src={LogoFullSVG} alt="Third Room" />
-    </div>
+    </CoverScreen>
   );
 }
