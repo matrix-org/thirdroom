@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
+import { Vector3 } from "three";
 
 import {
   createRemoteAudioData,
@@ -10,7 +11,7 @@ import {
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
 } from "../engine/audio/audio.game";
-import { Transform, addChild, addTransformComponent } from "../engine/component/transform";
+import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import { createRemoteImage } from "../engine/image/image.game";
 import {
@@ -197,10 +198,9 @@ export const CubeSpawnerActionMap: ActionMap = {
 const CUBE_THROW_FORCE = 10;
 
 const _direction = vec3.create();
+const _impulse = new Vector3();
+const _cameraWorldQuat = quat.create();
 
-const _impulse = new RAPIER.Vector3(0, 0, 0);
-
-const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
 
@@ -219,19 +219,24 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
-    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
     // place object at direction
     vec3.add(Transform.position[cube], Transform.position[cube], direction);
 
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
-    _impulse.x = direction[0];
-    _impulse.y = direction[1];
-    _impulse.z = direction[2];
-    RigidBody.store.get(cube)?.applyImpulse(_impulse, true);
+    _impulse.fromArray(direction);
+
+    const body = RigidBody.store.get(cube);
+
+    if (!body) throw new Error("could not find RigidBody for eid " + cube);
+
+    setEulerFromQuaternion(Transform.rotation[cube], _cameraWorldQuat);
+
+    body.applyImpulse(_impulse, true);
 
     addChild(ctx.activeScene, cube);
   }
