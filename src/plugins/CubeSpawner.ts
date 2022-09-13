@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
+import { Vector3 } from "three";
 
 import {
   createRemoteAudioData,
@@ -10,7 +11,7 @@ import {
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
 } from "../engine/audio/audio.game";
-import { Transform, addChild, addTransformComponent } from "../engine/component/transform";
+import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import { createRemoteImage } from "../engine/image/image.game";
 import {
@@ -62,8 +63,8 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
 
     registerPrefab(ctx, {
       name: "crate",
-      create: () => {
-        const eid = createPhysicsCube(ctx, 1, cubeMaterial);
+      create: (ctx, remote) => {
+        const eid = createPhysicsCube(ctx, 1, cubeMaterial, remote);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,
@@ -100,8 +101,8 @@ export const CubeSpawnerModule = defineModule<GameState, CubeSpawnerModuleState>
 
     registerPrefab(ctx, {
       name: "bouncy-ball",
-      create: () => {
-        const eid = createBouncyBall(ctx, 1, ballMaterial);
+      create: (ctx, remote) => {
+        const eid = createBouncyBall(ctx, 1, ballMaterial, remote);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: ballAudioData,
@@ -197,10 +198,9 @@ export const CubeSpawnerActionMap: ActionMap = {
 const CUBE_THROW_FORCE = 10;
 
 const _direction = vec3.create();
+const _impulse = new Vector3();
+const _cameraWorldQuat = quat.create();
 
-const _impulse = new RAPIER.Vector3(0, 0, 0);
-
-const cameraWorldQuat = quat.create();
 export const CubeSpawnerSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
 
@@ -219,25 +219,30 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
     mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
-    mat4.getRotation(cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
     // place object at direction
     vec3.add(Transform.position[cube], Transform.position[cube], direction);
 
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
-    _impulse.x = direction[0];
-    _impulse.y = direction[1];
-    _impulse.z = direction[2];
-    RigidBody.store.get(cube)?.applyImpulse(_impulse, true);
+    _impulse.fromArray(direction);
+
+    const body = RigidBody.store.get(cube);
+
+    if (!body) throw new Error("could not find RigidBody for eid " + cube);
+
+    setEulerFromQuaternion(Transform.rotation[cube], _cameraWorldQuat);
+
+    body.applyImpulse(_impulse, true);
 
     addChild(ctx.activeScene, cube);
   }
 };
 
-export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial) => {
+export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
   const eid = addEntity(world);
@@ -247,7 +252,7 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
 
   addRemoteNodeComponent(state, eid, { mesh });
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.ball(size / 2)

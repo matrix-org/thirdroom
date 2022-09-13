@@ -434,7 +434,7 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
 
 const COLLISION_GROUPS = 0xffff_ffff;
 
-export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial, remote = false) => {
   const { world } = ctx;
   const { physicsWorld } = getModule(ctx, PhysicsModule);
   const eid = addEntity(world);
@@ -450,7 +450,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
     mesh: createCubeMesh(ctx, size, material),
   });
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
