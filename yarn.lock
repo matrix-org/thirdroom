@@ -4410,6 +4410,11 @@ optionator@^0.9.1:
     type-check "^0.4.0"
     word-wrap "^1.2.3"
 
+optipng-js@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/optipng-js/-/optipng-js-0.1.2.tgz#187bef388e9091d8028b38cf972cc9b0915a54b1"
+  integrity sha512-Tm1vrmJIpRkz6ZaX0Lp/wD3aCpWz29EQn6h3mF5t+YnTE6UCj2huwqwrFiYHmW2Hz3KarnreYsZYbBIVJ5F5lQ==
+
 ora@^5.4.1:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/ora/-/ora-5.4.1.tgz#1b2678426af4ac4a509008e5e4ac9e9959db9e18"

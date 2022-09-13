@@ -77,6 +77,7 @@ import { getTransmissionFactor, getTransmissionTextureInfo } from "./KHR_materia
 import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_materials_volume";
 import { getMaterialIOR } from "./KHR_materials_ior";
 import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
+import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 
 export interface GLTFResource {
   url: string;
@@ -846,17 +847,19 @@ async function _loadGLTFTexture(
 
   const texture = resource.root.textures[index];
 
-  if (texture.source === undefined) {
+  const isBasis = hasBasisuExtension(texture);
+
+  if (texture.source === undefined && !isBasis) {
     throw new Error(`texture[${index}].source is undefined.`);
   }
 
-  if (texture.sampler === undefined) {
-    throw new Error(`texture[${index}].sampler is undefined.`);
-  }
-
   const { image, sampler } = await promiseObject({
-    image: loadGLTFImage(ctx, resource, texture.source, { flipY: options?.flipY }),
-    sampler: loadGLTFSampler(ctx, resource, texture.sampler, { mapping: options?.mapping }),
+    image: isBasis
+      ? loadBasisuImage(ctx, resource, texture)
+      : loadGLTFImage(ctx, resource, texture.source!, { flipY: options?.flipY }),
+    sampler: texture.sampler
+      ? loadGLTFSampler(ctx, resource, texture.sampler, { mapping: options?.mapping })
+      : undefined,
   });
 
   const remoteTexture = createRemoteTexture(ctx, {

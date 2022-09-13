@@ -8,6 +8,7 @@ import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
+import { compressTextures } from "./functions/compressTextures";
 import { dedupeProperties } from "./functions/dedupeProperties";
 import { extensionAwareInstance } from "./functions/extensionAwareInstance";
 
@@ -24,5 +25,5 @@ export function registerExtensions(io: PlatformIO) {
 }
 
 export async function transformGLTF(doc: Document) {
-  await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize());
+  await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize(), compressTextures());
 }

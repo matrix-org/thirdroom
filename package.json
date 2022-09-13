@@ -48,6 +48,7 @@
     "gl-matrix": "^3.4.3",
     "immer": "^9.0.12",
     "meshoptimizer": "^0.18.1",
+    "optipng-js": "^0.1.2",
     "react": "^17.0.2",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
