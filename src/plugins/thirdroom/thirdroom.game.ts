@@ -1,6 +1,7 @@
-import { addEntity, defineQuery, hasComponent } from "bitecs";
+import { addEntity, defineQuery } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
+import { Vector3 } from "three";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -40,7 +41,6 @@ import { createFlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
-import { Player } from "../../engine/component/Player";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -184,13 +184,14 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
 
     collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
-      const player =
-        (hasComponent(ctx.world, Player, eid1 || 0) && eid1) || (hasComponent(ctx.world, Player, eid2 || 0) && eid2);
+      // const player =
+      //   (hasComponent(ctx.world, Player, eid1 || 0) && eid1) || (hasComponent(ctx.world, Player, eid2 || 0) && eid2);
+      const player = eid1 || eid2;
 
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
 
       if (player && floor) {
-        spawnPlayer(spawnPointQuery(ctx.world), player);
+        spawnEntity(spawnPointQuery(ctx.world), player);
       }
     });
 
@@ -383,7 +384,7 @@ function loadPlayerRig(ctx: GameState) {
   }
 
   if (spawnPoints.length > 0) {
-    spawnPlayer(spawnPoints, playerRig);
+    spawnEntity(spawnPoints, playerRig);
   }
 
   addChild(ctx.activeScene, playerRig);
@@ -399,24 +400,40 @@ const waitUntil = (fn: Function) =>
     }, 100);
   });
 
-function spawnPlayer(
+const zero = new Vector3();
+
+function teleportEntity(eid: number, position: vec3, quaternion?: quat) {
+  // TODO
+  // Transform.skipLerp[eid] = 1;
+  Transform.position[eid].set(position);
+  if (quaternion) {
+    Transform.quaternion[eid].set(quaternion);
+    setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
+    Transform.rotation[eid][0] = 0;
+    Transform.rotation[eid][2] = 0;
+    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+  }
+  const body = RigidBody.store.get(eid);
+  if (body) {
+    applyTransformToRigidBody(body, eid);
+    body.setLinvel(zero, true);
+  }
+}
+
+const _p = vec3.create();
+const _q = quat.create();
+
+function spawnEntity(
   spawnPoints: number[],
-  playerRig: number,
+  eid: number,
   spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1))
 ) {
-  const worldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
-  const worldPosition = mat4.getTranslation(vec3.create(), worldMatrix);
-  const worldQuaternion = mat4.getRotation(quat.create(), worldMatrix);
+  const spawnWorldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
+  const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
+  const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
 
-  vec3.copy(Transform.position[playerRig], worldPosition);
-  Transform.position[playerRig][1] += 1.6;
-  setEulerFromQuaternion(Transform.rotation[playerRig], worldQuaternion);
-  Transform.rotation[playerRig][0] = 0;
-  Transform.rotation[playerRig][2] = 0;
-  setQuaternionFromEuler(Transform.quaternion[playerRig], Transform.rotation[playerRig]);
+  spawnPosition[1] += 1.6;
+  quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
 
-  const body = RigidBody.store.get(playerRig);
-  if (body) {
-    applyTransformToRigidBody(body, playerRig);
-  }
+  teleportEntity(eid, spawnPosition, spawnQuaternion);
 }
