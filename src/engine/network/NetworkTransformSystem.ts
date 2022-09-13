@@ -146,7 +146,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     // step forward local elapsed
     historian.localElapsed += ctx.dt * 1000;
 
-    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 2;
+    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 10;
 
     const targetElapsed = (historian.targetElapsed =
       historian.localElapsed - historian.interpolationBufferMs + FRAME_MS);
@@ -159,8 +159,8 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
       for (let i = historian.timestamps.length - 1; i >= 0; i--) {
         const t = historian.timestamps[i];
         const tt = historian.timestamps[i - 1];
+        index = i;
         if (t < targetElapsed && tt > targetElapsed) {
-          index = i;
           break;
         }
       }
