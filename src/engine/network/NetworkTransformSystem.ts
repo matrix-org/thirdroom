@@ -8,7 +8,13 @@ import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
 import { getModule } from "../module/module.common";
-import { addEntityToHistorian, getEntityHistory, removeEntityFromHistorian } from "./Historian";
+import {
+  addEntityToHistorian,
+  getEntityHistory,
+  INTERP_BUFFER_MS,
+  removeEntityFromHistorian,
+  TARGET_MS as INTERP_AMOUNT_MS,
+} from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { tickRate } from "../config.common";
@@ -146,10 +152,9 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     // step forward local elapsed
     historian.localElapsed += ctx.dt * 1000;
 
-    const trimElapsed = historian.localElapsed - historian.interpolationBufferMs * 10;
+    const trimElapsed = historian.localElapsed - INTERP_BUFFER_MS;
 
-    const targetElapsed = (historian.targetElapsed =
-      historian.localElapsed - historian.interpolationBufferMs + FRAME_MS);
+    const targetElapsed = (historian.targetElapsed = historian.localElapsed - INTERP_AMOUNT_MS + FRAME_MS);
 
     let index = -1;
     if (historian.timestamps.length > 2) {

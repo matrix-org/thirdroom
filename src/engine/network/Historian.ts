@@ -1,7 +1,7 @@
 import { createInterpolationBuffer, InterpolationBuffer } from "./InterpolationBuffer";
 
-// larger interp buffer, larger latency, smoother gameplay at higher latencies
-export const INTERP_BUFFER_MS = 50;
+export const INTERP_BUFFER_MS = 500;
+export const TARGET_MS = 20;
 
 export interface Historian {
   entities: Map<number, InterpolationBuffer>;
