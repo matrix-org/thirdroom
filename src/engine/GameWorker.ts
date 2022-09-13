@@ -115,6 +115,7 @@ async function onInit({
       if (elapsed > 1000 / tickRate) {
         console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
         clearInterval(interval);
+        update(state);
         interval = gameLoop();
       }
     }, 1000 / tickRate);
