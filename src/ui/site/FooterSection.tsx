@@ -33,7 +33,7 @@ export function FooterSection() {
           <FotterMenu>
             <Label className="uppercase">Join our community</Label>
             <a
-              href="https://matrix.to/#thirdroom-public:matrix.org"
+              href="https://matrix.to/#/#thirdroom-dev:matrix.org"
               target="_blank"
               className="flex items-center gap-xs"
             >
