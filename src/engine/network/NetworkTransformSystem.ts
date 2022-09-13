@@ -158,13 +158,17 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
 
     let index = -1;
     if (historian.timestamps.length > 2) {
-      while ((historian.timestamps.at(-1) || 0) < trimElapsed) {
-        historian.timestamps.pop();
-      }
       for (let i = historian.timestamps.length - 1; i >= 0; i--) {
         const t = historian.timestamps[i];
         const tt = historian.timestamps[i - 1];
+
+        if (t < trimElapsed) {
+          historian.timestamps.splice(i);
+          continue;
+        }
+
         index = i;
+
         if (t < targetElapsed && tt > targetElapsed) {
           break;
         }
