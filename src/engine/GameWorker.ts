@@ -105,9 +105,23 @@ async function onInit({
 
   console.log("GameWorker initialized");
 
-  setInterval(() => {
-    update(state);
-  }, 1000 / tickRate);
+  let interval: any;
+
+  const gameLoop = () => {
+    interval = setInterval(() => {
+      const then = performance.now();
+      update(state);
+      const elapsed = performance.now() - then;
+      if (elapsed > 1000 / tickRate) {
+        console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
+        clearInterval(interval);
+        interval = gameLoop();
+      }
+    }, 1000 / tickRate);
+    return interval;
+  };
+
+  gameLoop();
 }
 
 // timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
