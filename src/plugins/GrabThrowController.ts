@@ -116,6 +116,8 @@ const _t = new Vector3();
 
 const _r = new Vector4();
 
+const zero = new Vector3();
+
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
@@ -245,6 +247,7 @@ export function GrabThrowSystem(ctx: GameState) {
     const body = RigidBody.store.get(heldEntity);
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
+      body.setAngvel(zero, true);
       body.setRotation(_r.fromArray(_cameraWorldQuat), true);
     }
   }

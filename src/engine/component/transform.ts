@@ -2,6 +2,7 @@ import {
   addComponent,
   addEntity,
   defineComponent,
+  defineQuery,
   entityExists,
   getEntityComponents,
   IComponent,
@@ -27,6 +28,7 @@ export interface Transform extends IComponent {
   localMatrix: Float32Array[];
   worldMatrix: Float32Array[];
   static: Uint8Array;
+  skipLerp: Uint8Array;
   worldMatrixNeedsUpdate: Uint8Array;
 
   parent: Uint32Array;
@@ -46,6 +48,7 @@ export const gameObjectBuffer = createObjectBufferView(
     worldMatrix: [Float32Array, maxEntities, 16],
     worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
     static: [Uint8Array, maxEntities],
+    skipLerp: [Uint8Array, maxEntities],
   },
   ArrayBuffer
 );
@@ -59,6 +62,7 @@ export const Transform: Transform = {
   quaternion: gameObjectBuffer.quaternion,
   localMatrix: gameObjectBuffer.localMatrix,
   static: gameObjectBuffer.static,
+  skipLerp: gameObjectBuffer.skipLerp,
 
   worldMatrix: gameObjectBuffer.worldMatrix,
   worldMatrixNeedsUpdate: gameObjectBuffer.worldMatrixNeedsUpdate,
@@ -85,6 +89,10 @@ export function addTransformComponent(world: World, eid: number) {
   Transform.nextSibling[eid] = 0;
   Transform.prevSibling[eid] = 0;
   Transform.hierarchyUpdated[eid] = 1;
+
+  // always skip lerp for first few frames of existence
+  addComponent(world, SkipRenderLerp, eid);
+  Transform.skipLerp[eid] = 10;
 }
 
 export function createTransformEntity(world: World) {
@@ -580,4 +588,26 @@ export function getForwardVector(out: vec3, pitch: number, roll: number) {
 
 export function getRightVector(out: vec3, roll: number) {
   return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
+}
+
+export const SkipRenderLerp = defineComponent();
+const skipRenderLerpQuery = defineQuery([SkipRenderLerp]);
+
+export function SkipRenderLerpSystem(ctx: GameState) {
+  const ents = skipRenderLerpQuery(ctx.world);
+  for (let i = 0; i < ents.length; i++) {
+    const eid = ents[i];
+
+    Transform.skipLerp[eid] = Transform.skipLerp[eid] - 1;
+
+    if (Transform.skipLerp[eid] <= 0) {
+      Transform.skipLerp[eid] = 0;
+      removeComponent(ctx.world, SkipRenderLerp, eid);
+    }
+  }
+}
+
+export function skipRenderLerp(ctx: GameState, eid: number, numberOfFramesToSkip = 10) {
+  addComponent(ctx.world, SkipRenderLerp, eid);
+  Transform.skipLerp[eid] = numberOfFramesToSkip;
 }

@@ -12,6 +12,7 @@ import {
   rewindCursorView,
   scrollCursorView,
   skipFloat32,
+  skipUint8,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
@@ -23,7 +24,7 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { addChild, removeRecursive, Transform } from "../component/transform";
+import { addChild, removeRecursive, skipRenderLerp, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
@@ -392,7 +393,8 @@ export const serializeTransformChanged = defineChangedSerializer(
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 0),
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 1),
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 2),
-  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 3)
+  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 3),
+  (v, eid) => writePropIfChanged(v, Transform.skipLerp, eid)
 );
 
 // export const serializeTransformChanged = (v: CursorView, eid: number) => {
@@ -438,7 +440,8 @@ export const deserializeTransformChanged = defineChangedDeserializer(
   (v, eid) => (eid ? (Networked.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v))
+  (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
+  (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint8(v)) : skipUint8(v))
 );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
@@ -574,12 +577,16 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const eid = network.networkIdToEntityId.get(nid);
-    if (!eid) {
+
+    if (eid === undefined) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
-      // continue;
-      // createRemoteNetworkedEntity(state, nid);
     }
+
     deserializeTransformSnapshot(v, eid);
+
+    if (eid && Transform.skipLerp[eid]) {
+      skipRenderLerp(state, eid);
+    }
   }
   return input;
 }

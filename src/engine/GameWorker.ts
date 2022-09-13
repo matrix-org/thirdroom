@@ -1,6 +1,6 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent } from "./component/transform";
+import { addChild, addTransformComponent, SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
@@ -145,8 +145,10 @@ function update(ctx: GameState) {
   swapWriteBufferFlags(ctx.gameToMainTripleBufferFlags);
   swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);
 
-  // const frameDuration = performance.now() - state.elapsed;
+  SkipRenderLerpSystem(ctx);
+
+  // const frameDuration = performance.now() - ctx.elapsed;
   // const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
 
-  // setTimeout(() => update(state), remainder);
+  // setTimeout(() => update(ctx), remainder);
 }

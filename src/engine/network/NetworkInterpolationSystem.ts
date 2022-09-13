@@ -9,11 +9,11 @@ import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
 import { getModule } from "../module/module.common";
 import {
+  INTERP_BUFFER_MS,
+  INTERP_AMOUNT_MS,
   addEntityToHistorian,
   getEntityHistory,
-  INTERP_BUFFER_MS,
   removeEntityFromHistorian,
-  TARGET_MS as INTERP_AMOUNT_MS,
 } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
@@ -34,7 +34,7 @@ const getPeerIdFromEntityId = (network: GameNetworkState, eid: number) => {
 const _vec = new Vector3();
 const _quat = new Quaternion();
 
-export function NetworkTransformSystem(ctx: GameState) {
+export function NetworkInterpolationSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
 
   const entered = enteredRemoteEntityQuery(ctx.world);

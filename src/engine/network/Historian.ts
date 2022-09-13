@@ -1,7 +1,7 @@
 import { createInterpolationBuffer, InterpolationBuffer } from "./InterpolationBuffer";
 
 export const INTERP_BUFFER_MS = 500;
-export const TARGET_MS = 20;
+export const INTERP_AMOUNT_MS = 20;
 
 export interface Historian {
   entities: Map<number, InterpolationBuffer>;
