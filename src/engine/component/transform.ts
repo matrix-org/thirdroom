@@ -607,6 +607,14 @@ export function SkipRenderLerpSystem(ctx: GameState) {
   }
 }
 
+/**
+ * Prevents the renderer from lerping an entity's position for N frames.
+ * Useful in cases where an entity is teleported. Entity won't zip to the new location and instead will disappear and reappear instantaneously.
+ *
+ * @param ctx
+ * @param eid
+ * @param numberOfFramesToSkip
+ */
 export function skipRenderLerp(ctx: GameState, eid: number, numberOfFramesToSkip = 10) {
   addComponent(ctx.world, SkipRenderLerp, eid);
   Transform.skipLerp[eid] = numberOfFramesToSkip;
