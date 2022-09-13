@@ -1,7 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
-import { Quaternion, Vector3 } from "three";
+import { Quaternion, Vector3, Vector4 } from "three";
 
 import { Transform } from "../engine/component/transform";
 import { NOOP } from "../engine/config.common";
@@ -100,7 +100,7 @@ const _direction = vec3.create();
 const _source = vec3.create();
 const _target = vec3.create();
 
-const _impulse = new RAPIER.Vector3(0, 0, 0);
+const _impulse = new Vector3();
 
 const _cameraWorldQuat = quat.create();
 
@@ -113,6 +113,8 @@ const collisionGroups = 0x00f0_000f;
 
 const _s = new Vector3();
 const _t = new Vector3();
+
+const _r = new Vector4();
 
 export function GrabThrowSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
@@ -158,9 +160,7 @@ export function GrabThrowSystem(ctx: GameState) {
     vec3.scale(direction, direction, THROW_FORCE);
 
     // fire!
-    _impulse.x = direction[0];
-    _impulse.y = direction[1];
-    _impulse.z = direction[2];
+    _impulse.fromArray(direction);
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
     notifyUiEntityReleased(ctx, heldEntity, peerId, ownerId);
@@ -244,10 +244,8 @@ export function GrabThrowSystem(ctx: GameState) {
 
     const body = RigidBody.store.get(heldEntity);
     if (body) {
-      _impulse.x = target[0];
-      _impulse.y = target[1];
-      _impulse.z = target[2];
-      body.setLinvel(_impulse, true);
+      body.setLinvel(_impulse.fromArray(target), true);
+      body.setRotation(_r.fromArray(_cameraWorldQuat), true);
     }
   }
 }
