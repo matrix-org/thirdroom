@@ -90,6 +90,8 @@ export function NetworkInterpolationSystem(ctx: GameState) {
         continue;
       }
 
+      // TODO: optional hermite interpolation
+
       const from = historian.index || 0;
       const to = (historian.index || 0) - 1;
 
@@ -115,15 +117,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
         quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
         body.setRotation(_quat.fromArray(quaternion), true);
       }
-
-      // TODO: figure out why hermite interpolation snaps entity to 0,0 every so often
-      // if (pFrom && pTo && vFrom && vTo) {
-      //   vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
-      //   body.setLinvel(_vec.fromArray(velocity), true);
-
-      //   vec3.hermite(position, pFrom, pTo, vFrom, vTo, historian.fractionOfTimePassed);
-      //   body.setTranslation(_vec.fromArray(position), true);
-      // }
     }
   }
 

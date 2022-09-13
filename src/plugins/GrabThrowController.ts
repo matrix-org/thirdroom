@@ -191,11 +191,6 @@ export function GrabThrowSystem(ctx: GameState) {
 
     shapeCastPosition.copy(s);
 
-    // const ray = new RAPIER.Ray(s, t);
-    // const solid = true;
-    // const maxToi = 4.0;
-    // const raycastHit = physics.physicsWorld.castRay(ray, maxToi, solid, collisionGroups);
-
     const shapecastHit = physics.physicsWorld.castShape(
       shapeCastPosition,
       shapeCastRotation,
@@ -206,12 +201,10 @@ export function GrabThrowSystem(ctx: GameState) {
     );
 
     if (shapecastHit !== null) {
-      // const hitPoint = ray.pointAt(hit.toi); // ray.origin + ray.dir * toi
       const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
-        // GrabComponent.joint[eid].set([hitPoint.x, hitPoint.y, hitPoint.z]);
         const newEid = takeOwnership(ctx, eid);
         if (newEid !== NOOP) {
           addComponent(ctx.world, GrabComponent, newEid);

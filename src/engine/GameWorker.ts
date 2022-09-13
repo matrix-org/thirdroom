@@ -125,12 +125,6 @@ async function onInit({
   gameLoop();
 }
 
-// timeoutOffset: ms to subtract from the dynamic timeout to make sure we are always updating around 60hz
-// ex. Our game loop should be called every 16.666ms, it took 3ms this frame.
-// We could schedule the timeout for 13.666ms, but it would likely be scheduled about  3ms later.
-// So subtract 3-4ms from that timeout to make sure it always swaps the buffers in under 16.666ms.
-// const timeoutOffset = 1;
-
 function update(ctx: GameState) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
@@ -146,9 +140,4 @@ function update(ctx: GameState) {
   swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);
 
   SkipRenderLerpSystem(ctx);
-
-  // const frameDuration = performance.now() - ctx.elapsed;
-  // const remainder = Math.max(1000 / tickRate - frameDuration - timeoutOffset, 0);
-
-  // setTimeout(() => update(ctx), remainder);
 }
