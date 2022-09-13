@@ -156,8 +156,8 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
 const onInboundNetworkMessage = (ctx: GameState, message: NetworkMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId, packet } = message;
-  network.incomingPeerIds.push(peerId);
-  network.incomingPackets.push(packet);
+  network.incomingPeerIds.unshift(peerId);
+  network.incomingPackets.unshift(packet);
 };
 
 const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {

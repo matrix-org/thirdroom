@@ -53,6 +53,7 @@ export default defineConfig<GameState>({
     ActionMappingSystem,
 
     InboundNetworkSystem,
+    NetworkTransformSystem,
 
     FirstPersonCameraSystem,
     PlayerControllerSystem,
@@ -63,7 +64,6 @@ export default defineConfig<GameState>({
     ReticleFocusSystem,
     GrabThrowSystem,
 
-    NetworkTransformSystem,
     UpdateMatrixWorldSystem,
 
     NametagSystem,
