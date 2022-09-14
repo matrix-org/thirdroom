@@ -51,15 +51,15 @@ export function compressTextures(): Transform {
 
       const name = texture.getName() || texture.getURI();
       const slots = listTextureSlots(doc, texture);
-      const isSRGB = slots.some(
-        (slotName) => slotName === "baseColorTexture" || slotName === "emissiveTexture" || "lightMapTexture"
-      );
+      const isSRGB = slots.some((slotName) => slotName === "baseColorTexture" || slotName === "emissiveTexture");
       const isNormal = slots.some((slotName) => slotName === "normalTexture");
 
       const workerIndex = jobs.size % workers.length;
       const worker = workers[workerIndex];
 
-      const useOptiPng = texture.listParents().some((prop) => prop.propertyType === "ReflectionProbe");
+      const useOptiPng = texture
+        .listParents()
+        .some((prop) => prop.propertyType === "ReflectionProbe" || prop.propertyType === "Lightmap");
 
       if (useOptiPng && mimeType === "image/jpeg") {
         continue;
