@@ -25,5 +25,13 @@ export function registerExtensions(io: PlatformIO) {
 }
 
 export async function transformGLTF(doc: Document) {
-  await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize(), compressTextures());
+  await doc.transform(
+    dedupeProperties(),
+    extensionAwareInstance(),
+    textureResize({
+      slots: /(metallicRoughnessTexture)|(occlusionTexture)|(normalTexture)/,
+      size: [1024, 1024],
+    }),
+    compressTextures()
+  );
 }
