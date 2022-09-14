@@ -63,6 +63,8 @@ async function processJob() {
   console.log(
     `Compressing texture "${name}" with ${useOptiPng ? "OptiPNG" : isSRGB ? "ETC1S" : "UASTC"} compression.
   Original Size: ${(data.byteLength / 1000000).toFixed(2)}MB
+  Width: ${size[0]}
+  Height: ${size[1]}
   Used As: ${slots.join(", ")}
 `
   );
@@ -73,9 +75,20 @@ async function processJob() {
   let outMimeType: string;
 
   if (useOptiPng) {
-    const output = optipng(data, ["-o2"], console.log);
-    outBuffer = output.data;
-    outMimeType = "image/png";
+    try {
+      const output = optipng(data, ["-o2"], console.log);
+      outBuffer = output.data;
+      outMimeType = "image/png";
+    } catch (error) {
+      console.error(`Error compressing ${name}`, error);
+
+      self.postMessage({
+        jobId,
+        error: true,
+      });
+
+      return;
+    }
   } else {
     const tempOutputBuffer = new Uint8Array(size[0] * size[1] * 4);
 
@@ -109,7 +122,21 @@ async function processJob() {
       basisEncoder.setMipSRGB(isSRGB);
     }
 
-    const numOutputBytes = basisEncoder.encode(tempOutputBuffer);
+    let numOutputBytes: number;
+
+    try {
+      numOutputBytes = basisEncoder.encode(tempOutputBuffer);
+    } catch (error) {
+      console.error(`Error compressing ${name}`, error);
+
+      self.postMessage({
+        jobId,
+        error: true,
+      });
+
+      return;
+    }
+
     outBuffer = new Uint8Array(tempOutputBuffer.buffer, 0, numOutputBytes);
     outMimeType = "image/ktx2";
 
