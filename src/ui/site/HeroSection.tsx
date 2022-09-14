@@ -46,7 +46,7 @@ export function HeroSection() {
   const navigate = useNavigate();
 
   return (
-    <div className="HeroSection flex flex-column items-center">
+    <section className="HeroSection flex flex-column items-center">
       <div className="HeroSection__main flex flex-column items-center justify-center">
         <Text className="HeroSection__heading" variant="h2">
           Create and explore immersive worlds
@@ -64,6 +64,6 @@ export function HeroSection() {
           <path d="M871 0.5C1508.5 0.5 1742 318 1742 318H0C0 318 233.5 0.5 871 0.5Z" fill="white" />
         </svg>
       </div>
-    </div>
+    </section>
   );
 }
