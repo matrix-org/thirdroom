@@ -21,7 +21,12 @@ export function compressTextures(): Transform {
 
       worker.addEventListener("message", (event) => {
         const jobId = event.data.jobId;
-        jobs.get(jobId)!.resolve(event.data);
+
+        if (event.data.error) {
+          jobs.get(jobId)!.reject(new Error("Error compressing texture"));
+        } else {
+          jobs.get(jobId)!.resolve(event.data);
+        }
       });
 
       workers.push(worker);
@@ -66,6 +71,7 @@ export function compressTextures(): Transform {
       }
 
       if (mimeType === "image/jpeg") {
+        const originalByteLength = imageData.byteLength;
         canvas.width = size[0];
         canvas.height = size[1];
         ctx.clearRect(0, 0, size[0], size[1]);
@@ -73,6 +79,14 @@ export function compressTextures(): Transform {
         ctx.drawImage(bitmap, 0, 0);
         imageData = ctx.getImageData(0, 0, size[0], size[1]).data;
         bitmap.close();
+
+        console.log(
+          `Converted image from jpeg to bitmap:
+  Width: ${size[0]}
+  Height: ${size[1]}
+  JPEG Byte Length: ${originalByteLength}
+  Bitmap Byte Length: ${imageData.byteLength}`
+        );
       }
 
       const jobId = nextJobId++;
