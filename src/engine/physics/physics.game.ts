@@ -159,9 +159,9 @@ export const PhysicsSystem = (state: GameState) => {
       velocity[1] = linvel.y;
       velocity[2] = linvel.z;
 
-      // networked physics body
+      // skip remote networked physics bodies
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
-        applyTransformToRigidBody(body, eid);
+        continue;
       } else {
         applyRigidBodyToTransform(body, eid);
       }

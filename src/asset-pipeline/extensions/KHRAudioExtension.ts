@@ -12,7 +12,7 @@ import {
   Format,
 } from "@gltf-transform/core";
 
-import { ObjectURLWebIO } from "..";
+import { ICustomPlatformIO } from "../ICustomPlatformIO";
 
 const EXTENSION_NAME = "KHR_audio";
 
@@ -81,7 +81,7 @@ export class KHRAudioExtension extends Extension {
     return new KHRAudioData(this.document.getGraph());
   }
 
-  public static async beforeReadDocument(io: ObjectURLWebIO, jsonDoc: JSONDocument) {
+  public static async beforeReadDocument(io: ICustomPlatformIO, jsonDoc: JSONDocument) {
     if (!jsonDoc.json.extensions || !jsonDoc.json.extensions[EXTENSION_NAME]) return;
 
     const rootDef = jsonDoc.json.extensions[EXTENSION_NAME] as AudioExtensionDef;

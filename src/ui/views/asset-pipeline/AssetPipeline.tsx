@@ -1,6 +1,6 @@
 import { DragEvent, useCallback } from "react";
 
-import { transformGLTF } from "../../../asset-pipeline";
+import { transformGLTFWeb } from "../../../asset-pipeline/web";
 import "./AssetPipeline.css";
 
 export default function AssetPipeline() {
@@ -29,7 +29,7 @@ export default function AssetPipeline() {
     }
 
     if (url) {
-      transformGLTF(url, fileMap);
+      transformGLTFWeb(url, fileMap);
     }
   }, []);
 

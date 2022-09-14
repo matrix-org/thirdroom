@@ -8,6 +8,7 @@ import {
   PMREMGenerator,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
@@ -104,6 +105,7 @@ export interface RendererModuleState {
   imageBitmapLoader: ImageBitmapLoader;
   imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
+  ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
   unlitMaterials: LocalUnlitMaterialResource[]; // done
@@ -172,6 +174,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
         imageOrientation: "flipY",
       }),
       rgbeLoader: new RGBELoader(),
+      ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
       meshPrimitives: [],
       nodes: [],
       reflectionProbes: [],

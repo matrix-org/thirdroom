@@ -71,20 +71,10 @@ export function ReticleFocusSystem(ctx: GameState) {
       focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
       addComponent(ctx.world, FocusComponent, eid);
 
-      for (const [p, e] of network.peerIdToEntityId.entries()) {
-        if (eid === e) {
-          peerId = p;
-          break;
-        }
-      }
+      peerId = network.entityIdToPeerId.get(eid);
 
       const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
-      for (const [p, i] of network.peerIdToIndex.entries()) {
-        if (ownerIdIndex === i) {
-          ownerId = p;
-          break;
-        }
-      }
+      ownerId = network.indexToPeerId.get(ownerIdIndex);
     }
   } else {
     // clear focus
