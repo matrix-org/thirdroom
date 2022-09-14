@@ -106,6 +106,11 @@ export function updateTransformFromNode(
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
   object3D: Object3D
 ) {
+  if (nodeReadView.skipLerp[0]) {
+    setTransformFromNode(ctx, nodeReadView, object3D);
+    return;
+  }
+
   const frameRate = 1 / ctx.dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
 

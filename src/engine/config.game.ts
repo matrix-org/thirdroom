@@ -22,7 +22,7 @@ import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
 import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
-import { NetworkTransformSystem } from "./network/NetworkTransformSystem";
+import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
@@ -53,6 +53,7 @@ export default defineConfig<GameState>({
     ActionMappingSystem,
 
     InboundNetworkSystem,
+    NetworkInterpolationSystem,
 
     FirstPersonCameraSystem,
     PlayerControllerSystem,
@@ -63,7 +64,6 @@ export default defineConfig<GameState>({
     ReticleFocusSystem,
     GrabThrowSystem,
 
-    NetworkTransformSystem,
     UpdateMatrixWorldSystem,
 
     NametagSystem,

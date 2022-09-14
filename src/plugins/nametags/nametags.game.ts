@@ -57,14 +57,8 @@ export function NametagSystem(ctx: GameState) {
       // projection to camera space
       const nametagWorldPosition = mat4.getTranslation(_v, Transform.worldMatrix[nametag]);
       const projected = projectPerspective(ctx, ctx.activeCamera, nametagWorldPosition);
-      let peerId;
-      for (const [p, e] of network.peerIdToEntityId.entries()) {
-        if (otherPlayer === e) {
-          peerId = p;
-          break;
-        }
-      }
 
+      const peerId = network.entityIdToPeerId.get(otherPlayer);
       if (peerId === undefined) throw new Error("could not find peerId for entityId " + nametag);
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);

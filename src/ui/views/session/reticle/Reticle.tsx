@@ -49,14 +49,24 @@ export function Reticle({ onEntityFocused, onEntitySelected }: IReticleProps) {
 
   useEffect(() => {
     const onEntityGrabbed = (ctx: IMainThreadContext, message: any) => {
-      delete entity?.held;
-      const e = Object.assign(message, entity);
-      if (message.held) {
-        setEntity(e);
-        onEntityFocused(e);
-      } else {
-        setEntity(e);
-        onEntityFocused(e);
+      if (entity) {
+        const e = {
+          ...entity,
+          held: message.held,
+          ownerId: message.ownerId,
+          peerId: message.peerId,
+          entityId: message.entityId,
+          networkId: message.networkId,
+          prefab: message.prefab,
+        };
+
+        if (message.held) {
+          setEntity(e);
+          onEntityFocused(e);
+        } else {
+          setEntity(e);
+          onEntityFocused(e);
+        }
       }
     };
     return registerMessageHandler(ctx, EntityGrabbedMessage, onEntityGrabbed);
