@@ -171,6 +171,11 @@ export function updateLocalNodeResources(
               primitive.skeleton.bones.forEach((bone) => activeSceneResource.scene.remove(bone));
               primitive.skeleton.dispose();
             }
+
+            if (primitive instanceof InstancedMesh) {
+              primitive.geometry.dispose();
+            }
+
             activeSceneResource.scene.remove(primitive);
           }
         }

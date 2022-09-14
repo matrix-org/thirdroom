@@ -379,29 +379,29 @@
   resolved "https://registry.yarnpkg.com/@fontsource/inter/-/inter-4.5.12.tgz#a6236379bf710658db048d7087ec588754962cb6"
   integrity sha512-bGKk4/8tube/nCk8hav0ZDBVbzJzc7m0Vt4xF5p15IN4YImwGdtKG38Oq5bU8xHNS+VfvbFFCepgQNj7Pr/Lvg==
 
-"@gltf-transform/core@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.3.0.tgz#0a449822319d7ead2296688095ebba7029a625f6"
-  integrity sha512-Azz7WWGvjURGe+u++odysQ1oqDqrXPXrYgfm5izBweXyQihBZsykN4j+SprSfSnksAXCNINsg316cBP/2EbVXg==
+"@gltf-transform/core@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.3.tgz#4d9c18ba91abab17711e01da06cfc0892005bd92"
+  integrity sha512-Z5jr1ykrV5VdaJgkdErL0XYJrHWPVp57Z9wMWwPSY0E4Q5C81Y020egqouqXC1yE1jFADzGa9jInrYD30i7y0A==
   dependencies:
     gl-matrix "~3.4.3"
     property-graph "^0.2.6"
 
-"@gltf-transform/extensions@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.3.0.tgz#a02977252e97fe4333ec9b1635fbd4bc78aa6f67"
-  integrity sha512-REU7iXDQs02kXgPlCr46maRStV6CnbR5iSdvZ19Li7d1szjyVFBZKAcVhobTqGyhOoV5vsXMSdVFHBF7eqEYMA==
+"@gltf-transform/extensions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-2.4.3.tgz#e8416bbcfb5b195910a678e7ed26387700307458"
+  integrity sha512-JMJkkmaHXZ7GN48dmsKXwpiCaBJT1GbO6vty9irhR3Q/WUlgc7AiUTJHY/Xr/jRgQYz1HpZO/cz681lj/ho6Vw==
   dependencies:
-    "@gltf-transform/core" "^2.3.0"
+    "@gltf-transform/core" "^2.4.3"
     ktx-parse "^0.4.5"
 
-"@gltf-transform/functions@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.3.0.tgz#6f3760b3f79798b543062adfa49c8d9984538a12"
-  integrity sha512-zZOtyIhSAjR0sy2g5F3Zx9dapnucB6u/GU/qGvHUHK7TYh/W9J0GlkNO+M0st+l8mfMYr9haSCYh6ld2OXLHIw==
+"@gltf-transform/functions@^2.4.3":
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/functions/-/functions-2.4.3.tgz#f38d70654d04e37420530c54e4417a9d65a7a657"
+  integrity sha512-nzmhnxuN7jMXlO+l2kboQlYCPZAOEOhTZAwHKtoIqQ9uPwKP/Pbb1FVAbCjm+2bbBvyVraOkrW3oG4EZ+p9tbg==
   dependencies:
-    "@gltf-transform/core" "^2.3.0"
-    "@gltf-transform/extensions" "^2.3.0"
+    "@gltf-transform/core" "^2.4.3"
+    "@gltf-transform/extensions" "^2.4.3"
     gl-matrix "~3.4.3"
     ndarray "^1.0.19"
     ndarray-lanczos "^0.1.2"
@@ -3383,10 +3383,10 @@ json5@^2.1.2:
   resolved "https://registry.yarnpkg.com/json5/-/json5-2.2.1.tgz#655d50ed1e6f95ad1a3caababd2b0efda10b395c"
   integrity sha512-1hqLFMSrGHRHxav9q9gNjJ5EXznIxGVO09xQRrwplcS8qs28pZ8s8hupZAmqDwZUmVZ2Qb2jnyPOWcDH8m8dlA==
 
-jsonc-parser@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/jsonc-parser/-/jsonc-parser-3.0.0.tgz#abdd785701c7e7eaca8a9ec8cf070ca51a745a22"
-  integrity sha512-fQzRfAbIBnR0IQvftw9FJveWiHp72Fg20giDrHz6TdfB12UH/uue0D3hm57UB5KgAVuniLMCaS8P1IMj9NR7cA==
+jsonc-parser@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/jsonc-parser/-/jsonc-parser-3.2.0.tgz#31ff3f4c2b9793f89c67212627c51c6394f88e76"
+  integrity sha512-gfFQZrcTc8CnKXp6Y4/CBT3fTc0OVuDofpre4aEeEpSBPV5X5v4+Vmx+8snU7RLPrNHPKSgLxGo9YuQzz20o+w==
 
 jsprim@^1.2.2:
   version "1.4.2"
@@ -3628,14 +3628,14 @@ minimist@^1.2.0, minimist@^1.2.6:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
   integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
-mlly@^0.5.2, mlly@^0.5.3:
-  version "0.5.12"
-  resolved "https://registry.yarnpkg.com/mlly/-/mlly-0.5.12.tgz#e68de01b871edb488492da368693fd583e5b74ec"
-  integrity sha512-8moXGh6Hfy2Nmys3DDEm4CuxDBk5Y7Lk1jQ4JcwW0djO9b+SCKTpw0enIQeZIuEnPljdxHSGmcbXU9hpIIEYeQ==
+mlly@^0.5.14, mlly@^0.5.2:
+  version "0.5.14"
+  resolved "https://registry.yarnpkg.com/mlly/-/mlly-0.5.14.tgz#1aead555f8ffafd29f192676f4697805e25112c3"
+  integrity sha512-DgRgNUSX9NIxxCxygX4Xeg9C7GX7OUx1wuQ8cXx9o9LE0e9wrH+OZ9fcnrlEedsC/rtqry3ZhUddC759XD/L0w==
   dependencies:
     acorn "^8.8.0"
-    pathe "^0.3.4"
-    pkg-types "^0.3.3"
+    pathe "^0.3.5"
+    pkg-types "^0.3.4"
     ufo "^0.8.5"
 
 mrmime@^1.0.0:
@@ -3868,6 +3868,11 @@ optionator@^0.9.1:
     type-check "^0.4.0"
     word-wrap "^1.2.3"
 
+optipng-js@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/optipng-js/-/optipng-js-0.1.2.tgz#187bef388e9091d8028b38cf972cc9b0915a54b1"
+  integrity sha512-Tm1vrmJIpRkz6ZaX0Lp/wD3aCpWz29EQn6h3mF5t+YnTE6UCj2huwqwrFiYHmW2Hz3KarnreYsZYbBIVJ5F5lQ==
+
 p-limit@^1.1.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/p-limit/-/p-limit-1.3.0.tgz#b86bd5f0c25690911c7590fcbfc2010d54b3ccb8"
@@ -3989,10 +3994,10 @@ pathe@^0.2.0:
   resolved "https://registry.yarnpkg.com/pathe/-/pathe-0.2.0.tgz#30fd7bbe0a0d91f0e60bae621f5d19e9e225c339"
   integrity sha512-sTitTPYnn23esFR3RlqYBWn4c45WGeLcsKzQiUpXJAyfcWkolvlYpV8FLo7JishK946oQwMFUCHXQ9AjGPKExw==
 
-pathe@^0.3.0, pathe@^0.3.4:
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/pathe/-/pathe-0.3.4.tgz#35bfb1e92373f98d9711cc74e7d6475a0654deae"
-  integrity sha512-YWgqEdxf36R6vcsyj0A+yT/rDRPe0wui4J9gRR7T4whjU5Lx/jZOr75ckEgTNaLVQABAwsrlzHRpIKcCdXAQ5A==
+pathe@^0.3.5, pathe@^0.3.7:
+  version "0.3.7"
+  resolved "https://registry.yarnpkg.com/pathe/-/pathe-0.3.7.tgz#83860c096cb11d9614c17e0d70d91622931676ce"
+  integrity sha512-yz7GK+kSsS27x727jtXpd5VT4dDfP/JDIQmaowfxyWCnFjOWtE1VIh7i6TzcSfzW0n4+bRQztj1VdKnITNq/MA==
 
 pathval@^1.1.1:
   version "1.1.1"
@@ -4019,14 +4024,14 @@ picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.2.2, picomatch@^2.3.1:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
-pkg-types@^0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/pkg-types/-/pkg-types-0.3.3.tgz#3c25e45274e1c586ec7811dcc3449afde846e463"
-  integrity sha512-6AJcCMnjUQPQv/Wk960w0TOmjhdjbeaQJoSKWRQv9N3rgkessCu6J0Ydsog/nw1MbpnxHuPzYbfOn2KmlZO1FA==
+pkg-types@^0.3.4:
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/pkg-types/-/pkg-types-0.3.5.tgz#ea01c7cf28da9e4c5b85de9b250de4b3dc2e9abc"
+  integrity sha512-VkxCBFVgQhNHYk9subx+HOhZ4jzynH11ah63LZsprTKwPCWG9pfWBlkElWFbvkP9BVR0dP1jS9xPdhaHQNK74Q==
   dependencies:
-    jsonc-parser "^3.0.0"
-    mlly "^0.5.3"
-    pathe "^0.3.0"
+    jsonc-parser "^3.2.0"
+    mlly "^0.5.14"
+    pathe "^0.3.7"
 
 pngjs-nozlib@^1.0.0:
   version "1.0.0"

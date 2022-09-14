@@ -72,7 +72,6 @@ export interface LocalMeshPrimitive {
   material?: LocalMaterialResource;
   targets?: number[] | Float32Array;
   geometryObj: BufferGeometry;
-  instancedGeometryObj?: InstancedBufferGeometry;
   materialObj: Material;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
@@ -365,8 +364,6 @@ function createMeshPrimitiveObject(
         }
       }
 
-      primitive.instancedGeometryObj = instancedGeometry;
-
       const instancedMeshObject = new InstancedMesh(instancedGeometry, materialObj, count);
       instancedMeshObject.frustumCulled = false;
 
@@ -459,10 +456,6 @@ function createMeshPrimitiveObject(
       material.defines.USE_REFLECTION_PROBES = "";
     }
 
-    if (instancedMesh) {
-      material.defines.USE_INSTANCING = "";
-    }
-
     if (!material.userData.beforeCompileHook) {
       const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
       const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
@@ -514,12 +507,12 @@ function createMeshPrimitiveObject(
         );
       }
 
-      material.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
+      meshMaterial.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
 
-      const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
+      const reflectionProbeParams = meshMaterial.userData.reflectionProbeParams.value as Vector3;
       reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);
 
-      const reflectionProbeSampleParams = material.userData.reflectionProbeSampleParams.value as Vector3;
+      const reflectionProbeSampleParams = meshMaterial.userData.reflectionProbeSampleParams.value as Vector3;
       const envMapHeight = rendererModule.reflectionProbesMap?.image.height || 256;
       const maxMip = Math.log2(envMapHeight) - 2;
       const texelWidth = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
@@ -565,10 +558,6 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     const meshPrimitiveResource = meshPrimitives[i];
 
     if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
-      if (meshPrimitiveResource.instancedGeometryObj) {
-        meshPrimitiveResource.instancedGeometryObj.dispose();
-      }
-
       meshPrimitiveResource.geometryObj.dispose();
       meshPrimitiveResource.materialObj.dispose();
       meshPrimitives.splice(i, 1);
