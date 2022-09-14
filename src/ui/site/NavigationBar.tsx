@@ -4,6 +4,7 @@ import { Button } from "../atoms/button/Button";
 import { Text } from "../atoms/text/Text";
 import LogoFullSVG from "../../../res/svg/logo-full.svg";
 import "./NavigationBar.css";
+import { isMobileDevice } from "../utils/common";
 
 export function Logo() {
   return (
@@ -28,7 +29,7 @@ export function NavigationBar() {
         <a href="https://github.com/matrix-org/thirdroom/discussions" target="_blank">
           <Text weight="medium">Discussion</Text>
         </a>
-        <Button onClick={() => navigate("/login")}>Login</Button>
+        {!isMobileDevice() && <Button onClick={() => navigate("/login")}>Login</Button>}
       </div>
     </nav>
   );

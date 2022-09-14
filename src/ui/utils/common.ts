@@ -43,3 +43,7 @@ export function copyToClipboard(text: string) {
     copyInput.remove();
   }
 }
+
+export function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}

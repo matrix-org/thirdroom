@@ -11,6 +11,7 @@ import MatrixLogoSVG from "../../../res/svg/matrix-logo.svg";
 import GithubLogoSVG from "../../../res/svg/github-logo.svg";
 import TwitterLogoSVG from "../../../res/svg/twitter-logo.svg";
 import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
+import { isMobileDevice } from "../utils/common";
 
 function FotterMenu({ children }: { children: ReactNode }) {
   return <div className="flex flex-column gap-sm">{children}</div>;
@@ -24,8 +25,8 @@ export function FooterSection() {
       <div className="FooterSection__content">
         <div className="FooterSection__branding flex justify-between items-center gap-md">
           <Logo />
-          <Button onClick={() => navigate("/login")}>
-            Get Started
+          <Button onClick={() => navigate("/login")} disabled={isMobileDevice()}>
+            {isMobileDevice() ? "Try on Desktop" : "Get Started"}
             <Icon color="on-primary" src={ArrowForwardIC} />
           </Button>
         </div>

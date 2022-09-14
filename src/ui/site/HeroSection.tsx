@@ -8,6 +8,7 @@ import { Icon } from "../atoms/icon/Icon";
 import { IconButton } from "../atoms/button/IconButton";
 import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
 import PlayIC from "../../../res/ic/play.svg";
+import { isMobileDevice } from "../utils/common";
 
 function PreviewVideoPlayer() {
   const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
@@ -51,9 +52,9 @@ export function HeroSection() {
         <Text className="HeroSection__heading" variant="h2">
           Create and explore immersive worlds
         </Text>
-        <Button size="xl" onClick={() => navigate("/login")}>
+        <Button size="xl" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
           <Icon color="on-primary" src={ArrowForwardIC} />
-          Get Started
+          {isMobileDevice() ? "Try on Desktop" : "Get Started"}
         </Button>
       </div>
       <div className="HeroSection__video">
