@@ -16,6 +16,6 @@
 }
 @media screen and (max-width: 550px) {
   .Site {
-    --side-spacing: var(--sp-sm);
+    --side-spacing: var(--sp-md);
   }
 }

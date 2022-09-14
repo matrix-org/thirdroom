@@ -54,7 +54,9 @@ export function HeroSection() {
         </Text>
         <Button size="xl" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
           <Icon color="on-primary" src={ArrowForwardIC} />
-          {isMobileDevice() ? "Try on Desktop" : "Get Started"}
+          <Text color="on-primary" weight="semi-bold">
+            {isMobileDevice() ? "Try on Desktop" : "Get Started"}
+          </Text>
         </Button>
       </div>
       <div className="HeroSection__video">

@@ -27,7 +27,9 @@ export function NavigationBar() {
       </div>
       <div className="flex items-center gap-lg">
         <a href="https://github.com/matrix-org/thirdroom/discussions" target="_blank">
-          <Text weight="medium">Discussion</Text>
+          <Text variant="b2" weight="medium">
+            Discussions
+          </Text>
         </a>
         {!isMobileDevice() && <Button onClick={() => navigate("/login")}>Login</Button>}
       </div>

@@ -8,9 +8,9 @@ import "./Site.css";
 export default function Site() {
   return (
     <div className="Site flex flex-column">
+      <NavigationBar />
       <div className="grow">
         <Scroll type="scroll">
-          <NavigationBar />
           <HeroSection />
           <BlogSection />
           <FooterSection />

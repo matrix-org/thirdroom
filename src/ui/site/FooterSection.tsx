@@ -57,6 +57,18 @@ export function FooterSection() {
             </a>
           </FotterMenu>
         </div>
+        <div className="FooterSection__copyright">
+          <Text variant="b2">
+            Copyright © 2022 Element •{" "}
+            <a href="https://element.io/legal" target="_blank">
+              Legal
+            </a>{" "}
+            •{" "}
+            <a href="https://element.io/privacy" target="_blank">
+              Privacy
+            </a>
+          </Text>
+        </div>
       </div>
     </footer>
   );
