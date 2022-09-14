@@ -29,6 +29,10 @@ export async function transformGLTF(doc: Document) {
     dedupeProperties(),
     extensionAwareInstance(),
     textureResize({
+      slots: /(baseColorTexture)|(emissiveTexture)/,
+      size: [2048, 2048],
+    }),
+    textureResize({
       slots: /(metallicRoughnessTexture)|(occlusionTexture)|(normalTexture)/,
       size: [1024, 1024],
     }),
