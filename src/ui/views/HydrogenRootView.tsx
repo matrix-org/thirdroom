@@ -407,10 +407,10 @@ export function HydrogenRootView() {
     [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
   );
 
-  const rootPath = useMatch({ path: "/" });
+  const previewPath = useMatch({ path: "/preview" });
   const loginPath = useMatch({ path: "/login" });
 
-  if (sessionInfo && !loading && !session && (rootPath || loginPath)) {
+  if (sessionInfo && !loading && !session && !previewPath) {
     loadInitialSession(sessionInfo);
   }
 
@@ -429,7 +429,7 @@ export function HydrogenRootView() {
     );
   }
 
-  if (rootPath && !session && !sessionInfo) {
+  if (!previewPath && !loginPath && !session && !sessionInfo) {
     return <Navigate to="/preview" />;
   }
 
