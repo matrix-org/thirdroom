@@ -410,6 +410,13 @@ export function HydrogenRootView() {
   const previewPath = useMatch({ path: "/preview" });
   const loginPath = useMatch({ path: "/login" });
 
+  const href = window.location.href;
+  const WORLD_PATH_REG = /^\S+(\/world\/(!|#)\S+:\S+)$/;
+
+  if (href.match(WORLD_PATH_REG) && !sessionInfo) {
+    localStorage.setItem("on_login_redirect_uri", href);
+  }
+
   if (sessionInfo && !loading && !session && !previewPath) {
     loadInitialSession(sessionInfo);
   }
@@ -431,6 +438,12 @@ export function HydrogenRootView() {
 
   if (!previewPath && !loginPath && !session && !sessionInfo) {
     return <Navigate to="/preview" />;
+  }
+
+  const onLoginRedirectPath = localStorage.getItem("on_login_redirect_uri")?.match(WORLD_PATH_REG)?.[1];
+  if (sessionInfo && !previewPath && onLoginRedirectPath) {
+    localStorage.removeItem("on_login_redirect_uri");
+    return <Navigate to={onLoginRedirectPath} />;
   }
 
   if (loginPath && sessionInfo) {
