@@ -226,7 +226,7 @@ export default function WorldView() {
       {world && editorEnabled && <EditorView />}
       {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
       {!("isBeingCreated" in world) && (
-        <Dialog open={showActiveMembers}>
+        <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
         </Dialog>
       )}

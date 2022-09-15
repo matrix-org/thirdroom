@@ -1,6 +1,5 @@
 import { addEntity } from "bitecs";
-import { mat4, vec3 } from "gl-matrix";
-import { degToRad } from "three/src/math/MathUtils";
+import { mat4, vec3, glMatrix } from "gl-matrix";
 
 import {
   commitToObjectTripleBuffer,
@@ -88,7 +87,7 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
   cameraBufferView.zfar[0] = props?.zfar || 2000;
   cameraBufferView.znear[0] = props?.znear === undefined ? 0.1 : props.znear;
   cameraBufferView.aspectRatio[0] = props?.aspectRatio || 0; // 0 for automatic aspect ratio defined by canvas
-  cameraBufferView.yfov[0] = props?.yfov === undefined ? 50 : props.yfov;
+  cameraBufferView.yfov[0] = props?.yfov === undefined ? glMatrix.toRadian(50) : props.yfov;
   cameraBufferView.projectionMatrixNeedsUpdate[0] = 1;
 
   const cameraTripleBuffer = createObjectTripleBuffer(perspectiveCameraSchema, ctx.gameToRenderTripleBufferFlags);
@@ -279,7 +278,7 @@ export function createCamera(state: GameState, setActive = true): number {
   addTransformComponent(state.world, eid);
 
   const remoteCamera = createRemotePerspectiveCamera(state, {
-    yfov: 75,
+    yfov: glMatrix.toRadian(75),
     znear: 0.1,
   });
 
@@ -318,7 +317,7 @@ export function calculateProjectionMatrix(ctx: GameState, camera: RemotePerspect
   const zoom = 1;
   const aspect = renderer.canvasWidth / renderer.canvasHeight;
 
-  const top = (near * Math.tan(degToRad(0.5 * fov))) / zoom;
+  const top = (near * Math.tan(0.5 * fov)) / zoom;
   const height = 2 * top;
   const width = aspect * height;
   const left = -0.5 * width;

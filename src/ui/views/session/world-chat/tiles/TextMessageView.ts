@@ -1,4 +1,5 @@
 import { TemplateView, TextTile, Builder, TileView } from "@thirdroom/hydrogen-view-sdk";
+import classNames from "classnames";
 
 import "./TextMessageView.css";
 
@@ -8,14 +9,21 @@ export class TextMessageView extends TemplateView<TextTile> implements TileView 
   }
 
   render(t: Builder<TextTile>, vm: TextTile): Element {
+    const isEmote = vm._getContent()?.msgtype === "m.emote";
+
+    let body = isEmote ? `* ${vm.displayName} ` : "";
+    body += vm._getPlainBody?.();
+
     return t.li(
-      { className: "WorldChat__TextMessageView" },
+      { className: classNames("WorldChat__TextMessageView", { "WorldChat__TextMessageView--emote": isEmote }) },
       t.div({ className: "Text Text-b2 Text--world Text--regular" }, [
-        t.span(
-          { className: "WorldChat__TextMessageView-sender Text Text-b2 Text--world Text--semi-bold" },
-          vm.displayName
-        ),
-        vm._getPlainBody?.() || "*** EMPTY MESSAGE ***",
+        isEmote
+          ? ""
+          : t.span(
+              { className: "WorldChat__TextMessageView-sender Text Text-b2 Text--world Text--semi-bold" },
+              vm.displayName
+            ),
+        body || "*** EMPTY MESSAGE ***",
       ])
     );
   }

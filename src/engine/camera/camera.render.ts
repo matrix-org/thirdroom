@@ -1,4 +1,4 @@
-import { OrthographicCamera, PerspectiveCamera, Scene } from "three";
+import { OrthographicCamera, PerspectiveCamera, Scene, MathUtils } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
@@ -94,7 +94,7 @@ export function updateNodeCamera(
 
     const cameraView = getReadObjectBufferView(node.camera.cameraTripleBuffer);
     perspectiveCamera.layers.mask = cameraView.layers[0];
-    perspectiveCamera.fov = cameraView.yfov[0];
+    perspectiveCamera.fov = cameraView.yfov[0] * MathUtils.RAD2DEG;
     perspectiveCamera.near = cameraView.znear[0];
     perspectiveCamera.far = cameraView.zfar[0];
 
