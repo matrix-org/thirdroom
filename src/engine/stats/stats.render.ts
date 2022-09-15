@@ -30,7 +30,7 @@ export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
 });
 
 // longer history == smoother RMS value
-const DELTA_HISTORY_LENGTH = 25;
+const DELTA_HISTORY_MAX = 25;
 
 export function RenderThreadStatsSystem(state: RenderThreadState) {
   const renderModule = getModule(state, RendererModule);
@@ -43,14 +43,14 @@ export function RenderThreadStatsSystem(state: RenderThreadState) {
   const stats = getModule(state, StatsModule);
   const { statsBuffer, staleFrameCounter, deltaHistory } = stats;
 
-  if (deltaHistory.length >= DELTA_HISTORY_LENGTH) {
+  if (deltaHistory.length >= DELTA_HISTORY_MAX) {
     deltaHistory.pop();
   }
-  if (deltaHistory.length < DELTA_HISTORY_LENGTH) {
+  if (deltaHistory.length < DELTA_HISTORY_MAX) {
     deltaHistory.unshift(state.dt);
   }
 
-  if (deltaHistory.length > DELTA_HISTORY_LENGTH / 2) {
+  if (deltaHistory.length > DELTA_HISTORY_MAX / 2) {
     const meanSquare = deltaHistory.reduce((a, v) => a + v ** 2, 0) / deltaHistory.length;
     stats.deltaRMS = Math.sqrt(meanSquare);
   }
@@ -62,7 +62,7 @@ export function RenderThreadStatsSystem(state: RenderThreadState) {
   const frameDuration = (end - state.elapsed) / 1000;
 
   statsBuffer.f32[Stats.fps] = 1 / deltaRMS;
-  statsBuffer.f32[Stats.frameTime] = deltaRMS * 1000;
+  statsBuffer.f32[Stats.frameTime] = state.dt * 1000;
   statsBuffer.f32[Stats.frameDuration] = frameDuration;
   statsBuffer.u32[Stats.frame] = frame;
   statsBuffer.u32[Stats.staleFrames] = staleFrameCounter;

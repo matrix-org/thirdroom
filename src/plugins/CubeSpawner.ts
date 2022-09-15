@@ -209,38 +209,37 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
 
   const prefab = spawnCube.pressed ? "crate" : spawnBall.pressed ? "bouncy-ball" : "crate";
 
-  for (let i = 0; i < 250; i++)
-    if (spawnCube.pressed || spawnBall.pressed) {
-      const cube = createPrefabEntity(ctx, prefab);
+  if (spawnCube.pressed || spawnBall.pressed) {
+    const cube = createPrefabEntity(ctx, prefab);
 
-      // caveat: must add owned before networked (should maybe change Owned to Remote)
-      addComponent(ctx.world, Owned, cube);
-      // Networked component isn't reset when removed so reset on add
-      addComponent(ctx.world, Networked, cube, true);
+    // caveat: must add owned before networked (should maybe change Owned to Remote)
+    addComponent(ctx.world, Owned, cube);
+    // Networked component isn't reset when removed so reset on add
+    addComponent(ctx.world, Networked, cube, true);
 
-      mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
 
-      mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
-      const direction = vec3.set(_direction, 0, 0, -1);
-      vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    const direction = vec3.set(_direction, 0, 0, -1);
+    vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
-      // place object at direction
-      vec3.add(Transform.position[cube], Transform.position[cube], direction);
+    // place object at direction
+    vec3.add(Transform.position[cube], Transform.position[cube], direction);
 
-      vec3.scale(direction, direction, CUBE_THROW_FORCE);
+    vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
-      _impulse.fromArray(direction);
+    _impulse.fromArray(direction);
 
-      const body = RigidBody.store.get(cube);
+    const body = RigidBody.store.get(cube);
 
-      if (!body) throw new Error("could not find RigidBody for eid " + cube);
+    if (!body) throw new Error("could not find RigidBody for eid " + cube);
 
-      setEulerFromQuaternion(Transform.rotation[cube], _cameraWorldQuat);
+    setEulerFromQuaternion(Transform.rotation[cube], _cameraWorldQuat);
 
-      body.applyImpulse(_impulse, true);
+    body.applyImpulse(_impulse, true);
 
-      addChild(ctx.activeScene, cube);
-    }
+    addChild(ctx.activeScene, cube);
+  }
 };
 
 export const createBouncyBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
