@@ -21,7 +21,7 @@ export function RoomListFriends() {
       <EmptyState
         style={{ minHeight: "400px" }}
         heading="No Friends"
-        text="You don't have any friend yet."
+        text="You don't have any friends yet."
         actions={
           <>
             <Dialog open={open} onOpenChange={setOpen}>
