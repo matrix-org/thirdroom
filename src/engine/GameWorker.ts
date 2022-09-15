@@ -2,7 +2,7 @@ import { addEntity, createWorld } from "bitecs";
 
 import { addChild, addTransformComponent, SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
-import { InitializeGameWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
+import { InitializeGameWorkerMessage, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
@@ -10,12 +10,16 @@ import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuf
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
-async function onInitMessage({ data }: { data: WorkerMessages }) {
+async function onInitMessage({ data }: MessageEvent) {
   if (typeof data !== "object") {
     return;
   }
 
-  const message = data as WorkerMessages;
+  const { dest, message } = data;
+
+  if (dest !== Thread.Game) {
+    return;
+  }
 
   if (message.type === WorkerMessageType.InitializeGameWorker) {
     workerScope.removeEventListener("message", onInitMessage);
@@ -47,9 +51,9 @@ async function onInit({
 
   function gameWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
     if (thread === Thread.Main) {
-      workerScope.postMessage(message, transferList);
+      workerScope.postMessage({ dest: thread, message }, transferList);
     } else if (thread === Thread.Render) {
-      renderPort.postMessage(message, transferList);
+      renderPort.postMessage({ dest: thread, message }, transferList);
     }
   }
 
@@ -57,7 +61,6 @@ async function onInit({
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     gameToRenderTripleBufferFlags,
-    renderPort,
     elapsed: performance.now(),
     dt: 0,
     world,
@@ -74,7 +77,11 @@ async function onInit({
       return;
     }
 
-    const message = data as WorkerMessages;
+    const { message, dest } = data;
+
+    if (dest !== Thread.Game) {
+      return;
+    }
 
     const handlers = state.messageHandlers.get(message.type);
 

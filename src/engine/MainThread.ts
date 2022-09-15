@@ -3,6 +3,7 @@ import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerM
 import { BaseThreadContext, Message, registerModules, Thread } from "./module/module.common";
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
+import { MockMessagePort } from "./module/MockMessageChannel";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -12,8 +13,6 @@ export interface IMainThreadContext extends BaseThreadContext {
   gameToMainTripleBufferFlags: Uint8Array;
   canvas: HTMLCanvasElement;
   animationFrameId?: number;
-  gameWorker: Worker;
-  renderWorker: Worker | MessagePort;
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
 }
@@ -25,14 +24,14 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
 
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker(canvas, useOffscreenCanvas);
+  const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas);
   const interWorkerMessageChannel = new MessageChannel();
 
   function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
     if (thread === Thread.Game) {
-      gameWorker.postMessage(message, transferList);
+      gameWorker.postMessage({ dest: thread, message }, transferList);
     } else if (thread === Thread.Render) {
-      renderWorker.postMessage(message, transferList);
+      renderWorker.postMessage({ dest: thread, message }, transferList);
     }
   }
 
@@ -47,25 +46,29 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     modules: new Map(),
     useOffscreenCanvas,
     canvas,
-    gameWorker,
-    renderWorker,
     messageHandlers: new Map(),
     initialGameWorkerState: {},
     initialRenderWorkerState: {},
     sendMessage: mainThreadSendMessage,
   };
 
-  function onWorkerMessage(event: MessageEvent<Message<any>>) {
-    const handlers = context.messageHandlers.get(event.data.type);
+  function onWorkerMessage(event: MessageEvent) {
+    const { message, dest } = event.data;
+
+    if (dest !== Thread.Main) {
+      return;
+    }
+
+    const handlers = context.messageHandlers.get(message.type);
 
     if (handlers) {
       for (let i = 0; i < handlers.length; i++) {
-        handlers[i](context, event.data);
+        handlers[i](context, message);
       }
     }
   }
 
-  context.gameWorker.addEventListener("message", onWorkerMessage);
+  gameWorker.addEventListener("message", onWorkerMessage);
   renderWorker.addEventListener("message", onWorkerMessage as any);
 
   /* Register module loader event handlers before we send the message (sendMessage synchronous to RenderThread when RenderThread is running on MainThread)*/
@@ -77,22 +80,22 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     Thread.Game,
     {
       type: WorkerMessageType.InitializeGameWorker,
-      renderWorkerMessagePort: interWorkerMessageChannel.port1,
+      renderWorkerMessagePort: useOffscreenCanvas ? interWorkerMessageChannel.port1 : undefined,
       mainToGameTripleBufferFlags,
       gameToMainTripleBufferFlags,
       gameToRenderTripleBufferFlags,
     } as InitializeGameWorkerMessage,
-    [interWorkerMessageChannel.port1]
+    useOffscreenCanvas ? [interWorkerMessageChannel.port1] : undefined
   );
 
   context.sendMessage(
     Thread.Render,
     {
       type: WorkerMessageType.InitializeRenderWorker,
-      gameWorkerMessageTarget: interWorkerMessageChannel.port2,
+      gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
     } as InitializeRenderWorkerMessage,
-    [interWorkerMessageChannel.port2]
+    useOffscreenCanvas ? [interWorkerMessageChannel.port2] : undefined
   );
 
   /* Initialize all modules and retrieve data needed to send to workers */
@@ -136,10 +139,12 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
       disposeModules();
 
-      context.gameWorker.removeEventListener("message", onWorkerMessage);
+      gameWorker.removeEventListener("message", onWorkerMessage);
       renderWorker.removeEventListener("message", onWorkerMessage as any);
 
-      context.gameWorker.terminate();
+      if (gameWorker instanceof Worker) {
+        gameWorker.terminate();
+      }
 
       if (renderWorker instanceof Worker) {
         renderWorker.terminate();
@@ -148,7 +153,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   };
 }
 
-async function initRenderWorker(canvas: HTMLCanvasElement, useOffscreenCanvas: boolean): Promise<Worker | MessagePort> {
+async function initRenderWorker(
+  canvas: HTMLCanvasElement,
+  gameWorker: Worker,
+  useOffscreenCanvas: boolean
+): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
     const { default: RenderWorker } = await import("./RenderWorker?worker");
@@ -156,6 +165,6 @@ async function initRenderWorker(canvas: HTMLCanvasElement, useOffscreenCanvas: b
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
     const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
-    return initRenderWorkerOnMainThread(canvas);
+    return initRenderWorkerOnMainThread(canvas, gameWorker);
   }
 }
