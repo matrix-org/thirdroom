@@ -133,6 +133,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
+      // NOTE: we only have this enabled due to a bug with depth buffer precision on M1 Mac in Chrome
+      // TODO: https://github.com/matrix-org/thirdroom/issues/118
+      logarithmicDepthBuffer: true,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
