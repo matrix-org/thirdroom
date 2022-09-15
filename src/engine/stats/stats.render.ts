@@ -6,6 +6,8 @@ interface StatsModuleState {
   statsBuffer: StatsBuffer;
   staleFrameCounter: number;
   staleTripleBufferCounter: number;
+  deltaHistory: number[];
+  deltaRMS: number;
 }
 
 export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
@@ -20,10 +22,15 @@ export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
       statsBuffer,
       staleFrameCounter: 0,
       staleTripleBufferCounter: 0,
+      deltaHistory: [],
+      deltaRMS: 0,
     };
   },
   init() {},
 });
+
+// longer history == smoother RMS value
+const DELTA_HISTORY_LENGTH = 25;
 
 export function RenderThreadStatsSystem(state: RenderThreadState) {
   const renderModule = getModule(state, RendererModule);
@@ -33,14 +40,29 @@ export function RenderThreadStatsSystem(state: RenderThreadState) {
     programs,
   } = renderModule.renderer.info;
 
-  const { statsBuffer, staleFrameCounter } = getModule(state, StatsModule);
+  const stats = getModule(state, StatsModule);
+  const { statsBuffer, staleFrameCounter, deltaHistory } = stats;
+
+  if (deltaHistory.length >= DELTA_HISTORY_LENGTH) {
+    deltaHistory.pop();
+  }
+  if (deltaHistory.length < DELTA_HISTORY_LENGTH) {
+    deltaHistory.unshift(state.dt);
+  }
+
+  if (deltaHistory.length > DELTA_HISTORY_LENGTH / 2) {
+    const meanSquare = deltaHistory.reduce((a, v) => a + v ** 2, 0) / deltaHistory.length;
+    stats.deltaRMS = Math.sqrt(meanSquare);
+  }
+
+  const { deltaRMS } = stats;
 
   const end = performance.now();
 
   const frameDuration = (end - state.elapsed) / 1000;
 
-  statsBuffer.f32[Stats.fps] = 1 / state.dt;
-  statsBuffer.f32[Stats.frameTime] = state.dt * 1000;
+  statsBuffer.f32[Stats.fps] = 1 / deltaRMS;
+  statsBuffer.f32[Stats.frameTime] = deltaRMS * 1000;
   statsBuffer.f32[Stats.frameDuration] = frameDuration;
   statsBuffer.u32[Stats.frame] = frame;
   statsBuffer.u32[Stats.staleFrames] = staleFrameCounter;

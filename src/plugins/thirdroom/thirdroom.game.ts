@@ -188,11 +188,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
       if (!entity) return;
 
-      if (hasComponent(ctx.world, Networked, entity) && !hasComponent(ctx.world, Owned, entity)) return;
-
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
 
       if (entity && floor) {
+        if (hasComponent(ctx.world, Networked, entity) && !hasComponent(ctx.world, Owned, entity)) return;
         spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
       }
     });

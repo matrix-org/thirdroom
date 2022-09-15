@@ -6,6 +6,7 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
+  Clock,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
@@ -119,6 +120,8 @@ export interface RendererModuleState {
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
+  dynamicResolutionScaling: boolean;
+  limitFramerate: boolean;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -181,6 +184,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       reflectionProbesMap: null,
       pmremGenerator,
       tilesRenderers: [],
+      dynamicResolutionScaling: true,
+      limitFramerate: false,
     };
   },
   init(ctx) {
@@ -211,9 +216,31 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
   },
 });
 
-export function startRenderLoop(state: RenderThreadState) {
-  const { renderer } = getModule(state, RendererModule);
-  renderer.setAnimationLoop(() => onUpdate(state));
+// framerate limiting: https://stackoverflow.com/questions/11285065/limiting-framerate-in-three-js-to-increase-performance-requestanimationframe
+
+const COMMON_REFRESH_RATES = [60, 75, 90, 120, 144, 165, 170, 175, 180, 185, 200, 240];
+
+export function startRenderLoop(ctx: RenderThreadState) {
+  const renderer = getModule(ctx, RendererModule);
+
+  const clock = new Clock();
+  const targetDelta = 1 / COMMON_REFRESH_RATES[0];
+  let delta = 0;
+
+  const renderLoop = () => {
+    requestAnimationFrame(renderLoop);
+    if (renderer.limitFramerate) {
+      delta += clock.getDelta();
+      if (delta > targetDelta) {
+        onUpdate(ctx);
+        delta = delta % targetDelta;
+      }
+    } else {
+      onUpdate(ctx);
+    }
+  };
+
+  renderLoop();
 }
 
 function onUpdate(state: RenderThreadState) {
