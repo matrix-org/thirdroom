@@ -29,8 +29,9 @@ import { useAsyncCallback } from "../hooks/useAsyncCallback";
 import { LoadingScreen } from "./components/loading-screen/LoadingScreen";
 import { Button } from "../atoms/button/Button";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
+import { registerThirdroomGlobalFn, registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 import { Dots } from "../atoms/loading/Dots";
+import { downloadFile } from "../../engine/utils/downloadFile";
 
 const defaultHomeServer = "thirdroom.io";
 
@@ -176,6 +177,31 @@ function initHydrogen() {
   };
 
   registerThirdroomGlobalVar("hydrogen", hydrogenInstance);
+  registerThirdroomGlobalFn("openCallLogs", () => {
+    const logViewer = window.open("/logviewer/index.html", "__blank");
+
+    function onReady() {
+      window.removeEventListener("log-viewer-ready", onReady);
+
+      logViewer?.postMessage({
+        hydrogenLogs: JSON.parse(
+          JSON.stringify({
+            items: Array.from((platform.logger as any)._openItems).map((i: any) =>
+              i.serialize(undefined, undefined, false)
+            ),
+          })
+        ),
+      });
+    }
+
+    window.addEventListener("log-viewer-ready", onReady);
+  });
+  registerThirdroomGlobalFn("downloadCallLogs", () => {
+    const logs = JSON.stringify({
+      items: Array.from((platform.logger as any)._openItems).map((i: any) => i.serialize(undefined, undefined, false)),
+    });
+    downloadFile(logs, "thirdroom-call-logs.json", "application/json");
+  });
 
   return hydrogenInstance;
 }
