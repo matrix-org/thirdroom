@@ -106,6 +106,11 @@ export function updateTransformFromNode(
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
   object3D: Object3D
 ) {
+  if (nodeReadView.skipLerp[0]) {
+    setTransformFromNode(ctx, nodeReadView, object3D);
+    return;
+  }
+
   const frameRate = 1 / ctx.dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);
 
@@ -166,6 +171,11 @@ export function updateLocalNodeResources(
               primitive.skeleton.bones.forEach((bone) => activeSceneResource.scene.remove(bone));
               primitive.skeleton.dispose();
             }
+
+            if (primitive instanceof InstancedMesh) {
+              primitive.geometry.dispose();
+            }
+
             activeSceneResource.scene.remove(primitive);
           }
         }

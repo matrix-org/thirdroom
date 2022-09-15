@@ -441,6 +441,8 @@ export function RemoteNodeSystem(ctx: GameState) {
       continue;
     }
 
+    remoteNode.rendererNodeBufferView.skipLerp[0] = Transform.skipLerp[eid];
+
     remoteNode.rendererNodeBufferView.visible[0] = 0;
 
     if (remoteNode.audioEmitter) {

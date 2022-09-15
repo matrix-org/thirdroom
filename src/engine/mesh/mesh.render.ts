@@ -72,7 +72,6 @@ export interface LocalMeshPrimitive {
   material?: LocalMaterialResource;
   targets?: number[] | Float32Array;
   geometryObj: BufferGeometry;
-  instancedGeometryObj?: InstancedBufferGeometry;
   materialObj: Material;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
@@ -365,8 +364,6 @@ function createMeshPrimitiveObject(
         }
       }
 
-      primitive.instancedGeometryObj = instancedGeometry;
-
       const instancedMeshObject = new InstancedMesh(instancedGeometry, materialObj, count);
       instancedMeshObject.frustumCulled = false;
 
@@ -450,15 +447,13 @@ function createMeshPrimitiveObject(
       material.defines = {};
     }
 
-    material.defines.USE_ENVMAP = "";
-    material.defines.ENVMAP_MODE_REFLECTION = "";
-    material.defines.ENVMAP_TYPE_CUBE_UV = "";
-    material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
-    material.defines.ENVMAP_BLENDING_NONE = "";
-    material.defines.USE_REFLECTION_PROBES = "";
-
-    if (instancedMesh) {
-      material.defines.USE_INSTANCING = "";
+    if (!("isMeshBasicMaterial" in material)) {
+      material.defines.USE_ENVMAP = "";
+      material.defines.ENVMAP_MODE_REFLECTION = "";
+      material.defines.ENVMAP_TYPE_CUBE_UV = "";
+      material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
+      material.defines.ENVMAP_BLENDING_NONE = "";
+      material.defines.USE_REFLECTION_PROBES = "";
     }
 
     if (!material.userData.beforeCompileHook) {
@@ -512,12 +507,12 @@ function createMeshPrimitiveObject(
         );
       }
 
-      material.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
+      meshMaterial.userData.reflectionProbesMap.value = rendererModule.reflectionProbesMap;
 
-      const reflectionProbeParams = material.userData.reflectionProbeParams.value as Vector3;
+      const reflectionProbeParams = meshMaterial.userData.reflectionProbeParams.value as Vector3;
       reflectionProbeParams.copy(mesh.userData.reflectionProbeParams);
 
-      const reflectionProbeSampleParams = material.userData.reflectionProbeSampleParams.value as Vector3;
+      const reflectionProbeSampleParams = meshMaterial.userData.reflectionProbeSampleParams.value as Vector3;
       const envMapHeight = rendererModule.reflectionProbesMap?.image.height || 256;
       const maxMip = Math.log2(envMapHeight) - 2;
       const texelWidth = 1.0 / (3 * Math.max(Math.pow(2, maxMip), 7 * 16));
@@ -563,10 +558,6 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
     const meshPrimitiveResource = meshPrimitives[i];
 
     if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
-      if (meshPrimitiveResource.instancedGeometryObj) {
-        meshPrimitiveResource.instancedGeometryObj.dispose();
-      }
-
       meshPrimitiveResource.geometryObj.dispose();
       meshPrimitiveResource.materialObj.dispose();
       meshPrimitives.splice(i, 1);

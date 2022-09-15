@@ -22,10 +22,10 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 export interface PrefabTemplate {
   name: string;
-  create: Function;
-  delete?: Function;
-  serialize?: Function;
-  deserialize?: Function;
+  create: (ctx: GameState, remote?: boolean) => number;
+  delete?: (ctx: GameState) => number;
+  serialize?: (ctx: GameState) => number;
+  deserialize?: (ctx: GameState) => number;
 }
 
 export const Prefab: Map<number, string> = new Map();
@@ -38,8 +38,8 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = () => {
-    const eid = create();
+  template.create = (ctx: GameState, remote = false) => {
+    const eid = create(ctx, remote);
     addPrefabComponent(state.world, eid, template.name);
     return eid;
   };
@@ -59,18 +59,22 @@ export function PrefabDisposalSystem(state: GameState) {
 
 export function getPrefabTemplate(state: GameState, name: string) {
   const prefabModule = getModule(state, PrefabModule);
-  return prefabModule.prefabTemplateMap.get(name);
+
+  const template = prefabModule.prefabTemplateMap.get(name);
+  if (!template) throw new Error("could not find template for prefab name: " + name);
+
+  return template;
 }
 
 // TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
 // add component+system for loading and swapping the prefab
 export const createLoadingEntity = createPhysicsCube;
 
-export const createPrefabEntity = (state: GameState, prefab: string) => {
+export const createPrefabEntity = (state: GameState, prefab: string, remote = false) => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
   if (create) {
-    return create(state);
+    return create(state, remote);
   } else {
     return createLoadingEntity(state, 1);
   }

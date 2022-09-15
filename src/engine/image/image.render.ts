@@ -1,4 +1,4 @@
-import { DataTexture } from "three";
+import { CompressedTexture, DataTexture } from "three";
 
 import { LocalBufferView } from "../bufferView/bufferView.common";
 import { getModule } from "../module/module.common";
@@ -9,6 +9,8 @@ import { ImageResourceProps } from "./image.common";
 
 const HDRMimeType = "image/vnd.radiance";
 const HDRExtension = ".hdr";
+const KTX2MimeType = "image/ktx2";
+const KTX2Extension = ".ktx2";
 
 export enum ImageFormat {
   RGBA = "rgba",
@@ -27,14 +29,20 @@ export interface RGBALocalImageResource {
   image: ImageBitmap;
 }
 
-export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource;
+export interface CompressedLocalImageResource {
+  resourceId: ResourceId;
+  format: ImageFormat.RGBA;
+  texture: CompressedTexture;
+}
+
+export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource | CompressedLocalImageResource;
 
 export async function onLoadLocalImageResource(
   ctx: RenderThreadState,
   resourceId: ResourceId,
   props: ImageResourceProps
 ): Promise<LocalImageResource> {
-  const { rgbeLoader, imageBitmapLoader, imageBitmapLoaderFlipY, images } = getModule(ctx, RendererModule);
+  const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY, images } = getModule(ctx, RendererModule);
 
   let uri: string;
   let isObjectUrl = false;
@@ -53,6 +61,7 @@ export async function onLoadLocalImageResource(
   }
 
   const isRGBE = uri.endsWith(HDRExtension) || ("mimeType" in props && props.mimeType === HDRMimeType);
+  const isKTX2 = uri.endsWith(KTX2Extension) || ("mimeType" in props && props.mimeType === KTX2MimeType);
 
   let localImageResource: LocalImageResource;
 
@@ -63,6 +72,14 @@ export async function onLoadLocalImageResource(
       localImageResource = {
         resourceId,
         format: ImageFormat.RGBE,
+        texture,
+      };
+    } else if (isKTX2) {
+      const texture = await ktx2Loader.loadAsync(uri);
+
+      localImageResource = {
+        resourceId,
+        format: ImageFormat.RGBA,
         texture,
       };
     } else {
@@ -91,7 +108,7 @@ export function updateLocalImageResources(ctx: RenderThreadState, images: LocalI
     const imageResource = images[i];
 
     if (getResourceDisposed(ctx, imageResource.resourceId)) {
-      if (imageResource.format === ImageFormat.RGBA) {
+      if ("image" in imageResource) {
         imageResource.image.close();
       } else {
         imageResource.texture.dispose();

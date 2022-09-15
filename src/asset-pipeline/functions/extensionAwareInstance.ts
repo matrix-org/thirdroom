@@ -75,6 +75,7 @@ export function extensionAwareInstance(): Transform {
 
             instanceRecord = { mesh: node.getMesh()!, nodes: new Set(), lightMap };
             meshInstances.set(instanceKey, instanceRecord);
+            console.log(instanceKey);
           }
 
           instanceRecord.nodes.add(node);

@@ -14,7 +14,7 @@ import {
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { NetworkModule, Owned, Networked } from "../engine/network/network.game";
+import { NetworkModule, Owned, Networked, associatePeerWithEntity } from "../engine/network/network.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
@@ -46,7 +46,7 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   // how this player looks to others
   addPrefabComponent(world, playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
 
-  network.peerIdToEntityId.set(network.peerId, playerRig);
+  associatePeerWithEntity(network, network.peerId, playerRig);
 
   addComponent(world, FlyPlayerRig, playerRig);
   FlyPlayerRig.set(playerRig, {

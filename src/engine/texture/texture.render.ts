@@ -27,7 +27,7 @@ export async function onLoadLocalTextureResource(
   ]);
 
   // TODO: Add ImageBitmap to Texture types
-  const texture = image.format === ImageFormat.RGBA ? new Texture(image.image as any) : image.texture;
+  const texture = "texture" in image ? image.texture : new Texture(image.image as any);
 
   if (sampler) {
     if (image.format === ImageFormat.RGBA) {

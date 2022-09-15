@@ -22,6 +22,7 @@ export function isInLayer(layers: number, layer: Layer): boolean {
 export const rendererNodeSchema = defineObjectBufferSchema({
   visible: [Uint8Array, 1],
   static: [Uint8Array, 1],
+  skipLerp: [Uint8Array, 1],
   worldMatrix: [Float32Array, 16],
   mesh: [Uint32Array, 1],
   instancedMesh: [Uint32Array, 1],

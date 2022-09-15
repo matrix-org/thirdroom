@@ -1,18 +1,9 @@
 import { Document, WebIO, Logger, Verbosity, JSONDocument, Extension, PlatformIO } from "@gltf-transform/core";
-import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { textureResize } from "@gltf-transform/functions";
 
 import { downloadFile } from "../engine/utils/downloadFile";
-import { KHRAudioExtension } from "./extensions/KHRAudioExtension";
-import { MXBackgroundExtension } from "./extensions/MXBackgroundExtension";
-import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
-import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
-import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
-import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
-import { dedupeProperties } from "./functions/dedupeProperties";
-import { extensionAwareInstance } from "./functions/extensionAwareInstance";
+import { registerExtensions, transformGLTF } from "./pipeline";
 
-export class ObjectURLWebIO extends WebIO {
+export class CustomWebIO extends WebIO {
   fileMap: Map<string, string> = new Map();
 
   private beforeReadDocumentHooks: ((io: PlatformIO, jsonDoc: JSONDocument) => Promise<void>)[] = [];
@@ -55,26 +46,18 @@ export class ObjectURLWebIO extends WebIO {
   public declare dirname: (uri: string) => string;
 }
 
-export async function transformGLTF(url: string, fileMap: Map<string, string>) {
+export async function transformGLTFWeb(url: string, fileMap: Map<string, string>) {
   const logger = new Logger(Verbosity.DEBUG);
 
-  const io = new ObjectURLWebIO()
-    .setLogger(logger)
-    .registerExtensions([
-      ...ALL_EXTENSIONS,
-      KHRAudioExtension,
-      MXLightmapExtension,
-      MXReflectionProbesExtension,
-      MXBackgroundExtension,
-      MXSpawnPointExtension,
-      OMIColliderExtension,
-    ]);
+  const io = new CustomWebIO().setLogger(logger);
+
+  registerExtensions(io);
 
   const doc = await io.readGLTF(url, fileMap);
 
   doc.setLogger(logger);
 
-  await doc.transform(dedupeProperties(), extensionAwareInstance(), textureResize());
+  await transformGLTF(doc);
 
   const glbBuffer = await io.writeBinary(doc);
 
