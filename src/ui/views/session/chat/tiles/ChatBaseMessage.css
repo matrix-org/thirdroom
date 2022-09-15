@@ -8,6 +8,12 @@
 .ChatBaseMessage--contentOnly .ChatBaseMessage__content {
   margin-left: calc(40px + var(--sp-xs));
 }
+.ChatBaseMessage--emote .ChatBaseMessage__content {
+  font-style: italic;
+}
+.ChatBaseMessage--emote .ChatBaseMessage__avatar {
+  margin: 0 var(--sp-xs);
+}
 
 .ChatBaseMessage__avatar {
   width: 40px;
@@ -26,6 +32,10 @@
     object-fit: cover;
     border: none;
   }
+}
+.ChatBaseMessage__avatar--sm {
+  width: 20px;
+  height: 20px;
 }
 .ChatBaseMessage__avatar-1 {
   background-color: var(--usercolor1);

@@ -9,6 +9,10 @@
     word-break: break-word;
   }
 }
+.WorldChat__TextMessageView--emote {
+  font-style: italic;
+}
+
 .WorldChat__TextMessageView-sender {
   margin-right: var(--sp-xs);
 }
