@@ -1,17 +1,19 @@
-import { InitializeRenderWorkerMessage, WorkerMessages, WorkerMessageType } from "./WorkerMessage";
+import { InitializeRenderWorkerMessage, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
+import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
 
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;
 
-export default function initRenderWorkerOnMainThread(canvas: HTMLCanvasElement) {
-  const messageChannel = new MessageChannel();
-  startRenderWorker(messageChannel.port1, canvas);
-  messageChannel.port1.start();
-  messageChannel.port2.start();
-  return messageChannel.port2;
+export default function initRenderWorkerOnMainThread(canvas: HTMLCanvasElement, gameWorker: Worker) {
+  const renderGameMessageChannel = new MockWorkerMessageChannel(gameWorker);
+  const rendererMainMessageChannel = new MockMessageChannel();
+  startRenderWorker(rendererMainMessageChannel.port1, canvas, renderGameMessageChannel.port1);
+  rendererMainMessageChannel.port1.start();
+  rendererMainMessageChannel.port2.start();
+  return rendererMainMessageChannel.port2;
 }
 
 const isWorker = typeof (window as any) === "undefined";
@@ -20,17 +22,25 @@ if (isWorker) {
   startRenderWorker(self as DedicatedWorkerGlobalScope);
 }
 
-function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort, canvas?: HTMLCanvasElement) {
-  const onInitMessage = (event: MessageEvent<WorkerMessages>) => {
+function startRenderWorker(
+  workerScope: DedicatedWorkerGlobalScope | MessagePort,
+  canvas?: HTMLCanvasElement,
+  mockGameWorkerPort?: MockMessagePort
+) {
+  const onInitMessage = (event: MessageEvent) => {
     if (typeof event.data !== "object") {
       return;
     }
 
-    const message = event.data;
+    const { message, dest } = event.data;
+
+    if (dest !== Thread.Render) {
+      return;
+    }
 
     if (message.type === WorkerMessageType.InitializeRenderWorker) {
       workerScope.removeEventListener("message", onInitMessage as any);
-      onInit(workerScope, message, canvas);
+      onInit(workerScope, message, canvas, mockGameWorkerPort);
     }
   };
 
@@ -40,13 +50,16 @@ function startRenderWorker(workerScope: DedicatedWorkerGlobalScope | MessagePort
 async function onInit(
   workerScope: DedicatedWorkerGlobalScope | MessagePort,
   { gameWorkerMessageTarget, gameToRenderTripleBufferFlags }: InitializeRenderWorkerMessage,
-  canvas?: HTMLCanvasElement
+  canvas?: HTMLCanvasElement,
+  mockGameWorkerPort?: MockMessagePort
 ) {
+  const gameWorkerMessagePort = gameWorkerMessageTarget || mockGameWorkerPort;
+
   function renderWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
     if (thread === Thread.Game) {
-      gameWorkerMessageTarget.postMessage(message, transferList);
+      gameWorkerMessagePort.postMessage({ dest: thread, message }, transferList);
     } else if (thread === Thread.Main) {
-      workerScope.postMessage(message, transferList);
+      workerScope.postMessage({ dest: thread, message }, transferList);
     }
   }
 
@@ -55,19 +68,22 @@ async function onInit(
     gameToRenderTripleBufferFlags,
     elapsed: performance.now(),
     dt: 0,
-    gameWorkerMessageTarget,
     messageHandlers: new Map(),
     systems: renderConfig.systems,
     modules: new Map(),
     sendMessage: renderWorkerSendMessage,
   };
 
-  const onMessage = ({ data }: MessageEvent<WorkerMessages>) => {
+  const onMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
       return;
     }
 
-    const message = data;
+    const { message, dest } = data;
+
+    if (dest !== Thread.Render) {
+      return;
+    }
 
     const handlers = state.messageHandlers.get(message.type);
 
@@ -79,11 +95,11 @@ async function onInit(
   };
 
   workerScope.addEventListener("message", onMessage as any);
-  gameWorkerMessageTarget.addEventListener("message", onMessage);
+  gameWorkerMessagePort.addEventListener("message", onMessage);
 
   const modulePromise = registerModules(Thread.Render, state, renderConfig.modules);
 
-  gameWorkerMessageTarget.start();
+  gameWorkerMessagePort.start();
 
   await modulePromise;
 

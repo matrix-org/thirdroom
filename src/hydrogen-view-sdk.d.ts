@@ -1142,6 +1142,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get isContinuation(): boolean;
     get isUnverified(): boolean;
     get isReply(): boolean;
+    _getContent(): any;
     updatePreviousSibling(prev: any): void;
     updateEntry(entry: any, param: any): any;
     startReply(): void;
@@ -1159,7 +1160,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   class BaseTextTile extends BaseMessageTile {
     constructor(entry: any, options: SimpleTileOptions);
     get shape(): "message" | "message-status";
-    get body(): null | string;
+    get body(): any;
   }
 
   export class TextTile extends BaseTextTile {

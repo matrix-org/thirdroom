@@ -47,7 +47,7 @@ import {
   updateLocalTextureResources,
 } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
-import { PostMessageTarget, RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
+import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
@@ -93,7 +93,6 @@ export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
-  gameWorkerMessageTarget: PostMessageTarget;
   gameToRenderTripleBufferFlags: Uint8Array;
 }
 
