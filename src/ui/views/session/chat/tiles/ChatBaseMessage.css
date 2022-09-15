@@ -5,6 +5,9 @@
     background-color: var(--bg-surface-hover);
   }
 }
+.ChatBaseMessage--contentOnly .ChatBaseMessage__content {
+  margin-left: calc(40px + var(--sp-xs));
+}
 
 .ChatBaseMessage__avatar {
   width: 40px;
