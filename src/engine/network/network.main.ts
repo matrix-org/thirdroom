@@ -1,7 +1,7 @@
 import { NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
 import { IMainThreadContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 
 /*********
  * Types *
@@ -46,9 +46,9 @@ export const NetworkModule = defineModule<IMainThreadContext, NetworkModuleState
  *******************/
 
 const onPeerMessage =
-  (gameWorker: Worker, peerId: string) =>
+  (ctx: IMainThreadContext, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
-    gameWorker.postMessage({ type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
+    ctx.sendMessage(Thread.Game, { type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
   };
 
 const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
@@ -81,7 +81,6 @@ const onNetworkBroadcast = (mainThread: IMainThreadContext, message: NetworkBroa
 };
 
 function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
-  const { gameWorker } = mainThread;
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
@@ -94,7 +93,7 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
   reliableChannels.delete(peerId);
   unreliableChannels.delete(peerId);
 
-  gameWorker.postMessage({
+  mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.RemovePeerId,
     peerId,
   });
@@ -106,7 +105,6 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
 
 export function connectToTestNet(mainThread: IMainThreadContext) {
   const network = getModule(mainThread, NetworkModule);
-  const { gameWorker } = mainThread;
 
   network.ws = new WebSocket("ws://localhost:9090");
   const { ws } = network;
@@ -122,7 +120,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
   const setHostFn = (data: { data: any }) => {
     if (data.data === "setHost") {
       console.log("ws - setHost");
-      gameWorker.postMessage({
+      mainThread.sendMessage(Thread.Game, {
         type: NetworkMessageType.SetHost,
         value: true,
       });
@@ -136,12 +134,12 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
       const d: any = JSON.parse(data.data);
       if (d.setPeerId) {
         console.log("ws - setPeerId", d.setPeerId);
-        gameWorker.postMessage({
+        mainThread.sendMessage(Thread.Game, {
           type: NetworkMessageType.SetPeerId,
           peerId: d.setPeerId,
         });
 
-        ws?.addEventListener("message", onPeerMessage(gameWorker, d.setPeerId));
+        ws?.addEventListener("message", onPeerMessage(mainThread, d.setPeerId));
 
         ws?.removeEventListener("message", setPeerIdFn);
       }
@@ -154,7 +152,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
       const d: any = JSON.parse(data.data);
       if (d.addPeerId) {
         console.log("ws - addPeerId", d.addPeerId);
-        gameWorker.postMessage({
+        mainThread.sendMessage(Thread.Game, {
           type: NetworkMessageType.AddPeerId,
           peerId: d.addPeerId,
         });
@@ -165,8 +163,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
 }
 
 export function setHost(mainThread: IMainThreadContext, value: boolean) {
-  const { gameWorker } = mainThread;
-  gameWorker.postMessage({
+  mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.SetHost,
     value,
   });
@@ -184,7 +181,6 @@ export function addPeer(
   dataChannel: RTCDataChannel,
   mediaStream?: MediaStream
 ) {
-  const { gameWorker } = mainThread;
   const network = getModule(mainThread, NetworkModule);
   const audio = getModule(mainThread, AudioModule);
   const { reliableChannels, unreliableChannels } = network;
@@ -197,11 +193,11 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    network.onPeerMessage = onPeerMessage(gameWorker, peerId);
+    network.onPeerMessage = onPeerMessage(mainThread, peerId);
     dataChannel.addEventListener("message", network.onPeerMessage);
     dataChannel.addEventListener("close", onClose);
 
-    gameWorker.postMessage({
+    mainThread.sendMessage(Thread.Game, {
       type: NetworkMessageType.AddPeerId,
       peerId,
     });
@@ -247,8 +243,7 @@ export function disconnect(mainThread: IMainThreadContext) {
 }
 
 export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
-  const { gameWorker } = mainThread;
-  gameWorker.postMessage({
+  mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.SetPeerId,
     peerId,
   });

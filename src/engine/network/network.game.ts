@@ -28,7 +28,7 @@ import { addChild, removeRecursive, skipRenderLerp, Transform } from "../compone
 import { GameState } from "../GameTypes";
 import { NOOP } from "../config.common";
 import { Player } from "../component/Player";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,
   NetworkMessage,
@@ -50,9 +50,6 @@ import { RigidBody } from "../physics/physics.game";
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createRemoteNametag } from "../nametag/nametag.game";
 import { createHistorian, Historian } from "./Historian";
-
-// type hack for postMessage(data, transfers) signature in worker
-const worker: Worker = self as any;
 
 /*********
  * Types *
@@ -848,7 +845,8 @@ export const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId: string) => {
   //   sendReliable(state, peerId, packet);
   // });
-  worker.postMessage(
+  state.sendMessage(
+    Thread.Main,
     {
       type: NetworkMessageType.NetworkBroadcast,
       packet,
@@ -860,9 +858,10 @@ export const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
 
 export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId: string) => {
-  //   sendUnreliable(peerId, packet);
+  //   sendUnreliable(state, peerId, packet);
   // });
-  worker.postMessage(
+  state.sendMessage(
+    Thread.Main,
     {
       type: NetworkMessageType.NetworkBroadcast,
       packet,
@@ -875,7 +874,8 @@ export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
 export const sendReliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
   // todo: headers
   // packet = writeHeaders(state, peerId, packet);
-  worker.postMessage(
+  state.sendMessage(
+    Thread.Main,
     {
       type: NetworkMessageType.NetworkMessage,
       peerId,
@@ -886,8 +886,9 @@ export const sendReliable = (state: GameState, peerId: string, packet: ArrayBuff
   );
 };
 
-export const sendUnreliable = (peerId: string, packet: ArrayBuffer) => {
-  worker.postMessage(
+export const sendUnreliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
+  state.sendMessage(
+    Thread.Main,
     {
       type: NetworkMessageType.NetworkMessage,
       peerId,
