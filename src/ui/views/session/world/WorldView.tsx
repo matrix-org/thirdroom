@@ -160,7 +160,6 @@ export function WorldView() {
       if (isEscape && isOverlayOpen) {
         canvasRef.current?.requestPointerLock();
         closeOverlay();
-        setShowFocusedEntity(showFocusedEntity);
         return;
       }
       if (isEscape && isOverlayOpen === false) {
