@@ -28,6 +28,9 @@ import { useInvite } from "../../../hooks/useInvite";
 import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
+import { NowPlayingControls } from "./NowPlayingControls";
+import { loadImageUrl } from "../../../utils/common";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -76,6 +79,7 @@ export function Overlay({
     closeOverlay: state.overlay.closeOverlay,
   }));
 
+  const isMounted = useIsMounted();
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -83,29 +87,44 @@ export function Overlay({
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
-  const [worldPreviewUrl, setWorldPreviewUrl] = useState<string | undefined>();
+  const [worldPreview, setWorldPreview] = useState<{ url?: string; thumbnail: string } | undefined>();
 
   useEffect(() => {
     if (selectedWorldId) {
       const world = session.rooms.get(selectedWorldId);
+      let selectedWorldChanged = false;
 
       if (!world || "isBeingCreated" in world) {
         return;
       }
 
       world.getStateEvent("m.world").then((result: any) => {
-        let scenePreviewUrl = result?.event?.content?.scene_preview_url;
+        const scenePreviewUrl = result?.event?.content?.scene_preview_url as string | unknown;
+        let scenePreviewThumbnail = scenePreviewUrl;
 
-        // eslint-disable-next-line camelcase
-        if (scenePreviewUrl && scenePreviewUrl.startsWith("mxc:")) {
-          // eslint-disable-next-line camelcase
-          scenePreviewUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
+        if (typeof scenePreviewUrl === "string" && scenePreviewUrl.startsWith("mxc:")) {
+          scenePreviewThumbnail = session.mediaRepository.mxcUrlThumbnail(scenePreviewUrl, 32, 32, "crop");
+          const downloadUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
+          if (downloadUrl)
+            loadImageUrl(downloadUrl).then((url) => {
+              if (selectedWorldChanged || !isMounted()) return;
+              setWorldPreview({
+                url,
+                thumbnail: url,
+              });
+            });
         }
 
-        setWorldPreviewUrl(scenePreviewUrl);
+        if (typeof scenePreviewThumbnail === "string")
+          setWorldPreview({
+            thumbnail: scenePreviewThumbnail,
+          });
       });
+      return () => {
+        selectedWorldChanged = true;
+      };
     }
-  }, [session, selectedWorldId]);
+  }, [session, selectedWorldId, isMounted]);
 
   const previewingWorld =
     worldId !== selectedWorldId ||
@@ -118,8 +137,12 @@ export function Overlay({
   const isChatOpen = selectedChat || selectedChatInvite;
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
-      {worldPreviewUrl && previewingWorld && (
-        <img alt="World Preview" src={worldPreviewUrl} className="Overlay__world-preview" />
+      {worldPreview?.thumbnail && previewingWorld && (
+        <img
+          alt="World Preview"
+          src={worldPreview.url ?? worldPreview.thumbnail}
+          className={classNames("Overlay__world-preview", { "Overlay__world-preview--blur": !worldPreview.url })}
+        />
       )}
       <SidebarView
         spaces={<SpacesView />}
@@ -135,14 +158,15 @@ export function Overlay({
                 </RoomListContent>
               }
               footer={
-                world &&
-                activeCall && (
+                world && activeCall ? (
                   <NowPlayingWorld
                     world={world}
                     activeCall={activeCall}
                     onExitWorld={onExitWorld}
                     platform={platform}
                   />
+                ) : (
+                  <NowPlayingControls />
                 )
               }
             />

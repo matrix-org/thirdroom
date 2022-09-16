@@ -14,6 +14,10 @@ import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { Dialog } from "../../../atoms/dialog/Dialog";
+import { usePermissionState } from "../../../hooks/usePermissionState";
+import { exceptionToString, useStreamRequest, RequestException } from "../../../hooks/useStreamRequest";
+import { AlertDialog } from "../dialogs/AlertDialog";
+import { Text } from "../../../atoms/text/Text";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -56,7 +60,10 @@ interface IWorldPreview {
 
 export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
   const navigate = useNavigate();
-  const { session } = useHydrogen(true);
+  const { session, platform } = useHydrogen(true);
+  const micPermission = usePermissionState("microphone");
+  const requestStream = useStreamRequest(platform, micPermission);
+  const [micException, setMicException] = useState<RequestException>();
 
   const { worldId, selectedWorldId, joiningWorld, loadState, error, closeOverlay } = useStore((state) => ({
     selectedWorldId: state.overlayWorld.selectedWorldId,
@@ -175,9 +182,44 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                   memberCount={memberCount}
                   onMembersClick={() => setIsMemberDialog(true)}
                   options={
-                    <Button size="lg" variant="primary" onClick={onEnterWorld}>
-                      Enter World
-                    </Button>
+                    <>
+                      {micException && (
+                        <AlertDialog
+                          open={!!micException}
+                          title="Microphone"
+                          content={
+                            <div className="flex flex-column gap-xs">
+                              <Text variant="b2">{exceptionToString(micException)}</Text>
+                              <Text variant="b2">
+                                Connecting to other users may be unreliable without microphone access. We intend to fix
+                                this in the near future.
+                              </Text>
+                            </div>
+                          }
+                          buttons={
+                            <Button fill="outline" onClick={onEnterWorld}>
+                              Enter without Microphone
+                            </Button>
+                          }
+                          requestClose={() => setMicException(undefined)}
+                        />
+                      )}
+                      <Button
+                        size="lg"
+                        variant="primary"
+                        onClick={async (evt) => {
+                          if (micPermission === "granted") {
+                            onEnterWorld(evt);
+                            return;
+                          }
+                          const [stream, exception] = await requestStream(true, false);
+                          if (stream) onEnterWorld(evt);
+                          if (exception) setMicException(exception);
+                        }}
+                      >
+                        Enter World
+                      </Button>
+                    </>
                   }
                 />
               );

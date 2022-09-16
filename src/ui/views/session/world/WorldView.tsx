@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { useOutletContext } from "react-router-dom";
+import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
 import { SessionOutletContext } from "../SessionView";
@@ -30,8 +31,57 @@ import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { useAlert } from "../../../hooks/useAlert";
+import { usePermissionState } from "../../../hooks/usePermissionState";
+import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
+import { AlertDialog } from "../dialogs/AlertDialog";
 
 const SHOW_NAMES_STORE = "showNames";
+
+const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showAlert: (text: string) => void }>(
+  ({ activeCall, showAlert }, ref) => {
+    const { platform } = useHydrogen(true);
+    const micPermission = usePermissionState("microphone");
+    const requestStream = useStreamRequest(platform, micPermission);
+    const [micException, setMicException] = useState<RequestException>();
+    const [microphone, setMicrophone] = useMicrophoneState();
+    const { mute: callMute, handleMute } = useCallMute(activeCall);
+    if (callMute === microphone) {
+      setMicrophone(!microphone);
+    }
+
+    return (
+      <>
+        {micException && (
+          <AlertDialog
+            open={!!micException}
+            title="Microphone"
+            content={<Text variant="b2">{exceptionToString(micException)}</Text>}
+            requestClose={() => setMicException(undefined)}
+          />
+        )}
+        <Tooltip content={callMute ? "Unmute" : "Mute"}>
+          <IconButton
+            variant="world"
+            label="Mic"
+            iconSrc={callMute ? MicOffIC : MicIC}
+            onClick={() => {
+              showAlert(callMute ? "Microphone Muted" : "Microphone Unmuted");
+              handleMute(async () => {
+                const [stream, exception] = await requestStream(true, false);
+                if (stream) return stream;
+                setMicException(exception);
+                return undefined;
+              });
+            }}
+            ref={ref}
+          />
+        </Tooltip>
+      </>
+    );
+  }
+);
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -41,7 +91,8 @@ export function WorldView() {
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
-  const { mute: callMute, toggleMute } = useCallMute(activeCall);
+
+  const muteBtnRef = useRef<HTMLButtonElement | null>(null);
   const { alertShown, alertText, showAlert } = useAlert();
 
   const engine = useMainThreadContext();
@@ -89,11 +140,6 @@ export function WorldView() {
     setShowActiveMembers(enabled);
   };
 
-  const onToggleMute = useCallback(() => {
-    const muted = toggleMute();
-    showAlert(muted ? "Microphone Muted" : "Microphone Unmuted");
-  }, [showAlert, toggleMute]);
-
   useKeyDown(
     (e) => {
       if (isEnteredWorld === false) return;
@@ -122,6 +168,7 @@ export function WorldView() {
         return;
       }
       if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
+        if (document.activeElement !== document.body) return;
         document.exitPointerLock();
         openWorldChat();
         return;
@@ -132,8 +179,8 @@ export function WorldView() {
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
-      if (!isTyping && e.code === "KeyM") {
-        onToggleMute();
+      if (!isTyping && e.code === "KeyM" && muteBtnRef.current !== null) {
+        muteBtnRef.current.click();
       }
       if (!isTyping && e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
@@ -158,7 +205,6 @@ export function WorldView() {
       closeWorldChat,
       openOverlay,
       closeOverlay,
-      onToggleMute,
     ]
   );
 
@@ -207,14 +253,20 @@ export function WorldView() {
           N
         </Text>
       </div>
-      <div className="flex flex-column items-center">
-        <Tooltip content={callMute ? "Unmute" : "Mute"}>
-          <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={onToggleMute} />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          M
-        </Text>
-      </div>
+      {activeCall && (
+        <div className="flex flex-column items-center">
+          <MuteButton
+            showAlert={showAlert}
+            activeCall={activeCall}
+            ref={(ref) => {
+              muteBtnRef.current = ref;
+            }}
+          />
+          <Text variant="b3" color="world" weight="bold">
+            M
+          </Text>
+        </div>
+      )}
       <div className="flex flex-column items-center">
         <Tooltip content="Disconnect">
           <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
