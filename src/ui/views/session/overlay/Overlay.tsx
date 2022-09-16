@@ -30,6 +30,7 @@ import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
 import { loadImageUrl } from "../../../utils/common";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -78,6 +79,7 @@ export function Overlay({
     closeOverlay: state.overlay.closeOverlay,
   }));
 
+  const isMounted = useIsMounted();
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -90,6 +92,7 @@ export function Overlay({
   useEffect(() => {
     if (selectedWorldId) {
       const world = session.rooms.get(selectedWorldId);
+      let selectedWorldChanged = false;
 
       if (!world || "isBeingCreated" in world) {
         return;
@@ -104,6 +107,7 @@ export function Overlay({
           const downloadUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
           if (downloadUrl)
             loadImageUrl(downloadUrl).then((url) => {
+              if (selectedWorldChanged || !isMounted()) return;
               setWorldPreview({
                 url,
                 thumbnail: url,
@@ -116,8 +120,11 @@ export function Overlay({
             thumbnail: scenePreviewThumbnail,
           });
       });
+      return () => {
+        selectedWorldChanged = true;
+      };
     }
-  }, [session, selectedWorldId]);
+  }, [session, selectedWorldId, isMounted]);
 
   const previewingWorld =
     worldId !== selectedWorldId ||
