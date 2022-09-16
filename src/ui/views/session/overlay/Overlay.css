@@ -37,3 +37,7 @@
   height: 100%;
   object-fit: cover;
 }
+
+.Overlay__world-preview--blur {
+  filter: blur(16px);
+}

@@ -43,3 +43,13 @@ export function copyToClipboard(text: string) {
     copyInput.remove();
   }
 }
+
+export function loadImageUrl(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    const image = document.createElement("img");
+    image.onload = () => {
+      resolve(url);
+    };
+    image.src = url;
+  });
+}
