@@ -1,0 +1,5 @@
+.NowPlayingControls {
+  height: 54px;
+  padding: 0 var(--sp-md);
+  border-top: 1px solid var(--bg-surface-border);
+}

@@ -130,9 +130,30 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     patchShaderChunks();
 
+    const canvas = (canvasTarget || ctx.canvas) as HTMLCanvasElement | OffscreenCanvas;
+
+    const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
+
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info")!;
+    const rendererName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+
+    // Enable logarithmicDepthBuffer in Chrome on M1 Mac when using the OpenGL backend
+    // TODO: https://github.com/matrix-org/thirdroom/issues/118
+    const logarithmicDepthBuffer =
+      typeof rendererName === "string" &&
+      rendererName.includes("Apple M1") &&
+      rendererName.includes("ANGLE") &&
+      !rendererName.includes("ANGLE Metal Renderer");
+
+    if (logarithmicDepthBuffer) {
+      console.log("Chrome OpenGL backend on M1 Mac detected, logarithmicDepthBuffer enabled");
+    }
+
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
+      context: gl,
+      logarithmicDepthBuffer,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;

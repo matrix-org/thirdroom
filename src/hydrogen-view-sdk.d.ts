@@ -2002,6 +2002,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get deviceIndex(): number | undefined;
     get eventTimestamp(): number | undefined;
     join(localMedia: LocalMedia): Promise<void>;
+    setMedia(localMedia: LocalMedia): Promise<void>;
     setMuted(muteSettings: MuteSettings): Promise<void>;
     get muteSettings(): MuteSettings | undefined;
     get hasJoined(): boolean;
