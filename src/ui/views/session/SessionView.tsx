@@ -228,6 +228,7 @@ export function SessionView() {
 
     let stream;
     try {
+      // TODO: Re-enable when we fix issues with joining without microphone enabled
       // if (localStorage.getItem("microphone") === "true") {
       stream = await platform.mediaDevices.getMediaTracks(true, false);
       // }
