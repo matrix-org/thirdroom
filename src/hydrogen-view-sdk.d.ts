@@ -574,6 +574,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomState(handler: RoomStateHandler): () => void;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
+    getAccountData(type: string): Promise<any>;
+    setAccountData(type: string, content: any): Promise<void>;
   }
 
   export class LocalMedia {

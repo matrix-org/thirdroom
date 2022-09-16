@@ -9,7 +9,6 @@ import { HydrogenRootView } from "./views/HydrogenRootView";
 import { LoginView } from "./views/login/LoginView";
 import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
-import { HomeView } from "./views/session/home/HomeView";
 import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
 import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
 
@@ -48,7 +47,7 @@ export function App() {
           <Route element={<SessionView />}>
             <Route path="world/:worldId" element={<WorldView />} />
             <Route path="world/" element={<WorldView />} />
-            <Route path="/" element={<HomeView />} />
+            <Route path="/" element={<WorldView />} />
           </Route>
         </Route>
         <Route path="/viewer" element={<GLTFViewer />} />

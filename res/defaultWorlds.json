@@ -1,4 +1,9 @@
 {
+  "home": {
+    "sceneUrl": "mxc://thirdroom.io/qhDhqEvIsqEtreOSriIfkadf",
+    "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
+    "defaultRoomAvatarUrl": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
+  },
   "scenes": [
     {
       "sceneName": "UK City",
