@@ -178,7 +178,7 @@ function initHydrogen() {
 
   registerThirdroomGlobalVar("hydrogen", hydrogenInstance);
   registerThirdroomGlobalFn("openCallLogs", () => {
-    const logViewer = window.open("/logviewer/index.html", "__blank");
+    const logViewer = window.open("/logviewer", "__blank");
 
     function onReady() {
       window.removeEventListener("log-viewer-ready", onReady);
