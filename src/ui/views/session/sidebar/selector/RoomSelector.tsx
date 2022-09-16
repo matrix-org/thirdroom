@@ -72,7 +72,7 @@ export function RoomSelector({ isSelected, onSelect, room, platform }: RoomSelec
           </div>
           {eventEntry?.content?.body && (
             <Text variant="b3" className="truncate">
-              {`${eventEntry.displayName}: ${eventEntry.content.body}`}
+              {`${eventEntry.displayName || eventEntry.sender}: ${eventEntry.content.body}`}
             </Text>
           )}
         </>

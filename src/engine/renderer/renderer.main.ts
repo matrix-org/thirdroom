@@ -26,7 +26,12 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
     return {};
   },
   init(ctx) {
-    ctx.gameWorker.postMessage({
+    ctx.sendMessage(Thread.Render, {
+      type: WorkerMessageType.RenderWorkerResize,
+      canvasWidth: ctx.canvas.clientWidth,
+      canvasHeight: ctx.canvas.clientHeight,
+    });
+    ctx.sendMessage(Thread.Game, {
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
@@ -40,12 +45,12 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
 
 const registerResizeEventHandler = (ctx: IMainThreadContext) => {
   function onResize() {
-    ctx.renderWorker.postMessage({
+    ctx.sendMessage(Thread.Render, {
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
-    ctx.gameWorker.postMessage({
+    ctx.sendMessage(Thread.Game, {
       type: WorkerMessageType.RenderWorkerResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,

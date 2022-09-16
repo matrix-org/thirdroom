@@ -17,10 +17,16 @@
 
     & > li {
       width: 100%;
-      padding: var(--sp-xs) var(--sp-md);
+      padding: var(--sp-xxs) var(--sp-md);
       &.ChatAnnouncement {
         padding: var(--sp-xxs) var(--sp-md);
       }
+    }
+    & > li + li:not(.ChatBaseMessage--contentOnly) {
+      margin-top: var(--sp-xxs);
+    }
+    & .ChatBaseMessage--contentOnly {
+      padding: var(--sp-xxs) var(--sp-md);
     }
   }
 }
