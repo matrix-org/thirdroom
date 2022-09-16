@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import classNames from "classnames";
 
 import { SessionOutletContext } from "../SessionView";
 import { WorldChat } from "../world-chat/WorldChat";
@@ -28,6 +29,7 @@ import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
+import { useAlert } from "../../../hooks/useAlert";
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -40,6 +42,7 @@ export function WorldView() {
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const { mute: callMute, toggleMute } = useCallMute(activeCall);
+  const { alertShown, alertText, showAlert } = useAlert();
 
   const engine = useMainThreadContext();
 
@@ -78,12 +81,18 @@ export function WorldView() {
     const enabled = !showNames;
     setShowNames(enabled);
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
-  }, [setShowNames, showNames, engine]);
+    showAlert(enabled ? "Show Names" : "Hide Names");
+  }, [setShowNames, showNames, showAlert, engine]);
 
   const toggleShowActiveMembers = () => {
     const enabled = !showActiveMembers;
     setShowActiveMembers(enabled);
   };
+
+  const onToggleMute = useCallback(() => {
+    const muted = toggleMute();
+    showAlert(muted ? "Microphone Muted" : "Microphone Unmuted");
+  }, [showAlert, toggleMute]);
 
   useKeyDown(
     (e) => {
@@ -124,7 +133,7 @@ export function WorldView() {
         onExitWorld();
       }
       if (!isTyping && e.code === "KeyM") {
-        toggleMute();
+        onToggleMute();
       }
       if (!isTyping && e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
@@ -149,6 +158,7 @@ export function WorldView() {
       closeWorldChat,
       openOverlay,
       closeOverlay,
+      onToggleMute,
     ]
   );
 
@@ -199,7 +209,7 @@ export function WorldView() {
       </div>
       <div className="flex flex-column items-center">
         <Tooltip content={callMute ? "Unmute" : "Mute"}>
-          <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
+          <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={onToggleMute} />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           M
@@ -218,6 +228,13 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
+      <div className="WorldView__alert-container">
+        <div className={classNames("WorldView__alert", { "WorldView__alert--shown": alertShown })}>
+          <Text variant="b2" color="world" weight="semi-bold">
+            {alertText}
+          </Text>
+        </div>
+      </div>
       <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}

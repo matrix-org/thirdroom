@@ -33,3 +33,29 @@
     padding: var(--sp-xs);
   }
 }
+
+.WorldView__alert-container {
+  position: absolute;
+  top: 72px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.WorldView__alert {
+  border-radius: var(--br-xs);
+  background-color: var(--bg-world-overlay);
+  height: 40px;
+  padding: 0 8px;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.WorldView__alert--shown {
+  opacity: 1;
+}
