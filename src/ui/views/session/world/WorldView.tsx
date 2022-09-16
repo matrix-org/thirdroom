@@ -105,6 +105,7 @@ export function WorldView() {
       if (isEscape && isOverlayOpen) {
         canvasRef.current?.requestPointerLock();
         closeOverlay();
+        setShowFocusedEntity(showFocusedEntity);
         return;
       }
       if (isEscape && isOverlayOpen === false) {
@@ -144,6 +145,7 @@ export function WorldView() {
       isChatOpen,
       isOverlayOpen,
       showFocusedEntity,
+      setShowFocusedEntity,
       showActiveMembers,
       openWorldChat,
       closeWorldChat,
@@ -224,7 +226,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
+      {!("isBeingCreated" in world) && <Nametags room={world} show={showFocusedEntity && !isOverlayOpen} />}
       {!("isBeingCreated" in world) && (
         <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
