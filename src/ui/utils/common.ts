@@ -44,6 +44,17 @@ export function copyToClipboard(text: string) {
   }
 }
 
+
 export function isMobileDevice() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+export function loadImageUrl(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    const image = document.createElement("img");
+    image.onload = () => {
+      resolve(url);
+    };
+    image.src = url;
+  });
 }
