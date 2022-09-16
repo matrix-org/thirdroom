@@ -190,7 +190,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                           content={
                             <div className="flex flex-column gap-xs">
                               <Text variant="b2">{exceptionToString(micException)}</Text>
-                              <Text variant="b2">Some feature may not work without microphone access.</Text>
+                              <Text variant="b2">Some features may not work without microphone access.</Text>
                             </div>
                           }
                           buttons={
