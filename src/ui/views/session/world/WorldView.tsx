@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { useOutletContext } from "react-router-dom";
+import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
+import classNames from "classnames";
 
 import { SessionOutletContext } from "../SessionView";
 import { WorldChat } from "../world-chat/WorldChat";
@@ -28,8 +30,58 @@ import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
+import { useToast } from "../../../hooks/useToast";
+import { usePermissionState } from "../../../hooks/usePermissionState";
+import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
+import { useHydrogen } from "../../../hooks/useHydrogen";
+import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
+import { AlertDialog } from "../dialogs/AlertDialog";
 
-const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
+const SHOW_NAMES_STORE = "showNames";
+
+const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showToast: (text: string) => void }>(
+  ({ activeCall, showToast }, ref) => {
+    const { platform } = useHydrogen(true);
+    const micPermission = usePermissionState("microphone");
+    const requestStream = useStreamRequest(platform, micPermission);
+    const [micException, setMicException] = useState<RequestException>();
+    const [microphone, setMicrophone] = useMicrophoneState();
+    const { mute: callMute, handleMute } = useCallMute(activeCall);
+    if (callMute === microphone) {
+      setMicrophone(!microphone);
+    }
+
+    return (
+      <>
+        {micException && (
+          <AlertDialog
+            open={!!micException}
+            title="Microphone"
+            content={<Text variant="b2">{exceptionToString(micException)}</Text>}
+            requestClose={() => setMicException(undefined)}
+          />
+        )}
+        <Tooltip content={callMute ? "Unmute" : "Mute"}>
+          <IconButton
+            variant="world"
+            label="Mic"
+            iconSrc={callMute ? MicOffIC : MicIC}
+            onClick={() => {
+              showToast(!callMute ? "Microphone Muted" : "Microphone Unmuted");
+              handleMute(async () => {
+                const [stream, exception] = await requestStream(true, false);
+                if (stream) return stream;
+                setMicException(exception);
+                return undefined;
+              });
+            }}
+            ref={ref}
+          />
+        </Tooltip>
+      </>
+    );
+  }
+);
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -39,27 +91,29 @@ export function WorldView() {
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
-  const { mute: callMute, toggleMute } = useCallMute(activeCall);
+
+  const muteBtnRef = useRef<HTMLButtonElement | null>(null);
+  const { toastShown, toastContent, showToast } = useToast();
 
   const engine = useMainThreadContext();
 
   const [entity, setEntity] = useState<EntityData>();
 
-  const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
-    const store = localStorage.getItem(FOCUSED_ENT_STORE_NAME);
+  const [showNames, setShowNames] = useState<boolean>(() => {
+    const store = localStorage.getItem(SHOW_NAMES_STORE);
     if (!store) return true;
     const json = JSON.parse(store);
-    return json.showFocusedEntity;
+    return json.showNames;
   });
 
   useEffect(() => {
-    localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
+    localStorage.setItem(SHOW_NAMES_STORE, JSON.stringify({ showNames }));
 
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, {
       type: NametagsEnableMessage,
-      enabled: showFocusedEntity,
+      enabled: showNames,
     });
-  }, [engine, showFocusedEntity]);
+  }, [engine, showNames]);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
@@ -74,11 +128,12 @@ export function WorldView() {
     setEntity(entity);
   };
 
-  const toggleShowFocusedEnity = useCallback(() => {
-    const enabled = !showFocusedEntity;
-    setShowFocusedEntity(enabled);
+  const toggleShowNames = useCallback(() => {
+    const enabled = !showNames;
+    setShowNames(enabled);
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
-  }, [setShowFocusedEntity, showFocusedEntity, engine]);
+    showToast(enabled ? "Show Names" : "Hide Names");
+  }, [setShowNames, showNames, showToast, engine]);
 
   const toggleShowActiveMembers = () => {
     const enabled = !showActiveMembers;
@@ -113,6 +168,7 @@ export function WorldView() {
         return;
       }
       if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
+        if (document.activeElement !== document.body) return;
         document.exitPointerLock();
         openWorldChat();
         return;
@@ -123,8 +179,8 @@ export function WorldView() {
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
-      if (!isTyping && e.code === "KeyM") {
-        toggleMute();
+      if (!isTyping && e.code === "KeyM" && muteBtnRef.current !== null) {
+        muteBtnRef.current.click();
       }
       if (!isTyping && e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
@@ -132,8 +188,8 @@ export function WorldView() {
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
         setStatsEnabled((enabled) => !enabled);
       }
-      if (e.code === "KeyO") {
-        toggleShowFocusedEnity();
+      if (e.code === "KeyN") {
+        toggleShowNames();
       }
       if (e.code === "KeyP") {
         toggleShowActiveMembers();
@@ -143,7 +199,7 @@ export function WorldView() {
       isEnteredWorld,
       isChatOpen,
       isOverlayOpen,
-      showFocusedEntity,
+      showNames,
       showActiveMembers,
       openWorldChat,
       closeWorldChat,
@@ -185,26 +241,32 @@ export function WorldView() {
         </Text>
       </div>
       <div className="flex flex-column items-center">
-        <Tooltip content={showFocusedEntity ? "Hide Names" : "Show Names"}>
+        <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
           <IconButton
             variant="world"
-            label="focusedEntity"
-            iconSrc={showFocusedEntity ? SubtitlesIC : SubtitlesOffIC}
-            onClick={toggleShowFocusedEnity}
+            label="Toggle Names"
+            iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
+            onClick={toggleShowNames}
           />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
-          O
+          N
         </Text>
       </div>
-      <div className="flex flex-column items-center">
-        <Tooltip content={callMute ? "Unmute" : "Mute"}>
-          <IconButton variant="world" label="Mic" iconSrc={callMute ? MicOffIC : MicIC} onClick={toggleMute} />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          M
-        </Text>
-      </div>
+      {activeCall && (
+        <div className="flex flex-column items-center">
+          <MuteButton
+            showToast={showToast}
+            activeCall={activeCall}
+            ref={(ref) => {
+              muteBtnRef.current = ref;
+            }}
+          />
+          <Text variant="b3" color="world" weight="bold">
+            M
+          </Text>
+        </div>
+      )}
       <div className="flex flex-column items-center">
         <Tooltip content="Disconnect">
           <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
@@ -218,19 +280,26 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
+      <div className="WorldView__toast-container">
+        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
+          <Text variant="b2" color="world" weight="semi-bold">
+            {toastContent}
+          </Text>
+        </div>
+      </div>
       <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
+      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showNames} />}
       {!("isBeingCreated" in world) && (
         <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
         </Dialog>
       )}
-      {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
+      {!isOverlayOpen && showNames && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
     </div>
   );
