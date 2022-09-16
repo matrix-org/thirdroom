@@ -20,7 +20,9 @@ import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { usePermissionState } from "../../../hooks/usePermissionState";
-import { MicStreamRequest } from "../../components/MicStreamRequest";
+import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
+import { AlertDialog } from "../dialogs/AlertDialog";
+import { Text } from "../../../atoms/text/Text";
 
 interface NowPlayingWorldProps {
   world: Room;
@@ -31,6 +33,8 @@ interface NowPlayingWorldProps {
 
 export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: NowPlayingWorldProps) {
   const micPermission = usePermissionState("microphone");
+  const requestStream = useStreamRequest(platform, micPermission);
+  const [micException, setMicException] = useState<RequestException>();
   const [microphone, setMicrophone] = useMicrophoneState();
   const { mute: callMute, handleMute } = useCallMute(activeCall);
 
@@ -61,20 +65,29 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
       }
       leftControls={
         <>
-          <MicStreamRequest
-            platform={platform}
-            permissionState={micPermission}
-            render={(requestStream) => (
-              <Tooltip content={callMute ? "Unmute" : "Mute"}>
-                <IconButton
-                  variant="surface-low"
-                  label="Mic"
-                  iconSrc={callMute ? MicOffIC : MicIC}
-                  onClick={() => handleMute(requestStream)}
-                />
-              </Tooltip>
-            )}
-          />
+          {micException && (
+            <AlertDialog
+              open={!!micException}
+              title="Microphone"
+              content={<Text variant="b2">{exceptionToString(micException)}</Text>}
+              requestClose={() => setMicException(undefined)}
+            />
+          )}
+          <Tooltip content={callMute ? "Unmute" : "Mute"}>
+            <IconButton
+              variant="surface-low"
+              label="Mic"
+              iconSrc={callMute ? MicOffIC : MicIC}
+              onClick={() => {
+                handleMute(async () => {
+                  const [stream, exception] = await requestStream(true, false);
+                  if (stream) return stream;
+                  setMicException(exception);
+                  return undefined;
+                });
+              }}
+            />
+          </Tooltip>
           <Tooltip content="Disconnect">
             <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
           </Tooltip>

@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
-
-import { RequestStream } from "../views/components/MicStreamRequest";
+import { GroupCall, Stream } from "@thirdroom/hydrogen-view-sdk";
 
 export function useCallMute(call?: GroupCall) {
   const getMuteState = useCallback(() => {
@@ -32,7 +30,7 @@ export function useCallMute(call?: GroupCall) {
     });
   }, [call, getMuteState]);
 
-  const handleMute = async (requestStream: RequestStream) => {
+  const handleMute = async (requestStream: () => Promise<Stream | undefined>) => {
     if (!call) return;
     if (call.localMedia?.userMedia) {
       toggleMute();

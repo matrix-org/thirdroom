@@ -31,14 +31,17 @@ import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { usePermissionState } from "../../../hooks/usePermissionState";
 import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
-import { MicStreamRequest } from "../../components/MicStreamRequest";
 import { useHydrogen } from "../../../hooks/useHydrogen";
+import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
+import { AlertDialog } from "../dialogs/AlertDialog";
 
 const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
 
 const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall }>(({ activeCall }, ref) => {
   const { platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
+  const requestStream = useStreamRequest(platform, micPermission);
+  const [micException, setMicException] = useState<RequestException>();
   const [microphone, setMicrophone] = useMicrophoneState();
   const { mute: callMute, handleMute } = useCallMute(activeCall);
   if (callMute === microphone) {
@@ -46,21 +49,32 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall }>(({ 
   }
 
   return (
-    <MicStreamRequest
-      permissionState={micPermission}
-      platform={platform}
-      render={(requestStream) => (
-        <Tooltip content={callMute ? "Unmute" : "Mute"}>
-          <IconButton
-            variant="world"
-            label="Mic"
-            iconSrc={callMute ? MicOffIC : MicIC}
-            onClick={() => handleMute(requestStream)}
-            ref={ref}
-          />
-        </Tooltip>
+    <>
+      {micException && (
+        <AlertDialog
+          open={!!micException}
+          title="Microphone"
+          content={<Text variant="b2">{exceptionToString(micException)}</Text>}
+          requestClose={() => setMicException(undefined)}
+        />
       )}
-    />
+      <Tooltip content={callMute ? "Unmute" : "Mute"}>
+        <IconButton
+          variant="world"
+          label="Mic"
+          iconSrc={callMute ? MicOffIC : MicIC}
+          onClick={() => {
+            handleMute(async () => {
+              const [stream, exception] = await requestStream(true, false);
+              if (stream) return stream;
+              setMicException(exception);
+              return undefined;
+            });
+          }}
+          ref={ref}
+        />
+      </Tooltip>
+    </>
   );
 });
 
