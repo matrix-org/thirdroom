@@ -19,15 +19,22 @@ export function useCallMute(call?: GroupCall) {
     if (!call) return;
 
     const { muteSettings } = call;
-    setMute(!getMuteState());
+
+    const newMuteState = !getMuteState();
+
+    setMute(newMuteState);
+
     if (!muteSettings) {
       setMute(getMuteState());
       return;
     }
+
     setTimeout(async () => {
       await call.setMuted(muteSettings.toggleMicrophone());
       setMute(getMuteState());
     });
+
+    return newMuteState;
   }, [call, getMuteState]);
 
   const handleMute = async (requestStream: () => Promise<Stream | undefined>) => {
