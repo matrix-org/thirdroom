@@ -228,9 +228,9 @@ export function SessionView() {
 
     let stream;
     try {
-      if (localStorage.getItem("microphone") === "true") {
-        stream = await platform.mediaDevices.getMediaTracks(true, false);
-      }
+      // if (localStorage.getItem("microphone") === "true") {
+      stream = await platform.mediaDevices.getMediaTracks(true, false);
+      // }
     } catch (err) {
       console.error(err);
     }
