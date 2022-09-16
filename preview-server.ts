@@ -10,6 +10,7 @@ const devServerConfig: InlineConfig = {
   ...userConfig,
   mode: "preview",
   build: {
+    ...userConfig.build,
     minify: false,
     sourcemap: true,
   },

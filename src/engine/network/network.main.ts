@@ -204,7 +204,12 @@ export function addPeer(
   };
 
   dataChannel.binaryType = "arraybuffer";
-  dataChannel.addEventListener("open", onOpen);
+
+  if (dataChannel.readyState === "open") {
+    onOpen();
+  } else {
+    dataChannel.addEventListener("open", onOpen);
+  }
 
   if (mediaStream) {
     setPeerMediaStream(audio, peerId, mediaStream);
