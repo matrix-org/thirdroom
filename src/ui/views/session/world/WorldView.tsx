@@ -67,7 +67,7 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showA
             label="Mic"
             iconSrc={callMute ? MicOffIC : MicIC}
             onClick={() => {
-              showAlert(callMute ? "Microphone Muted" : "Microphone Unmuted");
+              showAlert(!callMute ? "Microphone Muted" : "Microphone Unmuted");
               handleMute(async () => {
                 const [stream, exception] = await requestStream(true, false);
                 if (stream) return stream;
