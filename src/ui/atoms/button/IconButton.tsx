@@ -1,4 +1,4 @@
-import { MouseEventHandler } from "react";
+import { forwardRef, MouseEventHandler } from "react";
 import classNames from "classnames";
 
 import { Icon } from "../icon/Icon";
@@ -27,29 +27,35 @@ interface IIconButton {
   tabIndex?: number;
 }
 
-export function IconButton({
-  className,
-  variant = "surface",
-  size = "md",
-  iconSrc,
-  label,
-  type = "button",
-  onClick,
-  disabled = false,
-  tabIndex,
-}: IIconButton) {
-  const btnClass = classNames(`IconButton IconButton--${variant}`, className);
+export const IconButton = forwardRef<HTMLButtonElement, IIconButton>(
+  (
+    {
+      className,
+      variant = "surface",
+      size = "md",
+      iconSrc,
+      label,
+      type = "button",
+      onClick,
+      disabled = false,
+      tabIndex,
+    },
+    ref
+  ) => {
+    const btnClass = classNames(`IconButton IconButton--${variant}`, className);
 
-  return (
-    <button
-      className={btnClass}
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      tabIndex={tabIndex}
-    >
-      <Icon color={variant} size={size} src={iconSrc} />
-    </button>
-  );
-}
+    return (
+      <button
+        ref={ref}
+        className={btnClass}
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        tabIndex={tabIndex}
+      >
+        <Icon color={variant} size={size} src={iconSrc} />
+      </button>
+    );
+  }
+);
