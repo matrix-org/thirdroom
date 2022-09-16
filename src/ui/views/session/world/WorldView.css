@@ -34,7 +34,7 @@
   }
 }
 
-.WorldView__alert-container {
+.WorldView__toast-container {
   position: absolute;
   top: 72px;
   left: 0;
@@ -43,7 +43,7 @@
   justify-content: center;
 }
 
-.WorldView__alert {
+.WorldView__toast {
   border-radius: var(--br-xs);
   background-color: var(--bg-world-overlay);
   height: 40px;
@@ -56,6 +56,6 @@
   align-items: center;
 }
 
-.WorldView__alert--shown {
+.WorldView__toast--shown {
   opacity: 1;
 }

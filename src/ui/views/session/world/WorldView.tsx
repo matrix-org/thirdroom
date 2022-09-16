@@ -30,7 +30,7 @@ import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
-import { useAlert } from "../../../hooks/useAlert";
+import { useToast } from "../../../hooks/useToast";
 import { usePermissionState } from "../../../hooks/usePermissionState";
 import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -39,8 +39,8 @@ import { AlertDialog } from "../dialogs/AlertDialog";
 
 const SHOW_NAMES_STORE = "showNames";
 
-const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showAlert: (text: string) => void }>(
-  ({ activeCall, showAlert }, ref) => {
+const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showToast: (text: string) => void }>(
+  ({ activeCall, showToast }, ref) => {
     const { platform } = useHydrogen(true);
     const micPermission = usePermissionState("microphone");
     const requestStream = useStreamRequest(platform, micPermission);
@@ -67,7 +67,7 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showA
             label="Mic"
             iconSrc={callMute ? MicOffIC : MicIC}
             onClick={() => {
-              showAlert(!callMute ? "Microphone Muted" : "Microphone Unmuted");
+              showToast(!callMute ? "Microphone Muted" : "Microphone Unmuted");
               handleMute(async () => {
                 const [stream, exception] = await requestStream(true, false);
                 if (stream) return stream;
@@ -93,7 +93,7 @@ export function WorldView() {
   const [statsEnabled, setStatsEnabled] = useState(false);
 
   const muteBtnRef = useRef<HTMLButtonElement | null>(null);
-  const { alertShown, alertText, showAlert } = useAlert();
+  const { toastShown, toastContent, showToast } = useToast();
 
   const engine = useMainThreadContext();
 
@@ -132,8 +132,8 @@ export function WorldView() {
     const enabled = !showNames;
     setShowNames(enabled);
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
-    showAlert(enabled ? "Show Names" : "Hide Names");
-  }, [setShowNames, showNames, showAlert, engine]);
+    showToast(enabled ? "Show Names" : "Hide Names");
+  }, [setShowNames, showNames, showToast, engine]);
 
   const toggleShowActiveMembers = () => {
     const enabled = !showActiveMembers;
@@ -256,7 +256,7 @@ export function WorldView() {
       {activeCall && (
         <div className="flex flex-column items-center">
           <MuteButton
-            showAlert={showAlert}
+            showToast={showToast}
             activeCall={activeCall}
             ref={(ref) => {
               muteBtnRef.current = ref;
@@ -280,10 +280,10 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
-      <div className="WorldView__alert-container">
-        <div className={classNames("WorldView__alert", { "WorldView__alert--shown": alertShown })}>
+      <div className="WorldView__toast-container">
+        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">
-            {alertText}
+            {toastContent}
           </Text>
         </div>
       </div>
