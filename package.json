@@ -54,12 +54,13 @@
     "react-router-dom": "6",
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.7",
-    "three": "npm:@thirdroom/three@^0.143.1",
+    "three": "npm:@thirdroom/three@^0.144.1",
     "zustand": "^4.0.0-rc.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react-hooks": "^8.0.0",
+    "@thirdroom/vite-plugin-rewrite-all": "1.0.2",
     "@types/babel__core": "^7.1.19",
     "@types/chrome": "^0.0.188",
     "@types/draco3dgltf": "^1.4.0",
@@ -99,11 +100,10 @@
     "stylelint-config-standard": "^25.0.0",
     "ts-node": "^10.7.0",
     "typescript": "^4.4.4",
-    "vite": "2.9.13",
+    "vite": "3.1.1",
     "vite-node": "^0.9.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
-    "vite-plugin-rewrite-all": "^0.1.2",
-    "vitest": "^0.9.2",
+    "vitest": "0.17.0",
     "ws": "^8.5.0"
   }
 }
