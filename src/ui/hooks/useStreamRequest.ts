@@ -14,9 +14,9 @@ export enum RequestException {
 
 export function exceptionToString(exception: RequestException) {
   if (exception === RequestException.NotAllowed)
-    return "Access to microphone is denied. Please allow it from browser address bar.";
+    return "Access to microphone was denied. Please allow it from browser address bar.";
   if (exception === RequestException.NotFound) return "No microphone found.";
-  return "Unable to connect access microphone. Unknown error occurs.";
+  return "Unable to connect access microphone. Please connect a microphone and refresh the page.";
 }
 
 export function useStreamRequest(platform: Platform, permissionState: PermissionState) {
