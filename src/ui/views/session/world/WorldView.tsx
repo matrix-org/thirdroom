@@ -29,7 +29,7 @@ import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 
-const FOCUSED_ENT_STORE_NAME = "showFocusedEntity";
+const SHOW_NAMES_STORE = "showNames";
 
 export function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
@@ -45,21 +45,21 @@ export function WorldView() {
 
   const [entity, setEntity] = useState<EntityData>();
 
-  const [showFocusedEntity, setShowFocusedEntity] = useState<boolean>(() => {
-    const store = localStorage.getItem(FOCUSED_ENT_STORE_NAME);
+  const [showNames, setShowNames] = useState<boolean>(() => {
+    const store = localStorage.getItem(SHOW_NAMES_STORE);
     if (!store) return true;
     const json = JSON.parse(store);
-    return json.showFocusedEntity;
+    return json.showNames;
   });
 
   useEffect(() => {
-    localStorage.setItem(FOCUSED_ENT_STORE_NAME, JSON.stringify({ showFocusedEntity }));
+    localStorage.setItem(SHOW_NAMES_STORE, JSON.stringify({ showNames }));
 
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, {
       type: NametagsEnableMessage,
-      enabled: showFocusedEntity,
+      enabled: showNames,
     });
-  }, [engine, showFocusedEntity]);
+  }, [engine, showNames]);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
@@ -74,11 +74,11 @@ export function WorldView() {
     setEntity(entity);
   };
 
-  const toggleShowFocusedEnity = useCallback(() => {
-    const enabled = !showFocusedEntity;
-    setShowFocusedEntity(enabled);
+  const toggleShowNames = useCallback(() => {
+    const enabled = !showNames;
+    setShowNames(enabled);
     engine.sendMessage<NametagsEnableMessageType>(Thread.Game, { type: NametagsEnableMessage, enabled });
-  }, [setShowFocusedEntity, showFocusedEntity, engine]);
+  }, [setShowNames, showNames, engine]);
 
   const toggleShowActiveMembers = () => {
     const enabled = !showActiveMembers;
@@ -132,8 +132,8 @@ export function WorldView() {
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
         setStatsEnabled((enabled) => !enabled);
       }
-      if (e.code === "KeyO") {
-        toggleShowFocusedEnity();
+      if (e.code === "KeyN") {
+        toggleShowNames();
       }
       if (e.code === "KeyP") {
         toggleShowActiveMembers();
@@ -143,7 +143,7 @@ export function WorldView() {
       isEnteredWorld,
       isChatOpen,
       isOverlayOpen,
-      showFocusedEntity,
+      showNames,
       showActiveMembers,
       openWorldChat,
       closeWorldChat,
@@ -185,16 +185,16 @@ export function WorldView() {
         </Text>
       </div>
       <div className="flex flex-column items-center">
-        <Tooltip content={showFocusedEntity ? "Hide Names" : "Show Names"}>
+        <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
           <IconButton
             variant="world"
-            label="focusedEntity"
-            iconSrc={showFocusedEntity ? SubtitlesIC : SubtitlesOffIC}
-            onClick={toggleShowFocusedEnity}
+            label="Toggle Names"
+            iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
+            onClick={toggleShowNames}
           />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
-          O
+          N
         </Text>
       </div>
       <div className="flex flex-column items-center">
@@ -224,13 +224,13 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showFocusedEntity} />}
+      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showNames} />}
       {!("isBeingCreated" in world) && (
         <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
         </Dialog>
       )}
-      {!isOverlayOpen && showFocusedEntity && <EntitySelected entity={entity} />}
+      {!isOverlayOpen && showNames && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
     </div>
   );
