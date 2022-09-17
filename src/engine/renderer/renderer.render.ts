@@ -50,6 +50,7 @@ import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
+  NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
   RendererStateTripleBuffer,
@@ -270,7 +271,7 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
   renderer.canvasHeight = canvasHeight;
 }
 
-function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: NotifyNextFrameMessage) {
+function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.sceneRenderedRequests.push({ id, sceneResourceId });
 }
