@@ -50,7 +50,6 @@ import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
-  NotifyNextFrameMessage,
   RendererMessageType,
   rendererModuleName,
   RendererStateTripleBuffer,
