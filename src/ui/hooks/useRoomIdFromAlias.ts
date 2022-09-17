@@ -30,7 +30,7 @@ export function useWorld(): [string | undefined, Room | RoomBeingCreated | undef
         const roomBeingCreated = await session.createRoom({
           type: RoomType.World,
           visibility: RoomVisibility.Private,
-          avatar: undefined,
+          avatar: defaultWorlds.home.defaultAvatar,
           name: "Home World",
           isEncrypted: false,
           isFederationDisabled: false,
@@ -71,6 +71,8 @@ export function useWorld(): [string | undefined, Room | RoomBeingCreated | undef
         });
 
         setHomeWorldId(roomBeingCreated.id);
+
+        console.log(roomBeingCreated);
 
         const homeWorld = await waitToCreateRoom(session, roomBeingCreated);
 

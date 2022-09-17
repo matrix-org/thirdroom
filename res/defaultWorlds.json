@@ -2,7 +2,15 @@
   "home": {
     "sceneUrl": "mxc://thirdroom.io/qhDhqEvIsqEtreOSriIfkadf",
     "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
-    "defaultRoomAvatarUrl": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
+    "defaultAvatar": {
+      "info": {
+        "h": 512,
+        "mimetype": "image/png",
+        "size": 307589,
+        "w": 512
+      },
+      "url": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
+    }
   },
   "scenes": [
     {

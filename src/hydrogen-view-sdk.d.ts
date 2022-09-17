@@ -504,6 +504,18 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
+  type ImageInfo = {
+    w: number;
+    h: number;
+    mimetype: string;
+    size: number;
+  };
+
+  type Avatar = {
+    info: ImageInfo;
+    name?: string;
+  } & ({ blob: IBlobHandle } | { url: string });
+
   interface ICreateRoom {
     type?: RoomType;
     visibility: RoomVisibility;
@@ -513,16 +525,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     isEncrypted?: boolean;
     isFederationDisabled?: boolean;
     alias?: string;
-    avatar?: {
-      name: string;
-      blob: IBlobHandle;
-      info: {
-        w?: number;
-        h?: number;
-        mimetype: string;
-        size: number;
-      };
-    };
+    avatar?: Avatar;
     powerLevelContentOverride?: any;
     initialState?: any[];
   }
