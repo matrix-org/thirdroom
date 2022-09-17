@@ -6,12 +6,25 @@ export enum RendererMessageType {
   InitializeCanvas = "renderer-initialize-canvas",
   InitializeResourceManager = "initialize-resource-manager",
   InitializeRendererTripleBuffers = "initialize-renderer-triple-buffers",
+  NotifySceneRendered = "renderer-notify-scene-renderer",
+  SceneRenderedNotification = "renderer-scene-rendered-notification",
 }
 
 export interface InitializeCanvasMessage {
   canvasTarget?: OffscreenCanvas;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
+}
+
+export interface NotifySceneRendererMessage {
+  type: RendererMessageType.NotifySceneRendered;
+  sceneResourceId: number;
+  id: number;
+}
+
+export interface SceneRenderedNotificationMessage {
+  type: RendererMessageType.SceneRenderedNotification;
+  id: number;
 }
 
 export const rendererStateSchema = defineObjectBufferSchema({

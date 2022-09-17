@@ -41,6 +41,7 @@ import { createFlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -208,7 +209,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
     await loadEnvironment(ctx, message.url);
+
     loadPreviewCamera(ctx);
+
+    await waitForCurrentSceneToRender(ctx);
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
