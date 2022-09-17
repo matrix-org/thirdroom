@@ -293,7 +293,7 @@ export function WorldView() {
       </div>
       {world && renderControl()}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && !isOverlayOpen && <Nametags room={world} enabled={showNames} />}
+      {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !isOverlayOpen} />}
       {!("isBeingCreated" in world) && (
         <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
           <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />

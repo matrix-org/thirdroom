@@ -115,17 +115,14 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
   );
 }
 
-export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
+export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const engine = useMainThreadContext();
 
   const [nametags, setNametags] = useState<LocalNametag[]>([]);
 
-  const onNametagsChanged = useCallback(
-    (nametags: LocalNametag[]) => {
-      setNametags([...nametags]);
-    },
-    [setNametags]
-  );
+  const onNametagsChanged = useCallback((nametags: LocalNametag[]) => {
+    setNametags([...nametags]);
+  }, []);
 
   useEffect(() => {
     const audioModule = getModule(engine, AudioModule);
@@ -152,7 +149,7 @@ export function Nametags({ room, enabled }: { room: Room; enabled: boolean }) {
 
   return (
     <div>
-      {enabled &&
+      {show &&
         nametags.map((nametag) => (
           <Nametag key={nametag.resourceId} room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
         ))}
