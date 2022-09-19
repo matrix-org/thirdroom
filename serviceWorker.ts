@@ -1,8 +1,7 @@
 /// <reference lib="ESNext" />
 /// <reference lib="WebWorker" />
 
-export default null;
-declare const self: ServiceWorkerGlobalScope;
+export declare const self: ServiceWorkerGlobalScope;
 
 const MXC_DOWNLOAD_CACHE = "download_mxc";
 
