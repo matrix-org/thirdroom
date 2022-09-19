@@ -22,6 +22,7 @@ import {
   onLoadLocalDirectionalLightResource,
   onLoadLocalPointLightResource,
   onLoadLocalSpotLightResource,
+  updateMainLight,
 } from "../light/light.render";
 import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
 import {
@@ -87,6 +88,7 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
+import { CSMDirectionalLight } from "../light/CSMDirectionalLight";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -118,6 +120,7 @@ export interface RendererModuleState {
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
+  mainLight?: CSMDirectionalLight;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -312,6 +315,7 @@ export function RendererSystem(ctx: RenderThreadState) {
 
   updateReflectionProbeTextureArray(ctx, activeSceneResource);
   updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
+  updateMainLight(ctx, activeCameraNode, rendererModule.nodes);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);

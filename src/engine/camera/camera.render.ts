@@ -1,8 +1,10 @@
 import { OrthographicCamera, PerspectiveCamera, Scene, MathUtils } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
+import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource } from "../resource/resource.render";
@@ -58,6 +60,7 @@ export function updateNodeCamera(
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
 ) {
+  const rendererModule = getModule(ctx, RendererModule);
   const currentCameraResourceId = node.camera?.resourceId || 0;
   const nextCameraResourceId = nodeReadView.camera[0];
 
@@ -101,6 +104,8 @@ export function updateNodeCamera(
     // Renderer will update aspect based on the viewport if the aspectRatio is set to 0
     if (cameraView.aspectRatio[0]) {
       perspectiveCamera.aspect = cameraView.aspectRatio[0];
+    } else {
+      perspectiveCamera.aspect = rendererModule.canvasWidth / rendererModule.canvasHeight;
     }
 
     if (cameraView.projectionMatrixNeedsUpdate[0]) {

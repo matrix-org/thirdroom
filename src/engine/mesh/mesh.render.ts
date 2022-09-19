@@ -23,12 +23,14 @@ import {
   LinearEncoding,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
+  Vector2,
 } from "three";
 
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 // import { Skeleton, SkinnedMesh } from "../animation/Skeleton";
 import { GLTFMesh } from "../gltf/GLTF";
+import { MAX_SHADOW_DISTANCE, NUM_CSM_CASCADES } from "../light/CSMDirectionalLight";
 import { MaterialType } from "../material/material.common";
 import {
   createDefaultMaterial,
@@ -448,6 +450,8 @@ function createMeshPrimitiveObject(
     }
 
     if (!("isMeshBasicMaterial" in material)) {
+      material.defines.USE_CSM = "";
+      material.defines.CSM_CASCADES = NUM_CSM_CASCADES;
       material.defines.USE_ENVMAP = "";
       material.defines.ENVMAP_MODE_REFLECTION = "";
       material.defines.ENVMAP_TYPE_CUBE_UV = "";
@@ -457,12 +461,18 @@ function createMeshPrimitiveObject(
     }
 
     if (!material.userData.beforeCompileHook) {
+      const csmSplits = new Uniform(Array.from({ length: NUM_CSM_CASCADES }, () => new Vector2()));
+      const cameraNear = new Uniform(1);
+      const shadowFar = new Uniform(MAX_SHADOW_DISTANCE);
       const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
       const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
       const reflectionProbeParams = new Uniform(new Vector3());
       const reflectionProbeSampleParams = new Uniform(new Vector3());
 
       material.onBeforeCompile = (shader) => {
+        shader.uniforms.CSM_cascades = csmSplits;
+        shader.uniforms.cameraNear = cameraNear;
+        shader.uniforms.shadowFar = shadowFar;
         shader.uniforms.lightMapTransform = lightMapTransform;
         shader.uniforms.reflectionProbesMap = reflectionProbesMap;
         shader.uniforms.reflectionProbeParams = reflectionProbeParams;
@@ -470,6 +480,9 @@ function createMeshPrimitiveObject(
       };
 
       material.userData.beforeCompileHook = true;
+      material.userData.csmSplits = csmSplits;
+      material.userData.cameraNear = cameraNear;
+      material.userData.shadowFar = shadowFar;
       material.userData.lightMapTransform = lightMapTransform;
       material.userData.reflectionProbesMap = reflectionProbesMap;
       material.userData.reflectionProbeParams = reflectionProbeParams;
