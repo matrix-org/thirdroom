@@ -1,14 +1,16 @@
-/// <reference lib="webworker" />
+/// <reference lib="ESNext" />
+/// <reference lib="WebWorker" />
 
-export declare const self: ServiceWorkerGlobalScope;
+export default null;
+declare const self: ServiceWorkerGlobalScope;
 
 const MXC_DOWNLOAD_CACHE = "download_mxc";
 
-function getCache(request: Request, cacheName) {
+function getCache(request: Request, cacheName: string) {
   return caches.open(cacheName).then((cache) => cache.match(request));
 }
 
-function fetchAndCache(request: Request, cacheName) {
+function fetchAndCache(request: Request, cacheName: string) {
   return fetch(request.clone()).then((response) => {
     if (response.status === 200) {
       const clonedResponse = response.clone();

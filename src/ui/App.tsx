@@ -15,7 +15,7 @@ import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
 
 window.onload = () => {
   if (navigator.serviceWorker) {
-    navigator.serviceWorker.register("/serviceWorker.ts", { scope: "/*" }).then((reg) => {
+    navigator.serviceWorker.register("/serviceWorker.ts").then((reg) => {
       console.log("Service worker is registered.");
     });
   }
