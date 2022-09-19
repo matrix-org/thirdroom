@@ -20,6 +20,7 @@ import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocato
 import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
+import { CSMDirectionalLight } from "../light/CSMDirectionalLight";
 import { LocalLightResource, updateNodeLight } from "../light/light.render";
 import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
@@ -48,7 +49,7 @@ export interface LocalNode {
   camera?: LocalCameraResource;
   cameraObject?: PerspectiveCamera | OrthographicCamera;
   light?: LocalLightResource;
-  lightObject?: Light;
+  lightObject?: Light | CSMDirectionalLight;
   tilesRenderer?: LocalTilesRendererResource;
   reflectionProbe?: LocalReflectionProbeResource;
   reflectionProbeObject?: ReflectionProbe;
@@ -143,6 +144,21 @@ export function setTransformFromNode(
   object3D.scale.copy(tempScale);
 
   object3D.visible = !!nodeReadView.visible[0];
+  object3D.layers.mask = nodeReadView.layers[0];
+}
+
+export function setWorldDirectionFromNode(
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
+  direction: Vector3,
+  object3D: Object3D
+) {
+  tempMatrix4.fromArray(nodeReadView.worldMatrix);
+
+  const e = tempMatrix4.elements;
+  direction.set(e[8], e[9], e[10]).negate().normalize();
+
+  object3D.visible = !!nodeReadView.visible[0];
+  object3D.layers.mask = nodeReadView.layers[0];
 }
 
 export function updateLocalNodeResources(

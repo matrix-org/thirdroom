@@ -84,7 +84,7 @@ export function createRemotePerspectiveCamera(ctx: GameState, props?: Perspectiv
   const cameraBufferView = createObjectBufferView(perspectiveCameraSchema, ArrayBuffer);
 
   cameraBufferView.layers[0] = props?.layers === undefined ? 1 : props.layers;
-  cameraBufferView.zfar[0] = props?.zfar || 2000;
+  cameraBufferView.zfar[0] = props?.zfar || 500;
   cameraBufferView.znear[0] = props?.znear === undefined ? 0.1 : props.znear;
   cameraBufferView.aspectRatio[0] = props?.aspectRatio || 0; // 0 for automatic aspect ratio defined by canvas
   cameraBufferView.yfov[0] = props?.yfov === undefined ? glMatrix.toRadian(50) : props.yfov;

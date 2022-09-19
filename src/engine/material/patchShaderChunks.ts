@@ -157,4 +157,85 @@ export default function patchShaderChunks() {
     #endif
     `
   );
+
+  // Cascaded Shadow Maps (CSM)
+  ShaderChunk.lights_fragment_begin = ShaderChunk.lights_fragment_begin.replace(
+    "#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )",
+    `#if ( NUM_DIR_LIGHTS > 0) && defined( RE_Direct ) && defined( USE_CSM ) && defined( CSM_CASCADES )
+
+      DirectionalLight directionalLight;
+
+      #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+        DirectionalLightShadow directionalLightShadow;
+
+        float linearDepth = (vViewPosition.z) / (shadowFar - cameraNear);
+
+        vec2 cascade;
+        float cascadeCenter;
+        float closestEdge;
+        float margin;
+        float csmx;
+        float csmy;
+
+        #pragma unroll_loop_start
+        for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
+          directionalLight = directionalLights[ i ];
+          getDirectionalLightInfo( directionalLight, geometry, directLight );
+
+          #if ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
+            // NOTE: Depth gets larger away from the camera.
+            // cascade.x is closer, cascade.y is further
+            cascade = CSM_cascades[ i ];
+            cascadeCenter = ( cascade.x + cascade.y ) / 2.0;
+            closestEdge = linearDepth < cascadeCenter ? cascade.x : cascade.y;
+            margin = 0.25 * pow( closestEdge, 2.0 );
+            csmx = cascade.x - margin / 2.0;
+            csmy = cascade.y + margin / 2.0;
+
+            if( linearDepth >= csmx && ( linearDepth < csmy || UNROLLED_LOOP_INDEX == CSM_CASCADES - 1 ) ) {
+              float dist = min( linearDepth - csmx, csmy - linearDepth );
+              float ratio = clamp( dist / margin, 0.0, 1.0 );
+              vec3 prevColor = directLight.color;
+              directionalLightShadow = directionalLightShadows[ i ];
+              directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
+              bool shouldFadeLastCascade = UNROLLED_LOOP_INDEX == CSM_CASCADES - 1 && linearDepth > cascadeCenter;
+              directLight.color = mix( prevColor, directLight.color, shouldFadeLastCascade ? ratio : 1.0 );
+              ReflectedLight prevLight = reflectedLight;
+              RE_Direct( directLight, geometry, material, reflectedLight );
+              bool shouldBlend = UNROLLED_LOOP_INDEX != CSM_CASCADES - 1 || UNROLLED_LOOP_INDEX == CSM_CASCADES - 1 && linearDepth < cascadeCenter;
+              float blendRatio = shouldBlend ? ratio : 1.0;
+              reflectedLight.directDiffuse = mix( prevLight.directDiffuse, reflectedLight.directDiffuse, blendRatio );
+              reflectedLight.directSpecular = mix( prevLight.directSpecular, reflectedLight.directSpecular, blendRatio );
+              reflectedLight.indirectDiffuse = mix( prevLight.indirectDiffuse, reflectedLight.indirectDiffuse, blendRatio );
+              reflectedLight.indirectSpecular = mix( prevLight.indirectSpecular, reflectedLight.indirectSpecular, blendRatio );
+            }
+          #endif
+        }
+        #pragma unroll_loop_end
+
+        #if ( NUM_DIR_LIGHTS > NUM_DIR_LIGHT_SHADOWS)
+          // compute the lights not casting shadows (if any)
+          #pragma unroll_loop_start
+          for ( int i = NUM_DIR_LIGHT_SHADOWS; i < NUM_DIR_LIGHTS; i ++ ) {
+            directionalLight = directionalLights[ i ];
+            getDirectionalLightInfo( directionalLight, geometry, directLight );
+            RE_Direct( directLight, geometry, material, reflectedLight );
+          }
+          #pragma unroll_loop_end
+        #endif
+
+      #endif
+
+    #elif ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )
+    `
+  );
+
+  ShaderChunk.lights_pars_begin =
+    `
+    #if defined( USE_CSM ) && defined( CSM_CASCADES )
+      uniform vec2 CSM_cascades[CSM_CASCADES];
+      uniform float cameraNear;
+      uniform float shadowFar;
+    #endif
+    ` + ShaderChunk.lights_pars_begin;
 }
