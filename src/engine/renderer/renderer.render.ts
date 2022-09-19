@@ -50,6 +50,7 @@ import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
+  NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
   RendererStateTripleBuffer,
@@ -118,6 +119,7 @@ export interface RendererModuleState {
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
+  sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -201,11 +203,13 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       reflectionProbesMap: null,
       pmremGenerator,
       tilesRenderers: [],
+      sceneRenderedRequests: [],
     };
   },
   init(ctx) {
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
+      registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerResourceLoader(ctx, SamplerResourceType, onLoadSampler),
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
       registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
@@ -267,6 +271,11 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Rende
   renderer.canvasHeight = canvasHeight;
 }
 
+function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: NotifySceneRendererMessage) {
+  const renderer = getModule(ctx, RendererModule);
+  renderer.sceneRenderedRequests.push({ id, sceneResourceId });
+}
+
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
   const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
@@ -315,5 +324,18 @@ export function RendererSystem(ctx: RenderThreadState) {
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
+  }
+
+  for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
+    const { id, sceneResourceId } = rendererModule.sceneRenderedRequests[i];
+
+    if (activeSceneResource && activeSceneResource.resourceId === sceneResourceId) {
+      ctx.sendMessage(Thread.Game, {
+        type: RendererMessageType.SceneRenderedNotification,
+        id,
+      });
+
+      rendererModule.sceneRenderedRequests.splice(i, 1);
+    }
   }
 }
