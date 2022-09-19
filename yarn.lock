@@ -384,6 +384,11 @@
   resolved "https://registry.yarnpkg.com/@fontsource/inter/-/inter-4.5.12.tgz#a6236379bf710658db048d7087ec588754962cb6"
   integrity sha512-bGKk4/8tube/nCk8hav0ZDBVbzJzc7m0Vt4xF5p15IN4YImwGdtKG38Oq5bU8xHNS+VfvbFFCepgQNj7Pr/Lvg==
 
+"@gautemo/vite-plugin-service-worker@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@gautemo/vite-plugin-service-worker/-/vite-plugin-service-worker-0.0.3.tgz#74b3fde1ae1dce38cf33e59340f562f2896ca5a1"
+  integrity sha512-vKczEXfJVB6qQt+0YIiqt587NpZgtQZGVzwHB2ffHqW6rMwhcgwMAkSfSgHJzNOGhe532GmB+BgcNT035g0dYw==
+
 "@gltf-transform/core@^2.4.3":
   version "2.4.3"
   resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-2.4.3.tgz#4d9c18ba91abab17711e01da06cfc0892005bd92"

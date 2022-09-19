@@ -1,6 +1,7 @@
 import { lazy, ReactNode, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
+import { serviceWorkerFile } from "virtual:vite-plugin-service-worker";
 
 import "./App.css";
 import "@fontsource/inter/variable.css";
@@ -12,6 +13,14 @@ import { WorldView } from "./views/session/world/WorldView";
 import { HomeView } from "./views/session/home/HomeView";
 import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
 import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
+
+window.onload = () => {
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.register(serviceWorkerFile, { type: "module" }).then((reg) => {
+      console.log("Service worker is registered.");
+    });
+  }
+};
 
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
