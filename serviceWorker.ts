@@ -37,5 +37,3 @@ self.addEventListener("fetch", async (event: FetchEvent) => {
       })
   );
 });
-
-self.clients;
