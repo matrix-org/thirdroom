@@ -13,6 +13,14 @@ import { HomeView } from "./views/session/home/HomeView";
 import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
 import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
 
+window.onload = () => {
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.register("/serviceWorker.ts", { scope: "/*" }).then((reg) => {
+      console.log("Service worker is registered.");
+    });
+  }
+};
+
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
   useEffect(() => {

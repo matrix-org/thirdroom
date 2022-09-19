@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext", "WebWorker"],
     "allowJs": false,
     "skipLibCheck": false,
     "esModuleInterop": false,
@@ -16,5 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["./src", "deps.d.ts", "./test", "./preview-server.ts", "./vite.config.ts"]
+  "include": ["./src", "deps.d.ts", "./test", "./preview-server.ts", "./vite.config.ts", "./serviceWorker.ts"]
 }
