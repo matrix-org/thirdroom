@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
 import pluginRewriteAll from "@thirdroom/vite-plugin-rewrite-all";
+import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker";
 import path from "path";
 
 import testnetServerPlugin from "./src/testnet";
@@ -20,6 +21,9 @@ export default defineConfig({
     react(),
     crossOriginIsolation(),
     testnetServerPlugin(),
+    serviceWorkerPlugin({
+      filename: "sw.ts",
+    }),
   ],
   resolve: {
     dedupe: ["three", "bitecs"],
