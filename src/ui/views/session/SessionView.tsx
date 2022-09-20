@@ -19,7 +19,7 @@ import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
-import { useStore } from "../../hooks/useStore";
+import { useStore, WorldLoadState } from "../../hooks/useStore";
 import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet } from "../../../engine/network/network.main";
@@ -34,6 +34,10 @@ export interface SessionOutletContext {
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
   onExitWorld: () => void;
+  onWorldTransfer: (roomId: string) => void;
+  onJoinSelectedWorld: () => void;
+  onLoadSelectedWorld: () => void;
+  onEnterSelectedWorld: () => void;
 }
 
 export function SessionView() {
@@ -60,6 +64,8 @@ export function SessionView() {
   }, [calls, world]);
 
   const { value: roomStatus } = useRoomStatus(session, world?.id);
+
+  // const [showPortalPrompt, setShowPortalPrompt] = useState<boolean>(false);
 
   useEffect(() => {
     if (
@@ -281,24 +287,96 @@ export function SessionView() {
     }
   }, [navigate]);
 
+  const onWorldTransfer = useCallback(
+    async (roomId: string) => {
+      const state = useStore.getState();
+
+      // exit current world
+      onExitWorld();
+
+      // select new world
+      state.overlayWorld.selectWorld(roomId);
+
+      // join if not already
+      const roomStatus = await session.observeRoomStatus(roomId);
+      if (roomStatus.get() !== RoomStatus.Joined) {
+        await onJoinSelectedWorld();
+      }
+
+      // load world
+      await onLoadSelectedWorld();
+
+      // enter world when loaded
+      const interval = setInterval(() => {
+        if (useStore.getState().world.loadState === WorldLoadState.Loaded) {
+          // setShowPortalPrompt(true);
+          onEnterSelectedWorld();
+          clearInterval(interval);
+        }
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+      };
+    },
+    [
+      //
+      onExitWorld,
+      onLoadSelectedWorld,
+      onEnterSelectedWorld,
+      onJoinSelectedWorld,
+      session,
+    ]
+  );
+
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
       world,
       activeCall,
       canvasRef,
       onExitWorld,
+      onWorldTransfer,
+      onJoinSelectedWorld,
+      onLoadSelectedWorld,
+      onEnterSelectedWorld,
     }),
-    [world, activeCall, canvasRef, onExitWorld]
+    [
+      world,
+      activeCall,
+      canvasRef,
+      onExitWorld,
+      onWorldTransfer,
+      onJoinSelectedWorld,
+      onLoadSelectedWorld,
+      onEnterSelectedWorld,
+    ]
   );
+
+  // const acceptPortalPrompt = useCallback(() => {
+  //   setShowPortalPrompt(false);
+  //   onEnterSelectedWorld();
+  // }, [onEnterSelectedWorld]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="SessionView">
+        {/* <AlertDialog
+          open={!!showPortalPrompt}
+          title="Entering New World"
+          content={<div className="flex flex-column gap-xs">Are you sure you wish to enter a new world?</div>}
+          buttons={
+            <Button fill="outline" onClick={acceptPortalPrompt}>
+              Enter World
+            </Button>
+          }
+          requestClose={() => setShowPortalPrompt(false)}
+        /> */}
         <canvas className="SessionView__viewport" ref={canvasRef} />
         {mainThread ? (
           <MainThreadContextProvider value={mainThread}>
             <Outlet context={outletContext} />
             {isOverlayOpen && (
+              //!showPortalPrompt &&
               <Overlay
                 calls={calls}
                 activeCall={activeCall}

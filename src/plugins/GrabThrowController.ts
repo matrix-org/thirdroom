@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, Types, defineQuery, removeComponent, addComponent } from "bitecs";
+import { defineComponent, Types, defineQuery, removeComponent, addComponent, hasComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
@@ -19,6 +19,7 @@ import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../engine
 import { takeOwnership } from "../engine/network/ownership.game";
 import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { Prefab } from "../engine/prefab/prefab.game";
+import { getPortalComponent, PortalComponent } from "./portals/portals.game";
 
 type GrabThrow = {};
 
@@ -33,6 +34,7 @@ export const GrabThrowModule = defineModule<GameState, GrabThrow>({
 });
 
 export const EntityGrabbedMessage = "entity-grabbed";
+export const PortalActivatedMessage = "portal-activated";
 
 export const GrabThrowActionMap: ActionMap = {
   id: "grab-throw",
@@ -205,14 +207,18 @@ export function GrabThrowSystem(ctx: GameState) {
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
-        const newEid = takeOwnership(ctx, eid);
-        if (newEid !== NOOP) {
-          addComponent(ctx.world, GrabComponent, newEid);
-          notifyUiEntityGrabbed(ctx, newEid, undefined, network.peerId);
-          heldEntity = newEid;
+        if (hasComponent(ctx.world, PortalComponent, eid)) {
+          notifyUiPortalActivated(ctx, eid);
         } else {
-          addComponent(ctx.world, GrabComponent, eid);
-          notifyUiEntityGrabbed(ctx, eid, peerId, ownerId);
+          const newEid = takeOwnership(ctx, eid);
+          if (newEid !== NOOP) {
+            addComponent(ctx.world, GrabComponent, newEid);
+            notifyUiEntityGrabbed(ctx, newEid, undefined, network.peerId);
+            heldEntity = newEid;
+          } else {
+            addComponent(ctx.world, GrabComponent, eid);
+            notifyUiEntityGrabbed(ctx, eid, peerId, ownerId);
+          }
         }
       }
     }
@@ -267,5 +273,14 @@ function notifyUiEntityGrabbed(ctx: GameState, eid: number, peerId?: string, own
     prefab: eid ? Prefab.get(eid) : undefined,
     ownerId,
     peerId,
+  });
+}
+
+function notifyUiPortalActivated(ctx: GameState, eid: number) {
+  const { roomId } = getPortalComponent(ctx.world, eid);
+  ctx.sendMessage(Thread.Main, {
+    type: PortalActivatedMessage,
+    eid,
+    roomId,
   });
 }

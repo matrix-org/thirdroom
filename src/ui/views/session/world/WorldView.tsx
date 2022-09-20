@@ -28,7 +28,7 @@ import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { Thread } from "../../../../engine/module/module.common";
+import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { useToast } from "../../../hooks/useToast";
 import { usePermissionState } from "../../../hooks/usePermissionState";
@@ -36,6 +36,8 @@ import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
+import { IMainThreadContext } from "../../../../engine/MainThread";
+import { PortalActivatedMessage } from "../../../../plugins/GrabThrowController";
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -84,7 +86,7 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
 );
 
 export function WorldView() {
-  const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
+  const { canvasRef, world, onExitWorld, onWorldTransfer, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
@@ -105,6 +107,14 @@ export function WorldView() {
     const json = JSON.parse(store);
     return json.showNames;
   });
+
+  useEffect(() => {
+    const onPortalActivated = async (engine: IMainThreadContext, message: any) => {
+      console.log("onPortalActivated", message);
+      onWorldTransfer(message.roomId);
+    };
+    return registerMessageHandler(engine, PortalActivatedMessage, onPortalActivated);
+  }, [engine, onWorldTransfer]);
 
   useEffect(() => {
     localStorage.setItem(SHOW_NAMES_STORE, JSON.stringify({ showNames }));

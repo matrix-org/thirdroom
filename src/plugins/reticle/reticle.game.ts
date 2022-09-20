@@ -9,6 +9,7 @@ import { getModule, Thread } from "../../engine/module/module.common";
 import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../../engine/network/network.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
+import { PortalComponent } from "../portals/portals.game";
 import { ReticleFocusMessage } from "./reticle.common";
 
 const FocusComponent = defineComponent();
@@ -91,6 +92,7 @@ export function ReticleFocusSystem(ctx: GameState) {
       prefab: eid ? Prefab.get(eid) : undefined,
       ownerId,
       peerId,
+      roomId: eid && PortalComponent.has(eid) && PortalComponent.get(eid)!.roomId,
     });
 
   const exited = exitFocusQuery(ctx.world);

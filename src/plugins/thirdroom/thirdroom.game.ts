@@ -42,6 +42,7 @@ import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
+import { waitUntil } from "../../engine/utils/waitUntil";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -395,16 +396,6 @@ function loadPlayerRig(ctx: GameState) {
 
   addChild(ctx.activeScene, playerRig);
 }
-
-const waitUntil = (fn: Function) =>
-  new Promise<void>((resolve) => {
-    const interval = setInterval(() => {
-      if (fn()) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 100);
-  });
 
 const zero = new Vector3();
 

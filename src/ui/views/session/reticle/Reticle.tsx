@@ -21,6 +21,7 @@ export interface EntityData {
   ownerId?: string;
   peerId?: string;
   held?: boolean;
+  roomId?: string;
 }
 
 interface IReticleProps {
@@ -74,15 +75,17 @@ export function Reticle({ onEntityFocused, onEntitySelected }: IReticleProps) {
 
   useKeyDown(
     (e) => {
-      if (e.code === "KeyE" && entity) {
-        if (entity.held) {
-          onEntitySelected(entity);
-          onEntityFocused(entity);
-        } else {
-          onEntitySelected(entity);
+      if (e.code === "KeyE") {
+        setMouseDown(true);
+        if (entity) {
+          if (entity.held) {
+            onEntitySelected(entity);
+            onEntityFocused(entity);
+          } else {
+            onEntitySelected(entity);
+          }
         }
       }
-      setMouseDown(true);
     },
     [entity]
   );

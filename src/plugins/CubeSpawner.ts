@@ -32,6 +32,7 @@ import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game
 import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
+import { addPortalComponent } from "./portals/portals.game";
 
 type CubeSpawnerModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
@@ -210,35 +211,37 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
   const prefab = spawnCube.pressed ? "crate" : spawnBall.pressed ? "bouncy-ball" : "crate";
 
   if (spawnCube.pressed || spawnBall.pressed) {
-    const cube = createPrefabEntity(ctx, prefab);
+    const eid = createPrefabEntity(ctx, prefab);
 
     // caveat: must add owned before networked (should maybe change Owned to Remote)
-    addComponent(ctx.world, Owned, cube);
+    addComponent(ctx.world, Owned, eid);
     // Networked component isn't reset when removed so reset on add
-    addComponent(ctx.world, Networked, cube, true);
+    addComponent(ctx.world, Networked, eid, true);
 
-    mat4.getTranslation(Transform.position[cube], Transform.worldMatrix[ctx.activeCamera]);
+    addPortalComponent(ctx.world, eid, { roomId: "#festival:thirdroom.dev" });
+
+    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[ctx.activeCamera]);
 
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
     // place object at direction
-    vec3.add(Transform.position[cube], Transform.position[cube], direction);
+    vec3.add(Transform.position[eid], Transform.position[eid], direction);
 
     vec3.scale(direction, direction, CUBE_THROW_FORCE);
 
     _impulse.fromArray(direction);
 
-    const body = RigidBody.store.get(cube);
+    const body = RigidBody.store.get(eid);
 
-    if (!body) throw new Error("could not find RigidBody for eid " + cube);
+    if (!body) throw new Error("could not find RigidBody for eid " + eid);
 
-    setEulerFromQuaternion(Transform.rotation[cube], _cameraWorldQuat);
+    setEulerFromQuaternion(Transform.rotation[eid], _cameraWorldQuat);
 
     body.applyImpulse(_impulse, true);
 
-    addChild(ctx.activeScene, cube);
+    addChild(ctx.activeScene, eid);
   }
 };
 
