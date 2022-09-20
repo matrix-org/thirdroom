@@ -32,7 +32,6 @@ import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game
 import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
-import { addPortalComponent } from "./portals/portals.game";
 
 type CubeSpawnerModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
@@ -217,8 +216,6 @@ export const CubeSpawnerSystem = (ctx: GameState) => {
     addComponent(ctx.world, Owned, eid);
     // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
-
-    addPortalComponent(ctx.world, eid, { roomId: "#festival:thirdroom.dev" });
 
     mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[ctx.activeCamera]);
 
