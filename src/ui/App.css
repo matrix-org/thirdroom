@@ -131,6 +131,9 @@
   --fw-regular: 400;
   --fw-light: 300;
 
+  --font-main: "InterVariable", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
   /* box shadow */
   --bs-surface-border: inset 0 0 0 1px var(--bg-surface-border);
   --bs-primary-border: inset 0 0 0 1px var(--bg-primary);
@@ -171,8 +174,7 @@ body {
   height: 100%;
   background-color: var(--bg-surface);
   color: var(--tc-surface);
-  font-family: InterVariable, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
-    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-variant-ligatures: no-contextual;
