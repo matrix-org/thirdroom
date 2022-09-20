@@ -20,6 +20,11 @@ jobs:
         run: yarn install
 
       - name: Build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+          VITE_SENTRY_DSN: "https://25c108e04120450fbf05a2f3ef4e2181@sentry.tools.element.io/50"
+          VITE_SENTRY_ENVIRONMENT: "production"
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
         run: yarn build
 
       - name: Create Deployment

@@ -32,8 +32,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { registerThirdroomGlobalFn, registerThirdroomGlobalVar } from "../../engine/utils/registerThirdroomGlobal";
 import { Dots } from "../atoms/loading/Dots";
 import { downloadFile } from "../../engine/utils/downloadFile";
-
-const defaultHomeServer = "thirdroom.io";
+import configData from "../../../config.json";
 
 function allowsChild(parent: Segment, child: Segment) {
   const parentType = parent.type;
@@ -143,8 +142,7 @@ function initHydrogen() {
   })();
 
   const config = {
-    defaultHomeServer,
-    homeserverList: ["thirdroom.io", "matrix.org"],
+    ...configData,
     oidc: {
       clientConfigs: {
         "https://id.thirdroom.io/realms/thirdroom/": {

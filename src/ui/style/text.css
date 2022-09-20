@@ -40,3 +40,23 @@
 .text-end {
   text-align: end;
 }
+
+.light {
+  font-weight: var(--fw-light);
+}
+
+.regular {
+  font-weight: var(--fw-regular);
+}
+
+.medium {
+  font-weight: var(--fw-medium);
+}
+
+.semi-bold {
+  font-weight: var(--fw-semi-bold);
+}
+
+.bold {
+  font-weight: var(--fw-bold);
+}

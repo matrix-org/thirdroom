@@ -1,0 +1,19 @@
+.ShortcutUI {
+  height: 100%;
+  max-width: 700px;
+  margin: auto;
+}
+.ShortcutUI__main {
+  padding: 0 var(--sp-md);
+  max-width: 400px;
+  margin: var(--sp-lg) auto;
+}
+.ShortcutUI__list {
+  padding: var(--sp-md);
+
+  & > div:not(:last-child) {
+    margin-bottom: var(--sp-sm);
+    padding-bottom: var(--sp-sm);
+    border-bottom: 1px solid var(--bg-surface-border);
+  }
+}

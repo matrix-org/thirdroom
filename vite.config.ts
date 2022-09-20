@@ -43,6 +43,7 @@ export default defineConfig({
     "import.meta.vitest": "undefined",
   },
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
