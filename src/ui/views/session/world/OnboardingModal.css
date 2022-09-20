@@ -1,10 +1,14 @@
+.OnboardingModal {
+  max-width: 600px;
+}
+
 .OnboardingModal__content {
   height: 100%;
 }
 
 .OnboardingModal__screen1 {
   margin: auto;
-  max-width: 400px;
+  max-width: 440px;
   height: 100%;
   padding: 0 var(--sp-md);
 

@@ -31,7 +31,7 @@ export function ShortcutUI() {
           </span>
         </Text>
         <Text className="text-center" style={{ marginTop: "var(--sp-lg)" }}>
-          Use WASD keys and mouse to move around and explore worlds.
+          Use the WASD keys and mouse to move around and explore worlds.
         </Text>
       </div>
       <Category header={<CategoryHeader title="Action" options={<Label>Key</Label>} />}>

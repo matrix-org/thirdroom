@@ -19,6 +19,7 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
+import HelpIC from "../../../../../res/ic/help.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
@@ -37,7 +38,6 @@ import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
-import { Modal } from "../../../atoms/modal/Modal";
 import { OnboardingModal } from "./OnboardingModal";
 import { useOnboarding } from "../../../hooks/useOnboarding";
 import { Header } from "../../../atoms/header/Header";
@@ -210,6 +210,7 @@ export function WorldView() {
         toggleShowActiveMembers();
       }
       if (e.code === "Slash") {
+        e.preventDefault();
         toggleShortcutUI();
       }
     },
@@ -258,6 +259,14 @@ export function WorldView() {
   const renderControl = () => (
     <div className="WorldView__controls flex">
       <div className="flex flex-column items-center">
+        <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
+          <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
+        </Tooltip>
+        <Text variant="b3" color="world" weight="bold">
+          /
+        </Text>
+      </div>
+      <div className="flex flex-column items-center">
         <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
           <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
         </Tooltip>
@@ -305,9 +314,7 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
-      <Modal open={onboarding}>
-        <OnboardingModal world={world} requestClose={finishOnboarding} />
-      </Modal>
+      <OnboardingModal open={onboarding} world={world} requestClose={finishOnboarding} />
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">

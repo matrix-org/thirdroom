@@ -4,7 +4,7 @@
   margin: auto;
 }
 .ShortcutUI__main {
-  padding: var(--sp-md);
+  padding: 0 var(--sp-md);
   max-width: 400px;
   margin: var(--sp-lg) auto;
 }
