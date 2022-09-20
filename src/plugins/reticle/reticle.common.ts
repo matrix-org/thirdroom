@@ -7,4 +7,5 @@ export interface ReticleFocusMessageType {
   networkId?: number;
   prefab?: string;
   peerId?: string;
+  uri?: string;
 }

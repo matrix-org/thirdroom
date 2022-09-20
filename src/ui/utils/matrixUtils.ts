@@ -118,3 +118,75 @@ export async function uploadAttachment(
   attachment.applyToContent("url", content);
   return content.url;
 }
+
+export interface ParsedMatrixURI {
+  protocol: "matrix:";
+  authority?: string;
+  mxid1: string;
+  mxid2?: string;
+}
+
+const SegmentToSigil: { [key: string]: string } = {
+  u: "@",
+  user: "@",
+  r: "#",
+  room: "#",
+  roomid: "!",
+};
+
+// https://github.com/matrix-org/matrix-spec-proposals/blob/main/proposals/2312-matrix-uri.md
+export function parseMatrixUri(uri: string): ParsedMatrixURI | URL {
+  const url = new URL(uri, window.location.href);
+
+  if (url.protocol === "matrix:") {
+    const matches = url.pathname.match(/^(\/\/.+\/)?(.+)$/);
+
+    let authority = undefined;
+    let path = undefined;
+
+    if (matches) {
+      if (matches.length == 3) {
+        authority = matches[1];
+        path = matches[2];
+      } else if (matches.length === 2) {
+        path = matches[1];
+      }
+    }
+
+    if (!path) {
+      throw new Error(`Invalid matrix uri "${uri}": No path provided`);
+    }
+
+    const segments = path.split("/");
+
+    if (segments.length !== 2 && segments.length !== 4) {
+      throw new Error(`Invalid matrix uri "${uri}": Invalid number of segments`);
+    }
+
+    const sigil1 = SegmentToSigil[segments[0]];
+
+    if (!sigil1) {
+      throw new Error(`Invalid matrix uri "${uri}": Invalid segment ${segments[0]}`);
+    }
+
+    if (!segments[1]) {
+      throw new Error(`Invalid matrix uri "${uri}": Empty segment`);
+    }
+
+    const mxid1 = `${sigil1}${segments[1]}`;
+
+    let mxid2: string | undefined = undefined;
+
+    if (segments.length === 4) {
+      if ((sigil1 === "!" || sigil1 === "#") && (segments[2] === "e" || segments[2] === "event") && segments[3]) {
+        mxid2 = `$${segments[3]}`;
+      } else {
+        throw new Error(`Invalid matrix uri "${uri}": Invalid segment ${segments[2]}`);
+      }
+    }
+
+    return { protocol: "matrix:", authority, mxid1, mxid2 };
+  }
+
+  return url;
+}

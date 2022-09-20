@@ -78,6 +78,7 @@ import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_mate
 import { getMaterialIOR } from "./KHR_materials_ior";
 import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
+import { inflatePortalComponent } from "./MX_portal";
 
 export interface GLTFResource {
   url: string;
@@ -398,6 +399,8 @@ async function _inflateGLTFNode(
         addComponent(ctx.world, SpawnPoint, nodeEid);
       }
     }
+
+    inflatePortalComponent(ctx, node, nodeEid);
 
     if (hasTilesRendererExtension(node)) {
       addTilesRenderer(ctx, resource, nodeIndex, nodeEid);

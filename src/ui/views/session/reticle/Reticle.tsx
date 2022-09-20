@@ -10,6 +10,7 @@ import { useEvent } from "../../../hooks/useEvent";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useKeyUp } from "../../../hooks/useKeyUp";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { ParsedMatrixURI, parseMatrixUri } from "../../../utils/matrixUtils";
 import { SessionOutletContext } from "../SessionView";
 
 import "./Reticle.css";
@@ -21,7 +22,8 @@ export interface EntityData {
   ownerId?: string;
   peerId?: string;
   held?: boolean;
-  roomId?: string;
+  uri?: string;
+  parsedUri?: ParsedMatrixURI | URL;
 }
 
 interface IReticleProps {
@@ -59,6 +61,7 @@ export function Reticle({ onEntityFocused, onEntitySelected }: IReticleProps) {
           entityId: message.entityId,
           networkId: message.networkId,
           prefab: message.prefab,
+          parsedUri: entity.uri ? parseMatrixUri(entity.uri) : undefined,
         };
 
         if (message.held) {

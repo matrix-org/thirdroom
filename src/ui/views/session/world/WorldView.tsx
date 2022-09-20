@@ -121,8 +121,7 @@ export function WorldView() {
 
   useEffect(() => {
     const onPortalActivated = async (engine: IMainThreadContext, message: any) => {
-      console.log("onPortalActivated", message);
-      onWorldTransfer(message.roomId);
+      onWorldTransfer(message.uri);
     };
     return registerMessageHandler(engine, PortalActivatedMessage, onPortalActivated);
   }, [engine, onWorldTransfer]);

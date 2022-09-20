@@ -6,9 +6,14 @@ import { Text } from "../../../atoms/text/Text";
 import { useCalls } from "../../../hooks/useCalls";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useWorld } from "../../../hooks/useRoomIdFromAlias";
+import { ParsedMatrixURI } from "../../../utils/matrixUtils";
 import { EntityData } from "../reticle/Reticle";
 
 import "./EntitySelected.css";
+
+function getMatrixUriPath(parsedUri: ParsedMatrixURI | URL): string {
+  return parsedUri instanceof URL ? parsedUri.href : parsedUri.mxid1;
+}
 
 export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
   const [isPortal, setIsPortal] = useState<boolean>();
@@ -20,7 +25,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
       const peer = entity?.peerId !== undefined;
       setIsPeer(peer);
       setIsHeld(entity?.held || false);
-      setIsPortal(entity?.roomId ? true : false);
+      setIsPortal(entity?.parsedUri ? true : false);
     }
   }, [entity]);
 
@@ -97,7 +102,7 @@ export function EntitySelected({ entity }: { entity: EntityData | undefined }) {
             </Text>
             <div className="flex flex-column gap-xxs">
               <Text variant="b3" color="world">
-                {entity.roomId}
+                {getMatrixUriPath(entity.parsedUri!)}
               </Text>
               <Text variant="b3" color="world">
                 <span className="EntitySelected__boxedKey">E</span> /

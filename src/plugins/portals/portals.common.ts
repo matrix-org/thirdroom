@@ -1,3 +1,3 @@
-export interface PortalData {
-  roomId: string;
+export interface PortalProps {
+  uri: string;
 }

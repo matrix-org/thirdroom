@@ -92,7 +92,7 @@ export function ReticleFocusSystem(ctx: GameState) {
       prefab: eid ? Prefab.get(eid) : undefined,
       ownerId,
       peerId,
-      roomId: eid && PortalComponent.has(eid) && PortalComponent.get(eid)!.roomId,
+      uri: eid && PortalComponent.has(eid) && PortalComponent.get(eid)!.uri,
     });
 
   const exited = exitFocusQuery(ctx.world);

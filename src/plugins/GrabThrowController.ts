@@ -277,10 +277,10 @@ function notifyUiEntityGrabbed(ctx: GameState, eid: number, peerId?: string, own
 }
 
 function notifyUiPortalActivated(ctx: GameState, eid: number) {
-  const { roomId } = getPortalComponent(ctx.world, eid);
+  const { uri } = getPortalComponent(ctx.world, eid);
   ctx.sendMessage(Thread.Main, {
     type: PortalActivatedMessage,
     eid,
-    roomId,
+    uri,
   });
 }

@@ -24,7 +24,7 @@ import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet } from "../../../engine/network/network.main";
 import { loadWorld } from "../../../plugins/thirdroom/thirdroom.main";
-import { getProfileRoom } from "../../utils/matrixUtils";
+import { getProfileRoom, parseMatrixUri } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
 
 let worldReloadId = 0;
@@ -34,7 +34,7 @@ export interface SessionOutletContext {
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
   onExitWorld: () => void;
-  onWorldTransfer: (roomId: string) => void;
+  onWorldTransfer: (uri: string) => void;
   onJoinSelectedWorld: () => void;
   onLoadSelectedWorld: () => void;
   onEnterSelectedWorld: () => void;
@@ -288,17 +288,23 @@ export function SessionView() {
   }, [navigate]);
 
   const onWorldTransfer = useCallback(
-    async (roomId: string) => {
+    async (uri: string) => {
       const state = useStore.getState();
 
       // exit current world
       onExitWorld();
 
+      const parsedUri = parseMatrixUri(uri);
+
+      if (parsedUri instanceof URL) {
+        return;
+      }
+
       // select new world
-      state.overlayWorld.selectWorld(roomId);
+      state.overlayWorld.selectWorld(parsedUri.mxid1);
 
       // join if not already
-      const roomStatus = await session.observeRoomStatus(roomId);
+      const roomStatus = await session.observeRoomStatus(parsedUri.mxid1);
       if (roomStatus.get() !== RoomStatus.Joined) {
         await onJoinSelectedWorld();
       }
