@@ -6,7 +6,7 @@ const ONBOARDING_KEY = "io.thirdroom.onboarding";
 
 export function useOnboarding(worldId?: string) {
   const { session, platform } = useHydrogen(true);
-  const [onboarding, setOnboarding] = useState(true);
+  const [onboarding, setOnboarding] = useState(false);
 
   useEffect(() => {
     async function run() {

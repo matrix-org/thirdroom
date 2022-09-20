@@ -17,6 +17,7 @@ import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
 import SubtitlesOffIC from "../../../../../res/ic/subtitles-off.svg";
 import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
+import CrossIC from "../../../../../res/ic/cross.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
@@ -39,6 +40,10 @@ import { AlertDialog } from "../dialogs/AlertDialog";
 import { Modal } from "../../../atoms/modal/Modal";
 import { OnboardingModal } from "./OnboardingModal";
 import { useOnboarding } from "../../../hooks/useOnboarding";
+import { Header } from "../../../atoms/header/Header";
+import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
+import { ShortcutUI } from "./ShortcutUI";
+import { Scroll } from "../../../atoms/scroll/Scroll";
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -94,6 +99,7 @@ export function WorldView() {
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
+  const [shortcutUI, setShortcutUI] = useState(false);
 
   const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
 
@@ -140,10 +146,8 @@ export function WorldView() {
     showToast(enabled ? "Show Names" : "Hide Names");
   }, [setShowNames, showNames, showToast, engine]);
 
-  const toggleShowActiveMembers = () => {
-    const enabled = !showActiveMembers;
-    setShowActiveMembers(enabled);
-  };
+  const toggleShowActiveMembers = () => setShowActiveMembers((state) => !state);
+  const toggleShortcutUI = () => setShortcutUI((state) => !state);
 
   useKeyDown(
     (e) => {
@@ -156,6 +160,11 @@ export function WorldView() {
       if (isEscape && showActiveMembers) {
         canvasRef.current?.requestPointerLock();
         setShowActiveMembers(false);
+        return;
+      }
+      if (isEscape && shortcutUI) {
+        canvasRef.current?.requestPointerLock();
+        setShortcutUI(false);
         return;
       }
       if (isEscape && isChatOpen) {
@@ -180,15 +189,15 @@ export function WorldView() {
         return;
       }
 
-      if (isChatOpen) return;
+      if (isTyping || isChatOpen || showActiveMembers || shortcutUI) return;
 
       if (e.altKey && e.code === "KeyL") {
         onExitWorld();
       }
-      if (!isTyping && e.code === "KeyM" && muteBtnRef.current !== null) {
+      if (e.code === "KeyM" && muteBtnRef.current !== null) {
         muteBtnRef.current.click();
       }
-      if (!isTyping && e.code === "Backquote") {
+      if (e.code === "Backquote") {
         setEditorEnabled((enabled) => !enabled);
       }
       if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
@@ -200,6 +209,9 @@ export function WorldView() {
       if (e.code === "KeyP") {
         toggleShowActiveMembers();
       }
+      if (e.code === "Slash") {
+        toggleShortcutUI();
+      }
     },
     [
       isEnteredWorld,
@@ -207,11 +219,12 @@ export function WorldView() {
       isOverlayOpen,
       showNames,
       showActiveMembers,
+      shortcutUI,
+      onboarding,
       openWorldChat,
       closeWorldChat,
       openOverlay,
       closeOverlay,
-      onboarding,
     ]
   );
 
@@ -310,9 +323,22 @@ export function WorldView() {
       {world && editorEnabled && <EditorView />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !isOverlayOpen} />}
       {!("isBeingCreated" in world) && (
-        <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
-          <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
-        </Dialog>
+        <>
+          <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
+            <MemberListDialog room={world} requestClose={() => setShowActiveMembers(false)} />
+          </Dialog>
+          <Dialog open={shortcutUI} onOpenChange={setShortcutUI}>
+            <Header
+              left={<HeaderTitle size="lg">Members</HeaderTitle>}
+              right={<IconButton iconSrc={CrossIC} onClick={toggleShortcutUI} label="Close" />}
+            />
+            <div className="flex" style={{ height: "600px" }}>
+              <Scroll type="hover">
+                <ShortcutUI />
+              </Scroll>
+            </div>
+          </Dialog>
+        </>
       )}
       {!isOverlayOpen && showNames && <EntitySelected entity={entity} />}
       {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
