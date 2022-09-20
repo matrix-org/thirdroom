@@ -329,7 +329,7 @@ export function WorldView() {
           </Dialog>
           <Dialog open={shortcutUI} onOpenChange={setShortcutUI}>
             <Header
-              left={<HeaderTitle size="lg">Members</HeaderTitle>}
+              left={<HeaderTitle size="lg">Controls</HeaderTitle>}
               right={<IconButton iconSrc={CrossIC} onClick={toggleShortcutUI} label="Close" />}
             />
             <div className="flex" style={{ height: "600px" }}>
