@@ -2,6 +2,7 @@ import { lazy, ReactNode, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
 import { serviceWorkerFile } from "virtual:vite-plugin-service-worker";
+import * as Sentry from "@sentry/react";
 
 import "./App.css";
 import "@fontsource/inter/variable.css";
@@ -12,6 +13,8 @@ import { SessionView } from "./views/session/SessionView";
 import { WorldView } from "./views/session/world/WorldView";
 import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
 import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
+
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 window.onload = () => {
   if (navigator.serviceWorker) {
@@ -50,7 +53,7 @@ export function App() {
   return (
     <>
       <FocusOutlineManager />
-      <Routes>
+      <SentryRoutes>
         <Route element={<HydrogenRootView />}>
           <Route path="/login" element={<LoginView />} />
           <Route element={<SessionView />}>
@@ -62,7 +65,7 @@ export function App() {
         <Route path="/viewer" element={<GLTFViewer />} />
         <Route path="/pipeline" element={<AssetPipeline />} />
         {storybookRoute}
-      </Routes>
+      </SentryRoutes>
     </>
   );
 }
