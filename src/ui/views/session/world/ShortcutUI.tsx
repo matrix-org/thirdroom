@@ -24,11 +24,11 @@ export function ShortcutUI() {
       <div className="ShortcutUI__main">
         <Text className="flex flex-column items-center gap-xs">
           <Kbd size="lg">W</Kbd>
-          <div className="flex items-center gap-xs">
+          <span className="flex items-center gap-xs">
             <Kbd size="lg">A</Kbd>
             <Kbd size="lg">S</Kbd>
             <Kbd size="lg">D</Kbd>
-          </div>
+          </span>
         </Text>
         <Text className="text-center" style={{ marginTop: "var(--sp-lg)" }}>
           Use WASD keys and mouse to move around and explore worlds.

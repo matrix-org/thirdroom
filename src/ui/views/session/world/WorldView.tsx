@@ -148,6 +148,7 @@ export function WorldView() {
   useKeyDown(
     (e) => {
       if (isEnteredWorld === false) return;
+      if (onboarding) return;
 
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
@@ -210,6 +211,7 @@ export function WorldView() {
       closeWorldChat,
       openOverlay,
       closeOverlay,
+      onboarding,
     ]
   );
 
@@ -228,6 +230,11 @@ export function WorldView() {
     canvasRef.current,
     []
   );
+
+  useEffect(() => {
+    if (onboarding) document.exitPointerLock();
+    else canvasRef.current?.requestPointerLock();
+  }, [onboarding, canvasRef]);
 
   usePointerLockChange(canvasRef.current, setIsPointerLock, []);
 
