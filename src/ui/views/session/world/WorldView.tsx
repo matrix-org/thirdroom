@@ -36,6 +36,9 @@ import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
+import { Modal } from "../../../atoms/modal/Modal";
+import { OnboardingModal } from "./OnboardingModal";
+import { useOnboarding } from "../../../hooks/useOnboarding";
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -91,6 +94,8 @@ export function WorldView() {
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
+
+  const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
 
   const muteBtnRef = useRef<HTMLButtonElement | null>(null);
   const { toastShown, toastContent, showToast } = useToast();
@@ -280,6 +285,9 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
+      <Modal open={onboarding}>
+        <OnboardingModal world={world} requestClose={finishOnboarding} />
+      </Modal>
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">
