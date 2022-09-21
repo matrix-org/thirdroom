@@ -230,11 +230,11 @@ async function loadSession(client: Client, session: Session) {
   const loadStatus = client.loadStatus.get();
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
-    await client.startLogout(client.sessionId);
-    localStorage.clear();
+    return false;
   }
 
   await session.callHandler.loadCalls("m.room" as CallIntent);
+  return true;
 }
 
 function loginFailureToMsg(loginFailure: LoginFailure) {
@@ -321,21 +321,18 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
     callback: loadInitialSession,
   } = useAsyncCallback(
     async (sessionInfo: ISessionInfo) => {
-      console.log(sessionInfo);
       await client.startWithExistingSession(sessionInfo.id);
 
-      if (client.session) {
-        try {
-          await loadSession(client, client.session);
-        } catch (error) {
-          console.error("Error loading initial session", error);
+      try {
+        if (client.session && (await loadSession(client, client.session))) {
+          sessionRef.current = client.session;
+          return;
         }
-      } else {
-        localStorage.clear();
-        return;
+      } catch (error) {
+        console.error("Error loading initial session", error);
       }
-
-      sessionRef.current = client.session;
+      await client.startLogout(client.sessionId);
+      localStorage.clear();
     },
     [platform, client]
   );
@@ -348,12 +345,16 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
     async (loginMethod) => {
       await client.startWithLogin(loginMethod);
 
-      if (client.session) {
-        await loadSession(client, client.session);
-        sessionRef.current = client.session;
-      } else {
-        throw Error("Unknown error logging in.");
+      try {
+        if (client.session && (await loadSession(client, client.session))) {
+          sessionRef.current = client.session;
+          return;
+        }
+      } catch (error) {
+        console.error("Unknown error logging in.", error);
       }
+      await client.startLogout(client.sessionId);
+      localStorage.clear();
     },
     [client]
   );
