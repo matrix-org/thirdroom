@@ -504,6 +504,18 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
+  type ImageInfo = {
+    w: number;
+    h: number;
+    mimetype: string;
+    size: number;
+  };
+
+  type Avatar = {
+    info: ImageInfo;
+    name?: string;
+  } & ({ blob: IBlobHandle } | { url: string });
+
   interface ICreateRoom {
     type?: RoomType;
     visibility: RoomVisibility;
@@ -513,16 +525,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     isEncrypted?: boolean;
     isFederationDisabled?: boolean;
     alias?: string;
-    avatar?: {
-      name: string;
-      blob: IBlobHandle;
-      info: {
-        w?: number;
-        h?: number;
-        mimetype: string;
-        size: number;
-      };
-    };
+    avatar?: Avatar;
     powerLevelContentOverride?: any;
     initialState?: any[];
   }
@@ -574,6 +577,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomState(handler: RoomStateHandler): () => void;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
+    getAccountData(type: string): Promise<any>;
+    setAccountData(type: string, content: any): Promise<void>;
   }
 
   export class LocalMedia {
@@ -2000,6 +2005,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get deviceIndex(): number | undefined;
     get eventTimestamp(): number | undefined;
     join(localMedia: LocalMedia): Promise<void>;
+    setMedia(localMedia: LocalMedia): Promise<void>;
     setMuted(muteSettings: MuteSettings): Promise<void>;
     get muteSettings(): MuteSettings | undefined;
     get hasJoined(): boolean;

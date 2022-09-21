@@ -7,6 +7,11 @@
   status = 200
 
 [[redirects]]
+  from = "/logviewer"
+  to = "/logviewer.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -17,6 +22,7 @@ for = "/*"
   [headers.values]
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Embedder-Policy = "require-corp"
+    Access-Control-Allow-Origin = "sentry.tools.element.io"
 
 [[headers]]
 for = "/.well-known/*"

@@ -1,6 +1,8 @@
 import { lazy, ReactNode, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
+import { serviceWorkerFile } from "virtual:vite-plugin-service-worker";
+import * as Sentry from "@sentry/react";
 
 import "./App.css";
 import "@fontsource/inter/variable.css";
@@ -9,6 +11,16 @@ import { HydrogenRootView } from "./views/HydrogenRootView";
 import { SplashScreen } from "./views/components/splash-screen/SplashScreen";
 import { PageNotFound } from "./views/components/page-not-found/PageNotFound";
 import { LoadingScreen } from "./views/components/loading-screen/LoadingScreen";
+
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
+
+window.onload = () => {
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.register(serviceWorkerFile, { type: "module" }).then((reg) => {
+      console.log("Service worker is registered.");
+    });
+  }
+};
 
 function FocusOutlineManager() {
   const { isFocusVisible } = useFocusVisible();
@@ -41,13 +53,12 @@ const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
 const SessionView = lazy(() => import("./views/session/SessionView"));
 const WorldView = lazy(() => import("./views/session/world/WorldView"));
-const HomeView = lazy(() => import("./views/session/home/HomeView"));
 
 export function App() {
   return (
     <>
       <FocusOutlineManager />
-      <Routes>
+      <SentryRoutes>
         <Route element={<HydrogenRootView />}>
           <Route
             path="/preview"
@@ -92,7 +103,7 @@ export function App() {
               path="/"
               element={
                 <Suspense fallback={<></>}>
-                  <HomeView />
+                  <WorldView />
                 </Suspense>
               }
             />
@@ -116,7 +127,7 @@ export function App() {
         />
         {storybookRoute}
         <Route path="*" element={<PageNotFound />} />
-      </Routes>
+      </SentryRoutes>
     </>
   );
 }

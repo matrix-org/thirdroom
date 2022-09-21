@@ -226,8 +226,19 @@ export default function SessionView() {
       groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
     }
 
-    const stream = await platform.mediaDevices.getMediaTracks(true, false);
-    const localMedia = new LocalMedia().withUserMedia(stream).withDataChannel({});
+    let stream;
+    try {
+      // TODO: Re-enable when we fix issues with joining without microphone enabled
+      // if (localStorage.getItem("microphone") === "true") {
+      stream = await platform.mediaDevices.getMediaTracks(true, false);
+      // }
+    } catch (err) {
+      console.error(err);
+    }
+    const localMedia = stream
+      ? new LocalMedia().withUserMedia(stream).withDataChannel({})
+      : new LocalMedia().withDataChannel({});
+
     await groupCall.join(localMedia);
 
     const profileRoom = getProfileRoom(session.rooms);
