@@ -5,6 +5,7 @@ import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from ".././../../../../res/ic/cross.svg";
+import AddUserIC from ".././../../../../res/ic/add-user.svg";
 import { MemberTile } from "../../components/member-tile/MemberTile";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Text } from "../../../atoms/text/Text";
@@ -26,6 +27,8 @@ import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { InviteDialog } from "./InviteDialog";
 
 interface MemberListDialogProps {
   room: Room;
@@ -36,6 +39,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const { session, platform } = useHydrogen(true);
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const [, world] = useWorld();
 
@@ -170,7 +174,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
     <>
       <Header
         left={<HeaderTitle size="lg">Members</HeaderTitle>}
-        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+        right={
+          <div className="flex gap-sm">
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <InviteDialog roomId={room.id} requestClose={() => setInviteOpen(false)} />
+            </Dialog>
+            {canDoAction("invite", myPL) && (
+              <IconButton iconSrc={AddUserIC} onClick={() => setInviteOpen(true)} label="Invite" />
+            )}
+            <IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />
+          </div>
+        }
       />
       <div className="flex" style={{ height: "600px" }}>
         {joined === undefined ? (
