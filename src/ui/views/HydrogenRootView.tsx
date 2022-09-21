@@ -310,7 +310,6 @@ function useOidcComplete(
   }
   return null;
 }
-
 function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
   const sessionRef = useRef<Session>();
   const session = sessionRef.current ?? undefined;
@@ -328,10 +327,10 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
           sessionRef.current = client.session;
           return;
         }
+        await client.startLogout(sessionInfo.id);
       } catch (error) {
         console.error("Error loading initial session", error);
       }
-      await client.startLogout(client.sessionId);
       localStorage.clear();
     },
     [platform, client]
@@ -350,10 +349,10 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
           sessionRef.current = client.session;
           return;
         }
+        await client.startLogout(client.sessionId);
       } catch (error) {
         console.error("Unknown error logging in.", error);
       }
-      await client.startLogout(client.sessionId);
       localStorage.clear();
     },
     [client]
