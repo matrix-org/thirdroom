@@ -24,8 +24,8 @@ import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
-import { EntityData, Reticle } from "../reticle/Reticle";
-import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Reticle } from "../reticle/Reticle";
+import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
 import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
@@ -45,7 +45,24 @@ import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { ShortcutUI } from "./ShortcutUI";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { IMainThreadContext } from "../../../../engine/MainThread";
-import { PortalActivatedMessage } from "../../../../plugins/GrabThrowController";
+import { useMouseDown } from "../../../hooks/useMouseDown";
+import {
+  InteractableAction,
+  InteractableType,
+  InteractionMessage,
+  InteractionMessageType,
+} from "../../../../plugins/interaction/interaction.common";
+import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
+import { createDisposables } from "../../../../engine/utils/createDisposables";
+import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
+
+export interface ActiveEntityState {
+  interactableType: InteractableType;
+  name: string;
+  held: boolean;
+  peerId?: string;
+  ownerId?: string;
+}
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -110,21 +127,12 @@ export function WorldView() {
 
   const engine = useMainThreadContext();
 
-  const [entity, setEntity] = useState<EntityData>();
-
   const [showNames, setShowNames] = useState<boolean>(() => {
     const store = localStorage.getItem(SHOW_NAMES_STORE);
     if (!store) return true;
     const json = JSON.parse(store);
     return json.showNames;
   });
-
-  useEffect(() => {
-    const onPortalActivated = async (engine: IMainThreadContext, message: any) => {
-      onWorldTransfer(message.uri);
-    };
-    return registerMessageHandler(engine, PortalActivatedMessage, onPortalActivated);
-  }, [engine, onWorldTransfer]);
 
   useEffect(() => {
     localStorage.setItem(SHOW_NAMES_STORE, JSON.stringify({ showNames }));
@@ -137,17 +145,6 @@ export function WorldView() {
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
-  const onEntitySelected = (entity: EntityData) => {
-    if (entity.peerId) {
-      setShowActiveMembers(true);
-      document.exitPointerLock();
-    }
-  };
-
-  const onEntityFocused = (entity: EntityData) => {
-    setEntity(entity);
-  };
-
   const toggleShowNames = useCallback(() => {
     const enabled = !showNames;
     setShowNames(enabled);
@@ -157,6 +154,58 @@ export function WorldView() {
 
   const toggleShowActiveMembers = () => setShowActiveMembers((state) => !state);
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
+
+  const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
+  const mouseDown = useMouseDown(canvasRef.current);
+
+  useEffect(() => {
+    const onInteraction = (ctx: IMainThreadContext, message: InteractionMessage) => {
+      const interactableType = message.interactableType;
+
+      if (!interactableType || message.action === InteractableAction.Unfocus) {
+        setActiveEntity(undefined);
+      } else if (message.interactableType === InteractableType.Object) {
+        setActiveEntity({
+          interactableType,
+          name: message.name || "Object",
+          held: message.held || false,
+          ownerId: message.ownerId,
+        });
+      } else if (message.interactableType === InteractableType.Player) {
+        if (message.action === InteractableAction.Grab) {
+          setShowActiveMembers(true);
+          document.exitPointerLock();
+        } else {
+          setActiveEntity({
+            interactableType,
+            name: (message.peerId && activeCall?.members.get(message.peerId)?.member.displayName) || "Player",
+            peerId: message.peerId,
+            held: false,
+          });
+        }
+      } else if (message.interactableType === InteractableType.Portal) {
+        console.log(message);
+        if (message.action === InteractableAction.Grab) {
+          onWorldTransfer(message.uri!);
+        } else {
+          setActiveEntity({
+            interactableType,
+            name: (message.uri && parsedMatrixUriToString(parseMatrixUri(message.uri))) || "Portal",
+            held: false,
+          });
+        }
+      }
+    };
+
+    const onExitedWorld = (ctx: IMainThreadContext, message: ExitedWorldMessage) => {
+      setActiveEntity(undefined);
+    };
+
+    return createDisposables([
+      registerMessageHandler(engine, InteractionMessageType, onInteraction),
+      registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
+    ]);
+  }, [activeCall, engine, onWorldTransfer]);
 
   useKeyDown(
     (e) => {
@@ -356,8 +405,8 @@ export function WorldView() {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && <EntitySelected entity={entity} />}
-      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
+      {!isOverlayOpen && showNames && activeEntity && <EntityTooltip activeEntity={activeEntity} />}
+      {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
     </div>
   );
 }

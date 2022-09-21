@@ -8,6 +8,7 @@ import { GameState } from "../GameTypes";
 import { RemoteMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
+import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
@@ -37,8 +38,6 @@ export function nodeHasCollider(node: GLTFNode): boolean {
 const tempPosition = vec3.create();
 const tempRotation = quat.create();
 const tempScale = vec3.create();
-
-const TRIMESH_COLLISION_GROUPS = 0xf000_000f;
 
 const supportedColliders = ["mesh", "box", "sphere", "capsule"];
 
@@ -85,8 +84,7 @@ export function addCollider(
     colliderDesc = RAPIER.ColliderDesc.capsule((collider.height / 2) * tempScale[0], collider.radius * tempScale[0]);
   }
 
-  colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
-  colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
+  colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(ctx, nodeEid, rigidBody);
@@ -133,8 +131,7 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
 
     const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
 
-    colliderDesc.setCollisionGroups(TRIMESH_COLLISION_GROUPS);
-    colliderDesc.setSolverGroups(TRIMESH_COLLISION_GROUPS);
+    colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
 
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 

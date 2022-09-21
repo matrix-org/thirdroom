@@ -190,3 +190,7 @@ export function parseMatrixUri(uri: string): ParsedMatrixURI | URL {
 
   return url;
 }
+
+export function parsedMatrixUriToString(uri: ParsedMatrixURI | URL) {
+  return uri instanceof URL ? uri.href : uri.mxid1;
+}

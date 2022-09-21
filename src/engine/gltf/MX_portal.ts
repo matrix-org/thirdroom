@@ -9,7 +9,5 @@ export function inflatePortalComponent(ctx: GameState, node: GLTFNode, nodeEid: 
     return;
   }
 
-  console.log("add portal component", extension);
-
-  addPortalComponent(ctx.world, nodeEid, { uri: extension.uri });
+  addPortalComponent(ctx, nodeEid, { uri: extension.uri });
 }

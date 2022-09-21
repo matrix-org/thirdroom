@@ -27,11 +27,14 @@ import { createPhysicsCube, createSphereMesh } from "../engine/mesh/mesh.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Networked, Owned } from "../engine/network/network.game";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
+import { dynamicObjectCollisionGroups } from "../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game";
 import { addResourceRef } from "../engine/resource/resource.game";
 import { createRemoteTexture } from "../engine/texture/texture.game";
 import randomRange from "../engine/utils/randomRange";
+import { InteractableType } from "./interaction/interaction.common";
+import { addInteractableComponent } from "./interaction/interaction.game";
 
 type CubeSpawnerModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
@@ -257,14 +260,15 @@ export const createBouncyBall = (state: GameState, size: number, material?: Remo
 
   const colliderDesc = RAPIER.ColliderDesc.ball(size / 2)
     .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
-    .setCollisionGroups(0xffff_ffff)
-    .setSolverGroups(0xffff_ffff)
+    .setCollisionGroups(dynamicObjectCollisionGroups)
     .setRestitution(1.3)
     .setDensity(1);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(state, eid, rigidBody);
+
+  addInteractableComponent(state, eid, InteractableType.Object);
 
   return eid;
 };

@@ -20,13 +20,12 @@ import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
-import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
-import { ReticleFocusSystem } from "../plugins/reticle/reticle.game";
+import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 
 export default defineConfig<GameState>({
@@ -45,7 +44,7 @@ export default defineConfig<GameState>({
     PhysicsCharacterControllerModule,
     FlyCharacterControllerModule,
     CubeSpawnerModule,
-    GrabThrowModule,
+    InteractionModule,
     NametagModule,
   ],
   systems: [
@@ -61,8 +60,7 @@ export default defineConfig<GameState>({
     PhysicsSystem,
     AnimationSystem,
     CubeSpawnerSystem,
-    ReticleFocusSystem,
-    GrabThrowSystem,
+    InteractionSystem,
 
     UpdateMatrixWorldSystem,
 

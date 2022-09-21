@@ -3,6 +3,8 @@ import { addEntity } from "bitecs";
 import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
+import { InteractableType } from "../../plugins/interaction/interaction.common";
+import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
@@ -461,6 +463,8 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(ctx, eid, rigidBody);
+
+  addInteractableComponent(ctx, eid, InteractableType.Object);
 
   return eid;
 };

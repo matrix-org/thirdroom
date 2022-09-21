@@ -6,10 +6,11 @@ import { GameState } from "../engine/GameTypes";
 import { inflateGLTFScene } from "../engine/gltf/gltf.game";
 import { getModule } from "../engine/module/module.common";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
+import { playerCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../engine/physics/physics.game";
+import { InteractableType } from "./interaction/interaction.common";
+import { addInteractableComponent } from "./interaction/interaction.game";
 import { NametagComponent } from "./nametags/nametags.game";
-
-const AVATAR_COLLISION_GROUPS = 0x0ff0_f00f;
 
 const AVATAR_HEIGHT = 1;
 const AVATAR_RADIUS = 0.5;
@@ -45,11 +46,11 @@ export function createContainerizedAvatar(ctx: GameState, uri: string, height = 
     RAPIER.ActiveEvents.CONTACT_EVENTS
   );
 
-  colliderDesc.setCollisionGroups(AVATAR_COLLISION_GROUPS);
-  colliderDesc.setSolverGroups(AVATAR_COLLISION_GROUPS);
+  colliderDesc.setCollisionGroups(playerCollisionGroups);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, container, rigidBody);
+  addInteractableComponent(ctx, container, InteractableType.Player);
 
   return container;
 }

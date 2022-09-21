@@ -400,8 +400,6 @@ async function _inflateGLTFNode(
       }
     }
 
-    inflatePortalComponent(ctx, node, nodeEid);
-
     if (hasTilesRendererExtension(node)) {
       addTilesRenderer(ctx, resource, nodeIndex, nodeEid);
     }
@@ -409,6 +407,8 @@ async function _inflateGLTFNode(
     if (nodeHasCollider(node)) {
       addCollider(ctx, resource, node, nodeEid, results.colliderMesh);
     }
+
+    inflatePortalComponent(ctx, node, nodeEid);
   });
 }
 
