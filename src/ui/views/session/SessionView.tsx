@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
+import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useMatch, useNavigate } from "react-router-dom";
 import {
   GroupCall,
@@ -26,6 +26,8 @@ import { connectToTestNet } from "../../../engine/network/network.main";
 import { loadWorld } from "../../../plugins/thirdroom/thirdroom.main";
 import { getProfileRoom, parseMatrixUri } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
+import { AlertDialog } from "./dialogs/AlertDialog";
+import { Button } from "../../atoms/button/Button";
 
 let worldReloadId = 0;
 
@@ -65,7 +67,7 @@ export function SessionView() {
 
   const { value: roomStatus } = useRoomStatus(session, world?.id);
 
-  // const [showPortalPrompt, setShowPortalPrompt] = useState<boolean>(false);
+  const [showPortalPrompt, setShowPortalPrompt] = useState<boolean>(false);
 
   useEffect(() => {
     if (
@@ -315,8 +317,7 @@ export function SessionView() {
       // enter world when loaded
       const interval = setInterval(() => {
         if (useStore.getState().world.loadState === WorldLoadState.Loaded) {
-          // setShowPortalPrompt(true);
-          onEnterSelectedWorld();
+          setShowPortalPrompt(true);
           clearInterval(interval);
         }
       }, 100);
@@ -325,14 +326,7 @@ export function SessionView() {
         clearInterval(interval);
       };
     },
-    [
-      //
-      onExitWorld,
-      onLoadSelectedWorld,
-      onEnterSelectedWorld,
-      onJoinSelectedWorld,
-      session,
-    ]
+    [onExitWorld, onLoadSelectedWorld, onJoinSelectedWorld, session]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
@@ -358,15 +352,15 @@ export function SessionView() {
     ]
   );
 
-  // const acceptPortalPrompt = useCallback(() => {
-  //   setShowPortalPrompt(false);
-  //   onEnterSelectedWorld();
-  // }, [onEnterSelectedWorld]);
+  const acceptPortalPrompt = useCallback(() => {
+    setShowPortalPrompt(false);
+    onEnterSelectedWorld();
+  }, [onEnterSelectedWorld]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="SessionView">
-        {/* <AlertDialog
+        <AlertDialog
           open={!!showPortalPrompt}
           title="Entering New World"
           content={<div className="flex flex-column gap-xs">Are you sure you wish to enter a new world?</div>}
@@ -376,13 +370,12 @@ export function SessionView() {
             </Button>
           }
           requestClose={() => setShowPortalPrompt(false)}
-        /> */}
+        />
         <canvas className="SessionView__viewport" ref={canvasRef} />
         {mainThread ? (
           <MainThreadContextProvider value={mainThread}>
             <Outlet context={outletContext} />
-            {isOverlayOpen && (
-              //!showPortalPrompt &&
+            {isOverlayOpen && !showPortalPrompt && (
               <Overlay
                 calls={calls}
                 activeCall={activeCall}
