@@ -5,6 +5,7 @@ import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from ".././../../../../res/ic/cross.svg";
+import AddUserIC from ".././../../../../res/ic/add-user.svg";
 import { MemberTile } from "../../components/member-tile/MemberTile";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Text } from "../../../atoms/text/Text";
@@ -26,6 +27,8 @@ import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { InviteDialog } from "./InviteDialog";
 
 interface MemberListDialogProps {
   room: Room;
@@ -36,8 +39,11 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const { session, platform } = useHydrogen(true);
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const [, world] = useWorld();
+
+  const isWorld = room.type === "org.matrix.msc3815.world";
 
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
@@ -46,18 +52,14 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   }, [calls, world]);
 
   const [active, setActive] = useState<RoomMember[]>();
+
   useEffect(() => {
-    if (activeCall) {
+    if (isWorld && activeCall) {
       const me = joined?.find((m) => m.userId === session.userId);
-      setActive(
-        (me ? [me] : []).concat(
-          Array.from(new Map(activeCall.members).values())
-            .filter((m) => m.isConnected)
-            .map((m) => m.member)
-        )
-      );
+      const activeCallMember = Array.from(new Map(activeCall.members).values());
+      setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
     }
-  }, [activeCall, joined, session]);
+  }, [isWorld, activeCall, joined, session]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
@@ -170,7 +172,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
     <>
       <Header
         left={<HeaderTitle size="lg">Members</HeaderTitle>}
-        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+        right={
+          <div className="flex gap-sm">
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <InviteDialog roomId={room.id} requestClose={() => setInviteOpen(false)} />
+            </Dialog>
+            {canDoAction("invite", myPL) && (
+              <IconButton iconSrc={AddUserIC} onClick={() => setInviteOpen(true)} label="Invite" />
+            )}
+            <IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />
+          </div>
+        }
       />
       <div className="flex" style={{ height: "600px" }}>
         {joined === undefined ? (
@@ -198,7 +210,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 <Category
                   header={
                     <CategoryHeader
-                      title="Active"
+                      title="Connected"
                       onClick={() => setActiveCat(!activeCat)}
                       after={<Icon src={activeCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
@@ -212,7 +224,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 <Category
                   header={
                     <CategoryHeader
-                      title="Joined"
+                      title={isWorld ? "Disconnected" : "Joined"}
                       onClick={() => setJoinedCat(!joinedCat)}
                       after={<Icon src={joinedCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
