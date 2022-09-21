@@ -43,6 +43,8 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
 
   const [, world] = useWorld();
 
+  const isWorld = room.type === "org.matrix.msc3815.world";
+
   const calls = useCalls(session);
   const activeCall = useMemo(() => {
     const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
@@ -50,18 +52,14 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   }, [calls, world]);
 
   const [active, setActive] = useState<RoomMember[]>();
+
   useEffect(() => {
-    if (activeCall) {
+    if (isWorld && activeCall) {
       const me = joined?.find((m) => m.userId === session.userId);
-      setActive(
-        (me ? [me] : []).concat(
-          Array.from(new Map(activeCall.members).values())
-            .filter((m) => m.isConnected)
-            .map((m) => m.member)
-        )
-      );
+      const activeCallMember = Array.from(new Map(activeCall.members).values());
+      setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
     }
-  }, [activeCall, joined, session]);
+  }, [isWorld, activeCall, joined, session]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
@@ -212,7 +210,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 <Category
                   header={
                     <CategoryHeader
-                      title="Active"
+                      title="Connected"
                       onClick={() => setActiveCat(!activeCat)}
                       after={<Icon src={activeCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
@@ -226,7 +224,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 <Category
                   header={
                     <CategoryHeader
-                      title="Joined"
+                      title={isWorld ? "Disconnected" : "Joined"}
                       onClick={() => setJoinedCat(!joinedCat)}
                       after={<Icon src={joinedCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
