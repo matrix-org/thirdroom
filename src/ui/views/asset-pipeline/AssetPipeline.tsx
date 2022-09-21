@@ -3,7 +3,7 @@ import { DragEvent, useCallback } from "react";
 import { transformGLTFWeb } from "../../../asset-pipeline/web";
 import "./AssetPipeline.css";
 
-export function AssetPipeline() {
+export default function AssetPipeline() {
   const onDropFile = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
 
