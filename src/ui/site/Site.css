@@ -1,0 +1,21 @@
+.Site {
+  --side-spacing: var(--sp-lg);
+  --content-max-width: calc(940px + 2 * var(--side-spacing));
+
+  --fs-display: 40px;
+  --lh-display: 48px;
+
+  height: 100%;
+}
+
+@media screen and (max-width: 750px) {
+  .Site {
+    --fs-display: 30px;
+    --lh-display: 36px;
+  }
+}
+@media screen and (max-width: 550px) {
+  .Site {
+    --side-spacing: var(--sp-md);
+  }
+}

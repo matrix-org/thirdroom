@@ -1,0 +1,19 @@
+.FooterSection {
+  background-color: var(--bg-surface-low);
+  border-top: 1px solid var(--bg-surface-border);
+  & a {
+    color: var(--tc-surface);
+  }
+}
+.FooterSection__content {
+  padding: var(--sp-xl) var(--side-spacing);
+  max-width: var(--content-max-width);
+  width: 100%;
+}
+.FooterSection__branding {
+  margin-bottom: 60px;
+}
+
+.FooterSection__copyright {
+  margin-top: var(--sp-xl);
+}

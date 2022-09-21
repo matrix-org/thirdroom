@@ -91,7 +91,7 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
   }
 );
 
-export function WorldView() {
+export default function WorldView() {
   const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
