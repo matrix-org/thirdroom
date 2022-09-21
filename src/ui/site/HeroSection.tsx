@@ -11,8 +11,8 @@ import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
 function PreviewVideoPlayer() {
-  const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
-  const preview = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/XmEFqhfOINcuQfOlxRrKRXMx";
+  const poster = ""; //"https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
+  const preview = ""; //"https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/XmEFqhfOINcuQfOlxRrKRXMx";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [play, setPlay] = useState(false);
 
