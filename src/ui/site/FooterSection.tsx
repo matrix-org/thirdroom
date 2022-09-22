@@ -67,6 +67,10 @@ export function FooterSection() {
             <a href="https://element.io/privacy" target="_blank">
               Privacy
             </a>
+            •{" "}
+            <a href="https://element.io/terms-of-service" target="_blank">
+              Terms of service
+            </a>
           </Text>
         </div>
       </div>
