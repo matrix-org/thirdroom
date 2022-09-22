@@ -45,6 +45,7 @@ import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engin
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { Player } from "../../engine/component/Player";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -196,7 +197,15 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
 
       if (entity && floor) {
-        spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        if (
+          hasComponent(ctx.world, Networked, entity) &&
+          hasComponent(ctx.world, Owned, entity) &&
+          !hasComponent(ctx.world, Player, entity)
+        ) {
+          removeRecursive(ctx.world, entity);
+        } else if (hasComponent(ctx.world, Player, entity)) {
+          spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        }
       }
     });
 
