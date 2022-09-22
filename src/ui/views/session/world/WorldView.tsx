@@ -55,7 +55,7 @@ import {
 import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
-import { Hotbar } from "../hotbar/Hotbar";
+import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -320,16 +320,20 @@ export default function WorldView() {
 
   const renderControl = () => (
     <>
-      <Hotbar
-        slots={[
-          { imageSrc: "/image/small-crate-icon.png" },
-          { imageSrc: "/image/medium-crate-icon.png" },
-          { imageSrc: "/image/large-crate-icon.png" },
-          { imageSrc: "/image/mirror-ball-icon.png" },
-          { imageSrc: "/image/black-mirror-ball-icon.png" },
-          { imageSrc: "/image/emissive-ball-icon.png" },
-        ]}
-      />
+      {!isChatOpen && (
+        <Hotbar>
+          {[
+            { imageSrc: "/image/small-crate-icon.png" },
+            { imageSrc: "/image/medium-crate-icon.png" },
+            { imageSrc: "/image/large-crate-icon.png" },
+            { imageSrc: "/image/mirror-ball-icon.png" },
+            { imageSrc: "/image/black-mirror-ball-icon.png" },
+            { imageSrc: "/image/emissive-ball-icon.png" },
+          ].map((slot, index) => (
+            <HotbarSlot key={index} imageSrc={slot.imageSrc} shortcutKey={index + 1} label="Spawn Object" />
+          ))}
+        </Hotbar>
+      )}
       <div className="WorldView__controls flex">
         <div className="flex flex-column items-center">
           <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
@@ -390,7 +394,7 @@ export default function WorldView() {
     <div className="WorldView">
       <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
-      <div className="WorldView__chat flex">
+      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": isChatOpen })}>
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>
       {world && renderControl()}
