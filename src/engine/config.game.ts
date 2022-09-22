@@ -14,7 +14,7 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
-import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
+import { SpawnablesModule, SpawnableSystem } from "../plugins/Spawnables";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
@@ -43,8 +43,8 @@ export default defineConfig<GameState>({
     FirstPersonCameraModule,
     PhysicsCharacterControllerModule,
     FlyCharacterControllerModule,
-    CubeSpawnerModule,
     InteractionModule,
+    SpawnablesModule,
     NametagModule,
   ],
   systems: [
@@ -59,8 +59,8 @@ export default defineConfig<GameState>({
     FlyControlsSystem,
     PhysicsSystem,
     AnimationSystem,
-    CubeSpawnerSystem,
     InteractionSystem,
+    SpawnableSystem,
 
     UpdateMatrixWorldSystem,
 

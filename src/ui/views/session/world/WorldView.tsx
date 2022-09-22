@@ -55,6 +55,7 @@ import {
 import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
+import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -318,66 +319,82 @@ export default function WorldView() {
   }
 
   const renderControl = () => (
-    <div className="WorldView__controls flex">
-      <div className="flex flex-column items-center">
-        <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
-          <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          /
-        </Text>
-      </div>
-      <div className="flex flex-column items-center">
-        <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
-          <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          P
-        </Text>
-      </div>
-      <div className="flex flex-column items-center">
-        <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
-          <IconButton
-            variant="world"
-            label="Toggle Names"
-            iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
-            onClick={toggleShowNames}
-          />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          N
-        </Text>
-      </div>
-      {activeCall && (
+    <>
+      {!isChatOpen && (
+        <Hotbar>
+          {[
+            { imageSrc: "/image/small-crate-icon.png" },
+            { imageSrc: "/image/medium-crate-icon.png" },
+            { imageSrc: "/image/large-crate-icon.png" },
+            { imageSrc: "/image/mirror-ball-icon.png" },
+            { imageSrc: "/image/black-mirror-ball-icon.png" },
+            { imageSrc: "/image/emissive-ball-icon.png" },
+          ].map((slot, index) => (
+            <HotbarSlot key={index} imageSrc={slot.imageSrc} shortcutKey={index + 1} label="Spawn Object" />
+          ))}
+        </Hotbar>
+      )}
+      <div className="WorldView__controls flex">
         <div className="flex flex-column items-center">
-          <MuteButton
-            showToast={showToast}
-            activeCall={activeCall}
-            ref={(ref) => {
-              muteBtnRef.current = ref;
-            }}
-          />
+          <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
+            <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
+          </Tooltip>
           <Text variant="b3" color="world" weight="bold">
-            M
+            /
           </Text>
         </div>
-      )}
-      <div className="flex flex-column items-center">
-        <Tooltip content="Disconnect">
-          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
-        </Tooltip>
-        <Text variant="b3" color="world" weight="bold">
-          Alt + L
-        </Text>
+        <div className="flex flex-column items-center">
+          <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
+            <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
+          </Tooltip>
+          <Text variant="b3" color="world" weight="bold">
+            P
+          </Text>
+        </div>
+        <div className="flex flex-column items-center">
+          <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
+            <IconButton
+              variant="world"
+              label="Toggle Names"
+              iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
+              onClick={toggleShowNames}
+            />
+          </Tooltip>
+          <Text variant="b3" color="world" weight="bold">
+            N
+          </Text>
+        </div>
+        {activeCall && (
+          <div className="flex flex-column items-center">
+            <MuteButton
+              showToast={showToast}
+              activeCall={activeCall}
+              ref={(ref) => {
+                muteBtnRef.current = ref;
+              }}
+            />
+            <Text variant="b3" color="world" weight="bold">
+              M
+            </Text>
+          </div>
+        )}
+        <div className="flex flex-column items-center">
+          <Tooltip content="Disconnect">
+            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
+          </Tooltip>
+          <Text variant="b3" color="world" weight="bold">
+            Alt + L
+          </Text>
+        </div>
       </div>
-    </div>
+    </>
   );
 
   return (
     <div className="WorldView">
       <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
-      <div className="WorldView__chat flex">
+      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": isChatOpen })}>
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>
       {world && renderControl()}

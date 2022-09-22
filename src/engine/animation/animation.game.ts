@@ -8,6 +8,7 @@ import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
+import { Networked } from "../network/network.game";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
 interface AnimationActionMap {
@@ -136,7 +137,7 @@ function processAnimations(ctx: GameState) {
       reduceClipActionWeights(allActions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
-      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, eid, animation);
+      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, animation);
       // synchronize selected clip action times
       synchronizeClipActions(actionsToPlay);
       // fade in selected animations
@@ -203,13 +204,12 @@ function getClipActionsUsingVelocity(
   physicsWorld: RAPIER.World,
   parent: number,
   rigidBody: RAPIER.RigidBody,
-  eid: number,
   animation: IAnimationComponent
 ): AnimationAction[] {
   const quaternion = Transform.quaternion[parent];
 
-  const linvel = rigidBody.linvel();
-  const vel = vec3.set(_vel, linvel.x, linvel.y, linvel.z);
+  const linvel = new Vector3().fromArray(Networked.velocity[parent]);
+  const vel = vec3.copy(_vel, Networked.velocity[parent]);
   const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
   const pitch = getPitch(quaternion);
@@ -226,11 +226,11 @@ function getClipActionsUsingVelocity(
   const strafingRight = angle2 < 50;
 
   const yRot = roll;
-  const yRotLast = lastYrot[eid];
+  const yRotLast = lastYrot[parent];
   const turningLeft = yRot - yRotLast > 0.1 * ctx.dt;
   const turningRight = yRot - yRotLast < -0.1 * ctx.dt;
   if (yRotLast !== yRot) {
-    lastYrot[eid] = yRot;
+    lastYrot[parent] = yRot;
   }
 
   const jumping = !isGrounded(ctx, physicsWorld, rigidBody);

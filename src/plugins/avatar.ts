@@ -3,7 +3,7 @@ import { addComponent, addEntity } from "bitecs";
 
 import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
-import { inflateGLTFScene } from "../engine/gltf/gltf.game";
+import { createGLTFEntity } from "../engine/gltf/gltf.game";
 import { getModule } from "../engine/module/module.common";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { playerCollisionGroups } from "../engine/physics/CollisionGroups";
@@ -15,7 +15,17 @@ import { NametagComponent } from "./nametags/nametags.game";
 const AVATAR_HEIGHT = 1;
 const AVATAR_RADIUS = 0.5;
 
-export function createContainerizedAvatar(ctx: GameState, uri: string, height = AVATAR_HEIGHT, radius = AVATAR_RADIUS) {
+interface AvatarOptions {
+  radius?: number;
+  height?: number;
+  remote?: boolean;
+}
+
+export function createContainerizedAvatar(
+  ctx: GameState,
+  uri: string,
+  { height = AVATAR_HEIGHT, radius = AVATAR_RADIUS, remote = false }: AvatarOptions = {}
+) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
@@ -29,8 +39,7 @@ export function createContainerizedAvatar(ctx: GameState, uri: string, height = 
   addChild(container, nametagAnchor);
   NametagComponent.entity[nametagAnchor] = container;
 
-  const eid = addEntity(ctx.world);
-  inflateGLTFScene(ctx, eid, uri, { createTrimesh: false });
+  const eid = createGLTFEntity(ctx, uri, { createTrimesh: false, isStatic: false });
 
   Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
