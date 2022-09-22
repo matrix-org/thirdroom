@@ -35,7 +35,7 @@ import randomRange from "../engine/utils/randomRange";
 import { InteractableType } from "./interaction/interaction.common";
 import { addInteractableComponent } from "./interaction/interaction.game";
 
-const { abs, round, random } = Math;
+const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
@@ -387,13 +387,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
       const emitter1 = module.hitAudioEmitters.get(eid1!);
       if (emitter1) {
-        const source = emitter1.sources[round(random() * emitter1.sources.length - 1)] as RemoteAudioSource;
+        const source = emitter1.sources[floor(random() * emitter1.sources.length)] as RemoteAudioSource;
         playAudio(source, { playbackRate, gain });
       }
 
       const emitter2 = module.hitAudioEmitters.get(eid2!);
       if (emitter2) {
-        const source = emitter2.sources[round(random() * emitter2.sources.length - 1)] as RemoteAudioSource;
+        const source = emitter2.sources[floor(random() * emitter2.sources.length)] as RemoteAudioSource;
         playAudio(source, { playbackRate, gain });
       }
     });

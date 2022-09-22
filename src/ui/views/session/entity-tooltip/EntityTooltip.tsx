@@ -56,6 +56,10 @@ export function EntityTooltip({ activeEntity }: EntityTooltipProps) {
                   <span> Grab</span>
                 </Text>
               )}
+              <Text variant="b3" color="world">
+                <span className="EntityTooltip__boxedKey">X</span>
+                <span> Delete</span>
+              </Text>
             </div>
           </>
         )}

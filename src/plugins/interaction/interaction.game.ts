@@ -12,7 +12,7 @@ import {
 import { vec3, mat4, quat } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
-import { Transform } from "../../engine/component/transform";
+import { removeRecursive, Transform } from "../../engine/component/transform";
 import { NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import {
@@ -94,6 +94,17 @@ export const InteractionActionMap: ActionMap = {
         {
           type: BindingType.Button,
           path: "Mouse/Left",
+        },
+      ],
+    },
+    {
+      id: "delete",
+      path: "Delete",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyX",
         },
       ],
     },
@@ -195,6 +206,15 @@ export function InteractionSystem(ctx: GameState) {
   const exited = exitFocusQuery(ctx.world);
 
   if (exited[0] && focusQuery(ctx.world).length === 0) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+
+  // deletion
+  const deleteBtn = input.actions.get("Delete") as ButtonActionState;
+  if (deleteBtn.pressed) {
+    const focused = focusQuery(ctx.world)[0];
+    if (focused) {
+      removeRecursive(ctx.world, focused);
+    }
+  }
 
   // Grab / Throw
   let heldEntity = grabQuery(ctx.world)[0];
