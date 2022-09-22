@@ -27,6 +27,9 @@ export function useUserProfile(client: Client, session?: Session) {
         .then((data) => {
           if (!isMounted()) return;
           updateProfile(session.userId, data.displayname, data.avatar_url);
+        })
+        .catch(() => {
+          // Silence error since not all users have profile routes
         });
     },
     [isMounted, updateProfile]

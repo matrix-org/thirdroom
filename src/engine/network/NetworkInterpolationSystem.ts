@@ -76,6 +76,11 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       const netVelocity = Networked.velocity[eid];
       const netQuaternion = Networked.quaternion[eid];
 
+      if (!network.interpolate) {
+        applyNetworkedToRigidBody(eid, body);
+        continue;
+      }
+
       const history = getEntityHistory(historian, eid);
 
       if (historian.needsUpdate) {

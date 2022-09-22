@@ -184,7 +184,6 @@ export default function WorldView() {
           });
         }
       } else if (message.interactableType === InteractableType.Portal) {
-        console.log(message);
         if (message.action === InteractableAction.Grab) {
           onWorldTransfer(message.uri!);
         } else {
@@ -305,8 +304,12 @@ export default function WorldView() {
 
   useEffect(() => {
     if (onboarding) document.exitPointerLock();
-    else canvasRef.current?.requestPointerLock();
-  }, [onboarding, canvasRef]);
+  }, [onboarding]);
+
+  const onFinishOnboarding = useCallback(() => {
+    finishOnboarding();
+    canvasRef.current?.requestPointerLock();
+  }, [canvasRef, finishOnboarding]);
 
   usePointerLockChange(canvasRef.current, setIsPointerLock, []);
 
@@ -372,7 +375,7 @@ export default function WorldView() {
 
   return (
     <div className="WorldView">
-      <OnboardingModal open={onboarding} world={world} requestClose={finishOnboarding} />
+      <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}

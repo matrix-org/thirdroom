@@ -28,6 +28,8 @@ import { getProfileRoom, parseMatrixUri } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
 import { AlertDialog } from "./dialogs/AlertDialog";
 import { Button } from "../../atoms/button/Button";
+import { AudioModule } from "../../../engine/audio/audio.main";
+import { getModule } from "../../../engine/module/module.common";
 
 let worldReloadId = 0;
 
@@ -271,7 +273,11 @@ export default function SessionView() {
     networkInterfaceRef.current = createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
 
     useStore.getState().world.enteredWorld();
+
     canvasRef.current?.requestPointerLock();
+
+    const audio = getModule(mainThread, AudioModule);
+    audio.context.resume();
   }, [world, platform, session, mainThread, client]);
 
   const onExitWorld = useCallback(() => {

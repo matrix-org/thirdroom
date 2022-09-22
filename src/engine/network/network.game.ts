@@ -73,6 +73,7 @@ export interface GameNetworkState {
   messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
   cursorView: CursorView;
   peerIdToHistorian: Map<string, Historian>;
+  interpolate: boolean;
 }
 
 export enum NetworkAction {
@@ -115,6 +116,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     messageHandlers: {},
     cursorView: createCursorView(),
     peerIdToHistorian: new Map(),
+    interpolate: false,
   }),
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);

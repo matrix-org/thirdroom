@@ -56,8 +56,8 @@ export function usePermissionState(name: PermissionName) {
         handlePermissionChange.apply(permStatus);
         permStatus.addEventListener("change", handlePermissionChange);
       })
-      .catch((err) => {
-        console.warn(err);
+      .catch(() => {
+        // Silence error since FF doesn't support microphone permission
       });
 
     return () => {
