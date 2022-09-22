@@ -203,7 +203,7 @@ export default function WorldView() {
     };
 
     const onObjectCapReached = (ctx: IMainThreadContext, message: ObjectCapReachedMessage) => {
-      showToast("Object cap reached.");
+      showToast("Maximum number of objects reached.");
     };
 
     return createDisposables([
