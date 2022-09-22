@@ -348,6 +348,9 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     if (interactableType === InteractableType.Object) {
       const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
       ownerId = network.indexToPeerId.get(ownerIdIndex);
+      if (hasComponent(ctx.world, Owned, eid)) {
+        ownerId = peerId;
+      }
     }
 
     let uri;
