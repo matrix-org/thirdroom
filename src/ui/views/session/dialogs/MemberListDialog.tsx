@@ -29,6 +29,7 @@ import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/netw
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { InviteDialog } from "./InviteDialog";
+import { useStore } from "../../../hooks/useStore";
 
 interface MemberListDialogProps {
   room: Room;
@@ -40,6 +41,8 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  const { isEnteredWorld, worldId } = useStore((state) => state.world);
 
   const [, world] = useWorld();
 
@@ -54,12 +57,12 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const [active, setActive] = useState<RoomMember[]>();
 
   useEffect(() => {
-    if (isWorld && activeCall) {
+    if (worldId === room?.id && isEnteredWorld && activeCall) {
       const me = joined?.find((m) => m.userId === session.userId);
       const activeCallMember = Array.from(new Map(activeCall.members).values());
       setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
     }
-  }, [isWorld, activeCall, joined, session]);
+  }, [activeCall, joined, session, worldId, isEnteredWorld, room]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
