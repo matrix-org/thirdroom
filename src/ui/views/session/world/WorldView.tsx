@@ -184,7 +184,6 @@ export default function WorldView() {
           });
         }
       } else if (message.interactableType === InteractableType.Portal) {
-        console.log(message);
         if (message.action === InteractableAction.Grab) {
           onWorldTransfer(message.uri!);
         } else {
