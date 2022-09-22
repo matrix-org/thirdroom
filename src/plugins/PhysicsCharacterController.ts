@@ -17,6 +17,7 @@ import { InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { associatePeerWithEntity, Networked, Owned } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
+import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
@@ -97,24 +98,6 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
   },
 });
 
-export enum PhysicsGroups {
-  None = 0,
-  All = 0x0000_f000,
-}
-
-export enum PhysicsInteractionGroups {
-  None = 0,
-  Default = 0xffff_ffff,
-}
-
-export function createInteractionGroup(groups: number, mask: number) {
-  return (groups << 16) | mask;
-}
-
-export const CharacterPhysicsGroup = 0b1;
-export const CharacterInteractionGroup = createInteractionGroup(CharacterPhysicsGroup, PhysicsGroups.All);
-export const CharacterShapecastInteractionGroup = createInteractionGroup(PhysicsGroups.All, ~CharacterPhysicsGroup);
-
 const obj = new Object3D();
 
 const walkSpeed = 60;
@@ -170,8 +153,7 @@ export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
-  colliderDesc.setCollisionGroups(CharacterInteractionGroup);
-  colliderDesc.setSolverGroups(CharacterInteractionGroup);
+  colliderDesc.setCollisionGroups(playerCollisionGroups);
   // colliderDesc.setTranslation(0, -1, 0);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
@@ -227,7 +209,7 @@ export const PlayerControllerSystem = (state: GameState) => {
       physicsWorld.gravity,
       colliderShape,
       state.dt,
-      CharacterShapecastInteractionGroup
+      playerShapeCastCollisionGroups
     );
 
     const isGrounded = !!shapeCastResult;

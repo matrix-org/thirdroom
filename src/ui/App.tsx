@@ -8,11 +8,9 @@ import "./App.css";
 import "@fontsource/inter/variable.css";
 
 import { HydrogenRootView } from "./views/HydrogenRootView";
-import { LoginView } from "./views/login/LoginView";
-import { SessionView } from "./views/session/SessionView";
-import { WorldView } from "./views/session/world/WorldView";
-import { GLTFViewer } from "./views/gltf-viewer/GLTFViewer";
-import { AssetPipeline } from "./views/asset-pipeline/AssetPipeline";
+import { SplashScreen } from "./views/components/splash-screen/SplashScreen";
+import { PageNotFound } from "./views/components/page-not-found/PageNotFound";
+import { LoadingScreen } from "./views/components/loading-screen/LoadingScreen";
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -49,22 +47,86 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
   );
 }
 
+const Site = lazy(() => import("./site/Site"));
+const LoginView = lazy(() => import("./views/login/LoginView"));
+const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
+const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
+const SessionView = lazy(() => import("./views/session/SessionView"));
+const WorldView = lazy(() => import("./views/session/world/WorldView"));
+
 export function App() {
   return (
     <>
       <FocusOutlineManager />
       <SentryRoutes>
         <Route element={<HydrogenRootView />}>
-          <Route path="/login" element={<LoginView />} />
-          <Route element={<SessionView />}>
-            <Route path="world/:worldId" element={<WorldView />} />
-            <Route path="world/" element={<WorldView />} />
-            <Route path="/" element={<WorldView />} />
+          <Route
+            path="/preview"
+            element={
+              <Suspense fallback={<SplashScreen />}>
+                <Site />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<LoadingScreen />}>
+                <LoginView />
+              </Suspense>
+            }
+          />
+          <Route
+            element={
+              <Suspense fallback={<LoadingScreen />}>
+                <SessionView />
+              </Suspense>
+            }
+          >
+            <Route
+              path="world/:worldId"
+              element={
+                <Suspense fallback={<></>}>
+                  <WorldView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="world/"
+              element={
+                <Suspense fallback={<></>}>
+                  <WorldView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/"
+              element={
+                <Suspense fallback={<></>}>
+                  <WorldView />
+                </Suspense>
+              }
+            />
           </Route>
         </Route>
-        <Route path="/viewer" element={<GLTFViewer />} />
-        <Route path="/pipeline" element={<AssetPipeline />} />
+        <Route
+          path="/viewer"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <GLTFViewer />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/pipeline"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <AssetPipeline />
+            </Suspense>
+          }
+        />
         {storybookRoute}
+        <Route path="*" element={<PageNotFound />} />
       </SentryRoutes>
     </>
   );

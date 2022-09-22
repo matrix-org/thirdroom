@@ -131,7 +131,7 @@ function getMatchingClientConfig(platform: Platform, issuer: string) {
   return platform.config.oidc.clientConfigs[normalisedIssuer];
 }
 
-export function LoginView() {
+export default function LoginView() {
   const { platform, urlRouter, login, client } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
   const [oidcError, setOidcError] = useState<string>();

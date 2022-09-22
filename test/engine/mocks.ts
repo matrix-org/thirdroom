@@ -57,8 +57,15 @@ export const mockPhysicsState = () => ({
       handle: 0,
       lockTranslations: () => {},
       lockRotations: () => {},
+      numColliders: () => 1,
+      collider: () => 1,
     }),
     createCollider: (desc: RAPIER.ColliderDesc, parentHandle?: number | undefined) => {},
+    getCollider: () => ({
+      collisionGroups: () => 0,
+      setActiveEvents: () => {},
+      setCollisionGroups: () => {},
+    }),
   } as unknown as RAPIER.World,
 });
 

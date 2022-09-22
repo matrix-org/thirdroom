@@ -243,7 +243,6 @@ export class KHRAudioExtension extends Extension {
           if (context.options.format === Format.GLB) {
             audioDataDef.mimeType = "audio/mpeg";
             audioDataDef.bufferView = context.otherBufferViewsIndexMap.get(data);
-            console.log("writing buffer view", audioDataDef.bufferView);
           } else {
             audioDataDef.uri = this.audioDataUris.get(audioData);
           }

@@ -3,6 +3,8 @@ import { addEntity } from "bitecs";
 import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
+import { InteractableType } from "../../plugins/interaction/interaction.common";
+import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
@@ -17,6 +19,7 @@ import { GameState } from "../GameTypes";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
+import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -432,8 +435,6 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
   return createMesh(ctx, geometry, material);
 };
 
-const COLLISION_GROUPS = 0xffff_ffff;
-
 export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial, remote = false) => {
   const { world } = ctx;
   const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -455,12 +456,13 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
     .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
-    .setCollisionGroups(COLLISION_GROUPS)
-    .setSolverGroups(COLLISION_GROUPS);
+    .setCollisionGroups(dynamicObjectCollisionGroups);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
   addRigidBody(ctx, eid, rigidBody);
+
+  addInteractableComponent(ctx, eid, InteractableType.Object);
 
   return eid;
 };

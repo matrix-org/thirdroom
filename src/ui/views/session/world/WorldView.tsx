@@ -24,13 +24,13 @@ import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
-import { EntityData, Reticle } from "../reticle/Reticle";
-import { EntitySelected } from "../entity-selected/EntitySelected";
+import { Reticle } from "../reticle/Reticle";
+import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
 import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { Thread } from "../../../../engine/module/module.common";
+import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { useToast } from "../../../hooks/useToast";
 import { usePermissionState } from "../../../hooks/usePermissionState";
@@ -44,6 +44,25 @@ import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { ShortcutUI } from "./ShortcutUI";
 import { Scroll } from "../../../atoms/scroll/Scroll";
+import { IMainThreadContext } from "../../../../engine/MainThread";
+import { useMouseDown } from "../../../hooks/useMouseDown";
+import {
+  InteractableAction,
+  InteractableType,
+  InteractionMessage,
+  InteractionMessageType,
+} from "../../../../plugins/interaction/interaction.common";
+import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
+import { createDisposables } from "../../../../engine/utils/createDisposables";
+import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
+
+export interface ActiveEntityState {
+  interactableType: InteractableType;
+  name: string;
+  held: boolean;
+  peerId?: string;
+  ownerId?: string;
+}
 
 const SHOW_NAMES_STORE = "showNames";
 
@@ -91,8 +110,8 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
   }
 );
 
-export function WorldView() {
-  const { canvasRef, world, onExitWorld, activeCall } = useOutletContext<SessionOutletContext>();
+export default function WorldView() {
+  const { canvasRef, world, onExitWorld, onWorldTransfer, activeCall } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
@@ -107,8 +126,6 @@ export function WorldView() {
   const { toastShown, toastContent, showToast } = useToast();
 
   const engine = useMainThreadContext();
-
-  const [entity, setEntity] = useState<EntityData>();
 
   const [showNames, setShowNames] = useState<boolean>(() => {
     const store = localStorage.getItem(SHOW_NAMES_STORE);
@@ -128,17 +145,6 @@ export function WorldView() {
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
-  const onEntitySelected = (entity: EntityData) => {
-    if (entity.peerId) {
-      setShowActiveMembers(true);
-      document.exitPointerLock();
-    }
-  };
-
-  const onEntityFocused = (entity: EntityData) => {
-    setEntity(entity);
-  };
-
   const toggleShowNames = useCallback(() => {
     const enabled = !showNames;
     setShowNames(enabled);
@@ -148,6 +154,57 @@ export function WorldView() {
 
   const toggleShowActiveMembers = () => setShowActiveMembers((state) => !state);
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
+
+  const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
+  const mouseDown = useMouseDown(canvasRef.current);
+
+  useEffect(() => {
+    const onInteraction = (ctx: IMainThreadContext, message: InteractionMessage) => {
+      const interactableType = message.interactableType;
+
+      if (!interactableType || message.action === InteractableAction.Unfocus) {
+        setActiveEntity(undefined);
+      } else if (message.interactableType === InteractableType.Object) {
+        setActiveEntity({
+          interactableType,
+          name: message.name || "Object",
+          held: message.held || false,
+          ownerId: message.ownerId,
+        });
+      } else if (message.interactableType === InteractableType.Player) {
+        if (message.action === InteractableAction.Grab) {
+          setShowActiveMembers(true);
+          document.exitPointerLock();
+        } else {
+          setActiveEntity({
+            interactableType,
+            name: (message.peerId && activeCall?.members.get(message.peerId)?.member.displayName) || "Player",
+            peerId: message.peerId,
+            held: false,
+          });
+        }
+      } else if (message.interactableType === InteractableType.Portal) {
+        if (message.action === InteractableAction.Grab) {
+          onWorldTransfer(message.uri!);
+        } else {
+          setActiveEntity({
+            interactableType,
+            name: (message.uri && parsedMatrixUriToString(parseMatrixUri(message.uri))) || "Portal",
+            held: false,
+          });
+        }
+      }
+    };
+
+    const onExitedWorld = (ctx: IMainThreadContext, message: ExitedWorldMessage) => {
+      setActiveEntity(undefined);
+    };
+
+    return createDisposables([
+      registerMessageHandler(engine, InteractionMessageType, onInteraction),
+      registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
+    ]);
+  }, [activeCall, engine, onWorldTransfer]);
 
   useKeyDown(
     (e) => {
@@ -247,8 +304,12 @@ export function WorldView() {
 
   useEffect(() => {
     if (onboarding) document.exitPointerLock();
-    else canvasRef.current?.requestPointerLock();
-  }, [onboarding, canvasRef]);
+  }, [onboarding]);
+
+  const onFinishOnboarding = useCallback(() => {
+    finishOnboarding();
+    canvasRef.current?.requestPointerLock();
+  }, [canvasRef, finishOnboarding]);
 
   usePointerLockChange(canvasRef.current, setIsPointerLock, []);
 
@@ -314,14 +375,7 @@ export function WorldView() {
 
   return (
     <div className="WorldView">
-      <OnboardingModal open={onboarding} world={world} requestClose={finishOnboarding} />
-      <div className="WorldView__toast-container">
-        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
-          <Text variant="b2" color="world" weight="semi-bold">
-            {toastContent}
-          </Text>
-        </div>
-      </div>
+      <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
@@ -347,8 +401,15 @@ export function WorldView() {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && <EntitySelected entity={entity} />}
-      {!isOverlayOpen && <Reticle onEntityFocused={onEntityFocused} onEntitySelected={onEntitySelected} />}
+      {!isOverlayOpen && showNames && activeEntity && <EntityTooltip activeEntity={activeEntity} />}
+      {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
+      <div className="WorldView__toast-container">
+        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
+          <Text variant="b2" color="world" weight="semi-bold">
+            {toastContent}
+          </Text>
+        </div>
+      </div>
     </div>
   );
 }

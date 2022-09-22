@@ -1,4 +1,4 @@
-.EntitySelected {
+.EntityTooltip {
   position: absolute;
   top: 50vh;
   left: 50vw;
@@ -12,11 +12,11 @@
   pointer-events: none;
 }
 
-.EntitySelected__mouseIcon {
+.EntityTooltip__mouseIcon {
   margin-bottom: -3px;
 }
 
-.EntitySelected__boxedKey {
+.EntityTooltip__boxedKey {
   position: relative;
   font-size: 10px;
   border: 1px solid var(--bg-world-border);

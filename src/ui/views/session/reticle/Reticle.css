@@ -27,10 +27,14 @@
   margin-left: -3px;
 }
 
-.Reticle__blue {
+.Reticle__object {
   background: var(--usercolor1);
 }
 
-.Reticle__yellow {
+.Reticle__player {
   background: var(--usercolor8);
+}
+
+.Reticle__portal {
+  background: var(--usercolor7);
 }
