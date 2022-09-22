@@ -24,7 +24,7 @@ import {
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import { getPeerIdIndexFromNetworkId, Networked, NetworkModule } from "../../engine/network/network.game";
+import { getPeerIdIndexFromNetworkId, Networked, NetworkModule, Owned } from "../../engine/network/network.game";
 import { takeOwnership } from "../../engine/network/ownership.game";
 import {
   addCollisionGroupMembership,
@@ -211,8 +211,8 @@ export function InteractionSystem(ctx: GameState) {
   const deleteBtn = input.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focused = focusQuery(ctx.world)[0];
-    // only delete objects
-    if (focused && Interactable.type[focused] === InteractableType.Object) {
+    // only delete owned objects
+    if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
     }
   }
