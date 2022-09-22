@@ -55,6 +55,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   }, [calls, world]);
 
   const [active, setActive] = useState<RoomMember[]>();
+  const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
 
   useEffect(() => {
     if (worldId === room?.id && isEnteredWorld && activeCall) {
@@ -223,7 +224,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 </Category>
               )}
 
-              {!!joined?.length && (
+              {!!filteredJoined?.length && (
                 <Category
                   header={
                     <CategoryHeader
@@ -233,8 +234,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {joinedCat &&
-                    joined.filter((member) => !active?.find((m) => m.userId === member.userId)).map(renderMemberTile)}
+                  {joinedCat && filteredJoined.map(renderMemberTile)}
                 </Category>
               )}
 
