@@ -230,7 +230,8 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {joinedCat && joined.map(renderMemberTile)}
+                  {joinedCat &&
+                    joined.filter((member) => !active?.find((m) => m.userId === member.userId)).map(renderMemberTile)}
                 </Category>
               )}
 
