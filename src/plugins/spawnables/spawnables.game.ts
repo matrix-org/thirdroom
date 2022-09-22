@@ -10,30 +10,31 @@ import {
   RemoteAudioSource,
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
-} from "../engine/audio/audio.game";
-import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../engine/component/transform";
-import { GameState } from "../engine/GameTypes";
-import { createGLTFEntity } from "../engine/gltf/gltf.game";
+} from "../../engine/audio/audio.game";
+import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../../engine/component/transform";
+import { GameState } from "../../engine/GameTypes";
+import { createGLTFEntity } from "../../engine/gltf/gltf.game";
 import {
   ActionDefinition,
   ActionType,
   BindingType,
   ButtonActionState,
   enableActionMap,
-} from "../engine/input/ActionMappingSystem";
-import { InputModule } from "../engine/input/input.game";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../engine/material/material.game";
-import { createSphereMesh } from "../engine/mesh/mesh.game";
-import { defineModule, getModule } from "../engine/module/module.common";
-import { Networked, Owned } from "../engine/network/network.game";
-import { addRemoteNodeComponent } from "../engine/node/node.game";
-import { dynamicObjectCollisionGroups } from "../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game";
-import { addResourceRef } from "../engine/resource/resource.game";
-import randomRange from "../engine/utils/randomRange";
-import { InteractableType } from "./interaction/interaction.common";
-import { addInteractableComponent } from "./interaction/interaction.game";
+} from "../../engine/input/ActionMappingSystem";
+import { InputModule } from "../../engine/input/input.game";
+import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
+import { createSphereMesh } from "../../engine/mesh/mesh.game";
+import { defineModule, getModule, Thread } from "../../engine/module/module.common";
+import { Networked, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
+import { addResourceRef } from "../../engine/resource/resource.game";
+import randomRange from "../../engine/utils/randomRange";
+import { InteractableType } from "../interaction/interaction.common";
+import { addInteractableComponent } from "../interaction/interaction.game";
+import { ObjectCapReachedMessageType } from "./spawnables.common";
 
 const { abs, floor, random } = Math;
 
@@ -416,7 +417,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   },
 });
 
-const CUBE_THROW_FORCE = 10;
+const MAX_OBJECTS = 50;
+const THROW_FORCE = 10;
 
 const _direction = vec3.create();
 const _impulse = new Vector3();
@@ -427,6 +429,17 @@ export const SpawnableSystem = (ctx: GameState) => {
   const { actions } = getModule(ctx, SpawnablesModule);
 
   const spawnables = actions.filter((a) => (input.actions.get(a.path) as ButtonActionState)?.pressed);
+
+  if (spawnables.length) {
+    // bounce out of the system if we hit the max object cap
+    const ownedEnts = ownedNetworkedQuery(ctx.world);
+    if (ownedEnts.length >= MAX_OBJECTS) {
+      ctx.sendMessage(Thread.Main, {
+        type: ObjectCapReachedMessageType,
+      });
+      return;
+    }
+  }
 
   for (const spawnable of spawnables) {
     const eid = createPrefabEntity(ctx, spawnable.id);
@@ -447,7 +460,7 @@ export const SpawnableSystem = (ctx: GameState) => {
     // vec3.scale(placement, placement, 4);
     vec3.add(Transform.position[eid], Transform.position[eid], placement);
 
-    vec3.scale(direction, direction, CUBE_THROW_FORCE);
+    vec3.scale(direction, direction, THROW_FORCE);
 
     _impulse.fromArray(direction);
 
