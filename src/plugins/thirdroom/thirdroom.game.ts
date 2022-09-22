@@ -25,6 +25,7 @@ import {
   PrintThreadStateMessage,
   ThirdRoomMessageType,
   GLTFViewerLoadGLTFMessage,
+  ExitedWorldMessage,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
@@ -42,6 +43,8 @@ import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
+import { waitUntil } from "../../engine/utils/waitUntil";
+import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -178,8 +181,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     const size = 10000;
     const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
       .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
-      .setCollisionGroups(0xf000_000f)
-      .setSolverGroups(0xf000_000f);
+      .setCollisionGroups(boundsCheckCollisionGroups);
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
     rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
@@ -239,6 +241,10 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
+
+  ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
+    type: ThirdRoomMessageType.ExitedWorld,
+  });
 
   removeRecursive(ctx.world, ctx.activeScene);
 
@@ -395,16 +401,6 @@ function loadPlayerRig(ctx: GameState) {
 
   addChild(ctx.activeScene, playerRig);
 }
-
-const waitUntil = (fn: Function) =>
-  new Promise<void>((resolve) => {
-    const interval = setInterval(() => {
-      if (fn()) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 100);
-  });
 
 const zero = new Vector3();
 

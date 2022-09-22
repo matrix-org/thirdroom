@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useMemo, useRef } from "react";
+import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useMatch, useNavigate } from "react-router-dom";
 import {
   GroupCall,
@@ -19,13 +19,15 @@ import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useCalls } from "../../hooks/useCalls";
-import { useStore } from "../../hooks/useStore";
+import { useStore, WorldLoadState } from "../../hooks/useStore";
 import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet } from "../../../engine/network/network.main";
 import { loadWorld } from "../../../plugins/thirdroom/thirdroom.main";
-import { getProfileRoom } from "../../utils/matrixUtils";
+import { getProfileRoom, parseMatrixUri } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
+import { AlertDialog } from "./dialogs/AlertDialog";
+import { Button } from "../../atoms/button/Button";
 
 let worldReloadId = 0;
 
@@ -34,6 +36,10 @@ export interface SessionOutletContext {
   activeCall?: GroupCall;
   canvasRef: RefObject<HTMLCanvasElement>;
   onExitWorld: () => void;
+  onWorldTransfer: (uri: string) => void;
+  onJoinSelectedWorld: () => void;
+  onLoadSelectedWorld: () => void;
+  onEnterSelectedWorld: () => void;
 }
 
 export default function SessionView() {
@@ -60,6 +66,8 @@ export default function SessionView() {
   }, [calls, world]);
 
   const { value: roomStatus } = useRoomStatus(session, world?.id);
+
+  const [showPortalPrompt, setShowPortalPrompt] = useState<boolean>(false);
 
   useEffect(() => {
     if (
@@ -281,24 +289,93 @@ export default function SessionView() {
     }
   }, [navigate]);
 
+  const onWorldTransfer = useCallback(
+    async (uri: string) => {
+      const state = useStore.getState();
+
+      // exit current world
+      onExitWorld();
+
+      const parsedUri = parseMatrixUri(uri);
+
+      if (parsedUri instanceof URL) {
+        return;
+      }
+
+      // select new world
+      state.overlayWorld.selectWorld(parsedUri.mxid1);
+
+      // join if not already
+      const roomStatus = await session.observeRoomStatus(parsedUri.mxid1);
+      if (roomStatus.get() !== RoomStatus.Joined) {
+        await onJoinSelectedWorld();
+      }
+
+      // load world
+      await onLoadSelectedWorld();
+
+      // enter world when loaded
+      const interval = setInterval(() => {
+        if (useStore.getState().world.loadState === WorldLoadState.Loaded) {
+          setShowPortalPrompt(true);
+          clearInterval(interval);
+        }
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+      };
+    },
+    [onExitWorld, onLoadSelectedWorld, onJoinSelectedWorld, session]
+  );
+
   const outletContext = useMemo<SessionOutletContext>(
     () => ({
       world,
       activeCall,
       canvasRef,
       onExitWorld,
+      onWorldTransfer,
+      onJoinSelectedWorld,
+      onLoadSelectedWorld,
+      onEnterSelectedWorld,
     }),
-    [world, activeCall, canvasRef, onExitWorld]
+    [
+      world,
+      activeCall,
+      canvasRef,
+      onExitWorld,
+      onWorldTransfer,
+      onJoinSelectedWorld,
+      onLoadSelectedWorld,
+      onEnterSelectedWorld,
+    ]
   );
+
+  const acceptPortalPrompt = useCallback(() => {
+    setShowPortalPrompt(false);
+    onEnterSelectedWorld();
+  }, [onEnterSelectedWorld]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="SessionView">
+        <AlertDialog
+          open={!!showPortalPrompt}
+          title="Entering New World"
+          content={<div className="flex flex-column gap-xs">Are you sure you wish to enter a new world?</div>}
+          buttons={
+            <Button fill="outline" onClick={acceptPortalPrompt}>
+              Enter World
+            </Button>
+          }
+          requestClose={() => setShowPortalPrompt(false)}
+        />
         <canvas className="SessionView__viewport" ref={canvasRef} />
         {mainThread ? (
           <MainThreadContextProvider value={mainThread}>
             <Outlet context={outletContext} />
-            {isOverlayOpen && (
+            {isOverlayOpen && !showPortalPrompt && (
               <Overlay
                 calls={calls}
                 activeCall={activeCall}
