@@ -14,10 +14,6 @@ export function BlogSection() {
         <Text variant="h2" weight="semi-bold">
           Welcome to Third Room: Technology Preview
         </Text>
-        <Text weight="semi-bold">More coming soon!</Text>
-        <Text variant="h2" weight="semi-bold">
-          Welcome to Third Room: Technology Preview
-        </Text>
         <Text weight="semi-bold">
           Introducing an open, standards-based, decentralised vision of the metaverse for the open Web, built entirely
           on Matrix… without cryptocurrencies, NFTs or walled gardens.
@@ -34,11 +30,6 @@ export function BlogSection() {
           standards via liberally licensed open source implementations, and without any dependencies on
           cryptocurrencies, NFTs, or data-hoarding big tech silos. In other words: Third Room will be a blank canvas for
           you to build open metaverse environments and applications in the spirit of the original open Web.
-        </Text>
-        <Text>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Inventore nostrum doloribus magnam, neque itaque
-          laborum maxime nisi illo saepe dicta in architecto tempore voluptates illum ex? Excepturi dicta explicabo
-          numquam!
         </Text>
 
         <Text variant="h2" weight="semi-bold">
