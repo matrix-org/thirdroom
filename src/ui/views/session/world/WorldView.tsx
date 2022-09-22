@@ -373,13 +373,6 @@ export default function WorldView() {
   return (
     <div className="WorldView">
       <OnboardingModal open={onboarding} world={world} requestClose={finishOnboarding} />
-      <div className="WorldView__toast-container">
-        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
-          <Text variant="b2" color="world" weight="semi-bold">
-            {toastContent}
-          </Text>
-        </div>
-      </div>
       <Stats statsEnabled={statsEnabled} />
       <div className="WorldView__chat flex">
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
@@ -407,6 +400,13 @@ export default function WorldView() {
       )}
       {!isOverlayOpen && showNames && activeEntity && <EntityTooltip activeEntity={activeEntity} />}
       {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
+      <div className="WorldView__toast-container">
+        <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
+          <Text variant="b2" color="world" weight="semi-bold">
+            {toastContent}
+          </Text>
+        </div>
+      </div>
     </div>
   );
 }
