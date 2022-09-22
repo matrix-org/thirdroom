@@ -1,12 +1,12 @@
 import { Text } from "../atoms/text/Text";
 import "./BlogSection.css";
 
-// function BlogImage({ imgSrc, imgAlt, align = "right" }: { imgSrc: string; imgAlt: string; align?: "right" | "left" }) {
-//   return <img className={`BlogImage BlogImage--${align}`} src={imgSrc} alt={imgAlt} />;
-// }
+function BlogImage({ imgSrc, imgAlt, align = "right" }: { imgSrc: string; imgAlt: string; align?: "right" | "left" }) {
+  return <img className={`BlogImage BlogImage--${align}`} src={imgSrc} alt={imgAlt} />;
+}
 
 export function BlogSection() {
-  //const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
+  const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
 
   return (
     <section className="BlogSection flex flex-column items-center gap-xl">
@@ -15,7 +15,7 @@ export function BlogSection() {
           Welcome to Third Room: Technology Preview
         </Text>
         <Text weight="semi-bold">More coming soon!</Text>
-        {/*<Text variant="h2" weight="semi-bold">
+        <Text variant="h2" weight="semi-bold">
           Welcome to Third Room: Technology Preview
         </Text>
         <Text weight="semi-bold">
@@ -706,7 +706,7 @@ export function BlogSection() {
           We live in exciting times: it will be fascinating to see how Third Room progresses, and whether it really
           could provide a viable alternative to the increasingly closed/centralised or NFT-focused visions of the
           metaverse which is emerging. But whatever happens, we hope you’re excited to finally play with it as we are!
-          </Text>*/}
+        </Text>
       </div>
     </section>
   );
