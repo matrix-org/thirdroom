@@ -211,7 +211,8 @@ export function InteractionSystem(ctx: GameState) {
   const deleteBtn = input.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focused = focusQuery(ctx.world)[0];
-    if (focused) {
+    // only delete objects
+    if (focused && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
     }
   }
