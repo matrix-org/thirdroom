@@ -27,3 +27,18 @@
     margin-top: 0;
   }
 }
+
+.MissingFeature__overlay {
+  background-color: var(--bg-surface-low);
+}
+
+.MissingFeature__content {
+  padding: var(--sp-xl) var(--sp-md);
+
+  & .Text-h2 {
+    margin-bottom: var(--sp-lg);
+  }
+  & ul {
+    margin-bottom: var(--sp-lg);
+  }
+}
