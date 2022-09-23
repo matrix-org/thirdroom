@@ -109,7 +109,7 @@ export default function SessionView() {
     state.world.loadingWorld(world.id);
 
     world
-      .observeStateTypeAndKey("m.world", "")
+      .observeStateTypeAndKey("org.matrix.msc3815.world", "")
       .then((observable) => {
         const onLoad = async (event: StateEvent | undefined) => {
           let sceneUrl = event?.content?.scene_url;
@@ -153,6 +153,17 @@ export default function SessionView() {
 
         if (initialEvent) {
           onLoad(initialEvent);
+        } else {
+          world
+            .getStateEvent("m.world")
+            .then((result) => {
+              if (result) {
+                const error = new Error("World needs to be manually updated by owner.");
+                console.error(error);
+                state.world.setWorldError(error as Error);
+              }
+            })
+            .catch(console.error);
         }
       })
       .catch((error) => {
