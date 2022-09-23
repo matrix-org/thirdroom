@@ -9,6 +9,7 @@ import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked } from "../network/network.game";
+import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
 interface AnimationActionMap {
@@ -67,7 +68,7 @@ const _forward = vec3.create();
 const _right = vec3.create();
 
 // TODO: reuse isGrounded for char controller
-const interactionGroup = 0xf00f_f00f;
+const interactionGroup = playerShapeCastCollisionGroups;
 const colliderShape = new Capsule(0.5, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);

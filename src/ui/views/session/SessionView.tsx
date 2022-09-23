@@ -29,7 +29,8 @@ import { useRoomStatus } from "../../hooks/useRoomStatus";
 import { AlertDialog } from "./dialogs/AlertDialog";
 import { Button } from "../../atoms/button/Button";
 import { AudioModule } from "../../../engine/audio/audio.main";
-import { getModule } from "../../../engine/module/module.common";
+import { getModule, Thread } from "../../../engine/module/module.common";
+import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../plugins/spawnables/spawnables.common";
 
 let worldReloadId = 0;
 
@@ -108,10 +109,11 @@ export default function SessionView() {
     state.world.loadingWorld(world.id);
 
     world
-      .observeStateTypeAndKey("m.world", "")
+      .observeStateTypeAndKey("org.matrix.msc3815.world", "")
       .then((observable) => {
         const onLoad = async (event: StateEvent | undefined) => {
           let sceneUrl = event?.content?.scene_url;
+          const maxObjectCap = event?.content?.max_member_object_cap;
 
           if (typeof sceneUrl !== "string") {
             state.world.setWorldError(new Error("Matrix room is not a valid world."));
@@ -129,8 +131,15 @@ export default function SessionView() {
           }
 
           try {
-            await loadWorld(mainThread!, sceneUrl);
+            await loadWorld(mainThread, sceneUrl);
             state.world.loadedWorld();
+
+            // set max obj cap
+            if (maxObjectCap !== undefined)
+              mainThread.sendMessage<SetObjectCapMessage>(Thread.Game, {
+                type: SetObjectCapMessageType,
+                value: maxObjectCap,
+              });
           } catch (error) {
             console.error(error);
             state.world.setWorldError(error as Error);
@@ -144,6 +153,17 @@ export default function SessionView() {
 
         if (initialEvent) {
           onLoad(initialEvent);
+        } else {
+          world
+            .getStateEvent("m.world")
+            .then((result) => {
+              if (result) {
+                const error = new Error("World needs to be manually updated by owner.");
+                console.error(error);
+                state.world.setWorldError(error as Error);
+              }
+            })
+            .catch(console.error);
         }
       })
       .catch((error) => {
