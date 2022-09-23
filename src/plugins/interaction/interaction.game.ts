@@ -12,6 +12,14 @@ import {
 import { vec3, mat4, quat } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
+import {
+  createRemoteAudioData,
+  createRemoteAudioSource,
+  createRemoteGlobalAudioEmitter,
+  playAudio,
+  RemoteAudioSource,
+  RemoteGlobalAudioEmitter,
+} from "../../engine/audio/audio.game";
 import { removeRecursive, Transform } from "../../engine/component/transform";
 import { NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
@@ -35,17 +43,51 @@ import {
 } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
+import { addResourceRef } from "../../engine/resource/resource.game";
+import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { PortalComponent } from "../portals/portals.game";
 import { InteractableAction, InteractableType, InteractionMessage, InteractionMessageType } from "./interaction.common";
 
-type InteractionModuleState = {};
+type InteractionModuleState = {
+  clickEmitter?: RemoteGlobalAudioEmitter;
+};
 
 export const InteractionModule = defineModule<GameState, InteractionModuleState>({
   name: "interaction",
   create() {
     return {};
   },
-  init(ctx) {
+  async init(ctx) {
+    const module = getModule(ctx, InteractionModule);
+
+    const clickAudio1 = createRemoteAudioData(ctx, { name: "Click1 Audio Data", uri: "/audio/click1.wav" });
+    addResourceRef(ctx, clickAudio1.resourceId);
+
+    const clickAudio2 = createRemoteAudioData(ctx, { name: "Click2 Audio Data", uri: "/audio/click2.wav" });
+    addResourceRef(ctx, clickAudio2.resourceId);
+
+    const clickAudioSource1 = createRemoteAudioSource(ctx, {
+      audio: clickAudio1,
+      loop: false,
+      autoPlay: false,
+      gain: 0.4,
+    });
+    addResourceRef(ctx, clickAudioSource1.resourceId);
+
+    const clickAudioSource2 = createRemoteAudioSource(ctx, {
+      audio: clickAudio2,
+      loop: false,
+      autoPlay: false,
+      gain: 0.4,
+    });
+    addResourceRef(ctx, clickAudioSource2.resourceId);
+
+    module.clickEmitter = createRemoteGlobalAudioEmitter(ctx, {
+      sources: [clickAudioSource1, clickAudioSource2],
+    });
+
+    addResourceRef(ctx, module.clickEmitter.resourceId);
+
     enableActionMap(ctx, InteractionActionMap);
   },
 });
@@ -154,9 +196,21 @@ const _r = new Vector4();
 
 const zero = new Vector3();
 
+let lastActiveScene = 0;
+
 export function InteractionSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
+  const interaction = getModule(ctx, InteractionModule);
+
+  // hack - add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
+  if (lastActiveScene !== ctx.activeScene) {
+    const remoteScene = RemoteSceneComponent.get(ctx.activeScene);
+    if (remoteScene && interaction.clickEmitter) {
+      remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
+    }
+    lastActiveScene = ctx.activeScene;
+  }
 
   // Focus
 
@@ -214,6 +268,7 @@ export function InteractionSystem(ctx: GameState) {
     // only delete owned objects
     if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
+      playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }
 
@@ -243,11 +298,15 @@ export function InteractionSystem(ctx: GameState) {
 
     sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
 
+    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
     removeComponent(ctx.world, GrabComponent, heldEntity);
     sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+
+    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
     // if grab is pressed
   } else if (grabPressed) {
@@ -282,6 +341,8 @@ export function InteractionSystem(ctx: GameState) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
         if (Interactable.type[eid] === InteractableType.Object) {
+          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+
           const newEid = takeOwnership(ctx, eid);
 
           if (newEid !== NOOP) {

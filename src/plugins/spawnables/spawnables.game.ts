@@ -256,12 +256,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
             createRemoteAudioSource(ctx, {
-              audio: ballAudioData2,
-              loop: false,
-              autoPlay: false,
-            }),
-            createRemoteAudioSource(ctx, {
-              audio: ballAudioData3,
+              audio: ballAudioData,
               loop: false,
               autoPlay: false,
             }),
@@ -301,12 +296,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
             createRemoteAudioSource(ctx, {
-              audio: ballAudioData2,
-              loop: false,
-              autoPlay: false,
-            }),
-            createRemoteAudioSource(ctx, {
-              audio: ballAudioData3,
+              audio: ballAudioData,
               loop: false,
               autoPlay: false,
             }),
