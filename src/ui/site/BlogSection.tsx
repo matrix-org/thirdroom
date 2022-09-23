@@ -31,12 +31,6 @@ export function BlogSection() {
           cryptocurrencies, NFTs, or data-hoarding big tech silos. In other words: Third Room will be a blank canvas for
           you to build open metaverse environments and applications in the spirit of the original open Web.
         </Text>
-        <Text variant="c1">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Inventore nostrum doloribus magnam, neque itaque
-          laborum maxime nisi illo saepe dicta in architecto tempore voluptates illum ex? Excepturi dicta explicabo
-          numquam!
-        </Text>
-
         <Text variant="h2" weight="semi-bold">
           The vision
         </Text>
