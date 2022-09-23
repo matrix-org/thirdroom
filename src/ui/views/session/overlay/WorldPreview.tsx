@@ -213,7 +213,10 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                             return;
                           }
                           const [stream, exception] = await requestStream(true, false);
-                          if (stream) onEnterWorld(evt);
+                          if (stream) {
+                            stream.getAudioTracks().forEach((track) => track.stop());
+                            onEnterWorld(evt);
+                          }
                           if (exception) setMicException(exception);
                         }}
                       >
