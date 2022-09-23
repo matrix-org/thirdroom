@@ -460,6 +460,10 @@ export function HydrogenRootView() {
     );
   }
 
+  if (!session && !sessionInfo && href.match(WORLD_PATH_REG)) {
+    return <Navigate to="/login" />;
+  }
+
   if (!previewPath && !loginPath && !session && !sessionInfo) {
     return <Navigate to="/preview" />;
   }
