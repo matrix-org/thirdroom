@@ -97,7 +97,7 @@ export function CreateWorld() {
           kick: 100,
           ban: 100,
           redact: 50,
-          state_default: 0,
+          state_default: 50,
           events_default: 0,
           users_default: 0,
           events: {
@@ -109,6 +109,7 @@ export function CreateWorld() {
             "m.room.message": 0,
             "m.room.encrypted": 50,
             "m.sticker": 50,
+            "org.matrix.msc3815.world": 50,
             "org.matrix.msc3401.call.member": 0,
             "org.matrix.msc3815.member.world": 0,
           },
@@ -118,7 +119,7 @@ export function CreateWorld() {
         },
         initialState: [
           {
-            type: "m.world",
+            type: "org.matrix.msc3815.world",
             content: {
               scene_url: sceneMxc,
               scene_preview_url: scenePrevMxc,
