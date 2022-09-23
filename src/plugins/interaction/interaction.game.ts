@@ -323,6 +323,7 @@ export function InteractionSystem(ctx: GameState) {
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
     sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
@@ -331,6 +332,7 @@ export function InteractionSystem(ctx: GameState) {
     // release
     removeComponent(ctx.world, GrabComponent, heldEntity);
     sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
