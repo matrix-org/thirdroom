@@ -384,6 +384,11 @@
   resolved "https://registry.yarnpkg.com/@fontsource/inter/-/inter-4.5.12.tgz#a6236379bf710658db048d7087ec588754962cb6"
   integrity sha512-bGKk4/8tube/nCk8hav0ZDBVbzJzc7m0Vt4xF5p15IN4YImwGdtKG38Oq5bU8xHNS+VfvbFFCepgQNj7Pr/Lvg==
 
+"@fontsource/noto-serif@^4.5.10":
+  version "4.5.10"
+  resolved "https://registry.yarnpkg.com/@fontsource/noto-serif/-/noto-serif-4.5.10.tgz#f5b1af2bead571132ebe31a33369bdbcb3e1e53a"
+  integrity sha512-N7zCysVog6+8W5QXx11htDDf5prs0EdWyxbZj5LyQkBDnYLHv2ltoJ0ImGI2YI0D/KMNbEz7VVcmamZu2cs51g==
+
 "@gautemo/vite-plugin-service-worker@^0.0.3":
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/@gautemo/vite-plugin-service-worker/-/vite-plugin-service-worker-0.0.3.tgz#74b3fde1ae1dce38cf33e59340f562f2896ca5a1"

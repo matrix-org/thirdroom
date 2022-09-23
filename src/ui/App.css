@@ -101,25 +101,31 @@
   --br-xxs: 4px;
 
   /* font sizes */
+  --fs-h1: 36px;
   --fs-h2: 24px;
   --fs-s1: 20px;
   --fs-s2: 18px;
+  --fs-c1: 18px;
   --fs-b1: 16px;
   --fs-b2: 14px;
   --fs-b3: 12px;
 
   /* line heights */
+  --lh-h1: 48px;
   --lh-h2: 28px;
   --lh-s1: 24px;
   --lh-s2: 22px;
+  --lh-c1: 26px;
   --lh-b1: 24px;
   --lh-b2: 20px;
   --lh-b3: 18px;
 
   /* letter spacing */
+  --ls-h1: 0;
   --ls-h2: 0;
   --ls-s1: 0;
   --ls-s2: 0;
+  --ls-c1: 0;
   --ls-b1: 0;
   --ls-b2: 0;
   --ls-b3: 0;
@@ -133,6 +139,8 @@
 
   --font-main: "InterVariable", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
     "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+  --font-serif: "Noto Serif", serif;
 
   /* box shadow */
   --bs-surface-border: inset 0 0 0 1px var(--bg-surface-border);

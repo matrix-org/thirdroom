@@ -5,15 +5,21 @@
   padding: var(--sp-xl) var(--side-spacing);
   max-width: var(--content-max-width);
   width: 100%;
-
+  & .Text-h1 {
+    margin-bottom: var(--sp-md);
+  }
   & .Text-h2 {
     margin-bottom: var(--sp-md);
-    &:not(:first-child) {
-      margin-top: 50px;
-    }
+    margin-top: 50px;
   }
   & p {
     margin-top: var(--sp-md);
+  }
+  & li {
+    font-family: var(--font-serif);
+    font-size: var(--fs-c1);
+    letter-spacing: var(--ls-c1);
+    line-height: var(--lh-c1);
   }
 }
 .BlogSection__spaced-list > li {

@@ -2,6 +2,11 @@
   margin: 0;
   padding: 0;
 }
+.Text-h1 {
+  font-size: var(--fs-h1);
+  letter-spacing: var(--ls-h1);
+  line-height: var(--lh-h1);
+}
 .Text-h2 {
   font-size: var(--fs-h2);
   letter-spacing: var(--ls-h2);
@@ -16,6 +21,12 @@
   font-size: var(--fs-s2);
   letter-spacing: var(--ls-s2);
   line-height: var(--lh-s2);
+}
+.Text-c1 {
+  font-family: var(--font-serif);
+  font-size: var(--fs-c1);
+  letter-spacing: var(--ls-c1);
+  line-height: var(--lh-c1);
 }
 .Text-b1 {
   font-size: var(--fs-b1);

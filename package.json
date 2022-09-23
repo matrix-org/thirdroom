@@ -26,6 +26,7 @@
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
     "@dimforge/rapier3d-compat": "0.7.6",
     "@fontsource/inter": "^4.5.12",
+    "@fontsource/noto-serif": "^4.5.10",
     "@gautemo/vite-plugin-service-worker": "^0.0.3",
     "@gltf-transform/core": "^2.4.3",
     "@gltf-transform/extensions": "^2.4.3",

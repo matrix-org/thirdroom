@@ -53,10 +53,10 @@ export function HeroSection() {
           Create and explore immersive worlds
         </Text>
         <Button size="xl" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
-          <Icon color="on-primary" src={ArrowForwardIC} />
           <Text color="on-primary" weight="semi-bold">
             {isMobileDevice() ? "Try on Desktop" : "Get Started"}
           </Text>
+          <Icon color="on-primary" src={ArrowForwardIC} />
         </Button>
       </div>
       <div className="HeroSection__video">
