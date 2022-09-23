@@ -60,12 +60,12 @@ import {
 } from "../spawnables/spawnables.common";
 import { InteractableAction, InteractableType, InteractionMessage, InteractionMessageType } from "./interaction.common";
 
-// importing from spawnables.game in this file induces a runtime error
+// TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
 
 type InteractionModuleState = {
   clickEmitter?: RemoteGlobalAudioEmitter;
-  // hack - add duplicate obj cap config to interaction module until import issue is resolved
+  // HACK: - add duplicate obj cap config to interaction module until import issue is resolved
   maxObjCap: number;
 };
 
@@ -291,7 +291,7 @@ export function InteractionSystem(ctx: GameState) {
   const deleteBtn = input.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focused = focusQuery(ctx.world)[0];
-    // only delete owned objects
+    // TODO: For now we only delete owned objects
     if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });

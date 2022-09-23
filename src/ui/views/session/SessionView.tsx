@@ -113,7 +113,7 @@ export default function SessionView() {
       .then((observable) => {
         const onLoad = async (event: StateEvent | undefined) => {
           let sceneUrl = event?.content?.scene_url;
-          const maxObjectCap = event?.content?.max_object_cap;
+          const maxObjectCap = event?.content?.max_member_object_cap;
 
           if (typeof sceneUrl !== "string") {
             state.world.setWorldError(new Error("Matrix room is not a valid world."));
