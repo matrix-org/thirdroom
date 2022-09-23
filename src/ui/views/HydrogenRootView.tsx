@@ -383,7 +383,8 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
 
   const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
-  let errorMsg = errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error?.message;
+  let errorMsg = error?.message;
+  if (errorLoggingIn) errorMsg = loginFailureToMsg(client.loginFailure) ?? errorMsg;
   if (oidcCompleteError) errorMsg = oidcCompleteError;
 
   return {
