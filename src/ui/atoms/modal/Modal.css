@@ -43,6 +43,14 @@
   display: flex;
   flex-direction: column;
 }
+
+.Modal--md {
+  max-width: 1000px;
+}
+.Modal--sm {
+  max-width: 600px;
+}
+
 .Modal[data-state="open"] {
   animation-name: modal-anime;
   animation-duration: 200ms;
