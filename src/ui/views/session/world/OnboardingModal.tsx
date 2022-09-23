@@ -28,7 +28,7 @@ export function OnboardingModal({ open, world, requestClose }: OnboardingModalPr
   const lastScreenNo = 2;
 
   return (
-    <Modal open={open} className="OnboardingModal">
+    <Modal open={open} className="OnboardingModal" size="sm">
       <Content
         top={<Header center={<HeaderTitle>{screenNo === 1 ? "Get Started" : "Controls"}</HeaderTitle>} />}
         children={

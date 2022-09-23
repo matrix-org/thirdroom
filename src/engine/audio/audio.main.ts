@@ -729,7 +729,6 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     if (getResourceDisposed(ctx, localAudioEmitter.resourceId)) {
       localAudioEmitter.inputGain.disconnect();
       localAudioEmitter.outputGain.disconnect();
-
       localAudioEmitters.splice(i, 1);
     }
   }
@@ -754,6 +753,8 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     // synchronize connections
     for (let j = 0; j < nextSourceIDs.length; j++) {
       const nextSourceRid = nextSourceIDs[j];
+
+      if (nextSourceRid === NOOP) continue;
 
       let source = currentSources.find((s) => s.resourceId === nextSourceRid);
 
