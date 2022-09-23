@@ -35,6 +35,7 @@ import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { getHttpUrl } from "../../../utils/avatar";
 import { UploadScene } from "./UploadScene";
+import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
 
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -44,6 +45,7 @@ export interface CreateWorldOptions {
   topic?: string;
   visibility: RoomVisibility;
   alias?: string;
+  maxMemberObjCap?: number;
 }
 
 export function CreateWorld() {
@@ -62,8 +64,12 @@ export function CreateWorld() {
 
   const navigate = useNavigate();
 
+  const [maxObjectCap, setMaxObjectCap] = useState(MAX_OBJECT_CAP);
+  const handleMaxObjectCapChange = (evt: ChangeEvent<HTMLInputElement>) =>
+    setMaxObjectCap(parseInt(evt.target.value) || 0);
+
   const handleCreateWorld = useCallback(
-    async ({ avatar, name, sceneMxc, scenePrevMxc, topic, visibility, alias }: CreateWorldOptions) => {
+    async ({ avatar, name, sceneMxc, scenePrevMxc, topic, visibility, alias, maxMemberObjCap }: CreateWorldOptions) => {
       setCreatingRoom(true);
 
       const avatarInfo = !avatar
@@ -116,6 +122,7 @@ export function CreateWorld() {
             content: {
               scene_url: sceneMxc,
               scene_preview_url: scenePrevMxc,
+              max_member_object_cap: maxMemberObjCap || MAX_OBJECT_CAP,
             },
           },
         ],
@@ -131,11 +138,12 @@ export function CreateWorld() {
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     if (isAliasAvail === false || !selectedScene) return;
-    const { nameInput, topicInput, isPrivateInput, aliasInput } = evt.target as typeof evt.target & {
+    const { nameInput, topicInput, isPrivateInput, aliasInput, maxObjectCapInput } = evt.target as typeof evt.target & {
       nameInput: HTMLInputElement;
       topicInput: HTMLInputElement;
       isPrivateInput: HTMLInputElement;
       aliasInput: HTMLInputElement;
+      maxObjectCapInput: HTMLInputElement;
     };
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
@@ -145,6 +153,7 @@ export function CreateWorld() {
       topic: topicInput.value || undefined,
       avatar: avatarData.blob,
       alias: aliasInput.value || undefined,
+      maxMemberObjCap: Number(maxObjectCapInput.value) || undefined,
     });
   };
 
@@ -256,6 +265,15 @@ export function CreateWorld() {
                         <Switch name="isPrivateInput" defaultChecked={true} />
                       </SettingTile>
                     </div>
+                    <SettingTile className="grow basis-0" label={<Label>Max Spawned Objects Per User</Label>}>
+                      <Input
+                        name="maxObjectCapInput"
+                        type="number"
+                        value={maxObjectCap}
+                        onChange={handleMaxObjectCapChange}
+                        required
+                      />
+                    </SettingTile>
                     <SettingTile label={<Label>World Avatar</Label>}>
                       <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
                     </SettingTile>
