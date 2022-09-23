@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint ./src",
-    "lint:css": "stylelint 'src/**/*.css'",
+    "lint:css": "stylelint \"src/**/*.css\"",
     "prepare": "husky install",
     "test": "vitest",
     "test:ui": "vitest --ui",
