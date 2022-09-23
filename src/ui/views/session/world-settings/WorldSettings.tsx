@@ -29,6 +29,7 @@ import { Icon } from "../../../atoms/icon/Icon";
 import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { uploadAttachment } from "../../../utils/matrixUtils";
+import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -54,7 +55,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
   const isPrivateRef = useRef(true);
   const [isPrivate, setIsPrivate] = useState(true);
 
-  const [worldInfo, setWorldInfo] = useState<{ sceneUrl?: string; previewUrl?: string }>({});
+  const [worldInfo, setWorldInfo] = useState<{ sceneUrl?: string; previewUrl?: string; maxObjectCap?: number }>({});
 
   const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
   const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
@@ -73,11 +74,19 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
           sceneUrl: content?.scene_url,
           previewUrl: content?.scene_preview_url,
         });
+        const fetchedMaxObjectCap = content?.max_member_object_cap ?? MAX_OBJECT_CAP;
+        maxObjectCapRef.current = fetchedMaxObjectCap;
+        setMaxObjectCap(fetchedMaxObjectCap);
       });
     }
   }, [room, isMounted]);
 
   const handleNameChange = (evt: ChangeEvent<HTMLInputElement>) => setNewName(evt.target.value.trim());
+
+  const maxObjectCapRef = useRef(MAX_OBJECT_CAP);
+  const [maxObjectCap, setMaxObjectCap] = useState(MAX_OBJECT_CAP);
+  const handleMaxObjectCapChange = (evt: ChangeEvent<HTMLInputElement>) =>
+    setMaxObjectCap(parseInt(evt.target.value) || 0);
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
@@ -103,10 +112,11 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
         name: newName,
       });
     }
-    if (sceneInfo.mxc || previewInfo.mxc) {
+    if (sceneInfo.mxc || previewInfo.mxc || maxObjectCap !== maxObjectCapRef.current) {
       room.getStateEvent("m.world").then((event) => {
         const content = event?.event?.content;
         session.hsApi.sendState(room.id, "m.world", "", {
+          max_member_object_cap: maxObjectCap,
           scene_url: sceneInfo.mxc ?? content?.scene_url,
           scene_preview_url: previewInfo.mxc ?? content?.scene_preview_url,
         });
@@ -172,6 +182,11 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         />
                       </SettingTile>
                     </div>
+                    <div className="flex gap-lg">
+                      <SettingTile className="grow basis-0" label={<Label>Max Spawned Objects Per User</Label>}>
+                        <Input type="number" value={maxObjectCap} onChange={handleMaxObjectCapChange} required />
+                      </SettingTile>
+                    </div>
                   </div>
                 </Scroll>
               }
@@ -191,7 +206,8 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         isPrivateRef.current === isPrivate &&
                         roomName === newName &&
                         !sceneInfo.mxc &&
-                        !previewInfo.mxc
+                        !previewInfo.mxc &&
+                        maxObjectCap === maxObjectCapRef.current
                       }
                     >
                       Save

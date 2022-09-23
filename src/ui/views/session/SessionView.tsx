@@ -135,7 +135,7 @@ export default function SessionView() {
             state.world.loadedWorld();
 
             // set max obj cap
-            if (maxObjectCap)
+            if (maxObjectCap !== undefined)
               mainThread.sendMessage<SetObjectCapMessage>(Thread.Game, {
                 type: SetObjectCapMessageType,
                 value: maxObjectCap,
