@@ -29,7 +29,8 @@ import { useRoomStatus } from "../../hooks/useRoomStatus";
 import { AlertDialog } from "./dialogs/AlertDialog";
 import { Button } from "../../atoms/button/Button";
 import { AudioModule } from "../../../engine/audio/audio.main";
-import { getModule } from "../../../engine/module/module.common";
+import { getModule, Thread } from "../../../engine/module/module.common";
+import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../plugins/spawnables/spawnables.common";
 
 let worldReloadId = 0;
 
@@ -112,6 +113,7 @@ export default function SessionView() {
       .then((observable) => {
         const onLoad = async (event: StateEvent | undefined) => {
           let sceneUrl = event?.content?.scene_url;
+          const maxObjectCap = event?.content?.max_object_cap || 1;
 
           if (typeof sceneUrl !== "string") {
             state.world.setWorldError(new Error("Matrix room is not a valid world."));
@@ -129,8 +131,15 @@ export default function SessionView() {
           }
 
           try {
-            await loadWorld(mainThread!, sceneUrl);
+            await loadWorld(mainThread, sceneUrl);
             state.world.loadedWorld();
+
+            // set max obj cap
+            if (maxObjectCap)
+              mainThread.sendMessage<SetObjectCapMessage>(Thread.Game, {
+                type: SetObjectCapMessageType,
+                value: maxObjectCap,
+              });
           } catch (error) {
             console.error(error);
             state.world.setWorldError(error as Error);

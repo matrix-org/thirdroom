@@ -39,6 +39,12 @@ export function ShortcutUI() {
           {renderItem("Run", <Kbd size="xs">Shift</Kbd>)}
           {renderItem("Jump", <Kbd size="xs">Space</Kbd>)}
           {renderItem(
+            "Spawn Objects",
+            <>
+              <Kbd size="xs">1</Kbd> - <Kbd size="xs">6</Kbd>
+            </>
+          )}
+          {renderItem(
             "Grab/Drop Object",
             <>
               <Kbd size="xs">E</Kbd>
@@ -50,13 +56,8 @@ export function ShortcutUI() {
               <Icon src={MouseIC} />
             </>
           )}
-          {renderItem(
-            "Spawn Objects",
-            <>
-              <Kbd size="xs">1</Kbd> - <Kbd size="xs">6</Kbd>
-            </>
-          )}
           {renderItem("Delete Object", <Kbd size="xs">X</Kbd>)}
+          {renderItem("Show Statistics", <Kbd size="xs">Ctrl + Shift + S</Kbd>)}
         </div>
       </Category>
     </div>
