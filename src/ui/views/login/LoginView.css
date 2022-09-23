@@ -29,7 +29,7 @@
 }
 
 .MissingFeature__overlay {
-  background-color: var(--bg-surface-low);
+  background-color: var(--bg-surface-low) !important;
 }
 
 .MissingFeature__content {
