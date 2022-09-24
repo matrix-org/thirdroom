@@ -383,7 +383,8 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
 
   const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
-  let errorMsg = errorLoggingIn ? loginFailureToMsg(client.loginFailure) : error?.message;
+  let errorMsg = error?.message;
+  if (errorLoggingIn) errorMsg = loginFailureToMsg(client.loginFailure) ?? errorMsg;
   if (oidcCompleteError) errorMsg = oidcCompleteError;
 
   return {
@@ -458,6 +459,10 @@ export function HydrogenRootView() {
         <Button onClick={() => window.location.reload()}>Refresh</Button>
       </CoverScreen>
     );
+  }
+
+  if (!session && !sessionInfo && href.match(WORLD_PATH_REG)) {
+    return <Navigate to="/login" />;
   }
 
   if (!previewPath && !loginPath && !session && !sessionInfo) {
