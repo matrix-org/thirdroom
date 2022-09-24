@@ -56,6 +56,7 @@ import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/th
 import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
 import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
+import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -201,11 +202,16 @@ export default function WorldView() {
       setActiveEntity(undefined);
     };
 
+    const onObjectCapReached = (ctx: IMainThreadContext, message: ObjectCapReachedMessage) => {
+      showToast("Maximum number of objects reached.");
+    };
+
     return createDisposables([
       registerMessageHandler(engine, InteractionMessageType, onInteraction),
+      registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
       registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
-  }, [activeCall, engine, onWorldTransfer]);
+  }, [activeCall, engine, onWorldTransfer, showToast]);
 
   useKeyDown(
     (e) => {
