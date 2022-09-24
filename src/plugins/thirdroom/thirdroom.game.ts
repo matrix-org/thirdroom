@@ -356,7 +356,6 @@ function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
 
 function swapToPlayerRig(ctx: GameState, playerRig: number) {
   removeComponent(ctx.world, FlyPlayerRig, playerRig);
-  addComponent(ctx.world, RigidBody, playerRig);
 
   addComponent(ctx.world, PlayerRig, playerRig);
 
