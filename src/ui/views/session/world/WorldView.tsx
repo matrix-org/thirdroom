@@ -271,6 +271,7 @@ export default function WorldView() {
         toggleShowNames();
       }
       if (e.code === "KeyP") {
+        document.exitPointerLock();
         toggleShowActiveMembers();
       }
       if (e.code === "Slash") {
