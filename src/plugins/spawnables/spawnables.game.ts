@@ -10,36 +10,40 @@ import {
   RemoteAudioSource,
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
-} from "../engine/audio/audio.game";
-import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../engine/component/transform";
-import { GameState } from "../engine/GameTypes";
-import { createGLTFEntity } from "../engine/gltf/gltf.game";
+} from "../../engine/audio/audio.game";
+import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../../engine/component/transform";
+import { MAX_OBJECT_CAP } from "../../engine/config.common";
+import { GameState } from "../../engine/GameTypes";
+import { createGLTFEntity } from "../../engine/gltf/gltf.game";
 import {
   ActionDefinition,
   ActionType,
   BindingType,
   ButtonActionState,
   enableActionMap,
-} from "../engine/input/ActionMappingSystem";
-import { InputModule } from "../engine/input/input.game";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../engine/material/material.game";
-import { createSphereMesh } from "../engine/mesh/mesh.game";
-import { defineModule, getModule } from "../engine/module/module.common";
-import { Networked, Owned } from "../engine/network/network.game";
-import { addRemoteNodeComponent } from "../engine/node/node.game";
-import { dynamicObjectCollisionGroups } from "../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { createPrefabEntity, registerPrefab } from "../engine/prefab/prefab.game";
-import { addResourceRef } from "../engine/resource/resource.game";
-import randomRange from "../engine/utils/randomRange";
-import { InteractableType } from "./interaction/interaction.common";
-import { addInteractableComponent } from "./interaction/interaction.game";
+} from "../../engine/input/ActionMappingSystem";
+import { InputModule } from "../../engine/input/input.game";
+import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
+import { createSphereMesh } from "../../engine/mesh/mesh.game";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { Networked, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
+import { addResourceRef } from "../../engine/resource/resource.game";
+import { createDisposables } from "../../engine/utils/createDisposables";
+import randomRange from "../../engine/utils/randomRange";
+import { InteractableType } from "../interaction/interaction.common";
+import { addInteractableComponent } from "../interaction/interaction.game";
+import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 
-const { abs, round, random } = Math;
+const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
   actions: ActionDefinition[];
+  maxObjCap: number;
 };
 
 export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
@@ -62,6 +66,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     return {
       hitAudioEmitters: new Map(),
       actions,
+      maxObjCap: MAX_OBJECT_CAP,
     };
   },
   init(ctx) {
@@ -255,12 +260,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
             createRemoteAudioSource(ctx, {
-              audio: ballAudioData2,
-              loop: false,
-              autoPlay: false,
-            }),
-            createRemoteAudioSource(ctx, {
-              audio: ballAudioData3,
+              audio: ballAudioData,
               loop: false,
               autoPlay: false,
             }),
@@ -300,12 +300,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
             createRemoteAudioSource(ctx, {
-              audio: ballAudioData2,
-              loop: false,
-              autoPlay: false,
-            }),
-            createRemoteAudioSource(ctx, {
-              audio: ballAudioData3,
+              audio: ballAudioData,
               loop: false,
               autoPlay: false,
             }),
@@ -387,13 +382,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
       const emitter1 = module.hitAudioEmitters.get(eid1!);
       if (emitter1) {
-        const source = emitter1.sources[round(random() * emitter1.sources.length - 1)] as RemoteAudioSource;
+        const source = emitter1.sources[floor(random() * emitter1.sources.length)] as RemoteAudioSource;
         playAudio(source, { playbackRate, gain });
       }
 
       const emitter2 = module.hitAudioEmitters.get(eid2!);
       if (emitter2) {
-        const source = emitter2.sources[round(random() * emitter2.sources.length - 1)] as RemoteAudioSource;
+        const source = emitter2.sources[floor(random() * emitter2.sources.length)] as RemoteAudioSource;
         playAudio(source, { playbackRate, gain });
       }
     });
@@ -413,10 +408,17 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       id: "spawnables",
       actions,
     });
+
+    return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
 });
 
-const CUBE_THROW_FORCE = 10;
+function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
+  const module = getModule(ctx, SpawnablesModule);
+  module.maxObjCap = message.value;
+}
+
+const THROW_FORCE = 10;
 
 const _direction = vec3.create();
 const _impulse = new Vector3();
@@ -424,9 +426,20 @@ const _cameraWorldQuat = quat.create();
 
 export const SpawnableSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
-  const { actions } = getModule(ctx, SpawnablesModule);
+  const { actions, maxObjCap } = getModule(ctx, SpawnablesModule);
 
   const spawnables = actions.filter((a) => (input.actions.get(a.path) as ButtonActionState)?.pressed);
+
+  if (spawnables.length) {
+    // bounce out of the system if we hit the max object cap
+    const ownedEnts = ownedNetworkedQuery(ctx.world);
+    if (ownedEnts.length > maxObjCap) {
+      ctx.sendMessage(Thread.Main, {
+        type: ObjectCapReachedMessageType,
+      });
+      return;
+    }
+  }
 
   for (const spawnable of spawnables) {
     const eid = createPrefabEntity(ctx, spawnable.id);
@@ -447,7 +460,7 @@ export const SpawnableSystem = (ctx: GameState) => {
     // vec3.scale(placement, placement, 4);
     vec3.add(Transform.position[eid], Transform.position[eid], placement);
 
-    vec3.scale(direction, direction, CUBE_THROW_FORCE);
+    vec3.scale(direction, direction, THROW_FORCE);
 
     _impulse.fromArray(direction);
 

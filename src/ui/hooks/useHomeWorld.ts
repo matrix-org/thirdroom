@@ -20,18 +20,18 @@ async function createHomeWorld(session: Session) {
       redact: 100,
       state_default: 100,
       events_default: 100,
-      users_default: 100,
+      users_default: 0,
       events: {
         "m.room.power_levels": 100,
         "m.room.history_visibility": 100,
         "m.room.tombstone": 100,
         "m.room.encryption": 100,
         "m.room.name": 100,
-        "m.room.message": 100,
+        "m.room.message": 0,
         "m.room.encrypted": 100,
-        "m.sticker": 100,
-        "org.matrix.msc3401.call.member": 100,
-        "org.matrix.msc3815.member.world": 100,
+        "m.sticker": 0,
+        "org.matrix.msc3401.call.member": 0,
+        "org.matrix.msc3815.member.world": 0,
       },
       users: {
         [session.userId]: 100,
@@ -39,7 +39,7 @@ async function createHomeWorld(session: Session) {
     },
     initialState: [
       {
-        type: "m.world",
+        type: "org.matrix.msc3815.world",
         content: {
           version: defaultWorlds.home.version,
           scene_url: defaultWorlds.home.sceneUrl,
@@ -64,7 +64,7 @@ async function updateHomeWorld(session: Session, accountData: HomeWorldAccountDa
   }
 
   await session.hsApi
-    .sendState(room.id, "m.world", "", {
+    .sendState(room.id, "org.matrix.msc3815.world", "", {
       scene_url: defaultWorlds.home.sceneUrl,
       scene_preview_url: defaultWorlds.home.scenePreviewUrl,
     })
@@ -79,8 +79,8 @@ export function useHomeWorld() {
     async function run() {
       const homeAccountData = await session.getAccountData("org.matrix.msc3815.world.home");
 
-      if (homeAccountData) {
-        if (!homeAccountData.version || homeAccountData.version < defaultWorlds.home.version) {
+      if (homeAccountData && homeAccountData.version && homeAccountData.version >= 4) {
+        if (homeAccountData.version < defaultWorlds.home.version) {
           await updateHomeWorld(session, homeAccountData);
 
           await session.setAccountData("org.matrix.msc3815.world.home", {
@@ -91,6 +91,10 @@ export function useHomeWorld() {
 
         setHomeWorldId(homeAccountData.room_id);
       } else {
+        if (homeAccountData && homeAccountData.version && homeAccountData.version <= 3) {
+          await session.rooms.get(homeAccountData.room_id)?.leave();
+        }
+
         const roomBeingCreated = await createHomeWorld(session);
 
         setHomeWorldId(roomBeingCreated.id);

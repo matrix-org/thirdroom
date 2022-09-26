@@ -98,7 +98,7 @@ export function Overlay({
         return;
       }
 
-      world.getStateEvent("m.world").then((result: any) => {
+      world.getStateEvent("org.matrix.msc3815.world").then((result: any) => {
         const scenePreviewUrl = result?.event?.content?.scene_preview_url as string | unknown;
         let scenePreviewThumbnail = scenePreviewUrl;
 
