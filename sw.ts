@@ -5,7 +5,7 @@ export declare const self: ServiceWorkerGlobalScope;
 
 const MXC_DOWNLOAD_CACHE = "download_mxc";
 
-self.addEventListener("fetch", async (event: FetchEvent) => {
+self.addEventListener("fetch", (event: FetchEvent) => {
   const { request } = event;
 
   // Only handle mxc download request.
