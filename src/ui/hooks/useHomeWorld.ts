@@ -20,7 +20,7 @@ async function createHomeWorld(session: Session) {
       redact: 100,
       state_default: 100,
       events_default: 100,
-      users_default: 100,
+      users_default: 0,
       events: {
         "m.room.power_levels": 100,
         "m.room.history_visibility": 100,
