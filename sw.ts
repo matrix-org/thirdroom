@@ -19,7 +19,7 @@ self.addEventListener("fetch", (event: FetchEvent) => {
         }
 
         return fetch(request).then((fetchedResponse) => {
-          cache.put(request, fetchedResponse.clone());
+          event.waitUntil(cache.put(request, fetchedResponse.clone()));
 
           return fetchedResponse;
         });
