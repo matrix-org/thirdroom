@@ -1,15 +1,16 @@
-import { useRef, useState } from "react";
+//import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "../atoms/button/Button";
 import { Text } from "../atoms/text/Text";
 import "./HeroSection.css";
 import { Icon } from "../atoms/icon/Icon";
-import { IconButton } from "../atoms/button/IconButton";
-import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
-import PlayIC from "../../../res/ic/play.svg";
+//import { IconButton } from "../atoms/button/IconButton";
+//import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
+//import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
+/*
 function PreviewVideoPlayer() {
   const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
   const preview = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/XmEFqhfOINcuQfOlxRrKRXMx";
@@ -42,6 +43,7 @@ function PreviewVideoPlayer() {
     </div>
   );
 }
+*/
 
 export function HeroSection() {
   const navigate = useNavigate();
@@ -60,7 +62,7 @@ export function HeroSection() {
         </Button>
       </div>
       <div className="HeroSection__video">
-        <PreviewVideoPlayer />
+        <iframe className="PreviewVideoPlayer" width="940" height="528" src="https://www.youtube.com/embed/HYc60DdL7qA" title="Third room" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen/>
       </div>
       <div className="HeroSection__curve">
         <svg viewBox="0 0 1742 318" fill="none" xmlns="http://www.w3.org/2000/svg">
