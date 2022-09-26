@@ -1,7 +1,7 @@
-import { addEntity, defineQuery, hasComponent } from "bitecs";
+import { addComponent, addEntity, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -14,8 +14,8 @@ import {
 } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { Networked, NetworkModule, Owned } from "../../engine/network/network.game";
-import { createPlayerRig } from "../PhysicsCharacterController";
+import { Networked, NetworkModule, Owned, ownedPlayerQuery } from "../../engine/network/network.game";
+import { createPlayerRig, PlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -38,14 +38,22 @@ import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
-import { createFlyPlayerRig } from "../FlyCharacterController";
+import { createFlyPlayerRig, FlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
-import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { waitUntil } from "../../engine/utils/waitUntil";
-import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { boundsCheckCollisionGroups, playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { Player } from "../../engine/component/Player";
+import {
+  ActionMap,
+  ActionType,
+  BindingType,
+  ButtonActionState,
+  enableActionMap,
+} from "../../engine/input/ActionMappingSystem";
+import { InputModule } from "../../engine/input/input.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -114,6 +122,25 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
         }
       }
     });
+
+    const actionMap: ActionMap = {
+      id: "fly-mode-toggle",
+      actions: [
+        {
+          id: "toggleFlyMode",
+          path: "toggleFlyMode",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyB",
+            },
+          ],
+        },
+      ],
+    };
+
+    enableActionMap(ctx, actionMap);
 
     return () => {
       for (const dispose of disposables) {
@@ -317,7 +344,36 @@ function loadPlayerRig(ctx: GameState) {
   addChild(ctx.activeScene, playerRig);
 }
 
+function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
+  removeComponent(ctx.world, PlayerRig, playerRig);
+  removeComponent(ctx.world, RigidBody, playerRig);
+
+  addComponent(ctx.world, FlyPlayerRig, playerRig);
+  FlyPlayerRig.set(playerRig, {
+    speed: 10,
+  });
+}
+
+function swapToPlayerRig(ctx: GameState, playerRig: number) {
+  removeComponent(ctx.world, FlyPlayerRig, playerRig);
+
+  addComponent(ctx.world, PlayerRig, playerRig);
+
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
+  colliderDesc.setCollisionGroups(playerCollisionGroups);
+
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(ctx, playerRig, rigidBody);
+}
+
 const zero = new Vector3();
+const tmpVec = new Vector3();
+const tmpQuat = new Quaternion();
 
 function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?: quat) {
   // mark to skip lerp to ensure lerp is fully avoided (if render tick is running up to 5x faster than game tick)
@@ -330,7 +386,10 @@ function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?
   }
   const body = RigidBody.store.get(eid);
   if (body) {
-    applyTransformToRigidBody(body, eid);
+    const position = Transform.position[eid];
+    body.setTranslation(tmpVec.fromArray(position), true);
+    if (quaternion) body.setRotation(tmpQuat.fromArray(quaternion), true);
+
     body.setLinvel(zero, true);
     body.setAngvel(zero, true);
   }
@@ -353,4 +412,17 @@ function spawnEntity(
   quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
 
   teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
+}
+
+export function ThirdroomSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const toggleFlyMode = input.actions.get("toggleFlyMode") as ButtonActionState;
+  const player = ownedPlayerQuery(ctx.world).at(-1);
+  if (player && toggleFlyMode.pressed) {
+    if (hasComponent(ctx.world, FlyPlayerRig, player)) {
+      swapToPlayerRig(ctx, player);
+    } else {
+      swapToFlyPlayerRig(ctx, player);
+    }
+  }
 }
