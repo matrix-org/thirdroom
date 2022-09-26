@@ -45,6 +45,7 @@ import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engin
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { Player } from "../../engine/component/Player";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -65,111 +66,17 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
     ];
 
-    // const cube = addEntity(ctx.world);
-    // addTransformComponent(ctx.world, cube);
-    // vec3.set(Transform.position[cube], 0, 0, -5);
-    // addCubeMesh(ctx, cube);
-    // addChild(ctx.activeScene, cube);
-    // addComponent(ctx.world, SpinnyCube, cube);
-
-    // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
-
-    // registerPrefab(ctx, {
-    //   name: "random-cube",
-    //   create: createCube,
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "red-cube",
-    //   create: () => {
-    //     const eid = createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 0, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     );
-    //     return eid;
-    //   },
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "musical-cube",
-    //   create: () => {
-    //     const eid = createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 0, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     );
-
-    //     const remoteNode = RemoteNodeComponent.get(eid)!;
-
-    //     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(ctx, {
-    //       sources: [
-    //         createRemoteAudioSource(ctx, {
-    //           audio: bachAudio,
-    //         }),
-    //       ],
-    //     });
-
-    //     return eid;
-    //   },
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "green-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [0, 1, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     ),
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "blue-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [0, 0, 1, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     ),
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "player-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 1, 1, 1.0],
-    //         roughnessFactor: 0.1,
-    //         metallicFactor: 0.9,
-    //       })
-    //     ),
-    // });
-
     registerPrefab(ctx, {
       name: "mixamo-x",
-      create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
+      create: (ctx, remote) => {
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
       },
     });
 
     registerPrefab(ctx, {
       name: "mixamo-y",
-      create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
+      create: (ctx, remote) => {
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
       },
     });
 
@@ -196,7 +103,15 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
 
       if (entity && floor) {
-        spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        if (
+          hasComponent(ctx.world, Networked, entity) &&
+          hasComponent(ctx.world, Owned, entity) &&
+          !hasComponent(ctx.world, Player, entity)
+        ) {
+          removeRecursive(ctx.world, entity);
+        } else if (hasComponent(ctx.world, Player, entity)) {
+          spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        }
       }
     });
 

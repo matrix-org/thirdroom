@@ -124,7 +124,7 @@ let isSliding = false;
 const slideForce = new Vector3();
 let lastSlideTime = 0;
 
-const colliderShape = new RAPIER.Capsule(0.5, 0.5);
+const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
@@ -208,7 +208,7 @@ export const PlayerControllerSystem = (state: GameState) => {
       shapeCastRotation,
       physicsWorld.gravity,
       colliderShape,
-      state.dt,
+      state.dt * 6,
       playerShapeCastCollisionGroups
     );
 
