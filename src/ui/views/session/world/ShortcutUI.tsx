@@ -57,7 +57,17 @@ export function ShortcutUI() {
             </>
           )}
           {renderItem("Delete Object", <Kbd size="xs">X</Kbd>)}
-          {renderItem("Show Statistics", <Kbd size="xs">Ctrl + Shift + S</Kbd>)}
+          {renderItem("Fly Mode", <Kbd size="xs">B</Kbd>)}
+          {renderItem(
+            "Show Statistics",
+            <>
+              <Kbd size="xs">Ctrl</Kbd>
+              <span>+</span>
+              <Kbd size="xs">Shift</Kbd>
+              <span>+</span>
+              <Kbd size="xs">S</Kbd>
+            </>
+          )}
         </div>
       </Category>
     </div>
