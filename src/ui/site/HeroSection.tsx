@@ -6,7 +6,7 @@ import { Text } from "../atoms/text/Text";
 import "./HeroSection.css";
 import { Icon } from "../atoms/icon/Icon";
 //import { IconButton } from "../atoms/button/IconButton";
-//import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
+import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
 //import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
