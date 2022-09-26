@@ -78,9 +78,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     registerPrefab(ctx, {
       name: "small-crate",
       create: (ctx, remote) => {
+        const size = 1;
+        const halfSize = size / 2;
+
         const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([1, 1, 1]);
+        Transform.scale[eid].set([size, size, size]);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,
@@ -101,7 +104,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(1 / 2, 1 / 2, 1 / 2)
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
           .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
@@ -118,9 +121,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     registerPrefab(ctx, {
       name: "medium-crate",
       create: (ctx, remote) => {
+        const size = 1.75;
+        const halfSize = size / 2;
+
         const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([2, 2, 2]);
+        Transform.scale[eid].set([size, size, size]);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,
@@ -145,7 +151,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(1, 1, 1)
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
           .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
@@ -162,9 +168,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     registerPrefab(ctx, {
       name: "large-crate",
       create: (ctx, remote) => {
+        const size = 2.5;
+        const halfSize = size / 2;
+
         const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([3, 3, 3]);
+        Transform.scale[eid].set([size, size, size]);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: crateAudioData,
@@ -189,7 +198,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(1.5, 1.5, 1.5)
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
           .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
@@ -457,6 +466,7 @@ export const SpawnableSystem = (ctx: GameState) => {
 
     // place object at direction
     const placement = vec3.clone(direction);
+
     // vec3.scale(placement, placement, 4);
     vec3.add(Transform.position[eid], Transform.position[eid], placement);
 
