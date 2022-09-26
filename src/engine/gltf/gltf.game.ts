@@ -466,7 +466,12 @@ export async function loadGLTFResource(uri: string, fileMap?: Map<string, string
 
 async function _loadGLTFResource(url: string, fileMap?: Map<string, string>) {
   const res = await fetch(url);
+
+  console.log(`Fetching glTF resource: ${url} Content-Length: ${res.headers.get("Content-Length")}`);
+
   const buffer = await res.arrayBuffer();
+
+  console.log(`glTF resource fetched: ${url} buffer byteLength: ${buffer.byteLength}`);
 
   // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#binary-header
   const header = new DataView(buffer, 0, GLB_HEADER_BYTE_LENGTH);
