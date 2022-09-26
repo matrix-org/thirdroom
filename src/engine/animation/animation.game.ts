@@ -69,7 +69,7 @@ const _right = vec3.create();
 
 // TODO: reuse isGrounded for char controller
 const interactionGroup = playerShapeCastCollisionGroups;
-const colliderShape = new Capsule(0.5, 0.5);
+const colliderShape = new Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 const shapeCastPosition = new Vector3();
@@ -85,7 +85,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
     shapeCastRotation,
     physicsWorld.gravity,
     colliderShape,
-    ctx.dt,
+    ctx.dt * 6,
     interactionGroup
   );
 
