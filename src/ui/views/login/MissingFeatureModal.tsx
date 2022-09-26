@@ -31,6 +31,8 @@ export function getMissingFeatureToMsg(missingFeature: MissingFeature) {
       return "WebGL2 Hardware acceleration is disabled.";
     case MissingFeature.WEB_RTC:
       return "WebRTC is not supported.";
+    case MissingFeature.INDEXED_DB:
+      return "Access to IndexedDB is disabled.";
   }
 }
 
@@ -47,8 +49,8 @@ export function MissingFeatureModal({ missingFeatures }: { missingFeatures: Miss
               </Text>
               <Text>This may be happening because of following reason(s):</Text>
               <ul>
-                {missingFeatures.map((m) => (
-                  <li>
+                {missingFeatures.map((m, i) => (
+                  <li key={i}>
                     <Text variant="b2" type="span">
                       {getMissingFeatureToMsg(m)}
                     </Text>
