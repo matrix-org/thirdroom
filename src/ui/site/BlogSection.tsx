@@ -221,7 +221,7 @@ export function BlogSection() {
             <li>Instanced mesh support (EXT_mesh_gpu_instancing)</li>
           </ul>
           <li>Postprocessing pipeline (currently bloom and tonemapping)</li>
-          <li>Dynamically reduce viewport resolution on slower devices</li>
+          <li>built-in super-speedy glTF previewer (drop and drag your .glb onto <a href="https://thirdroom.io/viewer">https://thirdroom.io/viewer</a>)</li>
           <li>Three.js Improvements</li>
           <ul>
             <li>Bulk of 3D transformation work moved to game thread</li>
@@ -610,7 +610,7 @@ export function BlogSection() {
           <li>Agriculture - visualise the health of my crops?</li>
           <li>
             Eventually, 2D or document collaboration a la Figma or Etherpad - which is after all a subset of 3D if you
-            squint enough.
+            squint hard enough.
           </li>
         </ul>
         <Text>
