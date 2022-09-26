@@ -9,7 +9,7 @@ import {
   enterQuery,
   exitQuery,
 } from "bitecs";
-import { vec3, mat4, quat } from "gl-matrix";
+import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
 import {
@@ -52,6 +52,7 @@ import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
+import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
 import {
   ObjectCapReachedMessageType,
@@ -176,6 +177,17 @@ export const InteractionActionMap: ActionMap = {
         },
       ],
     },
+    {
+      id: "scroll",
+      path: "Scroll",
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          y: "Mouse/Scroll",
+        },
+      ],
+    },
   ],
 };
 
@@ -197,7 +209,8 @@ const exitFocusQuery = exitQuery(focusQuery);
 const grabQuery = defineQuery([GrabComponent]);
 
 const MAX_FOCUS_DISTANCE = 3.3;
-const HELD_DISTANCE = 2.5;
+const MIN_HELD_DISTANCE = 1.5;
+const MAX_HELD_DISTANCE = 8;
 const GRAB_DISTANCE = 3.3;
 const GRAB_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
@@ -223,6 +236,8 @@ const _r = new Vector4();
 const zero = new Vector3();
 
 let lastActiveScene = 0;
+
+let heldOffset = 0;
 
 export function InteractionSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
@@ -327,6 +342,8 @@ export function InteractionSystem(ctx: GameState) {
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
+    heldOffset = 0;
+
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
@@ -335,6 +352,8 @@ export function InteractionSystem(ctx: GameState) {
     sendInteractionMessage(ctx, InteractableAction.Unfocus);
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+
+    heldOffset = 0;
 
     // if grab is pressed
   } else if (grabPressed) {
@@ -400,6 +419,13 @@ export function InteractionSystem(ctx: GameState) {
   // if still holding entity, move towards the held point
   heldEntity = grabQuery(ctx.world)[0];
   if (heldEntity) {
+    // move held point upon scrolling
+    const [, scrollY] = input.actions.get("Scroll") as vec2;
+    if (scrollY !== 0) {
+      heldOffset += scrollY / 1000;
+    }
+    heldOffset = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
+
     const heldPosition = Transform.position[heldEntity];
 
     const target = _target;
@@ -408,7 +434,7 @@ export function InteractionSystem(ctx: GameState) {
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
-    vec3.scale(direction, direction, HELD_DISTANCE);
+    vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
 
     vec3.sub(target, target, direction);
 
