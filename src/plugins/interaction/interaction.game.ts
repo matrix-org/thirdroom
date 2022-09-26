@@ -212,7 +212,7 @@ const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
 const MAX_HELD_DISTANCE = 8;
 const GRAB_DISTANCE = 3.3;
-const GRAB_MOVE_SPEED = 10;
+const HELD_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
 
 const _direction = vec3.create();
@@ -440,7 +440,7 @@ export function InteractionSystem(ctx: GameState) {
 
     vec3.sub(target, target, heldPosition);
 
-    vec3.scale(target, target, GRAB_MOVE_SPEED);
+    vec3.scale(target, target, HELD_MOVE_SPEED - heldOffset / 2);
 
     const body = RigidBody.store.get(heldEntity);
     if (body) {
