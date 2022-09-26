@@ -16,7 +16,7 @@ function reportStatus(ctx: GameState, status: { loaded: number; total: number })
   });
 }
 
-export async function fetchWithProgress(ctx: GameState, url: string) {
+export async function fetchWithProgress(ctx: GameState, url: string): Promise<Response> {
   const status = { loaded: 0, total: 0 };
 
   const response = await fetch(url);
@@ -45,7 +45,6 @@ export async function fetchWithProgress(ctx: GameState, url: string) {
       },
     })
   );
-  const blob = await res.blob();
 
-  return blob;
+  return res;
 }
