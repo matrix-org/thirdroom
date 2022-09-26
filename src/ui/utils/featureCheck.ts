@@ -4,6 +4,7 @@ export enum MissingFeature {
   WEB_GL2 = "WEB_GL2",
   WEB_GL_HARDWARE_ACC = "WEB_GL_HARDWARE_ACC",
   WEB_RTC = "WEB_RTC",
+  INDEXED_DB = "INDEXED_DB",
 }
 
 export const SUPPORTED_FIREFOX_VERSION = 104;
@@ -57,7 +58,28 @@ function webRTCSupport() {
   );
 }
 
-export function getMissingFeature() {
+async function indexedDBSupport(): Promise<boolean> {
+  const testDBName = `featureCheck-${Math.random()}`;
+  return new Promise((resolve) => {
+    let db;
+    try {
+      db = indexedDB.open(testDBName);
+    } catch {
+      resolve(false);
+      return;
+    }
+    db.onsuccess = () => {
+      resolve(true);
+      indexedDB.deleteDatabase(testDBName);
+    };
+    db.onerror = () => {
+      resolve(false);
+      indexedDB.deleteDatabase(testDBName);
+    };
+  });
+}
+
+export async function getMissingFeature() {
   const missingFeature: MissingFeature[] = [];
 
   if (sharedArrayBufferSupport() === false) {
@@ -81,6 +103,9 @@ export function getMissingFeature() {
 
   if (webRTCSupport() === false) {
     missingFeature.push(MissingFeature.WEB_RTC);
+  }
+  if ((await indexedDBSupport()) === false) {
+    missingFeature.push(MissingFeature.INDEXED_DB);
   }
 
   return missingFeature;
