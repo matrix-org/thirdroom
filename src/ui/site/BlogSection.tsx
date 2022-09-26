@@ -447,7 +447,7 @@ export function BlogSection() {
               rel="noreferrer noopener"
             >
               Creepy Cat
-            </a>
+            </a>{" "}
             and{" "}
             <a
               href="https://assetstore.unity.com/packages/3d/environments/urban/city-builder-london-214943?aid=1101lMAW&utm_source=aff"
@@ -722,7 +722,7 @@ export function BlogSection() {
             rel="noreferrer noopener"
           >
             Matryoshka embedding
-          </a>
+          </a>{" "}
           trick which is working so well with Element Call - after all; if you’re already in Matrix in Element (or some
           other widget-capable Matrix client), why shouldn’t you just be able to reach straight into Third Room? This
           will likely come much later.
