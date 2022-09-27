@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/react";
 
 import "./App.css";
 import "@fontsource/inter/variable.css";
+import "@fontsource/noto-serif/latin.css";
 
 import { HydrogenRootView } from "./views/HydrogenRootView";
 import { SplashScreen } from "./views/components/splash-screen/SplashScreen";

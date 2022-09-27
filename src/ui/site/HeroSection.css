@@ -6,7 +6,7 @@
 
 .HeroSection__main,
 .HeroSection__video {
-  max-width: var(--content-max-width);
+  max-width: var(--hero-max-width);
   width: 100%;
   padding: 0 var(--side-spacing);
   position: relative;
