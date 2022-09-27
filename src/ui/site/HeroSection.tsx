@@ -11,8 +11,8 @@ import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
 function PreviewVideoPlayer() {
-  const poster = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/pzKeFNXcZHPJTpAeCdetyqEk";
-  const preview = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/PutXTmnFnatayKGTthGFeAeK";
+  const poster = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/SdGwxKOoMBGvNEvaKGwopaCW";
+  const preview = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/eCIGHgUqQWmJrVdzUpTwrGbp";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [play, setPlay] = useState(false);
 

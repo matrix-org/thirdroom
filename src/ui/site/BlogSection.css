@@ -44,6 +44,10 @@
   float: left;
   margin-left: 0;
 }
+.BlogImage--center {
+  margin: var(--sp-md) 0 0 0;
+  width: inherit;
+}
 
 @media screen and (max-width: 680px) {
   .BlogImage {

@@ -1,13 +1,19 @@
 import { Text } from "../atoms/text/Text";
 import "./BlogSection.css";
 
-function BlogImage({ imgSrc, imgAlt, align = "right" }: { imgSrc: string; imgAlt: string; align?: "right" | "left" }) {
+function BlogImage({
+  imgSrc,
+  imgAlt,
+  align = "right",
+}: {
+  imgSrc: string;
+  imgAlt: string;
+  align?: "right" | "left" | "center";
+}) {
   return <img className={`BlogImage BlogImage--${align}`} src={imgSrc} alt={imgAlt} />;
 }
 
 export function BlogSection() {
-  const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
-
   return (
     <section className="BlogSection flex flex-column items-center gap-xl">
       <div className="BlogSection__content">
@@ -24,7 +30,6 @@ export function BlogSection() {
           excited today to finally publicly debut our first Technology Preview of Third Room - a beautiful new web
           client for connecting to shared 3D (or 2D) spatial environments and applications built on Matrix.
         </Text>
-        <BlogImage imgSrc={poster} imgAlt="image" />
         <Text variant="c1">
           Third Room lets you use Matrix as the platform for a truly free and open decentralised vision of the metaverse
           (or however you refer to interoperable virtual worlds and spatial web applications) - built entirely on open
@@ -62,6 +67,8 @@ export function BlogSection() {
             <a href="#next-steps">Next steps</a>
           </li>
         </ul>
+
+        <BlogImage align="center" imgSrc="/landing/Multiplayer.jpg" imgAlt="image" />
 
         <Text id="the-vision" variant="h2" weight="semi-bold">
           The vision
@@ -105,6 +112,8 @@ export function BlogSection() {
           about how to use our Unity asset export pipeline.
         </Text>
 
+        <BlogImage align="center" imgSrc="/landing/Engine.jpg" imgAlt="image" />
+
         <Text id="how-does-it-work" variant="h2" weight="semi-bold">
           How does it work?
         </Text>
@@ -136,7 +145,6 @@ export function BlogSection() {
           </a>{" "}
           in order to provide the Matrix networking and chat/voip components, with the rest of the UI built in React.
         </Text>
-        <BlogImage align="left" imgSrc={poster} imgAlt="image" />
         <Text variant="c1">
           Manifold achieves a stable 60fps on a typical modern laptop - on Chrome on a M1 Macbook Pro, it renders a
           typical scene at 2000x1244px at 60fps, with 13.12ms of unused gametime available for every 16.67ms frame, and
@@ -333,6 +341,8 @@ export function BlogSection() {
           </li>
         </ul>
 
+        <BlogImage align="center" imgSrc="/landing/Portal.jpg" imgAlt="image" />
+
         <Text id="what-makes-us-unique" variant="h2" weight="semi-bold">
           What makes Third Room unique?
         </Text>
@@ -515,6 +525,8 @@ export function BlogSection() {
             although we will of course be adding VR/AR support via WebXR in future.
           </li>
         </ul>
+
+        <BlogImage align="center" imgSrc="/landing/UI.jpg" imgAlt="image" />
 
         <Text id="built-on-matrix" variant="h2" weight="semi-bold">
           Built entirely on Matrix
