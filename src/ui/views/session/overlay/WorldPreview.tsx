@@ -18,6 +18,10 @@ import { usePermissionState } from "../../../hooks/usePermissionState";
 import { exceptionToString, useStreamRequest, RequestException } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { FetchProgressMessage, FetchProgressMessageType } from "../../../../engine/utils/fetchWithProgress.game";
+import { registerMessageHandler } from "../../../../engine/module/module.common";
+import { IMainThreadContext } from "../../../../engine/MainThread";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -65,6 +69,8 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
   const requestStream = useStreamRequest(platform, micPermission);
   const [micException, setMicException] = useState<RequestException>();
 
+  const engine = useMainThreadContext();
+
   const { worldId, selectedWorldId, joiningWorld, loadState, error, closeOverlay } = useStore((state) => ({
     selectedWorldId: state.overlayWorld.selectedWorldId,
     worldId: state.world.worldId,
@@ -95,6 +101,16 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
       navigate(`/world/${roomBeingCreated.roomId}`);
     }
   }, [navigate, roomStatus, roomBeingCreated]);
+
+  const [percentLoaded, setPercentLoaded] = useState(0);
+
+  useEffect(() => {
+    const onFetchProgress = (ctx: IMainThreadContext, message: FetchProgressMessage) => {
+      const percent = parseInt(((message.status.loaded / message.status.total) * 100).toFixed(0));
+      setPercentLoaded(percent);
+    };
+    return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);
+  });
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
@@ -170,7 +186,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                   onMembersClick={() => setIsMemberDialog(true)}
                   options={
                     <Button size="lg" variant="secondary" disabled>
-                      Loading...
+                      {`Loading... ${percentLoaded}%`}
                     </Button>
                   }
                 />
