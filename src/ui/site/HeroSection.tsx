@@ -11,7 +11,6 @@ import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
 function PreviewVideoPlayer() {
-  const poster = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/SdGwxKOoMBGvNEvaKGwopaCW";
   const preview = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/eCIGHgUqQWmJrVdzUpTwrGbp";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [play, setPlay] = useState(false);
@@ -24,7 +23,7 @@ function PreviewVideoPlayer() {
 
   return (
     <div className="PreviewVideoPlayer">
-      <video ref={videoRef} controls={play} preload="none" autoPlay={false} poster={poster}>
+      <video ref={videoRef} controls={play} preload="none" autoPlay={false} poster="/landing/Hero.jpg">
         <source src={preview} type="video/mp4" />
       </video>
       {!play && (
