@@ -9,7 +9,6 @@ export interface FetchProgressMessage {
 }
 
 function reportStatus(ctx: GameState, status: { loaded: number; total: number }) {
-  console.log("reportStatus()", status);
   ctx.sendMessage<FetchProgressMessage>(Thread.Main, {
     type: FetchProgressMessageType,
     status,
