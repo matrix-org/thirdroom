@@ -110,6 +110,7 @@ export function CreateWorld() {
             "m.room.encrypted": 50,
             "m.sticker": 50,
             "org.matrix.msc3815.world": 50,
+            "org.matrix.msc3401.call": 0,
             "org.matrix.msc3401.call.member": 0,
             "org.matrix.msc3815.member.world": 0,
           },
