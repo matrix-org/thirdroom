@@ -12,7 +12,7 @@
 }
 
 .WorldView__chat {
-  --chat-width: 385px;
+  --chat-width: 200px;
   max-width: var(--chat-width);
   width: 100%;
   height: calc(100% - 70px);
@@ -21,6 +21,9 @@
   bottom: var(--sp-md);
   left: var(--sp-md);
   pointer-events: none;
+}
+.WorldView__chat--open {
+  --chat-width: 385px;
 }
 
 .WorldView__controls {
@@ -32,6 +35,13 @@
   & .IconButton {
     padding: var(--sp-xs);
   }
+}
+
+.WorldView .Hotbar {
+  position: absolute;
+  bottom: var(--sp-md);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .WorldView__toast-container {

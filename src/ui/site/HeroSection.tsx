@@ -11,8 +11,8 @@ import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
 function PreviewVideoPlayer() {
-  const poster = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/uBbjXXiIeSBvjLAKirLSjReL";
-  const preview = "https://matrix-client.matrix.org/_matrix/media/r0/download/matrix.org/XmEFqhfOINcuQfOlxRrKRXMx";
+  const poster = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/pzKeFNXcZHPJTpAeCdetyqEk";
+  const preview = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/PutXTmnFnatayKGTthGFeAeK";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [play, setPlay] = useState(false);
 
@@ -50,7 +50,7 @@ export function HeroSection() {
     <section className="HeroSection flex flex-column items-center">
       <div className="HeroSection__main flex flex-column items-center justify-center">
         <Text className="HeroSection__heading" variant="h2">
-          Create and explore immersive worlds
+          Open, decentralised, immersive worlds built on Matrix
         </Text>
         <Button size="xl" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
           <Text color="on-primary" weight="semi-bold">

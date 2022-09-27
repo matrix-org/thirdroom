@@ -1015,10 +1015,10 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@thirdroom/hydrogen-view-sdk@0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.20.tgz#c984c83a20a5443d82ca8055ce99dcf62d321468"
-  integrity sha512-lTeappDmELN1/1n5i44e4tomGUhlONZ+Y1mTmE9HTjAcKBUbA5fvcZE41WSXq/B+q5puPAPwNkAeYhh9Cre8cQ==
+"@thirdroom/hydrogen-view-sdk@0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.24.tgz#15e31e49ddbac329c08237dedf45d9591a47220c"
+  integrity sha512-2iB+vbG0S0h85LKk/3rbZQX1IbdJJZ1UTo6AFMsmaylCObBDAUQpwA3WbcwuuVa+tKJZ/VpVuPQV0GhNBxnH4A==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.8.tgz"
     another-json "^0.2.0"

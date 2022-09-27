@@ -39,15 +39,35 @@ export function ShortcutUI() {
           {renderItem("Run", <Kbd size="xs">Shift</Kbd>)}
           {renderItem("Jump", <Kbd size="xs">Space</Kbd>)}
           {renderItem(
+            "Spawn Objects",
+            <>
+              <Kbd size="xs">1</Kbd> - <Kbd size="xs">6</Kbd>
+            </>
+          )}
+          {renderItem(
             "Grab/Drop Object",
             <>
               <Kbd size="xs">E</Kbd>
-              <Text variant="b3">/</Text>
+            </>
+          )}
+          {renderItem(
+            "Grab/Throw Object",
+            <>
               <Icon src={MouseIC} />
             </>
           )}
-          {renderItem("Spawn Cube", <Kbd size="xs">1</Kbd>)}
-          {renderItem("Spawn Sphere", <Kbd size="xs">2</Kbd>)}
+          {renderItem("Delete Object", <Kbd size="xs">X</Kbd>)}
+          {renderItem("Fly Mode", <Kbd size="xs">B</Kbd>)}
+          {renderItem(
+            "Show Statistics",
+            <>
+              <Kbd size="xs">Ctrl</Kbd>
+              <span>+</span>
+              <Kbd size="xs">Shift</Kbd>
+              <span>+</span>
+              <Kbd size="xs">S</Kbd>
+            </>
+          )}
         </div>
       </Category>
     </div>
