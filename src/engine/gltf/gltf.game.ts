@@ -79,6 +79,7 @@ import { getMaterialIOR } from "./KHR_materials_ior";
 import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
+import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 
 export interface GLTFResource {
   url: string;
@@ -141,7 +142,7 @@ export async function inflateGLTFScene(
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
-  const resource = await loadGLTFResource(uri, fileMap);
+  const resource = await loadGLTFResource(ctx, uri, fileMap);
 
   if (sceneIndex === undefined) {
     sceneIndex = resource.root.scene;
@@ -443,7 +444,11 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
   return revoke;
 }
 
-export async function loadGLTFResource(uri: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
+export async function loadGLTFResource(
+  ctx: GameState,
+  uri: string,
+  fileMap?: Map<string, string>
+): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
   // TODO: Add gltfResource pinning
@@ -454,7 +459,7 @@ export async function loadGLTFResource(uri: string, fileMap?: Map<string, string
   //   return cachedGltf.promise;
   // }
 
-  const promise = _loadGLTFResource(url.href, fileMap);
+  const promise = _loadGLTFResource(ctx, url.href, fileMap);
 
   // gltfCache.set(url.href, {
   //   refCount: 1,
@@ -464,8 +469,8 @@ export async function loadGLTFResource(uri: string, fileMap?: Map<string, string
   return promise;
 }
 
-async function _loadGLTFResource(url: string, fileMap?: Map<string, string>) {
-  const res = await fetch(url);
+async function _loadGLTFResource(ctx: GameState, url: string, fileMap?: Map<string, string>) {
+  const res = await fetchWithProgress(ctx, url);
 
   console.log(`Fetching glTF resource: ${url} Content-Length: ${res.headers.get("Content-Length")}`);
 
