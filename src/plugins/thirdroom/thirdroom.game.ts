@@ -256,7 +256,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
       name: "Environment Map Texture",
       image: createRemoteImage(ctx, {
         name: "Environment Map Image",
-        uri: "/cubemap/venice_sunset_1k.hdr",
+        uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
       }),
       sampler: createRemoteSampler(ctx, {
