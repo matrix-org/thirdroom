@@ -23,9 +23,10 @@ import { IconButton } from "../../atoms/button/IconButton";
 import ChevronBottom from "../../../../res/ic/chevron-bottom.svg";
 import { DropdownMenu } from "../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../atoms/menu/DropdownMenuItem";
-import { getMissingFeature } from "../../utils/featureCheck";
+import { getMissingFeature, MissingFeature } from "../../utils/featureCheck";
 import { MissingFeatureModal } from "./MissingFeatureModal";
 import "./LoginView.css";
+import { useIsMounted } from "../../hooks/useIsMounted";
 
 function useQueryHomeserver(client: Client, homeserver: string) {
   const queryRef = useRef<AbortableOperation<QueryLoginResult>>();
@@ -139,8 +140,17 @@ export default function LoginView() {
   const [oidcError, setOidcError] = useState<string>();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
+  const isMounted = useIsMounted();
 
-  const missingFeatures = getMissingFeature();
+  const [missingFeatures, setMissingFeature] = useState<MissingFeature[]>([]);
+  useEffect(() => {
+    const run = async () => {
+      const missingFeature = await getMissingFeature();
+      if (!isMounted()) return;
+      setMissingFeature(missingFeature);
+    };
+    run();
+  }, [isMounted]);
 
   const { homeserver, loading, error, result, queryHomeserver } = useQueryHomeserver(
     client,
