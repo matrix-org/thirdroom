@@ -5,8 +5,6 @@
   background-color: var(--bg-surface);
   box-shadow: var(--bs-surface);
   border-radius: var(--br-xs);
-
-  gap: var(--sp-md);
 }
 
 .WorldPreviewCard__content {

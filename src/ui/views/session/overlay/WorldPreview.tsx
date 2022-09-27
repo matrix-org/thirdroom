@@ -22,6 +22,8 @@ import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { FetchProgressMessage, FetchProgressMessageType } from "../../../../engine/utils/fetchWithProgress.game";
 import { registerMessageHandler } from "../../../../engine/module/module.common";
 import { IMainThreadContext } from "../../../../engine/MainThread";
+import { Progress } from "../../../atoms/progress/Progress";
+import { bytesToSize, getPercentage } from "../../../utils/common";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -102,15 +104,13 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
     }
   }, [navigate, roomStatus, roomBeingCreated]);
 
-  const [percentLoaded, setPercentLoaded] = useState(0);
-
+  const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
   useEffect(() => {
     const onFetchProgress = (ctx: IMainThreadContext, message: FetchProgressMessage) => {
-      const percent = parseInt(((message.status.loaded / message.status.total) * 100).toFixed(0));
-      setPercentLoaded(percent);
+      setLoadProgress(message.status);
     };
     return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);
-  });
+  }, [engine]);
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
@@ -184,10 +184,22 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                   title={roomName}
                   memberCount={memberCount}
                   onMembersClick={() => setIsMemberDialog(true)}
-                  options={
-                    <Button size="lg" variant="secondary" disabled>
-                      {`Loading... ${percentLoaded}%`}
-                    </Button>
+                  content={
+                    <div className="flex flex-column gap-xs">
+                      <Progress
+                        variant="secondary"
+                        max={100}
+                        value={loadProgress.total === 0 ? 0 : getPercentage(loadProgress.total, loadProgress.loaded)}
+                      />
+                      <div className="flex justify-between gap-md">
+                        <Text color="surface-low" variant="b3">
+                          {`Loading: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}
+                        </Text>
+                        <Text color="surface-low" variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(
+                          loadProgress.total
+                        )}`}</Text>
+                      </div>
+                    </div>
                   }
                 />
               );
