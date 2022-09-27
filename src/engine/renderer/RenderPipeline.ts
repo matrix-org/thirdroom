@@ -57,7 +57,7 @@ export class RenderPipeline {
     this.effectComposer = new EffectComposer(renderer, target);
     this.renderPass = new RenderPass(scene, camera);
     this.outlinePass = new OutlinePass(rendererSize, scene, camera);
-    this.bloomPass = new UnrealBloomPass(rendererSize, 0.5, 0.4, 0.9);
+    this.bloomPass = new UnrealBloomPass(rendererSize, 0.4, 0.4, 0.9);
     this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
 
     this.effectComposer.addPass(this.renderPass);
