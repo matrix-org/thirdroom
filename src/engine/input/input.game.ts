@@ -46,6 +46,7 @@ enum MouseButton {
   Middle = 1 << 2,
   Four = 1 << 3,
   Five = 1 << 4,
+  Scroll = 1 << 5,
 }
 
 const out = { keyCode: 0, values: [] };
@@ -56,11 +57,16 @@ function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/Middle"] = checkBitflag(buttons, MouseButton.Middle) ? 1 : 0;
   raw["Mouse/Four"] = checkBitflag(buttons, MouseButton.Four) ? 1 : 0;
   raw["Mouse/Five"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
+  raw["Mouse/Scroll"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
 }
 
 function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/movementX"] = o.values[0];
   raw["Mouse/movementY"] = o.values[1];
+}
+
+function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
+  raw["Mouse/Scroll"] = o.values[0];
 }
 
 export function ApplyInputSystem(ctx: GameState) {
@@ -74,6 +80,9 @@ export function ApplyInputSystem(ctx: GameState) {
       case KeyCodes.MouseMovement:
         applyMouseMovement(raw, out);
         break;
+      case KeyCodes.MouseScroll:
+        applyMouseScroll(raw, out);
+        break;
       default:
         raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
     }
@@ -84,4 +93,5 @@ export function ResetInputSystem(ctx: GameState) {
   const { raw } = getModule(ctx, InputModule);
   raw["Mouse/movementX"] = 0;
   raw["Mouse/movementY"] = 0;
+  raw["Mouse/Scroll"] = 0;
 }

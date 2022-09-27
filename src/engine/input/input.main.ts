@@ -82,6 +82,14 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
       }
     }
 
+    function onWheel({ deltaY }: WheelEvent) {
+      if (document.pointerLockElement === canvas) {
+        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseScroll, deltaY)) {
+          console.warn("input ring buffer full");
+        }
+      }
+    }
+
     function onBlur() {}
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -90,6 +98,7 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
     window.addEventListener("keyup", onKeyUp);
     window.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("blur", onBlur);
+    canvas.addEventListener("wheel", onWheel);
 
     return () => {
       canvas.removeEventListener("mousedown", onMouseDown);
@@ -98,6 +107,7 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("blur", onBlur);
+      canvas.removeEventListener("wheel", onWheel);
     };
   },
 });
