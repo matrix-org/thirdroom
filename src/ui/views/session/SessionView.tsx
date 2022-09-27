@@ -319,13 +319,16 @@ export default function SessionView() {
     async (uri: string) => {
       const state = useStore.getState();
 
-      // exit current world
-      onExitWorld();
-
       const parsedUri = parseMatrixUri(uri);
 
       if (parsedUri instanceof URL) {
         return;
+      }
+
+      // Terminate previous world's network connection
+      if (networkInterfaceRef.current) {
+        networkInterfaceRef.current();
+        networkInterfaceRef.current = undefined;
       }
 
       // select new world
@@ -352,7 +355,7 @@ export default function SessionView() {
         clearInterval(interval);
       };
     },
-    [onExitWorld, onLoadSelectedWorld, onJoinSelectedWorld, session]
+    [onLoadSelectedWorld, onJoinSelectedWorld, session]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
