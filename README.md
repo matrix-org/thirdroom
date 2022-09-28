@@ -16,12 +16,7 @@ make it easy to discover, create, and share 3D worlds with others.
 
 ## Getting Started
 
-To get started with Third Room, you'll first need a Matrix account. You can sign up for an account on the matrix.org
-homeserver [here](https://app.element.io/#/register).
-
-Once you have a Matrix account, you can visit [thirdroom.io](https://thirdroom.io) to try out the latest Third Room
-client. You can create your own world or join our public testing world at
-[https://thirdroom.io/world/#thirdroom-public:matrix.org](https://thirdroom.io/world/#thirdroom-public:matrix.org).
+Visit [thirdroom.io](https://thirdroom.io)
 
 ## About Third Room
 

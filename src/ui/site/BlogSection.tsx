@@ -290,7 +290,7 @@ export function BlogSection() {
 
           <li>
             <span className="semi-bold">Editing:</span> We have started on a direct-manipulation editor, letting you go
-            full Inception or Dark City and get hands on with changing the world; you can trigger it with the § or `
+            full Inception or Dark City and get hands on with changing the world; you can trigger it with the <kbd>§</kbd> or <kbd>`</kbd>
             key. Right now it just lets you navigate the scene graph of the world and select the entities, but the next
             step will be to turn it into a full in-world editor.{" "}
           </li>
