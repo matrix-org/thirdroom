@@ -194,7 +194,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     let deferred = resourceModule.deferredResources.get(resourceId);
 
     if (!deferred) {
-      deferred = createDeferred<unknown>(3000, `Loading resource ${resourceId} ${description} timed out.`);
+      deferred = createDeferred<unknown>(30000, `Loading resource ${resourceId} ${description} timed out.`);
       resourceModule.deferredResources.set(resourceId, deferred);
     }
 
