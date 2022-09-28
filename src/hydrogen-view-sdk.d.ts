@@ -947,6 +947,10 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     token?: (loginToken: string) => ILoginMethod;
   }
 
+  export interface ClientOptions {
+    deviceName?: string;
+  }
+
   export class Client {
     sessionId: string;
 
@@ -956,7 +960,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     loadStatus: ObservableValue<LoadStatus>;
 
-    constructor(platform: Platform);
+    constructor(platform: Platform, options?: ClientOptions);
     get loginFailure(): LoginFailure;
 
     startWithExistingSession(sessionId: string): Promise<void>;
