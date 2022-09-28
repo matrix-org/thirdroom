@@ -425,7 +425,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
         node.emitterPannerNode?.disconnect();
       }
       if (node.nametag) {
-        audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag));
+        audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag), 1);
         audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
       }
 
