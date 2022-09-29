@@ -20,11 +20,11 @@ export const GraphicsQualityOptions: GraphicsQualityOption[] = [
   },
   {
     label: "Medium",
-    value: GraphicsQualitySetting.Low,
+    value: GraphicsQualitySetting.Medium,
   },
   {
     label: "High",
-    value: GraphicsQualitySetting.Low,
+    value: GraphicsQualitySetting.High,
   },
 ];
 
