@@ -1,0 +1,9 @@
+.QualitySelectionView__wrapper {
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(16px);
+  transform: scale(1.1);
+}

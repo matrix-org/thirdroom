@@ -52,7 +52,7 @@ const Site = lazy(() => import("./site/Site"));
 const LoginView = lazy(() => import("./views/login/LoginView"));
 const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
-const SessionView = lazy(() => import("./views/session/SessionView"));
+const ClientView = lazy(() => import("./views/session/ClientView"));
 const WorldView = lazy(() => import("./views/session/world/WorldView"));
 
 export function App() {
@@ -80,7 +80,7 @@ export function App() {
           <Route
             element={
               <Suspense fallback={<LoadingScreen />}>
-                <SessionView />
+                <ClientView />
               </Suspense>
             }
           >
