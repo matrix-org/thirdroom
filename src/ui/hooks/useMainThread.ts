@@ -1,17 +1,19 @@
-import { RefObject, useState, useEffect, createContext, useContext } from "react";
+import { RefObject, useState, useEffect, createContext, useContext, useRef } from "react";
 
 import { IMainThreadContext, MainThread } from "../../engine/MainThread";
+import { GraphicsQualitySetting } from "../../engine/renderer/renderer.common";
 import { useIsMounted } from "./useIsMounted";
 
-export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>) {
+export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>, quality: GraphicsQualitySetting) {
   const [context, setContext] = useState<IMainThreadContext>();
   const isMounted = useIsMounted();
+  const qualityRef = useRef(quality);
 
   useEffect(() => {
     if (canvasRef.current) {
       let disposeFn: () => void | undefined;
 
-      MainThread(canvasRef.current).then(({ context, dispose }) => {
+      MainThread(canvasRef.current, { quality: qualityRef.current }).then(({ context, dispose }) => {
         if (!isMounted()) {
           dispose();
         } else {

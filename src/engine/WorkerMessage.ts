@@ -1,3 +1,5 @@
+import { GraphicsQualitySetting } from "./renderer/renderer.common";
+
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
   GameWorkerInitialized = "game-worker-initialized",
@@ -53,6 +55,7 @@ export interface GameWorkerErrorMessage extends WorkerMessage {
 
 export interface InitializeRenderWorkerMessage extends WorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
+  quality: GraphicsQualitySetting;
   gameWorkerMessageTarget: MessagePort;
   gameToRenderTripleBufferFlags: Uint8Array;
 }

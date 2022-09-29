@@ -31,6 +31,7 @@ import { Button } from "../../atoms/button/Button";
 import { AudioModule } from "../../../engine/audio/audio.main";
 import { getModule, Thread } from "../../../engine/module/module.common";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../plugins/spawnables/spawnables.common";
+import { useSettingsStore } from "../../hooks/useSettingsStore";
 
 let worldReloadId = 0;
 
@@ -49,7 +50,8 @@ export default function SessionView() {
   const { client, session, platform } = useHydrogen(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mainThread = useInitMainThreadContext(canvasRef);
+  const quality = useSettingsStore((state) => state.settings.quality);
+  const mainThread = useInitMainThreadContext(canvasRef, quality);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
 

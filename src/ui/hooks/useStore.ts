@@ -12,6 +12,7 @@ export enum OverlayWindow {
   CreateWorld = "create_world",
   UserProfile = "user_profile",
   WorldSettings = "world_settings",
+  UserSettings = "user_settings",
 }
 
 export enum WorldLoadState {

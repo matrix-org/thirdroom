@@ -6,9 +6,22 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
+  Layers,
+  Scene,
+  Camera,
+  WebGLRenderTarget,
+  LinearFilter,
+  RGBAFormat,
+  Vector2,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
@@ -48,6 +61,7 @@ import {
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
+  GraphicsQualitySetting,
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
@@ -75,11 +89,10 @@ import {
   onLoadLocalLightMapResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
-import { NodeResourceType } from "../node/node.common";
+import { Layer, NodeResourceType } from "../node/node.common";
 import { ResourceId } from "../resource/resource.common";
 import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
-import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
 import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
 import {
@@ -89,8 +102,16 @@ import {
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 
+// TODO: Add samples property to official three types package
+declare module "three" {
+  interface WebGLRenderTargetOptions {
+    samples: number;
+  }
+}
+
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
+  quality: GraphicsQualitySetting;
   elapsed: number;
   dt: number;
   gameToRenderTripleBufferFlags: Uint8Array;
@@ -101,7 +122,6 @@ export interface RendererModuleState {
   canvasWidth: number;
   canvasHeight: number;
   renderer: WebGLRenderer;
-  renderPipeline: RenderPipeline;
   imageBitmapLoader: ImageBitmapLoader;
   imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
@@ -120,6 +140,12 @@ export interface RendererModuleState {
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
   sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
+  effectComposer: EffectComposer;
+  renderPass: RenderPass;
+  outlinePass: OutlinePass;
+  bloomPass: UnrealBloomPass;
+  gammaCorrectionPass: ShaderPass;
+  outlineLayers: Layers;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -156,13 +182,16 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
+      // Use MSAA for the forward render pass
+      antialias: ctx.quality === GraphicsQualitySetting.Low,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
     renderer.toneMapping = LinearToneMapping;
+
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = ctx.quality > GraphicsQualitySetting.Low;
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
@@ -176,10 +205,49 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     pmremGenerator.compileEquirectangularShader();
 
+    const rendererSize = renderer.getSize(new Vector2());
+
+    const target =
+      ctx.quality > GraphicsQualitySetting.Low
+        ? new WebGLRenderTarget(rendererSize.width, rendererSize.height, {
+            minFilter: LinearFilter,
+            magFilter: LinearFilter,
+            format: RGBAFormat,
+            encoding: sRGBEncoding,
+            samples: 16,
+          })
+        : undefined;
+
+    const scene = new Scene();
+    const camera = new Camera();
+
+    const effectComposer = new EffectComposer(renderer, target);
+    const renderPass = new RenderPass(scene, camera);
+    const outlinePass = new OutlinePass(rendererSize, scene, camera);
+    const bloomPass = new UnrealBloomPass(rendererSize, 0.4, 0.4, 0.9);
+    const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+
+    effectComposer.addPass(renderPass);
+    effectComposer.addPass(outlinePass);
+
+    if (ctx.quality > GraphicsQualitySetting.Low) {
+      effectComposer.addPass(bloomPass);
+    }
+
+    effectComposer.addPass(gammaCorrectionPass);
+
+    const outlineLayers = new Layers();
+    outlineLayers.set(Layer.EditorSelection);
+
     return {
       needsResize: true,
       renderer,
-      renderPipeline: new RenderPipeline(renderer),
+      effectComposer,
+      renderPass,
+      outlinePass,
+      bloomPass,
+      gammaCorrectionPass,
+      outlineLayers,
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
@@ -278,7 +346,7 @@ function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: 
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight } = rendererModule;
 
   const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
@@ -306,7 +374,8 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     activeCameraNode.cameraObject.updateProjectionMatrix();
 
-    renderPipeline.setSize(canvasWidth, canvasHeight);
+    rendererModule.renderer.setSize(canvasWidth, canvasHeight, false);
+    rendererModule.effectComposer.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
@@ -323,7 +392,27 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
+    const scene = activeSceneResource.scene;
+    const camera = activeCameraNode.cameraObject;
+
+    rendererModule.renderPass.scene = scene;
+    rendererModule.renderPass.camera = camera;
+    rendererModule.outlinePass.renderScene = scene;
+    rendererModule.outlinePass.renderCamera = camera;
+
+    rendererModule.outlinePass.selectedObjects.length = 0;
+
+    scene.traverse((child) => {
+      if (child.layers.test(rendererModule.outlineLayers)) {
+        rendererModule.outlinePass.selectedObjects.push(child);
+      }
+    });
+
+    if (ctx.quality > GraphicsQualitySetting.Low || rendererModule.outlinePass.selectedObjects.length > 0) {
+      rendererModule.effectComposer.render(ctx.dt);
+    } else {
+      rendererModule.renderer.render(scene, camera);
+    }
   }
 
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {

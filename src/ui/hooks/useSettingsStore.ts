@@ -2,14 +2,10 @@ import create from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
+import { GraphicsQualitySetting } from "../../engine/renderer/renderer.common";
+
 const SETTINGS_KEY = "thirdroom-settings";
 const SETTINGS_STORE_VERSION = 1;
-
-export enum GraphicsQualitySetting {
-  Low = "low",
-  Medium = "medium",
-  High = "high",
-}
 
 interface SettingsState {
   qualityPromptAtStartup: boolean;

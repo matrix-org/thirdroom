@@ -4,7 +4,8 @@ import { ReactNode } from "react";
 import { Button } from "../../../atoms/button/Button";
 import { Modal } from "../../../atoms/modal/Modal";
 import { Text } from "../../../atoms/text/Text";
-import { GraphicsQualitySetting, useSettingsStore } from "../../../hooks/useSettingsStore";
+import { useSettingsStore } from "../../../hooks/useSettingsStore";
+import { GraphicsQualitySetting } from "../../../../engine/renderer/renderer.common";
 import "./QualitySelectionView.css";
 
 export interface GraphicsQualityOption {
@@ -31,7 +32,7 @@ export const GraphicsQualityOptions: GraphicsQualityOption[] = [
   },
 ];
 
-function QualityCard({
+export function QualityCard({
   selected,
   onClick,
   name,

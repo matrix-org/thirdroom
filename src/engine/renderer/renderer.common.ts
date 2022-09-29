@@ -2,6 +2,12 @@ import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/Objec
 
 export const rendererModuleName = "renderer";
 
+export enum GraphicsQualitySetting {
+  Low = 0,
+  Medium = 1,
+  High = 2,
+}
+
 export enum RendererMessageType {
   InitializeCanvas = "renderer-initialize-canvas",
   InitializeResourceManager = "initialize-resource-manager",

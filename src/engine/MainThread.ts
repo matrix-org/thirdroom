@@ -4,6 +4,7 @@ import { BaseThreadContext, Message, registerModules, Thread } from "./module/mo
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
+import { GraphicsQualitySetting } from "./renderer/renderer.common";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -17,7 +18,11 @@ export interface IMainThreadContext extends BaseThreadContext {
   initialRenderWorkerState: { [key: string]: any };
 }
 
-export async function MainThread(canvas: HTMLCanvasElement) {
+interface MainThreadOptions {
+  quality: GraphicsQualitySetting;
+}
+
+export async function MainThread(canvas: HTMLCanvasElement, options: MainThreadOptions) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
   const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
@@ -92,6 +97,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     Thread.Render,
     {
       type: WorkerMessageType.InitializeRenderWorker,
+      quality: options.quality,
       gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
     } as InitializeRenderWorkerMessage,

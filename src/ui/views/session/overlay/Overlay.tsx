@@ -31,6 +31,7 @@ import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
 import { loadImageUrl } from "../../../utils/common";
 import { useIsMounted } from "../../../hooks/useIsMounted";
+import { UserSettings } from "../user-settings/UserSettings";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -180,6 +181,7 @@ export function Overlay({
           {selectedWindow === OverlayWindow.WorldSettings && worldSettingsId && (
             <WorldSettings roomId={worldSettingsId} />
           )}
+          {selectedWindow === OverlayWindow.UserSettings && <UserSettings />}
         </div>
       ) : (
         <div className="Overlay__content grow">

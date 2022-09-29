@@ -53,6 +53,7 @@ export function UserMenu() {
           </div>
           <div>
             <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserProfile)}>View Profile</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserSettings)}>Settings</DropdownMenuItem>
             {accountManagementUrl && (
               <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
             )}
