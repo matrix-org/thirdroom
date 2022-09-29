@@ -58,7 +58,7 @@ export function BlogSection() {
             <a href="#built-on-matrix">Built entirely on Matrix</a>
           </li>
           <li>
-            <a href="#what-could-you-use-it-for">What could you use it for?</a>
+            <a href="#what-can-you-use-it-for">What could you use it for?</a>
           </li>
           <li>
             <a href="#how-does-this-fit-in">How does this fit in with the rest of Matrix?</a>
