@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
 const SETTINGS_KEY = "thirdroom-settings";
-const SETTINGS_STORE_VERSION = 0;
+const SETTINGS_STORE_VERSION = 1;
 
 export enum GraphicsQualitySetting {
   Low = "low",
@@ -11,29 +11,14 @@ export enum GraphicsQualitySetting {
   High = "high",
 }
 
-export interface GraphicsQualityOption {
-  label: string;
-  value: string;
-}
-
-export const GraphicsQualityOptions: GraphicsQualityOption[] = [
-  {
-    label: "Low",
-    value: GraphicsQualitySetting.Low,
-  },
-  {
-    label: "Medium",
-    value: GraphicsQualitySetting.Medium,
-  },
-  {
-    label: "High",
-    value: GraphicsQualitySetting.High,
-  },
-];
-
 interface SettingsState {
   qualityPromptAtStartup: boolean;
   quality: GraphicsQualitySetting;
+}
+
+interface ISettingsStore {
+  settings: SettingsState;
+  setSetting<K extends keyof SettingsState>(key: K, value: SettingsState[K]): void;
 }
 
 const DEFAULT_SETTINGS = {
@@ -41,13 +26,13 @@ const DEFAULT_SETTINGS = {
   quality: GraphicsQualitySetting.Medium,
 };
 
-export const useSettingsStore = create<SettingsState>()(
+export const useSettingsStore = create<ISettingsStore>()(
   persist(
     immer((set) => ({
-      ...DEFAULT_SETTINGS,
-      setSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+      settings: { ...DEFAULT_SETTINGS },
+      setSetting: (key, value) => {
         set((state) => {
-          state[key] = value;
+          state.settings[key] = value;
         });
       },
     })),
