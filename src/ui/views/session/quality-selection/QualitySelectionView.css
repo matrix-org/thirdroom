@@ -1,0 +1,32 @@
+.QualityCard {
+  padding: var(--sp-sm);
+  box-shadow: 0 0 0 1px var(--bg-surface-border);
+  border-radius: var(--br-xs);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--bg-surface-hover);
+  }
+
+  & ul {
+    padding-left: var(--sp-sm);
+    margin: 0;
+  }
+}
+
+.QualityCard--selected {
+  box-shadow: 0 0 0 3px var(--bg-primary);
+  &:hover {
+    background-color: transparent;
+  }
+}
+
+.QualitySelectionView {
+  height: auto;
+}
+.QualitySelectionView__content {
+  padding: var(--sp-md);
+  & > .Text:first-child {
+    padding: var(--sp-md) 0;
+  }
+}
