@@ -8,6 +8,12 @@ export enum GraphicsQualitySetting {
   High = 2,
 }
 
+export const GraphicsQualitySettings: { [key: string]: GraphicsQualitySetting } = {
+  low: GraphicsQualitySetting.Low,
+  medium: GraphicsQualitySetting.Medium,
+  high: GraphicsQualitySetting.High,
+};
+
 export enum RendererMessageType {
   InitializeCanvas = "renderer-initialize-canvas",
   InitializeResourceManager = "initialize-resource-manager",

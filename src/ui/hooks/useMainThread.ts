@@ -4,7 +4,7 @@ import { IMainThreadContext, MainThread } from "../../engine/MainThread";
 import { GraphicsQualitySetting } from "../../engine/renderer/renderer.common";
 import { useIsMounted } from "./useIsMounted";
 
-export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>, quality: GraphicsQualitySetting) {
+export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>, quality?: GraphicsQualitySetting) {
   const [context, setContext] = useState<IMainThreadContext>();
   const isMounted = useIsMounted();
   const qualityRef = useRef(quality);

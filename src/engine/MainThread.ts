@@ -4,7 +4,7 @@ import { BaseThreadContext, Message, registerModules, Thread } from "./module/mo
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
-import { GraphicsQualitySetting } from "./renderer/renderer.common";
+import { GraphicsQualitySetting, GraphicsQualitySettings } from "./renderer/renderer.common";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -19,13 +19,17 @@ export interface IMainThreadContext extends BaseThreadContext {
 }
 
 interface MainThreadOptions {
-  quality: GraphicsQualitySetting;
+  quality?: GraphicsQualitySetting;
 }
 
-export async function MainThread(canvas: HTMLCanvasElement, options: MainThreadOptions) {
+export async function MainThread(canvas: HTMLCanvasElement, options?: MainThreadOptions) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
-  const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
+  const searchParams = new URLSearchParams(window.location.search || hashSearch);
+  const renderMain = searchParams.get("renderMain");
+  const quality =
+    options?.quality !== undefined ? options.quality : GraphicsQualitySettings[searchParams.get("quality") || "low"];
+
   const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
 
   const gameWorker = new GameWorker();
@@ -97,7 +101,7 @@ export async function MainThread(canvas: HTMLCanvasElement, options: MainThreadO
     Thread.Render,
     {
       type: WorkerMessageType.InitializeRenderWorker,
-      quality: options.quality,
+      quality,
       gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
     } as InitializeRenderWorkerMessage,
