@@ -18,6 +18,12 @@ make it easy to discover, create, and share 3D worlds with others.
 
 Visit [thirdroom.io](https://thirdroom.io)
 
+## Homeserver Requirements
+
+Your homeserver should be on [Synapse version 1.62 or higher](https://github.com/matrix-org/synapse/releases). This is due to Third Room's requirement of the `Cross-Origin-Resource-Policy: cross-origin` header for the media repository's download route. Third Room uses SharedArrayBuffers which require us to [run in a secure-context](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements).
+
+You also should have a TURN server set up with your homeserver. More info on how to do that [here](https://matrix-org.github.io/synapse/develop/turn-howto.html).
+
 ## About Third Room
 
 Third Room enables people to discover and create virtual worlds while protecting their privacy and giving them ownership over their data. We use open standards to ensure that both the 3d content and social networking data is portable and interoperable with other platforms. We empower creators to design and program rich and interactive virtual worlds and avatars using a wide variety of 3D content creation tools and harnessing the power of the glTF file format.
