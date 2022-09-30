@@ -160,7 +160,16 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     const canvas = (canvasTarget || ctx.canvas) as HTMLCanvasElement | OffscreenCanvas;
 
-    const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
+    const contextAttributes: WebGLContextAttributes = {
+      alpha: true,
+      depth: true,
+      stencil: true,
+      antialias: ctx.quality === GraphicsQualitySetting.Low,
+      premultipliedAlpha: true,
+      powerPreference: "high-performance",
+    };
+
+    const gl = canvas.getContext("webgl2", contextAttributes) as WebGL2RenderingContext;
 
     const debugInfo = gl.getExtension("WEBGL_debug_renderer_info")!;
     const rendererName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
@@ -178,12 +187,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     }
 
     const renderer = new WebGLRenderer({
-      powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
-      // Use MSAA for the forward render pass
-      antialias: ctx.quality === GraphicsQualitySetting.Low,
+      ...contextAttributes,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
