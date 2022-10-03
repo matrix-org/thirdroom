@@ -101,7 +101,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = remote
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
@@ -191,11 +193,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 
-        // const rigidBodyDesc = remote
-        //   ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-        //   : RAPIER.RigidBodyDesc.newDynamic();
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-
+        const rigidBodyDesc = remote
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
@@ -291,8 +291,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       create: (ctx, remote) => {
         const eid = createBall(ctx, 1, blackMirrorMaterial, remote);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-
+        const rigidBodyDesc = remote
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.ball(1 / 2)
@@ -331,8 +332,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       create: (ctx, remote) => {
         const eid = createBall(ctx, 2, emissiveMaterial, remote);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-
+        const rigidBodyDesc = remote
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         rigidBody.setGravityScale(0.9, true);
