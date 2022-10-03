@@ -104,7 +104,8 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       const pTo = history.position.at(to);
       if (pFrom && pTo) {
         vec3.lerp(position, pFrom, pTo, historian.fractionOfTimePassed);
-        body.setTranslation(_vec.fromArray(position), true);
+        if (body.isDynamic()) body.setTranslation(_vec.fromArray(position), true);
+        if (body.isKinematic()) body.setNextKinematicTranslation(_vec.fromArray(position));
       }
 
       if (body.isDynamic()) {
@@ -203,6 +204,13 @@ function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
   Transform.quaternion[eid].set(netQuaternion);
 
   body.setTranslation(_vec.fromArray(netPosition), true);
-  if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);
+
+  if (body.isDynamic()) {
+    body.setTranslation(_vec.fromArray(netPosition), true);
+    body.setLinvel(_vec.fromArray(netVelocity), true);
+  } else if (body.isKinematic()) {
+    body.setNextKinematicTranslation(_vec.fromArray(netPosition));
+  }
+
   body.setRotation(_quat.fromArray(netQuaternion), true);
 }
