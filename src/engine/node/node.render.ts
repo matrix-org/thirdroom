@@ -104,7 +104,8 @@ const tempScale = new Vector3();
 export function updateTransformFromNode(
   ctx: RenderThreadState,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
-  object3D: Object3D
+  object3D: Object3D,
+  gameDeltaTime?: number
 ) {
   if (nodeReadView.skipLerp[0]) {
     setTransformFromNode(ctx, nodeReadView, object3D);
@@ -150,7 +151,8 @@ export function updateLocalNodeResources(
   rendererModule: RendererModuleState,
   nodes: LocalNode[],
   activeSceneResource: LocalSceneResource | undefined,
-  activeCameraNode: LocalNode | undefined
+  activeCameraNode: LocalNode | undefined,
+  gameDeltaTime: number
 ) {
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
@@ -248,7 +250,7 @@ export function updateLocalNodeResources(
     updateNodeCamera(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeLight(ctx, activeSceneResource.scene, node, nodeView);
     updateNodeReflectionProbe(ctx, activeSceneResource.scene, node, nodeView);
-    updateNodeMesh(ctx, activeSceneResource, node, nodeView);
+    updateNodeMesh(ctx, activeSceneResource, node, nodeView, gameDeltaTime);
     updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node, nodeView);
   }
 }

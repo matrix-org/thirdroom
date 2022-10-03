@@ -283,6 +283,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
   const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
+  const gameDeltaTime = rendererStateView.deltaTime[0];
 
   const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
   const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
@@ -317,7 +318,14 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
-  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
+  updateLocalNodeResources(
+    ctx,
+    rendererModule,
+    rendererModule.nodes,
+    activeSceneResource,
+    activeCameraNode,
+    gameDeltaTime
+  );
 
   updateReflectionProbeTextureArray(ctx, activeSceneResource);
   updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);

@@ -134,6 +134,7 @@ export const RenderableSystem = (state: GameState) => {
 
   renderer.rendererStateBufferView.activeSceneResourceId[0] = activeScene?.rendererResourceId || 0;
   renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.rendererResourceId || 0;
+  renderer.rendererStateBufferView.deltaTime[0] = state.dt;
 
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
 

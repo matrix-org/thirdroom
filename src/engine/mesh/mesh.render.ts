@@ -615,7 +615,8 @@ export function updateNodeMesh(
   ctx: RenderThreadState,
   sceneResource: LocalSceneResource,
   node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
+  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
+  gameDeltaTime: number
 ) {
   const currentMeshResourceId = node.mesh?.resourceId || 0;
   const nextMeshResourceId = nodeReadView.mesh[0];
@@ -659,13 +660,13 @@ export function updateNodeMesh(
         primitiveObject.material = nextMaterial;
       }
 
-      updateTransformFromNode(ctx, nodeReadView, primitiveObject);
+      updateTransformFromNode(ctx, nodeReadView, primitiveObject, gameDeltaTime);
 
       if (node.skinnedMesh) {
         for (const joint of node.skinnedMesh.joints) {
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
-            updateTransformFromNode(ctx, boneReadView, joint.bone);
+            updateTransformFromNode(ctx, boneReadView, joint.bone, gameDeltaTime);
           }
         }
       }

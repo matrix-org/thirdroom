@@ -30,6 +30,7 @@ export interface SceneRenderedNotificationMessage {
 export const rendererStateSchema = defineObjectBufferSchema({
   activeSceneResourceId: [Uint32Array, 1],
   activeCameraResourceId: [Uint32Array, 1],
+  deltaTime: [Float32Array, 1],
 });
 
 export type RendererStateTripleBuffer = ObjectTripleBuffer<typeof rendererStateSchema>;
