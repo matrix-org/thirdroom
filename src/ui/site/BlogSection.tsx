@@ -304,7 +304,7 @@ export function BlogSection() {
           </li>
 
           <li>
-            <span className="semi-bold">VR/AR:</span> We need to flip the bit to enable WebVR / OpenXR support (and then
+            <span className="semi-bold">VR/AR:</span> We need to flip the bit to enable WebVR / WebXR support (and then
             tweak the app’s UI to be usable in a 3D environment)
           </li>
 
