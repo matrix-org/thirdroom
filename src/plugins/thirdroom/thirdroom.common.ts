@@ -7,6 +7,8 @@ export enum ThirdRoomMessageType {
   WorldLoadError = "world-load-error",
   PrintThreadState = "print-thread-state",
   GLTFViewerLoadGLTF = "gltf-viewer-load-gltf",
+  GLTFViewerLoaded = "gltf-viewer-loaded",
+  GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
 }
 
@@ -49,4 +51,14 @@ export interface GLTFViewerLoadGLTFMessage {
   type: ThirdRoomMessageType.GLTFViewerLoadGLTF;
   url: string;
   fileMap: Map<string, string>;
+}
+
+export interface GLTFViewerLoadedMessage {
+  type: ThirdRoomMessageType.GLTFViewerLoaded;
+  url: string;
+}
+
+export interface GLTFViewerLoadErrorMessage {
+  type: ThirdRoomMessageType.GLTFViewerLoadError;
+  error: string;
 }
