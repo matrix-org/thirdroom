@@ -26,6 +26,8 @@ import {
   ThirdRoomMessageType,
   GLTFViewerLoadGLTFMessage,
   ExitedWorldMessage,
+  GLTFViewerLoadErrorMessage,
+  GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
@@ -212,8 +214,18 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   try {
     await loadEnvironment(ctx, message.url, message.fileMap);
     loadPlayerRig(ctx);
-  } catch (error) {
+
+    ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.GLTFViewerLoaded,
+      url: message.url,
+    });
+  } catch (error: any) {
     console.error(error);
+
+    ctx.sendMessage<GLTFViewerLoadErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.GLTFViewerLoadError,
+      error: error.message || "Unknown Error",
+    });
 
     URL.revokeObjectURL(message.url);
 

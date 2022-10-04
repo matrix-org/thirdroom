@@ -35,7 +35,7 @@ export class CustomWebIO extends WebIO {
 
   public resolve(base: string, path: string): string {
     const uri = super.resolve(base, path);
-    return this.fileMap.get(path) || uri;
+    return this.fileMap.get(decodeURIComponent(path)) || uri;
   }
 
   public declare readURI: {
@@ -46,20 +46,57 @@ export class CustomWebIO extends WebIO {
   public declare dirname: (uri: string) => string;
 }
 
-export async function transformGLTFWeb(url: string, fileMap: Map<string, string>) {
+export interface GLTFTransformProgressMessage {
+  step: string;
+  status?: string;
+}
+
+export type GLTFTransformProgressCallback = (message: GLTFTransformProgressMessage) => void;
+
+export async function transformGLTFWeb(
+  url: string,
+  fileMap: Map<string, string>,
+  onProgress?: GLTFTransformProgressCallback
+) {
   const logger = new Logger(Verbosity.DEBUG);
 
   const io = new CustomWebIO().setLogger(logger);
 
   registerExtensions(io);
 
+  if (onProgress) {
+    onProgress({
+      step: "Reading glTF...",
+    });
+  }
+
   const doc = await io.readGLTF(url, fileMap);
 
   doc.setLogger(logger);
 
-  await transformGLTF(doc);
+  if (onProgress) {
+    onProgress({
+      step: "Transforming glTF...",
+    });
+  }
+
+  await transformGLTF(doc, onProgress);
+
+  if (onProgress) {
+    onProgress({
+      step: "Writing glTF...",
+    });
+  }
 
   const glbBuffer = await io.writeBinary(doc);
 
-  downloadFile(glbBuffer, `${doc.getRoot().getName() || "scene"}.glb`, "model/gltf-binary");
+  const fileName = `${doc.getRoot().getName() || "scene"}.glb`;
+
+  if (onProgress) {
+    onProgress({
+      step: `glTF successfully transformed, downloading "${fileName}"...`,
+    });
+  }
+
+  downloadFile(glbBuffer, fileName, "model/gltf-binary");
 }

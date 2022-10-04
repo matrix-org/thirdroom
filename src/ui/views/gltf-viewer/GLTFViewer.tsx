@@ -1,12 +1,19 @@
-import { DragEvent, useCallback, useRef, useState } from "react";
+import { DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-import { Thread } from "../../../engine/module/module.common";
+import { registerMessageHandler, Thread } from "../../../engine/module/module.common";
+import { createDisposables } from "../../../engine/utils/createDisposables";
+import {
+  GLTFViewerLoadedMessage,
+  GLTFViewerLoadErrorMessage,
+  ThirdRoomMessageType,
+} from "../../../plugins/thirdroom/thirdroom.common";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { MainThreadContextProvider, useInitMainThreadContext } from "../../hooks/useMainThread";
 import { EditorView } from "../session/editor/EditorView";
 import { Stats } from "../session/stats/Stats";
+import { Text } from "../../atoms/text/Text";
 import "./GLTFViewer.css";
 
 export default function GLTFViewer() {
@@ -14,6 +21,28 @@ export default function GLTFViewer() {
   const mainThread = useInitMainThreadContext(canvasRef);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
+  const [{ loading, loaded, error }, setLoadState] = useState<{ loading: boolean; loaded: boolean; error?: string }>({
+    loading: false,
+    loaded: false,
+  });
+
+  useEffect(() => {
+    if (mainThread) {
+      return createDisposables([
+        registerMessageHandler(
+          mainThread,
+          ThirdRoomMessageType.GLTFViewerLoaded,
+          (ctx, message: GLTFViewerLoadedMessage) => setLoadState({ loading: false, loaded: true })
+        ),
+        registerMessageHandler(
+          mainThread,
+          ThirdRoomMessageType.GLTFViewerLoadError,
+          (ctx, message: GLTFViewerLoadErrorMessage) =>
+            setLoadState({ loading: false, loaded: true, error: message.error })
+        ),
+      ]);
+    }
+  }, [mainThread]);
 
   useKeyDown((e) => {
     if (e.code === "Backquote") {
@@ -56,8 +85,10 @@ export default function GLTFViewer() {
       }
 
       if (mainThread && url) {
+        setLoadState({ loading: true, loaded: false });
+
         mainThread.sendMessage(Thread.Game, {
-          type: "gltf-viewer-load-gltf",
+          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
           url,
           fileMap,
         });
@@ -83,6 +114,21 @@ export default function GLTFViewer() {
           />
           {mainThread && <Stats statsEnabled={statsEnabled} />}
           {mainThread && editorEnabled && <EditorView />}
+          {!loaded && !loading && !error && (
+            <div className="GLTFViewer__message">
+              <Text color="world">Drag and drop .gltf directory or .glb file to preview it.</Text>
+            </div>
+          )}
+          {!loaded && loading && (
+            <div className="GLTFViewer__message">
+              <Text color="world">Loading scene...</Text>
+            </div>
+          )}
+          {error && (
+            <div className="GLTFViewer__message">
+              <Text color="danger">{error}</Text>
+            </div>
+          )}
         </div>
       </MainThreadContextProvider>
     </DndProvider>
