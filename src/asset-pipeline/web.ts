@@ -35,7 +35,7 @@ export class CustomWebIO extends WebIO {
 
   public resolve(base: string, path: string): string {
     const uri = super.resolve(base, path);
-    return this.fileMap.get(path) || uri;
+    return this.fileMap.get(decodeURIComponent(path)) || uri;
   }
 
   public declare readURI: {
