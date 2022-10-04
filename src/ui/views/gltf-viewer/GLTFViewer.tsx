@@ -115,17 +115,17 @@ export default function GLTFViewer() {
           {mainThread && <Stats statsEnabled={statsEnabled} />}
           {mainThread && editorEnabled && <EditorView />}
           {!loaded && !loading && !error && (
-            <div className="GLTFViewer_message">
+            <div className="GLTFViewer__message">
               <Text color="world">Drag and drop .gltf directory or .glb file to preview it.</Text>
             </div>
           )}
           {!loaded && loading && (
-            <div className="GLTFViewer_message">
+            <div className="GLTFViewer__message">
               <Text color="world">Loading scene...</Text>
             </div>
           )}
           {error && (
-            <div className="GLTFViewer_message">
+            <div className="GLTFViewer__message">
               <Text color="danger">{error}</Text>
             </div>
           )}

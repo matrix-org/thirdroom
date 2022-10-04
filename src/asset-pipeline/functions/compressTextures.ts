@@ -3,9 +3,10 @@ import { TextureBasisu } from "@gltf-transform/extensions";
 import { listTextureSlots } from "@gltf-transform/functions";
 
 import { createDeferred, Deferred } from "../../engine/utils/Deferred";
+import { GLTFTransformProgressCallback } from "../web";
 import TextureCompressionWorker from "./TextureCompressionWorker?worker";
 
-export function compressTextures(): Transform {
+export function compressTextures(onProgress?: GLTFTransformProgressCallback): Transform {
   return async (doc: Document) => {
     const root = doc.getRoot();
 
@@ -15,6 +16,14 @@ export function compressTextures(): Transform {
     const workers: Worker[] = [];
 
     const numWorkers = navigator.hardwareConcurrency || 4;
+    let completedJobs = 0;
+
+    if (onProgress) {
+      onProgress({
+        step: "Compressing textures with Basis Universal Texture Compression...",
+        status: `Using ${numWorkers} threads. Initializing...`,
+      });
+    }
 
     for (let i = 0; i < numWorkers; i++) {
       const worker = new TextureCompressionWorker();
@@ -25,6 +34,15 @@ export function compressTextures(): Transform {
         if (event.data.error) {
           jobs.get(jobId)!.reject(new Error("Error compressing texture"));
         } else {
+          completedJobs++;
+
+          if (onProgress) {
+            onProgress({
+              step: "Compressing textures with Basis Universal Texture Compression...",
+              status: `Using ${numWorkers} threads. ${jobs.size - completedJobs} / ${jobs.size} textures remaining.`,
+            });
+          }
+
           jobs.get(jobId)!.resolve(event.data);
         }
       });
