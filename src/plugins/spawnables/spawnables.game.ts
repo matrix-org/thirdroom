@@ -11,7 +11,7 @@ import {
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
 } from "../../engine/audio/audio.game";
-import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../../engine/component/transform";
+import { Transform, addChild, addTransformComponent } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
@@ -483,7 +483,7 @@ export const SpawnableSystem = (ctx: GameState) => {
       continue;
     }
 
-    setEulerFromQuaternion(Transform.rotation[eid], _cameraWorldQuat);
+    quat.copy(Transform.quaternion[eid], _cameraWorldQuat);
 
     body.applyImpulse(_impulse, true);
 

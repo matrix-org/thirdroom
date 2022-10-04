@@ -1,5 +1,5 @@
 import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
-import { vec2, glMatrix as glm } from "gl-matrix";
+import { vec2, glMatrix as glm, quat } from "gl-matrix";
 
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
@@ -100,8 +100,8 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   if (Math.abs(lookX) >= 1) {
     yawEntities.forEach((eid) => {
       const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-      Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
-      setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+      const quaternion = Transform.quaternion[eid];
+      quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
     });
   }
 

@@ -381,6 +381,9 @@ function swapToPlayerRig(ctx: GameState, playerRig: number) {
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, playerRig, rigidBody);
+
+  tmpQuat.fromArray(Transform.quaternion[playerRig]);
+  rigidBody.setRotation(tmpQuat, true);
 }
 
 const zero = new Vector3();
@@ -422,6 +425,7 @@ function spawnEntity(
 
   spawnPosition[1] += 1.6;
   quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
+  quat.rotateY(spawnQuaternion, spawnQuaternion, Math.PI);
 
   teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
 }
