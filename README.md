@@ -238,6 +238,12 @@ Third Room client as you navigate from world to world.
 We hope to standardize this WebAssembly Scene Graph API as a member of the Open Metaverse Interoperability Group's
 [Scripting Working Group](https://github.com/omigroup/omi-scripting-group).
 
+## Creating Your Own Scenes
+
+Third Room is built on top of the glTF standard 3D file format, you can technically use any tool that exports glTF to create Third Room scenes. However, not all of the glTF extensions Third Room uses are supported by every tool. We've created the Third Room Unity Exporter for easily creating Third Room scenes from Unity.
+
+Learn more [here](https://github.com/matrix-org/thirdroom-unity-exporter).
+
 ## Local Development
 
 The Third Room client can be ran locally against any Matrix homeserver in development.
