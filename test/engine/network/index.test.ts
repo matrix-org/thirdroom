@@ -6,24 +6,12 @@ import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
-  deserializeCreates,
-  deserializeDeletes,
-  deserializeTransformChanged,
-  deserializeUpdatesChanged,
   getPeerIdIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
   Owned,
   Networked,
   ownedNetworkedQuery,
-  serializeCreates,
-  serializeDeletes,
-  serializeTransformChanged,
-  serializeUpdatesChanged,
-  serializeTransformSnapshot,
-  deserializeTransformSnapshot,
-  serializeUpdatesSnapshot,
-  deserializeUpdatesSnapshot,
   NetworkModule,
 } from "../../../src/engine/network/network.game";
 import {
@@ -36,6 +24,20 @@ import {
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
 import { RigidBody } from "../../../src/engine/physics/physics.game";
+import {
+  serializeTransformSnapshot,
+  deserializeTransformSnapshot,
+  serializeTransformChanged,
+  deserializeTransformChanged,
+  serializeUpdatesSnapshot,
+  deserializeUpdatesSnapshot,
+  serializeUpdatesChanged,
+  deserializeUpdatesChanged,
+  serializeCreates,
+  deserializeCreates,
+  serializeDeletes,
+  deserializeDeletes,
+} from "../../../src/engine/network/serialization.game";
 
 const clearComponentData = () => {
   new Uint8Array(Transform.position[0].buffer).fill(0);

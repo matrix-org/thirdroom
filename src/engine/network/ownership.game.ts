@@ -7,15 +7,10 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
-import {
-  Networked,
-  NetPipeData,
-  NetworkModule,
-  NetworkAction,
-  broadcastReliable,
-  Owned,
-  writeMetadata,
-} from "./network.game";
+import { Networked, NetworkModule, Owned } from "./network.game";
+import { NetworkAction } from "./NetworkAction";
+import { broadcastReliable } from "./outbound.game";
+import { writeMetadata, NetPipeData } from "./serialization.game";
 
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 

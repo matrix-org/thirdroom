@@ -163,6 +163,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
 }
 
 export function setHost(mainThread: IMainThreadContext, value: boolean) {
+  console.log("setting host to", value);
   mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.SetHost,
     value,

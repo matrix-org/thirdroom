@@ -40,5 +40,5 @@ export interface RemovePeerIdMessage extends Message<NetworkMessageType.RemovePe
 }
 
 export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
-  value: boolean;
+  hostId: string;
 }
