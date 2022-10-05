@@ -12,8 +12,10 @@ emcc \
   -s MALLOC=emmalloc \
   -s MODULARIZE=1 \
   -s EXPORT_ES6=1 \
+  -s EXIT_RUNTIME=1 \
   -s ENVIRONMENT='worker' \
   -s EXPORT_NAME="ScriptingRuntimeModule" \
+  -s EXPORTED_RUNTIME_METHODS="allocateUTF8,exitJS" \
   -o ./build/scripting-runtime.js \
   -D_GNU_SOURCE \
   -DCONFIG_VERSION=\"$QUICKJS_CONFIG_VERSION\" \
