@@ -240,6 +240,7 @@ let lastActiveScene = 0;
 let heldOffset = 0;
 
 export function InteractionSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
@@ -398,7 +399,7 @@ export function InteractionSystem(ctx: GameState) {
             });
           } else {
             // otherwise attempt to take ownership
-            const newEid = takeOwnership(ctx, eid);
+            const newEid = takeOwnership(ctx, network, eid);
 
             if (newEid !== NOOP) {
               addComponent(ctx.world, GrabComponent, newEid);

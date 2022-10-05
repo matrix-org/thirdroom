@@ -1,10 +1,11 @@
-/* Inbound */
+import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, readUint8, readFloat32 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
+import { dequeueNetworkRingBuffer } from "./RingBuffer";
 import { NetPipeData } from "./serialization.game";
 
 const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffer) => {
@@ -34,13 +35,30 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
   handler(input);
 };
 
+const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+const arr: [string, ArrayBuffer][] = [];
 const processNetworkMessages = (state: GameState) => {
   try {
     const network = getModule(state, NetworkModule);
-    while (network.incomingPackets.length) {
-      const peerId = network.incomingPeerIds.pop();
-      const msg = network.incomingPackets.pop();
-      if (peerId && msg) processNetworkMessage(state, peerId, msg);
+    // while (network.incomingPackets.length) {
+    //   const peerId = network.incomingPeerIds.pop();
+    //   const msg = network.incomingPackets.pop();
+    //   if (peerId && msg) processNetworkMessage(state, peerId, msg);
+    // }
+
+    // if (availableRead(network.incomingRingBuffer) > 10000)
+    while (availableRead(network.incomingRingBuffer)) {
+      // console.log("incoming packets", availableRead(network.incomingRingBuffer) / 1000);
+      dequeueNetworkRingBuffer(network.incomingRingBuffer, ringOut);
+      if (ringOut.peerId && ringOut.packet) {
+        // arr.unshift([ringOut.peerId, ringOut.packet]);
+        processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+      }
+    }
+
+    while (arr.length) {
+      const a = arr.shift();
+      if (a) processNetworkMessage(state, a[0], a[1]);
     }
   } catch (e) {
     console.error(e);

@@ -13,7 +13,9 @@ import {
   deleteNetworkId,
   exitedNetworkedQuery,
   ownedPlayerQuery,
+  GameNetworkState,
 } from "./network.game";
+import { enqueueNetworkRingBuffer } from "./RingBuffer";
 import {
   NetPipeData,
   createNewPeerSnapshotMessage,
@@ -21,19 +23,22 @@ import {
   createFullChangedMessage,
 } from "./serialization.game";
 
-export const broadcastReliable = (state: GameState, packet: ArrayBuffer) => {
+export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
   // state.network.peers.forEach((peerId: string) => {
   //   sendReliable(state, peerId, packet);
   // });
-  state.sendMessage(
-    Thread.Main,
-    {
-      type: NetworkMessageType.NetworkBroadcast,
-      packet,
-      reliable: true,
-    },
-    [packet]
-  );
+  // state.sendMessage(
+  //   Thread.Main,
+  //   {
+  //     type: NetworkMessageType.NetworkBroadcast,
+  //     packet,
+  //     reliable: true,
+  //   },
+  //   [packet]
+  // );
+  if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, "", packet, true)) {
+    console.warn("outgoing network ring buffer full");
+  }
 };
 
 export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
@@ -51,19 +56,22 @@ export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
   );
 };
 
-export const sendReliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
+export const sendReliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
   // todo: headers
   // packet = writeHeaders(state, peerId, packet);
-  state.sendMessage(
-    Thread.Main,
-    {
-      type: NetworkMessageType.NetworkMessage,
-      peerId,
-      packet,
-      reliable: true,
-    },
-    [packet]
-  );
+  // state.sendMessage(
+  //   Thread.Main,
+  //   {
+  //     type: NetworkMessageType.NetworkMessage,
+  //     peerId,
+  //     packet,
+  //     reliable: true,
+  //   },
+  //   [packet]
+  // );
+  if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, peerId, packet)) {
+    console.warn("outgoing network ring buffer full");
+  }
 };
 
 export const sendUnreliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
@@ -140,20 +148,20 @@ const sendUpdates = (ctx: GameState) => {
         // if hosting, broadcast peerIdIndex message
         // if (network.hosting) {
         // broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
-        broadcastReliable(ctx, createPeerIdIndexMessage(ctx, network.peerId));
+        broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, network.peerId));
         // }
 
-        sendReliable(ctx, theirPeerId, newPeerSnapshotMsg);
+        sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
       }
     }
   } else {
     // if (network.hosting) {
     // reliably send full messages for now
     const msg = createFullChangedMessage(data);
-    if (msg.byteLength) broadcastReliable(ctx, msg);
+    if (msg.byteLength) broadcastReliable(ctx, network, msg);
     // } else {
     // const msg = createCommandMessage(data);
-    // if (msg.byteLength) sendReliable(ctx, network.hostId, msg);
+    // if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);
     // }
   }
 

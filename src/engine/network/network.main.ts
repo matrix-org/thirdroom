@@ -1,35 +1,56 @@
-import { NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
+import { availableRead } from "@thirdroom/ringbuffer";
+
+import { InitializeNetworkStateMessage, NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
 import { IMainThreadContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import {
+  createNetworkRingBuffer,
+  dequeueNetworkRingBuffer,
+  enqueueNetworkRingBuffer,
+  NetworkRingBuffer,
+} from "./RingBuffer";
 
 /*********
  * Types *
  ********/
 
-export interface NetworkModuleState {
+export interface MainNetworkState {
   reliableChannels: Map<string, RTCDataChannel>;
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
   // event listener references here for access upon disposal (removeEventListener)
   onPeerMessage?: ({ data }: { data: ArrayBuffer }) => void;
+  incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
 }
 
 /******************
  * Initialization *
  *****************/
 
-export const NetworkModule = defineModule<IMainThreadContext, NetworkModuleState>({
+export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>({
   name: "network",
-  create() {
+  async create(ctx, { sendMessage }) {
+    const incomingRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const outgoingRingBuffer = createNetworkRingBuffer(Uint8Array);
+
+    sendMessage<InitializeNetworkStateMessage>(Thread.Game, NetworkMessageType.InitializeNetworkState, {
+      type: NetworkMessageType.InitializeNetworkState,
+      incomingRingBuffer,
+      outgoingRingBuffer,
+    });
+
     return {
       reliableChannels: new Map<string, RTCDataChannel>(),
       unreliableChannels: new Map<string, RTCDataChannel>(),
+      incomingRingBuffer,
+      outgoingRingBuffer,
     };
   },
   init(ctx) {
     const disposables = [
-      registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onNetworkMessage),
+      registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onOutgoingMessage),
       registerMessageHandler(ctx, NetworkMessageType.NetworkBroadcast, onNetworkBroadcast),
     ];
 
@@ -45,13 +66,16 @@ export const NetworkModule = defineModule<IMainThreadContext, NetworkModuleState
  * Message Handlers *
  *******************/
 
-const onPeerMessage =
-  (ctx: IMainThreadContext, peerId: string) =>
+const onIncomingMessage =
+  (ctx: IMainThreadContext, network: MainNetworkState, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
-    ctx.sendMessage(Thread.Game, { type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
+    // ctx.sendMessage(Thread.Game, { type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
+    if (!enqueueNetworkRingBuffer(network.incomingRingBuffer, peerId, data)) {
+      console.warn("incoming network ring buffer full");
+    }
   };
 
-const onNetworkMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
+const onOutgoingMessage = (mainThread: IMainThreadContext, message: NetworkMessage) => {
   const network = getModule(mainThread, NetworkModule);
   const { ws, reliableChannels, unreliableChannels } = network;
   const { peerId, packet, reliable } = message;
@@ -139,7 +163,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
           peerId: d.setPeerId,
         });
 
-        ws?.addEventListener("message", onPeerMessage(mainThread, d.setPeerId));
+        ws?.addEventListener("message", onIncomingMessage(mainThread, network, d.setPeerId));
 
         ws?.removeEventListener("message", setPeerIdFn);
       }
@@ -194,7 +218,7 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    network.onPeerMessage = onPeerMessage(mainThread, peerId);
+    network.onPeerMessage = onIncomingMessage(mainThread, network, peerId);
     dataChannel.addEventListener("message", network.onPeerMessage);
     dataChannel.addEventListener("close", onClose);
 
@@ -253,4 +277,21 @@ export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
     type: NetworkMessageType.SetPeerId,
     peerId,
   });
+}
+
+const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
+  const network = getModule(ctx, NetworkModule);
+
+  while (availableRead(network.outgoingRingBuffer)) {
+    dequeueNetworkRingBuffer(network.outgoingRingBuffer, ringOut);
+    const peer = network.reliableChannels.get(ringOut.peerId);
+    if (peer) peer.send(ringOut.packet);
+    else if (ringOut.broadcast)
+      network.reliableChannels.forEach((peer) => {
+        if (peer.readyState === "open") {
+          peer.send(ringOut.packet);
+        }
+      });
+  }
 }

@@ -4,9 +4,10 @@ import { createCursorView, CursorView } from "../allocator/CursorView";
 import { removeRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { Player } from "../component/Player";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,
+  InitializeNetworkStateMessage,
   NetworkMessage,
   NetworkMessageType,
   RemovePeerIdMessage,
@@ -29,6 +30,7 @@ import {
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
+import { NetworkRingBuffer } from "./RingBuffer";
 // import { createCommandMessage } from "./commands.game";
 
 /*********
@@ -36,6 +38,8 @@ import { registerInboundMessageHandler } from "./inbound.game";
  ********/
 
 export interface GameNetworkState {
+  incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   hosting: boolean;
   incomingPackets: ArrayBuffer[];
   incomingPeerIds: string[];
@@ -63,27 +67,35 @@ export interface GameNetworkState {
 
 export const NetworkModule = defineModule<GameState, GameNetworkState>({
   name: "network",
-  create: (ctx): GameNetworkState => ({
-    hosting: false,
-    incomingPackets: [],
-    incomingPeerIds: [],
-    networkIdToEntityId: new Map<number, number>(),
-    peerIdToEntityId: new Map(),
-    entityIdToPeerId: new Map(),
-    hostId: "",
-    peerId: "",
-    peers: [],
-    newPeers: [],
-    peerIdToIndex: new Map(),
-    indexToPeerId: new Map(),
-    peerIdCount: 0,
-    localIdCount: 0,
-    removedLocalIds: [],
-    messageHandlers: {},
-    cursorView: createCursorView(),
-    peerIdToHistorian: new Map(),
-    interpolate: false,
-  }),
+  create: async (ctx, { waitForMessage }): Promise<GameNetworkState> => {
+    const { incomingRingBuffer, outgoingRingBuffer } = await waitForMessage<InitializeNetworkStateMessage>(
+      Thread.Main,
+      NetworkMessageType.InitializeNetworkState
+    );
+    return {
+      incomingRingBuffer,
+      outgoingRingBuffer,
+      hosting: false,
+      incomingPackets: [],
+      incomingPeerIds: [],
+      networkIdToEntityId: new Map<number, number>(),
+      peerIdToEntityId: new Map(),
+      entityIdToPeerId: new Map(),
+      hostId: "",
+      peerId: "",
+      peers: [],
+      newPeers: [],
+      peerIdToIndex: new Map(),
+      indexToPeerId: new Map(),
+      peerIdCount: 0,
+      localIdCount: 0,
+      removedLocalIds: [],
+      messageHandlers: {},
+      cursorView: createCursorView(),
+      peerIdToHistorian: new Map(),
+      interpolate: false,
+    };
+  },
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
 
