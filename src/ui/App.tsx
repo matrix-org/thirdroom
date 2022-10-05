@@ -12,6 +12,7 @@ import { HydrogenRootView } from "./views/HydrogenRootView";
 import { SplashScreen } from "./views/components/splash-screen/SplashScreen";
 import { PageNotFound } from "./views/components/page-not-found/PageNotFound";
 import { LoadingScreen } from "./views/components/loading-screen/LoadingScreen";
+import ScriptingSandbox from "./views/scripting-sandbox/ScriptingSandbox";
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -123,6 +124,14 @@ export function App() {
           element={
             <Suspense fallback={<SplashScreen />}>
               <AssetPipeline />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/scripting"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <ScriptingSandbox />
             </Suspense>
           }
         />
