@@ -24,27 +24,12 @@ import {
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
-  // state.network.peers.forEach((peerId: string) => {
-  //   sendReliable(state, peerId, packet);
-  // });
-  // state.sendMessage(
-  //   Thread.Main,
-  //   {
-  //     type: NetworkMessageType.NetworkBroadcast,
-  //     packet,
-  //     reliable: true,
-  //   },
-  //   [packet]
-  // );
   if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, "", packet, true)) {
     console.warn("outgoing network ring buffer full");
   }
 };
 
 export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
-  // state.network.peers.forEach((peerId: string) => {
-  //   sendUnreliable(state, peerId, packet);
-  // });
   state.sendMessage(
     Thread.Main,
     {
@@ -57,18 +42,6 @@ export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
 };
 
 export const sendReliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
-  // todo: headers
-  // packet = writeHeaders(state, peerId, packet);
-  // state.sendMessage(
-  //   Thread.Main,
-  //   {
-  //     type: NetworkMessageType.NetworkMessage,
-  //     peerId,
-  //     packet,
-  //     reliable: true,
-  //   },
-  //   [packet]
-  // );
   if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, peerId, packet)) {
     console.warn("outgoing network ring buffer full");
   }
@@ -120,7 +93,6 @@ function disposeNetworkedEntities(state: GameState) {
   }
 }
 
-// rate limiting outbound data reduces bandwidth and smoothes the interpolation
 const sendUpdates = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
   const data: NetPipeData = [ctx, network.cursorView];
@@ -159,9 +131,6 @@ const sendUpdates = (ctx: GameState) => {
     // reliably send full messages for now
     const msg = createFullChangedMessage(data);
     if (msg.byteLength) broadcastReliable(ctx, network, msg);
-    // } else {
-    // const msg = createCommandMessage(data);
-    // if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);
     // }
   }
 
