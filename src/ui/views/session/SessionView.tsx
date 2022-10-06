@@ -32,6 +32,7 @@ import { AudioModule } from "../../../engine/audio/audio.main";
 import { getModule, Thread } from "../../../engine/module/module.common";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../plugins/spawnables/spawnables.common";
 import { useRoomCall } from "../../hooks/useRoomCall";
+import { LoadingScreen } from "../components/loading-screen/LoadingScreen";
 
 let worldReloadId = 0;
 
@@ -416,7 +417,7 @@ export default function SessionView() {
             <StatusBar showOverlayTip={isEnteredWorld} title={isHome ? "Home" : world?.name} />
           </MainThreadContextProvider>
         ) : (
-          <div>Initializing engine...</div>
+          <LoadingScreen message="Initializing engine..." />
         )}
       </div>
     </DndProvider>
