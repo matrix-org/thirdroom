@@ -137,19 +137,19 @@ export function createMatrixNetworkInterface(
   }
 
   function joinWorld(userId: string, isHost: boolean) {
-    setHost(ctx, isHost);
+    if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
     enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
-          updateHost();
+          updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
-        updateHost();
+        updateHost(userId);
         removePeer(ctx, member.userId);
       },
       onReset() {
@@ -157,7 +157,7 @@ export function createMatrixNetworkInterface(
       },
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !hasPeer(ctx, member.userId)) {
-          updateHost();
+          updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
@@ -170,7 +170,7 @@ export function createMatrixNetworkInterface(
     }
   }
 
-  function updateHost() {
+  function updateHost(userId: string) {
     // Of the connected members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
 
@@ -179,9 +179,17 @@ export function createMatrixNetworkInterface(
       .filter((member) => member.isConnected && member.dataChannel);
 
     if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-      setHost(ctx, true);
+      setHost(ctx, userId);
     } else {
-      setHost(ctx, false);
+      // TODO: use powerlevels to determine host
+      // find youngest member for now
+      const hostMember = sortedConnectedMembers.sort((a, b) => {
+        if (a.eventTimestamp === b.eventTimestamp) {
+          return a.deviceIndex! > b.deviceIndex ? 1 : -1;
+        }
+        return a.eventTimestamp! > b.eventTimestamp ? 1 : -1;
+      })[0];
+      setHost(ctx, hostMember.userId);
     }
   }
 

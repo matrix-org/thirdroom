@@ -49,7 +49,7 @@ import {
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 
-export type NetPipeData = [GameState, CursorView];
+export type NetPipeData = [GameState, CursorView, string];
 
 export const writeElapsed = (input: NetPipeData) => {
   const [ctx, v] = input;
@@ -422,7 +422,7 @@ export function deserializePeerIdIndex(input: NetPipeData) {
 const messageView = createCursorView(new ArrayBuffer(1000));
 
 export function createPeerIdIndexMessage(state: GameState, peerId: string) {
-  const input: NetPipeData = [state, messageView];
+  const input: NetPipeData = [state, messageView, ""];
   writeMessageType(NetworkAction.AssignPeerIdIndex)(input);
   writeElapsed(input);
   serializePeerIdIndex(input, peerId);
@@ -493,7 +493,7 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
 }
 
 export function createPlayerNetworkIdMessage(state: GameState) {
-  const input: NetPipeData = [state, messageView];
+  const input: NetPipeData = [state, messageView, ""];
   writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
   writeElapsed(input);
   serializePlayerNetworkId(input);

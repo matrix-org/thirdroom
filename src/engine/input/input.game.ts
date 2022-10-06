@@ -2,6 +2,8 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
+import { isHost } from "../network/network.common";
+import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
@@ -49,8 +51,8 @@ enum MouseButton {
   Scroll = 1 << 5,
 }
 
-const out = { keyCode: 0, values: [] };
-function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
+const out: { keyCode: number; values: [number, number] } = { keyCode: 0, values: [0, 0] };
+export function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   const buttons = o.values[0];
   raw["Mouse/Left"] = checkBitflag(buttons, MouseButton.Left) ? 1 : 0;
   raw["Mouse/Right"] = checkBitflag(buttons, MouseButton.Right) ? 1 : 0;
@@ -60,19 +62,33 @@ function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/Scroll"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
 }
 
-function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
+export function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/movementX"] = o.values[0];
   raw["Mouse/movementY"] = o.values[1];
 }
 
-function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
+export function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/Scroll"] = o.values[0];
 }
 
 export function ApplyInputSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+
   const { inputRingBuffer, raw } = getModule(ctx, InputModule);
   while (availableRead(inputRingBuffer)) {
-    dequeueInputRingBuffer(inputRingBuffer, out);
+    const command = dequeueInputRingBuffer(inputRingBuffer, out);
+    if (!command) continue;
+
+    if (!isHost(network)) {
+      // collect commands to send to host
+      network.commands.push(command);
+
+      // skip applying inputs if we aren't hosting and client-side prediction is off
+      if (!network.clientSidePrediction) {
+        continue;
+      }
+    }
+
     switch (out.keyCode) {
       case KeyCodes.MouseButtons:
         applyMouseButtons(raw, out);

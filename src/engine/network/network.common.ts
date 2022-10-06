@@ -1,4 +1,6 @@
 import { Message } from "../module/module.common";
+import { GameNetworkState } from "./network.game";
+import { MainNetworkState } from "./network.main";
 import { NetworkRingBuffer } from "./RingBuffer";
 
 export enum NetworkMessageType {
@@ -49,3 +51,6 @@ export interface RemovePeerIdMessage extends Message<NetworkMessageType.RemovePe
 export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
   hostId: string;
 }
+
+export const isHost = (network: GameNetworkState | MainNetworkState) =>
+  network.peerId && network.hostId && network.hostId === network.peerId;

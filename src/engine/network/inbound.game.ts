@@ -13,7 +13,7 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
   const cursorView = createCursorView(msg);
   const messageType = readUint8(cursorView);
   const elapsed = readFloat32(cursorView);
-  const input: NetPipeData = [state, cursorView];
+  const input: NetPipeData = [state, cursorView, peerId];
   const { messageHandlers } = getModule(state, NetworkModule);
 
   const historian = network.peerIdToHistorian.get(peerId);
@@ -36,19 +36,12 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-const arr: [string, ArrayBuffer][] = [];
+// const arr: [string, ArrayBuffer][] = [];
 const processNetworkMessages = (state: GameState) => {
   try {
     const network = getModule(state, NetworkModule);
-    // while (network.incomingPackets.length) {
-    //   const peerId = network.incomingPeerIds.pop();
-    //   const msg = network.incomingPackets.pop();
-    //   if (peerId && msg) processNetworkMessage(state, peerId, msg);
-    // }
 
-    // if (availableRead(network.incomingRingBuffer) > 10000)
     while (availableRead(network.incomingRingBuffer)) {
-      // console.log("incoming packets", availableRead(network.incomingRingBuffer) / 1000);
       dequeueNetworkRingBuffer(network.incomingRingBuffer, ringOut);
       if (ringOut.peerId && ringOut.packet) {
         // arr.unshift([ringOut.peerId, ringOut.packet]);
@@ -56,10 +49,10 @@ const processNetworkMessages = (state: GameState) => {
       }
     }
 
-    while (arr.length) {
-      const a = arr.shift();
-      if (a) processNetworkMessage(state, a[0], a[1]);
-    }
+    // while (arr.length) {
+    //   const a = arr.shift();
+    //   if (a) processNetworkMessage(state, a[0], a[1]);
+    // }
   } catch (e) {
     console.error(e);
   }

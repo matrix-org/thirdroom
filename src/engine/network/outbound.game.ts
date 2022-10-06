@@ -3,7 +3,8 @@
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
-import { NetworkMessageType } from "./network.common";
+import { createCommandMessage } from "./commands.game";
+import { isHost, NetworkMessageType } from "./network.common";
 import {
   NetworkModule,
   enteredNetworkIdQuery,
@@ -95,7 +96,7 @@ function disposeNetworkedEntities(state: GameState) {
 
 const sendUpdates = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
-  const data: NetPipeData = [ctx, network.cursorView];
+  const data: NetPipeData = [ctx, network.cursorView, ""];
 
   // only send updates when:
   // - we have connected peers
@@ -104,6 +105,7 @@ const sendUpdates = (ctx: GameState) => {
   const haveConnectedPeers = network.peers.length > 0;
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
   const hostEstablished = network.hostId !== "";
+  const hosting = isHost(network);
 
   if (!haveConnectedPeers || !spawnedPlayerRig || !hostEstablished) {
     return ctx;
@@ -111,27 +113,28 @@ const sendUpdates = (ctx: GameState) => {
 
   // send snapshot update to all new peers
   const haveNewPeers = network.newPeers.length > 0;
-  if (haveNewPeers) {
-    const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
 
-    while (network.newPeers.length) {
-      const theirPeerId = network.newPeers.shift();
-      if (theirPeerId) {
-        // if hosting, broadcast peerIdIndex message
-        // if (network.hosting) {
-        // broadcastReliable(ctx, createPeerIdIndexMessage(ctx, theirPeerId));
-        broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, network.peerId));
-        // }
+  if (hosting) {
+    if (haveNewPeers) {
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
 
-        sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
+      while (network.newPeers.length) {
+        const theirPeerId = network.newPeers.shift();
+        if (theirPeerId) {
+          broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, network.peerId));
+          sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
+        }
       }
+    } else {
+      // send state updates if hosting
+      const msg = createFullChangedMessage(data);
+      if (msg.byteLength) broadcastReliable(ctx, network, msg);
     }
-  } else {
-    // if (network.hosting) {
-    // reliably send full messages for now
-    const msg = createFullChangedMessage(data);
-    if (msg.byteLength) broadcastReliable(ctx, network, msg);
-    // }
+  } else if (network.commands.length) {
+    // send commands to host if not hosting
+    const msg = createCommandMessage(ctx, network.commands);
+    if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);
+    network.commands.length = 0;
   }
 
   return ctx;

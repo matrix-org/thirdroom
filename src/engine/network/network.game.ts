@@ -27,10 +27,12 @@ import {
   deserializeSnapshot,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
+  NetPipeData,
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { NetworkRingBuffer } from "./RingBuffer";
+import { deserializeCommand } from "./commands.game";
 // import { createCommandMessage } from "./commands.game";
 
 /*********
@@ -43,22 +45,25 @@ export interface GameNetworkState {
   hosting: boolean;
   incomingPackets: ArrayBuffer[];
   incomingPeerIds: string[];
-  peerIdToEntityId: Map<string, number>;
-  entityIdToPeerId: Map<number, string>;
-  networkIdToEntityId: Map<number, number>;
-  peerId: string;
+  commands: ArrayBuffer[];
   hostId: string;
+  peerId: string;
   peers: string[];
   newPeers: string[];
   peerIdCount: number;
   peerIdToIndex: Map<string, number>;
+  peerIdToHistorian: Map<string, Historian>;
+  peerIdToEntityId: Map<string, number>;
+  peerIdToInputState: Map<string, { [path: string]: number }>;
+  entityIdToPeerId: Map<number, string>;
+  networkIdToEntityId: Map<number, number>;
   indexToPeerId: Map<number, string>;
   localIdCount: number;
   removedLocalIds: number[];
-  messageHandlers: { [key: number]: (input: [GameState, CursorView]) => void };
+  messageHandlers: { [key: number]: (input: NetPipeData) => void };
   cursorView: CursorView;
-  peerIdToHistorian: Map<string, Historian>;
   interpolate: boolean;
+  clientSidePrediction: boolean;
 }
 
 /******************
@@ -78,22 +83,25 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       hosting: false,
       incomingPackets: [],
       incomingPeerIds: [],
-      networkIdToEntityId: new Map<number, number>(),
-      peerIdToEntityId: new Map(),
-      entityIdToPeerId: new Map(),
+      commands: [],
       hostId: "",
       peerId: "",
       peers: [],
       newPeers: [],
       peerIdToIndex: new Map(),
+      peerIdToHistorian: new Map(),
+      peerIdToInputState: new Map(),
+      networkIdToEntityId: new Map(),
+      peerIdToEntityId: new Map(),
+      entityIdToPeerId: new Map(),
       indexToPeerId: new Map(),
       peerIdCount: 0,
       localIdCount: 0,
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
-      peerIdToHistorian: new Map(),
       interpolate: false,
+      clientSidePrediction: false,
     };
   },
   init(ctx: GameState) {
@@ -110,6 +118,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
+    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommand);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),

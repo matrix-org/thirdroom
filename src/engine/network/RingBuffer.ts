@@ -46,6 +46,18 @@ export function createNetworkRingBuffer<T extends TypedArrayConstructor>(
   });
 }
 
+const writePeerIdCache = new Map();
+const writePeerId = (v: CursorView, peerId: string) => {
+  const encoded = writePeerIdCache.get(peerId);
+  if (encoded) {
+    writeUint8(v, encoded.byteLength);
+    writeArrayBuffer(v, encoded);
+  } else {
+    writeString(v, peerId);
+  }
+  return v;
+};
+
 export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
   rb: NetworkRingBuffer<T>,
   peerId: string,
@@ -56,7 +68,7 @@ export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
 
   moveCursorView(view, 0);
 
-  writeString(view, peerId);
+  writePeerId(view, peerId);
 
   writeUint8(view, broadcast ? 1 : 0);
 

@@ -1,6 +1,12 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import { InitializeNetworkStateMessage, NetworkBroadcast, NetworkMessage, NetworkMessageType } from "./network.common";
+import {
+  InitializeNetworkStateMessage,
+  NetworkBroadcast,
+  NetworkMessage,
+  NetworkMessageType,
+  SetHostMessage,
+} from "./network.common";
 import { IMainThreadContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -20,9 +26,11 @@ export interface MainNetworkState {
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
   // event listener references here for access upon disposal (removeEventListener)
-  onPeerMessage?: ({ data }: { data: ArrayBuffer }) => void;
+  onIncomingMessage?: ({ data }: { data: ArrayBuffer }) => void;
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  peerId?: string;
+  hostId?: string;
 }
 
 /******************
@@ -69,7 +77,6 @@ export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>(
 const onIncomingMessage =
   (ctx: IMainThreadContext, network: MainNetworkState, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
-    // ctx.sendMessage(Thread.Game, { type: NetworkMessageType.NetworkMessage, peerId, packet: data }, [data]);
     if (!enqueueNetworkRingBuffer(network.incomingRingBuffer, peerId, data)) {
       console.warn("incoming network ring buffer full");
     }
@@ -109,9 +116,9 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
   const unreliableChannel = unreliableChannels.get(peerId);
-  if (network.onPeerMessage) {
-    reliableChannel?.removeEventListener("message", network.onPeerMessage);
-    unreliableChannel?.removeEventListener("message", network.onPeerMessage);
+  if (network.onIncomingMessage) {
+    reliableChannel?.removeEventListener("message", network.onIncomingMessage);
+    unreliableChannel?.removeEventListener("message", network.onIncomingMessage);
   }
 
   reliableChannels.delete(peerId);
@@ -186,11 +193,15 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
   ws.addEventListener("message", addPeerId);
 }
 
-export function setHost(mainThread: IMainThreadContext, value: boolean) {
-  console.log("setting host to", value);
-  mainThread.sendMessage(Thread.Game, {
+export function setHost(mainThread: IMainThreadContext, hostId: string) {
+  console.log("setting host to", hostId);
+
+  const network = getModule(mainThread, NetworkModule);
+  network.hostId = hostId;
+
+  mainThread.sendMessage<SetHostMessage>(Thread.Game, {
     type: NetworkMessageType.SetHost,
-    value,
+    hostId,
   });
 }
 
@@ -218,8 +229,8 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    network.onPeerMessage = onIncomingMessage(mainThread, network, peerId);
-    dataChannel.addEventListener("message", network.onPeerMessage);
+    network.onIncomingMessage = onIncomingMessage(mainThread, network, peerId);
+    dataChannel.addEventListener("message", network.onIncomingMessage);
     dataChannel.addEventListener("close", onClose);
 
     mainThread.sendMessage(Thread.Game, {
@@ -273,6 +284,9 @@ export function disconnect(mainThread: IMainThreadContext) {
 }
 
 export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
+  const network = getModule(mainThread, NetworkModule);
+  network.peerId = peerId;
+
   mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.SetPeerId,
     peerId,

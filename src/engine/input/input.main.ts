@@ -34,60 +34,46 @@ export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
     };
   },
   init(ctx) {
-    const { inputRingBuffer } = getModule(ctx, InputModule);
+    const { inputRingBuffer: irb } = getModule(ctx, InputModule);
     const { canvas } = ctx;
 
     const last: { [key: string]: boolean } = {};
 
-    function onMouseDown({ buttons }: MouseEvent) {
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseButtons, buttons)) {
-          console.warn("input ring buffer full");
-        }
+    function enqueue(keyCode: number, ...values: number[]) {
+      if (document.pointerLockElement !== canvas) {
+        return;
+      }
+
+      if (!enqueueInputRingBuffer(irb, keyCode, ...values)) {
+        console.warn("input ring buffer full");
       }
     }
 
+    function onMouseDown({ buttons }: MouseEvent) {
+      enqueue(KeyCodes.MouseButtons, buttons);
+    }
+
     function onMouseUp({ buttons }: MouseEvent) {
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseButtons, buttons)) {
-          console.warn("input ring buffer full");
-        }
-      }
+      enqueue(KeyCodes.MouseButtons, buttons);
     }
 
     function onKeyDown({ code }: KeyboardEvent) {
       if (last[code]) return;
       last[code] = true;
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, codeToKeyCode(code), 1)) {
-          console.warn("input ring buffer full");
-        }
-      }
+      enqueue(codeToKeyCode(code), 1);
     }
 
     function onKeyUp({ code }: KeyboardEvent) {
       last[code] = false;
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, codeToKeyCode(code), 0)) {
-          console.warn("input ring buffer full");
-        }
-      }
+      enqueue(codeToKeyCode(code), 0);
     }
 
     function onMouseMove({ movementX, movementY }: MouseEvent) {
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseMovement, movementX, movementY)) {
-          console.warn("input ring buffer full");
-        }
-      }
+      enqueue(KeyCodes.MouseMovement, movementX, movementY);
     }
 
     function onWheel({ deltaY }: WheelEvent) {
-      if (document.pointerLockElement === canvas) {
-        if (!enqueueInputRingBuffer(inputRingBuffer, KeyCodes.MouseScroll, deltaY)) {
-          console.warn("input ring buffer full");
-        }
-      }
+      enqueue(KeyCodes.MouseScroll, deltaY);
     }
 
     function onBlur() {}
