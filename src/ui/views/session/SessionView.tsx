@@ -31,6 +31,7 @@ import { Button } from "../../atoms/button/Button";
 import { AudioModule } from "../../../engine/audio/audio.main";
 import { getModule, Thread } from "../../../engine/module/module.common";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../plugins/spawnables/spawnables.common";
+import { useRoomCall } from "../../hooks/useRoomCall";
 
 let worldReloadId = 0;
 
@@ -63,10 +64,7 @@ export default function SessionView() {
   const [worldIdOrAlias, world, curWorldReloadId] = useWorld();
 
   const calls = useCalls(session);
-  const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
-    return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, world]);
+  const activeCall = useRoomCall(calls, world?.id);
 
   const { value: roomStatus } = useRoomStatus(session, world?.id);
 

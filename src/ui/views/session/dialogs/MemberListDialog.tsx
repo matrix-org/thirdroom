@@ -1,4 +1,4 @@
-import { useState, ReactNode, useMemo, useEffect } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
 import { Header } from "../../../atoms/header/Header";
@@ -30,6 +30,7 @@ import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { InviteDialog } from "./InviteDialog";
 import { useStore } from "../../../hooks/useStore";
+import { useRoomCall } from "../../../hooks/useRoomCall";
 
 interface MemberListDialogProps {
   room: Room;
@@ -49,10 +50,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const isWorld = room.type === "org.matrix.msc3815.world";
 
   const calls = useCalls(session);
-  const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
-    return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, world]);
+  const activeCall = useRoomCall(calls, world?.id);
 
   const [active, setActive] = useState<RoomMember[]>();
   const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
