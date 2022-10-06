@@ -17,7 +17,6 @@ import { NetPipeData, writeMetadata } from "./serialization.game";
 const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 
-// TODO: collect commands and then call this in outbound network system
 export const createCommandMessage = (ctx: GameState, commands: ArrayBuffer[]) => {
   writeMetadata(NetworkAction.Command)([ctx, messageView]);
   writeUint8(messageView, commands.length);
@@ -32,8 +31,6 @@ export const deserializeCommand = (input: NetPipeData) => {
   const [ctx, cv, peerId] = input;
   const network = getModule(ctx, NetworkModule);
 
-  console.log("deserializeCommand", peerId);
-
   const count = readUint8(cv);
   for (let i = 0; i < count; i++) {
     out.keyCode = readUint8(cv);
@@ -43,8 +40,6 @@ export const deserializeCommand = (input: NetPipeData) => {
     let raw = network.peerIdToInputState.get(peerId);
 
     if (!raw) {
-      // console.error("could not find input state for peerId", peerId);
-      // return input;
       raw = {};
       network.peerIdToInputState.set(peerId, raw);
     }
