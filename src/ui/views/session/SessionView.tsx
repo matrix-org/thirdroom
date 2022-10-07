@@ -24,7 +24,7 @@ import { useWorld } from "../../hooks/useRoomIdFromAlias";
 import { createMatrixNetworkInterface } from "../../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet } from "../../../engine/network/network.main";
 import { loadWorld } from "../../../plugins/thirdroom/thirdroom.main";
-import { getProfileRoom, parseMatrixUri } from "../../utils/matrixUtils";
+import { getProfileRoom, parseMatrixUri, roomIdToAlias } from "../../utils/matrixUtils";
 import { useRoomStatus } from "../../hooks/useRoomStatus";
 import { AlertDialog } from "./dialogs/AlertDialog";
 import { Button } from "../../atoms/button/Button";
@@ -43,7 +43,6 @@ export interface SessionOutletContext {
   onExitWorld: () => void;
   onWorldTransfer: (uri: string) => void;
   onJoinSelectedWorld: () => void;
-  onLoadSelectedWorld: () => void;
   onEnterSelectedWorld: () => void;
 }
 
@@ -219,20 +218,6 @@ export default function SessionView() {
     navigate(`/world/${(room && room.canonicalAlias) || worldId}?reload=${worldReloadId++}`);
   }, [session, navigate]);
 
-  const onLoadSelectedWorld = useCallback(async () => {
-    const state = useStore.getState();
-
-    const worldId = state.overlayWorld.selectedWorldId;
-
-    if (!worldId) {
-      return;
-    }
-
-    const room = session.rooms.get(worldId);
-
-    navigate(`/world/${(room && room.canonicalAlias) || worldId}`);
-  }, [session, navigate]);
-
   const onEnterSelectedWorld = useCallback(async () => {
     if (!world || "isBeingCreated" in world || !mainThread) {
       return;
@@ -340,7 +325,7 @@ export default function SessionView() {
       }
 
       // load world
-      await onLoadSelectedWorld();
+      navigate(`/world/${roomIdToAlias(session.rooms, parsedUri.mxid1) ?? parsedUri.mxid1}`);
 
       // enter world when loaded
       const interval = setInterval(() => {
@@ -354,7 +339,7 @@ export default function SessionView() {
         clearInterval(interval);
       };
     },
-    [onLoadSelectedWorld, onJoinSelectedWorld, session]
+    [onJoinSelectedWorld, navigate, session]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
@@ -365,19 +350,9 @@ export default function SessionView() {
       onExitWorld,
       onWorldTransfer,
       onJoinSelectedWorld,
-      onLoadSelectedWorld,
       onEnterSelectedWorld,
     }),
-    [
-      world,
-      activeCall,
-      canvasRef,
-      onExitWorld,
-      onWorldTransfer,
-      onJoinSelectedWorld,
-      onLoadSelectedWorld,
-      onEnterSelectedWorld,
-    ]
+    [world, activeCall, canvasRef, onExitWorld, onWorldTransfer, onJoinSelectedWorld, onEnterSelectedWorld]
   );
 
   const acceptPortalPrompt = useCallback(() => {
@@ -410,7 +385,6 @@ export default function SessionView() {
                 onExitWorld={onExitWorld}
                 onJoinWorld={onJoinSelectedWorld}
                 onReloadWorld={onReloadSelectedWorld}
-                onLoadWorld={onLoadSelectedWorld}
                 onEnterWorld={onEnterSelectedWorld}
               />
             )}

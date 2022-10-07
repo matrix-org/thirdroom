@@ -24,6 +24,7 @@ import { registerMessageHandler } from "../../../../engine/module/module.common"
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Progress } from "../../../atoms/progress/Progress";
 import { bytesToSize, getPercentage } from "../../../utils/common";
+import { roomIdToAlias } from "../../../utils/matrixUtils";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -59,12 +60,11 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
 
 interface IWorldPreview {
   onJoinWorld: MouseEventHandler<HTMLButtonElement>;
-  onLoadWorld: MouseEventHandler<HTMLButtonElement>;
   onReloadWorld: MouseEventHandler<HTMLButtonElement>;
   onEnterWorld: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
+export function WorldPreview({ onJoinWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
   const navigate = useNavigate();
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
@@ -112,6 +112,11 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
     return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);
   }, [engine]);
 
+  const handleLoadWorld = () => {
+    if (!selectedWorldId) return;
+    navigate(`/world/${roomIdToAlias(session.rooms, selectedWorldId) ?? selectedWorldId}`);
+  };
+
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
       {room && (
@@ -156,7 +161,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                 memberCount={memberCount}
                 onMembersClick={() => setIsMemberDialog(true)}
                 options={
-                  <Button size="lg" variant="secondary" onClick={onLoadWorld}>
+                  <Button size="lg" variant="secondary" onClick={handleLoadWorld}>
                     Load World
                   </Button>
                 }
@@ -172,7 +177,7 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
                   memberCount={memberCount}
                   onMembersClick={() => setIsMemberDialog(true)}
                   options={
-                    <Button size="lg" variant="secondary" onClick={onLoadWorld}>
+                    <Button size="lg" variant="secondary" onClick={handleLoadWorld}>
                       Load World
                     </Button>
                   }

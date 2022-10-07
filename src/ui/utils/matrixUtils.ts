@@ -59,12 +59,14 @@ export async function isRoomAliasAvailable(homeserver: string, alias: string): P
   return false;
 }
 
-export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: string): Room | void {
-  if (alias.startsWith("#") === false) return;
-
+export function aliasToRoomId(rooms: ObservableMap<string, Room>, alias: string) {
   for (const room of rooms.values()) {
-    if (room.canonicalAlias === alias) return room;
+    if (room.canonicalAlias === alias) return room.id;
   }
+}
+
+export function roomIdToAlias(rooms: ObservableMap<string, Room>, roomId: string) {
+  return rooms.get(roomId)?.canonicalAlias ?? undefined;
 }
 
 export function getProfileRoom(rooms: ObservableMap<string, Room>) {
