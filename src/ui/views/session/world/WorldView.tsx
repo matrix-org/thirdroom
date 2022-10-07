@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { useOutletContext } from "react-router-dom";
-import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
 import { SessionOutletContext } from "../SessionView";
@@ -112,8 +112,13 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
   }
 );
 
-export function WorldView() {
-  const { canvasRef, world, onExitWorld, onWorldTransfer, activeCall } = useOutletContext<SessionOutletContext>();
+interface WorldViewProps {
+  world: Room;
+  activeCall: GroupCall;
+}
+
+export function WorldView({ world, activeCall }: WorldViewProps) {
+  const { canvasRef, onExitWorld, onWorldTransfer } = useOutletContext<SessionOutletContext>();
   const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
@@ -320,10 +325,6 @@ export function WorldView() {
   }, [canvasRef, finishOnboarding]);
 
   usePointerLockChange(canvasRef.current, setIsPointerLock, []);
-
-  if (isEnteredWorld === false || world === undefined) {
-    return null;
-  }
 
   const renderControl = () => (
     <>
