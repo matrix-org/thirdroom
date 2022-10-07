@@ -53,7 +53,7 @@ const LoginView = lazy(() => import("./views/login/LoginView"));
 const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
 const SessionView = lazy(() => import("./views/session/SessionView"));
-const WorldView = lazy(() => import("./views/session/world/WorldView"));
+const World = lazy(() => import("./views/session/world/World"));
 
 export function App() {
   return (
@@ -88,7 +88,7 @@ export function App() {
               path="world/:worldId"
               element={
                 <Suspense fallback={<></>}>
-                  <WorldView />
+                  <World />
                 </Suspense>
               }
             />
@@ -96,7 +96,7 @@ export function App() {
               path="world/"
               element={
                 <Suspense fallback={<></>}>
-                  <WorldView />
+                  <World />
                 </Suspense>
               }
             />
@@ -104,7 +104,7 @@ export function App() {
               path="/"
               element={
                 <Suspense fallback={<></>}>
-                  <WorldView />
+                  <World />
                 </Suspense>
               }
             />

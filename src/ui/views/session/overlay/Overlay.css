@@ -28,17 +28,3 @@
   position: relative;
   pointer-events: all;
 }
-
-.Overlay__world-preview {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.Overlay__world-preview--blur {
-  filter: blur(16px);
-  transform: scale(1.1);
-}

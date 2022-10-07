@@ -1,4 +1,4 @@
-import { MouseEventHandler, useEffect, useState } from "react";
+import { MouseEventHandler } from "react";
 import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
@@ -29,8 +29,6 @@ import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
-import { loadImageUrl } from "../../../utils/common";
-import { useIsMounted } from "../../../hooks/useIsMounted";
 
 interface OverlayProps {
   calls: Map<string, GroupCall>;
@@ -70,7 +68,6 @@ export function Overlay({ calls, activeCall, onExitWorld, onJoinWorld, onReloadW
     closeOverlay: state.overlay.closeOverlay,
   }));
 
-  const isMounted = useIsMounted();
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -78,63 +75,9 @@ export function Overlay({ calls, activeCall, onExitWorld, onJoinWorld, onReloadW
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
-  const [worldPreview, setWorldPreview] = useState<{ url?: string; thumbnail: string } | undefined>();
-
-  useEffect(() => {
-    if (selectedWorldId) {
-      const world = session.rooms.get(selectedWorldId);
-      let selectedWorldChanged = false;
-
-      if (!world || "isBeingCreated" in world) {
-        return;
-      }
-
-      world.getStateEvent("org.matrix.msc3815.world").then((result: any) => {
-        const scenePreviewUrl = result?.event?.content?.scene_preview_url as string | unknown;
-        let scenePreviewThumbnail = scenePreviewUrl;
-
-        if (typeof scenePreviewUrl === "string" && scenePreviewUrl.startsWith("mxc:")) {
-          scenePreviewThumbnail = session.mediaRepository.mxcUrlThumbnail(scenePreviewUrl, 32, 32, "crop");
-          const downloadUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
-          if (downloadUrl)
-            loadImageUrl(downloadUrl).then((url) => {
-              if (selectedWorldChanged || !isMounted()) return;
-              setWorldPreview({
-                url,
-                thumbnail: url,
-              });
-            });
-        }
-
-        if (typeof scenePreviewThumbnail === "string")
-          setWorldPreview({
-            thumbnail: scenePreviewThumbnail,
-          });
-      });
-      return () => {
-        selectedWorldChanged = true;
-      };
-    }
-  }, [session, selectedWorldId, isMounted]);
-
-  const previewingWorld =
-    worldId !== selectedWorldId ||
-    !(
-      loadState === WorldLoadState.Loaded ||
-      loadState === WorldLoadState.Entering ||
-      loadState === WorldLoadState.Entered
-    );
-
   const isChatOpen = selectedChat || selectedChatInvite;
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
-      {worldPreview?.thumbnail && previewingWorld && (
-        <img
-          alt="World Preview"
-          src={worldPreview.url ?? worldPreview.thumbnail}
-          className={classNames("Overlay__world-preview", { "Overlay__world-preview--blur": !worldPreview.url })}
-        />
-      )}
       <SidebarView
         spaces={<SpacesView />}
         roomList={
