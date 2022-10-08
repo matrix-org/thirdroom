@@ -34,12 +34,11 @@ interface OverlayProps {
   calls: Map<string, GroupCall>;
   activeCall: GroupCall | undefined;
   onExitWorld: MouseEventHandler<HTMLButtonElement>;
-  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
   onReloadWorld: MouseEventHandler<HTMLButtonElement>;
   onEnterWorld: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function Overlay({ calls, activeCall, onExitWorld, onJoinWorld, onReloadWorld, onEnterWorld }: OverlayProps) {
+export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnterWorld }: OverlayProps) {
   const { session, platform } = useHydrogen(true);
 
   const {
@@ -118,7 +117,7 @@ export function Overlay({ calls, activeCall, onExitWorld, onJoinWorld, onReloadW
       ) : (
         <div className="Overlay__content grow">
           {(worldId === selectedWorldId && loadState === WorldLoadState.Entered) || isChatOpen ? undefined : (
-            <WorldPreview onJoinWorld={onJoinWorld} onReloadWorld={onReloadWorld} onEnterWorld={onEnterWorld} />
+            <WorldPreview onReloadWorld={onReloadWorld} onEnterWorld={onEnterWorld} />
           )}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats

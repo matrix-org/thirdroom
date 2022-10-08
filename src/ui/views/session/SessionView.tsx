@@ -42,7 +42,6 @@ export interface SessionOutletContext {
   canvasRef: RefObject<HTMLCanvasElement>;
   onExitWorld: () => void;
   onWorldTransfer: (uri: string) => void;
-  onJoinSelectedWorld: () => void;
   onEnterSelectedWorld: () => void;
 }
 
@@ -184,26 +183,6 @@ export default function SessionView() {
     };
   }, [mainThread, world, curWorldReloadId, session, worldIdOrAlias]);
 
-  const onJoinSelectedWorld = useCallback(async () => {
-    const worldId = useStore.getState().overlayWorld.selectedWorldId;
-
-    if (!worldId) {
-      return;
-    }
-
-    useStore.getState().world.joinWorld();
-
-    try {
-      await session.joinRoom(worldId);
-
-      const room = session.rooms.get(worldId);
-
-      navigate(`/world/${(room && room.canonicalAlias) || worldId}`);
-    } catch (error) {
-      useStore.getState().world.setWorldError(error as Error);
-    }
-  }, [session, navigate]);
-
   const onReloadSelectedWorld = useCallback(() => {
     const state = useStore.getState();
 
@@ -321,7 +300,12 @@ export default function SessionView() {
       // join if not already
       const roomStatus = await session.observeRoomStatus(parsedUri.mxid1);
       if (roomStatus.get() !== RoomStatus.Joined) {
-        await onJoinSelectedWorld();
+        try {
+          useStore.getState().world.joinWorld();
+          await session.joinRoom(parsedUri.mxid1);
+        } catch (error) {
+          useStore.getState().world.setWorldError(error as Error);
+        }
       }
 
       // load world
@@ -339,7 +323,7 @@ export default function SessionView() {
         clearInterval(interval);
       };
     },
-    [onJoinSelectedWorld, navigate, session]
+    [navigate, session]
   );
 
   const outletContext = useMemo<SessionOutletContext>(
@@ -349,10 +333,9 @@ export default function SessionView() {
       canvasRef,
       onExitWorld,
       onWorldTransfer,
-      onJoinSelectedWorld,
       onEnterSelectedWorld,
     }),
-    [world, activeCall, canvasRef, onExitWorld, onWorldTransfer, onJoinSelectedWorld, onEnterSelectedWorld]
+    [world, activeCall, canvasRef, onExitWorld, onWorldTransfer, onEnterSelectedWorld]
   );
 
   const acceptPortalPrompt = useCallback(() => {
@@ -383,7 +366,6 @@ export default function SessionView() {
                 calls={calls}
                 activeCall={activeCall}
                 onExitWorld={onExitWorld}
-                onJoinWorld={onJoinSelectedWorld}
                 onReloadWorld={onReloadSelectedWorld}
                 onEnterWorld={onEnterSelectedWorld}
               />

@@ -20,7 +20,7 @@ export function WorldThumbnail() {
   useEffect(() => {
     let selectedWorldChanged = false;
     const world = previewId ? session.rooms.get(previewId) : undefined;
-    if (world && "isBeingCreated" in world === false) {
+    if (world) {
       world.getStateEvent("org.matrix.msc3815.world").then((result: any) => {
         const scenePreviewUrl = result?.event?.content?.scene_preview_url as string | unknown;
         let scenePreviewThumbnail = scenePreviewUrl;

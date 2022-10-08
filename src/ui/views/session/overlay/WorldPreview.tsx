@@ -59,12 +59,11 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
 }
 
 interface IWorldPreview {
-  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
   onReloadWorld: MouseEventHandler<HTMLButtonElement>;
   onEnterWorld: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function WorldPreview({ onJoinWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
+export function WorldPreview({ onReloadWorld, onEnterWorld }: IWorldPreview) {
   const navigate = useNavigate();
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
@@ -115,6 +114,15 @@ export function WorldPreview({ onJoinWorld, onReloadWorld, onEnterWorld }: IWorl
   const handleLoadWorld = () => {
     if (!selectedWorldId) return;
     navigate(`/world/${roomIdToAlias(session.rooms, selectedWorldId) ?? selectedWorldId}`);
+  };
+  const handleJoinWorld = async () => {
+    if (!selectedWorldId) return;
+    try {
+      useStore.getState().world.joinWorld();
+      await session.joinRoom(selectedWorldId);
+    } catch (error) {
+      useStore.getState().world.setWorldError(error as Error);
+    }
   };
 
   return (
@@ -309,7 +317,7 @@ export function WorldPreview({ onJoinWorld, onReloadWorld, onEnterWorld }: IWorl
             <WorldPreviewCard
               title="Unnamed Room"
               options={
-                <Button size="lg" variant="primary" disabled={joiningWorld} onClick={onJoinWorld}>
+                <Button size="lg" variant="primary" disabled={joiningWorld} onClick={handleJoinWorld}>
                   {joiningWorld ? "Joining World..." : "Join World"}
                 </Button>
               }
