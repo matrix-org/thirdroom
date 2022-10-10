@@ -7,6 +7,8 @@ import {
   HomeServerApi,
   RoomBeingCreated,
   Session,
+  GroupCall,
+  BaseObservableMap,
 } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
@@ -73,6 +75,19 @@ export function getProfileRoom(rooms: ObservableMap<string, Room>) {
   const type = "org.matrix.msc3815.profile";
   for (const room of rooms.values()) {
     if (room.type === type) return room;
+  }
+}
+export async function updateWorldProfile(session: Session, world: Room) {
+  const profileRoom = getProfileRoom(session.rooms);
+
+  if (profileRoom) {
+    const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
+
+    if (profileEvent && profileEvent.event.content.avatar_url) {
+      await session.hsApi.sendState(world.id, "org.matrix.msc3815.world.member", session.userId, {
+        avatar_url: profileEvent.event.content.avatar_url,
+      });
+    }
   }
 }
 
@@ -195,4 +210,10 @@ export function parseMatrixUri(uri: string): ParsedMatrixURI | URL {
 
 export function parsedMatrixUriToString(uri: ParsedMatrixURI | URL) {
   return uri instanceof URL ? uri.href : uri.mxid1;
+}
+
+export function getRoomCall(calls: Map<string, GroupCall> | BaseObservableMap<string, GroupCall>, roomId?: string) {
+  if (!roomId) return undefined;
+  const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === roomId ? call : []));
+  return roomCalls.length ? roomCalls[0] : undefined;
 }
