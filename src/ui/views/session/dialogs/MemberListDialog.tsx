@@ -23,7 +23,6 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { Dots } from "../../../atoms/loading/Dots";
-import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
@@ -43,9 +42,12 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const { isEnteredWorld, worldId } = useStore((state) => state.world);
+  const { isEnteredWorld, worldId } = useStore((state) => ({
+    worldId: state.world.worldId,
+    isEnteredWorld: state.world.entered,
+  }));
 
-  const [, world] = useWorld();
+  const world = worldId ? session.rooms.get(worldId) : undefined;
 
   const isWorld = room.type === "org.matrix.msc3815.world";
 

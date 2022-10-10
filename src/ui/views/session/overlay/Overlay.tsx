@@ -1,4 +1,3 @@
-import { MouseEventHandler } from "react";
 import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
@@ -21,7 +20,7 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, SidebarTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
+import { useStore, SidebarTabs, OverlayWindow } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { useInvite } from "../../../hooks/useInvite";
@@ -29,17 +28,13 @@ import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
+import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useCalls } from "../../../hooks/useCalls";
+import { useRoomCall } from "../../../hooks/useRoomCall";
 
-interface OverlayProps {
-  calls: Map<string, GroupCall>;
-  activeCall: GroupCall | undefined;
-  onExitWorld: MouseEventHandler<HTMLButtonElement>;
-  onReloadWorld: MouseEventHandler<HTMLButtonElement>;
-  onEnterWorld: MouseEventHandler<HTMLButtonElement>;
-}
-
-export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnterWorld }: OverlayProps) {
+export function Overlay() {
   const { session, platform } = useHydrogen(true);
+  const calls = useCalls(session);
 
   const {
     selectedSidebarTab,
@@ -50,7 +45,6 @@ export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnter
     closeChat,
     worldId,
     isEnteredWorld,
-    loadState,
     selectedWorldId,
   } = useStore((state) => ({
     selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
@@ -61,12 +55,13 @@ export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnter
     minimizeChat: state.overlayChat.minimizeChat,
     closeChat: state.overlayChat.closeChat,
     worldId: state.world.worldId,
-    isEnteredWorld: state.world.isEnteredWorld,
-    loadState: state.world.loadState,
+    isEnteredWorld: state.world.entered,
     selectedWorldId: state.overlayWorld.selectedWorldId,
     closeOverlay: state.overlay.closeOverlay,
   }));
 
+  const activeCall = useRoomCall(calls, worldId);
+  const { exitWorld } = useWorldAction(session);
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -92,12 +87,7 @@ export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnter
               }
               footer={
                 world && activeCall ? (
-                  <NowPlayingWorld
-                    world={world}
-                    activeCall={activeCall}
-                    onExitWorld={onExitWorld}
-                    platform={platform}
-                  />
+                  <NowPlayingWorld world={world} activeCall={activeCall} onExitWorld={exitWorld} platform={platform} />
                 ) : (
                   <NowPlayingControls />
                 )
@@ -116,9 +106,7 @@ export function Overlay({ calls, activeCall, onExitWorld, onReloadWorld, onEnter
         </div>
       ) : (
         <div className="Overlay__content grow">
-          {(worldId === selectedWorldId && loadState === WorldLoadState.Entered) || isChatOpen ? undefined : (
-            <WorldPreview onReloadWorld={onReloadWorld} onEnterWorld={onEnterWorld} />
-          )}
+          {worldId === selectedWorldId || isChatOpen ? undefined : <WorldPreview />}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={

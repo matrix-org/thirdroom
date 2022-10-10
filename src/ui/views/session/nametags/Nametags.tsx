@@ -8,12 +8,13 @@ import { range } from "../../../../engine/utils/interpolation";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoomMembers } from "../../../hooks/useRoomMembers";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { AudioModule } from "../../../../engine/audio/audio.main";
 import { getReadObjectBufferView } from "../../../../engine/allocator/ObjectBufferView";
 import { LocalNametag } from "../../../../engine/nametag/nametag.main";
+import { useStore } from "../../../hooks/useStore";
+import { getRoomCall } from "../../../utils/matrixUtils";
 
 // src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 const useAnimationFrame = (callback: Function, enabled = true) => {
@@ -117,6 +118,7 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
 
 export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const engine = useMainThreadContext();
+  const { worldId } = useStore((state) => state.world);
 
   const [nametags, setNametags] = useState<LocalNametag[]>([]);
 
@@ -135,17 +137,8 @@ export function Nametags({ room, show }: { room: Room; show: boolean }) {
   }, [engine, onNametagsChanged]);
 
   const { session } = useHydrogen(true);
-  const [, world] = useWorld();
 
-  let groupCall: GroupCall | undefined;
-  if (world) {
-    for (const [, call] of Array.from(session.callHandler.calls)) {
-      if (call.roomId === world.id) {
-        groupCall = call;
-        break;
-      }
-    }
-  }
+  const groupCall = getRoomCall(session.callHandler.calls, worldId);
 
   return (
     <div>

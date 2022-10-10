@@ -1,21 +1,22 @@
-import { useOutletContext } from "react-router-dom";
-
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
-import { SessionOutletContext } from "../SessionView";
+import { useWorldPath } from "../../../hooks/useWorld";
+import { WorldLoading } from "./WorldLoading";
 import { WorldThumbnail } from "./WorldThumbnail";
 import { WorldView } from "./WorldView";
 
 export default function World() {
   const { session } = useHydrogen(true);
-  const { world, activeCall } = useOutletContext<SessionOutletContext>();
-  const { isEnteredWorld } = useStore((state) => state.world);
-  const joinedWorld = world ? session.rooms.get(world.id) : undefined;
+  const { worldId, entered } = useStore((state) => state.world);
+  const world = worldId ? session.rooms.get(worldId) : undefined;
+
+  const [roomId, reloadId] = useWorldPath();
 
   return (
     <>
-      {joinedWorld && isEnteredWorld && activeCall && <WorldView world={joinedWorld} activeCall={activeCall} />}
+      {world && entered && <WorldView world={world} />}
       <WorldThumbnail />
+      <WorldLoading roomId={roomId} reloadId={reloadId} />
     </>
   );
 }

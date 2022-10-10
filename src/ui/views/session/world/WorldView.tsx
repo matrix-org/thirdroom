@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
-import { useOutletContext } from "react-router-dom";
 import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
-import { SessionOutletContext } from "../SessionView";
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import { Text } from "../../../atoms/text/Text";
@@ -57,6 +55,9 @@ import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
 import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
 import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
+import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useCalls } from "../../../hooks/useCalls";
+import { useRoomCall } from "../../../hooks/useRoomCall";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -114,12 +115,15 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
 
 interface WorldViewProps {
   world: Room;
-  activeCall: GroupCall;
 }
 
-export function WorldView({ world, activeCall }: WorldViewProps) {
-  const { canvasRef, onExitWorld, onWorldTransfer } = useOutletContext<SessionOutletContext>();
-  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
+export function WorldView({ world }: WorldViewProps) {
+  const mainThread = useMainThreadContext();
+  const { session } = useHydrogen(true);
+  const calls = useCalls(session);
+  const activeCall = useRoomCall(calls);
+  const { exitWorld } = useWorldAction(session);
+  const isEnteredWorld = useStore((state) => state.world.entered);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
@@ -163,7 +167,7 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
 
   const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
-  const mouseDown = useMouseDown(canvasRef.current);
+  const mouseDown = useMouseDown(mainThread.canvas);
 
   useEffect(() => {
     const onInteraction = (ctx: IMainThreadContext, message: InteractionMessage) => {
@@ -192,7 +196,8 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
         }
       } else if (message.interactableType === InteractableType.Portal) {
         if (message.action === InteractableAction.Grab) {
-          onWorldTransfer(message.uri!);
+          // TODO:
+          // onWorldTransfer(message.uri!);
         } else {
           setActiveEntity({
             interactableType,
@@ -216,7 +221,7 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
       registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
       registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
-  }, [activeCall, engine, onWorldTransfer, showToast]);
+  }, [activeCall, engine, showToast]);
 
   useKeyDown(
     (e) => {
@@ -227,22 +232,22 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
       if (isEscape && showActiveMembers) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         setShowActiveMembers(false);
         return;
       }
       if (isEscape && shortcutUI) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         setShortcutUI(false);
         return;
       }
       if (isEscape && isChatOpen) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         closeWorldChat();
         return;
       }
       if (isEscape && isOverlayOpen) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         closeOverlay();
         return;
       }
@@ -261,7 +266,7 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
       if (isTyping || isChatOpen || showActiveMembers || shortcutUI) return;
 
       if (e.altKey && e.code === "KeyL") {
-        onExitWorld();
+        exitWorld();
       }
       if (e.code === "KeyM" && muteBtnRef.current !== null) {
         muteBtnRef.current.click();
@@ -304,14 +309,14 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
     (e) => {
       const isChatOpen = useStore.getState().worldChat.isOpen;
       const isOverlayOpen = useStore.getState().overlay.isOpen;
-      const isEnteredWorld = useStore.getState().world.isEnteredWorld;
+      const isEnteredWorld = useStore.getState().world.entered;
       if (isEnteredWorld === false) return;
 
-      canvasRef.current?.requestPointerLock();
+      mainThread.canvas?.requestPointerLock();
       if (isChatOpen) closeWorldChat();
       if (isOverlayOpen) closeOverlay();
     },
-    canvasRef.current,
+    mainThread.canvas,
     []
   );
 
@@ -321,10 +326,10 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
 
   const onFinishOnboarding = useCallback(() => {
     finishOnboarding();
-    canvasRef.current?.requestPointerLock();
-  }, [canvasRef, finishOnboarding]);
+    mainThread.canvas?.requestPointerLock();
+  }, [mainThread.canvas, finishOnboarding]);
 
-  usePointerLockChange(canvasRef.current, setIsPointerLock, []);
+  usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
   const renderControl = () => (
     <>
@@ -388,7 +393,7 @@ export function WorldView({ world, activeCall }: WorldViewProps) {
         )}
         <div className="flex flex-column items-center">
           <Tooltip content="Disconnect">
-            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
+            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={exitWorld} />
           </Tooltip>
           <Text variant="b3" color="world" weight="bold">
             Alt + L

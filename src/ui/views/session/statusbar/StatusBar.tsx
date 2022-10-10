@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
+import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { Text } from "../../../atoms/text/Text";
@@ -9,6 +10,7 @@ import { useRecentMessage } from "../../../hooks/useRecentMessage";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
+import { roomIdToAlias } from "../../../utils/matrixUtils";
 
 function OverlayButton({
   style,
@@ -99,8 +101,14 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
+  const { session } = useHydrogen(true);
   const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
   const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
+
+  const homeMatch = useMatch({ path: "/", end: true });
+  const isHome = homeMatch !== null;
+  const { worldId } = useStore((state) => state.world);
+  const world = worldId ? session.rooms.get(worldId) : undefined;
 
   const handleTipClick = () => {
     if (isOverlayOpen) {
@@ -138,7 +146,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
       <div className="StatusBar__center">
         {title && (
           <Text color="world" weight="semi-bold">
-            {title}
+            {isHome ? "Home" : world?.name ?? roomIdToAlias(session.rooms, worldId) ?? "Unknown"}
           </Text>
         )}
       </div>
