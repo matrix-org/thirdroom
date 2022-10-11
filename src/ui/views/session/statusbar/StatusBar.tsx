@@ -10,7 +10,6 @@ import { useRecentMessage } from "../../../hooks/useRecentMessage";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
-import { roomIdToAlias } from "../../../utils/matrixUtils";
 
 function OverlayButton({
   style,
@@ -146,7 +145,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
       <div className="StatusBar__center">
         {title && (
           <Text color="world" weight="semi-bold">
-            {isHome ? "Home" : world?.name ?? roomIdToAlias(session.rooms, worldId) ?? "Unknown"}
+            {isHome ? "Home" : world?.name ?? world?.canonicalAlias ?? "Unknown"}
           </Text>
         )}
       </div>
