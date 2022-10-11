@@ -38,22 +38,18 @@ function useWorldLoadingProgress(worldId?: string) {
   return loadProgress;
 }
 
-function useLoadWorld(onLoad: (roomId: string) => void, roomId?: string, reloadId?: string) {
+function useLoadWorld() {
   const { session } = useHydrogen(true);
   const mainThread = useMainThreadContext();
-  const { exitWorld } = useWorldAction(session);
-  const [error, setError] = useState<string>();
-  const isMounted = useIsMounted();
 
-  const handleLoad = useCallback(
-    async (event: StateEvent | undefined) => {
+  const loadWorldCallback = useCallback(
+    async (roomId: string, event: StateEvent | undefined) => {
       if (!roomId) return;
       let sceneUrl = event?.content?.scene_url;
       const maxObjectCap = event?.content?.max_member_object_cap;
 
       if (typeof sceneUrl !== "string") {
-        setError("3D scene does not exist for this world.");
-        return;
+        throw new Error("3D scene does not exist for this world.");
       }
 
       if (sceneUrl.startsWith("mxc:")) {
@@ -62,7 +58,6 @@ function useLoadWorld(onLoad: (roomId: string) => void, roomId?: string, reloadI
 
       try {
         await loadWorld(mainThread, sceneUrl);
-        onLoad(roomId);
 
         // set max obj cap
         if (maxObjectCap !== undefined)
@@ -71,37 +66,16 @@ function useLoadWorld(onLoad: (roomId: string) => void, roomId?: string, reloadI
             value: maxObjectCap,
           });
       } catch (err: any) {
-        setError(err?.message ?? "Unknown error loading world.");
-        return;
+        throw new Error(err?.message ?? "Unknown error loading world.");
       }
     },
-    [mainThread, session.mediaRepository, roomId, onLoad]
+    [mainThread, session.mediaRepository]
   );
 
-  useEffect(() => {
-    setError(undefined);
-    const world = roomId ? session.rooms.get(roomId) : undefined;
-    let subscriptionHandle: SubscriptionHandle | undefined;
-
-    world?.observeStateTypeAndKey("org.matrix.msc3815.world", "").then((observable) => {
-      if (!isMounted()) return;
-      subscriptionHandle = observable.subscribe(handleLoad);
-      const initialEvent = observable.get();
-      handleLoad(initialEvent);
-    });
-
-    return () => {
-      subscriptionHandle?.();
-      exitWorld();
-      setError(undefined);
-    };
-  }, [roomId, reloadId, session, mainThread, exitWorld, handleLoad, isMounted]);
-
-  return error;
+  return loadWorldCallback;
 }
 
 function useEnterWorld() {
-  const { worldId, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
   const mainThread = useMainThreadContext();
   const { session, platform, client } = useHydrogen(true);
 
@@ -133,9 +107,9 @@ function useEnterWorld() {
   );
 
   const enterWorldCallback = useCallback(
-    async (world: Room) => {
-      if (!world || "isBeingCreated" in world || !mainThread) {
-        return;
+    async (world: Room): Promise<(() => void) | undefined> => {
+      if ("isBeingCreated" in world) {
+        return undefined;
       }
 
       const groupCall = await connectGroupCall(world);
@@ -143,34 +117,74 @@ function useEnterWorld() {
 
       if (import.meta.env.VITE_USE_TESTNET) {
         connectToTestNet(mainThread);
-        return;
+        return undefined;
       }
 
       const powerLevels = await world.observePowerLevels();
       const disposer = createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
-      setNetworkInterfaceDisposer(disposer);
 
       const audio = getModule(mainThread, AudioModule);
       audio.context.resume();
+      return disposer;
     },
-    [session, mainThread, client, setNetworkInterfaceDisposer, connectGroupCall]
+    [session, mainThread, client, connectGroupCall]
   );
+
+  return enterWorldCallback;
+}
+
+export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
+  const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
+  const { session } = useHydrogen(true);
+  const loadProgress = useWorldLoadingProgress(worldId);
+  const { closeWorld } = useWorldAction(session);
+  const isMounted = useIsMounted();
+
+  const loadWorld = useLoadWorld();
+  const enterWorld = useEnterWorld();
+
+  useEffect(() => {
+    const world = roomId ? session.rooms.get(roomId) : undefined;
+    let subscriptionHandle: SubscriptionHandle | undefined;
+
+    world?.observeStateTypeAndKey("org.matrix.msc3815.world", "").then((observable) => {
+      if (!isMounted()) return;
+
+      const handleLoad = (event: StateEvent | undefined) => {
+        loadWorld(world.id, event)
+          .then(() => {
+            setWorld(roomId);
+          })
+          .catch((err) => {
+            // TODO: show error + reload button
+          });
+      };
+
+      subscriptionHandle = observable.subscribe(handleLoad);
+      const initialEvent = observable.get();
+      handleLoad(initialEvent);
+    });
+
+    return () => {
+      subscriptionHandle?.();
+      closeWorld();
+    };
+  }, [session, roomId, reloadId, closeWorld, loadWorld, isMounted, setWorld]);
 
   useEffect(() => {
     const world = worldId ? session.rooms.get(worldId) : undefined;
     if (world && !entered) {
-      enterWorldCallback(world);
+      enterWorld(world)
+        .then((networkInterfaceDisposer) => {
+          if (networkInterfaceDisposer) {
+            setNetworkInterfaceDisposer(networkInterfaceDisposer);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     }
-  }, [worldId, entered, enterWorldCallback, session.rooms]);
-}
-
-export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const { worldId, setWorld, entered } = useStore((state) => state.world);
-  const loadProgress = useWorldLoadingProgress(worldId);
-
-  // TODO: show error with reload button
-  useLoadWorld(setWorld, roomId, reloadId);
-  useEnterWorld();
+  }, [worldId, entered, enterWorld, setNetworkInterfaceDisposer, session.rooms]);
 
   if (entered) return <></>;
 
@@ -183,10 +197,10 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
         value={loadProgress.total === 0 ? 0 : getPercentage(loadProgress.total, loadProgress.loaded)}
       />
       <div className="flex justify-between gap-md">
-        <Text color="surface-low" variant="b3">
+        <Text color="world" variant="b3">
           {`Loading: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}
         </Text>
-        <Text color="surface-low" variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(
+        <Text color="world" variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(
           loadProgress.total
         )}`}</Text>
       </div>

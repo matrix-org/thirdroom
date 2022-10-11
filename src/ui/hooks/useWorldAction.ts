@@ -27,18 +27,23 @@ export function useWorldAction(session: Session) {
     [session.rooms, navigate]
   );
 
-  const exitWorld = useCallback(() => {
+  const closeWorld = useCallback(() => {
     const world = useStore.getState().world;
     if (world.worldId) {
       world.disposeNetworkInterface?.();
       world.setNetworkInterfaceDisposer(undefined);
       world.setWorld();
     }
+  }, []);
+
+  const exitWorld = useCallback(() => {
+    closeWorld();
     navigate("/");
-  }, [navigate]);
+  }, [navigate, closeWorld]);
 
   return {
     enterWorld,
     exitWorld,
+    closeWorld,
   };
 }

@@ -1,6 +1,14 @@
 .WorldLoading {
   position: absolute;
-  top: 0;
-  z-index: 99999;
+  bottom: 100px;
+  left: 50%;
   pointer-events: none;
+  transform: translateX(-50%);
+
+  max-width: 515px;
+  width: 100%;
+
+  padding: var(--sp-md);
+  background-color: var(--bg-world-overlay);
+  border-radius: var(--br-xs);
 }

@@ -52,7 +52,7 @@ import {
 } from "../../../../plugins/interaction/interaction.common";
 import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
-import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
+import { aliasToRoomId, parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
 import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
 import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
 import { useWorldAction } from "../../../hooks/useWorldAction";
@@ -122,7 +122,8 @@ export function WorldView({ world }: WorldViewProps) {
   const { session } = useHydrogen(true);
   const calls = useCalls(session);
   const activeCall = useRoomCall(calls);
-  const { exitWorld } = useWorldAction(session);
+  const { enterWorld, exitWorld } = useWorldAction(session);
+  const { selectWorld } = useStore((state) => state.overlayWorld);
   const isEnteredWorld = useStore((state) => state.world.entered);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
@@ -198,6 +199,18 @@ export function WorldView({ world }: WorldViewProps) {
         if (message.action === InteractableAction.Grab) {
           // TODO:
           // onWorldTransfer(message.uri!);
+          // join world if not joined
+
+          const parsedUri = parseMatrixUri(message.uri!);
+
+          if (parsedUri instanceof URL) {
+            return;
+          }
+          const id = parsedUri.mxid1.startsWith("#") ? aliasToRoomId(session.rooms, parsedUri.mxid1) : parsedUri.mxid1;
+          if (id && session.rooms.get(id)) {
+            selectWorld(id);
+            enterWorld(id);
+          }
         } else {
           setActiveEntity({
             interactableType,
@@ -221,7 +234,7 @@ export function WorldView({ world }: WorldViewProps) {
       registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
       registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
-  }, [activeCall, engine, showToast]);
+  }, [activeCall, engine, showToast, enterWorld, selectWorld, session.rooms]);
 
   useKeyDown(
     (e) => {

@@ -1,6 +1,5 @@
 import { useCallback, useState, FormEvent, ChangeEvent } from "react";
 import { RoomVisibility, IBlobHandle, RoomType } from "@thirdroom/hydrogen-view-sdk";
-import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -62,8 +61,6 @@ export function CreateWorld() {
   const isMounted = useIsMounted();
   const [creatingRoom, setCreatingRoom] = useState(false);
 
-  const navigate = useNavigate();
-
   const [maxObjectCap, setMaxObjectCap] = useState(MAX_OBJECT_CAP);
   const handleMaxObjectCapChange = (evt: ChangeEvent<HTMLInputElement>) =>
     setMaxObjectCap(parseInt(evt.target.value) || 0);
@@ -83,7 +80,7 @@ export function CreateWorld() {
               ...(await getImageDimension(avatar.nativeBlob)),
             },
           };
-      const roomBeingCreated = await session.createRoom({
+      await session.createRoom({
         type: RoomType.World,
         visibility,
         avatar: avatarInfo,
@@ -130,11 +127,9 @@ export function CreateWorld() {
         ],
       });
 
-      navigate(`/world/${roomBeingCreated.id}`);
-
       closeWindow();
     },
-    [session, navigate, closeWindow]
+    [session, closeWindow]
   );
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {

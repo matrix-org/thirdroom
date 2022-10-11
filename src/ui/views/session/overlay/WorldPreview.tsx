@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldPreview.css";
@@ -9,7 +8,6 @@ import { useStore } from "../../../hooks/useStore";
 import { useRoom } from "../../../hooks/useRoom";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
-import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
@@ -19,6 +17,7 @@ import { exceptionToString, useStreamRequest, RequestException } from "../../../
 import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
 import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useUnknownWorldPath } from "../../../hooks/useWorld";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -52,11 +51,7 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
   );
 }
 
-// FIXME: use react useRef or zustand to store reload id
-// let worldReloadId = 0;
-
 export function WorldPreview() {
-  const navigate = useNavigate();
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
   const requestStream = useStreamRequest(platform, micPermission);
@@ -64,15 +59,13 @@ export function WorldPreview() {
 
   const { enterWorld } = useWorldAction(session);
 
-  const { worldId, selectedWorldId } = useStore((state) => ({
-    selectedWorldId: state.overlayWorld.selectedWorldId,
-    worldId: state.world.worldId,
-  }));
+  const worldId = useStore((state) => state.world.worldId);
+  const { selectWorld, selectedWorldId } = useStore((state) => state.overlayWorld);
+  const [unknownWorldId, unknownWorldAlias] = useUnknownWorldPath();
 
   const previewWorldId = selectedWorldId || worldId;
 
   const room = useRoom(session, previewWorldId);
-  const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
 
   const [isMemberDialog, setIsMemberDialog] = useState(false);
 
@@ -82,36 +75,22 @@ export function WorldPreview() {
     value: roomStatus,
   } = useRoomStatus(session, previewWorldId);
 
-  useEffect(() => {
-    if (!roomBeingCreated) return;
-    if (roomStatus === undefined) return;
-
-    if ((roomStatus & RoomStatus.Replaced) !== 0 && roomStatus & RoomStatus.BeingCreated) {
-      navigate(`/world/${roomBeingCreated.roomId}`);
-    }
-  }, [navigate, roomStatus, roomBeingCreated]);
-
   const handleLoadWorld = () => {
     if (!selectedWorldId) return;
     enterWorld(selectedWorldId);
   };
 
-  // const handleReloadWorld = () => {
-  //   if (!selectedWorldId) return;
-  //   enterWorld(selectedWorldId, {
-  //     alias: roomIdToAlias(session.rooms, selectedWorldId),
-  //     reload: true,
-  //   });
-  // }
-
-  // const handleJoinWorld = async () => {
-  //   if (!selectedWorldId) return;
-  //   try {
-  //     await session.joinRoom(selectedWorldId);
-  //   } catch (error) {
-  //     // TODO: show ERROR in UI
-  //   }
-  // };
+  const handleJoinWorld = async (roomIdOrAlias: string) => {
+    try {
+      const roomId = await session.joinRoom(roomIdOrAlias);
+      const world = session.rooms.get(roomId);
+      if (world && world.type === "org.matrix.msc3815") {
+        selectWorld(roomId);
+      }
+    } catch (error) {
+      // TODO: show ERROR in UI
+    }
+  };
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
@@ -121,6 +100,19 @@ export function WorldPreview() {
         </Dialog>
       )}
       {(() => {
+        const unknownIdOrAlias = unknownWorldAlias ?? unknownWorldId;
+        if (!previewWorldId && unknownIdOrAlias) {
+          return (
+            <WorldPreviewCard
+              title={unknownWorldAlias ?? "Unknown world"}
+              options={
+                <Button variant="secondary" onClick={() => handleJoinWorld(unknownIdOrAlias)}>
+                  Join World
+                </Button>
+              }
+            />
+          );
+        }
         if (roomStatus === undefined) {
           if (roomStatusLoading) {
             return <WorldPreviewCard title="Loading Room..." />;

@@ -106,7 +106,7 @@ export function Overlay() {
         </div>
       ) : (
         <div className="Overlay__content grow">
-          {worldId === selectedWorldId || isChatOpen ? undefined : <WorldPreview />}
+          {(worldId && worldId === selectedWorldId) || isChatOpen ? undefined : <WorldPreview />}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={
