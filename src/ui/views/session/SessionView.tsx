@@ -14,7 +14,6 @@ export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
-  const isEnteredWorld = useStore((state) => state.world.entered);
 
   // const onWorldTransfer = useCallback(
   //   async (uri: string) => {
@@ -72,7 +71,7 @@ export default function SessionView() {
           <MainThreadContextProvider value={mainThread}>
             <Outlet />
             {isOverlayOpen && <Overlay />}
-            <StatusBar showOverlayTip={isEnteredWorld} />
+            <StatusBar />
           </MainThreadContextProvider>
         ) : (
           <LoadingScreen message="Initializing engine..." />

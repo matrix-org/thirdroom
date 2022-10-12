@@ -10,6 +10,7 @@ import "./WorldThumbnail.css";
 export function WorldThumbnail() {
   const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
   const { worldId, entered } = useStore((state) => state.world);
+  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
   const previewId = selectedWorldId ?? worldId;
 
@@ -51,7 +52,7 @@ export function WorldThumbnail() {
     };
   }, [session, previewId, isMounted]);
 
-  if (worldId === selectedWorldId && entered) return <></>;
+  if ((!isOverlayOpen || worldId === selectedWorldId) && entered) return <></>;
   return (
     <div className={classNames("WorldThumbnail", { "WorldThumbnail--blur": worldPreview && !worldPreview?.url })}>
       {worldPreview && <img alt="World Preview" src={worldPreview.url ?? worldPreview.thumbnail} />}

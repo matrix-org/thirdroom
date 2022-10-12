@@ -58,8 +58,9 @@ export interface WorldState {
   worldId: string | undefined;
   entered: boolean;
   disposeNetworkInterface: (() => void) | undefined;
-  setWorld(roomId?: string): void;
-  setNetworkInterfaceDisposer(disposer: (() => void) | undefined): void;
+  setWorld(roomId: string): void;
+  closeWorld(): void;
+  setNetworkInterfaceDisposer(disposer: () => void): void;
 }
 
 export interface WorldChatState {
@@ -197,13 +198,23 @@ export const useStore = create<StoreState>()(
       setWorld(roomId) {
         set((state) => {
           state.world.worldId = roomId;
+          if (!roomId) {
+            state.world.entered = false;
+          }
         });
       },
-
+      closeWorld() {
+        set((state) => {
+          state.world.disposeNetworkInterface?.();
+          state.world.worldId = undefined;
+          state.world.entered = false;
+          state.world.disposeNetworkInterface = undefined;
+        });
+      },
       setNetworkInterfaceDisposer(disposer) {
         set((state) => {
           state.world.disposeNetworkInterface = disposer;
-          state.world.entered = disposer ? true : false;
+          state.world.entered = true;
         });
       },
     },

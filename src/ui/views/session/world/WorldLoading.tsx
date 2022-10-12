@@ -13,12 +13,12 @@ import "./WorldLoading.css";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { loadWorld } from "../../../../plugins/thirdroom/thirdroom.main";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../../../plugins/spawnables/spawnables.common";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { createMatrixNetworkInterface } from "../../../../engine/network/createMatrixNetworkInterface";
 import { getRoomCall, updateWorldProfile } from "../../../utils/matrixUtils";
 import { connectToTestNet } from "../../../../engine/network/network.main";
 import { AudioModule } from "../../../../engine/audio/audio.main";
+import { usePreviousState } from "../../../hooks/usePreviousState";
 
 function useWorldLoadingProgress(worldId?: string) {
   const engine = useMainThreadContext();
@@ -134,11 +134,22 @@ function useEnterWorld() {
 }
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
+  const mainThread = useMainThreadContext();
+  const { worldId, setWorld, closeWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
+  const { closeOverlay, openOverlay } = useStore((state) => state.overlay);
   const { session } = useHydrogen(true);
   const loadProgress = useWorldLoadingProgress(worldId);
-  const { closeWorld } = useWorldAction(session);
   const isMounted = useIsMounted();
+  const prevRoomId = usePreviousState(roomId);
+
+  if (roomId && prevRoomId !== roomId) {
+    closeOverlay();
+    mainThread.canvas.requestPointerLock();
+  }
+  if (!roomId && prevRoomId) {
+    openOverlay();
+    document.exitPointerLock();
+  }
 
   const loadWorld = useLoadWorld();
   const enterWorld = useEnterWorld();
@@ -153,7 +164,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       const handleLoad = (event: StateEvent | undefined) => {
         loadWorld(world.id, event)
           .then(() => {
-            setWorld(roomId);
+            setWorld(world.id);
           })
           .catch((err) => {
             // TODO: show error + reload button
@@ -186,16 +197,11 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
     }
   }, [worldId, entered, enterWorld, setNetworkInterfaceDisposer, session.rooms]);
 
-  if (entered) return <></>;
+  if (!roomId || entered || loadProgress.total === 0) return <></>;
 
-  // TODO: STYLE ME
   return (
     <div className="WorldLoading flex flex-column gap-xs">
-      <Progress
-        variant="secondary"
-        max={100}
-        value={loadProgress.total === 0 ? 0 : getPercentage(loadProgress.total, loadProgress.loaded)}
-      />
+      <Progress variant="secondary" max={100} value={getPercentage(loadProgress.total, loadProgress.loaded)} />
       <div className="flex justify-between gap-md">
         <Text color="world" variant="b3">
           {`Loading: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}

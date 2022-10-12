@@ -10,6 +10,7 @@ import { useRecentMessage } from "../../../hooks/useRecentMessage";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
+import { useWorldPath } from "../../../hooks/useWorld";
 
 function OverlayButton({
   style,
@@ -95,11 +96,10 @@ export function NotificationButton({ onClick }: { onClick: () => void }) {
   );
 }
 interface StatusBarProps {
-  showOverlayTip?: boolean;
   title?: string | null;
 }
 
-export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
+export function StatusBar({ title }: StatusBarProps) {
   const { session } = useHydrogen(true);
   const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
   const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
@@ -108,6 +108,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
   const isHome = homeMatch !== null;
   const { worldId } = useStore((state) => state.world);
   const world = worldId ? session.rooms.get(worldId) : undefined;
+  const [knownWorldId] = useWorldPath();
 
   const handleTipClick = () => {
     if (isOverlayOpen) {
@@ -122,7 +123,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
   return (
     <div className="StatusBar shrink-0 flex items-center">
       <div className="StatusBar__left grow basis-0">
-        {showOverlayTip && (
+        {knownWorldId && (
           <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={handleTipClick}>
             <Text
               color="world"
@@ -150,7 +151,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
         )}
       </div>
       <div className="StatusBar__right grow basis-0 flex justify-end">
-        {showOverlayTip && <NotificationButton onClick={handleTipClick} />}
+        {knownWorldId && <NotificationButton onClick={handleTipClick} />}
       </div>
     </div>
   );
