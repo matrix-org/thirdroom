@@ -121,7 +121,7 @@ export function WorldView({ world }: WorldViewProps) {
   const mainThread = useMainThreadContext();
   const { session } = useHydrogen(true);
   const calls = useCalls(session);
-  const activeCall = useRoomCall(calls);
+  const activeCall = useRoomCall(calls, world.id);
   const { enterWorld, exitWorld } = useWorldAction(session);
   const { selectWorld } = useStore((state) => state.overlayWorld);
   const isEnteredWorld = useStore((state) => state.world.entered);
