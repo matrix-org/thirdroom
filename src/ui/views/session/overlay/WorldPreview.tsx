@@ -18,6 +18,7 @@ import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useUnknownWorldPath } from "../../../hooks/useWorld";
+import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -51,6 +52,49 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
   );
 }
 
+function JoinWorldCard({ worldIdOrAlias }: { worldIdOrAlias: string }) {
+  const { selectWorld } = useStore((state) => state.overlayWorld);
+  const { session } = useHydrogen(true);
+
+  const {
+    loading,
+    error,
+    callback: joinRoomCallback,
+  } = useAsyncCallback<(roomIdOrAlias: string) => Promise<string>, string>(async (roomIdOrAlias) => {
+    const roomId = await session.joinRoom(roomIdOrAlias);
+    return roomId;
+  }, []);
+
+  const handleJoinWorld = async (roomIdOrAlias: string) => {
+    const roomId = await joinRoomCallback(roomIdOrAlias);
+    if (roomId) {
+      selectWorld(roomId);
+    }
+  };
+
+  return (
+    <WorldPreviewCard
+      title={worldIdOrAlias.startsWith("#") ? worldIdOrAlias : "Unknown world"}
+      desc={error && error.message}
+      options={(() => {
+        if (loading) {
+          return (
+            <Button variant="secondary" disabled>
+              Joining...
+            </Button>
+          );
+        }
+        if (error) return null;
+        return (
+          <Button variant="secondary" onClick={() => handleJoinWorld(worldIdOrAlias)}>
+            Join World
+          </Button>
+        );
+      })()}
+    />
+  );
+}
+
 export function WorldPreview() {
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
@@ -60,7 +104,7 @@ export function WorldPreview() {
   const { enterWorld } = useWorldAction(session);
 
   const worldId = useStore((state) => state.world.worldId);
-  const { selectWorld, selectedWorldId } = useStore((state) => state.overlayWorld);
+  const { selectedWorldId } = useStore((state) => state.overlayWorld);
   const [unknownWorldId, unknownWorldAlias] = useUnknownWorldPath();
 
   const previewWorldId = selectedWorldId || worldId;
@@ -80,18 +124,6 @@ export function WorldPreview() {
     enterWorld(selectedWorldId);
   };
 
-  const handleJoinWorld = async (roomIdOrAlias: string) => {
-    try {
-      const roomId = await session.joinRoom(roomIdOrAlias);
-      const world = session.rooms.get(roomId);
-      if (world && world.type === "org.matrix.msc3815") {
-        selectWorld(roomId);
-      }
-    } catch (error) {
-      // TODO: show ERROR in UI
-    }
-  };
-
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
       {room && (
@@ -102,16 +134,7 @@ export function WorldPreview() {
       {(() => {
         const unknownIdOrAlias = unknownWorldAlias ?? unknownWorldId;
         if (!previewWorldId && unknownIdOrAlias) {
-          return (
-            <WorldPreviewCard
-              title={unknownWorldAlias ?? "Unknown world"}
-              options={
-                <Button variant="secondary" onClick={() => handleJoinWorld(unknownIdOrAlias)}>
-                  Join World
-                </Button>
-              }
-            />
-          );
+          return <JoinWorldCard worldIdOrAlias={unknownIdOrAlias} />;
         }
         if (roomStatus === undefined) {
           if (roomStatusLoading) {
