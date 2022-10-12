@@ -15,54 +15,6 @@ export default function SessionView() {
   const mainThread = useInitMainThreadContext(canvasRef);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 
-  // const onWorldTransfer = useCallback(
-  //   async (uri: string) => {
-  //     const state = useStore.getState();
-
-  //     const parsedUri = parseMatrixUri(uri);
-
-  //     if (parsedUri instanceof URL) {
-  //       return;
-  //     }
-
-  //     // Terminate previous world's network connection
-  //     if (networkInterfaceRef.current) {
-  //       networkInterfaceRef.current();
-  //       networkInterfaceRef.current = undefined;
-  //     }
-
-  //     // select new world
-  //     state.overlayWorld.selectWorld(parsedUri.mxid1);
-
-  //     // join if not already
-  //     const roomStatus = await session.observeRoomStatus(parsedUri.mxid1);
-  //     if (roomStatus.get() !== RoomStatus.Joined) {
-  //       try {
-  //         useStore.getState().world.joinWorld();
-  //         await session.joinRoom(parsedUri.mxid1);
-  //       } catch (error) {
-  //         useStore.getState().world.setWorldError(error as Error);
-  //       }
-  //     }
-
-  //     // load world
-  //     navigate(`/world/${roomIdToAlias(session.rooms, parsedUri.mxid1) ?? parsedUri.mxid1}`);
-
-  //     // enter world when loaded
-  //     const interval = setInterval(() => {
-  //       if (useStore.getState().world.loadState === WorldLoadState.Loaded) {
-  //         setShowPortalPrompt(true);
-  //         clearInterval(interval);
-  //       }
-  //     }, 100);
-
-  //     return () => {
-  //       clearInterval(interval);
-  //     };
-  //   },
-  //   [navigate, session]
-  // );
-
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="SessionView">
