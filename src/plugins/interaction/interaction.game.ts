@@ -31,7 +31,7 @@ import {
   ButtonActionState,
 } from "../../engine/input/ActionMappingSystem";
 import { getInputController, InputModule } from "../../engine/input/input.game";
-import { InputController } from "../../engine/input/InputController";
+import { InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
@@ -55,7 +55,6 @@ import { addResourceRef } from "../../engine/resource/resource.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
-import { characterRigQuery } from "../rigs/character.game";
 import { PortalComponent } from "../portals/portals.game";
 import {
   ObjectCapReachedMessageType,
@@ -260,7 +259,7 @@ export function InteractionSystem(ctx: GameState) {
   }
 
   // TODO: remove dependency on PlayerController plugin
-  const rigs = characterRigQuery(ctx.world);
+  const rigs = inputControllerQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];

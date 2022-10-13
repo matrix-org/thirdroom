@@ -1,3 +1,5 @@
+import { defineQuery } from "bitecs";
+
 import { ActionState, ActionMap } from "./ActionMappingSystem";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
@@ -20,3 +22,6 @@ export const createInputController = (props: InputControllerProps): InputControl
   actions: props.actions || new Map(),
   raw: {},
 });
+
+export const InputControllerComponent = new Map<number, InputController>();
+export const inputControllerQuery = defineQuery([InputControllerComponent]);

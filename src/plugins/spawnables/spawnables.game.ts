@@ -29,7 +29,7 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { getInputController, InputModule } from "../../engine/input/input.game";
-import { InputController } from "../../engine/input/InputController";
+import { InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
@@ -41,7 +41,6 @@ import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.g
 import { addResourceRef } from "../../engine/resource/resource.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
-import { characterRigQuery } from "../rigs/character.game";
 import { InteractableType } from "../interaction/interaction.common";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
@@ -447,7 +446,7 @@ export const SpawnableSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   const spawnablesModule = getModule(ctx, SpawnablesModule);
 
-  const rigs = characterRigQuery(ctx.world);
+  const rigs = inputControllerQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];

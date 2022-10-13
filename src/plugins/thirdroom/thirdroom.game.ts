@@ -44,7 +44,7 @@ import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
-import { createFlyPlayerRig, FlyPlayerRig } from "../FlyCharacterController";
+import { createFlyPlayerRig, FlyRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
@@ -59,7 +59,7 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
-import { GameInputModule, getInputController, InputModule, setInputController } from "../../engine/input/input.game";
+import { GameInputModule, getInputController, InputModule, addInputController } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
 import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
 import {
@@ -68,8 +68,8 @@ import {
   createRemoteMediaStream,
 } from "../../engine/audio/audio.game";
 import { createRemoteNametag } from "../../engine/nametag/nametag.game";
-import { CharacterRig, characterRigQuery } from "../rigs/character.game";
-import { createInputController, InputController } from "../../engine/input/InputController";
+import { CharacterRig } from "../rigs/character.game";
+import { createInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -397,7 +397,7 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
   // setup input controller from default controller's ringbuffer and actionMaps
   const defaultController = input.defaultController;
   const controller = createInputController(defaultController);
-  setInputController(input, controller, eid);
+  addInputController(ctx.world, input, controller, eid);
 
   input.activeController = controller;
 
@@ -453,7 +453,7 @@ function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: Ga
   const controller = createInputController({
     actionMaps: defaultController.actionMaps,
   });
-  setInputController(input, controller, eid);
+  addInputController(input, controller, eid);
 
   addChild(ctx.activeScene, eid);
 
@@ -468,12 +468,12 @@ function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
   removeComponent(ctx.world, CharacterRig, playerRig);
   removeComponent(ctx.world, RigidBody, playerRig);
 
-  addComponent(ctx.world, FlyPlayerRig, playerRig);
-  FlyPlayerRig.speed[playerRig] = 10;
+  addComponent(ctx.world, FlyRig, playerRig);
+  FlyRig.set(playerRig, { speed: 10 });
 }
 
 function swapToPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, FlyPlayerRig, playerRig);
+  removeComponent(ctx.world, FlyRig, playerRig);
 
   addComponent(ctx.world, CharacterRig, playerRig);
 
@@ -492,7 +492,7 @@ function swapToPlayerRig(ctx: GameState, playerRig: number) {
 export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
 
-  const rigs = characterRigQuery(ctx.world);
+  const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const controller = getInputController(input, eid);
@@ -503,7 +503,7 @@ export function ThirdroomSystem(ctx: GameState) {
 function updateThirdroom(ctx: GameState, controller: InputController, player: number) {
   const toggleFlyMode = controller.actions.get("toggleFlyMode") as ButtonActionState;
   if (toggleFlyMode.pressed) {
-    if (hasComponent(ctx.world, FlyPlayerRig, player)) {
+    if (hasComponent(ctx.world, FlyRig, player)) {
       swapToPlayerRig(ctx, player);
     } else {
       swapToFlyPlayerRig(ctx, player);

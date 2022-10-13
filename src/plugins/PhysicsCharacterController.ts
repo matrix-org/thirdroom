@@ -13,14 +13,14 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { getInputController, InputModule } from "../engine/input/input.game";
-import { InputController } from "../engine/input/InputController";
+import { InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
-import { CharacterRig, characterRigQuery } from "./rigs/character.game";
+import { CharacterRig } from "./rigs/character.game";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
@@ -172,8 +172,8 @@ export function addPlayerRig(state: GameState, playerRig: number, setActiveCamer
 function updatePhysicsCharacterController(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  controller: InputController,
   network: GameNetworkState,
+  controller: InputController,
   playerRig: number
 ) {
   const body = RigidBody.store.get(playerRig);
@@ -278,10 +278,10 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
-  const rigs = characterRigQuery(ctx.world);
+  const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const controller = getInputController(input, eid);
-    updatePhysicsCharacterController(ctx, physics, controller, network, eid);
+    updatePhysicsCharacterController(ctx, physics, network, controller, eid);
   }
 };

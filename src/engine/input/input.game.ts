@@ -1,12 +1,13 @@
 import { availableRead } from "@thirdroom/ringbuffer";
+import { addComponent } from "bitecs";
 
-import { GameState } from "../GameTypes";
+import { GameState, World } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { isHost } from "../network/network.common";
 import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
-import { InputController, createInputController } from "./InputController";
+import { InputController, createInputController, InputControllerComponent } from "./InputController";
 import { KeyCodes, Keys } from "./KeyCodes";
 import { dequeueInputRingBuffer } from "./RingBuffer";
 
@@ -35,7 +36,7 @@ export const InputModule = defineModule<GameState, GameInputModule>({
     const controller = createInputController({ inputRingBuffer });
 
     return {
-      controllers: new Map(),
+      controllers: InputControllerComponent,
       defaultController: controller,
       activeController: controller,
     };
@@ -126,7 +127,8 @@ export function ResetInputSystem(ctx: GameState) {
  * Utils *
  **********/
 
-export function setInputController(input: GameInputModule, controller: InputController, eid: number) {
+export function addInputController(world: World, input: GameInputModule, controller: InputController, eid: number) {
+  addComponent(world, InputControllerComponent, eid);
   input.controllers.set(eid, controller);
 }
 

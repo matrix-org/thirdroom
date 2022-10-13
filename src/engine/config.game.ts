@@ -23,7 +23,7 @@ import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
-import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
+import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
@@ -61,7 +61,7 @@ export default defineConfig<GameState>({
 
     FirstPersonCameraSystem,
     PhysicsCharacterControllerSystem,
-    FlyControlsSystem,
+    FlyControllerSystem,
     PhysicsSystem,
     AnimationSystem,
     InteractionSystem,

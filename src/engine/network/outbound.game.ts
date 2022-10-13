@@ -102,7 +102,7 @@ const sendUpdates = (ctx: GameState) => {
   // - host has been established (peerIdIndex has been assigned)
   const haveConnectedPeers = network.peers.length > 0;
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
-  const hostEstablished = network.hostId !== "";
+  const hostEstablished = network.hostId !== "" && network.peerIdToIndex.has(network.peerId);
   const hosting = isHost(network);
 
   if (!haveConnectedPeers || !spawnedPlayerRig || !hostEstablished) {

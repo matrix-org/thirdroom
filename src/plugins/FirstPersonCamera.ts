@@ -4,7 +4,7 @@ import { vec2, glMatrix as glm } from "gl-matrix";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
-import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputModule } from "../engine/input/input.game";
 import { InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 
@@ -70,49 +70,54 @@ export function addCameraYawTargetComponent(world: World, eid: number) {
 export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
 export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
 
-export function FirstPersonCameraSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-  const { world } = ctx;
+function applyYaw(ctx: GameState, controller: InputController, eid: number) {
+  const [lookX] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
-  for (const controller of input.controllers.values()) {
-    applyFirstPersonCamera(ctx, controller);
+  if (Math.abs(lookX) >= 1) {
+    const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
+    Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
+    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
   }
-
-  return world;
 }
 
-function applyFirstPersonCamera(ctx: GameState, controller: InputController) {
-  const [lookX, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
-
-  const pitchEntities = cameraPitchTargetQuery(ctx.world);
+function applyPitch(ctx: GameState, controller: InputController, eid: number) {
+  const [, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
-    pitchEntities.forEach((eid) => {
-      const rotation = Transform.rotation[eid];
-      const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
-      const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
-      const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
-      const maxAngleRads = glm.toRadian(maxAngle || 89);
-      const minAngleRads = glm.toRadian(minAngle || -89);
-      rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+    const rotation = Transform.rotation[eid];
+    const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
+    const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
+    const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
+    const maxAngleRads = glm.toRadian(maxAngle || 89);
+    const minAngleRads = glm.toRadian(minAngle || -89);
+    rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
-      if (rotation[0] > maxAngleRads) {
-        rotation[0] = maxAngleRads;
-      } else if (rotation[0] < minAngleRads) {
-        rotation[0] = minAngleRads;
-      }
+    if (rotation[0] > maxAngleRads) {
+      rotation[0] = maxAngleRads;
+    } else if (rotation[0] < minAngleRads) {
+      rotation[0] = minAngleRads;
+    }
 
-      setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
-    });
+    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+  }
+}
+
+export function FirstPersonCameraSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+
+  const pitchEntities = cameraPitchTargetQuery(ctx.world);
+  for (let i = 0; i < pitchEntities.length; i++) {
+    const eid = pitchEntities[i];
+    // pitch target on camera, controller is on the parent of the camera
+    const parent = Transform.parent[eid];
+    const controller = getInputController(input, parent);
+    applyPitch(ctx, controller, eid);
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);
-
-  if (Math.abs(lookX) >= 1) {
-    yawEntities.forEach((eid) => {
-      const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-      Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
-      setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
-    });
+  for (let i = 0; i < yawEntities.length; i++) {
+    const eid = yawEntities[i];
+    const controller = getInputController(input, eid);
+    applyYaw(ctx, controller, eid);
   }
 }
