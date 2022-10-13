@@ -1,18 +1,19 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import { createCursorView, readUint8, readFloat32 } from "../allocator/CursorView";
+import { createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
-import { NetPipeData } from "./serialization.game";
+import { NetPipeData, readMetadata } from "./serialization.game";
 
 const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffer) => {
   const network = getModule(state, NetworkModule);
+
   const cursorView = createCursorView(msg);
-  const messageType = readUint8(cursorView);
-  const elapsed = readFloat32(cursorView);
+  const { type: messageType, elapsed } = readMetadata(cursorView);
+
   const input: NetPipeData = [state, cursorView, peerId];
   const { messageHandlers } = getModule(state, NetworkModule);
 

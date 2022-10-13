@@ -23,7 +23,7 @@ import {
   deserializeFullUpdate,
   deserializeNewPeerSnapshot,
   deserializePeerIdIndex,
-  deserializePlayerNetworkId,
+  // deserializePlayerNetworkId,
   deserializeSnapshot,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
@@ -112,7 +112,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
     registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
-    registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
+    // registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
     registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommand);

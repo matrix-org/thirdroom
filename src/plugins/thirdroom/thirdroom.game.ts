@@ -19,7 +19,7 @@ import {
   NetworkModule,
   Owned,
 } from "../../engine/network/network.game";
-import { createPlayerRig } from "../PhysicsCharacterController";
+import { addPlayerRig, createPlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -44,7 +44,7 @@ import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
-import { createFlyPlayerRig, FlyRig } from "../FlyCharacterController";
+import { addFlyPlayerRig, createFlyPlayerRig, FlyRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
@@ -421,14 +421,12 @@ function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: Ga
 
   const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
 
-  let eid: number;
-
-  const prefab = Math.random() > 0.5 ? "mixamo-x" : "mixamo-y";
+  const eid = createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
 
   if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-    eid = createFlyPlayerRig(ctx, prefab, false);
+    addFlyPlayerRig(ctx, eid);
   } else {
-    eid = createPlayerRig(ctx, prefab, false);
+    addPlayerRig(ctx, eid);
   }
 
   associatePeerWithEntity(network, peerId, eid);

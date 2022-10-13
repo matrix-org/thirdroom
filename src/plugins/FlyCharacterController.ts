@@ -2,7 +2,6 @@ import { addEntity, addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { createCamera } from "../engine/camera/camera.game";
-import { Player } from "../engine/component/Player";
 import {
   addTransformComponent,
   Transform,
@@ -21,7 +20,6 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { NetworkModule, Owned, Networked, associatePeerWithEntity } from "../engine/network/network.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
@@ -82,42 +80,35 @@ interface IFlyPlayerRig {
 export const FlyRig: Map<number, IFlyPlayerRig> = new Map();
 export const flyRigQuery = defineQuery([FlyRig]);
 
-export function createFlyPlayerRig(state: GameState, prefab: string, setActiveCamera = true) {
-  const { world } = state;
-  const network = getModule(state, NetworkModule);
-
-  const playerRig = addEntity(world);
-  addTransformComponent(world, playerRig);
+export function createFlyPlayerRig(ctx: GameState, prefab: string, setActiveCamera = false) {
+  const playerRig = addEntity(ctx.world);
+  addTransformComponent(ctx.world, playerRig);
 
   // how this player looks to others
-  addPrefabComponent(world, playerRig, prefab);
+  addPrefabComponent(ctx.world, playerRig, prefab);
 
-  associatePeerWithEntity(network, network.peerId, playerRig);
-
-  addComponent(world, FlyRig, playerRig);
-  FlyRig.set(playerRig, {
-    speed: 10,
-  });
-
-  addCameraYawTargetComponent(world, playerRig);
-
-  const camera = createCamera(state, setActiveCamera);
-  addCameraPitchTargetComponent(world, camera);
-  addChild(playerRig, camera);
-  const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.2;
-
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  addComponent(world, Owned, playerRig);
-  addComponent(world, Player, playerRig);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(world, Networked, playerRig, true);
-
-  return playerRig;
+  return addFlyPlayerRig(ctx, playerRig, setActiveCamera);
 }
 
 const velocityVec = vec3.create();
 const cameraWorldRotation = quat.create();
+
+export function addFlyPlayerRig(ctx: GameState, playerRig: number, setActiveCamera = false) {
+  addComponent(ctx.world, FlyRig, playerRig);
+  FlyRig.set(playerRig, {
+    speed: 10,
+  });
+
+  addCameraYawTargetComponent(ctx.world, playerRig);
+
+  const camera = createCamera(ctx, setActiveCamera);
+  addCameraPitchTargetComponent(ctx.world, camera);
+  addChild(playerRig, camera);
+  const cameraPosition = Transform.position[camera];
+  cameraPosition[1] = 1.2;
+
+  return playerRig;
+}
 
 function applyFlyController(playerRig: number, controller: InputController, camera: number, ctx: GameState) {
   const { speed } = FlyRig.get(playerRig)!;

@@ -51,19 +51,26 @@ import { NetworkAction } from "./NetworkAction";
 
 export type NetPipeData = [GameState, CursorView, string];
 
-export const writeElapsed = (input: NetPipeData) => {
-  const [ctx, v] = input;
-  writeFloat32(v, ctx.elapsed);
-  return input;
-};
-
 export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   const [, v] = input;
   writeUint8(v, type);
   return input;
 };
 
+export const writeElapsed = (input: NetPipeData) => {
+  const [ctx, v] = input;
+  writeFloat32(v, ctx.elapsed);
+  return input;
+};
+
 export const writeMetadata = (type: NetworkAction) => pipe(writeMessageType(type), writeElapsed);
+
+const _out: { type: number; elapsed: number } = { type: 0, elapsed: 0 };
+export const readMetadata = (v: CursorView, out = _out) => {
+  out.type = readUint8(v);
+  out.elapsed = readFloat32(v);
+  return out;
+};
 
 /* Transform serialization */
 
@@ -206,6 +213,19 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 // };
 
 /* Create */
+export function createRemoteNetworkedEntity(state: GameState, network: GameNetworkState, nid: number, prefab: string) {
+  const eid = createPrefabEntity(state, prefab, true);
+
+  // assign networkId
+  addComponent(state.world, Networked, eid, true);
+  Networked.networkId[eid] = nid;
+  network.networkIdToEntityId.set(nid, eid);
+
+  // add to scene
+  addChild(state.activeScene, eid);
+
+  return eid;
+}
 
 export function serializeCreatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
@@ -245,20 +265,6 @@ export function serializeCreates(input: NetPipeData) {
   return input;
 }
 
-export function createRemoteNetworkedEntity(state: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(state, prefab, true);
-
-  // assign networkId
-  addComponent(state.world, Networked, eid, true);
-  Networked.networkId[eid] = nid;
-  network.networkIdToEntityId.set(nid, eid);
-
-  // add to scene
-  addChild(state.activeScene, eid);
-
-  return eid;
-}
-
 export function deserializeCreates(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
@@ -274,7 +280,7 @@ export function deserializeCreates(input: NetPipeData) {
   return input;
 }
 
-/* Update */
+/* Updates - Snapshot */
 
 export function serializeUpdatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
@@ -288,6 +294,28 @@ export function serializeUpdatesSnapshot(input: NetPipeData) {
   }
   return input;
 }
+export function deserializeUpdatesSnapshot(input: NetPipeData) {
+  const [state, v] = input;
+  const network = getModule(state, NetworkModule);
+  const count = readUint32(v);
+  for (let i = 0; i < count; i++) {
+    const nid = readUint32(v);
+    const eid = network.networkIdToEntityId.get(nid);
+
+    if (eid === undefined) {
+      console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
+    }
+
+    deserializeTransformSnapshot(v, eid);
+
+    if (eid && Transform.skipLerp[eid]) {
+      skipRenderLerp(state, eid);
+    }
+  }
+  return input;
+}
+
+/* Updates - Changed */
 
 export function serializeUpdatesChanged(input: NetPipeData) {
   const [state, v] = input;
@@ -310,28 +338,6 @@ export function serializeUpdatesChanged(input: NetPipeData) {
   writeCount(count);
   return input;
 }
-
-export function deserializeUpdatesSnapshot(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
-  const count = readUint32(v);
-  for (let i = 0; i < count; i++) {
-    const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid);
-
-    if (eid === undefined) {
-      console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
-    }
-
-    deserializeTransformSnapshot(v, eid);
-
-    if (eid && Transform.skipLerp[eid]) {
-      skipRenderLerp(state, eid);
-    }
-  }
-  return input;
-}
-
 export function deserializeUpdatesChanged(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
@@ -493,7 +499,7 @@ export function createPlayerNetworkIdMessage(state: GameState) {
   const input: NetPipeData = [state, messageView, ""];
   writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
   writeElapsed(input);
-  serializePlayerNetworkId(input);
+  // serializePlayerNetworkId(input);
   return sliceCursorView(messageView);
 }
 
@@ -586,8 +592,8 @@ export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
 // deserialization pipelines
 export const deserializeNewPeerSnapshot = pipe(
   deserializeCreates,
-  deserializeUpdatesSnapshot,
-  deserializePlayerNetworkId
+  deserializeUpdatesSnapshot
+  // deserializePlayerNetworkId
 );
 export const deserializeSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
 export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
