@@ -2,7 +2,6 @@
   position: absolute;
   bottom: 100px;
   left: 50%;
-  pointer-events: none;
   transform: translateX(-50%);
 
   max-width: 515px;

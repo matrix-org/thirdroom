@@ -19,6 +19,8 @@ import { getRoomCall, updateWorldProfile } from "../../../utils/matrixUtils";
 import { connectToTestNet } from "../../../../engine/network/network.main";
 import { AudioModule } from "../../../../engine/audio/audio.main";
 import { usePreviousState } from "../../../hooks/usePreviousState";
+import { Button } from "../../../atoms/button/Button";
+import { useWorldAction } from "../../../hooks/useWorldAction";
 
 function useWorldLoadingProgress(worldId?: string) {
   const engine = useMainThreadContext();
@@ -136,16 +138,22 @@ function useEnterWorld() {
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
   const mainThread = useMainThreadContext();
   const { worldId, setWorld, closeWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
-  const { closeOverlay, openOverlay } = useStore((state) => state.overlay);
+  const { closeOverlay, openOverlay, isOpen: isOverlayOpen } = useStore((state) => state.overlay);
+  const selectWorld = useStore((state) => state.overlayWorld.selectWorld);
   const { session } = useHydrogen(true);
+  const { enterWorld: enterWorldAction } = useWorldAction(session);
   const loadProgress = useWorldLoadingProgress(worldId);
   const isMounted = useIsMounted();
   const prevRoomId = usePreviousState(roomId);
+  const [error, setError] = useState<Error>();
 
   if (roomId && prevRoomId !== roomId) {
     closeOverlay();
+  }
+  if (entered) {
     mainThread.canvas.requestPointerLock();
   }
+
   if (!roomId && prevRoomId) {
     openOverlay();
     document.exitPointerLock();
@@ -155,6 +163,13 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const enterWorld = useEnterWorld();
 
   useEffect(() => {
+    if (!isOverlayOpen && roomId && session.rooms.get(roomId)) {
+      selectWorld(roomId);
+    }
+  }, [isOverlayOpen, selectWorld, roomId, session.rooms]);
+
+  useEffect(() => {
+    setError(undefined);
     const world = roomId ? session.rooms.get(roomId) : undefined;
     let subscriptionHandle: SubscriptionHandle | undefined;
 
@@ -163,11 +178,9 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
 
       const handleLoad = (event: StateEvent | undefined) => {
         loadWorld(world.id, event)
-          .then(() => {
-            setWorld(world.id);
-          })
-          .catch((err) => {
-            // TODO: show error + reload button
+          .then(() => setWorld(world.id))
+          .catch((err: Error) => {
+            setError(err);
           });
       };
 
@@ -191,12 +204,24 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
             setNetworkInterfaceDisposer(networkInterfaceDisposer);
           }
         })
-        .catch((err) => {
-          console.error(err);
+        .catch((err: Error) => {
+          setError(err);
         });
     }
   }, [worldId, entered, enterWorld, setNetworkInterfaceDisposer, session.rooms]);
 
+  if (isOverlayOpen) return null;
+
+  if (roomId && error) {
+    return (
+      <div className="WorldLoading flex items-center gap-md">
+        <Text className="grow" color="world">
+          {error.message}
+        </Text>
+        <Button onClick={() => enterWorldAction(roomId, { reload: true })}>Reload</Button>
+      </div>
+    );
+  }
   if (!roomId || entered || loadProgress.total === 0) return <></>;
 
   return (
