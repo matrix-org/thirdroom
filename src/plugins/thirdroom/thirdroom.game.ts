@@ -453,7 +453,7 @@ function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: Ga
   const controller = createInputController({
     actionMaps: defaultController.actionMaps,
   });
-  addInputController(input, controller, eid);
+  addInputController(ctx.world, input, controller, eid);
 
   addChild(ctx.activeScene, eid);
 
