@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
-import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
 import { WorldChat } from "../world-chat/WorldChat";
@@ -23,7 +23,7 @@ import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Reticle } from "../reticle/Reticle";
-import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
+import { EntityTooltip, IPortalProcess } from "../entity-tooltip/EntityTooltip";
 import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
@@ -58,6 +58,7 @@ import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../.
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -131,6 +132,7 @@ export function WorldView({ world }: WorldViewProps) {
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [shortcutUI, setShortcutUI] = useState(false);
+  const isMounted = useIsMounted();
 
   const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
 
@@ -168,10 +170,12 @@ export function WorldView({ world }: WorldViewProps) {
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
 
   const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
+  const [portalProcess, setPortalProcess] = useState<IPortalProcess>({});
   const mouseDown = useMouseDown(mainThread.canvas);
 
   useEffect(() => {
-    const onInteraction = (ctx: IMainThreadContext, message: InteractionMessage) => {
+    let unSubStatusObserver: () => void | undefined;
+    const onInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
       const interactableType = message.interactableType;
 
       if (!interactableType || message.action === InteractableAction.Unfocus) {
@@ -197,19 +201,39 @@ export function WorldView({ world }: WorldViewProps) {
         }
       } else if (message.interactableType === InteractableType.Portal) {
         if (message.action === InteractableAction.Grab) {
-          // TODO:
-          // onWorldTransfer(message.uri!);
-          // join world if not joined
+          try {
+            setPortalProcess({});
+            if (!message.uri) throw Error("Portal does not have valid matrix id/alias");
+            console.log(message.uri);
+            const parsedUri = parseMatrixUri(message.uri);
+            if (parsedUri instanceof URL) {
+              return;
+            }
 
-          const parsedUri = parseMatrixUri(message.uri!);
+            const roomIdOrAlias = parsedUri.mxid1;
+            const roomId = roomIdOrAlias.startsWith("#")
+              ? aliasToRoomId(session.rooms, parsedUri.mxid1)
+              : parsedUri.mxid1;
 
-          if (parsedUri instanceof URL) {
-            return;
-          }
-          const id = parsedUri.mxid1.startsWith("#") ? aliasToRoomId(session.rooms, parsedUri.mxid1) : parsedUri.mxid1;
-          if (id && session.rooms.get(id)) {
-            selectWorld(id);
-            enterWorld(id);
+            if (roomId && session.rooms.get(roomId)) {
+              selectWorld(roomId);
+              enterWorld(roomId);
+              return;
+            }
+
+            setPortalProcess({ joining: true });
+            const rId = await session.joinRoom(roomIdOrAlias);
+            if (!isMounted()) return;
+            setPortalProcess({});
+            const roomStatusObserver = await session.observeRoomStatus(rId);
+            unSubStatusObserver = roomStatusObserver.subscribe((roomStatus) => {
+              if (roomStatus !== RoomStatus.Joined) return;
+              selectWorld(rId);
+              enterWorld(rId);
+            });
+          } catch (err) {
+            if (!isMounted()) return;
+            setPortalProcess({ error: err as Error });
           }
         } else {
           setActiveEntity({
@@ -229,12 +253,16 @@ export function WorldView({ world }: WorldViewProps) {
       showToast("Maximum number of objects reached.");
     };
 
-    return createDisposables([
+    const disposables = createDisposables([
       registerMessageHandler(engine, InteractionMessageType, onInteraction),
       registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
       registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
-  }, [activeCall, engine, showToast, enterWorld, selectWorld, session.rooms]);
+    return () => {
+      unSubStatusObserver?.();
+      disposables();
+    };
+  }, [activeCall, engine, showToast, enterWorld, selectWorld, isMounted, session]);
 
   useKeyDown(
     (e) => {
@@ -444,7 +472,9 @@ export function WorldView({ world }: WorldViewProps) {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && activeEntity && <EntityTooltip activeEntity={activeEntity} />}
+      {!isOverlayOpen && showNames && activeEntity && (
+        <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
+      )}
       {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
