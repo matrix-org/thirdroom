@@ -63,6 +63,7 @@ export const registerInboundMessageHandler = (
   type: number,
   cb: (input: NetPipeData) => void
 ) => {
+  // TODO: hold a list of multiple handlers
   network.messageHandlers[type] = cb;
 };
 

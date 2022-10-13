@@ -2,7 +2,7 @@ import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode, KeyCodes } from "./KeyCodes";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
-import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
 /*********
  * Types *
@@ -15,9 +15,6 @@ export interface InputModuleState {
 /******************
  * Initialization *
  *****************/
-
-// max ringbuffer items
-const RING_BUFFER_MAX = 100;
 
 export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
   name: "input",

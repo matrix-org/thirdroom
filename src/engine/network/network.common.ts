@@ -52,5 +52,5 @@ export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
   hostId: string;
 }
 
-export const isHost = (network: GameNetworkState | MainNetworkState) =>
-  network.peerId && network.hostId && network.hostId === network.peerId;
+export const isHost = (network: GameNetworkState | MainNetworkState): boolean =>
+  !!network.peerId && !!network.hostId && network.hostId === network.peerId;

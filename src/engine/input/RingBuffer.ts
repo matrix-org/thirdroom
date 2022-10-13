@@ -25,6 +25,8 @@ export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBu
   view: CursorView;
 }
 
+export const RING_BUFFER_MAX = 100;
+
 const BYTE_LENGTH = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
 export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, capacity?: number): InputRingBuffer<T> {

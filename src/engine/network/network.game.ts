@@ -8,13 +8,13 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import {
   AddPeerIdMessage,
   InitializeNetworkStateMessage,
+  isHost,
   NetworkMessage,
   NetworkMessageType,
   RemovePeerIdMessage,
   SetHostMessage,
   SetPeerIdMessage,
 } from "./network.common";
-import randomRange from "../utils/randomRange";
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
 import {
@@ -33,7 +33,6 @@ import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { NetworkRingBuffer } from "./RingBuffer";
 import { deserializeCommand } from "./commands.game";
-// import { createCommandMessage } from "./commands.game";
 
 /*********
  * Types *
@@ -54,7 +53,6 @@ export interface GameNetworkState {
   peerIdToIndex: Map<string, number>;
   peerIdToHistorian: Map<string, Historian>;
   peerIdToEntityId: Map<string, number>;
-  peerIdToInputState: Map<string, { [path: string]: number }>;
   entityIdToPeerId: Map<number, string>;
   networkIdToEntityId: Map<number, number>;
   indexToPeerId: Map<number, string>;
@@ -90,7 +88,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       newPeers: [],
       peerIdToIndex: new Map(),
       peerIdToHistorian: new Map(),
-      peerIdToInputState: new Map(),
       networkIdToEntityId: new Map(),
       peerIdToEntityId: new Map(),
       entityIdToPeerId: new Map(),
@@ -159,7 +156,7 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
   network.peerIdToHistorian.set(peerId, createHistorian());
 
   // Set our local peer id index
-  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
+  if (isHost(network)) mapPeerIdAndIndex(network, peerId);
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
@@ -198,18 +195,12 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   }
 };
 
-// hack - could also temporarily send whole peerId string to avoid potential collisions
-const peerIdIndex = Math.round(randomRange(0, 0xffff));
-
 // Set local peer id
 const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
   network.peerId = peerId;
-  // if (network.hosting) mapPeerIdAndIndex(ctx, peerId);
-
-  network.peerIdToIndex.set(peerId, peerIdIndex);
-  network.indexToPeerId.set(peerIdIndex, peerId);
+  if (isHost(network)) mapPeerIdAndIndex(network, peerId);
 };
 
 const onSetHost = (ctx: GameState, message: SetHostMessage) => {
@@ -219,12 +210,11 @@ const onSetHost = (ctx: GameState, message: SetHostMessage) => {
 
 /* Utils */
 
-// const mapPeerIdAndIndex = (ctx: GameState, peerId: string) => {
-//   const network = getModule(ctx, NetworkModule);
-//   // const peerIdIndex = network.peerIdCount++;
-//   network.peerIdToIndex.set(peerId, peerIdIndex);
-//   network.indexToPeerId.set(peerIdIndex, peerId);
-// };
+const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
+  const peerIdIndex = network.peerIdCount++;
+  network.peerIdToIndex.set(peerId, peerIdIndex);
+  network.indexToPeerId.set(peerIdIndex, peerId);
+};
 
 const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1) << offset);
 
@@ -234,7 +224,7 @@ export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  // const peerIdIndex = network.peerIdToIndex.get(network.peerId);
+  const peerIdIndex = network.peerIdToIndex.get(network.peerId);
 
   if (peerIdIndex === undefined) {
     // console.error("could not create networkId, peerId not set in peerIdToIndex map");

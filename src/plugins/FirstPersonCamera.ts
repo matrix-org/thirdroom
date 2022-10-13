@@ -5,6 +5,7 @@ import { setQuaternionFromEuler, Transform } from "../engine/component/transform
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
+import { InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 
 type FirstPersonCameraModuleState = {};
@@ -14,8 +15,10 @@ export const FirstPersonCameraModule = defineModule<GameState, FirstPersonCamera
   create() {
     return {};
   },
-  init(state) {
-    enableActionMap(state, FirstPersonCameraActionMap);
+  init(ctx) {
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, FirstPersonCameraActionMap);
   },
 });
 
@@ -71,9 +74,17 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const { world } = ctx;
 
-  const [lookX, lookY] = input.actions.get(FirstPersonCameraActions.Look) as vec2;
+  for (const controller of input.controllers.values()) {
+    applyFirstPersonCamera(ctx, controller);
+  }
 
-  const pitchEntities = cameraPitchTargetQuery(world);
+  return world;
+}
+
+function applyFirstPersonCamera(ctx: GameState, controller: InputController) {
+  const [lookX, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
+
+  const pitchEntities = cameraPitchTargetQuery(ctx.world);
 
   if (Math.abs(lookY) >= 1) {
     pitchEntities.forEach((eid) => {
@@ -95,7 +106,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     });
   }
 
-  const yawEntities = cameraYawTargetQuery(world);
+  const yawEntities = cameraYawTargetQuery(ctx.world);
 
   if (Math.abs(lookX) >= 1) {
     yawEntities.forEach((eid) => {
@@ -104,6 +115,4 @@ export function FirstPersonCameraSystem(ctx: GameState) {
       setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
     });
   }
-
-  return world;
 }

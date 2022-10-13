@@ -3,7 +3,13 @@ import { mat4, quat, vec3 } from "gl-matrix";
 
 import { createCamera } from "../engine/camera/camera.game";
 import { Player } from "../engine/component/Player";
-import { addTransformComponent, Transform, addChild, updateMatrixWorld } from "../engine/component/transform";
+import {
+  addTransformComponent,
+  Transform,
+  addChild,
+  updateMatrixWorld,
+  getChildAt,
+} from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -12,7 +18,7 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
-import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { NetworkModule, Owned, Networked, associatePeerWithEntity } from "../engine/network/network.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";
@@ -26,17 +32,16 @@ export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacter
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, FlyCharacterControllerActionMap);
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, FlyCharacterControllerActionMap);
   },
 });
 
-interface IFlyPlayerRig {
-  speed: number;
-}
-
 export const FlyPlayerRig: Map<number, IFlyPlayerRig> = new Map();
+export const flyPlayerRigQuery = defineQuery([FlyPlayerRig]);
 
-export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
+export function createFlyPlayerRig(state: GameState, prefab: string, setActiveCamera = true) {
   const { world } = state;
   const network = getModule(state, NetworkModule);
 
@@ -44,7 +49,7 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   addTransformComponent(world, playerRig);
 
   // how this player looks to others
-  addPrefabComponent(world, playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
+  addPrefabComponent(world, playerRig, prefab);
 
   associatePeerWithEntity(network, network.peerId, playerRig);
 
@@ -70,33 +75,36 @@ export function createFlyPlayerRig(state: GameState, setActiveCamera = true) {
   return playerRig;
 }
 
-export const flyPlayerRigQuery = defineQuery([FlyPlayerRig]);
-
 const velocityVec = vec3.create();
 const cameraWorldRotation = quat.create();
 
 export function FlyControlsSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const playerRig = flyPlayerRigQuery(ctx.world)[0];
+  const ents = flyPlayerRigQuery(ctx.world);
 
-  if (!playerRig) {
-    return;
+  for (let i = 0; i < ents.length; i++) {
+    const playerRig = ents[i];
+    const camera = getChildAt(playerRig, 0);
+
+    const { speed } = FlyPlayerRig.get(playerRig)!;
+
+    const controller = getInputController(input, playerRig);
+
+    const moveVec = controller.actions.get(FlyCharacterControllerActions.Move) as Float32Array;
+    const boost = controller.actions.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
+
+    const boostModifier = boost.held ? 2 : 1;
+
+    vec3.set(velocityVec, moveVec[0], 0, -moveVec[1]);
+
+    updateMatrixWorld(camera);
+
+    mat4.getRotation(cameraWorldRotation, Transform.worldMatrix[camera]);
+    vec3.transformQuat(velocityVec, velocityVec, cameraWorldRotation);
+    vec3.normalize(velocityVec, velocityVec);
+    vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);
+    vec3.add(Transform.position[playerRig], Transform.position[playerRig], velocityVec);
   }
-
-  const { speed } = FlyPlayerRig.get(playerRig)!;
-
-  const moveVec = input.actions.get(FlyCharacterControllerActions.Move) as Float32Array;
-  const boost = input.actions.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
-
-  const boostModifier = boost.held ? 2 : 1;
-
-  vec3.set(velocityVec, moveVec[0], 0, -moveVec[1]);
-  updateMatrixWorld(ctx.activeCamera);
-  mat4.getRotation(cameraWorldRotation, Transform.worldMatrix[ctx.activeCamera]);
-  vec3.transformQuat(velocityVec, velocityVec, cameraWorldRotation);
-  vec3.normalize(velocityVec, velocityVec);
-  vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);
-  vec3.add(Transform.position[playerRig], Transform.position[playerRig], velocityVec);
 }
 
 export const FlyCharacterControllerActions = {

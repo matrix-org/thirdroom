@@ -1,5 +1,3 @@
-/* Send */
-
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
@@ -121,7 +119,7 @@ const sendUpdates = (ctx: GameState) => {
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
-          broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, network.peerId));
+          broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, theirPeerId));
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
         }
       }

@@ -5,7 +5,10 @@ import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import { FirstPersonCameraModule, FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
-import { PhysicsCharacterControllerModule, PlayerControllerSystem } from "../plugins/PhysicsCharacterController";
+import {
+  PhysicsCharacterControllerModule,
+  PhysicsCharacterControllerSystem,
+} from "../plugins/PhysicsCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
   EditorModule,
@@ -57,7 +60,7 @@ export default defineConfig<GameState>({
     NetworkInterpolationSystem,
 
     FirstPersonCameraSystem,
-    PlayerControllerSystem,
+    PhysicsCharacterControllerSystem,
     FlyControlsSystem,
     PhysicsSystem,
     AnimationSystem,

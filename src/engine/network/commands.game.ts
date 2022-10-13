@@ -7,7 +7,13 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { applyMouseButtons, applyMouseMovement, applyMouseScroll } from "../input/input.game";
+import {
+  applyMouseButtons,
+  applyMouseMovement,
+  applyMouseScroll,
+  getInputController,
+  InputModule,
+} from "../input/input.game";
 import { KeyCodes, Keys } from "../input/KeyCodes";
 import { getModule } from "../module/module.common";
 import { NetworkModule } from "./network.game";
@@ -27,9 +33,18 @@ export const createCommandMessage = (ctx: GameState, commands: ArrayBuffer[]) =>
 };
 
 const out: { keyCode: number; values: [number, number] } = { keyCode: 0, values: [0, 0] };
-export const deserializeCommand = (input: NetPipeData) => {
-  const [ctx, cv, peerId] = input;
+export const deserializeCommand = (data: NetPipeData) => {
+  const [ctx, cv, peerId] = data;
+  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+
+  const eid = network.peerIdToEntityId.get(peerId);
+
+  if (!eid) {
+    return data;
+  }
+
+  const controller = getInputController(input, eid);
 
   const count = readUint8(cv);
   for (let i = 0; i < count; i++) {
@@ -37,12 +52,7 @@ export const deserializeCommand = (input: NetPipeData) => {
     out.values[0] = readFloat32(cv);
     out.values[1] = readFloat32(cv);
 
-    let raw = network.peerIdToInputState.get(peerId);
-
-    if (!raw) {
-      raw = {};
-      network.peerIdToInputState.set(peerId, raw);
-    }
+    const { raw } = controller;
 
     switch (out.keyCode) {
       case KeyCodes.MouseButtons:
@@ -58,6 +68,6 @@ export const deserializeCommand = (input: NetPipeData) => {
         raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
     }
 
-    return input;
+    return data;
   }
 };

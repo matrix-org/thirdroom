@@ -20,7 +20,7 @@ import {
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../../engine/audio/audio.game";
-import { removeRecursive, Transform } from "../../engine/component/transform";
+import { getChildAt, removeRecursive, Transform } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import {
@@ -30,9 +30,11 @@ import {
   BindingType,
   ButtonActionState,
 } from "../../engine/input/ActionMappingSystem";
-import { InputModule } from "../../engine/input/input.game";
+import { getInputController, InputModule } from "../../engine/input/input.game";
+import { InputController } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
+  GameNetworkState,
   getPeerIdIndexFromNetworkId,
   Networked,
   NetworkModule,
@@ -47,12 +49,13 @@ import {
   GrabCollisionGroup,
   grabShapeCastCollisionGroups,
 } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
+import { characterRigQuery } from "../rigs/character.game";
 import { PortalComponent } from "../portals/portals.game";
 import {
   ObjectCapReachedMessageType,
@@ -66,7 +69,7 @@ import { InteractableAction, InteractableType, InteractionMessage, InteractionMe
 
 type InteractionModuleState = {
   clickEmitter?: RemoteGlobalAudioEmitter;
-  // HACK: - add duplicate obj cap config to interaction module until import issue is resolved
+  // HACK: add duplicate obj cap config to interaction module until import issue is resolved
   maxObjCap: number;
 };
 
@@ -108,7 +111,9 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
 
     addResourceRef(ctx, module.clickEmitter.resourceId);
 
-    enableActionMap(ctx, InteractionActionMap);
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, InteractionActionMap);
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
@@ -119,7 +124,7 @@ function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
   module.maxObjCap = message.value;
 }
 
-export const InteractionActionMap: ActionMap = {
+const InteractionActionMap: ActionMap = {
   id: "interaction",
   actions: [
     {
@@ -245,19 +250,38 @@ export function InteractionSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
 
-  // hack - add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
+  // HACK: add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
   if (lastActiveScene !== ctx.activeScene) {
     const remoteScene = RemoteSceneComponent.get(ctx.activeScene);
-    if (remoteScene && interaction.clickEmitter) {
+    if (remoteScene && interaction.clickEmitter && !remoteScene.audioEmitters.includes(interaction.clickEmitter)) {
       remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
     }
     lastActiveScene = ctx.activeScene;
   }
 
+  // TODO: remove dependency on PlayerController plugin
+  const rigs = characterRigQuery(ctx.world);
+
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const camera = getChildAt(eid, 0);
+    const controller = getInputController(input, eid);
+    updateInteractions(ctx, physics, interaction, network, controller, camera);
+  }
+}
+
+function updateInteractions(
+  ctx: GameState,
+  physics: PhysicsModuleState,
+  interaction: InteractionModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  camera: number
+) {
   // Focus
 
   // raycast outward from camera
-  const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+  const cameraMatrix = Transform.worldMatrix[camera];
   mat4.getRotation(_cameraWorldQuat, cameraMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
@@ -304,7 +328,7 @@ export function InteractionSystem(ctx: GameState) {
   if (exited[0] && focusQuery(ctx.world).length === 0) sendInteractionMessage(ctx, InteractableAction.Unfocus);
 
   // deletion
-  const deleteBtn = input.actions.get("Delete") as ButtonActionState;
+  const deleteBtn = controller.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focused = focusQuery(ctx.world)[0];
     // TODO: For now we only delete owned objects
@@ -317,10 +341,10 @@ export function InteractionSystem(ctx: GameState) {
   // Grab / Throw
   let heldEntity = grabQuery(ctx.world)[0];
 
-  const grabBtn = input.actions.get("Grab") as ButtonActionState;
-  const grabBtn2 = input.actions.get("Grab2") as ButtonActionState;
-  const throwBtn = input.actions.get("Throw") as ButtonActionState;
-  const throwBtn2 = input.actions.get("Throw2") as ButtonActionState;
+  const grabBtn = controller.actions.get("Grab") as ButtonActionState;
+  const grabBtn2 = controller.actions.get("Grab2") as ButtonActionState;
+  const throwBtn = controller.actions.get("Throw") as ButtonActionState;
+  const throwBtn2 = controller.actions.get("Throw2") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
@@ -329,7 +353,7 @@ export function InteractionSystem(ctx: GameState) {
   if (heldEntity && throwPressed) {
     removeComponent(ctx.world, GrabComponent, heldEntity);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
@@ -359,7 +383,7 @@ export function InteractionSystem(ctx: GameState) {
     // if grab is pressed
   } else if (grabPressed) {
     // raycast outward from camera
-    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+    const cameraMatrix = Transform.worldMatrix[camera];
     mat4.getRotation(_cameraWorldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
@@ -421,7 +445,7 @@ export function InteractionSystem(ctx: GameState) {
   heldEntity = grabQuery(ctx.world)[0];
   if (heldEntity) {
     // move held point upon scrolling
-    const [, scrollY] = input.actions.get("Scroll") as vec2;
+    const [, scrollY] = controller.actions.get("Scroll") as vec2;
     if (scrollY !== 0) {
       heldOffset += scrollY / 1000;
     }
@@ -430,9 +454,9 @@ export function InteractionSystem(ctx: GameState) {
     const heldPosition = Transform.position[heldEntity];
 
     const target = _target;
-    mat4.getTranslation(target, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getTranslation(target, Transform.worldMatrix[camera]);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);

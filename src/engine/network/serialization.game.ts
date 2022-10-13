@@ -36,7 +36,7 @@ import { getModule } from "../module/module.common";
 import { createRemoteNametag } from "../nametag/nametag.game";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RigidBody } from "../physics/physics.game";
-import { Prefab, createPrefabEntity, addPrefabComponent } from "../prefab/prefab.game";
+import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
   Networked,
@@ -253,9 +253,6 @@ export function createRemoteNetworkedEntity(state: GameState, network: GameNetwo
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  // assign prefab
-  addPrefabComponent(state.world, eid, prefab);
-
   // add to scene
   addChild(state.activeScene, eid);
 
@@ -393,7 +390,7 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
   const network = getModule(state, NetworkModule);
   const peerIdIndex = network.peerIdToIndex.get(peerId);
 
-  console.log("sending peerIdIndex", peerId, peerIdIndex);
+  // console.log("sending peerIdIndex", peerId, peerIdIndex);
   if (peerIdIndex === undefined) {
     // console.error(`unable to serialize peerIdIndex message - peerIdIndex not set for ${peerId}`);
     throw new Error(`unable to serialize peerIdIndex message - peerIdIndex not set for ${peerId}`);
@@ -414,7 +411,7 @@ export function deserializePeerIdIndex(input: NetPipeData) {
 
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
-  console.log("recieving peerIdIndex", peerId, peerIdIndex);
+  // console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
 

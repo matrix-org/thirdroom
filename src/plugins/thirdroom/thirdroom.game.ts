@@ -1,7 +1,6 @@
 import { addComponent, addEntity, defineQuery, hasComponent, removeComponent } from "bitecs";
-import { vec3, mat4, quat } from "gl-matrix";
+import { vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { Quaternion, Vector3 } from "three";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -9,13 +8,18 @@ import {
   addTransformComponent,
   removeRecursive,
   setEulerFromQuaternion,
-  skipRenderLerp,
   Transform,
 } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { Networked, NetworkModule, Owned, ownedPlayerQuery } from "../../engine/network/network.game";
-import { createPlayerRig, PlayerRig } from "../PhysicsCharacterController";
+import {
+  associatePeerWithEntity,
+  GameNetworkState,
+  Networked,
+  NetworkModule,
+  Owned,
+} from "../../engine/network/network.game";
+import { createPlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -55,7 +59,17 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
-import { InputModule } from "../../engine/input/input.game";
+import { GameInputModule, getInputController, InputModule, setInputController } from "../../engine/input/input.game";
+import { spawnEntity } from "../../engine/utils/spawnEntity";
+import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
+import {
+  createRemotePositionalAudioEmitter,
+  createRemoteMediaStreamSource,
+  createRemoteMediaStream,
+} from "../../engine/audio/audio.game";
+import { createRemoteNametag } from "../../engine/nametag/nametag.game";
+import { CharacterRig, characterRigQuery } from "../rigs/character.game";
+import { createInputController, InputController } from "../../engine/input/InputController";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -72,6 +86,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
+      registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
     ];
@@ -89,8 +104,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
         return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
       },
     });
-
-    // await waitForRemoteResource(ctx, environmentMapTexture.resourceId);
 
     // create out of bounds floor check
     const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
@@ -125,24 +138,9 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    const actionMap: ActionMap = {
-      id: "fly-mode-toggle",
-      actions: [
-        {
-          id: "toggleFlyMode",
-          path: "toggleFlyMode",
-          type: ActionType.Button,
-          bindings: [
-            {
-              type: BindingType.Button,
-              path: "Keyboard/KeyB",
-            },
-          ],
-        },
-      ],
-    };
-
-    enableActionMap(ctx, actionMap);
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, actionMap);
 
     return () => {
       for (const dispose of disposables) {
@@ -151,6 +149,23 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     };
   },
 });
+
+const actionMap: ActionMap = {
+  id: "fly-mode-toggle",
+  actions: [
+    {
+      id: "toggleFlyMode",
+      path: "toggleFlyMode",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyB",
+        },
+      ],
+    },
+  ],
+};
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
@@ -177,10 +192,26 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   }
 }
 
+// when peers join us in the world
+function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
+  const input = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
+  if (!isHost(network)) {
+    return;
+  }
+
+  loadRemotePlayerRig(ctx, input, network, message.peerId);
+}
+
+// when we join the world
 async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
   await waitUntil(() => network.peerIdToIndex.has(network.peerId));
-  loadPlayerRig(ctx);
+
+  if (isHost(network)) {
+    loadPlayerRig(ctx, input, network);
+  }
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
@@ -212,8 +243,12 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
   try {
+    const network = getModule(ctx, NetworkModule);
+    const input = getModule(ctx, InputModule);
+
     await loadEnvironment(ctx, message.url, message.fileMap);
-    loadPlayerRig(ctx);
+
+    loadPlayerRig(ctx, input, network);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
@@ -303,7 +338,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
   }
 }
 
-const spawnPointQuery = defineQuery([SpawnPoint]);
+export const spawnPointQuery = defineQuery([SpawnPoint]);
 
 function loadPreviewCamera(ctx: GameState) {
   const spawnPoints = spawnPointQuery(ctx.world);
@@ -332,7 +367,7 @@ function loadPreviewCamera(ctx: GameState) {
   }
 }
 
-function loadPlayerRig(ctx: GameState) {
+function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState) {
   const spawnPoints = spawnPointQuery(ctx.world);
 
   if (ctx.activeCamera) {
@@ -341,35 +376,106 @@ function loadPlayerRig(ctx: GameState) {
 
   const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
 
-  let playerRig: number;
+  let eid: number;
+
+  const prefab = Math.random() > 0.5 ? "mixamo-x" : "mixamo-y";
 
   if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-    playerRig = createFlyPlayerRig(ctx);
+    eid = createFlyPlayerRig(ctx, prefab, true);
   } else {
-    playerRig = createPlayerRig(ctx);
+    eid = createPlayerRig(ctx, prefab, true);
   }
+
+  associatePeerWithEntity(network, network.peerId, eid);
+
+  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
+  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Player, eid);
+  // Networked component isn't reset when removed so reset on add
+  addComponent(ctx.world, Networked, eid, true);
+
+  // setup input controller from default controller's ringbuffer and actionMaps
+  const defaultController = input.defaultController;
+  const controller = createInputController(defaultController);
+  setInputController(input, controller, eid);
+
+  input.activeController = controller;
+
+  addChild(ctx.activeScene, eid);
 
   if (spawnPoints.length > 0) {
-    spawnEntity(ctx, spawnPoints, playerRig);
+    spawnEntity(ctx, spawnPoints, eid);
   }
 
-  addChild(ctx.activeScene, playerRig);
+  return eid;
+}
+
+function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState, peerId: string) {
+  const spawnPoints = spawnPointQuery(ctx.world);
+
+  const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
+
+  let eid: number;
+
+  const prefab = Math.random() > 0.5 ? "mixamo-x" : "mixamo-y";
+
+  if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
+    eid = createFlyPlayerRig(ctx, prefab, false);
+  } else {
+    eid = createPlayerRig(ctx, prefab, false);
+  }
+
+  associatePeerWithEntity(network, peerId, eid);
+
+  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
+  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Player, eid);
+  // Networked component isn't reset when removed so reset on add
+  addComponent(ctx.world, Networked, eid, true);
+
+  // setup remote node data
+  addRemoteNodeComponent(ctx, eid, {
+    name: peerId,
+    audioEmitter: createRemotePositionalAudioEmitter(ctx, {
+      sources: [
+        createRemoteMediaStreamSource(ctx, {
+          stream: createRemoteMediaStream(ctx, { streamId: peerId }),
+        }),
+      ],
+    }),
+    nametag: createRemoteNametag(ctx, {
+      name: peerId,
+    }),
+  });
+
+  // setup input controller from default controller using just the actionMaps
+  const defaultController = input.defaultController;
+  const controller = createInputController({
+    actionMaps: defaultController.actionMaps,
+  });
+  setInputController(input, controller, eid);
+
+  addChild(ctx.activeScene, eid);
+
+  if (spawnPoints.length > 0) {
+    spawnEntity(ctx, spawnPoints, eid);
+  }
+
+  return eid;
 }
 
 function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, PlayerRig, playerRig);
+  removeComponent(ctx.world, CharacterRig, playerRig);
   removeComponent(ctx.world, RigidBody, playerRig);
 
   addComponent(ctx.world, FlyPlayerRig, playerRig);
-  FlyPlayerRig.set(playerRig, {
-    speed: 10,
-  });
+  FlyPlayerRig.speed[playerRig] = 10;
 }
 
 function swapToPlayerRig(ctx: GameState, playerRig: number) {
   removeComponent(ctx.world, FlyPlayerRig, playerRig);
 
-  addComponent(ctx.world, PlayerRig, playerRig);
+  addComponent(ctx.world, CharacterRig, playerRig);
 
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
@@ -383,54 +489,20 @@ function swapToPlayerRig(ctx: GameState, playerRig: number) {
   addRigidBody(ctx, playerRig, rigidBody);
 }
 
-const zero = new Vector3();
-const tmpVec = new Vector3();
-const tmpQuat = new Quaternion();
-
-function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?: quat) {
-  // mark to skip lerp to ensure lerp is fully avoided (if render tick is running up to 5x faster than game tick)
-  skipRenderLerp(ctx, eid);
-
-  Transform.position[eid].set(position);
-  if (quaternion) {
-    Transform.quaternion[eid].set(quaternion);
-    setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
-  }
-  const body = RigidBody.store.get(eid);
-  if (body) {
-    const position = Transform.position[eid];
-    body.setTranslation(tmpVec.fromArray(position), true);
-    if (quaternion) body.setRotation(tmpQuat.fromArray(quaternion), true);
-
-    body.setLinvel(zero, true);
-    body.setAngvel(zero, true);
-  }
-}
-
-const _p = vec3.create();
-const _q = quat.create();
-
-function spawnEntity(
-  ctx: GameState,
-  spawnPoints: number[],
-  eid: number,
-  spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1))
-) {
-  const spawnWorldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
-  const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
-  const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
-
-  spawnPosition[1] += 1.6;
-  quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
-
-  teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
-}
-
 export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const toggleFlyMode = input.actions.get("toggleFlyMode") as ButtonActionState;
-  const player = ownedPlayerQuery(ctx.world).at(-1);
-  if (player && toggleFlyMode.pressed) {
+
+  const rigs = characterRigQuery(ctx.world);
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const controller = getInputController(input, eid);
+    updateThirdroom(ctx, controller, eid);
+  }
+}
+
+function updateThirdroom(ctx: GameState, controller: InputController, player: number) {
+  const toggleFlyMode = controller.actions.get("toggleFlyMode") as ButtonActionState;
+  if (toggleFlyMode.pressed) {
     if (hasComponent(ctx.world, FlyPlayerRig, player)) {
       swapToPlayerRig(ctx, player);
     } else {

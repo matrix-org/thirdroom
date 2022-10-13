@@ -5,38 +5,39 @@ import { defineModule, getModule, Thread } from "../module/module.common";
 import { isHost } from "../network/network.common";
 import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
-import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
+import { InputController, createInputController } from "./InputController";
 import { KeyCodes, Keys } from "./KeyCodes";
-import { dequeueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { dequeueInputRingBuffer } from "./RingBuffer";
 
 /*********
  * Types *
  ********/
 
-export interface GameInputModuleState {
-  inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
-  actions: Map<string, ActionState>;
-  actionMaps: ActionMap[];
-  raw: { [path: string]: number };
+export interface GameInputModule {
+  controllers: Map<number, InputController>;
+  defaultController: InputController;
+  activeController: InputController;
 }
 
 /******************
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<GameState, GameInputModuleState>({
+export const InputModule = defineModule<GameState, GameInputModule>({
   name: "input",
   async create(ctx, { waitForMessage }) {
     const { inputRingBuffer } = await waitForMessage<InitializeInputStateMessage>(
       Thread.Main,
       InputMessageType.InitializeInputState
     );
+
+    const controller = createInputController({ inputRingBuffer });
+
     return {
-      inputRingBuffer,
-      actions: new Map(),
-      actionMaps: [],
-      raw: {},
+      controllers: new Map(),
+      defaultController: controller,
+      activeController: controller,
     };
   },
   init(ctx) {},
@@ -73,8 +74,10 @@ export function applyMouseScroll(raw: { [path: string]: number }, o: typeof out)
 
 export function ApplyInputSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
 
-  const { inputRingBuffer, raw } = getModule(ctx, InputModule);
+  const { inputRingBuffer, raw } = input.activeController;
+
   while (availableRead(inputRingBuffer)) {
     const command = dequeueInputRingBuffer(inputRingBuffer, out);
     if (!command) continue;
@@ -105,9 +108,30 @@ export function ApplyInputSystem(ctx: GameState) {
   }
 }
 
+/**********
+ * System *
+ **********/
+
 export function ResetInputSystem(ctx: GameState) {
-  const { raw } = getModule(ctx, InputModule);
-  raw["Mouse/movementX"] = 0;
-  raw["Mouse/movementY"] = 0;
-  raw["Mouse/Scroll"] = 0;
+  const input = getModule(ctx, InputModule);
+  for (const controller of input.controllers.values()) {
+    const { raw } = controller;
+    raw["Mouse/movementX"] = 0;
+    raw["Mouse/movementY"] = 0;
+    raw["Mouse/Scroll"] = 0;
+  }
+}
+
+/**********
+ * Utils *
+ **********/
+
+export function setInputController(input: GameInputModule, controller: InputController, eid: number) {
+  input.controllers.set(eid, controller);
+}
+
+export function getInputController(input: GameInputModule, eid: number) {
+  const controller = input.controllers.get(eid);
+  if (!controller) throw new Error("could not find input controller for eid: " + eid);
+  return controller;
 }
