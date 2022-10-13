@@ -7,13 +7,8 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import {
-  applyMouseButtons,
-  applyMouseMovement,
-  applyMouseScroll,
-  getInputController,
-  InputModule,
-} from "../input/input.game";
+import { applyMouseButtons, applyMouseMovement, applyMouseScroll, InputModule } from "../input/input.game";
+import { getInputController } from "../input/InputController";
 import { KeyCodes, Keys } from "../input/KeyCodes";
 import { getModule } from "../module/module.common";
 import { NetworkModule } from "./network.game";

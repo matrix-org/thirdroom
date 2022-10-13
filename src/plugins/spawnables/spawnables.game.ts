@@ -28,8 +28,8 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
-import { getInputController, InputModule } from "../../engine/input/input.game";
-import { InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { InputModule } from "../../engine/input/input.game";
+import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";

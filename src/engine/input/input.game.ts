@@ -1,13 +1,18 @@
 import { availableRead } from "@thirdroom/ringbuffer";
-import { addComponent } from "bitecs";
 
-import { GameState, World } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { isHost } from "../network/network.common";
 import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
-import { InputController, createInputController, InputControllerComponent } from "./InputController";
+import {
+  InputController,
+  createInputController,
+  InputControllerComponent,
+  exitedInputControllerQuery,
+  removeInputController,
+} from "./InputController";
 import { KeyCodes, Keys } from "./KeyCodes";
 import { dequeueInputRingBuffer } from "./RingBuffer";
 
@@ -107,6 +112,12 @@ export function ApplyInputSystem(ctx: GameState) {
         raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
     }
   }
+
+  const exited = exitedInputControllerQuery(ctx.world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    removeInputController(ctx.world, input, eid);
+  }
 }
 
 /**********
@@ -121,19 +132,4 @@ export function ResetInputSystem(ctx: GameState) {
     raw["Mouse/movementY"] = 0;
     raw["Mouse/Scroll"] = 0;
   }
-}
-
-/**********
- * Utils *
- **********/
-
-export function addInputController(world: World, input: GameInputModule, controller: InputController, eid: number) {
-  addComponent(world, InputControllerComponent, eid);
-  input.controllers.set(eid, controller);
-}
-
-export function getInputController(input: GameInputModule, eid: number) {
-  const controller = input.controllers.get(eid);
-  if (!controller) throw new Error("could not find input controller for eid: " + eid);
-  return controller;
 }

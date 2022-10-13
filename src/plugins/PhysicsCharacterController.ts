@@ -12,8 +12,8 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
-import { getInputController, InputModule } from "../engine/input/input.game";
-import { InputController, inputControllerQuery } from "../engine/input/InputController";
+import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
@@ -174,22 +174,22 @@ function updatePhysicsCharacterController(
   { physicsWorld }: PhysicsModuleState,
   network: GameNetworkState,
   controller: InputController,
-  playerRig: number
+  rig: number
 ) {
-  const body = RigidBody.store.get(playerRig);
+  const body = RigidBody.store.get(rig);
   if (!body) {
     return;
   }
 
-  const peerId = network.entityIdToPeerId.get(playerRig);
+  const peerId = network.entityIdToPeerId.get(rig);
   if (!peerId) {
     return;
   }
 
-  obj.quaternion.x = Transform.quaternion[playerRig][0];
-  obj.quaternion.y = Transform.quaternion[playerRig][1];
-  obj.quaternion.z = Transform.quaternion[playerRig][2];
-  obj.quaternion.w = Transform.quaternion[playerRig][3];
+  obj.quaternion.x = Transform.quaternion[rig][0];
+  obj.quaternion.y = Transform.quaternion[rig][1];
+  obj.quaternion.z = Transform.quaternion[rig][2];
+  obj.quaternion.w = Transform.quaternion[rig][3];
   body.setRotation(obj.quaternion, true);
 
   // Handle Input
@@ -277,6 +277,7 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+  // console.log("PhysicsCharacterControllerSystem", input.controllers);
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {

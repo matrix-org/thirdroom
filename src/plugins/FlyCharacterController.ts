@@ -18,8 +18,8 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
-import { getInputController, InputModule } from "../engine/input/input.game";
-import { InputController } from "../engine/input/InputController";
+import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { NetworkModule, Owned, Networked, associatePeerWithEntity } from "../engine/network/network.game";
 import { addPrefabComponent } from "../engine/prefab/prefab.game";

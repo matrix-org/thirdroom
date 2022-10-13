@@ -1,6 +1,8 @@
-import { defineQuery } from "bitecs";
+import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
+import { World } from "../GameTypes";
 import { ActionState, ActionMap } from "./ActionMappingSystem";
+import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
 export interface InputController {
@@ -25,3 +27,20 @@ export const createInputController = (props: InputControllerProps): InputControl
 
 export const InputControllerComponent = new Map<number, InputController>();
 export const inputControllerQuery = defineQuery([InputControllerComponent]);
+export const exitedInputControllerQuery = exitQuery(inputControllerQuery);
+
+export function addInputController(world: World, input: GameInputModule, controller: InputController, eid: number) {
+  addComponent(world, InputControllerComponent, eid);
+  input.controllers.set(eid, controller);
+}
+
+export function removeInputController(world: World, input: GameInputModule, eid: number) {
+  if (hasComponent(world, InputControllerComponent, eid)) removeComponent(world, InputControllerComponent, eid);
+  input.controllers.delete(eid);
+}
+
+export function getInputController(input: GameInputModule, eid: number) {
+  const controller = input.controllers.get(eid);
+  if (!controller) throw new Error("could not find input controller for eid: " + eid);
+  return controller;
+}

@@ -59,7 +59,7 @@ import {
   ButtonActionState,
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
-import { GameInputModule, getInputController, InputModule, addInputController } from "../../engine/input/input.game";
+import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
 import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
 import {
@@ -69,7 +69,13 @@ import {
 } from "../../engine/audio/audio.game";
 import { createRemoteNametag } from "../../engine/nametag/nametag.game";
 import { CharacterRig } from "../rigs/character.game";
-import { createInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import {
+  addInputController,
+  createInputController,
+  getInputController,
+  InputController,
+  inputControllerQuery,
+} from "../../engine/input/InputController";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;

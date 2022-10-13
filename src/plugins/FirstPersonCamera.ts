@@ -4,8 +4,8 @@ import { vec2, glMatrix as glm } from "gl-matrix";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
-import { getInputController, InputModule } from "../engine/input/input.game";
-import { InputController } from "../engine/input/InputController";
+import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 
 type FirstPersonCameraModuleState = {};

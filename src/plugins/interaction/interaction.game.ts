@@ -30,8 +30,8 @@ import {
   BindingType,
   ButtonActionState,
 } from "../../engine/input/ActionMappingSystem";
-import { getInputController, InputModule } from "../../engine/input/input.game";
-import { InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { InputModule } from "../../engine/input/input.game";
+import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
