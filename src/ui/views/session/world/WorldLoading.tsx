@@ -136,7 +136,6 @@ function useEnterWorld() {
 }
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const mainThread = useMainThreadContext();
   const { worldId, setWorld, closeWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
   const { closeOverlay, openOverlay, isOpen: isOverlayOpen } = useStore((state) => state.overlay);
   const selectWorld = useStore((state) => state.overlayWorld.selectWorld);
@@ -150,13 +149,9 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   if (roomId && prevRoomId !== roomId) {
     closeOverlay();
   }
-  if (entered) {
-    mainThread.canvas.requestPointerLock();
-  }
 
   if (!roomId && prevRoomId) {
     openOverlay();
-    document.exitPointerLock();
   }
 
   const loadWorld = useLoadWorld();

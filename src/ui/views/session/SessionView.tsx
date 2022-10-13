@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -9,11 +9,18 @@ import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
 import { useStore } from "../../hooks/useStore";
 import { LoadingScreen } from "../components/loading-screen/LoadingScreen";
+import { useHomeWorld } from "../../hooks/useHomeWorld";
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const homeWorldId = useHomeWorld();
+  useEffect(() => {
+    if (homeWorldId) {
+      useStore.getState().overlayWorld.selectWorld(homeWorldId);
+    }
+  }, [homeWorldId]);
 
   return (
     <DndProvider backend={HTML5Backend}>

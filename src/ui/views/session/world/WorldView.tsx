@@ -362,6 +362,10 @@ export function WorldView({ world }: WorldViewProps) {
   );
 
   useEffect(() => {
+    mainThread.canvas.requestPointerLock();
+  }, [mainThread]);
+
+  useEffect(() => {
     if (onboarding) document.exitPointerLock();
   }, [onboarding]);
 
