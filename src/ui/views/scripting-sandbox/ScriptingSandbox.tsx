@@ -1,67 +1,60 @@
 import { useEffect } from "react";
 
-import scriptingRuntimeWASMUrl from "../../../scripting/build/scripting-runtime.wasm?url";
-import ScriptingRuntimeModule from "../../../scripting/build/scripting-runtime";
+import { useIsMounted } from "../../hooks/useIsMounted";
+import { ScriptingRuntime } from "./ScriptingRuntime";
 
 export default function ScriptingSandbox() {
+  const isMounted = useIsMounted();
+
   useEffect(() => {
-    let runtime: any;
-    let animationFrame: number;
+    let runtime: ScriptingRuntime;
 
     async function run() {
-      runtime = await ScriptingRuntimeModule({
-        locateFile(path: string) {
-          if (path.endsWith(".wasm")) {
-            return scriptingRuntimeWASMUrl;
-          }
-        },
-      });
-
       const code = `
-        onUpdate = () => {
-          console.log("test7");
+        const cubeNode = createNode({
+          translation: [0, 1, 0],
+          mesh: createMesh({
+            primitives: [
+              createCubePrimitive({
+                size: [1, 1, 1],
+                material: createPBRMaterial({
+                  baseColorFactor: [1, 0, 0, 1]
+                })
+              })
+            ]
+          })
+        });
+
+        setParent(scene, cubeNode);
+
+        onUpdate = (dt) => {
+          transformRotateY(id, dt * 0.5);
         };
       `;
 
-      const codePtr = runtime.allocateUTF8(code);
-
-      if (runtime._init(codePtr)) {
-        return;
-      }
-
-      const update = (t: number) => {
-        if (runtime._update()) {
-          return;
-        }
-
-        animationFrame = requestAnimationFrame(update);
-      };
-
-      animationFrame = requestAnimationFrame(update);
+      runtime = await ScriptingRuntime.load(code);
     }
 
-    run().catch((error) => {
-      console.error(error);
+    run()
+      .then(() => {
+        if (!isMounted()) {
+          runtime.dispose();
+        }
+      })
+      .catch((error) => {
+        console.error(error);
 
-      if (runtime) {
-        try {
-          runtime.exitJS(0);
-        } catch {}
-      }
-
-      cancelAnimationFrame(animationFrame);
-    });
+        if (!isMounted()) {
+          runtime.dispose();
+        }
+      });
 
     return () => {
       if (runtime) {
-        try {
-          runtime.exitJS(0);
-        } catch {}
+        runtime.dispose();
       }
-
-      cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [isMounted]);
 
   return <div />;
 }
