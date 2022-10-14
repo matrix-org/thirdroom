@@ -16,7 +16,7 @@ import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
-import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
+import { getMxIdDomain, isRoomAliasAvailable, waitToCreateRoom } from "../../../utils/matrixUtils";
 import { getImageDimension } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
@@ -80,7 +80,7 @@ export function CreateWorld() {
               ...(await getImageDimension(avatar.nativeBlob)),
             },
           };
-      await session.createRoom({
+      const roomBeingCreated = await session.createRoom({
         type: RoomType.World,
         visibility,
         avatar: avatarInfo,
@@ -127,6 +127,10 @@ export function CreateWorld() {
         ],
       });
 
+      const room = await waitToCreateRoom(session, roomBeingCreated);
+      if (room) {
+        useStore.getState().overlayWorld.selectWorld(room.id);
+      }
       closeWindow();
     },
     [session, closeWindow]

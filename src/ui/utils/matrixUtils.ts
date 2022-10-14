@@ -110,9 +110,8 @@ export async function waitToCreateRoom(
     const unSubs = roomBeingCreated.disposableOn("change", () => {
       unSubs();
       if (!roomBeingCreated.roomId) return resolve(undefined);
-      const profileRoom = session.rooms.get(roomBeingCreated.roomId);
-      if (!profileRoom) return resolve(undefined);
-      resolve(profileRoom);
+      const room = session.rooms.get(roomBeingCreated.roomId);
+      resolve(room);
     });
   });
 }
