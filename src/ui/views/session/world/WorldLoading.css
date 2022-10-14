@@ -1,13 +1,5 @@
 .WorldLoading {
   position: absolute;
   bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  max-width: 515px;
   width: 100%;
-
-  padding: var(--sp-md);
-  background-color: var(--bg-world-overlay);
-  border-radius: var(--br-xs);
 }

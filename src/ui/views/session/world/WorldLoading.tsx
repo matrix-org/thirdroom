@@ -21,6 +21,7 @@ import { AudioModule } from "../../../../engine/audio/audio.main";
 import { usePreviousState } from "../../../hooks/usePreviousState";
 import { Button } from "../../../atoms/button/Button";
 import { useWorldAction } from "../../../hooks/useWorldAction";
+import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 
 function useWorldLoadingProgress(worldId?: string) {
   const engine = useMainThreadContext();
@@ -145,6 +146,8 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const isMounted = useIsMounted();
   const prevRoomId = usePreviousState(roomId);
   const [error, setError] = useState<Error>();
+  const world = roomId ? session.rooms.get(roomId) : undefined;
+  const [creator, setCreator] = useState<string>();
 
   if (roomId && prevRoomId !== roomId) {
     closeOverlay();
@@ -207,31 +210,50 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
     }
   }, [worldId, entered, enterWorld, setNetworkInterfaceDisposer, session.rooms]);
 
+  useEffect(() => {
+    let disposed = false;
+    world?.getStateEvent("m.room.create", "").then((stateEvent) => {
+      if (disposed) return;
+      const creatorId = stateEvent?.event.sender;
+      if (!creatorId) return;
+      setCreator(creatorId);
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [world]);
+
   if (isOverlayOpen) return null;
 
   if (roomId && error) {
     return (
-      <div className="WorldLoading flex items-center gap-md">
-        <Text className="grow" color="world">
-          {error.message}
-        </Text>
-        <Button onClick={() => enterWorldAction(roomId, { reload: true })}>Reload</Button>
+      <div className="WorldLoading flex justify-center">
+        <WorldPreviewCard
+          title={world?.name ?? world?.canonicalAlias ?? "Unknown World"}
+          desc={error?.message}
+          options={<Button onClick={() => enterWorldAction(roomId, { reload: true })}>Reload</Button>}
+        />
       </div>
     );
   }
+
   if (!roomId || entered || loadProgress.total === 0) return <></>;
 
   return (
-    <div className="WorldLoading flex flex-column gap-xs">
-      <Progress variant="secondary" max={100} value={getPercentage(loadProgress.total, loadProgress.loaded)} />
-      <div className="flex justify-between gap-md">
-        <Text color="world" variant="b3">
-          {`Loading: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}
-        </Text>
-        <Text color="world" variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(
-          loadProgress.total
-        )}`}</Text>
-      </div>
+    <div className="WorldLoading flex justify-center">
+      <WorldPreviewCard
+        title={world?.name ?? world?.canonicalAlias ?? "Unknown World"}
+        desc={creator ? `Created by ${creator}` : undefined}
+        content={
+          <div className="flex flex-column gap-xs">
+            <Progress variant="secondary" max={100} value={getPercentage(loadProgress.total, loadProgress.loaded)} />
+            <div className="flex justify-between gap-md">
+              <Text variant="b3">{`Loading Scene: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}</Text>
+              <Text variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(loadProgress.total)}`}</Text>
+            </div>
+          </div>
+        }
+      />
     </div>
   );
 }
