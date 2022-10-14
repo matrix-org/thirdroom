@@ -57,7 +57,6 @@ export function Overlay() {
     worldId: state.world.worldId,
     isEnteredWorld: state.world.entered,
     selectedWorldId: state.overlayWorld.selectedWorldId,
-    closeOverlay: state.overlay.closeOverlay,
   }));
 
   const activeCall = useRoomCall(calls, worldId);

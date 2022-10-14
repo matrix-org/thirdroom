@@ -136,7 +136,7 @@ function useEnterWorld() {
 }
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const { worldId, setWorld, closeWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
+  const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
   const { closeOverlay, openOverlay, isOpen: isOverlayOpen } = useStore((state) => state.overlay);
   const selectWorld = useStore((state) => state.overlayWorld.selectWorld);
   const { session } = useHydrogen(true);
@@ -186,9 +186,11 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
 
     return () => {
       subscriptionHandle?.();
-      closeWorld();
+      const world = useStore.getState().world;
+      world.disposeNetworkInterface?.();
+      world.closeWorld();
     };
-  }, [session, roomId, reloadId, closeWorld, loadWorld, isMounted, setWorld]);
+  }, [session, roomId, reloadId, loadWorld, isMounted, setWorld]);
 
   useEffect(() => {
     const world = worldId ? session.rooms.get(worldId) : undefined;

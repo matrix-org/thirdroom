@@ -30,6 +30,7 @@ export function useWorldAction(session: Session) {
   const exitWorld = useCallback(() => {
     const world = useStore.getState().world;
     if (world.worldId) {
+      world.disposeNetworkInterface?.();
       world.closeWorld();
     }
     navigate("/");
