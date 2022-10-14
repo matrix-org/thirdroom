@@ -8,7 +8,7 @@ import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { Networked } from "../network/network.game";
+// import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
@@ -214,8 +214,10 @@ function getClipActionsUsingVelocity(
 ): AnimationAction[] {
   const quaternion = Transform.quaternion[parent];
 
-  const linvel = new Vector3().fromArray(Networked.velocity[parent]);
-  const vel = vec3.copy(_vel, Networked.velocity[parent]);
+  // const linvel = new Vector3().fromArray(Networked.velocity[parent]);
+  // const vel = vec3.copy(_vel, Networked.velocity[parent]);
+  const linvel = rigidBody.linvel();
+  const vel = vec3.set(_vel, linvel.x, linvel.y, linvel.z);
   const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
   const pitch = getPitch(quaternion);
