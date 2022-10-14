@@ -95,20 +95,16 @@ export function NotificationButton({ onClick }: { onClick: () => void }) {
     </OverlayButton>
   );
 }
-interface StatusBarProps {
-  title?: string | null;
-}
 
-export function StatusBar({ title }: StatusBarProps) {
+export function StatusBar() {
   const { session } = useHydrogen(true);
   const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
   const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
-  const { worldId } = useStore((state) => state.world);
-  const world = worldId ? session.rooms.get(worldId) : undefined;
   const [knownWorldId] = useWorldPath();
+  const world = knownWorldId ? session.rooms.get(knownWorldId) : undefined;
 
   const handleTipClick = () => {
     if (isOverlayOpen) {
@@ -144,11 +140,9 @@ export function StatusBar({ title }: StatusBarProps) {
         )}
       </div>
       <div className="StatusBar__center">
-        {title && (
-          <Text color="world" weight="semi-bold">
-            {isHome ? "Home" : world?.name ?? world?.canonicalAlias ?? "Unknown"}
-          </Text>
-        )}
+        <Text color="world" weight="semi-bold">
+          {isHome ? "Home" : world?.name ?? world?.canonicalAlias ?? "Unknown"}
+        </Text>
       </div>
       <div className="StatusBar__right grow basis-0 flex justify-end">
         {knownWorldId && <NotificationButton onClick={handleTipClick} />}
