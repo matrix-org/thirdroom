@@ -129,7 +129,12 @@ function processAnimations(ctx: GameState) {
     const animation = AnimationComponent.get(eid);
 
     // avatars exist within a parent container which has all other components for this entity
-    const parent = Transform.parent[eid] || eid;
+    const parent = Transform.parent[eid];
+    if (!parent) {
+      console.warn("cannot find parent container for avatar:", eid);
+      continue;
+    }
+
     const rigidBody = RigidBody.store.get(parent);
 
     if (animation && rigidBody) {
