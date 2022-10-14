@@ -54,9 +54,11 @@ export default defineConfig<GameState>({
   ],
   systems: [
     ApplyInputSystem,
-    ActionMappingSystem,
 
     InboundNetworkSystem,
+
+    ActionMappingSystem,
+
     NetworkInterpolationSystem,
 
     FirstPersonCameraSystem,
