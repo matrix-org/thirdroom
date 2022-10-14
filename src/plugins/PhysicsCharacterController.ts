@@ -19,7 +19,6 @@ import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { CharacterRig } from "./rigs/character.game";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
@@ -132,27 +131,28 @@ const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-export const createPlayerRig = (state: GameState, prefab: string, setActiveCamera = false) => {
+export const createPlayerRig = (state: GameState, setActiveCamera = false) => {
   const { world } = state;
 
   const playerRig = addEntity(world);
   addTransformComponent(world, playerRig);
 
-  // avatar to use for this rig
-  addPrefabComponent(world, playerRig, prefab);
+  const camera = createCamera(state, setActiveCamera);
+  addChild(playerRig, camera);
 
-  addPlayerRig(state, playerRig, setActiveCamera);
+  addPlayerRig(state, playerRig, camera, setActiveCamera);
 
   return playerRig;
 };
 
-export function addPlayerRig(state: GameState, playerRig: number, setActiveCamera = false) {
+export function addPlayerRig(state: GameState, playerRig: number, camera: number, setActiveCamera = false) {
   const { world } = state;
   const { physicsWorld } = getModule(state, PhysicsModule);
 
   addComponent(world, CharacterRig, playerRig);
 
   addCameraYawTargetComponent(world, playerRig);
+  addCameraPitchTargetComponent(world, camera);
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
@@ -162,9 +162,6 @@ export function addPlayerRig(state: GameState, playerRig: number, setActiveCamer
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(state, playerRig, rigidBody);
 
-  const camera = createCamera(state, setActiveCamera);
-  addCameraPitchTargetComponent(world, camera);
-  addChild(playerRig, camera);
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.2;
 }

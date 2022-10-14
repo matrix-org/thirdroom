@@ -118,7 +118,6 @@ export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefi
   return v;
 };
 
-// todo: bench performance of defineChangedSerializer vs raw function
 const defineChangedSerializer = (...fns: ((v: CursorView, eid: number) => boolean)[]) => {
   const spacer = fns.length <= 8 ? spaceUint8 : fns.length <= 16 ? spaceUint16 : spaceUint32;
   return (v: CursorView, eid: number) => {
@@ -168,7 +167,6 @@ export const serializeTransformChanged = defineChangedSerializer(
 //   return changeMask > 0;
 // };
 
-// todo: bench performance of defineChangedSerializer vs raw function
 export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
   const readChangeMask = fns.length <= 8 ? readUint8 : fns.length <= 16 ? readUint16 : readUint32;
   return (v: CursorView, eid: number | undefined) => {
@@ -495,26 +493,32 @@ export function deserializePlayerNetworkId(input: NetPipeData) {
   return input;
 }
 
-export function createPlayerNetworkIdMessage(state: GameState) {
-  const input: NetPipeData = [state, messageView, ""];
-  writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
-  writeElapsed(input);
-  // serializePlayerNetworkId(input);
-  return sliceCursorView(messageView);
-}
-
 /* Message Factories */
 
-// playerNetIdMsg + createMsg + deleteMsg
+// export function createPlayerNetworkIdMessage(state: GameState) {
+//   const input: NetPipeData = [state, messageView, ""];
+//   writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
+//   writeElapsed(input);
+//   // serializePlayerNetworkId(input);
+//   return sliceCursorView(messageView);
+// }
+
+// New Peer Snapshot Update
 export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.NewPeerSnapshot),
   serializeCreatesSnapshot,
   serializeUpdatesSnapshot,
-  serializePlayerNetworkId,
+  // serializePlayerNetworkId,
   ([_, v]) => sliceCursorView(v)
 );
 
-// reliably send all entities and their data to newly seen clients on-join
+export const deserializeNewPeerSnapshot = pipe(
+  deserializeCreates,
+  deserializeUpdatesSnapshot
+  // deserializePlayerNetworkId
+);
+
+// Full Snapshot Update
 export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.FullSnapshot),
   serializeCreatesSnapshot,
@@ -527,7 +531,9 @@ export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pi
   }
 );
 
-// reilably send creates/updates/deletes in one message
+export const deserializeSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
+
+// Changed State Update
 export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.FullChanged),
   serializeCreates,
@@ -541,43 +547,7 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
   }
 );
 
-// reliably send creates
-export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-  writeMetadata(NetworkAction.Create),
-  serializeCreates,
-  ([_, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-      moveCursorView(v, 0);
-    }
-    return sliceCursorView(v);
-  }
-);
-
-// unreliably send updates
-export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-  writeMetadata(NetworkAction.UpdateChanged),
-  serializeUpdatesChanged,
-  ([_, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-      moveCursorView(v, 0);
-    }
-    return sliceCursorView(v);
-  }
-);
-
-// unreliably send updates
-export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-  writeMetadata(NetworkAction.UpdateSnapshot),
-  serializeUpdatesSnapshot,
-  ([_, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-      moveCursorView(v, 0);
-    }
-    return sliceCursorView(v);
-  }
-);
-
-// reliably send deletes
+// Deletion Update
 export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Delete),
   serializeDeletes,
@@ -589,11 +559,40 @@ export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   }
 );
 
-// deserialization pipelines
-export const deserializeNewPeerSnapshot = pipe(
-  deserializeCreates,
-  deserializeUpdatesSnapshot
-  // deserializePlayerNetworkId
-);
-export const deserializeSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
+// deserialization
 export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
+
+// unused
+
+// export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+//   writeMetadata(NetworkAction.Create),
+//   serializeCreates,
+//   ([_, v]) => {
+//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
+//       moveCursorView(v, 0);
+//     }
+//     return sliceCursorView(v);
+//   }
+// );
+
+// export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+//   writeMetadata(NetworkAction.UpdateChanged),
+//   serializeUpdatesChanged,
+//   ([_, v]) => {
+//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
+//       moveCursorView(v, 0);
+//     }
+//     return sliceCursorView(v);
+//   }
+// );
+
+// export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+//   writeMetadata(NetworkAction.UpdateSnapshot),
+//   serializeUpdatesSnapshot,
+//   ([_, v]) => {
+//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
+//       moveCursorView(v, 0);
+//     }
+//     return sliceCursorView(v);
+//   }
+// );

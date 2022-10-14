@@ -1,8 +1,15 @@
-import { defineComponent, defineQuery, Types } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery, Types } from "bitecs";
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRoll, Transform } from "../../engine/component/transform";
+import {
+  addChild,
+  addTransformComponent,
+  getForwardVector,
+  getPitch,
+  getRoll,
+  Transform,
+} from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -98,4 +105,13 @@ export function NametagSystem(ctx: GameState) {
       }
     }
   }
+}
+
+export function addNametag(ctx: GameState, height: number, container: number) {
+  const nametagAnchor = addEntity(ctx.world);
+  addTransformComponent(ctx.world, nametagAnchor);
+  addComponent(ctx.world, NametagComponent, nametagAnchor);
+  Transform.position[nametagAnchor].set([0, height + height / 1.5, 0]);
+  addChild(container, nametagAnchor);
+  NametagComponent.entity[nametagAnchor] = container;
 }

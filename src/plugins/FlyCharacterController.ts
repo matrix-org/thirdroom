@@ -20,7 +20,6 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { addPrefabComponent } from "../engine/prefab/prefab.game";
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
 type FlyCharacterControllerModuleState = {};
@@ -80,30 +79,30 @@ interface IFlyPlayerRig {
 export const FlyRig: Map<number, IFlyPlayerRig> = new Map();
 export const flyRigQuery = defineQuery([FlyRig]);
 
-export function createFlyPlayerRig(ctx: GameState, prefab: string, setActiveCamera = false) {
+export function createFlyPlayerRig(ctx: GameState, setActiveCamera = false) {
   const playerRig = addEntity(ctx.world);
   addTransformComponent(ctx.world, playerRig);
 
-  // how this player looks to others
-  addPrefabComponent(ctx.world, playerRig, prefab);
+  const camera = createCamera(ctx, setActiveCamera);
+  addChild(playerRig, camera);
 
-  return addFlyPlayerRig(ctx, playerRig, setActiveCamera);
+  addFlyPlayerRig(ctx, playerRig, camera, setActiveCamera);
+
+  return playerRig;
 }
 
 const velocityVec = vec3.create();
 const cameraWorldRotation = quat.create();
 
-export function addFlyPlayerRig(ctx: GameState, playerRig: number, setActiveCamera = false) {
+export function addFlyPlayerRig(ctx: GameState, playerRig: number, camera: number, setActiveCamera = false) {
   addComponent(ctx.world, FlyRig, playerRig);
   FlyRig.set(playerRig, {
     speed: 10,
   });
 
   addCameraYawTargetComponent(ctx.world, playerRig);
-
-  const camera = createCamera(ctx, setActiveCamera);
   addCameraPitchTargetComponent(ctx.world, camera);
-  addChild(playerRig, camera);
+
   const cameraPosition = Transform.position[camera];
   cameraPosition[1] = 1.2;
 

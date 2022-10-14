@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, addEntity } from "bitecs";
+import { addEntity } from "bitecs";
 
+import { createCamera } from "../engine/camera/camera.game";
 import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import { createGLTFEntity } from "../engine/gltf/gltf.game";
@@ -10,7 +11,8 @@ import { playerCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../engine/physics/physics.game";
 import { InteractableType } from "./interaction/interaction.common";
 import { addInteractableComponent } from "./interaction/interaction.game";
-import { NametagComponent } from "./nametags/nametags.game";
+import { addNametag } from "./nametags/nametags.game";
+import { addPlayerRig } from "./PhysicsCharacterController";
 
 const AVATAR_HEIGHT = 1;
 const AVATAR_RADIUS = 0.5;
@@ -19,25 +21,39 @@ interface AvatarOptions {
   radius?: number;
   height?: number;
   remote?: boolean;
+  nametag?: boolean;
+  camera?: boolean;
 }
 
-export function createContainerizedAvatar(
-  ctx: GameState,
-  uri: string,
-  { height = AVATAR_HEIGHT, radius = AVATAR_RADIUS, remote = false }: AvatarOptions = {}
-) {
+export function createAvatar(ctx: GameState, uri: string, options: AvatarOptions = {}) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
   addTransformComponent(ctx.world, container);
   addRemoteNodeComponent(ctx, container);
 
-  const nametagAnchor = addEntity(ctx.world);
-  addTransformComponent(ctx.world, nametagAnchor);
-  addComponent(ctx.world, NametagComponent, nametagAnchor);
-  Transform.position[nametagAnchor].set([0, height + height / 1.5, 0]);
-  addChild(container, nametagAnchor);
-  NametagComponent.entity[nametagAnchor] = container;
+  addAvatar(ctx, uri, physicsWorld, container, options);
+
+  return container;
+}
+
+export function addAvatar(
+  ctx: GameState,
+  uri: string,
+  physicsWorld: RAPIER.World,
+  container: number,
+  options: AvatarOptions = {}
+) {
+  const { height = AVATAR_HEIGHT, radius = AVATAR_RADIUS, camera = false, nametag = false } = options;
+
+  if (nametag) addNametag(ctx, height, container);
+
+  // TODO: connect camera to head of avatar
+  if (camera) {
+    const camera = createCamera(ctx);
+    addPlayerRig(ctx, container, camera);
+    addChild(container, camera);
+  }
 
   const eid = createGLTFEntity(ctx, uri, { createTrimesh: false, isStatic: false });
 
@@ -60,6 +76,4 @@ export function createContainerizedAvatar(
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, container, rigidBody);
   addInteractableComponent(ctx, container, InteractableType.Player);
-
-  return container;
 }

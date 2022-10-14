@@ -273,7 +273,7 @@ export function updateRemoteCameras(ctx: GameState) {
   }
 }
 
-export function createCamera(state: GameState, setActive = true): number {
+export function createCamera(state: GameState, setActive = false): number {
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
 

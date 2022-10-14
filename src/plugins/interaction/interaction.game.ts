@@ -1,14 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import {
-  defineComponent,
-  Types,
-  defineQuery,
-  removeComponent,
-  addComponent,
-  hasComponent,
-  enterQuery,
-  exitQuery,
-} from "bitecs";
+import { defineComponent, Types, removeComponent, addComponent, hasComponent } from "bitecs";
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
@@ -20,6 +11,7 @@ import {
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../../engine/audio/audio.game";
+import { OurPlayer } from "../../engine/component/Player";
 import { getChildAt, removeRecursive, Transform } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
@@ -199,18 +191,14 @@ export const Interactable = defineComponent({
   type: Types.ui8,
 });
 
-const FocusComponent = defineComponent();
-
-export const GrabComponent = defineComponent({
-  handle1: Types.ui32,
-  handle2: Types.ui32,
-  joint: [Types.f32, 3],
+const FocusComponent = defineComponent({
+  focusedEntity: Types.eid,
 });
 
-const focusQuery = defineQuery([FocusComponent]);
-const enterFocusQuery = enterQuery(focusQuery);
-const exitFocusQuery = exitQuery(focusQuery);
-const grabQuery = defineQuery([GrabComponent]);
+export const GrabComponent = defineComponent({
+  grabbedEntity: Types.eid,
+  joint: [Types.f32, 3],
+});
 
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
@@ -258,27 +246,20 @@ export function InteractionSystem(ctx: GameState) {
     lastActiveScene = ctx.activeScene;
   }
 
-  // TODO: remove dependency on PlayerController plugin
   const rigs = inputControllerQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const camera = getChildAt(eid, 0);
     const controller = getInputController(input, eid);
-    updateInteractions(ctx, physics, interaction, network, controller, camera);
+
+    updateFocus(ctx, physics, eid, camera);
+    updateDeletion(ctx, interaction, controller, eid);
+    updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
   }
 }
 
-function updateInteractions(
-  ctx: GameState,
-  physics: PhysicsModuleState,
-  interaction: InteractionModuleState,
-  network: GameNetworkState,
-  controller: InputController,
-  camera: number
-) {
-  // Focus
-
+function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, camera: number) {
   // raycast outward from camera
   const cameraMatrix = Transform.worldMatrix[camera];
   mat4.getRotation(_cameraWorldQuat, cameraMatrix);
@@ -309,36 +290,45 @@ function updateInteractions(
     eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
-    } else if (eid !== focusQuery(ctx.world)[0]) {
-      focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
-      addComponent(ctx.world, FocusComponent, eid);
+    } else {
+      addComponent(ctx.world, FocusComponent, rig);
+      FocusComponent.focusedEntity[rig] = eid;
     }
   } else {
     // clear focus
-    focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
+    removeComponent(ctx.world, FocusComponent, rig, true);
   }
 
-  const entered = enterFocusQuery(ctx.world);
+  // only update UI if it's our player
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+  if (ourPlayer) {
+    if (FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
+    if (!FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+  }
+}
 
-  if (entered[0]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
-
-  const exited = exitFocusQuery(ctx.world);
-
-  if (exited[0] && focusQuery(ctx.world).length === 0) sendInteractionMessage(ctx, InteractableAction.Unfocus);
-
-  // deletion
+function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
   const deleteBtn = controller.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
-    const focused = focusQuery(ctx.world)[0];
+    const focused = FocusComponent.focusedEntity[rig];
     // TODO: For now we only delete owned objects
     if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }
+}
 
-  // Grab / Throw
-  let heldEntity = grabQuery(ctx.world)[0];
+function updateGrabThrow(
+  ctx: GameState,
+  interaction: InteractionModuleState,
+  physics: PhysicsModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  rig: number,
+  camera: number
+) {
+  let heldEntity = GrabComponent.grabbedEntity[rig];
 
   const grabBtn = controller.actions.get("Grab") as ButtonActionState;
   const grabBtn2 = controller.actions.get("Grab2") as ButtonActionState;
@@ -348,9 +338,11 @@ function updateInteractions(
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
 
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+
   // if holding and entity and throw is pressed
   if (heldEntity && throwPressed) {
-    removeComponent(ctx.world, GrabComponent, heldEntity);
+    removeComponent(ctx.world, GrabComponent, rig, true);
 
     mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, -1);
@@ -361,8 +353,10 @@ function updateInteractions(
     _impulse.fromArray(direction);
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
-    sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    if (ourPlayer) {
+      sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
@@ -371,9 +365,12 @@ function updateInteractions(
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
-    removeComponent(ctx.world, GrabComponent, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    removeComponent(ctx.world, GrabComponent, rig, true);
+
+    if (ourPlayer) {
+      sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
@@ -425,23 +422,26 @@ function updateInteractions(
             const newEid = takeOwnership(ctx, network, eid);
 
             if (newEid !== NOOP) {
-              addComponent(ctx.world, GrabComponent, newEid);
-              sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+              addComponent(ctx.world, GrabComponent, rig);
+              GrabComponent.grabbedEntity[rig] = newEid;
               heldEntity = newEid;
+              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
             } else {
-              addComponent(ctx.world, GrabComponent, eid);
-              sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              addComponent(ctx.world, GrabComponent, rig);
+              GrabComponent.grabbedEntity[rig] = eid;
+              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
             }
           }
         } else {
-          sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
       }
     }
   }
 
   // if still holding entity, move towards the held point
-  heldEntity = grabQuery(ctx.world)[0];
+  heldEntity = GrabComponent.grabbedEntity[rig];
+
   if (heldEntity) {
     // move held point upon scrolling
     const [, scrollY] = controller.actions.get("Scroll") as vec2;
@@ -477,6 +477,7 @@ function updateInteractions(
 
 function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
+
   const interactableType = Interactable.type[eid];
 
   if (!eid || !interactableType) {
