@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
-import { useOutletContext } from "react-router-dom";
-import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
-import { SessionOutletContext } from "../SessionView";
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import { Text } from "../../../atoms/text/Text";
@@ -25,7 +23,7 @@ import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Reticle } from "../reticle/Reticle";
-import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
+import { EntityTooltip, IPortalProcess } from "../entity-tooltip/EntityTooltip";
 import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
@@ -54,9 +52,13 @@ import {
 } from "../../../../plugins/interaction/interaction.common";
 import { ExitedWorldMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
-import { parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
+import { aliasToRoomId, parsedMatrixUriToString, parseMatrixUri } from "../../../utils/matrixUtils";
 import { Hotbar, HotbarSlot } from "../../components/hotbar/Hotbar";
 import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
+import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useCalls } from "../../../hooks/useCalls";
+import { useRoomCall } from "../../../hooks/useRoomCall";
+import { useIsMounted } from "../../../hooks/useIsMounted";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -112,15 +114,25 @@ const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showT
   }
 );
 
-export default function WorldView() {
-  const { canvasRef, world, onExitWorld, onWorldTransfer, activeCall } = useOutletContext<SessionOutletContext>();
-  const isEnteredWorld = useStore((state) => state.world.isEnteredWorld);
+interface WorldViewProps {
+  world: Room;
+}
+
+export function WorldView({ world }: WorldViewProps) {
+  const mainThread = useMainThreadContext();
+  const { session } = useHydrogen(true);
+  const calls = useCalls(session);
+  const activeCall = useRoomCall(calls, world.id);
+  const { enterWorld, exitWorld } = useWorldAction(session);
+  const { selectWorld } = useStore((state) => state.overlayWorld);
+  const isEnteredWorld = useStore((state) => state.world.entered);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [shortcutUI, setShortcutUI] = useState(false);
+  const isMounted = useIsMounted();
 
   const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
 
@@ -158,10 +170,12 @@ export default function WorldView() {
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
 
   const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
-  const mouseDown = useMouseDown(canvasRef.current);
+  const [portalProcess, setPortalProcess] = useState<IPortalProcess>({});
+  const mouseDown = useMouseDown(mainThread.canvas);
 
   useEffect(() => {
-    const onInteraction = (ctx: IMainThreadContext, message: InteractionMessage) => {
+    let unSubStatusObserver: () => void | undefined;
+    const onInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
       const interactableType = message.interactableType;
 
       if (!interactableType || message.action === InteractableAction.Unfocus) {
@@ -187,7 +201,40 @@ export default function WorldView() {
         }
       } else if (message.interactableType === InteractableType.Portal) {
         if (message.action === InteractableAction.Grab) {
-          onWorldTransfer(message.uri!);
+          try {
+            setPortalProcess({});
+            if (!message.uri) throw Error("Portal does not have valid matrix id/alias");
+            console.log(message.uri);
+            const parsedUri = parseMatrixUri(message.uri);
+            if (parsedUri instanceof URL) {
+              return;
+            }
+
+            const roomIdOrAlias = parsedUri.mxid1;
+            const roomId = roomIdOrAlias.startsWith("#")
+              ? aliasToRoomId(session.rooms, parsedUri.mxid1)
+              : parsedUri.mxid1;
+
+            if (roomId && session.rooms.get(roomId)) {
+              selectWorld(roomId);
+              enterWorld(roomId);
+              return;
+            }
+
+            setPortalProcess({ joining: true });
+            const rId = await session.joinRoom(roomIdOrAlias);
+            if (!isMounted()) return;
+            setPortalProcess({});
+            const roomStatusObserver = await session.observeRoomStatus(rId);
+            unSubStatusObserver = roomStatusObserver.subscribe((roomStatus) => {
+              if (roomStatus !== RoomStatus.Joined) return;
+              selectWorld(rId);
+              enterWorld(rId);
+            });
+          } catch (err) {
+            if (!isMounted()) return;
+            setPortalProcess({ error: err as Error });
+          }
         } else {
           setActiveEntity({
             interactableType,
@@ -206,12 +253,16 @@ export default function WorldView() {
       showToast("Maximum number of objects reached.");
     };
 
-    return createDisposables([
+    const disposables = createDisposables([
       registerMessageHandler(engine, InteractionMessageType, onInteraction),
       registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
       registerMessageHandler(engine, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
-  }, [activeCall, engine, onWorldTransfer, showToast]);
+    return () => {
+      unSubStatusObserver?.();
+      disposables();
+    };
+  }, [activeCall, engine, showToast, enterWorld, selectWorld, isMounted, session]);
 
   useKeyDown(
     (e) => {
@@ -222,22 +273,22 @@ export default function WorldView() {
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
       if (isEscape && showActiveMembers) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         setShowActiveMembers(false);
         return;
       }
       if (isEscape && shortcutUI) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         setShortcutUI(false);
         return;
       }
       if (isEscape && isChatOpen) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         closeWorldChat();
         return;
       }
       if (isEscape && isOverlayOpen) {
-        canvasRef.current?.requestPointerLock();
+        mainThread.canvas?.requestPointerLock();
         closeOverlay();
         return;
       }
@@ -256,7 +307,7 @@ export default function WorldView() {
       if (isTyping || isChatOpen || showActiveMembers || shortcutUI) return;
 
       if (e.altKey && e.code === "KeyL") {
-        onExitWorld();
+        exitWorld();
       }
       if (e.code === "KeyM" && muteBtnRef.current !== null) {
         muteBtnRef.current.click();
@@ -299,16 +350,20 @@ export default function WorldView() {
     (e) => {
       const isChatOpen = useStore.getState().worldChat.isOpen;
       const isOverlayOpen = useStore.getState().overlay.isOpen;
-      const isEnteredWorld = useStore.getState().world.isEnteredWorld;
+      const isEnteredWorld = useStore.getState().world.entered;
       if (isEnteredWorld === false) return;
 
-      canvasRef.current?.requestPointerLock();
+      mainThread.canvas?.requestPointerLock();
       if (isChatOpen) closeWorldChat();
       if (isOverlayOpen) closeOverlay();
     },
-    canvasRef.current,
+    mainThread.canvas,
     []
   );
+
+  useEffect(() => {
+    mainThread.canvas.requestPointerLock();
+  }, [mainThread]);
 
   useEffect(() => {
     if (onboarding) document.exitPointerLock();
@@ -316,14 +371,10 @@ export default function WorldView() {
 
   const onFinishOnboarding = useCallback(() => {
     finishOnboarding();
-    canvasRef.current?.requestPointerLock();
-  }, [canvasRef, finishOnboarding]);
+    mainThread.canvas?.requestPointerLock();
+  }, [mainThread.canvas, finishOnboarding]);
 
-  usePointerLockChange(canvasRef.current, setIsPointerLock, []);
-
-  if (isEnteredWorld === false || world === undefined) {
-    return null;
-  }
+  usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
   const renderControl = () => (
     <>
@@ -387,7 +438,7 @@ export default function WorldView() {
         )}
         <div className="flex flex-column items-center">
           <Tooltip content="Disconnect">
-            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={onExitWorld} />
+            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={exitWorld} />
           </Tooltip>
           <Text variant="b3" color="world" weight="bold">
             Alt + L
@@ -425,7 +476,9 @@ export default function WorldView() {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && activeEntity && <EntityTooltip activeEntity={activeEntity} />}
+      {!isOverlayOpen && showNames && activeEntity && (
+        <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
+      )}
       {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
