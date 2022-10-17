@@ -1,7 +1,7 @@
 {
   "home": {
-    "version": 4,
-    "sceneUrl": "mxc://thirdroom.io/VPsSUQAxjzRZMpAiAeWDfbQX",
+    "version": 5,
+    "sceneUrl": "mxc://thirdroom.io/VSnRoignrmkvwiDQxLtVDbdx",
     "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
     "defaultAvatar": {
       "info": {
@@ -16,13 +16,13 @@
   "scenes": [
     {
       "sceneName": "Terra",
-      "sceneUrl": "mxc://thirdroom.io/XEtTtcMyxQPgXWFilkdNbUOQ",
+      "sceneUrl": "mxc://thirdroom.io/ZdmlWeZwILicxAWIEATfNAzy",
       "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
       "defaultRoomAvatarUrl": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
     },
     {
       "sceneName": "UK City",
-      "sceneUrl": "mxc://thirdroom.io/mgPdUZWxSNVjmWepIcNbILCu",
+      "sceneUrl": "mxc://thirdroom.io/OyEhHRopfPfxfcydpLYMBLkl",
       "scenePreviewUrl": "mxc://thirdroom.io/VnHYowXiIytpeJAxIkYCTygh",
       "defaultRoomAvatarUrl": "mxc://thirdroom.io/yWBfCCFEHMdjAPOYSQoIAeOZ"
     }
