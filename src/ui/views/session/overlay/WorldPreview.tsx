@@ -1,15 +1,13 @@
-import { MouseEventHandler, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
-import { useStore, WorldLoadState } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 import { useRoom } from "../../../hooks/useRoom";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
-import { useRoomBeingCreated } from "../../../hooks/useRoomBeingCreated";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useInviteControl } from "../../../hooks/useInviteControl";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
@@ -18,12 +16,9 @@ import { usePermissionState } from "../../../hooks/usePermissionState";
 import { exceptionToString, useStreamRequest, RequestException } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
-import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { FetchProgressMessage, FetchProgressMessageType } from "../../../../engine/utils/fetchWithProgress.game";
-import { registerMessageHandler } from "../../../../engine/module/module.common";
-import { IMainThreadContext } from "../../../../engine/MainThread";
-import { Progress } from "../../../atoms/progress/Progress";
-import { bytesToSize, getPercentage } from "../../../utils/common";
+import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useUnknownWorldPath } from "../../../hooks/useWorld";
+import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -57,35 +52,64 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
   );
 }
 
-interface IWorldPreview {
-  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
-  onLoadWorld: MouseEventHandler<HTMLButtonElement>;
-  onReloadWorld: MouseEventHandler<HTMLButtonElement>;
-  onEnterWorld: MouseEventHandler<HTMLButtonElement>;
+function JoinWorldCard({ worldIdOrAlias }: { worldIdOrAlias: string }) {
+  const { selectWorld } = useStore((state) => state.overlayWorld);
+  const { session } = useHydrogen(true);
+
+  const {
+    loading,
+    error,
+    callback: joinRoomCallback,
+  } = useAsyncCallback<(roomIdOrAlias: string) => Promise<string>, string>(async (roomIdOrAlias) => {
+    const roomId = await session.joinRoom(roomIdOrAlias);
+    return roomId;
+  }, []);
+
+  const handleJoinWorld = async (roomIdOrAlias: string) => {
+    const roomId = await joinRoomCallback(roomIdOrAlias);
+    if (roomId) {
+      selectWorld(roomId);
+    }
+  };
+
+  return (
+    <WorldPreviewCard
+      title={worldIdOrAlias.startsWith("#") ? worldIdOrAlias : "Unknown world"}
+      desc={error && error.message}
+      options={(() => {
+        if (loading) {
+          return (
+            <Button variant="secondary" disabled>
+              Joining...
+            </Button>
+          );
+        }
+        if (error) return null;
+        return (
+          <Button variant="secondary" onClick={() => handleJoinWorld(worldIdOrAlias)}>
+            Join World
+          </Button>
+        );
+      })()}
+    />
+  );
 }
 
-export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterWorld }: IWorldPreview) {
-  const navigate = useNavigate();
+export function WorldPreview() {
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
   const requestStream = useStreamRequest(platform, micPermission);
   const [micException, setMicException] = useState<RequestException>();
 
-  const engine = useMainThreadContext();
+  const { enterWorld } = useWorldAction(session);
 
-  const { worldId, selectedWorldId, joiningWorld, loadState, error, closeOverlay } = useStore((state) => ({
-    selectedWorldId: state.overlayWorld.selectedWorldId,
-    worldId: state.world.worldId,
-    joiningWorld: state.world.joiningWorld,
-    loadState: state.world.loadState,
-    error: state.world.error,
-    closeOverlay: state.overlay.closeOverlay,
-  }));
+  const worldId = useStore((state) => state.world.worldId);
+  const { selectedWorldId } = useStore((state) => state.overlayWorld);
+  const [unknownWorldId, unknownWorldAlias] = useUnknownWorldPath();
 
   const previewWorldId = selectedWorldId || worldId;
 
   const room = useRoom(session, previewWorldId);
-  const roomBeingCreated = useRoomBeingCreated(session, previewWorldId);
 
   const [isMemberDialog, setIsMemberDialog] = useState(false);
 
@@ -95,22 +119,10 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
     value: roomStatus,
   } = useRoomStatus(session, previewWorldId);
 
-  useEffect(() => {
-    if (!roomBeingCreated) return;
-    if (roomStatus === undefined) return;
-
-    if ((roomStatus & RoomStatus.Replaced) !== 0 && roomStatus & RoomStatus.BeingCreated) {
-      navigate(`/world/${roomBeingCreated.roomId}`);
-    }
-  }, [navigate, roomStatus, roomBeingCreated]);
-
-  const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
-  useEffect(() => {
-    const onFetchProgress = (ctx: IMainThreadContext, message: FetchProgressMessage) => {
-      setLoadProgress(message.status);
-    };
-    return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);
-  }, [engine]);
+  const handleLoadWorld = () => {
+    if (!selectedWorldId) return;
+    enterWorld(selectedWorldId);
+  };
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
@@ -120,6 +132,10 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
         </Dialog>
       )}
       {(() => {
+        const unknownIdOrAlias = unknownWorldAlias ?? unknownWorldId;
+        if (!previewWorldId && unknownIdOrAlias) {
+          return <JoinWorldCard worldIdOrAlias={unknownIdOrAlias} />;
+        }
         if (roomStatus === undefined) {
           if (roomStatusLoading) {
             return <WorldPreviewCard title="Loading Room..." />;
@@ -146,167 +162,53 @@ export function WorldPreview({ onJoinWorld, onLoadWorld, onReloadWorld, onEnterW
         } else if (roomStatus & RoomStatus.Archived) {
           return <WorldPreviewCard title="Room Archived" />;
         } else if (roomStatus & RoomStatus.Joined) {
-          const roomName = room?.name || "Unnamed Room";
-          const memberCount = room?.joinedMemberCount || 0;
-
-          if (selectedWorldId !== worldId) {
-            return (
-              <WorldPreviewCard
-                title={roomName}
-                memberCount={memberCount}
-                onMembersClick={() => setIsMemberDialog(true)}
-                options={
-                  <Button size="lg" variant="secondary" onClick={onLoadWorld}>
-                    Load World
-                  </Button>
-                }
-              />
-            );
-          }
-
-          switch (loadState) {
-            case WorldLoadState.None:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  options={
-                    <Button size="lg" variant="secondary" onClick={onLoadWorld}>
-                      Load World
-                    </Button>
-                  }
-                />
-              );
-            case WorldLoadState.Loading:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  content={
-                    <div className="flex flex-column gap-xs">
-                      <Progress
-                        variant="secondary"
-                        max={100}
-                        value={loadProgress.total === 0 ? 0 : getPercentage(loadProgress.total, loadProgress.loaded)}
-                      />
-                      <div className="flex justify-between gap-md">
-                        <Text color="surface-low" variant="b3">
-                          {`Loading: ${getPercentage(loadProgress.total, loadProgress.loaded)}%`}
-                        </Text>
-                        <Text color="surface-low" variant="b3">{`${bytesToSize(loadProgress.loaded)} / ${bytesToSize(
-                          loadProgress.total
-                        )}`}</Text>
-                      </div>
-                    </div>
-                  }
-                />
-              );
-            case WorldLoadState.Loaded:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  options={
-                    <>
-                      {micException && (
-                        <AlertDialog
-                          open={!!micException}
-                          title="Microphone"
-                          content={
-                            <div className="flex flex-column gap-xs">
-                              <Text variant="b2">{exceptionToString(micException)}</Text>
-                              <Text variant="b2">
-                                Connecting to other users may be unreliable without microphone access. We intend to fix
-                                this in the near future.
-                              </Text>
-                            </div>
-                          }
-                          buttons={
-                            <Button fill="outline" onClick={onEnterWorld}>
-                              Enter without Microphone
-                            </Button>
-                          }
-                          requestClose={() => setMicException(undefined)}
-                        />
-                      )}
-                      <Button
-                        size="lg"
-                        variant="primary"
-                        onClick={async (evt) => {
-                          if (micPermission === "granted") {
-                            onEnterWorld(evt);
-                            return;
-                          }
-                          const [stream, exception] = await requestStream(true, false);
-                          if (stream) {
-                            stream.getAudioTracks().forEach((track) => track.stop());
-                            onEnterWorld(evt);
-                          }
-                          if (exception) setMicException(exception);
-                        }}
-                      >
-                        Enter World
-                      </Button>
-                    </>
-                  }
-                />
-              );
-            case WorldLoadState.Error:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  desc={error ? error.message : "Unknown error"}
-                  options={
-                    <Button size="lg" variant="secondary" onClick={onReloadWorld}>
-                      Reload World
-                    </Button>
-                  }
-                />
-              );
-            case WorldLoadState.Entering:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  options={
-                    <Button size="lg" variant="secondary" disabled>
-                      Entering...
-                    </Button>
-                  }
-                />
-              );
-            case WorldLoadState.Entered:
-              return (
-                <WorldPreviewCard
-                  title={roomName}
-                  memberCount={memberCount}
-                  onMembersClick={() => setIsMemberDialog(true)}
-                  options={
-                    <Button size="lg" variant="secondary" onClick={closeOverlay}>
-                      Close Overlay
-                    </Button>
-                  }
-                />
-              );
-          }
-        } else if (roomStatus === RoomStatus.None) {
-          if (error) {
-            return <WorldPreviewCard title="Unnamed Room" desc={`Error joining world: ${error.message}`} />;
-          }
-
           return (
             <WorldPreviewCard
-              title="Unnamed Room"
+              title={room?.name || "Unnamed Room"}
+              memberCount={room?.joinedMemberCount || 0}
+              onMembersClick={() => setIsMemberDialog(true)}
               options={
-                <Button size="lg" variant="primary" disabled={joiningWorld} onClick={onJoinWorld}>
-                  {joiningWorld ? "Joining World..." : "Join World"}
-                </Button>
+                <>
+                  {micException && (
+                    <AlertDialog
+                      open={!!micException}
+                      title="Microphone"
+                      content={
+                        <div className="flex flex-column gap-xs">
+                          <Text variant="b2">{exceptionToString(micException)}</Text>
+                          <Text variant="b2">
+                            Connecting to other users may be unreliable without microphone access. We intend to fix this
+                            in the near future.
+                          </Text>
+                        </div>
+                      }
+                      buttons={
+                        <Button fill="outline" onClick={handleLoadWorld}>
+                          Enter without Microphone
+                        </Button>
+                      }
+                      requestClose={() => setMicException(undefined)}
+                    />
+                  )}
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    onClick={async () => {
+                      if (micPermission === "granted") {
+                        handleLoadWorld();
+                        return;
+                      }
+                      const [stream, exception] = await requestStream(true, false);
+                      if (stream) {
+                        stream.getAudioTracks().forEach((track) => track.stop());
+                        handleLoadWorld();
+                      }
+                      if (exception) setMicException(exception);
+                    }}
+                  >
+                    Enter World
+                  </Button>
+                </>
               }
             />
           );

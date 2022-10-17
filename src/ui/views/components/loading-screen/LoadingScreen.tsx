@@ -6,14 +6,15 @@ import { CoverScreen } from "../cover-screen/CoverScreen";
 
 interface LoadingScreenProps {
   className?: string;
+  message?: string;
 }
 
-export function LoadingScreen({ className }: LoadingScreenProps) {
+export function LoadingScreen({ className, message }: LoadingScreenProps) {
   return (
     <CoverScreen className={classNames("gap-md", className)}>
       <Dots size="lg" />
       <Text variant="b3" weight="semi-bold">
-        Loading
+        {message ? message : "Loading"}
       </Text>
     </CoverScreen>
   );

@@ -845,8 +845,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     platform: Platform;
   }
 
-  export type RoomId = string;
-
   export class Invite extends EventEmitter<any> {
     constructor(options: InviteOptions);
     get isInvite(): true;
@@ -883,7 +881,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     loadMemberList(log?: any): Promise<MemberList>;
     fillGap(fragmentEntry: any, amount: number, log?: any): Promise<void>;
     get name(): string | null;
-    get id(): RoomId;
+    get id(): string;
     get avatarUrl(): string | null;
     get avatarColorId(): string;
     get type(): string | undefined;

@@ -1,6 +1,5 @@
 import { useCallback, useState, FormEvent, ChangeEvent } from "react";
 import { RoomVisibility, IBlobHandle, RoomType } from "@thirdroom/hydrogen-view-sdk";
-import { useNavigate } from "react-router-dom";
 
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -17,7 +16,7 @@ import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
-import { getMxIdDomain, isRoomAliasAvailable } from "../../../utils/matrixUtils";
+import { getMxIdDomain, isRoomAliasAvailable, waitToCreateRoom } from "../../../utils/matrixUtils";
 import { getImageDimension } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
@@ -61,8 +60,6 @@ export function CreateWorld() {
   const [selectedScene, setSelectedScene] = useState<{ url: string; previewUrl: string }>();
   const isMounted = useIsMounted();
   const [creatingRoom, setCreatingRoom] = useState(false);
-
-  const navigate = useNavigate();
 
   const [maxObjectCap, setMaxObjectCap] = useState(MAX_OBJECT_CAP);
   const handleMaxObjectCapChange = (evt: ChangeEvent<HTMLInputElement>) =>
@@ -130,11 +127,13 @@ export function CreateWorld() {
         ],
       });
 
-      navigate(`/world/${roomBeingCreated.id}`);
-
+      const room = await waitToCreateRoom(session, roomBeingCreated);
+      if (room) {
+        useStore.getState().overlayWorld.selectWorld(room.id);
+      }
       closeWindow();
     },
-    [session, navigate, closeWindow]
+    [session, closeWindow]
   );
 
   const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
