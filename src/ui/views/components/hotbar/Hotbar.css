@@ -1,0 +1,9 @@
+.HotbarSlot {
+  width: 40px;
+  position: relative;
+}
+.HotbarSlot__key {
+  position: absolute;
+  top: -4px;
+  right: 0;
+}

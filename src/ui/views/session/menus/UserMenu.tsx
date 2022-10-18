@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
@@ -19,6 +20,7 @@ export function UserMenu() {
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
   const { selectWindow } = useStore((state) => state.overlayWindow);
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
 
   const handleCopy = () => {
     if (copied) return;
@@ -54,6 +56,7 @@ export function UserMenu() {
             {accountManagementUrl && (
               <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
             )}
+            <DropdownMenuItem onSelect={() => navigate("/preview")}>Tech Preview</DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
                 if (confirm("Are you sure?")) logout();

@@ -504,6 +504,18 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     Archived = 1 << 5,
   }
 
+  type ImageInfo = {
+    w: number;
+    h: number;
+    mimetype: string;
+    size: number;
+  };
+
+  type Avatar = {
+    info: ImageInfo;
+    name?: string;
+  } & ({ blob: IBlobHandle } | { url: string });
+
   interface ICreateRoom {
     type?: RoomType;
     visibility: RoomVisibility;
@@ -513,16 +525,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     isEncrypted?: boolean;
     isFederationDisabled?: boolean;
     alias?: string;
-    avatar?: {
-      name: string;
-      blob: IBlobHandle;
-      info: {
-        w?: number;
-        h?: number;
-        mimetype: string;
-        size: number;
-      };
-    };
+    avatar?: Avatar;
     powerLevelContentOverride?: any;
     initialState?: any[];
   }
@@ -574,6 +577,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     joinRoom(roomIdOrAlias: string, log?: ILogger): Promise<string>;
     observeRoomState(handler: RoomStateHandler): () => void;
     observeRoomStatus(roomId: string): Promise<RetainedObservableValue<RoomStatus>>;
+    getAccountData(type: string): Promise<any>;
+    setAccountData(type: string, content: any): Promise<void>;
   }
 
   export class LocalMedia {
@@ -840,8 +845,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     platform: Platform;
   }
 
-  export type RoomId = string;
-
   export class Invite extends EventEmitter<any> {
     constructor(options: InviteOptions);
     get isInvite(): true;
@@ -878,7 +881,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     loadMemberList(log?: any): Promise<MemberList>;
     fillGap(fragmentEntry: any, amount: number, log?: any): Promise<void>;
     get name(): string | null;
-    get id(): RoomId;
+    get id(): string;
     get avatarUrl(): string | null;
     get avatarColorId(): string;
     get type(): string | undefined;
@@ -942,6 +945,10 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     token?: (loginToken: string) => ILoginMethod;
   }
 
+  export interface ClientOptions {
+    deviceName?: string;
+  }
+
   export class Client {
     sessionId: string;
 
@@ -951,7 +958,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     loadStatus: ObservableValue<LoadStatus>;
 
-    constructor(platform: Platform);
+    constructor(platform: Platform, options?: ClientOptions);
     get loginFailure(): LoginFailure;
 
     startWithExistingSession(sessionId: string): Promise<void>;

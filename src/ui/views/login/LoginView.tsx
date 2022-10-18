@@ -17,13 +17,16 @@ import { SettingTile } from "../components/setting-tile/SettingTile";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { Icon } from "../../atoms/icon/Icon";
 import PlanetIC from "../../../../res/ic/planet.svg";
-import "./LoginView.css";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Dots } from "../../atoms/loading/Dots";
 import { IconButton } from "../../atoms/button/IconButton";
 import ChevronBottom from "../../../../res/ic/chevron-bottom.svg";
 import { DropdownMenu } from "../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../atoms/menu/DropdownMenuItem";
+import { getMissingFeature, MissingFeature } from "../../utils/featureCheck";
+import { MissingFeatureModal } from "./MissingFeatureModal";
+import "./LoginView.css";
+import { useIsMounted } from "../../hooks/useIsMounted";
 
 function useQueryHomeserver(client: Client, homeserver: string) {
   const queryRef = useRef<AbortableOperation<QueryLoginResult>>();
@@ -131,12 +134,23 @@ function getMatchingClientConfig(platform: Platform, issuer: string) {
   return platform.config.oidc.clientConfigs[normalisedIssuer];
 }
 
-export function LoginView() {
+export default function LoginView() {
   const { platform, urlRouter, login, client } = useHydrogen();
   const [authenticating, setAuthenticating] = useState(false);
   const [oidcError, setOidcError] = useState<string>();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
+  const isMounted = useIsMounted();
+
+  const [missingFeatures, setMissingFeature] = useState<MissingFeature[]>([]);
+  useEffect(() => {
+    const run = async () => {
+      const missingFeature = await getMissingFeature();
+      if (!isMounted()) return;
+      setMissingFeature(missingFeature);
+    };
+    run();
+  }, [isMounted]);
 
   const { homeserver, loading, error, result, queryHomeserver } = useQueryHomeserver(
     client,
@@ -261,6 +275,7 @@ export function LoginView() {
     </>
   );
 
+  if (missingFeatures.length > 0) return <MissingFeatureModal missingFeatures={missingFeatures} />;
   return (
     <div className="LoginView flex justify-center items-start">
       <div className="LoginView__card grow flex flex-column gap-xl">

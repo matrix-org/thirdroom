@@ -1,16 +1,30 @@
 {
+  "home": {
+    "version": 5,
+    "sceneUrl": "mxc://thirdroom.io/VSnRoignrmkvwiDQxLtVDbdx",
+    "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
+    "defaultAvatar": {
+      "info": {
+        "h": 512,
+        "mimetype": "image/png",
+        "size": 307589,
+        "w": 512
+      },
+      "url": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
+    }
+  },
   "scenes": [
     {
-      "sceneName": "UK City",
-      "sceneUrl": "mxc://thirdroom.dev/BvsVzxxhINjugBuzvUanzxuH",
-      "scenePreviewUrl": "mxc://thirdroom.dev/zTIRxVyHwDNetUMphuMqttyv",
-      "defaultRoomAvatarUrl": "mxc://thirdroom.dev/jLzmUOUVrKrvKWmzrPvDsOSE"
+      "sceneName": "Terra",
+      "sceneUrl": "mxc://thirdroom.io/ZdmlWeZwILicxAWIEATfNAzy",
+      "scenePreviewUrl": "mxc://thirdroom.io/OvtWlQFZzTTvEMoQbYnNtVec",
+      "defaultRoomAvatarUrl": "mxc://thirdroom.io/aQuXXENLaYnfAZdwJVgRpfUT"
     },
     {
-      "sceneName": "City",
-      "sceneUrl": "mxc://thirdroom.dev/IMHZpLrVOmYHyxRJxRnuyhuE",
-      "scenePreviewUrl": "mxc://thirdroom.dev/KbtGoCcqBLBFtqUqvjmqaqKM",
-      "defaultRoomAvatarUrl": "mxc://thirdroom.dev/lRugyDfMhIrtTPFROZmIyrAx"
+      "sceneName": "UK City",
+      "sceneUrl": "mxc://thirdroom.io/OyEhHRopfPfxfcydpLYMBLkl",
+      "scenePreviewUrl": "mxc://thirdroom.io/VnHYowXiIytpeJAxIkYCTygh",
+      "defaultRoomAvatarUrl": "mxc://thirdroom.io/yWBfCCFEHMdjAPOYSQoIAeOZ"
     }
   ]
 }

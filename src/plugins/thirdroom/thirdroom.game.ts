@@ -1,7 +1,7 @@
-import { addEntity, defineQuery, hasComponent } from "bitecs";
+import { addComponent, addEntity, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
@@ -14,8 +14,8 @@ import {
 } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { Networked, NetworkModule, Owned } from "../../engine/network/network.game";
-import { createPlayerRig } from "../PhysicsCharacterController";
+import { Networked, NetworkModule, Owned, ownedPlayerQuery } from "../../engine/network/network.game";
+import { createPlayerRig, PlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -25,6 +25,9 @@ import {
   PrintThreadStateMessage,
   ThirdRoomMessageType,
   GLTFViewerLoadGLTFMessage,
+  ExitedWorldMessage,
+  GLTFViewerLoadErrorMessage,
+  GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
@@ -37,10 +40,22 @@ import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
-import { createFlyPlayerRig } from "../FlyCharacterController";
+import { createFlyPlayerRig, FlyPlayerRig } from "../FlyCharacterController";
 import { createContainerizedAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
-import { applyTransformToRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
+import { waitUntil } from "../../engine/utils/waitUntil";
+import { boundsCheckCollisionGroups, playerCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { Player } from "../../engine/component/Player";
+import {
+  ActionMap,
+  ActionType,
+  BindingType,
+  ButtonActionState,
+  enableActionMap,
+} from "../../engine/input/ActionMappingSystem";
+import { InputModule } from "../../engine/input/input.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -61,111 +76,17 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
     ];
 
-    // const cube = addEntity(ctx.world);
-    // addTransformComponent(ctx.world, cube);
-    // vec3.set(Transform.position[cube], 0, 0, -5);
-    // addCubeMesh(ctx, cube);
-    // addChild(ctx.activeScene, cube);
-    // addComponent(ctx.world, SpinnyCube, cube);
-
-    // const bachAudio = createRemoteAudio(ctx, "/audio/bach.mp3");
-
-    // registerPrefab(ctx, {
-    //   name: "random-cube",
-    //   create: createCube,
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "red-cube",
-    //   create: () => {
-    //     const eid = createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 0, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     );
-    //     return eid;
-    //   },
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "musical-cube",
-    //   create: () => {
-    //     const eid = createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 0, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     );
-
-    //     const remoteNode = RemoteNodeComponent.get(eid)!;
-
-    //     remoteNode.audioEmitter = createRemotePositionalAudioEmitter(ctx, {
-    //       sources: [
-    //         createRemoteAudioSource(ctx, {
-    //           audio: bachAudio,
-    //         }),
-    //       ],
-    //     });
-
-    //     return eid;
-    //   },
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "green-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [0, 1, 0, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     ),
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "blue-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [0, 0, 1, 1.0],
-    //         roughnessFactor: 0.8,
-    //         metallicFactor: 0.8,
-    //       })
-    //     ),
-    // });
-
-    // registerPrefab(ctx, {
-    //   name: "player-cube",
-    //   create: () =>
-    //     createCube(
-    //       ctx,
-    //       createRemoteStandardMaterial(ctx, {
-    //         baseColorFactor: [1, 1, 1, 1.0],
-    //         roughnessFactor: 0.1,
-    //         metallicFactor: 0.9,
-    //       })
-    //     ),
-    // });
-
     registerPrefab(ctx, {
       name: "mixamo-x",
-      create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
+      create: (ctx, remote) => {
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
       },
     });
 
     registerPrefab(ctx, {
       name: "mixamo-y",
-      create: () => {
-        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb");
+      create: (ctx, remote) => {
+        return createContainerizedAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
       },
     });
 
@@ -177,8 +98,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     const size = 10000;
     const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
       .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
-      .setCollisionGroups(0xf000_000f)
-      .setSolverGroups(0xf000_000f);
+      .setCollisionGroups(boundsCheckCollisionGroups);
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
     rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
@@ -193,9 +113,36 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
 
       if (entity && floor) {
-        spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        if (
+          hasComponent(ctx.world, Networked, entity) &&
+          hasComponent(ctx.world, Owned, entity) &&
+          !hasComponent(ctx.world, Player, entity)
+        ) {
+          removeRecursive(ctx.world, entity);
+        } else if (hasComponent(ctx.world, Player, entity)) {
+          spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
+        }
       }
     });
+
+    const actionMap: ActionMap = {
+      id: "fly-mode-toggle",
+      actions: [
+        {
+          id: "toggleFlyMode",
+          path: "toggleFlyMode",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyB",
+            },
+          ],
+        },
+      ],
+    };
+
+    enableActionMap(ctx, actionMap);
 
     return () => {
       for (const dispose of disposables) {
@@ -208,7 +155,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
     await loadEnvironment(ctx, message.url);
+
     loadPreviewCamera(ctx);
+
+    await waitForCurrentSceneToRender(ctx);
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
@@ -236,6 +186,10 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
+  ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
+    type: ThirdRoomMessageType.ExitedWorld,
+  });
+
   removeRecursive(ctx.world, ctx.activeScene);
 
   if (thirdroom.sceneGLTF) {
@@ -260,8 +214,18 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   try {
     await loadEnvironment(ctx, message.url, message.fileMap);
     loadPlayerRig(ctx);
-  } catch (error) {
+
+    ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.GLTFViewerLoaded,
+      url: message.url,
+    });
+  } catch (error: any) {
     console.error(error);
+
+    ctx.sendMessage<GLTFViewerLoadErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.GLTFViewerLoadError,
+      error: error.message || "Unknown Error",
+    });
 
     URL.revokeObjectURL(message.url);
 
@@ -304,7 +268,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
       name: "Environment Map Texture",
       image: createRemoteImage(ctx, {
         name: "Environment Map Image",
-        uri: "/cubemap/venice_sunset_1k.hdr",
+        uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
       }),
       sampler: createRemoteSampler(ctx, {
@@ -392,17 +356,36 @@ function loadPlayerRig(ctx: GameState) {
   addChild(ctx.activeScene, playerRig);
 }
 
-const waitUntil = (fn: Function) =>
-  new Promise<void>((resolve) => {
-    const interval = setInterval(() => {
-      if (fn()) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 100);
+function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
+  removeComponent(ctx.world, PlayerRig, playerRig);
+  removeComponent(ctx.world, RigidBody, playerRig);
+
+  addComponent(ctx.world, FlyPlayerRig, playerRig);
+  FlyPlayerRig.set(playerRig, {
+    speed: 10,
   });
+}
+
+function swapToPlayerRig(ctx: GameState, playerRig: number) {
+  removeComponent(ctx.world, FlyPlayerRig, playerRig);
+
+  addComponent(ctx.world, PlayerRig, playerRig);
+
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
+  colliderDesc.setCollisionGroups(playerCollisionGroups);
+
+  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  addRigidBody(ctx, playerRig, rigidBody);
+}
 
 const zero = new Vector3();
+const tmpVec = new Vector3();
+const tmpQuat = new Quaternion();
 
 function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?: quat) {
   // mark to skip lerp to ensure lerp is fully avoided (if render tick is running up to 5x faster than game tick)
@@ -415,7 +398,10 @@ function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?
   }
   const body = RigidBody.store.get(eid);
   if (body) {
-    applyTransformToRigidBody(body, eid);
+    const position = Transform.position[eid];
+    body.setTranslation(tmpVec.fromArray(position), true);
+    if (quaternion) body.setRotation(tmpQuat.fromArray(quaternion), true);
+
     body.setLinvel(zero, true);
     body.setAngvel(zero, true);
   }
@@ -438,4 +424,17 @@ function spawnEntity(
   quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
 
   teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
+}
+
+export function ThirdroomSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const toggleFlyMode = input.actions.get("toggleFlyMode") as ButtonActionState;
+  const player = ownedPlayerQuery(ctx.world).at(-1);
+  if (player && toggleFlyMode.pressed) {
+    if (hasComponent(ctx.world, FlyPlayerRig, player)) {
+      swapToPlayerRig(ctx, player);
+    } else {
+      swapToFlyPlayerRig(ctx, player);
+    }
+  }
 }

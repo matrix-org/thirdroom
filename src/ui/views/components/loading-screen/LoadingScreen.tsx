@@ -1,17 +1,21 @@
-import { ReactNode } from "react";
 import classNames from "classnames";
 
-import "./LoadingScreen.css";
+import { Dots } from "../../../atoms/loading/Dots";
+import { Text } from "../../../atoms/text/Text";
+import { CoverScreen } from "../cover-screen/CoverScreen";
 
 interface LoadingScreenProps {
   className?: string;
-  children: ReactNode;
+  message?: string;
 }
 
-export function LoadingScreen({ className, children }: LoadingScreenProps) {
+export function LoadingScreen({ className, message }: LoadingScreenProps) {
   return (
-    <div className={classNames("LoadingScreen flex flex-column justify-center items-center", className)}>
-      {children}
-    </div>
+    <CoverScreen className={classNames("gap-md", className)}>
+      <Dots size="lg" />
+      <Text variant="b3" weight="semi-bold">
+        {message ? message : "Loading"}
+      </Text>
+    </CoverScreen>
   );
 }

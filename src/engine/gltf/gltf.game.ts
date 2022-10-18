@@ -78,6 +78,8 @@ import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_mate
 import { getMaterialIOR } from "./KHR_materials_ior";
 import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
+import { inflatePortalComponent } from "./MX_portal";
+import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 
 export interface GLTFResource {
   url: string;
@@ -118,9 +120,9 @@ export interface GLTFResource {
   audioEmitterPromises: Map<number, { output: AudioEmitterOutput; promise: Promise<RemoteAudioEmitter> }>;
 }
 
-export function createGLTFEntity(ctx: GameState, uri: string) {
+export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
   const eid = addEntity(ctx.world);
-  inflateGLTFScene(ctx, eid, uri);
+  inflateGLTFScene(ctx, eid, uri, options);
   return eid;
 }
 
@@ -140,7 +142,7 @@ export async function inflateGLTFScene(
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
-  const resource = await loadGLTFResource(uri, fileMap);
+  const resource = await loadGLTFResource(ctx, uri, fileMap);
 
   if (sceneIndex === undefined) {
     sceneIndex = resource.root.scene;
@@ -406,6 +408,8 @@ async function _inflateGLTFNode(
     if (nodeHasCollider(node)) {
       addCollider(ctx, resource, node, nodeEid, results.colliderMesh);
     }
+
+    inflatePortalComponent(ctx, node, nodeEid);
   });
 }
 
@@ -440,7 +444,11 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
   return revoke;
 }
 
-export async function loadGLTFResource(uri: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
+export async function loadGLTFResource(
+  ctx: GameState,
+  uri: string,
+  fileMap?: Map<string, string>
+): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
   // TODO: Add gltfResource pinning
@@ -451,7 +459,7 @@ export async function loadGLTFResource(uri: string, fileMap?: Map<string, string
   //   return cachedGltf.promise;
   // }
 
-  const promise = _loadGLTFResource(url.href, fileMap);
+  const promise = _loadGLTFResource(ctx, url.href, fileMap);
 
   // gltfCache.set(url.href, {
   //   refCount: 1,
@@ -461,9 +469,14 @@ export async function loadGLTFResource(uri: string, fileMap?: Map<string, string
   return promise;
 }
 
-async function _loadGLTFResource(url: string, fileMap?: Map<string, string>) {
-  const res = await fetch(url);
+async function _loadGLTFResource(ctx: GameState, url: string, fileMap?: Map<string, string>) {
+  const res = await fetchWithProgress(ctx, url);
+
+  console.log(`Fetching glTF resource: ${url} Content-Length: ${res.headers.get("Content-Length")}`);
+
   const buffer = await res.arrayBuffer();
+
+  console.log(`glTF resource fetched: ${url} buffer byteLength: ${buffer.byteLength}`);
 
   // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#binary-header
   const header = new DataView(buffer, 0, GLB_HEADER_BYTE_LENGTH);

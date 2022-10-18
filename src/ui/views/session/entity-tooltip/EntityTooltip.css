@@ -1,0 +1,26 @@
+.EntityTooltip {
+  position: absolute;
+  top: 50vh;
+  left: 50vw;
+  margin-top: 15px;
+  margin-left: 15px;
+  padding: var(--sp-xxs) var(--sp-xs);
+  background-color: var(--bg-world-overlay);
+  border-radius: 0px var(--br-xs) var(--br-xs) var(--br-xs);
+  color: var(--tc-world);
+  opacity: 1;
+  pointer-events: none;
+}
+
+.EntityTooltip__mouseIcon {
+  margin-bottom: -3px;
+}
+
+.EntityTooltip__boxedKey {
+  position: relative;
+  font-size: 10px;
+  border: 1px solid var(--bg-world-border);
+  border-radius: 2px;
+  padding: 0px 3px;
+  bottom: 1px;
+}

@@ -16,12 +16,13 @@ make it easy to discover, create, and share 3D worlds with others.
 
 ## Getting Started
 
-To get started with Third Room, you'll first need a Matrix account. You can sign up for an account on the matrix.org
-homeserver [here](https://app.element.io/#/register).
+Visit [thirdroom.io](https://thirdroom.io)
 
-Once you have a Matrix account, you can visit [thirdroom.io](https://thirdroom.io) to try out the latest Third Room
-client. You can create your own world or join our public testing world at
-[https://thirdroom.io/world/#thirdroom-public:matrix.org](https://thirdroom.io/world/#thirdroom-public:matrix.org).
+## Homeserver Requirements
+
+Your homeserver should be on [Synapse version 1.62 or higher](https://github.com/matrix-org/synapse/releases). This is due to Third Room's requirement of the `Cross-Origin-Resource-Policy: cross-origin` header for the media repository's download route. Third Room uses SharedArrayBuffers which require us to [run in a secure-context](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements).
+
+You also should have a TURN server set up with your homeserver. More info on how to do that [here](https://matrix-org.github.io/synapse/develop/turn-howto.html).
 
 ## About Third Room
 
@@ -236,6 +237,12 @@ Third Room client as you navigate from world to world.
 
 We hope to standardize this WebAssembly Scene Graph API as a member of the Open Metaverse Interoperability Group's
 [Scripting Working Group](https://github.com/omigroup/omi-scripting-group).
+
+## Creating Your Own Scenes
+
+Third Room is built on top of the glTF standard 3D file format, you can technically use any tool that exports glTF to create Third Room scenes. However, not all of the glTF extensions Third Room uses are supported by every tool. We've created the Third Room Unity Exporter for easily creating Third Room scenes from Unity.
+
+Learn more [here](https://github.com/matrix-org/thirdroom-unity-exporter).
 
 ## Local Development
 

@@ -1,0 +1,19 @@
+.WorldThumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(100% 100% at 50% 100%, #dcedfe 0%, #ffffff 100%);
+
+  & img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.WorldThumbnail--blur img {
+  filter: blur(16px);
+  transform: scale(1.1);
+}

@@ -1,6 +1,5 @@
 import create from "zustand";
 import { immer } from "zustand/middleware/immer";
-import { RoomId } from "@thirdroom/hydrogen-view-sdk";
 
 export enum SidebarTabs {
   Home = "Home",
@@ -12,15 +11,6 @@ export enum OverlayWindow {
   CreateWorld = "create_world",
   UserProfile = "user_profile",
   WorldSettings = "world_settings",
-}
-
-export enum WorldLoadState {
-  None = "none",
-  Loading = "loading",
-  Loaded = "loaded",
-  Entering = "entering",
-  Entered = "entered",
-  Error = "error",
 }
 
 export interface UserProfileState {
@@ -52,32 +42,25 @@ export interface OverlayWindowState {
 }
 
 export interface OverlayWorldState {
-  selectedWorldId: RoomId | undefined;
-  selectWorld(roomId: RoomId | undefined): void;
+  selectedWorldId: string | undefined;
+  selectWorld(roomId: string | undefined): void;
 }
 
 export interface OverlayChatState {
-  selectedChatId: RoomId | undefined;
-  activeChats: Set<RoomId>;
-  selectChat(roomId: RoomId | undefined): void;
-  minimizeChat(roomId: RoomId): void;
-  closeChat(roomId: RoomId): void;
+  selectedChatId: string | undefined;
+  activeChats: Set<string>;
+  selectChat(roomId: string | undefined): void;
+  minimizeChat(roomId: string): void;
+  closeChat(roomId: string): void;
 }
 
 export interface WorldState {
-  joiningWorld: boolean;
-  isEnteredWorld: boolean;
-  worldId: RoomId | undefined;
-  loadState: WorldLoadState;
-  error?: Error;
-  setInitialWorld(roomId: RoomId | undefined): void;
-  loadingWorld(roomId: RoomId | undefined): void;
-  loadedWorld(): void;
-  setWorldError(error: Error): void;
-  enteringWorld(): void;
-  enteredWorld(): void;
-  leftWorld(): void;
-  joinWorld(): void;
+  worldId: string | undefined;
+  entered: boolean;
+  disposeNetworkInterface: (() => void) | undefined;
+  setWorld(roomId: string): void;
+  closeWorld(): void;
+  setNetworkInterfaceDisposer(disposer: () => void): void;
 }
 
 export interface WorldChatState {
@@ -171,7 +154,7 @@ export const useStore = create<StoreState>()(
     overlayChat: {
       activeChats: new Set(),
       selectedChatId: undefined,
-      selectChat(roomId: RoomId) {
+      selectChat(roomId: string) {
         set((state) => {
           if (!state.overlayChat.activeChats.has(roomId)) {
             state.overlayChat.activeChats.add(roomId);
@@ -184,12 +167,12 @@ export const useStore = create<StoreState>()(
           }
         });
       },
-      minimizeChat(roomId: RoomId) {
+      minimizeChat(roomId: string) {
         set((state) => {
           state.overlayChat.selectedChatId = undefined;
         });
       },
-      closeChat(roomId: RoomId) {
+      closeChat(roomId: string) {
         set((state) => {
           if (state.overlayChat.selectedChatId === roomId) {
             state.overlayChat.selectedChatId = undefined;
@@ -201,7 +184,7 @@ export const useStore = create<StoreState>()(
     },
     overlayWorld: {
       selectedWorldId: undefined,
-      selectWorld(roomId: RoomId | undefined) {
+      selectWorld(roomId: string | undefined) {
         set((state) => {
           state.overlayChat.selectedChatId = undefined;
           state.overlayWorld.selectedWorldId = roomId;
@@ -209,66 +192,29 @@ export const useStore = create<StoreState>()(
       },
     },
     world: {
-      isEnteredWorld: false,
       worldId: undefined,
-      loadState: WorldLoadState.None,
-      error: undefined,
-      joiningWorld: false,
-      setInitialWorld(roomId: RoomId | undefined) {
+      entered: false,
+      disposeNetworkInterface: undefined,
+      setWorld(roomId) {
         set((state) => {
-          state.overlayWorld.selectedWorldId = roomId;
           state.world.worldId = roomId;
-          state.world.error = undefined;
-          state.world.loadState = WorldLoadState.None;
-          state.overlayWindow.selectedWindow = undefined;
-          state.world.joiningWorld = false;
+          if (!roomId) {
+            state.world.entered = false;
+          }
         });
       },
-      joinWorld() {
+      closeWorld() {
         set((state) => {
-          state.world.joiningWorld = true;
-        });
-      },
-      loadingWorld(roomId: RoomId | undefined) {
-        set((state) => {
-          state.overlayWorld.selectedWorldId = roomId;
-          state.world.worldId = roomId;
-          state.world.error = undefined;
-          state.world.loadState = roomId ? WorldLoadState.Loading : WorldLoadState.None;
-          state.world.joiningWorld = false;
-        });
-      },
-      loadedWorld() {
-        set((state) => {
-          state.world.loadState = WorldLoadState.Loaded;
-        });
-      },
-      setWorldError(error: Error) {
-        set((state) => {
-          state.world.loadState = WorldLoadState.Error;
-          state.world.error = error as Error;
-        });
-      },
-      enteringWorld() {
-        set((state) => {
-          state.world.loadState = WorldLoadState.Entering;
-        });
-      },
-      enteredWorld() {
-        set((state) => {
-          state.world.isEnteredWorld = true;
-          state.world.loadState = WorldLoadState.Entered;
-          state.overlay.isOpen = false;
-        });
-      },
-      leftWorld() {
-        set((state) => {
-          state.world.isEnteredWorld = false;
+          state.world.disposeNetworkInterface?.();
           state.world.worldId = undefined;
-          state.world.loadState = WorldLoadState.None;
-          state.worldChat.isOpen = false;
-          state.overlay.isOpen = true;
-          state.world.joiningWorld = false;
+          state.world.entered = false;
+          state.world.disposeNetworkInterface = undefined;
+        });
+      },
+      setNetworkInterfaceDisposer(disposer) {
+        set((state) => {
+          state.world.disposeNetworkInterface = disposer;
+          state.world.entered = true;
         });
       },
     },

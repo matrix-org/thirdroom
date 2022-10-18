@@ -1,0 +1,16 @@
+.OnboardingModal__content {
+  height: 100%;
+}
+
+.OnboardingModal__screen1 {
+  margin: auto;
+  max-width: 440px;
+  height: 100%;
+  padding: 0 var(--sp-md);
+
+  & .Avatar {
+    margin-bottom: var(--sp-lg);
+    width: 120px;
+    height: 120px;
+  }
+}

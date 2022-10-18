@@ -66,6 +66,7 @@ export const Keys = [
   "ArrowDown",
   "MouseButtons",
   "MouseMovement",
+  "MouseScroll",
 ] as const;
 
 export type KeyCode = typeof Keys[number];

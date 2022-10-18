@@ -14,19 +14,18 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
-import { CubeSpawnerModule, CubeSpawnerSystem } from "../plugins/CubeSpawner";
+import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
-import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
+import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
 import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { RemoteSceneSystem } from "./scene/scene.game";
-import { GrabThrowModule, GrabThrowSystem } from "../plugins/GrabThrowController";
 import { FlyCharacterControllerModule, FlyControlsSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
-import { ReticleFocusSystem } from "../plugins/reticle/reticle.game";
+import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 
 export default defineConfig<GameState>({
@@ -44,8 +43,8 @@ export default defineConfig<GameState>({
     FirstPersonCameraModule,
     PhysicsCharacterControllerModule,
     FlyCharacterControllerModule,
-    CubeSpawnerModule,
-    GrabThrowModule,
+    InteractionModule,
+    SpawnablesModule,
     NametagModule,
   ],
   systems: [
@@ -60,9 +59,9 @@ export default defineConfig<GameState>({
     FlyControlsSystem,
     PhysicsSystem,
     AnimationSystem,
-    CubeSpawnerSystem,
-    ReticleFocusSystem,
-    GrabThrowSystem,
+    InteractionSystem,
+    SpawnableSystem,
+    ThirdroomSystem,
 
     UpdateMatrixWorldSystem,
 

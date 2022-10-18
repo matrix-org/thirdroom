@@ -1,10 +1,11 @@
-import { useState, ReactNode, useMemo, useEffect } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from ".././../../../../res/ic/cross.svg";
+import AddUserIC from ".././../../../../res/ic/add-user.svg";
 import { MemberTile } from "../../components/member-tile/MemberTile";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Text } from "../../../atoms/text/Text";
@@ -22,10 +23,13 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { Dots } from "../../../atoms/loading/Dots";
-import { useWorld } from "../../../hooks/useRoomIdFromAlias";
 import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { InviteDialog } from "./InviteDialog";
+import { useStore } from "../../../hooks/useStore";
+import { useRoomCall } from "../../../hooks/useRoomCall";
 
 interface MemberListDialogProps {
   room: Room;
@@ -36,28 +40,30 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const { session, platform } = useHydrogen(true);
 
   const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+  const [inviteOpen, setInviteOpen] = useState(false);
 
-  const [, world] = useWorld();
+  const { isEnteredWorld, worldId } = useStore((state) => ({
+    worldId: state.world.worldId,
+    isEnteredWorld: state.world.entered,
+  }));
+
+  const world = worldId ? session.rooms.get(worldId) : undefined;
+
+  const isWorld = room.type === "org.matrix.msc3815.world";
 
   const calls = useCalls(session);
-  const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
-    return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, world]);
+  const activeCall = useRoomCall(calls, world?.id);
 
   const [active, setActive] = useState<RoomMember[]>();
+  const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
+
   useEffect(() => {
-    if (activeCall) {
+    if (worldId === room?.id && isEnteredWorld && activeCall) {
       const me = joined?.find((m) => m.userId === session.userId);
-      setActive(
-        (me ? [me] : []).concat(
-          Array.from(new Map(activeCall.members).values())
-            .filter((m) => m.isConnected)
-            .map((m) => m.member)
-        )
-      );
+      const activeCallMember = Array.from(new Map(activeCall.members).values());
+      setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
     }
-  }, [activeCall, joined, session]);
+  }, [activeCall, joined, session, worldId, isEnteredWorld, room]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
@@ -170,7 +176,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
     <>
       <Header
         left={<HeaderTitle size="lg">Members</HeaderTitle>}
-        right={<IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />}
+        right={
+          <div className="flex gap-sm">
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <InviteDialog roomId={room.id} requestClose={() => setInviteOpen(false)} />
+            </Dialog>
+            {canDoAction("invite", myPL) && (
+              <IconButton iconSrc={AddUserIC} onClick={() => setInviteOpen(true)} label="Invite" />
+            )}
+            <IconButton iconSrc={CrossIC} onClick={requestClose} label="Close" />
+          </div>
+        }
       />
       <div className="flex" style={{ height: "600px" }}>
         {joined === undefined ? (
@@ -198,7 +214,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 <Category
                   header={
                     <CategoryHeader
-                      title="Active"
+                      title="Connected"
                       onClick={() => setActiveCat(!activeCat)}
                       after={<Icon src={activeCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
@@ -208,17 +224,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                 </Category>
               )}
 
-              {!!joined?.length && (
+              {!!filteredJoined?.length && (
                 <Category
                   header={
                     <CategoryHeader
-                      title="Joined"
+                      title={isWorld ? "Disconnected" : "Joined"}
                       onClick={() => setJoinedCat(!joinedCat)}
                       after={<Icon src={joinedCat ? ChevronBottomIC : ChevronRightIC} />}
                     />
                   }
                 >
-                  {joinedCat && joined.map(renderMemberTile)}
+                  {joinedCat && filteredJoined.map(renderMemberTile)}
                 </Category>
               )}
 

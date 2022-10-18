@@ -19,7 +19,7 @@ interface IText {
   id?: string;
   className?: string;
   style?: CSSProperties;
-  variant?: "h2" | "s1" | "s2" | "b1" | "b2" | "b3";
+  variant?: "h1" | "h2" | "s1" | "s2" | "c1" | "b1" | "b2" | "b3";
   color?: textColor;
   weight?: "light" | "regular" | "medium" | "semi-bold" | "bold";
   type?: undefined | "span" | "label" | "div";
@@ -50,6 +50,7 @@ export function Text({
   if (type === "span") return <span {...props}>{children}</span>;
   if (type === "label") return <label {...props}>{children}</label>;
   if (type === "div") return <div {...props}>{children}</div>;
+  if (variant === "h1") return <h1 {...props}>{children}</h1>;
   if (variant === "h2") return <h2 {...props}>{children}</h2>;
   if (variant === "s1") return <h4 {...props}>{children}</h4>;
   return <p {...props}>{children}</p>;

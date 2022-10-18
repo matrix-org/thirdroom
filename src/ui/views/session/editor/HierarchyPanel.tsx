@@ -129,7 +129,6 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
 
   const onSetSelectedNode = useCallback(
     (nodeId) => {
-      console.log("onSetSelectedNode");
       setSelectedEntity(mainThread, nodeId);
     },
     [mainThread]

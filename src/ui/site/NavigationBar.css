@@ -1,0 +1,8 @@
+.NavigationBar {
+  min-height: 80px;
+  padding: 0 var(--sp-md);
+  border-bottom: 1px solid var(--bg-surface-border);
+  & a {
+    color: var(--tc-surface);
+  }
+}

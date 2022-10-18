@@ -1,0 +1,45 @@
+.Kbd {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: var(--br-xxs);
+  font-family: var(--font-main);
+  line-height: 0;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 10%);
+
+  & > * {
+    flex-shrink: 0;
+  }
+}
+
+.Kbd--surface {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--bg-surface-border);
+}
+.Kbd--world {
+  background-color: var(--bg-world-overlay);
+  border: 1px solid var(--bg-world-border);
+}
+
+.Kbd--xs {
+  padding: 0 var(--sp-xxs);
+  min-width: 20px;
+  height: 20px;
+}
+
+.Kbd--sm {
+  padding: 2px var(--sp-xxs);
+  min-width: 26px;
+  height: 26px;
+}
+.Kbd--md {
+  padding: var(--sp-xxs);
+  min-width: 32px;
+  height: 32px;
+}
+.Kbd--lg {
+  padding: var(--sp-xxs) var(--sp-xs);
+  min-width: 40px;
+  height: 40px;
+}
