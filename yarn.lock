@@ -5659,6 +5659,11 @@ w3c-xmlserializer@^3.0.0:
   dependencies:
     xml-name-validator "^4.0.0"
 
+wabt@^1.0.30:
+  version "1.0.30"
+  resolved "https://registry.yarnpkg.com/wabt/-/wabt-1.0.30.tgz#23cff6d38a05d0718e298fda371a70f0dff38ad7"
+  integrity sha512-qM1QnttJhjZ4vTSuXvder43yxgGhVffT/0wMc0SwYpboEW0/ENISpei/2kIDEMPrnNfTQ4GdvD7JIFV0IJPYog==
+
 webidl-conversions@^7.0.0:
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"

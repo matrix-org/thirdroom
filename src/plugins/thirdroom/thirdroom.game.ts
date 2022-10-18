@@ -56,6 +56,7 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
+import { loadJSScript } from "../../engine/scripting/scripting.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -214,6 +215,33 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   try {
     await loadEnvironment(ctx, message.url, message.fileMap);
     loadPlayerRig(ctx);
+
+    const code = `
+      const id = new WebSG.Node().id = 1;
+      console.log(id);
+
+      // const cubeNode = new Node({
+      //   translation: [0, 1, 0],
+      //   mesh: new Mesh({
+      //     primitives: [
+      //       new CubePrimitive({
+      //         size: [1, 1, 1],
+      //         material: new PBRMaterial({
+      //           baseColorFactor: [1, 0, 0, 1]
+      //         })
+      //       })
+      //     ]
+      //   })
+      // });
+
+      // cubeNode.parent = scene;
+
+      // onUpdate = (dt) => {
+      //   cubeNode.rotateY(dt * 0.5);
+      // };
+    `;
+
+    await loadJSScript(ctx, code);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
