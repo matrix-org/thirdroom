@@ -40,7 +40,7 @@
     "@react-aria/interactions": "^3.9.1",
     "@sentry/react": "^7.13.0",
     "@sentry/tracing": "^7.13.0",
-    "@thirdroom/hydrogen-view-sdk": "0.0.25",
+    "@thirdroom/hydrogen-view-sdk": "0.0.27",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
     "bitecs": "^0.3.38",

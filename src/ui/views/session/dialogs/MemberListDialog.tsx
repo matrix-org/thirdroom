@@ -1,4 +1,4 @@
-import { useState, ReactNode, useEffect } from "react";
+import { useState, ReactNode } from "react";
 import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
 import { Header } from "../../../atoms/header/Header";
@@ -23,13 +23,10 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { Dots } from "../../../atoms/loading/Dots";
-import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { InviteDialog } from "./InviteDialog";
-import { useStore } from "../../../hooks/useStore";
-import { useRoomCall } from "../../../hooks/useRoomCall";
 
 interface MemberListDialogProps {
   room: Room;
@@ -39,31 +36,11 @@ interface MemberListDialogProps {
 export function MemberListDialog({ room, requestClose }: MemberListDialogProps) {
   const { session, platform } = useHydrogen(true);
 
-  const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+  const { active, invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const { isEnteredWorld, worldId } = useStore((state) => ({
-    worldId: state.world.worldId,
-    isEnteredWorld: state.world.entered,
-  }));
-
-  const world = worldId ? session.rooms.get(worldId) : undefined;
-
   const isWorld = room.type === "org.matrix.msc3815.world";
-
-  const calls = useCalls(session);
-  const activeCall = useRoomCall(calls, world?.id);
-
-  const [active, setActive] = useState<RoomMember[]>();
   const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
-
-  useEffect(() => {
-    if (worldId === room?.id && isEnteredWorld && activeCall) {
-      const me = joined?.find((m) => m.userId === session.userId);
-      const activeCallMember = Array.from(new Map(activeCall.members).values());
-      setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
-    }
-  }, [activeCall, joined, session, worldId, isEnteredWorld, room]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
