@@ -23,6 +23,7 @@ export function bytesToSize(bytes: number) {
 }
 
 export function getPercentage(total: number, value: number) {
+  if (total === 0) return 0;
   return Math.round((value / total) * 100);
 }
 
@@ -43,7 +44,6 @@ export function copyToClipboard(text: string) {
     copyInput.remove();
   }
 }
-
 
 export function isMobileDevice() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

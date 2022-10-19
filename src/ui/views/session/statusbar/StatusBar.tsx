@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
+import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { Text } from "../../../atoms/text/Text";
@@ -9,6 +10,7 @@ import { useRecentMessage } from "../../../hooks/useRecentMessage";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
+import { useWorldPath } from "../../../hooks/useWorld";
 
 function OverlayButton({
   style,
@@ -93,14 +95,16 @@ export function NotificationButton({ onClick }: { onClick: () => void }) {
     </OverlayButton>
   );
 }
-interface StatusBarProps {
-  showOverlayTip?: boolean;
-  title?: string | null;
-}
 
-export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
+export function StatusBar() {
+  const { session } = useHydrogen(true);
   const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
   const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
+
+  const homeMatch = useMatch({ path: "/", end: true });
+  const isHome = homeMatch !== null;
+  const [knownWorldId] = useWorldPath();
+  const world = knownWorldId ? session.rooms.get(knownWorldId) : undefined;
 
   const handleTipClick = () => {
     if (isOverlayOpen) {
@@ -115,7 +119,7 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
   return (
     <div className="StatusBar shrink-0 flex items-center">
       <div className="StatusBar__left grow basis-0">
-        {showOverlayTip && (
+        {knownWorldId && (
           <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={handleTipClick}>
             <Text
               color="world"
@@ -136,14 +140,12 @@ export function StatusBar({ showOverlayTip, title }: StatusBarProps) {
         )}
       </div>
       <div className="StatusBar__center">
-        {title && (
-          <Text color="world" weight="semi-bold">
-            {title}
-          </Text>
-        )}
+        <Text color="world" weight="semi-bold">
+          {isHome ? "Home" : world?.name ?? world?.canonicalAlias ?? "Unknown"}
+        </Text>
       </div>
       <div className="StatusBar__right grow basis-0 flex justify-end">
-        {showOverlayTip && <NotificationButton onClick={handleTipClick} />}
+        {knownWorldId && <NotificationButton onClick={handleTipClick} />}
       </div>
     </div>
   );
