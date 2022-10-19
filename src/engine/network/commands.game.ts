@@ -62,7 +62,7 @@ export const deserializeCommand = (data: NetPipeData) => {
       default:
         raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
     }
-
-    return data;
   }
+
+  return data;
 };
