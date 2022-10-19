@@ -1,4 +1,5 @@
 import { defineQuery, enterQuery, exitQuery, Not, defineComponent, Types } from "bitecs";
+import murmur from "murmurhash-js";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { removeRecursive } from "../component/transform";
@@ -21,9 +22,9 @@ import {
   deserializeCreates,
   deserializeDeletes,
   deserializeFullUpdate,
+  deserializeInformPlayerNetworkId,
   deserializeNewPeerSnapshot,
   deserializePeerIdIndex,
-  // deserializePlayerNetworkId,
   deserializeSnapshot,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
@@ -115,7 +116,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
     registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
-    // registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializePlayerNetworkId);
+    registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
     registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommand);
@@ -214,7 +215,8 @@ const onSetHost = (ctx: GameState, message: SetHostMessage) => {
 /* Utils */
 
 const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
-  const peerIdIndex = network.peerIdCount++;
+  // const peerIdIndex = network.peerIdCount++;
+  const peerIdIndex = murmur(peerId);
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
 };

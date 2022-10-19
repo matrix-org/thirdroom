@@ -15,7 +15,12 @@ import {
   GameNetworkState,
 } from "./network.game";
 import { enqueueNetworkRingBuffer } from "./RingBuffer";
-import { NetPipeData, createNewPeerSnapshotMessage, createFullChangedMessage } from "./serialization.game";
+import {
+  NetPipeData,
+  createNewPeerSnapshotMessage,
+  createFullChangedMessage,
+  createInformPlayerNetworkIdMessage,
+} from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, "", packet, true)) {
@@ -116,8 +121,14 @@ const sendUpdates = (ctx: GameState) => {
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
-          // broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, theirPeerId));
+          // send out the snapshot first so entities exist for the next two messages
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
+
+          // inform new peer of our (the host's) own avatar
+          sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
+
+          // inform everyone of the new peer's avatar
+          broadcastReliable(ctx, network, createInformPlayerNetworkIdMessage(ctx, theirPeerId));
         }
       }
     } else {

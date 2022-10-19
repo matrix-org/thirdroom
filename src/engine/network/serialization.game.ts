@@ -30,11 +30,12 @@ import {
   createRemoteMediaStream,
 } from "../audio/audio.game";
 import { Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeRecursive, Transform } from "../component/transform";
+import { addChild, skipRenderLerp, removeRecursive, Transform, getChildAt, Hidden } from "../component/transform";
+import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { createRemoteNametag } from "../nametag/nametag.game";
-import { RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
@@ -442,76 +443,84 @@ export function createPeerIdIndexMessage(state: GameState, peerId: string) {
 
 /* Player NetworkId Message */
 
-export function serializePlayerNetworkId(input: NetPipeData) {
+export function serializeInformPlayerNetworkId(input: NetPipeData, peerId: string) {
   const [state, cv] = input;
   const network = getModule(state, NetworkModule);
-  const peerId = network.peerId;
   const peerEid = network.peerIdToEntityId.get(peerId);
-  const peerIdIndex = network.peerIdToIndex.get(peerId);
-  console.log(`serializePlayerNetworkId`, peerId, peerEid, peerIdIndex);
-  if (peerEid === undefined || peerIdIndex === undefined) {
-    console.error(
-      `could not send NetworkMessage.AssignPlayerEntity, ${peerId} not set on peerIdToEntity/peerIdToIndex map`
-    );
+  if (peerEid === undefined) {
+    console.error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerId} not set on peerIdToEntity map`);
     return input;
   }
 
   const peerNid = Networked.networkId[peerEid];
+  if (peerNid === NOOP) {
+    console.error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerEid} has no networkId assigned`);
+    return input;
+  }
 
   writeString(cv, peerId);
   writeUint32(cv, peerNid);
+
   return input;
 }
 
-export function deserializePlayerNetworkId(input: NetPipeData) {
-  const [state, cv] = input;
-  const network = getModule(state, NetworkModule);
+export function deserializeInformPlayerNetworkId(input: NetPipeData) {
+  const [ctx, cv] = input;
+  const network = getModule(ctx, NetworkModule);
   // read
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
 
   const peid = network.networkIdToEntityId.get(peerNid);
-  if (peid !== undefined) {
-    associatePeerWithEntity(network, peerId, peid);
-    console.log("deserializePlayerNetworkId", network.peerIdToEntityId);
+  if (peid === undefined) {
+    console.error("could not find peer's networkId for eid", peid);
+    return input;
+  }
 
-    const remoteNode = RemoteNodeComponent.get(peid);
+  console.log("deserializePlayerNetworkId for peer", peerId);
 
-    if (!remoteNode) {
-      throw new Error(`Couldn't find remote node for networked entity: ${peid} peerId: ${peerId}`);
-    }
+  associatePeerWithEntity(network, peerId, peid);
 
-    addComponent(state.world, Player, peid);
+  addComponent(ctx.world, Player, peid);
 
-    remoteNode.name = peerId;
+  // if our own avatar
+  if (peerId === network.peerId) {
+    // hide our avatar
+    addComponent(ctx.world, Hidden, peid);
+    // set active camera
+    ctx.activeCamera = getChildAt(peid, 0);
 
-    remoteNode.audioEmitter = createRemotePositionalAudioEmitter(state, {
+    // don't add voip/nametag
+    return input;
+  }
+
+  // if not our own avatar, add voip/nametag onto remote node
+  addRemoteNodeComponent(ctx, peid, {
+    name: peerId,
+    audioEmitter: createRemotePositionalAudioEmitter(ctx, {
       sources: [
-        createRemoteMediaStreamSource(state, {
-          stream: createRemoteMediaStream(state, { streamId: peerId }),
+        createRemoteMediaStreamSource(ctx, {
+          stream: createRemoteMediaStream(ctx, { streamId: peerId }),
         }),
       ],
-    });
-
-    remoteNode.nametag = createRemoteNametag(state, {
+    }),
+    nametag: createRemoteNametag(ctx, {
       name: peerId,
-    });
-  } else {
-    console.error("could not find peer's entityId within network.networkIdToEntityId");
-  }
+    }),
+  });
 
   return input;
 }
 
 /* Message Factories */
 
-// export function createPlayerNetworkIdMessage(state: GameState) {
-//   const input: NetPipeData = [state, messageView, ""];
-//   writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
-//   writeElapsed(input);
-//   // serializePlayerNetworkId(input);
-//   return sliceCursorView(messageView);
-// }
+export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
+  const input: NetPipeData = [ctx, messageView, ""];
+  writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
+  writeElapsed(input);
+  serializeInformPlayerNetworkId(input, peerId);
+  return sliceCursorView(messageView);
+}
 
 // New Peer Snapshot Update
 export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
@@ -519,7 +528,7 @@ export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer =
   serializeCreatesSnapshot,
   serializeUpdatesSnapshot,
   // serializePlayerNetworkId,
-  ([_, v]) => sliceCursorView(v)
+  ([, v]) => sliceCursorView(v)
 );
 
 export const deserializeNewPeerSnapshot = pipe(
@@ -533,7 +542,7 @@ export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pi
   writeMetadata(NetworkAction.FullSnapshot),
   serializeCreatesSnapshot,
   serializeUpdatesSnapshot,
-  ([_, v]) => {
+  ([, v]) => {
     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
@@ -549,7 +558,7 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
   serializeCreates,
   serializeUpdatesChanged,
   serializeDeletes,
-  ([_, v]) => {
+  ([, v]) => {
     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 3 * Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
@@ -561,7 +570,7 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
 export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Delete),
   serializeDeletes,
-  ([_, v]) => {
+  ([, v]) => {
     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
@@ -577,7 +586,7 @@ export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdates
 // export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
 //   writeMetadata(NetworkAction.Create),
 //   serializeCreates,
-//   ([_, v]) => {
+//   ([, v]) => {
 //     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
 //       moveCursorView(v, 0);
 //     }
@@ -588,7 +597,7 @@ export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdates
 // export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
 //   writeMetadata(NetworkAction.UpdateChanged),
 //   serializeUpdatesChanged,
-//   ([_, v]) => {
+//   ([, v]) => {
 //     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
 //       moveCursorView(v, 0);
 //     }
@@ -599,7 +608,7 @@ export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdates
 // export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
 //   writeMetadata(NetworkAction.UpdateSnapshot),
 //   serializeUpdatesSnapshot,
-//   ([_, v]) => {
+//   ([, v]) => {
 //     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
 //       moveCursorView(v, 0);
 //     }
