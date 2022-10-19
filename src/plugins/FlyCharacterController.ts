@@ -1,14 +1,7 @@
-import { addEntity, addComponent, defineQuery } from "bitecs";
+import { addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
-import { createCamera } from "../engine/camera/camera.game";
-import {
-  addTransformComponent,
-  Transform,
-  addChild,
-  updateMatrixWorld,
-  getChildAt,
-} from "../engine/component/transform";
+import { Transform, updateMatrixWorld, getChildAt } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -20,7 +13,6 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "./FirstPersonCamera";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -76,41 +68,22 @@ interface IFlyPlayerRig {
   speed: number;
 }
 
-export const FlyRig: Map<number, IFlyPlayerRig> = new Map();
-export const flyRigQuery = defineQuery([FlyRig]);
-
-export function createFlyPlayerRig(ctx: GameState, setActiveCamera = false) {
-  const playerRig = addEntity(ctx.world);
-  addTransformComponent(ctx.world, playerRig);
-
-  const camera = createCamera(ctx, setActiveCamera);
-  addChild(playerRig, camera);
-
-  addFlyPlayerRig(ctx, playerRig, camera, setActiveCamera);
-
-  return playerRig;
-}
+export const FlyControls: Map<number, IFlyPlayerRig> = new Map();
+export const flyControlsQuery = defineQuery([FlyControls]);
 
 const velocityVec = vec3.create();
 const cameraWorldRotation = quat.create();
 
-export function addFlyPlayerRig(ctx: GameState, playerRig: number, camera: number, setActiveCamera = false) {
-  addComponent(ctx.world, FlyRig, playerRig);
-  FlyRig.set(playerRig, {
+export function addFlyControls(ctx: GameState, eid: number) {
+  addComponent(ctx.world, FlyControls, eid);
+  FlyControls.set(eid, {
     speed: 10,
   });
-
-  addCameraYawTargetComponent(ctx.world, playerRig);
-  addCameraPitchTargetComponent(ctx.world, camera);
-
-  const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.2;
-
-  return playerRig;
+  return eid;
 }
 
-function applyFlyController(playerRig: number, controller: InputController, camera: number, ctx: GameState) {
-  const { speed } = FlyRig.get(playerRig)!;
+function applyFlyControls(playerRig: number, controller: InputController, camera: number, ctx: GameState) {
+  const { speed } = FlyControls.get(playerRig)!;
   const moveVec = controller.actions.get(FlyCharacterControllerActions.Move) as Float32Array;
   const boost = controller.actions.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
 
@@ -129,7 +102,7 @@ function applyFlyController(playerRig: number, controller: InputController, came
 
 export function FlyControllerSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const ents = flyRigQuery(ctx.world);
+  const ents = flyControlsQuery(ctx.world);
 
   for (let i = 0; i < ents.length; i++) {
     const playerRig = ents[i];
@@ -137,6 +110,6 @@ export function FlyControllerSystem(ctx: GameState) {
 
     const controller = getInputController(input, playerRig);
 
-    applyFlyController(playerRig, controller, camera, ctx);
+    applyFlyControls(playerRig, controller, camera, ctx);
   }
 }

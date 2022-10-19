@@ -1,4 +1,4 @@
-import { addComponent, addEntity, defineComponent, defineQuery, Types } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery, enterQuery, Types } from "bitecs";
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
@@ -15,8 +15,9 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { projectPerspective } from "../../engine/camera/camera.game";
 import { NetworkModule, ownedPlayerQuery } from "../../engine/network/network.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
-import { RemoteNodeComponent } from "../../engine/node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
+import { createRemoteNametag } from "../../engine/nametag/nametag.game";
 
 type NametagState = {
   enabled: boolean;
@@ -42,6 +43,7 @@ export const NametagComponent = defineComponent({
   entity: Types.eid,
 });
 const nametagQuery = defineQuery([NametagComponent]);
+const enteredNametagQuery = enterQuery(nametagQuery);
 
 const _v = vec3.create();
 const _t = vec3.create();
@@ -56,16 +58,36 @@ export function NametagSystem(ctx: GameState) {
     const ourPlayer = ownedPlayerQuery(ctx.world)[0];
     const ourWorldPosition = Transform.position[ourPlayer];
 
+    const entered = enteredNametagQuery(ctx.world);
+    for (let i = 0; i < entered.length; i++) {
+      const eid = entered[i];
+      const player = NametagComponent.entity[eid];
+
+      const peerId = network.entityIdToPeerId.get(player);
+
+      if (!peerId) {
+        console.warn("could not add nametag resource, no peerId for entity: ", eid);
+        continue;
+      }
+
+      console.log("addRemoteNodeComponent createRemoteNametag", peerId);
+      addRemoteNodeComponent(ctx, player, {
+        nametag: createRemoteNametag(ctx, {
+          name: peerId,
+        }),
+      });
+    }
+
     const nametagEnts = nametagQuery(ctx.world);
     for (let i = 0; i < nametagEnts.length; i++) {
       const nametag = nametagEnts[i];
-      const otherPlayer = NametagComponent.entity[nametag];
+      const player = NametagComponent.entity[nametag];
 
       // projection to camera space
       const nametagWorldPosition = mat4.getTranslation(_v, Transform.worldMatrix[nametag]);
       const projected = projectPerspective(ctx, ctx.activeCamera, nametagWorldPosition);
 
-      const peerId = network.entityIdToPeerId.get(otherPlayer);
+      const peerId = network.entityIdToPeerId.get(player);
       if (peerId === undefined) {
         console.warn("could not find peerId for entityId " + nametag);
         continue;
@@ -84,7 +106,7 @@ export function NametagSystem(ctx: GameState) {
       const dot = vec3.dot(target, forward);
       const angle = radToDeg(Math.acos(dot));
 
-      const remoteNode = RemoteNodeComponent.get(otherPlayer);
+      const remoteNode = RemoteNodeComponent.get(player);
       if (remoteNode === undefined) throw new Error("could not find remote node for player " + peerId);
       if (remoteNode.nametag === undefined) throw new Error("could not find nametag resource for player " + peerId);
 

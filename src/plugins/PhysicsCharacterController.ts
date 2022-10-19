@@ -1,9 +1,8 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, addEntity } from "bitecs";
+import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { createCamera } from "../engine/camera/camera.game";
-import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
+import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -19,8 +18,6 @@ import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { CharacterRig } from "./rigs/character.game";
-import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -100,6 +97,10 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
   },
 });
 
+export const PhysicsControls = defineComponent();
+export const physicsControlsQuery = defineQuery([PhysicsControls]);
+export const enteredPhysicsControlsQuery = enterQuery(physicsControlsQuery);
+
 const obj = new Object3D();
 
 const walkSpeed = 60;
@@ -131,28 +132,8 @@ const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-export const createPlayerRig = (state: GameState, setActiveCamera = false) => {
-  const { world } = state;
-
-  const playerRig = addEntity(world);
-  addTransformComponent(world, playerRig);
-
-  const camera = createCamera(state, setActiveCamera);
-  addChild(playerRig, camera);
-
-  addPlayerRig(state, playerRig, camera, setActiveCamera);
-
-  return playerRig;
-};
-
-export function addPlayerRig(state: GameState, playerRig: number, camera: number, setActiveCamera = false) {
-  const { world } = state;
-  const { physicsWorld } = getModule(state, PhysicsModule);
-
-  addComponent(world, CharacterRig, playerRig);
-
-  addCameraYawTargetComponent(world, playerRig);
-  addCameraPitchTargetComponent(world, camera);
+export function addPhysicsControls(ctx: GameState, { physicsWorld }: PhysicsModuleState, playerRig: number) {
+  addComponent(ctx.world, PhysicsControls, playerRig);
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
@@ -160,13 +141,10 @@ export function addPlayerRig(state: GameState, playerRig: number, camera: number
   const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
   colliderDesc.setCollisionGroups(playerCollisionGroups);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(state, playerRig, rigidBody);
-
-  const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.2;
+  addRigidBody(ctx, playerRig, rigidBody);
 }
 
-function updatePhysicsCharacterController(
+function updatePhysicsControls(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
   network: GameNetworkState,
@@ -274,12 +252,11 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-  // console.log("PhysicsCharacterControllerSystem", input.controllers);
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const controller = getInputController(input, eid);
-    updatePhysicsCharacterController(ctx, physics, network, controller, eid);
+    updatePhysicsControls(ctx, physics, network, controller, eid);
   }
 };

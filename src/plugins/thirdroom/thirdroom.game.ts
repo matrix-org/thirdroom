@@ -6,6 +6,8 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
   addTransformComponent,
+  getChildAt,
+  Hidden,
   removeRecursive,
   setEulerFromQuaternion,
   Transform,
@@ -19,7 +21,6 @@ import {
   NetworkModule,
   Owned,
 } from "../../engine/network/network.game";
-import { createPlayerRig } from "../PhysicsCharacterController";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -41,11 +42,12 @@ import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import { registerPrefab } from "../../engine/prefab/prefab.game";
+import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
+import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
-import { createFlyPlayerRig, FlyRig } from "../FlyCharacterController";
-import { addAvatar, createAvatar } from "../avatar";
+import { addFlyControls, FlyControls } from "../FlyCharacterController";
+import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
+import { addAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
@@ -67,8 +69,6 @@ import {
   createRemoteMediaStreamSource,
   createRemoteMediaStream,
 } from "../../engine/audio/audio.game";
-import { createRemoteNametag } from "../../engine/nametag/nametag.game";
-import { CharacterRig } from "../rigs/character.game";
 import {
   addInputController,
   createInputController,
@@ -76,11 +76,52 @@ import {
   InputController,
   inputControllerQuery,
 } from "../../engine/input/InputController";
+import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
   collisionsGLTF?: GLTFResource;
 }
+
+const addAvatarCamera = (ctx: GameState, eid: number) => {
+  const camera = createCamera(ctx);
+  Transform.position[camera][1] = 1.2;
+  addChild(eid, camera);
+  addCameraYawTargetComponent(ctx.world, eid);
+  addCameraPitchTargetComponent(ctx.world, camera);
+  return camera;
+};
+
+const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
+  const defaultController = input.defaultController;
+  const controller = createInputController({
+    actionMaps: defaultController.actionMaps,
+  });
+  addInputController(ctx.world, input, controller, eid);
+  return controller;
+};
+
+const createAvatarRig =
+  (input: GameInputModule, physics: PhysicsModuleState, network: GameNetworkState) =>
+  (ctx: GameState, remote = false) => {
+    const spawnPoints = spawnPointQuery(ctx.world);
+
+    const eid = addEntity(ctx.world);
+    addTransformComponent(ctx.world, eid);
+    addAvatarCamera(ctx, eid);
+    addAvatarController(ctx, input, eid);
+
+    const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
+    if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
+      addFlyControls(ctx, eid);
+    } else {
+      addPhysicsControls(ctx, physics, eid);
+    }
+
+    addAvatar(ctx, "/gltf/full-animation-rig.glb", physics.physicsWorld, eid, { kinematic: false, nametag: remote });
+
+    return eid;
+  };
 
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
@@ -88,6 +129,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     return {};
   },
   async init(ctx) {
+    const input = getModule(ctx, InputModule);
+    const physics = getModule(ctx, PhysicsModule);
+    const network = getModule(ctx, NetworkModule);
+
     const disposables = [
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
@@ -98,17 +143,8 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     ];
 
     registerPrefab(ctx, {
-      name: "mixamo-x",
-      create: (ctx, remote) => {
-        return createAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "mixamo-y",
-      create: (ctx, remote) => {
-        return createAvatar(ctx, "/gltf/full-animation-rig.glb", { remote });
-      },
+      name: "avatar",
+      create: createAvatarRig(input, physics, network),
     });
 
     // create out of bounds floor check
@@ -144,9 +180,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, actionMap);
+    enableActionMap(input.defaultController, actionMap);
 
     return () => {
       for (const dispose of disposables) {
@@ -202,12 +236,11 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
 function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-  const physics = getModule(ctx, PhysicsModule);
-  if (!isHost(network)) {
+  if (network.authoritative && !isHost(network)) {
     return;
   }
 
-  loadRemotePlayerRig(ctx, input, network, physics, message.peerId);
+  loadRemotePlayerRig(ctx, input, network, message.peerId);
 }
 
 // when we join the world
@@ -216,9 +249,9 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   const input = getModule(ctx, InputModule);
   await waitUntil(() => network.peerIdToIndex.has(network.peerId));
 
-  if (isHost(network)) {
-    loadPlayerRig(ctx, input, network);
-  }
+  // if (isHost(network)) {
+  loadPlayerRig(ctx, input, network);
+  // }
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
@@ -375,40 +408,36 @@ function loadPreviewCamera(ctx: GameState) {
 }
 
 function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState) {
-  const spawnPoints = spawnPointQuery(ctx.world);
-
   if (ctx.activeCamera) {
     removeRecursive(ctx.world, ctx.activeCamera);
   }
 
-  const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
+  const eid = createPrefabEntity(ctx, "avatar");
 
-  let eid: number;
+  // hide our own avatar
+  const avatar = getChildAt(eid, 1);
+  addComponent(ctx.world, Hidden, avatar);
+  // TODO: fix interaction colliders to not detect our own avatar
 
-  if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-    eid = createFlyPlayerRig(ctx, true);
-  } else {
-    eid = createPlayerRig(ctx, true);
-  }
+  // set active camera and controller for our own rig
+  ctx.activeCamera = getChildAt(eid, 0);
+  input.activeController = getInputController(input, eid);
+  input.activeController.inputRingBuffer = input.defaultController.inputRingBuffer;
 
   associatePeerWithEntity(network, network.peerId, eid);
 
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
+  // TODO: add Authoring component for authoritatively controlled entities as a host,
+  //       use Owned to distinguish actual ownership on all clients
   addComponent(ctx.world, Owned, eid);
   addComponent(ctx.world, Player, eid);
   addComponent(ctx.world, OurPlayer, eid);
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  // setup input controller from default controller's ringbuffer and actionMaps
-  const defaultController = input.defaultController;
-  const controller = createInputController(defaultController);
-  addInputController(ctx.world, input, controller, eid);
-
-  input.activeController = controller;
-
   addChild(ctx.activeScene, eid);
 
+  const spawnPoints = spawnPointQuery(ctx.world);
   if (spawnPoints.length > 0) {
     spawnEntity(ctx, spawnPoints, eid);
   }
@@ -416,36 +445,12 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
   return eid;
 }
 
-function loadRemotePlayerRig(
-  ctx: GameState,
-  input: GameInputModule,
-  network: GameNetworkState,
-  physics: PhysicsModuleState,
-  peerId: string
-) {
-  const spawnPoints = spawnPointQuery(ctx.world);
-
-  const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
-
-  let eid: number;
-
-  if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-    eid = createFlyPlayerRig(ctx, false);
-  } else {
-    eid = createPlayerRig(ctx, false);
-  }
-
-  addAvatar(ctx, "/gltf/full-animation-rig.glb", physics.physicsWorld, eid, { nametag: true });
+function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState, peerId: string) {
+  const eid = createPrefabEntity(ctx, "avatar", true);
 
   associatePeerWithEntity(network, peerId, eid);
 
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Player, eid);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
-
-  // setup remote node data
+  // setup positional audio emitter for VoIP
   addRemoteNodeComponent(ctx, eid, {
     name: peerId,
     audioEmitter: createRemotePositionalAudioEmitter(ctx, {
@@ -455,39 +460,36 @@ function loadRemotePlayerRig(
         }),
       ],
     }),
-    nametag: createRemoteNametag(ctx, {
-      name: peerId,
-    }),
   });
 
-  // setup input controller from default controller using just the actionMaps
-  const defaultController = input.defaultController;
-  const controller = createInputController({
-    actionMaps: defaultController.actionMaps,
-  });
-  addInputController(ctx.world, input, controller, eid);
+  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
+  // TODO: add Authoring component for authoritatively controlled entities as a host,
+  //       use Owned to distinguish actual ownership on all clients
+  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Player, eid);
+  // Networked component isn't reset when removed so reset on add
+  addComponent(ctx.world, Networked, eid, true);
 
   addChild(ctx.activeScene, eid);
 
+  const spawnPoints = spawnPointQuery(ctx.world);
   if (spawnPoints.length > 0) {
     spawnEntity(ctx, spawnPoints, eid);
   }
-
-  return eid;
 }
 
 function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, CharacterRig, playerRig);
+  removeComponent(ctx.world, PhysicsControls, playerRig);
   removeComponent(ctx.world, RigidBody, playerRig);
 
-  addComponent(ctx.world, FlyRig, playerRig);
-  FlyRig.set(playerRig, { speed: 10 });
+  addComponent(ctx.world, FlyControls, playerRig);
+  FlyControls.set(playerRig, { speed: 10 });
 }
 
 function swapToPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, FlyRig, playerRig);
+  removeComponent(ctx.world, FlyControls, playerRig);
 
-  addComponent(ctx.world, CharacterRig, playerRig);
+  addComponent(ctx.world, PhysicsControls, playerRig);
 
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
@@ -515,7 +517,7 @@ export function ThirdroomSystem(ctx: GameState) {
 function updateThirdroom(ctx: GameState, controller: InputController, player: number) {
   const toggleFlyMode = controller.actions.get("toggleFlyMode") as ButtonActionState;
   if (toggleFlyMode.pressed) {
-    if (hasComponent(ctx.world, FlyRig, player)) {
+    if (hasComponent(ctx.world, FlyControls, player)) {
       swapToPlayerRig(ctx, player);
     } else {
       swapToFlyPlayerRig(ctx, player);
