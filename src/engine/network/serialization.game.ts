@@ -527,15 +527,10 @@ export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer =
   writeMetadata(NetworkAction.NewPeerSnapshot),
   serializeCreatesSnapshot,
   serializeUpdatesSnapshot,
-  // serializePlayerNetworkId,
   ([, v]) => sliceCursorView(v)
 );
 
-export const deserializeNewPeerSnapshot = pipe(
-  deserializeCreates,
-  deserializeUpdatesSnapshot
-  // deserializePlayerNetworkId
-);
+export const deserializeNewPeerSnapshot = pipe(deserializeCreates, deserializeUpdatesSnapshot);
 
 // Full Snapshot Update
 export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
