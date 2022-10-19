@@ -1,4 +1,3 @@
-import { MouseEventHandler, useEffect, useState } from "react";
 import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
 
@@ -21,7 +20,7 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, SidebarTabs, OverlayWindow, WorldLoadState } from "../../../hooks/useStore";
+import { useStore, SidebarTabs, OverlayWindow } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { useInvite } from "../../../hooks/useInvite";
@@ -29,29 +28,13 @@ import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
-import { loadImageUrl } from "../../../utils/common";
-import { useIsMounted } from "../../../hooks/useIsMounted";
+import { useWorldAction } from "../../../hooks/useWorldAction";
+import { useCalls } from "../../../hooks/useCalls";
+import { useRoomCall } from "../../../hooks/useRoomCall";
 
-interface OverlayProps {
-  calls: Map<string, GroupCall>;
-  activeCall: GroupCall | undefined;
-  onExitWorld: MouseEventHandler<HTMLButtonElement>;
-  onJoinWorld: MouseEventHandler<HTMLButtonElement>;
-  onLoadWorld: MouseEventHandler<HTMLButtonElement>;
-  onReloadWorld: MouseEventHandler<HTMLButtonElement>;
-  onEnterWorld: MouseEventHandler<HTMLButtonElement>;
-}
-
-export function Overlay({
-  calls,
-  activeCall,
-  onExitWorld,
-  onJoinWorld,
-  onLoadWorld,
-  onReloadWorld,
-  onEnterWorld,
-}: OverlayProps) {
+export function Overlay() {
   const { session, platform } = useHydrogen(true);
+  const calls = useCalls(session);
 
   const {
     selectedSidebarTab,
@@ -62,7 +45,6 @@ export function Overlay({
     closeChat,
     worldId,
     isEnteredWorld,
-    loadState,
     selectedWorldId,
   } = useStore((state) => ({
     selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
@@ -73,13 +55,12 @@ export function Overlay({
     minimizeChat: state.overlayChat.minimizeChat,
     closeChat: state.overlayChat.closeChat,
     worldId: state.world.worldId,
-    isEnteredWorld: state.world.isEnteredWorld,
-    loadState: state.world.loadState,
+    isEnteredWorld: state.world.entered,
     selectedWorldId: state.overlayWorld.selectedWorldId,
-    closeOverlay: state.overlay.closeOverlay,
   }));
 
-  const isMounted = useIsMounted();
+  const activeCall = useRoomCall(calls, worldId);
+  const { exitWorld } = useWorldAction(session);
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, selectedChatId);
   const selectedChatInvite = useInvite(session, selectedChatId);
@@ -87,63 +68,9 @@ export function Overlay({
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
-  const [worldPreview, setWorldPreview] = useState<{ url?: string; thumbnail: string } | undefined>();
-
-  useEffect(() => {
-    if (selectedWorldId) {
-      const world = session.rooms.get(selectedWorldId);
-      let selectedWorldChanged = false;
-
-      if (!world || "isBeingCreated" in world) {
-        return;
-      }
-
-      world.getStateEvent("org.matrix.msc3815.world").then((result: any) => {
-        const scenePreviewUrl = result?.event?.content?.scene_preview_url as string | unknown;
-        let scenePreviewThumbnail = scenePreviewUrl;
-
-        if (typeof scenePreviewUrl === "string" && scenePreviewUrl.startsWith("mxc:")) {
-          scenePreviewThumbnail = session.mediaRepository.mxcUrlThumbnail(scenePreviewUrl, 32, 32, "crop");
-          const downloadUrl = session.mediaRepository.mxcUrl(scenePreviewUrl);
-          if (downloadUrl)
-            loadImageUrl(downloadUrl).then((url) => {
-              if (selectedWorldChanged || !isMounted()) return;
-              setWorldPreview({
-                url,
-                thumbnail: url,
-              });
-            });
-        }
-
-        if (typeof scenePreviewThumbnail === "string")
-          setWorldPreview({
-            thumbnail: scenePreviewThumbnail,
-          });
-      });
-      return () => {
-        selectedWorldChanged = true;
-      };
-    }
-  }, [session, selectedWorldId, isMounted]);
-
-  const previewingWorld =
-    worldId !== selectedWorldId ||
-    !(
-      loadState === WorldLoadState.Loaded ||
-      loadState === WorldLoadState.Entering ||
-      loadState === WorldLoadState.Entered
-    );
-
   const isChatOpen = selectedChat || selectedChatInvite;
   return (
     <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
-      {worldPreview?.thumbnail && previewingWorld && (
-        <img
-          alt="World Preview"
-          src={worldPreview.url ?? worldPreview.thumbnail}
-          className={classNames("Overlay__world-preview", { "Overlay__world-preview--blur": !worldPreview.url })}
-        />
-      )}
       <SidebarView
         spaces={<SpacesView />}
         roomList={
@@ -159,12 +86,7 @@ export function Overlay({
               }
               footer={
                 world && activeCall ? (
-                  <NowPlayingWorld
-                    world={world}
-                    activeCall={activeCall}
-                    onExitWorld={onExitWorld}
-                    platform={platform}
-                  />
+                  <NowPlayingWorld world={world} activeCall={activeCall} onExitWorld={exitWorld} platform={platform} />
                 ) : (
                   <NowPlayingControls />
                 )
@@ -183,14 +105,7 @@ export function Overlay({
         </div>
       ) : (
         <div className="Overlay__content grow">
-          {(worldId === selectedWorldId && loadState === WorldLoadState.Entered) || isChatOpen ? undefined : (
-            <WorldPreview
-              onJoinWorld={onJoinWorld}
-              onLoadWorld={onLoadWorld}
-              onReloadWorld={onReloadWorld}
-              onEnterWorld={onEnterWorld}
-            />
-          )}
+          {(worldId && worldId === selectedWorldId) || isChatOpen ? undefined : <WorldPreview />}
           {activeChats.size === 0 ? undefined : (
             <ActiveChats
               chat={

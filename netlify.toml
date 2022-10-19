@@ -22,7 +22,6 @@ for = "/*"
   [headers.values]
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Embedder-Policy = "require-corp"
-    Access-Control-Allow-Origin = "sentry.tools.element.io"
 
 [[headers]]
 for = "/.well-known/*"
