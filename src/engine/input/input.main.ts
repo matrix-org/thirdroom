@@ -8,7 +8,7 @@ import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BU
  * Types *
  ********/
 
-export interface InputModuleState {
+export interface MainInputModule {
   inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
 }
 
@@ -16,7 +16,7 @@ export interface InputModuleState {
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<IMainThreadContext, InputModuleState>({
+export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
   name: "input",
   create(ctx, { sendMessage }) {
     // TODO: optimize memory
