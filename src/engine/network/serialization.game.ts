@@ -220,16 +220,6 @@ export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetwork
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
-  // TODO: set active camera if it's our avatar from the host (in separate message)
-  // if (!isHost(network)) {
-  //   const peerIdIndex = getPeerIdIndexFromNetworkId(nid);
-  //   const peerId = network.indexToPeerId.get(peerIdIndex);
-  //   if (peerId === network.peerId) {
-  //     const camera = getChildAt(eid, 0);
-  //     ctx.activeCamera = camera;
-  //   }
-  // }
-
   // add to scene
   addChild(ctx.activeScene, eid);
 
