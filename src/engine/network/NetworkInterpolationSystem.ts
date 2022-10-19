@@ -61,67 +61,78 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const body = RigidBody.store.get(eid);
-    if (body) {
-      const peerId = getPeerIdFromEntityId(network, eid);
-      if (peerId === undefined) continue;
 
-      const historian = network.peerIdToHistorian.get(peerId);
-      if (historian === undefined) continue;
+    if (!body) {
+      console.warn("could not find rigidbody for:", eid);
+      continue;
+    }
 
-      const position = Transform.position[eid];
-      const quaternion = Transform.quaternion[eid];
-      const velocity = RigidBody.velocity[eid];
+    const peerId = getPeerIdFromEntityId(network, eid);
+    if (peerId === undefined) {
+      console.warn("could not find peerId for:", eid);
+      continue;
+    }
 
-      const netPosition = Networked.position[eid];
-      const netVelocity = Networked.velocity[eid];
-      const netQuaternion = Networked.quaternion[eid];
+    const historian = network.peerIdToHistorian.get(peerId);
+    if (historian === undefined) {
+      applyNetworkedToRigidBody(eid, body);
+      // console.warn("could not find historian for:", peerId);
+      continue;
+    }
 
-      if (!network.interpolate) {
-        applyNetworkedToRigidBody(eid, body);
-        continue;
+    const position = Transform.position[eid];
+    const quaternion = Transform.quaternion[eid];
+    const velocity = RigidBody.velocity[eid];
+
+    const netPosition = Networked.position[eid];
+    const netVelocity = Networked.velocity[eid];
+    const netQuaternion = Networked.quaternion[eid];
+
+    if (!network.interpolate) {
+      applyNetworkedToRigidBody(eid, body);
+      continue;
+    }
+
+    const history = getEntityHistory(historian, eid);
+
+    if (historian.needsUpdate) {
+      // append current network values to interpolation buffer
+      addEntityHistory(history, netPosition, netVelocity, netQuaternion);
+    }
+
+    // drop old history
+    syncWithHistorian(history, historian);
+
+    if (historian.index === -1) {
+      continue;
+    }
+
+    // TODO: optional hermite interpolation
+
+    const from = historian.index || 0;
+    const to = (historian.index || 0) - 1;
+
+    const pFrom = history.position.at(from);
+    const pTo = history.position.at(to);
+    if (pFrom && pTo) {
+      vec3.lerp(position, pFrom, pTo, historian.fractionOfTimePassed);
+      body.setTranslation(_vec.fromArray(position), true);
+    }
+
+    if (body.isDynamic()) {
+      const vFrom = history.velocity.at(from);
+      const vTo = history.velocity.at(to);
+      if (vFrom && vTo) {
+        vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
+        body.setLinvel(_vec.fromArray(velocity), true);
       }
+    }
 
-      const history = getEntityHistory(historian, eid);
-
-      if (historian.needsUpdate) {
-        // append current network values to interpolation buffer
-        addEntityHistory(history, netPosition, netVelocity, netQuaternion);
-      }
-
-      // drop old history
-      syncWithHistorian(history, historian);
-
-      if (historian.index === -1) {
-        continue;
-      }
-
-      // TODO: optional hermite interpolation
-
-      const from = historian.index || 0;
-      const to = (historian.index || 0) - 1;
-
-      const pFrom = history.position.at(from);
-      const pTo = history.position.at(to);
-      if (pFrom && pTo) {
-        vec3.lerp(position, pFrom, pTo, historian.fractionOfTimePassed);
-        body.setTranslation(_vec.fromArray(position), true);
-      }
-
-      if (body.isDynamic()) {
-        const vFrom = history.velocity.at(from);
-        const vTo = history.velocity.at(to);
-        if (vFrom && vTo) {
-          vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
-          body.setLinvel(_vec.fromArray(velocity), true);
-        }
-      }
-
-      const qFrom = history.quaternion.at(from);
-      const qTo = history.quaternion.at(to);
-      if (qFrom && qTo) {
-        quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
-        body.setRotation(_quat.fromArray(quaternion), true);
-      }
+    const qFrom = history.quaternion.at(from);
+    const qTo = history.quaternion.at(to);
+    if (qFrom && qTo) {
+      quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
+      body.setRotation(_quat.fromArray(quaternion), true);
     }
   }
 

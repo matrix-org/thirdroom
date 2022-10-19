@@ -15,12 +15,7 @@ import {
   GameNetworkState,
 } from "./network.game";
 import { enqueueNetworkRingBuffer } from "./RingBuffer";
-import {
-  NetPipeData,
-  createNewPeerSnapshotMessage,
-  createPeerIdIndexMessage,
-  createFullChangedMessage,
-} from "./serialization.game";
+import { NetPipeData, createNewPeerSnapshotMessage, createFullChangedMessage } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, "", packet, true)) {
@@ -102,7 +97,9 @@ const sendUpdates = (ctx: GameState) => {
   // - host has been established (peerIdIndex has been assigned)
   const haveConnectedPeers = network.peers.length > 0;
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
-  const hostEstablished = network.hostId !== "" && network.peerIdToIndex.has(network.peerId);
+  const hostEstablished = network.authoritative
+    ? network.hostId !== "" && network.peerIdToIndex.has(network.peerId)
+    : true;
   const hosting = isHost(network);
 
   if (!haveConnectedPeers || !spawnedPlayerRig || !hostEstablished) {
@@ -119,7 +116,7 @@ const sendUpdates = (ctx: GameState) => {
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
-          broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, theirPeerId));
+          // broadcastReliable(ctx, network, createPeerIdIndexMessage(ctx, theirPeerId));
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
         }
       }

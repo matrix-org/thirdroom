@@ -60,8 +60,10 @@ export interface GameNetworkState {
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: NetPipeData) => void };
   cursorView: CursorView;
+  // feature flags
   interpolate: boolean;
   clientSidePrediction: boolean;
+  authoritative: boolean;
 }
 
 /******************
@@ -99,6 +101,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       cursorView: createCursorView(),
       interpolate: false,
       clientSidePrediction: false,
+      authoritative: true,
     };
   },
   init(ctx: GameState) {

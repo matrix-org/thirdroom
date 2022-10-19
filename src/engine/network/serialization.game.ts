@@ -211,16 +211,26 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 // };
 
 /* Create */
-export function createRemoteNetworkedEntity(state: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(state, prefab, true);
+export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetworkState, nid: number, prefab: string) {
+  const eid = createPrefabEntity(ctx, prefab, true);
 
   // assign networkId
-  addComponent(state.world, Networked, eid, true);
+  addComponent(ctx.world, Networked, eid, true);
   Networked.networkId[eid] = nid;
   network.networkIdToEntityId.set(nid, eid);
 
+  // TODO: set active camera if it's our avatar from the host (in separate message)
+  // if (!isHost(network)) {
+  //   const peerIdIndex = getPeerIdIndexFromNetworkId(nid);
+  //   const peerId = network.indexToPeerId.get(peerIdIndex);
+  //   if (peerId === network.peerId) {
+  //     const camera = getChildAt(eid, 0);
+  //     ctx.activeCamera = camera;
+  //   }
+  // }
+
   // add to scene
-  addChild(state.activeScene, eid);
+  addChild(ctx.activeScene, eid);
 
   return eid;
 }
