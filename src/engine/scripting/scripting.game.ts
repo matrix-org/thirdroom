@@ -1,6 +1,9 @@
+import { addComponent, defineQuery } from "bitecs";
+
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
-import { createTransformEntity } from "../component/transform";
+import { addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
+import { createSimpleCube } from "../mesh/mesh.game";
 import { defineModule, getModule } from "../module/module.common";
 
 export enum ScriptExecutionEnvironment {
@@ -23,11 +26,9 @@ interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnviron
 }
 
 interface ScriptExports extends WebAssembly.Exports {
-  memory: WebAssembly.Memory;
   malloc(size: number): number;
-  _initialize(): void;
   initialize(): void;
-  update(): void;
+  update(dt: number): void;
 }
 
 interface JSScriptExports extends ScriptExports {
@@ -35,7 +36,7 @@ interface JSScriptExports extends ScriptExports {
 }
 
 interface ScriptingModuleState {
-  scripts: Script[];
+  scripts: Script<ScriptExecutionEnvironment>[];
 }
 
 export const ScriptingModule = defineModule<GameState, ScriptingModuleState>({
@@ -47,6 +48,22 @@ export const ScriptingModule = defineModule<GameState, ScriptingModuleState>({
   },
   init(ctx) {},
 });
+
+interface IScriptNodeComponent {
+  id: Uint32Array;
+  namePtr: Uint32Array;
+  position: Float32Array;
+  quaternion: Float32Array;
+  scale: Float32Array;
+  parent: Uint32Array;
+  firstChild: Uint32Array;
+  nextSibling: Uint32Array;
+  prevSibiling: Uint32Array;
+}
+
+const ScriptNodeComponent = new Map<number, IScriptNodeComponent>();
+
+const scriptTransformQuery = defineQuery([Transform, ScriptNodeComponent]);
 
 export function ScriptingSystem(ctx: GameState) {
   const { scripts } = getModule(ctx, ScriptingModule);
@@ -61,20 +78,40 @@ export function ScriptingSystem(ctx: GameState) {
 
   for (let i = 0; i < scripts.length; i++) {
     const script = scripts[i];
-    (script.instance.exports as ScriptExports).update();
+    (script.instance.exports as ScriptExports).update(ctx.dt);
+  }
+
+  const scriptTransformEntities = scriptTransformQuery(ctx.world);
+
+  for (let i = 0; i < scriptTransformEntities.length; i++) {
+    const eid = scriptTransformEntities[i];
+    const component = ScriptNodeComponent.get(eid);
+
+    if (component) {
+      Transform.position[eid].set(component.position);
+      Transform.scale[eid].set(component.scale);
+      Transform.quaternion[eid].set(component.quaternion);
+    }
   }
 }
 
 export async function loadJSScript(ctx: GameState, source: string): Promise<Script<ScriptExecutionEnvironment.JS>> {
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
-  const script = await loadWASMScript(ctx, ScriptExecutionEnvironment.JS, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer);
   const codePtr = allocateString(script.instance, script.HEAPU8, source);
   script.instance.exports.evalJS(codePtr);
   return script;
 }
 
-export async function loadWASMScript<Env extends ScriptExecutionEnvironment>(
+export async function loadWASMScript(ctx: GameState, url: string): Promise<Script<ScriptExecutionEnvironment.WASM>> {
+  const response = await fetch(url);
+  const buffer = await response.arrayBuffer();
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer);
+  return script;
+}
+
+async function loadScript<Env extends ScriptExecutionEnvironment>(
   ctx: GameState,
   environment: Env,
   buffer: ArrayBuffer
@@ -89,7 +126,6 @@ export async function loadWASMScript<Env extends ScriptExecutionEnvironment>(
   const memory = new WebAssembly.Memory({
     initial: 256,
     maximum: 256,
-    shared: true,
   });
 
   const HEAPU8 = new Uint8Array(memory.buffer);
@@ -106,14 +142,38 @@ export async function loadWASMScript<Env extends ScriptExecutionEnvironment>(
        */
       create_node: () => {
         const nodeId = nextNodeId++;
-        const eid = createTransformEntity(world);
-        nodeIdToEid.set(nodeId, eid);
+        const nodeEid = createSimpleCube(ctx, 1);
+        addChild(ctx.activeScene, nodeEid);
+        nodeIdToEid.set(nodeId, nodeEid);
 
-        const ptr = instance!.exports.malloc(64);
+        const nodePtr = instance!.exports.malloc(64);
 
-        HEAPU32[ptr / 4] = 1337;
+        const component: IScriptNodeComponent = {
+          id: new Uint32Array(memory.buffer, nodePtr, 1),
+          namePtr: new Uint32Array(memory.buffer, nodePtr + 4, 1),
+          position: new Float32Array(memory.buffer, nodePtr + 8, 3),
+          quaternion: new Float32Array(memory.buffer, nodePtr + 20, 4),
+          scale: new Float32Array(memory.buffer, nodePtr + 36, 3),
+          parent: new Uint32Array(memory.buffer, nodePtr + 48, 1),
+          firstChild: new Uint32Array(memory.buffer, nodePtr + 52, 1),
+          nextSibling: new Uint32Array(memory.buffer, nodePtr + 56, 1),
+          prevSibiling: new Uint32Array(memory.buffer, nodePtr + 60, 1),
+        };
 
-        return ptr;
+        ScriptNodeComponent.set(nodeEid, component);
+
+        component.id[0] = nodeId;
+
+        const nameStrPointer = allocateString(instance!, HEAPU8, "Test Node");
+        component.namePtr[0] = nameStrPointer;
+
+        component.position.set(Transform.position[nodeEid]);
+        component.quaternion.set(Transform.quaternion[nodeEid]);
+        component.scale.set(Transform.scale[nodeEid]);
+
+        addComponent(world, ScriptNodeComponent, nodeEid);
+
+        return nodePtr;
       },
     },
     wasi_snapshot_preview1: {
@@ -160,10 +220,13 @@ export async function loadWASMScript<Env extends ScriptExecutionEnvironment>(
 
   instance = result.instance as ScriptWebAssemblyInstance<Env>;
 
-  instance.exports._initialize();
+  if ("_initialize" in instance.exports) {
+    (instance.exports._initialize as Function)();
+  }
+
   instance.exports.initialize();
 
-  return {
+  const script: Script<Env> = {
     instance,
     module: result.module,
     environment,
@@ -173,6 +236,12 @@ export async function loadWASMScript<Env extends ScriptExecutionEnvironment>(
     nextNodeId,
     nodeIdToEid,
   };
+
+  const { scripts } = getModule(ctx, ScriptingModule);
+
+  scripts.push(script);
+
+  return script;
 }
 
 export function disposeScript(script: Script) {

@@ -18,12 +18,3 @@ emcc \
   -DCONFIG_STACK_CHECK \
   src/*.c \
   include/quickjs/{quickjs,cutils,libregexp,libunicode}.c
-
-../../node_modules/.bin/wasm2wat ./build/scripting-runtime.wasm -o ./build/scripting-runtime.wat
-
-sed \
-  -i '' \
-    's/(import "env" "memory" (memory (;0;) 256 256))/(import "env" "memory" (memory (;0;) 256 256 shared))/g' \
-    ./build/scripting-runtime.wat
-
-../../node_modules/.bin/wat2wasm --enable-threads ./build/scripting-runtime.wat -o ./build/scripting-runtime.wasm

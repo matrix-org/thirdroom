@@ -2,3 +2,4 @@ src/asset-pipeline/vendor
 src/logviewer
 src/scripting
 public/
+examples/

@@ -97,17 +97,17 @@ static JSValue js_node_constructor(JSContext *ctx, JSValueConst new_target, int 
   JSValue global = JS_GetGlobalObject(ctx);
   JSValue float32ArrayConstructor = JS_GetPropertyStr(ctx, global, "Float32Array");
 
-  JSValue positionBuffer = JS_NewArrayBuffer(ctx, node->position, sizeof(node->position), NULL, node->position, false);
+  JSValue positionBuffer = JS_NewArrayBuffer(ctx, &node->position, sizeof(node->position), NULL, NULL, false);
   JSValue positionArgs[] = { positionBuffer, 0, 3 };
   JSValue position = JS_CallConstructor(ctx, float32ArrayConstructor, 3, positionArgs);
   JS_SetPropertyStr(ctx, nodeObj, "position", position);
 
-  JSValue quaternionBuffer = JS_NewArrayBuffer(ctx, node->quaternion, sizeof(node->quaternion), NULL, node->quaternion, false);
+  JSValue quaternionBuffer = JS_NewArrayBuffer(ctx, &node->quaternion, sizeof(node->quaternion), NULL, NULL, false);
   JSValue quaternionArgs[] = { quaternionBuffer, 0, 4 };
   JSValue quaternion = JS_CallConstructor(ctx, float32ArrayConstructor, 3, quaternionArgs);
   JS_SetPropertyStr(ctx, nodeObj, "quaternion", quaternion);
 
-  JSValue scaleBuffer = JS_NewArrayBuffer(ctx, node->scale, sizeof(node->scale), NULL, node->scale, false);
+  JSValue scaleBuffer = JS_NewArrayBuffer(ctx, &node->scale, sizeof(node->scale), NULL, NULL, false);
   JSValue scaleArgs[] = { scaleBuffer, 0, 3 };
   JSValue scale = JS_CallConstructor(ctx, float32ArrayConstructor, 3, scaleArgs);
   JS_SetPropertyStr(ctx, nodeObj, "scale", scale);
@@ -161,7 +161,7 @@ int32_t initialize() {
   JS_SetPropertyStr(ctx, console, "log", JS_NewCFunction(ctx, js_console_log, "log", 1));
   JS_SetPropertyStr(ctx, global, "console", console);
 
-  onUpdateAtom = JS_NewAtom(ctx, "onUpdate");
+  onUpdateAtom = JS_NewAtom(ctx, "onupdate");
 
   JSValue jsSceneGraphNamespace = JS_NewObject(ctx);
   JS_SetPropertyStr(ctx, global, "WebSG", jsSceneGraphNamespace);
@@ -181,7 +181,11 @@ int32_t evalJS(const char * code) {
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
 
-    emscripten_console_errorf("Error calling update(): %s", JS_ToCString(ctx, error));
+    emscripten_console_errorf(
+      "Error calling update(): %s\n  %s",
+      JS_ToCString(ctx, error),
+      JS_ToCString(ctx, JS_GetPropertyStr(ctx, error, "stack"))
+    ); 
 
     JS_FreeValue(ctx, error);
 
@@ -193,7 +197,7 @@ int32_t evalJS(const char * code) {
 
 // Called 
 EMSCRIPTEN_KEEPALIVE
-int32_t update() {
+int32_t update(float_t dt) {
   int32_t ret;
 
   JSValue global = JS_GetGlobalObject(ctx);
@@ -205,7 +209,12 @@ int32_t update() {
     return 0;
   }
 
-  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, 0, NULL);
+  JSValue dtVal = JS_NewFloat64(ctx, dt);
+
+  int argc = 1;
+  JSValueConst argv[1] = { dtVal };
+
+  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, argc, argv);
 
   JS_FreeValue(ctx, updateFn);
 

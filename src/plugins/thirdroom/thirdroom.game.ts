@@ -1,5 +1,6 @@
 import { addComponent, addEntity, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
+import glMatrixText from "gl-matrix/gl-matrix.js?raw";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
@@ -56,7 +57,9 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
+// import { loadWASMScript } from "../../engine/scripting/scripting.game";
 import { loadJSScript } from "../../engine/scripting/scripting.game";
+// import rustExample from "../../../examples/spinny-cube/rust/target/wasm32-unknown-unknown/release/spinny_cube.wasm?url";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -217,31 +220,20 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     loadPlayerRig(ctx);
 
     const code = `
-      const id = new WebSG.Node().id = 1;
-      console.log(id);
+      ${glMatrixText}
 
-      // const cubeNode = new Node({
-      //   translation: [0, 1, 0],
-      //   mesh: new Mesh({
-      //     primitives: [
-      //       new CubePrimitive({
-      //         size: [1, 1, 1],
-      //         material: new PBRMaterial({
-      //           baseColorFactor: [1, 0, 0, 1]
-      //         })
-      //       })
-      //     ]
-      //   })
-      // });
+      const node = new WebSG.Node();
 
-      // cubeNode.parent = scene;
+      node.position[1] = 1.8;
 
-      // onUpdate = (dt) => {
-      //   cubeNode.rotateY(dt * 0.5);
-      // };
+      onupdate = (dt) => {
+        glMatrix.quat.rotateY(node.quaternion, node.quaternion, dt * 10);
+      };
     `;
 
     await loadJSScript(ctx, code);
+
+    // await loadWASMScript(ctx, rustExample);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
