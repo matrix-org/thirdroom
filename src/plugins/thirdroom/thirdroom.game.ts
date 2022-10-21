@@ -449,12 +449,6 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
 function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState, peerId: string) {
   const eid = createPrefabEntity(ctx, "avatar", true);
 
-  // TODO: figure out how to connect this camera to the camera of the avatars spawned on other clients
-  // synchronize entire scene graph of a Networked entity?
-  // const camera = getCamera(ctx, eid);
-  // addComponent(ctx.world, Owned, camera);
-  // addComponent(ctx.world, Networked, camera, true);
-
   associatePeerWithEntity(network, peerId, eid);
 
   // setup positional audio emitter for VoIP
