@@ -11,8 +11,9 @@ import {
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../../engine/audio/audio.game";
+import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
-import { getChildAt, removeRecursive, Transform } from "../../engine/component/transform";
+import { removeRecursive, Transform } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import {
@@ -25,6 +26,7 @@ import {
 import { InputModule } from "../../engine/input/input.game";
 import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
   getPeerIdIndexFromNetworkId,
@@ -250,12 +252,15 @@ export function InteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const camera = getChildAt(eid, 0);
+    const camera = getCamera(ctx, eid);
     const controller = getInputController(input, eid);
 
     updateFocus(ctx, physics, eid, camera);
-    updateDeletion(ctx, interaction, controller, eid);
-    updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
+
+    if (network.authoritative && isHost(network)) {
+      updateDeletion(ctx, interaction, controller, eid);
+      updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
+    }
   }
 }
 

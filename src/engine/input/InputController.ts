@@ -18,10 +18,10 @@ export interface InputControllerProps {
   actionMaps?: ActionMap[];
 }
 
-export const createInputController = (props: InputControllerProps): InputController => ({
-  inputRingBuffer: props.inputRingBuffer || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
-  actionMaps: props.actionMaps || [],
-  actions: props.actions || new Map(),
+export const createInputController = (props?: InputControllerProps): InputController => ({
+  inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
+  actionMaps: (props && props.actionMaps) || [],
+  actions: (props && props.actions) || new Map(),
   raw: {},
 });
 
@@ -43,4 +43,15 @@ export function getInputController(input: GameInputModule, eid: number) {
   const controller = input.controllers.get(eid);
   if (!controller) throw new Error("could not find input controller for eid: " + eid);
   return controller;
+}
+
+/**
+ * Sets the active controller to the provided entity's controller
+ * @param input GameInputModule
+ * @param eid number
+ */
+export function setActiveInputController(input: GameInputModule, eid: number) {
+  const controller = getInputController(input, eid) || createInputController();
+  controller.inputRingBuffer = input.defaultController.inputRingBuffer;
+  input.activeController = controller;
 }

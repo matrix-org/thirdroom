@@ -344,3 +344,8 @@ export const skipUint8 = (v: CursorView) => {
   v.cursor += Uint8Array.BYTES_PER_ELEMENT;
   return v;
 };
+
+export const skipUint32 = (v: CursorView) => {
+  v.cursor += Uint32Array.BYTES_PER_ELEMENT;
+  return v;
+};

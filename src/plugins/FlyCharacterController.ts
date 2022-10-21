@@ -1,7 +1,8 @@
 import { addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
-import { Transform, updateMatrixWorld, getChildAt } from "../engine/component/transform";
+import { getCamera } from "../engine/camera/camera.game";
+import { Transform, updateMatrixWorld } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -106,8 +107,7 @@ export function FlyControllerSystem(ctx: GameState) {
 
   for (let i = 0; i < ents.length; i++) {
     const playerRig = ents[i];
-    const camera = getChildAt(playerRig, 0);
-
+    const camera = getCamera(ctx, playerRig);
     const controller = getInputController(input, playerRig);
 
     applyFlyControls(playerRig, controller, camera, ctx);

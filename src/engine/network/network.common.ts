@@ -5,8 +5,6 @@ import { NetworkRingBuffer } from "./RingBuffer";
 
 export enum NetworkMessageType {
   // Main -> Game
-  NetworkMessage = "reliable-network-message",
-  NetworkBroadcast = "reliable-network-broadcast",
   InitializeNetworkState = "InitializeNetworkState",
 
   // Game -> Main
@@ -17,17 +15,6 @@ export enum NetworkMessageType {
 }
 
 // Main -> Game
-
-export interface NetworkMessage extends Message<NetworkMessageType.NetworkMessage> {
-  peerId: string;
-  packet: ArrayBuffer;
-  reliable: boolean;
-}
-
-export interface NetworkBroadcast extends Message<NetworkMessageType.NetworkBroadcast> {
-  packet: ArrayBuffer;
-  reliable: boolean;
-}
 
 export interface InitializeNetworkStateMessage extends Message<NetworkMessageType.InitializeNetworkState> {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;

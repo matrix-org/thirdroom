@@ -11,13 +11,8 @@ import {
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
 } from "../../engine/audio/audio.game";
-import {
-  Transform,
-  addChild,
-  addTransformComponent,
-  setEulerFromQuaternion,
-  getChildAt,
-} from "../../engine/component/transform";
+import { getCamera } from "../../engine/camera/camera.game";
+import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
@@ -33,7 +28,8 @@ import { getInputController, InputController, inputControllerQuery } from "../..
 import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { Networked, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { isHost } from "../../engine/network/network.common";
+import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
@@ -443,6 +439,11 @@ const _impulse = new Vector3();
 const _cameraWorldQuat = quat.create();
 
 export const SpawnableSystem = (ctx: GameState) => {
+  const network = getModule(ctx, NetworkModule);
+  if (network.authoritative && !isHost(network)) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
   const spawnablesModule = getModule(ctx, SpawnablesModule);
 
@@ -450,7 +451,7 @@ export const SpawnableSystem = (ctx: GameState) => {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const camera = getChildAt(eid, 0);
+    const camera = getCamera(ctx, eid);
     const controller = getInputController(input, eid);
     updateSpawnables(ctx, spawnablesModule, controller, camera);
   }

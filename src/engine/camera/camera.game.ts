@@ -1,4 +1,4 @@
-import { addEntity } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery, hasComponent } from "bitecs";
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
 import {
@@ -7,7 +7,7 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { addTransformComponent, Transform } from "../component/transform";
+import { addTransformComponent, Transform, traverseRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
@@ -77,6 +77,9 @@ export interface PerspectiveCameraProps {
 }
 
 const DEFAULT_PERSPECTIVE_CAMERA_NAME = "Perspective Camera";
+
+export const CameraComponent = defineComponent();
+export const cameraComponentQuery = defineQuery([CameraComponent]);
 
 export function createRemotePerspectiveCamera(ctx: GameState, props?: PerspectiveCameraProps): RemotePerspectiveCamera {
   const rendererModule = getModule(ctx, RendererModule);
@@ -276,6 +279,7 @@ export function updateRemoteCameras(ctx: GameState) {
 export function createCamera(state: GameState, setActive = false): number {
   const eid = addEntity(state.world);
   addTransformComponent(state.world, eid);
+  addComponent(state.world, CameraComponent, eid);
 
   const remoteCamera = createRemotePerspectiveCamera(state, {
     yfov: glMatrix.toRadian(75),
@@ -361,4 +365,37 @@ function makePerspective(
   m[15] = 0;
 
   return m;
+}
+
+/**
+ * Sets the the active camera to the last camera added to the provided entity
+ *
+ * @param ctx GameState
+ * @param eid number
+ */
+export function setActiveCamera(ctx: GameState, eid: number) {
+  traverseRecursive(eid, (e) => {
+    if (hasComponent(ctx.world, CameraComponent, e)) {
+      ctx.activeCamera = e;
+      return;
+    }
+  });
+}
+
+/**
+ * Obtains the last added camera on the provided entity if one exists, throws if not
+ *
+ * @param ctx GameState
+ * @param eid number
+ */
+export function getCamera(ctx: GameState, eid: number) {
+  let camera;
+  traverseRecursive(eid, (e) => {
+    if (hasComponent(ctx.world, CameraComponent, e)) {
+      camera = e;
+      return false;
+    }
+  });
+  if (!camera) throw new Error("camera not found on entity " + eid);
+  return camera;
 }

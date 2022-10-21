@@ -6,7 +6,6 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
   addTransformComponent,
-  getChildAt,
   Hidden,
   removeRecursive,
   setEulerFromQuaternion,
@@ -42,12 +41,12 @@ import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
+import { createCamera, createRemotePerspectiveCamera, setActiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
-import { addAvatar } from "../avatar";
+import { addAvatar, getAvatar } from "../avatar";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
@@ -75,6 +74,7 @@ import {
   getInputController,
   InputController,
   inputControllerQuery,
+  setActiveInputController,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 
@@ -415,14 +415,14 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
   const eid = createPrefabEntity(ctx, "avatar");
 
   // hide our own avatar
-  const avatar = getChildAt(eid, 1);
+  const avatar = getAvatar(ctx, eid);
   addComponent(ctx.world, Hidden, avatar);
+
   // TODO: fix interaction colliders to not detect our own avatar
 
   // set active camera and controller for our own rig
-  ctx.activeCamera = getChildAt(eid, 0);
-  input.activeController = getInputController(input, eid);
-  input.activeController.inputRingBuffer = input.defaultController.inputRingBuffer;
+  setActiveCamera(ctx, eid);
+  setActiveInputController(input, eid);
 
   associatePeerWithEntity(network, network.peerId, eid);
 
@@ -447,6 +447,12 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
 
 function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState, peerId: string) {
   const eid = createPrefabEntity(ctx, "avatar", true);
+
+  // TODO: figure out how to connect this camera to the camera of the avatars spawned on other clients
+  // synchronize entire scene graph of a Networked entity?
+  // const camera = getCamera(ctx, eid);
+  // addComponent(ctx.world, Owned, camera);
+  // addComponent(ctx.world, Networked, camera, true);
 
   associatePeerWithEntity(network, peerId, eid);
 

@@ -29,8 +29,8 @@ import {
   createRemoteMediaStreamSource,
   createRemoteMediaStream,
 } from "../audio/audio.game";
-import { Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeRecursive, Transform, getChildAt, Hidden } from "../component/transform";
+import { OurPlayer, Player } from "../component/Player";
+import { addChild, skipRenderLerp, removeRecursive, Transform, Hidden } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -49,6 +49,9 @@ import {
 } from "./network.game";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
+import { InputModule } from "../input/input.game";
+import { setActiveInputController } from "../input/InputController";
+import { setActiveCamera } from "../camera/camera.game";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -145,6 +148,7 @@ export const serializeTransformChanged = defineChangedSerializer(
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 1),
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 2),
   (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 3),
+  // (v, eid) => writePropIfChanged(v, Networked.networkId, Transform.parent[eid]),
   (v, eid) => writePropIfChanged(v, Transform.skipLerp, eid)
 );
 
@@ -191,6 +195,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
   (v, eid) => (eid ? (Networked.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
+  // (v, eid) => (eid ? (Networked.parent[eid] = readUint32(v)) : skipUint32(v)),
   (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint8(v)) : skipUint8(v))
 );
 
@@ -229,12 +234,12 @@ export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetwork
 export function serializeCreatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const entities = ownedNetworkedQuery(state.world);
-  // todo: optimize length written with maxEntities config
+  // TODO: optimize length written with maxEntities config
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid) || "";
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -252,7 +257,7 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid) || "";
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -293,6 +298,7 @@ export function serializeUpdatesSnapshot(input: NetPipeData) {
   }
   return input;
 }
+
 export function deserializeUpdatesSnapshot(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
@@ -454,9 +460,12 @@ export function serializeInformPlayerNetworkId(input: NetPipeData, peerId: strin
   return input;
 }
 
-export function deserializeInformPlayerNetworkId(input: NetPipeData) {
-  const [ctx, cv] = input;
+export function deserializeInformPlayerNetworkId(data: NetPipeData) {
+  const [ctx, cv] = data;
+
+  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+
   // read
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
@@ -464,7 +473,7 @@ export function deserializeInformPlayerNetworkId(input: NetPipeData) {
   const peid = network.networkIdToEntityId.get(peerNid);
   if (peid === undefined) {
     console.error("could not find peer's networkId for eid", peid);
-    return input;
+    return data;
   }
 
   console.log("deserializePlayerNetworkId for peer", peerId);
@@ -475,13 +484,15 @@ export function deserializeInformPlayerNetworkId(input: NetPipeData) {
 
   // if our own avatar
   if (peerId === network.peerId) {
-    // hide our avatar
+    addComponent(ctx.world, OurPlayer, peid);
+    // TODO: move this net message definition to plugin scope so we don't have to import a plugin-defined function here
+    // embodyAvatar(ctx, input, peid);
     addComponent(ctx.world, Hidden, peid);
-    // set active camera
-    ctx.activeCamera = getChildAt(peid, 0);
+    setActiveCamera(ctx, peid);
+    setActiveInputController(input, peid);
 
     // don't add voip/nametag
-    return input;
+    return data;
   }
 
   // if not our own avatar, add voip/nametag onto remote node
@@ -499,7 +510,7 @@ export function deserializeInformPlayerNetworkId(input: NetPipeData) {
     }),
   });
 
-  return input;
+  return data;
 }
 
 /* Message Factories */

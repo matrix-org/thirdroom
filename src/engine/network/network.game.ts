@@ -9,8 +9,6 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import {
   AddPeerIdMessage,
   InitializeNetworkStateMessage,
-  isHost,
-  NetworkMessage,
   NetworkMessageType,
   RemovePeerIdMessage,
   SetHostMessage,
@@ -101,6 +99,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       messageHandlers: {},
       cursorView: createCursorView(),
       interpolate: false,
+      // TODO: this causes desync atm
       clientSidePrediction: false,
       authoritative: true,
     };
@@ -126,7 +125,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       registerMessageHandler(ctx, NetworkMessageType.SetPeerId, onSetPeerId),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, onRemovePeerId),
-      registerMessageHandler(ctx, NetworkMessageType.NetworkMessage, onInboundNetworkMessage),
     ];
 
     return () => {
@@ -141,13 +139,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  * Message Handlers *
  *******************/
 
-const onInboundNetworkMessage = (ctx: GameState, message: NetworkMessage) => {
-  const network = getModule(ctx, NetworkModule);
-  const { peerId, packet } = message;
-  network.incomingPeerIds.unshift(peerId);
-  network.incomingPackets.unshift(packet);
-};
-
 const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
@@ -159,8 +150,7 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
 
   network.peerIdToHistorian.set(peerId, createHistorian());
 
-  // Set our local peer id index
-  if (isHost(network)) mapPeerIdAndIndex(network, peerId);
+  mapPeerIdAndIndex(network, peerId);
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
@@ -204,7 +194,7 @@ const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
   network.peerId = peerId;
-  if (isHost(network)) mapPeerIdAndIndex(network, peerId);
+  mapPeerIdAndIndex(network, peerId);
 };
 
 const onSetHost = (ctx: GameState, message: SetHostMessage) => {
@@ -215,8 +205,7 @@ const onSetHost = (ctx: GameState, message: SetHostMessage) => {
 /* Utils */
 
 const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
-  // const peerIdIndex = network.peerIdCount++;
-  const peerIdIndex = murmur(peerId);
+  const peerIdIndex = (murmur(peerId) >> 16) >>> 0;
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
 };
@@ -257,6 +246,10 @@ export const associatePeerWithEntity = (network: GameNetworkState, peerId: strin
 export const Networked = defineComponent({
   // networkId contains both peerIdIndex (owner) and localNetworkId
   networkId: Types.ui32,
+  // TODO: split net ID into 2 32bit ints
+  // ownerId: Types.ui32,
+  // localId: Types.ui32,
+  parent: Types.ui32,
   position: [Types.f32, 3],
   quaternion: [Types.f32, 4],
   velocity: [Types.f32, 3],

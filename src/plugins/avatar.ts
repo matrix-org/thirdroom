@@ -1,9 +1,19 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity } from "bitecs";
+import { addComponent, addEntity, defineComponent, hasComponent } from "bitecs";
 
-import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../engine/component/transform";
+import { setActiveCamera } from "../engine/camera/camera.game";
+import {
+  addTransformComponent,
+  Transform,
+  setQuaternionFromEuler,
+  addChild,
+  Hidden,
+  traverseRecursive,
+} from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import { createGLTFEntity } from "../engine/gltf/gltf.game";
+import { GameInputModule } from "../engine/input/input.game";
+import { setActiveInputController } from "../engine/input/InputController";
 import { getModule } from "../engine/module/module.common";
 import { addRemoteNodeComponent } from "../engine/node/node.game";
 import { playerCollisionGroups } from "../engine/physics/CollisionGroups";
@@ -21,6 +31,8 @@ interface AvatarOptions {
   kinematic?: boolean;
   nametag?: boolean;
 }
+
+export const AvatarComponent = defineComponent();
 
 export function createAvatar(ctx: GameState, uri: string, options: AvatarOptions = {}) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -46,6 +58,7 @@ export function addAvatar(
   if (nametag) addNametag(ctx, height, container);
 
   const eid = createGLTFEntity(ctx, uri, { createTrimesh: false, isStatic: false });
+  addComponent(ctx.world, AvatarComponent, eid);
 
   Transform.position[eid].set([0, -1, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
@@ -68,4 +81,29 @@ export function addAvatar(
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, container, rigidBody);
   addInteractableComponent(ctx, container, InteractableType.Player);
+}
+
+/**
+ * Embodies an entity, which sets the active camera+controller to the provided entity's own camera+controller
+ *
+ * @param ctx GameState
+ * @param input GameInputModule
+ * @param eid number
+ */
+export function embodyAvatar(ctx: GameState, input: GameInputModule, eid: number) {
+  addComponent(ctx.world, Hidden, eid);
+  setActiveCamera(ctx, eid);
+  setActiveInputController(input, eid);
+}
+
+export function getAvatar(ctx: GameState, eid: number) {
+  let avatar;
+  traverseRecursive(eid, (e) => {
+    if (hasComponent(ctx.world, AvatarComponent, e)) {
+      avatar = e;
+      return false;
+    }
+  });
+  if (!avatar) throw new Error("avatar not found for entity " + eid);
+  return avatar;
 }

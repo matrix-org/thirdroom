@@ -60,6 +60,15 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entities = remoteEntityQuery(ctx.world);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
+
+    // update parent
+    // const parentNid = Networked.parent[eid];
+    // const parentEid = parentNid && network.networkIdToEntityId.get(parentNid);
+    // if (parentEid && parentEid !== Transform.parent[eid]) {
+    //   addChild(parentEid, eid);
+    //   console.log(`updated parent - eid: ${eid}; parent: ${parentEid}`);
+    // }
+
     const body = RigidBody.store.get(eid);
 
     if (!body) {
