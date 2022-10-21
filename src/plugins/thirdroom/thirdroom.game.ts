@@ -46,7 +46,7 @@ import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.g
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
-import { addAvatar, getAvatar } from "../avatar";
+import { addAvatar } from "../avatars/avatar.game";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
@@ -77,6 +77,7 @@ import {
   setActiveInputController,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
+import { getAvatar } from "../avatars/getAvatar";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;

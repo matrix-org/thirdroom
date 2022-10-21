@@ -472,6 +472,8 @@ export const updateSpawnables = (
       ctx.sendMessage(Thread.Main, {
         type: ObjectCapReachedMessageType,
       });
+      // TODO: send this message to the other clients
+      // TODO: add two configs: max objects per client and max objects per room
       return;
     }
   }

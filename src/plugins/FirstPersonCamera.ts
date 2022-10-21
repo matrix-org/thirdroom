@@ -1,12 +1,29 @@
-import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
 import { vec2, glMatrix as glm } from "gl-matrix";
 
+import {
+  createCursorView,
+  readFloat32,
+  readUint32,
+  sliceCursorView,
+  writeFloat32,
+  writeUint32,
+} from "../engine/allocator/CursorView";
+import { getCamera } from "../engine/camera/camera.game";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
+import { NOOP } from "../engine/config.common";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
+import { registerInboundMessageHandler } from "../engine/network/inbound.game";
+import { isHost } from "../engine/network/network.common";
+import { Networked, NetworkModule, Owned } from "../engine/network/network.game";
+import { NetworkAction } from "../engine/network/NetworkAction";
+import { broadcastReliable } from "../engine/network/outbound.game";
+import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
+import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
 
@@ -19,8 +36,36 @@ export const FirstPersonCameraModule = defineModule<GameState, FirstPersonCamera
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
     enableActionMap(controller, FirstPersonCameraActionMap);
+
+    const network = getModule(ctx, NetworkModule);
+    registerInboundMessageHandler(network, NetworkAction.UpdateCamera, deserializeUpdateCamera);
   },
 });
+
+const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT + 10 * Float32Array.BYTES_PER_ELEMENT;
+const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
+
+export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
+  const data: NetPipeData = [ctx, messageView, ""];
+  writeMetadata(NetworkAction.UpdateCamera)(data);
+  writeUint32(messageView, Networked.networkId[eid]);
+  writeFloat32(messageView, Transform.rotation[camera][0]);
+  return sliceCursorView(messageView);
+}
+
+function deserializeUpdateCamera(data: NetPipeData) {
+  const [ctx, view] = data;
+
+  // TODO: put network ref in the net pipe data
+  const network = getModule(ctx, NetworkModule);
+
+  const avatarNid = readUint32(view);
+  const avatar = network.networkIdToEntityId.get(avatarNid)!;
+  const camera = getCamera(ctx, avatar);
+  Transform.rotation[camera][0] = readFloat32(view);
+  setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
+  return data;
+}
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",
@@ -103,6 +148,11 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
 }
 
 export function FirstPersonCameraSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
 
   const pitchEntities = cameraPitchTargetQuery(ctx.world);
@@ -112,6 +162,16 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const parent = Transform.parent[eid];
     const controller = getInputController(input, parent);
     applyPitch(ctx, controller, eid);
+
+    // network the camera's avatar
+    const avatar = getAvatar(ctx, parent);
+    if (avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent)) {
+      const camera = getCamera(ctx, parent);
+      const msg = createUpdateCameraMessage(ctx, parent, camera);
+      if (msg.byteLength > 0) {
+        broadcastReliable(ctx, network, msg);
+      }
+    }
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);

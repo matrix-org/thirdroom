@@ -11,4 +11,5 @@ export enum NetworkAction {
   NewPeerSnapshot,
   RemoveOwnershipMessage,
   Command,
+  UpdateCamera,
 }
