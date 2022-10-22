@@ -7,7 +7,7 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { addTransformComponent, Transform, traverseRecursive } from "../component/transform";
+import { addTransformComponent, findChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
@@ -368,34 +368,23 @@ function makePerspective(
 }
 
 /**
- * Sets the the active camera to the last camera added to the provided entity
- *
- * @param ctx GameState
- * @param eid number
- */
-export function setActiveCamera(ctx: GameState, eid: number) {
-  traverseRecursive(eid, (e) => {
-    if (hasComponent(ctx.world, CameraComponent, e)) {
-      ctx.activeCamera = e;
-      return;
-    }
-  });
-}
-
-/**
  * Obtains the last added camera on the provided entity if one exists, throws if not
  *
  * @param ctx GameState
  * @param eid number
  */
 export function getCamera(ctx: GameState, eid: number) {
-  let camera;
-  traverseRecursive(eid, (e) => {
-    if (hasComponent(ctx.world, CameraComponent, e)) {
-      camera = e;
-      return false;
-    }
-  });
+  const camera = findChild(eid, (child) => hasComponent(ctx.world, CameraComponent, child));
   if (!camera) throw new Error("camera not found on entity " + eid);
   return camera;
+}
+
+/**
+ * Sets the the active camera to the last camera added to the provided entity
+ *
+ * @param ctx GameState
+ * @param eid number
+ */
+export function setActiveCamera(ctx: GameState, eid: number) {
+  ctx.activeCamera = getCamera(ctx, eid);
 }

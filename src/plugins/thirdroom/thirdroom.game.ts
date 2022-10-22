@@ -50,7 +50,6 @@ import { addAvatar } from "../avatars/avatar.game";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
-import { waitUntil } from "../../engine/utils/waitUntil";
 import { boundsCheckCollisionGroups, playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, Player } from "../../engine/component/Player";
 import {
@@ -78,6 +77,7 @@ import {
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { getAvatar } from "../avatars/getAvatar";
+import { getNametag, NametagComponent } from "../nametags/nametags.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -119,7 +119,7 @@ const createAvatarRig =
       addPhysicsControls(ctx, physics, eid);
     }
 
-    addAvatar(ctx, "/gltf/full-animation-rig.glb", physics.physicsWorld, eid, { kinematic: false, nametag: remote });
+    addAvatar(ctx, "/gltf/full-animation-rig.glb", physics.physicsWorld, eid, { kinematic: false, nametag: true });
 
     return eid;
   };
@@ -248,11 +248,8 @@ function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
 async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   const network = getModule(ctx, NetworkModule);
   const input = getModule(ctx, InputModule);
-  await waitUntil(() => network.peerIdToIndex.has(network.peerId));
 
-  // if (isHost(network)) {
   loadPlayerRig(ctx, input, network);
-  // }
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
@@ -419,6 +416,9 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
   const avatar = getAvatar(ctx, eid);
   addComponent(ctx.world, Hidden, avatar);
 
+  const nametag = getNametag(ctx, eid);
+  removeComponent(ctx.world, NametagComponent, nametag);
+
   // TODO: fix interaction colliders to not detect our own avatar
 
   // set active camera and controller for our own rig
@@ -505,6 +505,11 @@ function swapToPlayerRig(ctx: GameState, playerRig: number) {
 }
 
 export function ThirdroomSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+  if (network.authoritative && !isHost(network)) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
 
   const rigs = inputControllerQuery(ctx.world);

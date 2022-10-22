@@ -130,6 +130,17 @@ export function getChildAt(eid: number, index: number): number {
   return cursor;
 }
 
+export const findChild = (parent: number, predicate: (eid: number) => boolean) => {
+  let eid;
+  traverseRecursive(parent, (e) => {
+    if (predicate(e)) {
+      eid = e;
+      return false;
+    }
+  });
+  return eid;
+};
+
 export function addChild(parent: number, child: number) {
   const previousParent = Transform.parent[child];
   if (previousParent !== NOOP) {

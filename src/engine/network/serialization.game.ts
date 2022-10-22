@@ -1,4 +1,4 @@
-import { addComponent, pipe } from "bitecs";
+import { addComponent, pipe, removeComponent } from "bitecs";
 
 import {
   createCursorView,
@@ -29,12 +29,11 @@ import {
   createRemoteMediaStreamSource,
   createRemoteMediaStream,
 } from "../audio/audio.game";
-import { OurPlayer, Player } from "../component/Player";
+import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
 import { addChild, skipRenderLerp, removeRecursive, Transform, Hidden } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { createRemoteNametag } from "../nametag/nametag.game";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
@@ -52,6 +51,8 @@ import { NetworkAction } from "./NetworkAction";
 import { InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
 import { setActiveCamera } from "../camera/camera.game";
+import { createRemoteNametag } from "../nametag/nametag.game";
+import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.game";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -484,18 +485,26 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   // if our own avatar
   if (peerId === network.peerId) {
-    addComponent(ctx.world, OurPlayer, peid);
+    // unset our old avatar
+    const old = ourPlayerQuery(ctx.world)[0];
+    removeComponent(ctx.world, OurPlayer, old);
+    removeComponent(ctx.world, RigidBody, old);
+
+    // embody new avatar
     // TODO: move this net message definition to plugin scope so we don't have to import a plugin-defined function here
     // embodyAvatar(ctx, input, peid);
+    const nametag = getNametag(ctx, peid);
+    removeComponent(ctx.world, NametagComponent, nametag);
+    addComponent(ctx.world, OurPlayer, peid);
     addComponent(ctx.world, Hidden, peid);
     setActiveCamera(ctx, peid);
     setActiveInputController(input, peid);
 
-    // don't add voip/nametag
+    // don't add voip
     return data;
   }
 
-  // if not our own avatar, add voip/nametag onto remote node
+  // if not our own avatar, add voip
   addRemoteNodeComponent(ctx, peid, {
     name: peerId,
     audioEmitter: createRemotePositionalAudioEmitter(ctx, {

@@ -30,6 +30,7 @@ interface AvatarOptions {
   height?: number;
   kinematic?: boolean;
   nametag?: boolean;
+  collisionGroup?: number;
 }
 
 export function createAvatar(ctx: GameState, uri: string, options: AvatarOptions = {}) {
@@ -51,7 +52,13 @@ export function addAvatar(
   container: number,
   options: AvatarOptions = {}
 ) {
-  const { height = AVATAR_HEIGHT, radius = AVATAR_RADIUS, kinematic = false, nametag = false } = options;
+  const {
+    height = AVATAR_HEIGHT,
+    radius = AVATAR_RADIUS,
+    kinematic = false,
+    nametag = false,
+    collisionGroup = playerCollisionGroups,
+  } = options;
 
   if (nametag) addNametag(ctx, height, container);
 
@@ -74,11 +81,13 @@ export function addAvatar(
     RAPIER.ActiveEvents.CONTACT_EVENTS
   );
 
-  colliderDesc.setCollisionGroups(playerCollisionGroups);
+  colliderDesc.setCollisionGroups(collisionGroup);
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, container, rigidBody);
   addInteractableComponent(ctx, container, InteractableType.Player);
+
+  return eid;
 }
 
 /**
