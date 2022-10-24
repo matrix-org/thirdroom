@@ -133,6 +133,6 @@ export function commitToObjectTripleBuffer<Schema extends ObjectBufferViewSchema
     objectTripleBuffer.tripleBuffer.byteViews[2].set(objectBufferView.byteView);
     objectTripleBuffer.initialized = true;
   } else {
-    copyToWriteBuffer(objectTripleBuffer.tripleBuffer, objectBufferView.buffer);
+    copyToWriteBuffer(objectTripleBuffer.tripleBuffer, objectBufferView.byteView);
   }
 }
