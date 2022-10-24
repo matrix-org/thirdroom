@@ -1,8 +1,8 @@
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
-import { getModule, Thread } from "../module/module.common";
+import { getModule } from "../module/module.common";
 import { createCommandMessage } from "./commands.game";
-import { isHost, NetworkMessageType } from "./network.common";
+import { isHost } from "./network.common";
 import {
   NetworkModule,
   enteredNetworkIdQuery,
@@ -29,15 +29,7 @@ export const broadcastReliable = (state: GameState, network: GameNetworkState, p
 };
 
 export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
-  state.sendMessage(
-    Thread.Main,
-    {
-      type: NetworkMessageType.NetworkBroadcast,
-      packet,
-      reliable: false,
-    },
-    [packet]
-  );
+  throw new Error("broadcastUnreliable not implemented");
 };
 
 export const sendReliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
@@ -47,16 +39,7 @@ export const sendReliable = (state: GameState, network: GameNetworkState, peerId
 };
 
 export const sendUnreliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
-  state.sendMessage(
-    Thread.Main,
-    {
-      type: NetworkMessageType.NetworkMessage,
-      peerId,
-      packet,
-      reliable: false,
-    },
-    [packet]
-  );
+  throw new Error("sendUnreliable not implemented");
 };
 
 const assignNetworkIds = (state: GameState) => {
