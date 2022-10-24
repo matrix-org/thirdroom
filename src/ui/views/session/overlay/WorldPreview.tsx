@@ -78,6 +78,7 @@ function JoinWorldCard({ worldIdOrAlias }: { worldIdOrAlias: string }) {
       desc={error && error.message}
       options={(() => {
         if (loading) {
+          // TODO: this doesn't work because the parent component's state changes when joining
           return (
             <Button variant="secondary" disabled>
               Joining...
@@ -214,7 +215,8 @@ export function WorldPreview() {
           );
         }
 
-        return <WorldPreviewCard title="Unknown error occurred" />;
+        // TODO: this default case may not only be the loading state
+        return <WorldPreviewCard title="Joining World..." />;
       })()}
     </div>
   );

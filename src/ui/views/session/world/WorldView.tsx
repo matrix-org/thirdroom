@@ -207,6 +207,7 @@ export function WorldView({ world }: WorldViewProps) {
             console.log(message.uri);
             const parsedUri = parseMatrixUri(message.uri);
             if (parsedUri instanceof URL) {
+              window.location.href = parsedUri.href;
               return;
             }
 
