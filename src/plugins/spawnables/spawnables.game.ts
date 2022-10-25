@@ -74,6 +74,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   },
   init(ctx) {
     const module = getModule(ctx, SpawnablesModule);
+    const physics = getModule(ctx, PhysicsModule);
 
     const crateAudioData = createRemoteAudioData(ctx, { name: "Crate Audio Data", uri: "/audio/hit.wav" });
     addResourceRef(ctx, crateAudioData.resourceId);
@@ -115,7 +116,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         return eid;
       },
@@ -162,7 +163,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         return eid;
       },
@@ -208,7 +209,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         return eid;
       },
@@ -267,7 +268,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -307,7 +308,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -349,7 +350,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: ballAudioData,

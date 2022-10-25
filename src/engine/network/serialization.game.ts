@@ -35,7 +35,7 @@ import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent } from "../node/node.game";
-import { RigidBody } from "../physics/physics.game";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
@@ -48,11 +48,13 @@ import {
 } from "./network.game";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { InputModule } from "../input/input.game";
+import { GameInputModule, InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
 import { setActiveCamera } from "../camera/camera.game";
 import { createRemoteNametag } from "../nametag/nametag.game";
 import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.game";
+import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
+import { getAvatar } from "../../plugins/avatars/getAvatar";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -464,6 +466,7 @@ export function serializeInformPlayerNetworkId(input: NetPipeData, peerId: strin
 export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
+  const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
@@ -493,12 +496,7 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
     // embody new avatar
     // TODO: move this net message definition to plugin scope so we don't have to import a plugin-defined function here
     // embodyAvatar(ctx, input, peid);
-    const nametag = getNametag(ctx, peid);
-    removeComponent(ctx.world, NametagComponent, nametag);
-    addComponent(ctx.world, OurPlayer, peid);
-    addComponent(ctx.world, Hidden, peid);
-    setActiveCamera(ctx, peid);
-    setActiveInputController(input, peid);
+    embodyAvatar(ctx, physics, input, peid);
 
     // don't add voip
     return data;
@@ -520,6 +518,27 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   });
 
   return data;
+}
+
+// TODO: move this to a plugin along with InformPlayerNetworkId
+function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
+  // remove the nametag
+  const nametag = getNametag(ctx, peid);
+  removeComponent(ctx.world, NametagComponent, nametag);
+
+  // hide our avatar
+  const avatar = getAvatar(ctx, peid);
+  addComponent(ctx.world, Hidden, avatar);
+
+  // mark entity as our player entity
+  addComponent(ctx.world, OurPlayer, peid);
+
+  // disable the collision group so we are unable to focus our own rigidbody
+  removeInteractableComponent(ctx, physics, peid);
+
+  // set the active camera & input controller to this entity's
+  setActiveCamera(ctx, peid);
+  setActiveInputController(input, peid);
 }
 
 /* Message Factories */

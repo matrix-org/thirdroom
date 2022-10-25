@@ -42,6 +42,7 @@ import {
   focusShapeCastCollisionGroups,
   GrabCollisionGroup,
   grabShapeCastCollisionGroups,
+  removeCollisionGroupMembership,
 } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
@@ -526,30 +527,61 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
   }
 }
 
-export function addInteractableComponent(ctx: GameState, eid: number, interactableType: InteractableType) {
+export function addInteractableComponent(
+  ctx: GameState,
+  physics: PhysicsModuleState,
+  eid: number,
+  interactableType: InteractableType
+) {
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
 
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const { physicsWorld } = physics;
 
   const rigidBody = RigidBody.store.get(eid);
-
-  if (rigidBody) {
-    for (let i = 0; i < rigidBody.numColliders(); i++) {
-      const colliderHandle = rigidBody.collider(i);
-      const collider = physicsWorld.getCollider(colliderHandle);
-
-      let collisionGroups = collider.collisionGroups();
-
-      collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
-      collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
-
-      collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
-      collider.setCollisionGroups(collisionGroups);
-    }
-  } else {
+  if (!rigidBody) {
     console.warn(
       `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
     );
+    return;
+  }
+
+  for (let i = 0; i < rigidBody.numColliders(); i++) {
+    const colliderHandle = rigidBody.collider(i);
+    const collider = physicsWorld.getCollider(colliderHandle);
+
+    let collisionGroups = collider.collisionGroups();
+
+    collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
+    collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
+
+    collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+    collider.setCollisionGroups(collisionGroups);
+  }
+}
+
+export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, eid: number) {
+  removeComponent(ctx.world, Interactable, eid);
+
+  const { physicsWorld } = physics;
+
+  const rigidBody = RigidBody.store.get(eid);
+  if (!rigidBody) {
+    console.warn(
+      `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
+    );
+    return;
+  }
+
+  for (let i = 0; i < rigidBody.numColliders(); i++) {
+    const colliderHandle = rigidBody.collider(i);
+    const collider = physicsWorld.getCollider(colliderHandle);
+
+    let collisionGroups = collider.collisionGroups();
+
+    collisionGroups = removeCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
+    collisionGroups = removeCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
+
+    collider.setCollisionGroups(collisionGroups);
   }
 }

@@ -16,7 +16,7 @@ import { setActiveInputController } from "../../engine/input/InputController";
 import { getModule } from "../../engine/module/module.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, addRigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, addRigidBody, PhysicsModuleState } from "../../engine/physics/physics.game";
 import { InteractableType } from "../interaction/interaction.common";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { addNametag } from "../nametags/nametags.game";
@@ -34,21 +34,21 @@ interface AvatarOptions {
 }
 
 export function createAvatar(ctx: GameState, uri: string, options: AvatarOptions = {}) {
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const physics = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
   addTransformComponent(ctx.world, container);
   addRemoteNodeComponent(ctx, container);
 
-  addAvatar(ctx, uri, physicsWorld, container, options);
+  addAvatar(ctx, physics, uri, container, options);
 
   return container;
 }
 
 export function addAvatar(
   ctx: GameState,
+  physics: PhysicsModuleState,
   uri: string,
-  physicsWorld: RAPIER.World,
   container: number,
   options: AvatarOptions = {}
 ) {
@@ -59,6 +59,7 @@ export function addAvatar(
     nametag = false,
     collisionGroup = playerCollisionGroups,
   } = options;
+  const { physicsWorld } = physics;
 
   if (nametag) addNametag(ctx, height, container);
 
@@ -85,7 +86,7 @@ export function addAvatar(
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
   addRigidBody(ctx, container, rigidBody);
-  addInteractableComponent(ctx, container, InteractableType.Player);
+  addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
   return eid;
 }

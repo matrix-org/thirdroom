@@ -78,6 +78,7 @@ import {
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { getAvatar } from "../avatars/getAvatar";
 import { getNametag, NametagComponent } from "../nametags/nametags.game";
+import { removeInteractableComponent } from "../interaction/interaction.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -119,7 +120,10 @@ const createAvatarRig =
       addPhysicsControls(ctx, physics, eid);
     }
 
-    addAvatar(ctx, "/gltf/full-animation-rig.glb", physics.physicsWorld, eid, { kinematic: false, nametag: true });
+    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
+      kinematic: false,
+      nametag: true,
+    });
 
     return eid;
   };
@@ -235,21 +239,23 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
 
 // when peers join us in the world
 function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
+  const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
   if (network.authoritative && !isHost(network)) {
     return;
   }
 
-  loadRemotePlayerRig(ctx, input, network, message.peerId);
+  loadRemotePlayerRig(ctx, physics, input, network, message.peerId);
 }
 
 // when we join the world
 async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   const network = getModule(ctx, NetworkModule);
+  const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
 
-  loadPlayerRig(ctx, input, network);
+  loadPlayerRig(ctx, physics, input, network);
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
@@ -282,11 +288,12 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
   try {
     const network = getModule(ctx, NetworkModule);
+    const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
 
     await loadEnvironment(ctx, message.url, message.fileMap);
 
-    loadPlayerRig(ctx, input, network);
+    loadPlayerRig(ctx, physics, input, network);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
@@ -405,25 +412,33 @@ function loadPreviewCamera(ctx: GameState) {
   }
 }
 
-function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState) {
+function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
+  // remove the nametag
+  const nametag = getNametag(ctx, peid);
+  removeComponent(ctx.world, NametagComponent, nametag);
+
+  // hide our avatar
+  const avatar = getAvatar(ctx, peid);
+  addComponent(ctx.world, Hidden, avatar);
+
+  // mark entity as our player entity
+  addComponent(ctx.world, OurPlayer, peid);
+
+  // disable the collision group so we are unable to focus our own rigidbody
+  removeInteractableComponent(ctx, physics, peid);
+
+  // set the active camera & input controller to this entity's
+  setActiveCamera(ctx, peid);
+  setActiveInputController(input, peid);
+}
+
+function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
   if (ctx.activeCamera) {
     removeRecursive(ctx.world, ctx.activeCamera);
   }
 
   const eid = createPrefabEntity(ctx, "avatar");
-
-  // hide our own avatar
-  const avatar = getAvatar(ctx, eid);
-  addComponent(ctx.world, Hidden, avatar);
-
-  const nametag = getNametag(ctx, eid);
-  removeComponent(ctx.world, NametagComponent, nametag);
-
-  // TODO: fix interaction colliders to not detect our own avatar
-
-  // set active camera and controller for our own rig
-  setActiveCamera(ctx, eid);
-  setActiveInputController(input, eid);
+  embodyAvatar(ctx, physics, input, eid);
 
   associatePeerWithEntity(network, network.peerId, eid);
 
@@ -446,8 +461,16 @@ function loadPlayerRig(ctx: GameState, input: GameInputModule, network: GameNetw
   return eid;
 }
 
-function loadRemotePlayerRig(ctx: GameState, input: GameInputModule, network: GameNetworkState, peerId: string) {
+function loadRemotePlayerRig(
+  ctx: GameState,
+  physics: PhysicsModuleState,
+  input: GameInputModule,
+  network: GameNetworkState,
+  peerId: string
+) {
   const eid = createPrefabEntity(ctx, "avatar", true);
+
+  removeInteractableComponent(ctx, physics, eid);
 
   associatePeerWithEntity(network, peerId, eid);
 
