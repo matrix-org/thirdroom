@@ -331,8 +331,7 @@ export function BlogSection() {
 
           <li>
             <span className="semi-bold">Engine features:</span> Realtime shadows (which need to play nice with the baked
-            lightmaps; experiment underway{" "}
-            <a href="https://thirdroom.io/world/#terra-realtime-shadows:thirdroom.io">here</a>), smarter antialiasing
+            lightmaps; experiment underway), smarter antialiasing
             (e.g. Temporal Reprojection Anti Aliasing,{" "}
             <a href="https://github.com/mrdoob/three.js/issues/14050" target="_blank" rel="noreferrer noopener">
               if/when it lands
