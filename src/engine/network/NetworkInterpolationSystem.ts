@@ -6,7 +6,7 @@ import { quat, vec3 } from "gl-matrix";
 import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
-import { GameNetworkState, getPeerIdIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
+import { GameNetworkState, getPeerIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
 import { getModule } from "../module/module.common";
 import {
   INTERP_BUFFER_MS,
@@ -26,7 +26,7 @@ export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
 export const exitedRemoteEntityQuery = exitQuery(remoteEntityQuery);
 
 const getPeerIdFromEntityId = (network: GameNetworkState, eid: number) => {
-  const pidx = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+  const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
   const peerId = network.indexToPeerId.get(pidx) || network.entityIdToPeerId.get(eid);
   return peerId;
 };
@@ -45,7 +45,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       applyNetworkedToRigidBody(eid, body);
 
       // add to historian
-      const pidx = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+      const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
       const peerId = network.indexToPeerId.get(pidx);
       if (!peerId) continue;
       const historian = network.peerIdToHistorian.get(peerId);
@@ -60,14 +60,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entities = remoteEntityQuery(ctx.world);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-
-    // update parent
-    // const parentNid = Networked.parent[eid];
-    // const parentEid = parentNid && network.networkIdToEntityId.get(parentNid);
-    // if (parentEid && parentEid !== Transform.parent[eid]) {
-    //   addChild(parentEid, eid);
-    //   console.log(`updated parent - eid: ${eid}; parent: ${parentEid}`);
-    // }
 
     const body = RigidBody.store.get(eid);
 
@@ -149,7 +141,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     // remove from historian
-    const pidx = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+    const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
     const peerId = network.indexToPeerId.get(pidx);
     if (!peerId) continue;
     const historian = network.peerIdToHistorian.get(peerId);

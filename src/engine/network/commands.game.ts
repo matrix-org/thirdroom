@@ -15,8 +15,10 @@ import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { NetPipeData, writeMetadata } from "./serialization.game";
 
+const MAX_MESSAGES = 1000;
 const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
-const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
+
+const messageView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
 
 export const createCommandMessage = (ctx: GameState, commands: ArrayBuffer[]) => {
   writeMetadata(NetworkAction.Command)([ctx, messageView]);

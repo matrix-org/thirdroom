@@ -1,5 +1,5 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
-import { vec2, glMatrix as glm } from "gl-matrix";
+import { vec2, glMatrix as glm, quat } from "gl-matrix";
 
 import {
   createCursorView,
@@ -120,8 +120,8 @@ function applyYaw(ctx: GameState, controller: InputController, eid: number) {
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-    Transform.rotation[eid][1] -= (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
-    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+    const quaternion = Transform.quaternion[eid];
+    quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
   }
 }
 

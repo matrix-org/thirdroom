@@ -1,10 +1,10 @@
-import { defineQuery, enterQuery, exitQuery, Not, defineComponent, Types } from "bitecs";
-import murmur from "murmurhash-js";
+import { defineQuery, enterQuery, exitQuery, Not, defineComponent, Types, addComponent } from "bitecs";
+import murmurHash from "murmurhash-js";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { removeRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { Player } from "../component/Player";
+import { ourPlayerQuery, Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,
@@ -22,16 +22,20 @@ import {
   deserializeFullUpdate,
   deserializeInformPlayerNetworkId,
   deserializeNewPeerSnapshot,
-  deserializePeerIdIndex,
+  deserializeAssignPeerIndex,
   deserializeSnapshot,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
+  embodyAvatar,
   NetPipeData,
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { NetworkRingBuffer } from "./RingBuffer";
 import { deserializeCommand } from "./commands.game";
+import { InputModule } from "../input/input.game";
+import { PhysicsModule } from "../physics/physics.game";
+import { waitUntil } from "../utils/waitUntil";
 
 /*********
  * Types *
@@ -41,8 +45,6 @@ export interface GameNetworkState {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   hosting: boolean;
-  incomingPackets: ArrayBuffer[];
-  incomingPeerIds: string[];
   commands: ArrayBuffer[];
   hostId: string;
   peerId: string;
@@ -80,8 +82,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       incomingRingBuffer,
       outgoingRingBuffer,
       hosting: false,
-      incomingPackets: [],
-      incomingPeerIds: [],
       commands: [],
       hostId: "",
       peerId: "",
@@ -114,7 +114,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.Delete, deserializeDeletes);
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
-    registerInboundMessageHandler(network, NetworkAction.AssignPeerIdIndex, deserializePeerIdIndex);
+    registerInboundMessageHandler(network, NetworkAction.AssignPeerIndex, deserializeAssignPeerIndex);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
@@ -160,30 +160,37 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   const peerArrIndex = network.peers.indexOf(peerId);
   const peerIndex = network.peerIdToIndex.get(peerId);
 
-  if (peerArrIndex > -1) {
+  if (peerArrIndex > -1 && peerIndex) {
     const entities = networkedQuery(ctx.world);
 
-    for (let i = entities.length - 1; i >= 0; i--) {
-      const eid = entities[i];
+    // if not authoritative, remove all of this peer's owned entities
+    if (!network.authoritative) {
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const eid = entities[i];
 
-      const networkId = Networked.networkId[eid];
+        const networkId = Networked.networkId[eid];
 
-      if (peerIndex === getPeerIdIndexFromNetworkId(networkId)) {
-        removeRecursive(ctx.world, eid);
+        // if the entity's networkId contains the peerIndex it means that peer owns the entity
+        if (peerIndex === getPeerIndexFromNetworkId(networkId)) {
+          network.entityIdToPeerId.delete(eid);
+          removeRecursive(ctx.world, eid);
+        }
       }
     }
 
+    // remove this peer's avatar entity
     const eid = network.peerIdToEntityId.get(peerId);
-    if (eid) removeRecursive(ctx.world, eid);
+    if (eid) {
+      network.entityIdToPeerId.delete(eid);
+      removeRecursive(ctx.world, eid);
+    }
 
     network.peers.splice(peerArrIndex, 1);
-    network.peerIdToIndex.delete(peerId);
-    const eid2 = network.peerIdToEntityId.get(peerId);
-    if (eid2) network.entityIdToPeerId.delete(eid2);
-    network.peerIdToEntityId.delete(peerId);
 
-    const historian = network.peerIdToHistorian.get(peerId);
-    if (historian) historian.entities.clear();
+    // TODO: don't delete these until the host has been re-elected (or ever? not that much mem at all)
+    // network.peerIdToIndex.delete(peerId);
+    // network.indexToPeerId.delete(peerIndex);
+    // network.peerIdToHistorian.delete(peerId);
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
@@ -197,37 +204,94 @@ const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   mapPeerIdAndIndex(network, peerId);
 };
 
-const onSetHost = (ctx: GameState, message: SetHostMessage) => {
+const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
+  const physics = getModule(ctx, PhysicsModule);
+  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-  network.hostId = message.hostId;
+
+  const newHostId = message.hostId;
+  const oldHostId = network.hostId;
+  const ourPeerId = network.peerId;
+
+  const newHostPeerIndex = network.peerIdToIndex.get(newHostId);
+
+  if (newHostPeerIndex && network.authoritative) {
+    const newHostElected = oldHostId !== newHostId;
+    const amNewHost = ourPeerId !== oldHostId && ourPeerId === newHostId;
+
+    // if we are new host, take authority over our avatar entity
+    const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
+    if (amNewHost) {
+      console.log("RE-ELECTION TAKING PLACE");
+
+      console.log("EMBODYING OWN AVATAR");
+      embodyAvatar(ctx, physics, input, eid);
+    }
+
+    // if host was re-elected, transfer ownership of old host's networked entities to new host
+    if (newHostElected) {
+      const ents = remoteNetworkedQuery(ctx.world);
+      console.log("CHANGING OWNERSHIP OF ALL REMOTE ENTITIES", ents);
+      // update peerIdIndex of the networkId to new host's peerId
+      for (let i = 0; i < ents.length; i++) {
+        const eid = ents[i];
+        const nid = Networked.networkId[eid];
+
+        const entityPeerIndex = getPeerIndexFromNetworkId(nid);
+        const entityPeerId = network.indexToPeerId.get(entityPeerIndex);
+        if (!entityPeerId) throw new Error("could not find peerId for eid " + eid);
+
+        if (oldHostId !== entityPeerId) {
+          continue;
+        }
+
+        console.log("Setting eid", eid, "ownership to peerId", newHostId);
+
+        if (amNewHost) {
+          addComponent(ctx.world, Owned, eid);
+        } else {
+          Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
+        }
+      }
+    }
+  }
+
+  network.hostId = newHostId;
 };
 
 /* Utils */
 
 const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
-  const peerIdIndex = (murmur(peerId) >> 16) >>> 0;
-  network.peerIdToIndex.set(peerId, peerIdIndex);
-  network.indexToPeerId.set(peerIdIndex, peerId);
+  const peerIndex = murmurHash(peerId) >>> 16;
+  console.log("new peerIndex", peerId, peerIndex);
+  network.peerIdToIndex.set(peerId, peerIndex);
+  network.indexToPeerId.set(peerIndex, peerId);
 };
 
 const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1) << offset);
 
-export const getPeerIdIndexFromNetworkId = (nid: number) => isolateBits(nid, 16);
+export const getPeerIndexFromNetworkId = (nid: number) => isolateBits(nid, 16);
 export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
+
+export const setPeerIdIndexInNetworkId = (nid: number, peerIdIndex: number) => {
+  const localId = getLocalIdFromNetworkId(nid);
+  return ((localId << 16) | peerIdIndex) >>> 0;
+};
 
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  const peerIdIndex = network.peerIdToIndex.get(network.peerId);
+  const peerIndex = network.peerIdToIndex.get(network.peerId);
 
-  if (peerIdIndex === undefined) {
-    // console.error("could not create networkId, peerId not set in peerIdToIndex map");
+  if (peerIndex === undefined) {
     throw new Error("could not create networkId, peerId not set in peerIdToIndex map");
   }
 
+  console.log("createNetworkId - localId:", localId, "; peerIndex:", peerIndex);
+
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
   // logical right shift by 0 to treat as an unsigned integer
-  return ((localId << 16) | peerIdIndex) >>> 0;
+  return ((localId << 16) | peerIndex) >>> 0;
 };
 
 export const deleteNetworkId = (ctx: GameState, nid: number) => {

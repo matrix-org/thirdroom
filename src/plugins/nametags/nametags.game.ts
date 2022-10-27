@@ -95,7 +95,7 @@ export function NametagSystem(ctx: GameState) {
 
       const peerId = network.entityIdToPeerId.get(player);
       if (peerId === undefined) {
-        console.warn("could not find peerId for entityId " + nametag);
+        // console.warn("could not find peerId for entityId " + nametag);
         continue;
       }
 

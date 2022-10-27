@@ -399,7 +399,7 @@ export function deserializeDeletes(input: NetPipeData) {
 /* PeerId Message */
 
 // host sends peerIdIndex to new peers
-export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
+export function serializeAssignPeerIndex(input: NetPipeData, peerId: string) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
   const peerIdIndex = network.peerIdToIndex.get(peerId);
@@ -417,7 +417,7 @@ export function serializePeerIdIndex(input: NetPipeData, peerId: string) {
 }
 
 // peer decodes the peerIdIndex
-export function deserializePeerIdIndex(input: NetPipeData) {
+export function deserializeAssignPeerIndex(input: NetPipeData) {
   const [state, v] = input;
   const network = getModule(state, NetworkModule);
   const peerId = readString(v);
@@ -425,18 +425,18 @@ export function deserializePeerIdIndex(input: NetPipeData) {
 
   network.peerIdToIndex.set(peerId, peerIdIndex);
   network.indexToPeerId.set(peerIdIndex, peerId);
-  // console.log("recieving peerIdIndex", peerId, peerIdIndex);
+  console.log("recieving peerIdIndex", peerId, peerIdIndex);
   return input;
 }
 
 // ad-hoc messages view
 const messageView = createCursorView(new ArrayBuffer(1000));
 
-export function createPeerIdIndexMessage(state: GameState, peerId: string) {
+export function createAssignPeerIndexMessage(state: GameState, peerId: string) {
   const input: NetPipeData = [state, messageView, ""];
-  writeMessageType(NetworkAction.AssignPeerIdIndex)(input);
+  writeMessageType(NetworkAction.AssignPeerIndex)(input);
   writeElapsed(input);
-  serializePeerIdIndex(input, peerId);
+  serializeAssignPeerIndex(input, peerId);
   return sliceCursorView(messageView);
 }
 
@@ -480,7 +480,7 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
     return data;
   }
 
-  console.log("deserializePlayerNetworkId for peer", peerId);
+  console.log("deserializeInformPlayerNetworkId for peer", peerId);
 
   associatePeerWithEntity(network, peerId, peid);
 
@@ -489,13 +489,14 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   // if our own avatar
   if (peerId === network.peerId) {
     // unset our old avatar
+    console.log("unset our old avatar. ourPlayerQuery", ourPlayerQuery(ctx.world));
     const old = ourPlayerQuery(ctx.world)[0];
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
+    removeComponent(ctx.world, Networked, old);
+    // removeComponent(ctx.world, Owned, old);
 
     // embody new avatar
-    // TODO: move this net message definition to plugin scope so we don't have to import a plugin-defined function here
-    // embodyAvatar(ctx, input, peid);
     embodyAvatar(ctx, physics, input, peid);
 
     // don't add voip
@@ -520,15 +521,19 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   return data;
 }
 
-// TODO: move this to a plugin along with InformPlayerNetworkId
-function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
+// TODO: move this to a plugin (along with InformPlayerNetworkId OR register another hook into InformPlayerNetworkId)
+export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
   // remove the nametag
-  const nametag = getNametag(ctx, peid);
-  removeComponent(ctx.world, NametagComponent, nametag);
+  try {
+    const nametag = getNametag(ctx, peid);
+    removeComponent(ctx.world, NametagComponent, nametag);
+  } catch {}
 
   // hide our avatar
-  const avatar = getAvatar(ctx, peid);
-  addComponent(ctx.world, Hidden, avatar);
+  try {
+    const avatar = getAvatar(ctx, peid);
+    addComponent(ctx.world, Hidden, avatar);
+  } catch {}
 
   // mark entity as our player entity
   addComponent(ctx.world, OurPlayer, peid);

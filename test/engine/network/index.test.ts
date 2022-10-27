@@ -6,7 +6,7 @@ import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
-  getPeerIdIndexFromNetworkId,
+  getPeerIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
   Owned,
@@ -52,7 +52,7 @@ describe("Network Tests", () => {
   describe("networkId", () => {
     it("should #getPeerIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;
-      strictEqual(getPeerIdIndexFromNetworkId(nid), 0x000f);
+      strictEqual(getPeerIndexFromNetworkId(nid), 0x000f);
     });
     it("should #getLocalIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;

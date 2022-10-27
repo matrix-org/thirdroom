@@ -6,7 +6,6 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
   addTransformComponent,
-  Hidden,
   removeRecursive,
   setEulerFromQuaternion,
   Transform,
@@ -41,7 +40,7 @@ import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { createCamera, createRemotePerspectiveCamera, setActiveCamera } from "../../engine/camera/camera.game";
+import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
@@ -73,12 +72,10 @@ import {
   getInputController,
   InputController,
   inputControllerQuery,
-  setActiveInputController,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
-import { getAvatar } from "../avatars/getAvatar";
-import { getNametag, NametagComponent } from "../nametags/nametags.game";
 import { removeInteractableComponent } from "../interaction/interaction.game";
+import { embodyAvatar } from "../../engine/network/serialization.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -279,6 +276,16 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
 
   ctx.activeCamera = NOOP;
   ctx.activeScene = NOOP;
+
+  // cleanup net module state
+  const network = getModule(ctx, NetworkModule);
+  network.hostId = "";
+  network.peers = [];
+  network.newPeers = [];
+  network.peerIdToEntityId = new Map();
+  network.entityIdToPeerId = new Map();
+  network.localIdCount = 0;
+  network.removedLocalIds = [];
 }
 
 function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
@@ -412,26 +419,6 @@ function loadPreviewCamera(ctx: GameState) {
   }
 }
 
-function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
-  // remove the nametag
-  const nametag = getNametag(ctx, peid);
-  removeComponent(ctx.world, NametagComponent, nametag);
-
-  // hide our avatar
-  const avatar = getAvatar(ctx, peid);
-  addComponent(ctx.world, Hidden, avatar);
-
-  // mark entity as our player entity
-  addComponent(ctx.world, OurPlayer, peid);
-
-  // disable the collision group so we are unable to focus our own rigidbody
-  removeInteractableComponent(ctx, physics, peid);
-
-  // set the active camera & input controller to this entity's
-  setActiveCamera(ctx, peid);
-  setActiveInputController(input, peid);
-}
-
 function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
   if (ctx.activeCamera) {
     removeRecursive(ctx.world, ctx.activeCamera);
@@ -470,6 +457,7 @@ function loadRemotePlayerRig(
 ) {
   const eid = createPrefabEntity(ctx, "avatar", true);
 
+  // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, eid);
 
   associatePeerWithEntity(network, peerId, eid);

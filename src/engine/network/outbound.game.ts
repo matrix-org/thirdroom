@@ -59,6 +59,7 @@ const deleteNetworkIds = (state: GameState) => {
   const exited = exitedNetworkIdQuery(state.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
+    console.log("networkId", Networked.networkId[eid], "deleted from eid", eid);
     deleteNetworkId(state, Networked.networkId[eid]);
     Networked.networkId[eid] = NOOP;
   }
@@ -80,6 +81,7 @@ const sendUpdates = (ctx: GameState) => {
   const data: NetPipeData = [ctx, network.cursorView, ""];
 
   // only send updates when:
+  // TODO: window is focused? otherwise ringbuffer overflowss
   // - we have connected peers
   // - player rig has spawned
   // - host has been established (peerIdIndex has been assigned)
@@ -107,7 +109,7 @@ const sendUpdates = (ctx: GameState) => {
           // send out the snapshot first so entities exist for the next two messages
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
 
-          // inform new peer of our (the host's) own avatar
+          // inform new peer of this host's avatar
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
           // inform everyone of the new peer's avatar
@@ -120,6 +122,8 @@ const sendUpdates = (ctx: GameState) => {
       if (msg.byteLength) broadcastReliable(ctx, network, msg);
     }
   } else if (network.commands.length) {
+    if (haveNewPeers) network.newPeers = [];
+
     // send commands to host if not hosting
     const msg = createCommandMessage(ctx, network.commands);
     if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);

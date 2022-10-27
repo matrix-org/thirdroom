@@ -6,7 +6,7 @@ export enum NetworkAction {
   FullChanged,
   FullSnapshot,
   Prefab,
-  AssignPeerIdIndex,
+  AssignPeerIndex,
   InformPlayerNetworkId,
   NewPeerSnapshot,
   RemoveOwnershipMessage,

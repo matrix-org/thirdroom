@@ -29,7 +29,7 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
-  getPeerIdIndexFromNetworkId,
+  getPeerIndexFromNetworkId,
   Networked,
   NetworkModule,
   Owned,
@@ -501,7 +501,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     let ownerId;
 
     if (interactableType === InteractableType.Object) {
-      const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+      const ownerIdIndex = getPeerIndexFromNetworkId(Networked.networkId[eid]);
       ownerId = network.indexToPeerId.get(ownerIdIndex);
       if (hasComponent(ctx.world, Owned, eid)) {
         ownerId = peerId;
