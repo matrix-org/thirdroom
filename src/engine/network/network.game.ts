@@ -220,16 +220,12 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
     // if we are new host, take authority over our avatar entity
     const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
     if (amNewHost) {
-      console.log("RE-ELECTION TAKING PLACE");
-
-      console.log("EMBODYING OWN AVATAR");
       embodyAvatar(ctx, physics, input, eid);
     }
 
     // if host was re-elected, transfer ownership of old host's networked entities to new host
     if (newHostElected) {
       const ents = remoteNetworkedQuery(ctx.world);
-      console.log("CHANGING OWNERSHIP OF ALL REMOTE ENTITIES", ents);
       // update peerIdIndex of the networkId to new host's peerId
       for (let i = 0; i < ents.length; i++) {
         const eid = ents[i];
@@ -242,8 +238,6 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
         if (oldHostId !== entityPeerId) {
           continue;
         }
-
-        console.log("Setting eid", eid, "ownership to peerId", newHostId);
 
         if (amNewHost) {
           addComponent(ctx.world, Owned, eid);
