@@ -44,7 +44,6 @@ import { waitUntil } from "../utils/waitUntil";
 export interface GameNetworkState {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  hosting: boolean;
   commands: ArrayBuffer[];
   hostId: string;
   peerId: string;
@@ -81,7 +80,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     return {
       incomingRingBuffer,
       outgoingRingBuffer,
-      hosting: false,
       commands: [],
       hostId: "",
       peerId: "",
@@ -101,7 +99,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       interpolate: false,
       // TODO: this causes desync atm
       clientSidePrediction: false,
-      authoritative: true,
+      authoritative: false,
     };
   },
   init(ctx: GameState) {
