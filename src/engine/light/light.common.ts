@@ -27,10 +27,16 @@ export const spotLightSchema = defineObjectBufferSchema({
 });
 
 export enum LightType {
-  Directional = "directional",
-  Point = "point",
-  Spot = "spot",
+  Directional,
+  Point,
+  Spot,
 }
+
+export const GLTFLightTypeToLightType: { [key: string]: LightType } = {
+  directional: LightType.Directional,
+  point: LightType.Point,
+  spot: LightType.Spot,
+};
 
 export type DirectionalLightTripleBuffer = ObjectTripleBuffer<typeof directionalLightSchema>;
 export type PointLightTripleBuffer = ObjectTripleBuffer<typeof pointLightSchema>;

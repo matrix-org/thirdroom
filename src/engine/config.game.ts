@@ -65,7 +65,9 @@ export default defineConfig<GameState>({
     SpawnableSystem,
     ThirdroomSystem,
 
+    // Copy Transform to RemoteNode
     ScriptingSystem,
+    // Copy RemoteNode to Transform
 
     UpdateMatrixWorldSystem,
 

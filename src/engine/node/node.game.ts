@@ -10,7 +10,6 @@ import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { RemoteCamera } from "../camera/camera.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteLight } from "../light/light.game";
 import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh, RemoteLightMap } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
@@ -28,6 +27,7 @@ import {
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
+import { IRemoteLight } from "../resource/resource-new.game";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -49,8 +49,8 @@ export interface RemoteNode {
   set instancedMesh(instancedMesh: RemoteInstancedMesh | undefined);
   get skinnedMesh(): RemoteSkinnedMesh | undefined;
   set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined);
-  get light(): RemoteLight | undefined;
-  set light(light: RemoteLight | undefined);
+  get light(): IRemoteLight | undefined;
+  set light(light: IRemoteLight | undefined);
   get reflectionProbe(): RemoteReflectionProbe | undefined;
   set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined);
   get camera(): RemoteCamera | undefined;
@@ -75,7 +75,7 @@ interface NodeProps {
   instancedMesh?: RemoteInstancedMesh;
   lightMap?: RemoteLightMap;
   skinnedMesh?: RemoteSkinnedMesh;
-  light?: RemoteLight;
+  light?: IRemoteLight;
   reflectionProbe?: RemoteReflectionProbe;
   camera?: RemoteCamera;
   audioEmitter?: RemotePositionalAudioEmitter;
@@ -132,7 +132,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _instancedMesh: RemoteInstancedMesh | undefined = props?.instancedMesh;
   let _lightMap: RemoteLightMap | undefined = props?.lightMap;
   let _skinnedMesh: RemoteSkinnedMesh | undefined = props?.skinnedMesh;
-  let _light: RemoteLight | undefined = props?.light;
+  let _light: IRemoteLight | undefined = props?.light;
   let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
   let _camera: RemoteCamera | undefined = props?.camera;
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
@@ -319,7 +319,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     get light() {
       return _light;
     },
-    set light(light: RemoteLight | undefined) {
+    set light(light: IRemoteLight | undefined) {
       if (light) {
         addResourceRef(ctx, light.resourceId);
       }

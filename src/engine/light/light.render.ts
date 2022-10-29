@@ -157,6 +157,7 @@ export function updateNodeLight(
 
     if (!spotLight) {
       spotLight = new SpotLight();
+      spotLight.target.position.set(0, 0, -1);
       spotLight.decay = 2;
 
       scene.add(spotLight);

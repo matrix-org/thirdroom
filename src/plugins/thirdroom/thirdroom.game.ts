@@ -1,9 +1,9 @@
 import { addComponent, addEntity, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { vec3, mat4, quat } from "gl-matrix";
-import glMatrixText from "gl-matrix/gl-matrix.js?raw";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
+import lightExampleCode from "../../scripting/examples/light-example.js?raw";
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
@@ -59,6 +59,7 @@ import {
 import { InputModule } from "../../engine/input/input.game";
 // import { loadWASMScript } from "../../engine/scripting/scripting.game";
 import { loadJSScript } from "../../engine/scripting/scripting.game";
+import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
 // import rustExample from "../../../examples/spinny-cube/rust/target/wasm32-unknown-unknown/release/spinny_cube.wasm?url";
 
 interface ThirdRoomModuleState {
@@ -219,22 +220,6 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     await loadEnvironment(ctx, message.url, message.fileMap);
     loadPlayerRig(ctx);
 
-    const code = `
-      ${glMatrixText}
-
-      const node = new WebSG.Node();
-
-      node.position[1] = 1.8;
-
-      onupdate = (dt) => {
-        glMatrix.quat.rotateY(node.quaternion, node.quaternion, dt * 10);
-      };
-    `;
-
-    await loadJSScript(ctx, code);
-
-    // await loadWASMScript(ctx, rustExample);
-
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
       url: message.url,
@@ -277,7 +262,10 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true });
+  const memory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
+  const resourceManager = new ScriptResourceManager(memory);
+
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true, resourceManager });
 
   thirdroom.sceneGLTF = sceneGltf;
 
@@ -321,6 +309,8 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     });
     addChild(newScene, collisionGeo);
   }
+
+  await loadJSScript(ctx, resourceManager, lightExampleCode);
 }
 
 const spawnPointQuery = defineQuery([SpawnPoint]);
