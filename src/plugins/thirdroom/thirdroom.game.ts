@@ -240,10 +240,10 @@ function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+  const { peerId } = message;
   if (network.authoritative && isHost(network)) {
     loadRemotePlayerRig(ctx, physics, input, network, message.peerId);
   } else if (!network.authoritative) {
-    const { peerId } = message;
     if (network.peers.includes(peerId) || network.peerId === peerId) return;
 
     network.peers.push(peerId);
