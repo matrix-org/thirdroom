@@ -2,6 +2,7 @@ import { GroupCall, Platform, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarPile } from "../../../atoms/avatar/AvatarPile";
+import { Text } from "../../../atoms/text/Text";
 import { useObservableMap } from "../../../hooks/useObservableMap";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { getAvatarHttpUrl } from "../../../utils/avatar";
@@ -36,7 +37,7 @@ export function WorldTileMembers({ session, platform, groupCall }: WorldTileMemb
             size="xxs"
           />
         ))}
-      {members.size > maxAvatars ? <span>{`+${members.size - maxAvatars}`}</span> : undefined}
+      {members.size > maxAvatars ? <Text variant="b3" type="span">{`+${members.size - maxAvatars}`}</Text> : undefined}
     </AvatarPile>
   );
 }
