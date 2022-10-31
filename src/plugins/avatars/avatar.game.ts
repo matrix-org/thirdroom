@@ -1,18 +1,9 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, addEntity } from "bitecs";
 
-import { setActiveCamera } from "../../engine/camera/camera.game";
-import {
-  addTransformComponent,
-  Transform,
-  setQuaternionFromEuler,
-  addChild,
-  Hidden,
-} from "../../engine/component/transform";
+import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
-import { GameInputModule } from "../../engine/input/input.game";
-import { setActiveInputController } from "../../engine/input/InputController";
 import { getModule } from "../../engine/module/module.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -89,17 +80,4 @@ export function addAvatar(
   addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
   return eid;
-}
-
-/**
- * Embodies an entity, which sets the active camera+controller to the provided entity's own camera+controller
- *
- * @param ctx GameState
- * @param input GameInputModule
- * @param eid number
- */
-export function embodyAvatar(ctx: GameState, input: GameInputModule, eid: number) {
-  addComponent(ctx.world, Hidden, eid);
-  setActiveCamera(ctx, eid);
-  setActiveInputController(input, eid);
 }

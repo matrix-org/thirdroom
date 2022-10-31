@@ -76,7 +76,7 @@ function disposeNetworkedEntities(state: GameState) {
   }
 }
 
-const sendUpdates = (ctx: GameState) => {
+const sendUpdatesAuthoritative = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
   const data: NetPipeData = [ctx, network.cursorView, ""];
 
@@ -87,9 +87,7 @@ const sendUpdates = (ctx: GameState) => {
   // - host has been established (peerIdIndex has been assigned)
   const haveConnectedPeers = network.peers.length > 0;
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
-  const hostEstablished = network.authoritative
-    ? network.hostId !== "" && network.peerIdToIndex.has(network.peerId)
-    : true;
+  const hostEstablished = network.hostId !== "" && network.peerIdToIndex.has(network.peerId);
   const hosting = isHost(network);
 
   if (!haveConnectedPeers || !spawnedPlayerRig || !hostEstablished) {
@@ -106,13 +104,13 @@ const sendUpdates = (ctx: GameState) => {
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
-          // send out the snapshot first so entities exist for the next two messages
+          // send out the snapshot first so entities that the next messages may reference exist
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
 
-          // inform new peer of this host's avatar
+          // inform new peer of this host avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
-          // inform everyone of the new peer's avatar
+          // inform everyone of the new peer avatar's networkId
           broadcastReliable(ctx, network, createInformPlayerNetworkIdMessage(ctx, theirPeerId));
         }
       }
@@ -133,20 +131,60 @@ const sendUpdates = (ctx: GameState) => {
   return ctx;
 };
 
-export function OutboundNetworkSystem(state: GameState) {
-  const network = getModule(state, NetworkModule);
+const sendUpdatesPeerToPeer = (ctx: GameState) => {
+  const network = getModule(ctx, NetworkModule);
+  const data: NetPipeData = [ctx, network.cursorView, ""];
+
+  // only send updates when:
+  // - we have connected peers
+  // - peerIdIndex has been assigned
+  // - player rig has spawned
+  const haveConnectedPeers = network.peers.length > 0;
+  const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
+
+  if (haveConnectedPeers && spawnedPlayerRig) {
+    // send snapshot update to all new peers
+    const haveNewPeers = network.newPeers.length > 0;
+    if (haveNewPeers) {
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
+
+      while (network.newPeers.length) {
+        const theirPeerId = network.newPeers.shift();
+        if (theirPeerId) {
+          // send out the snapshot first so entities that the next messages may reference exist
+          sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
+
+          // inform new peer of our avatar's networkId
+          sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
+        }
+      }
+    } else {
+      // reliably send full messages for now
+      const msg = createFullChangedMessage(data);
+      if (msg.byteLength) broadcastReliable(ctx, network, msg);
+    }
+  }
+
+  return ctx;
+};
+
+export function OutboundNetworkSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
 
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
-  if (!hasPeerIdIndex) return state;
+  if (!hasPeerIdIndex) return ctx;
 
   // assign networkIds before serializing game state
-  assignNetworkIds(state);
+  assignNetworkIds(ctx);
+
   // serialize and send all outgoing updates
-  sendUpdates(state);
+  if (network.authoritative) sendUpdatesAuthoritative(ctx);
+  else sendUpdatesPeerToPeer(ctx);
+
   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
-  deleteNetworkIds(state);
+  deleteNetworkIds(ctx);
 
-  disposeNetworkedEntities(state);
+  disposeNetworkedEntities(ctx);
 
-  return state;
+  return ctx;
 }

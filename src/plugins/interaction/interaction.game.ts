@@ -258,7 +258,9 @@ export function InteractionSystem(ctx: GameState) {
 
     updateFocus(ctx, physics, eid, camera);
 
-    if (network.authoritative && isHost(network)) {
+    const authoritativeAndHosting = network.authoritative && isHost(network);
+
+    if (authoritativeAndHosting || !network.authoritative) {
       updateDeletion(ctx, interaction, controller, eid);
       updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
     }

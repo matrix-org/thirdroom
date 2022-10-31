@@ -213,7 +213,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
 
   const newHostPeerIndex = network.peerIdToIndex.get(newHostId);
 
-  if (newHostPeerIndex && network.authoritative) {
+  if (network.authoritative && newHostPeerIndex) {
     const newHostElected = oldHostId !== newHostId;
     const amNewHost = ourPeerId !== oldHostId && ourPeerId === newHostId;
 
@@ -242,6 +242,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
         if (amNewHost) {
           addComponent(ctx.world, Owned, eid);
         } else {
+          // TODO: re-send this from the host side either via explicit message or via creation message
           Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
         }
       }

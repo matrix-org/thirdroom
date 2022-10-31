@@ -88,7 +88,7 @@ export function ApplyInputSystem(ctx: GameState) {
     const command = dequeueInputRingBuffer(inputRingBuffer, out);
     if (!command) continue;
 
-    if (!isHost(network)) {
+    if (network.authoritative && !isHost(network)) {
       // collect commands to send to host
       network.commands.push(command);
 

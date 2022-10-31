@@ -76,6 +76,7 @@ import {
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
+import { createHistorian } from "../../engine/network/Historian";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -239,11 +240,17 @@ function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-  if (network.authoritative && !isHost(network)) {
-    return;
+  if (network.authoritative && isHost(network)) {
+    loadRemotePlayerRig(ctx, physics, input, network, message.peerId);
+  } else if (!network.authoritative) {
+    const { peerId } = message;
+    if (network.peers.includes(peerId) || network.peerId === peerId) return;
+
+    network.peers.push(peerId);
+    network.newPeers.push(peerId);
   }
 
-  loadRemotePlayerRig(ctx, physics, input, network, message.peerId);
+  network.peerIdToHistorian.set(peerId, createHistorian());
 }
 
 // when we join the world

@@ -55,6 +55,7 @@ import { createRemoteNametag } from "../nametag/nametag.game";
 import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
+import { isHost } from "./network.common";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -474,20 +475,20 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
 
+  console.log("deserializeInformPlayerNetworkId for peer", peerId);
+
   const peid = network.networkIdToEntityId.get(peerNid);
   if (peid === undefined) {
     console.error("could not find peer's networkId for eid", peid);
     return data;
   }
 
-  console.log("deserializeInformPlayerNetworkId for peer", peerId);
-
   associatePeerWithEntity(network, peerId, peid);
 
   addComponent(ctx.world, Player, peid);
 
   // if our own avatar
-  if (peerId === network.peerId) {
+  if (network.authoritative && !isHost(network) && peerId === network.peerId) {
     // unset our old avatar
     console.log("unset our old avatar. ourPlayerQuery", ourPlayerQuery(ctx.world));
     const old = ourPlayerQuery(ctx.world)[0];
@@ -500,23 +501,25 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
     embodyAvatar(ctx, physics, input, peid);
 
     // don't add voip
-    return data;
+    // return data;
   }
 
-  // if not our own avatar, add voip
-  addRemoteNodeComponent(ctx, peid, {
-    name: peerId,
-    audioEmitter: createRemotePositionalAudioEmitter(ctx, {
-      sources: [
-        createRemoteMediaStreamSource(ctx, {
-          stream: createRemoteMediaStream(ctx, { streamId: peerId }),
-        }),
-      ],
-    }),
-    nametag: createRemoteNametag(ctx, {
+  if (peerId !== network.peerId) {
+    // if not our own avatar, add voip
+    addRemoteNodeComponent(ctx, peid, {
       name: peerId,
-    }),
-  });
+      audioEmitter: createRemotePositionalAudioEmitter(ctx, {
+        sources: [
+          createRemoteMediaStreamSource(ctx, {
+            stream: createRemoteMediaStream(ctx, { streamId: peerId }),
+          }),
+        ],
+      }),
+      nametag: createRemoteNametag(ctx, {
+        name: peerId,
+      }),
+    });
+  }
 
   return data;
 }
