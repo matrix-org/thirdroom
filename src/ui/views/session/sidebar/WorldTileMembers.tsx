@@ -3,6 +3,7 @@ import { GroupCall, Member, Platform, Session } from "@thirdroom/hydrogen-view-s
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarPile } from "../../../atoms/avatar/AvatarPile";
 import { Text } from "../../../atoms/text/Text";
+import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { useObservableMap } from "../../../hooks/useObservableMap";
 import { getIdentifierColorNumber } from "../../../utils/avatar";
 import { getAvatarHttpUrl } from "../../../utils/avatar";
@@ -29,17 +30,20 @@ export function WorldTileMembers({ session, platform, groupCall }: WorldTileMemb
     <AvatarPile>
       {Array.from(members.values())
         .slice(0, maxAvatars)
-        .map(({ member }) => (
-          <Avatar
-            key={member.userId}
-            name={member.displayName || getMxIdUsername(member.userId)}
-            bgColor={`var(--usercolor${getIdentifierColorNumber(member.userId)})`}
-            imageSrc={
-              member.avatarUrl ? getAvatarHttpUrl(member.avatarUrl, 20, platform, session.mediaRepository) : undefined
-            }
-            shape="circle"
-            size="xxs"
-          />
+        .map(({ member }, index) => (
+          <Tooltip content={member.name} side="top">
+            <Avatar
+              style={index > 0 ? { marginLeft: "calc(-1 * var(--av-xxs) / 4)" } : {}}
+              key={member.userId}
+              name={member.displayName || getMxIdUsername(member.userId)}
+              bgColor={`var(--usercolor${getIdentifierColorNumber(member.userId)})`}
+              imageSrc={
+                member.avatarUrl ? getAvatarHttpUrl(member.avatarUrl, 20, platform, session.mediaRepository) : undefined
+              }
+              shape="circle"
+              size="xxs"
+            />
+          </Tooltip>
         ))}
       {members.size > maxAvatars ? <Text variant="b3" type="span">{`+${members.size - maxAvatars}`}</Text> : undefined}
     </AvatarPile>
