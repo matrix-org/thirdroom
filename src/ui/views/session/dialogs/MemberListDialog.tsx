@@ -149,6 +149,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
       />
     );
   };
+
   return (
     <>
       <Header
@@ -197,7 +198,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {activeCat && active.map(renderMemberTile)}
+                  {activeCat &&
+                    Array.from(
+                      active
+                        .reduce((filtered, member) => {
+                          if (!filtered.has(member.userId)) filtered.set(member.userId, member);
+                          return filtered;
+                        }, new Map<string, RoomMember>())
+                        .values()
+                    ).map((member) => {
+                      return renderMemberTile(member);
+                    })}
                 </Category>
               )}
 

@@ -1,4 +1,4 @@
-import { GroupCall, Platform, Session } from "@thirdroom/hydrogen-view-sdk";
+import { GroupCall, Member, Platform, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarPile } from "../../../atoms/avatar/AvatarPile";
@@ -17,7 +17,11 @@ interface WorldTileMembersProps {
 const maxAvatars = 5;
 
 export function WorldTileMembers({ session, platform, groupCall }: WorldTileMembersProps) {
-  const members = useObservableMap(() => groupCall.members, [groupCall]);
+  const allMembers = useObservableMap(() => groupCall.members, [groupCall]);
+  const members = [...allMembers.values()].reduce((filtered, member) => {
+    if (!filtered.has(member.userId)) filtered.set(member.userId, member);
+    return filtered;
+  }, new Map<string, Member>());
 
   if (members.size === 0) return null;
 
