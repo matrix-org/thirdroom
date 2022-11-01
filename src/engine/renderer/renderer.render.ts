@@ -17,12 +17,6 @@ import { CameraType } from "../camera/camera.common";
 import { onLoadOrthographicCamera, onLoadPerspectiveCamera } from "../camera/camera.render";
 import { ImageResourceType } from "../image/image.common";
 import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
-import { DirectionalLightResourceType, PointLightResourceType, SpotLightResourceType } from "../light/light.common";
-import {
-  onLoadLocalDirectionalLightResource,
-  onLoadLocalPointLightResource,
-  onLoadLocalSpotLightResource,
-} from "../light/light.render";
 import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
 import {
   LocalStandardMaterialResource,
@@ -33,7 +27,7 @@ import {
   updateLocalUnlitMaterialResources,
 } from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResourceLoader } from "../resource/resource.render";
+import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
 import { SamplerResourceType } from "../sampler/sampler.common";
 import { onLoadSampler } from "../sampler/sampler.render";
 import { SceneResourceType } from "../scene/scene.common";
@@ -88,6 +82,7 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
+import { LightResource } from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -215,9 +210,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
       registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
       registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
-      registerResourceLoader(ctx, DirectionalLightResourceType, onLoadLocalDirectionalLightResource),
-      registerResourceLoader(ctx, PointLightResourceType, onLoadLocalPointLightResource),
-      registerResourceLoader(ctx, SpotLightResourceType, onLoadLocalSpotLightResource),
+      registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
       registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),

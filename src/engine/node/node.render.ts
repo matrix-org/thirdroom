@@ -20,7 +20,7 @@ import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocato
 import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
-import { LocalLightResource, updateNodeLight } from "../light/light.render";
+import { updateNodeLight } from "../light/light.render";
 import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { LocalReflectionProbeResource, updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
@@ -29,6 +29,7 @@ import { RendererModule, RendererModuleState, RenderThreadState } from "../rende
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
+import { LocalLight } from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { promiseObject } from "../utils/promiseObject";
@@ -47,7 +48,7 @@ export interface LocalNode {
   meshPrimitiveObjects?: PrimitiveObject3D[];
   camera?: LocalCameraResource;
   cameraObject?: PerspectiveCamera | OrthographicCamera;
-  light?: LocalLightResource;
+  light?: LocalLight;
   lightObject?: Light;
   tilesRenderer?: LocalTilesRendererResource;
   reflectionProbe?: LocalReflectionProbeResource;
@@ -73,7 +74,7 @@ export async function onLoadLocalNode(
       ? waitForLocalResource<LocalSkinnedMesh>(ctx, nodeView.skinnedMesh[0])
       : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
-    light: nodeView.light[0] ? waitForLocalResource<LocalLightResource>(ctx, nodeView.light[0]) : undefined,
+    light: nodeView.light[0] ? waitForLocalResource<LocalLight>(ctx, nodeView.light[0]) : undefined,
     reflectionProbe: nodeView.reflectionProbe[0]
       ? waitForLocalResource<LocalReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])
       : undefined,

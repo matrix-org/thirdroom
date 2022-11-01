@@ -12,5 +12,6 @@
     "quickjs.h": "c",
     "math.h": "c",
     "inttypes.h": "c"
-  }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

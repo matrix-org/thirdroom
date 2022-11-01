@@ -17,6 +17,7 @@ interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnviron
   instance: ScriptWebAssemblyInstance<Env>;
   resourceManager: ScriptResourceManager;
   dispose: boolean;
+  U8Heap: Uint8Array;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
@@ -69,7 +70,11 @@ export async function loadJSScript(
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
   const script = await loadScript(ctx, resourceManager, ScriptExecutionEnvironment.JS, buffer);
-  const codePtr = resourceManager.allocateString(source);
+  const arr = new TextEncoder().encode(source);
+  const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+  const codePtr = script.instance.exports.allocate(nullTerminatedArr.byteLength);
+  nullTerminatedArr.set(arr);
+  script.U8Heap.set(nullTerminatedArr, codePtr);
   script.instance.exports.evalJS(codePtr);
   return script;
 }
@@ -111,6 +116,7 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     environment,
     resourceManager,
     dispose: false,
+    U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
 
   const { scripts } = getModule(ctx, ScriptingModule);

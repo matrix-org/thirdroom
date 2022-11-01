@@ -1,13 +1,21 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
+import { TripleBuffer } from "../allocator/TripleBuffer";
+import { TypedArrayConstructor32 } from "../allocator/types";
+
 export interface ResourceDefinition<S extends Schema = Schema> {
   name: string;
-  schema: S;
+  schema: ProcessedSchema<S>;
+  byteLength: number;
 }
 
 interface Schema {
   [key: string]: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>;
 }
+
+type ProcessedSchema<S extends Schema> = {
+  [K in keyof S]: S[K] & { byteOffset: number };
+};
 
 export interface ResourcePropDef<
   Key extends string,
@@ -19,7 +27,7 @@ export interface ResourcePropDef<
 > {
   type: Key;
   size: number;
-  byteLength: number;
+  arrayType: TypedArrayConstructor32;
   required: Req;
   mutable: Mut;
   script: boolean;
@@ -42,7 +50,7 @@ function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
     type: "bool",
     size: 1,
     // TODO: look into byte alignment to make this smaller like using a Uin8tArray
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -64,7 +72,7 @@ function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "u32",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -86,7 +94,7 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "f32",
     size: 1,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -104,7 +112,7 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "vec2",
     size: 2,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -122,7 +130,7 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "vec3",
     size: 3,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -140,7 +148,7 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "rgb",
     size: 3,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -158,7 +166,7 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "rgba",
     size: 4,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -176,7 +184,7 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "quat",
     size: 4,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -194,7 +202,7 @@ function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
   return {
     type: "mat4",
     size: 16,
-    byteLength: Float32Array.BYTES_PER_ELEMENT,
+    arrayType: Float32Array,
     mutable: true,
     required: false,
     script: false,
@@ -212,7 +220,7 @@ function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?
   return {
     type: "bitmask",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -234,7 +242,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
     type: "enum",
     enumType,
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -252,7 +260,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
   return {
     type: "string",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -270,7 +278,7 @@ function createArrayBufferPropDef<Mut extends boolean, Req extends boolean>(opti
   return {
     type: "arraybuffer",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -290,7 +298,7 @@ function createRefPropDef<Def extends ResourceDefinition, Mut extends boolean, R
   return {
     type: "ref",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     resourceDef,
     mutable: true,
     required: false,
@@ -313,7 +321,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
   return {
     type: "refArray",
     size,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     resourceDef,
     mutable: true,
     required: false,
@@ -331,7 +339,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
   return {
     type: "selfRef",
     size: 1,
-    byteLength: Uint32Array.BYTES_PER_ELEMENT,
+    arrayType: Uint32Array,
     mutable: true,
     required: false,
     script: false,
@@ -360,13 +368,16 @@ export const PropType = {
 };
 
 export const defineResource = <S extends Schema>(name: string, schema: S): ResourceDefinition<S> => {
-  const resourceDef = {
+  const resourceDef: ResourceDefinition<S> = {
     name,
-    schema,
+    schema: schema as unknown as ProcessedSchema<S>,
+    byteLength: 0,
   };
 
-  for (const propName in schema) {
-    const prop = schema[propName];
+  let cursor = 0;
+
+  for (const propName in resourceDef.schema) {
+    const prop = resourceDef.schema[propName];
 
     if (prop.type === "selfRef") {
       schema[propName] = PropType.ref(resourceDef, {
@@ -375,10 +386,106 @@ export const defineResource = <S extends Schema>(name: string, schema: S): Resou
         script: prop.script,
       }) as unknown as any;
     }
+
+    prop.byteOffset = cursor;
+    cursor += prop.arrayType.BYTES_PER_ELEMENT * prop.size;
   }
 
-  return {
-    name,
-    schema,
-  };
+  resourceDef.byteLength = cursor;
+
+  return resourceDef as unknown as ResourceDefinition<S>;
 };
+
+type ResourcePropValue<
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"],
+  MutResource extends boolean
+> = Def["schema"][Prop]["type"] extends "string"
+  ? string
+  : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "arrayBuffer"
+  ? ArrayBuffer
+  : Def["schema"][Prop]["type"] extends "bool"
+  ? boolean
+  : Def["schema"][Prop]["type"] extends "mat4"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "f32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "rgba"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "rgb"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec2"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec3"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "quat"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "bitmask"
+  ? number
+  : Def["schema"][Prop]["type"] extends "enum"
+  ? // TODO: actually return the enum type instead of number
+    // ex: Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
+    number
+  : Def["schema"][Prop]["type"] extends "ref"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
+    : unknown
+  : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "selfRef"
+  ? Resource<Def, MutResource>
+  : never;
+
+type ResourcePropValueMut<
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"],
+  MutResource extends boolean
+> = MutResource extends false
+  ? Readonly<ResourcePropValue<Def, Prop, MutResource>>
+  : Def["schema"][Prop]["mutable"] extends false
+  ? Readonly<ResourcePropValue<Def, Prop, MutResource>>
+  : ResourcePropValue<Def, Prop, MutResource>;
+
+export type Resource<Def extends ResourceDefinition, MutResource extends boolean = true> = {
+  resourceId: number;
+  tripleBuffer: TripleBuffer;
+} & { [Prop in keyof Def["schema"]]: ResourcePropValueMut<Def, Prop, MutResource> };
+
+export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true> & {
+  initialized: boolean;
+  byteView: Uint8Array;
+  byteOffset: number;
+  addRef(): void;
+  removeRef(): void;
+};
+
+export type LocalResource<Def extends ResourceDefinition> = Resource<Def, false>;
+
+type RequiredProps<Def extends ResourceDefinition> = {
+  [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
+}[keyof Def["schema"]];
+
+export type InitialResourceProps<Def extends ResourceDefinition> = {
+  [Prop in keyof Def["schema"]]?: ResourcePropValue<Def, Prop, true>;
+} & {
+  [Prop in RequiredProps<Def>]: ResourcePropValue<Def, Prop, true>;
+};
+
+export interface IRemoteResourceManager {
+  resources: RemoteResource<ResourceDefinition>[];
+  createResource<Def extends ResourceDefinition>(
+    resourceDef: Def,
+    props: InitialResourceProps<Def>
+  ): RemoteResource<Def>;
+  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
+}
+
+export interface ILocalResourceManager {
+  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): LocalResource<Def> | undefined;
+}
+
+export const MAX_C_STRING_BYTE_LENGTH = 1024;

@@ -262,8 +262,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const memory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
-  const resourceManager = new ScriptResourceManager(memory);
+  const resourceManager = new ScriptResourceManager(ctx);
 
   const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true, resourceManager });
 

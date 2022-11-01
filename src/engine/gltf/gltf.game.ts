@@ -67,10 +67,8 @@ import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
-import { IRemoteLight, RemoteLight } from "../resource/resource-new.game";
-import { GLTFLightTypeToLightType, LightType } from "../light/light.common";
-import { IResourceManager } from "../resource/IResourceManager";
-import { LightResource } from "../resource/schema";
+import { LightResource, LightType, RemoteLight } from "../resource/schema";
+import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 
 export interface GLTFResource {
   url: string;
@@ -85,7 +83,7 @@ export interface GLTFResource {
   meshes: Map<number, RemoteMesh>;
   skins: Map<number, RemoteSkinnedMesh>;
   joints: Map<number, RemoteNode>;
-  lights: Map<number, IRemoteLight>;
+  lights: Map<number, RemoteLight>;
   reflectionProbes: Map<number, RemoteReflectionProbe>;
   images: Map<number, RemoteImage>;
   textures: Map<number, RemoteTexture>;
@@ -100,7 +98,7 @@ export interface GLTFResource {
   bufferPromises: Map<number, Promise<ArrayBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
   skinPromises: Map<number, Promise<RemoteSkinnedMesh>>;
-  lightPromises: Map<number, Promise<IRemoteLight>>;
+  lightPromises: Map<number, Promise<RemoteLight>>;
   reflectionProbePromises: Map<number, Promise<RemoteReflectionProbe>>;
   imagePromises: Map<number, Promise<RemoteImage>>;
   texturePromises: Map<number, Promise<RemoteTexture>>;
@@ -109,7 +107,7 @@ export interface GLTFResource {
   audioPromises: Map<number, Promise<RemoteAudioData>>;
   audioSourcePromises: Map<number, Promise<RemoteAudioSource>>;
   audioEmitterPromises: Map<number, { output: AudioEmitterOutput; promise: Promise<RemoteAudioEmitter> }>;
-  manager: IResourceManager;
+  manager: IRemoteResourceManager;
 }
 
 export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
@@ -124,7 +122,7 @@ interface GLTFSceneOptions {
   // TODO: temporary hack for spawning avatars without static trimesh
   createTrimesh?: boolean;
   isStatic?: boolean;
-  resourceManager?: IResourceManager;
+  resourceManager?: IRemoteResourceManager;
 }
 
 export async function inflateGLTFScene(
@@ -135,7 +133,7 @@ export async function inflateGLTFScene(
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
-  const _resourceManager = resourceManager || ctx.globalResourceManager;
+  const _resourceManager = resourceManager || ctx.resourceManager;
 
   const resource = await loadGLTFResource(ctx, _resourceManager, uri, fileMap);
 
@@ -380,7 +378,7 @@ async function _inflateGLTFNode(
           addRemoteNodeComponent(ctx, nodeEid, { name: node.name, static: isStatic });
 
         if (!remoteNode.light) {
-          remoteNode.light = new RemoteLight(resource.manager, {
+          remoteNode.light = resource.manager.createResource(LightResource, {
             type: LightType.Directional,
             castShadow: true,
             intensity: 0.8,
@@ -442,7 +440,7 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
 
 export async function loadGLTFResource(
   ctx: GameState,
-  resourceManager: IResourceManager,
+  resourceManager: IRemoteResourceManager,
   uri: string,
   fileMap?: Map<string, string>
 ): Promise<GLTFResource> {
@@ -468,7 +466,7 @@ export async function loadGLTFResource(
 
 async function _loadGLTFResource(
   ctx: GameState,
-  resourceManager: IResourceManager,
+  resourceManager: IRemoteResourceManager,
   url: string,
   fileMap?: Map<string, string>
 ) {
@@ -506,7 +504,7 @@ const ChunkType = {
 const CHUNK_HEADER_BYTE_LENGTH = 8;
 
 async function loadGLB(
-  resourceManager: IResourceManager,
+  resourceManager: IRemoteResourceManager,
   buffer: ArrayBuffer,
   url: string,
   fileMap?: Map<string, string>
@@ -548,7 +546,7 @@ async function loadGLB(
 }
 
 async function loadGLTF(
-  resourceManager: IResourceManager,
+  resourceManager: IRemoteResourceManager,
   json: unknown,
   url: string,
   binaryChunk?: ArrayBuffer,
@@ -1299,7 +1297,13 @@ async function _loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: nu
   return remoteCamera;
 }
 
-export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<IRemoteLight> {
+const GLTFLightTypeToLightType: { [key: string]: LightType } = {
+  directional: LightType.Directional,
+  point: LightType.Point,
+  spot: LightType.Spot,
+};
+
+export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
   let lightPromise = resource.lightPromises.get(index);
 
   if (lightPromise) {
@@ -1313,7 +1317,7 @@ export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, inde
   return lightPromise;
 }
 
-async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<IRemoteLight> {
+async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
   if (!resource.root.extensions?.KHR_lights_punctual) {
     throw new Error("glTF file has no KHR_lights_punctual extension");
   }

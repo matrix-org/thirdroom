@@ -7,7 +7,7 @@ import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
-import { GlobalResourceManager } from "./resource/GlobalResourceManager";
+import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -71,8 +71,10 @@ async function onInit({
     messageHandlers: new Map(),
     modules: new Map(),
     sendMessage: gameWorkerSendMessage,
-    globalResourceManager: new GlobalResourceManager(),
+    resourceManager: undefined as any,
   };
+
+  state.resourceManager = new GameResourceManager(state);
 
   const onMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {

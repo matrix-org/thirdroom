@@ -28,6 +28,7 @@ import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingModule, ScriptingSystem } from "./scripting/scripting.game";
+import { GameResourceSystem } from "./resource/GameResourceSystem";
 
 export default defineConfig<GameState>({
   modules: [
@@ -84,6 +85,8 @@ export default defineConfig<GameState>({
     ResourceLoaderSystem,
     PrefabDisposalSystem,
     NameSystem,
+
+    GameResourceSystem,
 
     ResetInputSystem,
     GameWorkerStatsSystem,

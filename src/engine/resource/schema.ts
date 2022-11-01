@@ -1,9 +1,8 @@
-import { defineResource, PropType } from "./ResourceDefinition";
+import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
 import { BufferViewTarget } from "../bufferView/bufferView.common";
 import { CameraType } from "../camera/camera.common";
-import { LightType } from "../light/light.common";
 import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
 import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap } from "../sampler/sampler.common";
@@ -129,6 +128,11 @@ export const MaterialResource = defineResource("material", {
   attenuationColor: PropType.rgb({ default: [1, 1, 1], script: true }),
 });
 
+export enum LightType {
+  Directional,
+  Point,
+  Spot,
+}
 export const LightResource = defineResource("light", {
   name: PropType.string({ default: "Light", script: true }),
   type: PropType.enum(LightType, { required: true, script: true, mutable: false }),
@@ -139,6 +143,8 @@ export const LightResource = defineResource("light", {
   innerConeAngle: PropType.f32({ default: 1, script: true }),
   outerConeAngle: PropType.f32({ default: 1, script: true }),
 });
+export type RemoteLight = RemoteResource<typeof LightResource>;
+export type LocalLight = LocalResource<typeof LightResource>;
 
 export const CameraResource = defineResource("camera", {
   // Shared properties between camera types
