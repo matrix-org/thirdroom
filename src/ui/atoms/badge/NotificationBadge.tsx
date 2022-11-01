@@ -1,4 +1,5 @@
 import classNames from "classnames";
+import { ReactNode } from "react";
 
 import { Text } from "../text/Text";
 
@@ -7,7 +8,7 @@ import "./NotificationBadge.css";
 interface INotificationBadge {
   className?: string;
   variant?: "primary" | "secondary" | "danger";
-  content?: string | number;
+  content?: string | number | ReactNode;
 }
 
 export function NotificationBadge({ className, variant = "primary", content }: INotificationBadge) {
@@ -21,11 +22,14 @@ export function NotificationBadge({ className, variant = "primary", content }: I
 
   return (
     <span className={notifClass}>
-      {hasContent && (
-        <Text variant="b3" color={`on-${variant}`} type="span" weight="semi-bold">
-          {content}
-        </Text>
-      )}
+      {hasContent &&
+        (typeof content === "string" || typeof content === "number" ? (
+          <Text variant="b3" color={`on-${variant}`} type="span" weight="semi-bold">
+            {content}
+          </Text>
+        ) : (
+          content
+        ))}
     </span>
   );
 }
