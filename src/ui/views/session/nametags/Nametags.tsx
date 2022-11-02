@@ -17,7 +17,7 @@ import { useStore } from "../../../hooks/useStore";
 import { getRoomCall } from "../../../utils/matrixUtils";
 
 // src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
-const useAnimationFrame = (callback: Function, enabled = true) => {
+export const useAnimationFrame = (callback: Function, enabled = true) => {
   const requestRef = useRef<number>();
   const previousTimeRef = useRef<number>();
 

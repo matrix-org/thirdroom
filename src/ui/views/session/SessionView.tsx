@@ -10,17 +10,20 @@ import { StatusBar } from "./statusbar/StatusBar";
 import { useStore } from "../../hooks/useStore";
 import { LoadingScreen } from "../components/loading-screen/LoadingScreen";
 import { useHomeWorld } from "../../hooks/useHomeWorld";
+import { useUnknownWorldPath } from "../../hooks/useWorld";
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const [worldId, worldAlias] = useUnknownWorldPath();
   const homeWorldId = useHomeWorld();
+
   useEffect(() => {
-    if (homeWorldId) {
+    if (!worldId && !worldAlias && homeWorldId) {
       useStore.getState().overlayWorld.selectWorld(homeWorldId);
     }
-  }, [homeWorldId]);
+  }, [worldId, worldAlias, homeWorldId]);
 
   return (
     <DndProvider backend={HTML5Backend}>

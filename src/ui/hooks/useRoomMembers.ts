@@ -57,7 +57,16 @@ export function useRoomMembers(room: Room) {
 
     if (groupCall) {
       const getActiveMembers = () => {
-        return Array.from(groupCall.members).map(([, callMember]) => callMember.member);
+        const activeMembers = new Map<string, RoomMember>();
+
+        for (const [, callMember] of groupCall.members) {
+          const member = callMember.member;
+          if (!activeMembers.has(member.userId)) {
+            activeMembers.set(member.userId, member);
+          }
+        }
+
+        return Array.from(activeMembers.values());
       };
 
       unsubscribeCallMemberListObservable = groupCall.members.subscribe({
