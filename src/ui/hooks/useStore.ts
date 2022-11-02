@@ -205,7 +205,6 @@ export const useStore = create<StoreState>()(
       },
       closeWorld() {
         set((state) => {
-          state.world.disposeNetworkInterface?.();
           state.world.worldId = undefined;
           state.world.entered = false;
           state.world.disposeNetworkInterface = undefined;
