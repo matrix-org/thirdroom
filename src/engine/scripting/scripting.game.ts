@@ -18,6 +18,7 @@ interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnviron
   resourceManager: ScriptResourceManager;
   dispose: boolean;
   U8Heap: Uint8Array;
+  source?: string;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
@@ -62,41 +63,29 @@ export function ScriptingSystem(ctx: GameState) {
   }
 }
 
-export async function loadJSScript(
-  ctx: GameState,
-  resourceManager: ScriptResourceManager,
-  source: string
-): Promise<Script<ScriptExecutionEnvironment.JS>> {
+export async function loadJSScript(ctx: GameState, source: string): Promise<Script<ScriptExecutionEnvironment.JS>> {
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
-  const script = await loadScript(ctx, resourceManager, ScriptExecutionEnvironment.JS, buffer);
-  const arr = new TextEncoder().encode(source);
-  const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-  const codePtr = script.instance.exports.allocate(nullTerminatedArr.byteLength);
-  nullTerminatedArr.set(arr);
-  script.U8Heap.set(nullTerminatedArr, codePtr);
-  script.instance.exports.evalJS(codePtr);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer);
+  script.source = source;
   return script;
 }
 
-export async function loadWASMScript(
-  ctx: GameState,
-  resourceManager: ScriptResourceManager,
-  url: string
-): Promise<Script<ScriptExecutionEnvironment.WASM>> {
+export async function loadWASMScript(ctx: GameState, url: string): Promise<Script<ScriptExecutionEnvironment.WASM>> {
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
-  const script = await loadScript(ctx, resourceManager, ScriptExecutionEnvironment.WASM, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer);
   return script;
 }
 
 async function loadScript<Env extends ScriptExecutionEnvironment>(
   ctx: GameState,
-  resourceManager: ScriptResourceManager,
   environment: Env,
   buffer: ArrayBuffer
 ): Promise<Script<Env>> {
   let instance: ScriptWebAssemblyInstance<Env> | undefined = undefined;
+
+  const resourceManager = new ScriptResourceManager(ctx);
 
   const result = await WebAssembly.instantiate(buffer, resourceManager.createImports());
 
@@ -107,8 +96,6 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
   if ("_initialize" in instance.exports) {
     (instance.exports._initialize as Function)();
   }
-
-  instance.exports.initialize();
 
   const script: Script<Env> = {
     instance,
@@ -124,6 +111,20 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
   scripts.push(script);
 
   return script;
+}
+
+export function runScript<Env extends ScriptExecutionEnvironment>(script: Script<Env>) {
+  script.instance.exports.initialize();
+
+  if (script.environment === ScriptExecutionEnvironment.JS) {
+    const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
+    const arr = new TextEncoder().encode(script.source);
+    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+    const codePtr = jsScript.instance.exports.allocate(nullTerminatedArr.byteLength);
+    nullTerminatedArr.set(arr);
+    jsScript.U8Heap.set(nullTerminatedArr, codePtr);
+    jsScript.instance.exports.evalJS(codePtr);
+  }
 }
 
 export function disposeScript(script: Script) {

@@ -24,6 +24,7 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
     this.resourceId = resourceId;
     this.tripleBuffer = tripleBuffer;
     this.manager = manager;
+    this.__props = {};
 
     const buffers = this.tripleBuffer.buffers;
     const schema = (LocalResourceClass as unknown as ILocalResourceClass<Def>).resourceDef.schema;

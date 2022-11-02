@@ -11,6 +11,7 @@ import {
   RemoteResource,
   ResourceDefinition,
 } from "./ResourceDefinition";
+import { LightResource } from "./schema";
 
 export class ScriptResourceManager implements IRemoteResourceManager {
   public memory: WebAssembly.Memory;
@@ -132,7 +133,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return strPtr;
   }
 
-  createImports(): { [key: string]: WebAssembly.ModuleImports } {
+  createImports(): WebAssembly.Imports {
     const printCharBuffers: (number[] | null)[] = [null, [], []];
 
     const printChar = (stream: number, curr: number) => {
@@ -160,13 +161,23 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       },
       wasgi: {
         get_light_by_name: (namePtr: number) => {
-          // const name = bufferManager.decodeString(namePtr);
-          // const light = ctx.lights.find((light) => light.name === name);
-          // return light ? light.id : -1;
+          const resources = this.resources;
+          const name = this.decodeString(namePtr);
+
+          for (let i = 0; i < resources.length; i++) {
+            const resource = resources[i];
+            const def = (resource.constructor as any).resourceDef as ResourceDefinition;
+
+            if (def === LightResource && resource.name === name) {
+              return resource.byteOffset;
+            }
+          }
+
           return 0;
         },
         create_light: () => {
-          return 0;
+          const resource = this.createResource(LightResource, {});
+          return resource.byteOffset;
         },
         dispose_light: (ptr: number) => {},
       },

@@ -27,8 +27,8 @@ typedef struct Light {
   float_t outer_cone_angle;
 } Light;
 
-import("wasgi") Light *get_light_by_name(const char *name);
-import("wasgi") Light *create_light();
-import("wasgi") void dispose_light(Light *light);
+import(wasgi) Light *get_light_by_name(const char *name);
+import(wasgi) Light *create_light();
+import(wasgi) void dispose_light(Light *light);
 
 #endif

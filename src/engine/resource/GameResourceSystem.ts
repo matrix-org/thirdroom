@@ -18,16 +18,16 @@ export function GameResourceSystem(ctx: GameState) {
 function commitResources(resources: RemoteResource<ResourceDefinition>[]) {
   for (let i = 0; i < resources.length; i++) {
     const resource = resources[i];
-
     const byteView = resource.byteView;
-    const tripleBufferByteViews = resource.tripleBuffer.byteViews;
 
-    if (!resource.initialized) {
+    if (resource.initialized) {
+      copyToWriteBuffer(resource.tripleBuffer, byteView);
+    } else {
+      const tripleBufferByteViews = resource.tripleBuffer.byteViews;
       tripleBufferByteViews[0].set(byteView);
       tripleBufferByteViews[1].set(byteView);
       tripleBufferByteViews[2].set(byteView);
-    } else {
-      copyToWriteBuffer(resource.tripleBuffer, byteView);
+      resource.initialized = true;
     }
   }
 }

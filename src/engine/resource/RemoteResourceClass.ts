@@ -1,4 +1,4 @@
-import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
+import { TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import { ResourceId } from "./resource.common";
 import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
@@ -38,6 +38,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     this.resourceId = resourceId;
     this.byteView = new Uint8Array(buffer, byteOffset, resourceDef.byteLength);
     this.tripleBuffer = tripleBuffer;
+    this.__props = {};
 
     const schema = (RemoteResourceClass as unknown as IRemoteResourceClass<Def>).resourceDef.schema;
 
@@ -47,9 +48,9 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
       if (props[propName] !== undefined) {
         if (prop.size === 1) {
-          arr[0] = prop.default as number;
+          arr[0] = props[propName] as number;
         } else {
-          arr.set(prop.default as ArrayLike<number>);
+          arr.set(props[propName] as ArrayLike<number>);
         }
       } else if (prop.default !== undefined) {
         if (prop.size === 1) {
@@ -81,8 +82,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     } else if (prop.type === "refArray") {
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: PrivateRemoteResource<Def>) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const arr = this.__props[propName][index];
+          const arr = this.__props[propName];
           const resources = [];
 
           for (let i = 0; i < arr.length; i++) {
@@ -99,15 +99,13 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     } else if (prop.size === 1) {
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: PrivateRemoteResource<Def>) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          return this.__props[propName][index][0];
+          return this.__props[propName][0];
         },
       });
     } else {
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: PrivateRemoteResource<Def>) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          return this.__props[propName][index];
+          return this.__props[propName];
         },
       });
     }

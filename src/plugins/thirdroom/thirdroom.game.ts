@@ -3,7 +3,6 @@ import { vec3, mat4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import lightExampleCode from "../../scripting/examples/light-example.js?raw";
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
@@ -57,10 +56,8 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-// import { loadWASMScript } from "../../engine/scripting/scripting.game";
 import { loadJSScript } from "../../engine/scripting/scripting.game";
-import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
-// import rustExample from "../../../examples/spinny-cube/rust/target/wasm32-unknown-unknown/release/spinny_cube.wasm?url";
+import lightExampleCode from "../../scripting/examples/light.js?raw";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -262,9 +259,13 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const resourceManager = new ScriptResourceManager(ctx);
+  const script = await loadJSScript(ctx, lightExampleCode);
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true, resourceManager });
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, {
+    fileMap,
+    isStatic: true,
+    resourceManager: script.resourceManager,
+  });
 
   thirdroom.sceneGLTF = sceneGltf;
 
@@ -308,8 +309,6 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     });
     addChild(newScene, collisionGeo);
   }
-
-  await loadJSScript(ctx, resourceManager, lightExampleCode);
 }
 
 const spawnPointQuery = defineQuery([SpawnPoint]);
