@@ -31,7 +31,7 @@ export class GameResourceManager implements IRemoteResourceManager {
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
     const resource = new resourceConstructor(this, resourceId, buffer, 0, tripleBuffer, props);
     setRemoteResource(this.ctx, resourceId, resource);
-    this.resources.push(resource as RemoteResource<ResourceDefinition>);
+    this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
 
     return resource;
   }
@@ -42,4 +42,11 @@ export class GameResourceManager implements IRemoteResourceManager {
   ): RemoteResource<Def> | undefined {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
   }
+
+  getString(byteOffset: number): string {
+    // TODO
+    return "";
+  }
+
+  setString(byteOffset: number, value: string): void {}
 }

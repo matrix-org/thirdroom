@@ -202,7 +202,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
-      if (prop.type === "string" || prop.type === "ref" || prop.type === "arraybuffer") {
+      if (prop.type === "ref" || prop.type === "arraybuffer") {
         dependencyByteOffsets.push(prop.byteOffset);
       } else if (prop.type === "refArray") {
         for (let i = 0; i < prop.size; i++) {
@@ -230,9 +230,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     async function loadLocalResource(ctx: ThreadContext, resourceId: number, tripleBuffer: TripleBuffer) {
       const resource = new LocalResourceClass(manager, resourceId, tripleBuffer);
-
       await Promise.all(waitForLocalResourceDependencies(resource));
-
       return resource;
     }
 

@@ -47,7 +47,9 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       const arr = new prop.arrayType(buffer, this.byteOffset + prop.byteOffset, prop.size);
 
       if (props[propName] !== undefined) {
-        if (prop.size === 1) {
+        if (prop.type === "string") {
+          this.manager.setString(arr.byteOffset, props[propName] as string);
+        } else if (prop.size === 1) {
           arr[0] = props[propName] as number;
         } else {
           arr.set(props[propName] as ArrayLike<number>);
@@ -72,7 +74,14 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "ref" || prop.type === "string" || prop.type === "arraybuffer") {
+    if (prop.type === "string") {
+      Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        get(this: PrivateRemoteResource<Def>) {
+          const byteOffset = this.__props[propName][0];
+          return this.manager.getString(byteOffset);
+        },
+      });
+    } else if (prop.type === "ref" || prop.type === "arraybuffer") {
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: PrivateRemoteResource<Def>) {
           const resourceId = this.__props[propName][0];

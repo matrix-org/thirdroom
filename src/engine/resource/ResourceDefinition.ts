@@ -461,7 +461,7 @@ export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true>
   byteOffset: number;
   addRef(): void;
   removeRef(): void;
-};
+} & { constructor: { name: string; resourceDef: Def } };
 
 export type LocalResource<Def extends ResourceDefinition> = Resource<Def, false>;
 
@@ -477,6 +477,8 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
 
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
+  getString(byteOffset: number): string;
+  setString(byteOffset: number, value: string): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>

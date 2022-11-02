@@ -56,7 +56,7 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { loadJSScript } from "../../engine/scripting/scripting.game";
+import { loadJSScript, runScript } from "../../engine/scripting/scripting.game";
 import lightExampleCode from "../../scripting/examples/light.js?raw";
 
 interface ThirdRoomModuleState {
@@ -309,6 +309,8 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     });
     addChild(newScene, collisionGeo);
   }
+
+  runScript(script);
 }
 
 const spawnPointQuery = defineQuery([SpawnPoint]);

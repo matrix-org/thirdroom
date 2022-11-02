@@ -77,8 +77,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     tripleBuffer.byteViews[2].set(resource.byteView);
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);
-    this.resources.push(resource as RemoteResource<ResourceDefinition>);
-
+    this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
     return resource;
   }
 
@@ -89,24 +88,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
   }
 
-  allocate(byteLength: number): number {
-    return (this.instance!.exports.allocate as Function)(byteLength);
-  }
-
-  deallocate(ptr: number): void {
-    (this.instance!.exports.deallocate as Function)(ptr);
-  }
-
-  allocateString(value: string): number {
-    const arr = this.textEncoder.encode(value);
-    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-    nullTerminatedArr.set(arr);
-    const ptr = this.allocate(nullTerminatedArr.byteLength);
-    this.U8Heap.set(nullTerminatedArr, ptr);
-    return ptr;
-  }
-
-  decodeString(ptr: number): string {
+  getString(ptr: number): string {
     if (!ptr) {
       return "";
     }
@@ -123,14 +105,25 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return this.textDecoder.decode(this.U8Heap.subarray(ptr, end));
   }
 
-  encodeString(ptr: number, value: string): number {
+  setString(ptr: number, value: string): void {
     if (!ptr || !value) {
-      return 0;
+      return;
     }
 
-    const strPtr = this.allocateString(value);
+    const arr = this.textEncoder.encode(value);
+    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+    nullTerminatedArr.set(arr);
+    const strPtr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, strPtr);
     this.U32Heap[ptr / Uint32Array.BYTES_PER_ELEMENT] = strPtr;
-    return strPtr;
+  }
+
+  allocate(byteLength: number): number {
+    return (this.instance!.exports.allocate as Function)(byteLength);
+  }
+
+  deallocate(ptr: number): void {
+    (this.instance!.exports.deallocate as Function)(ptr);
   }
 
   createImports(): WebAssembly.Imports {
@@ -162,11 +155,11 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       wasgi: {
         get_light_by_name: (namePtr: number) => {
           const resources = this.resources;
-          const name = this.decodeString(namePtr);
+          const name = this.getString(namePtr);
 
           for (let i = 0; i < resources.length; i++) {
             const resource = resources[i];
-            const def = (resource.constructor as any).resourceDef as ResourceDefinition;
+            const def = resource.constructor.resourceDef;
 
             if (def === LightResource && resource.name === name) {
               return resource.byteOffset;
