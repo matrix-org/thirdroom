@@ -203,6 +203,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
       />
     );
   };
+
   return (
     <>
       <Header
