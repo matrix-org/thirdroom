@@ -109,9 +109,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
     const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer, props);
-    tripleBuffer.byteViews[0].set(resource.byteView);
-    tripleBuffer.byteViews[1].set(resource.byteView);
-    tripleBuffer.byteViews[2].set(resource.byteView);
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
