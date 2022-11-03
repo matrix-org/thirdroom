@@ -1,7 +1,13 @@
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import { ResourceId } from "./resource.common";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialResourceProps,
+  IRemoteResourceManager,
+  RemoteResource,
+  RemoteResourceStringStore,
+  ResourceDefinition,
+} from "./ResourceDefinition";
 
 export interface IRemoteResourceClass<Def extends ResourceDefinition> {
   new (
@@ -15,16 +21,11 @@ export interface IRemoteResourceClass<Def extends ResourceDefinition> {
   resourceDef: Def;
 }
 
-type PrivateRemoteResource<Def extends ResourceDefinition> = RemoteResource<Def> & {
-  manager: IRemoteResourceManager;
-  __props: { [key: string]: any };
-};
-
 export function defineRemoteResourceClass<Def extends ResourceDefinition>(resourceDef: Def): IRemoteResourceClass<Def> {
   const { name, schema } = resourceDef;
 
   function RemoteResourceClass(
-    this: PrivateRemoteResource<Def>,
+    this: RemoteResource<Def>,
     manager: IRemoteResourceManager,
     resourceId: ResourceId,
     buffer: ArrayBuffer,
@@ -44,25 +45,33 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
     for (const propName in schema) {
       const prop = schema[propName];
-      const arr = new prop.arrayType(buffer, this.byteOffset + prop.byteOffset, prop.size);
+      const initialValue = props[propName] !== undefined ? props[propName] : prop.default;
+      const view = new prop.arrayType(buffer, this.byteOffset + prop.byteOffset, prop.size);
 
-      if (props[propName] !== undefined) {
-        if (prop.type === "string") {
-          this.manager.setString(arr.byteOffset, props[propName] as string);
-        } else if (prop.size === 1) {
-          arr[0] = props[propName] as number;
-        } else {
-          arr.set(props[propName] as ArrayLike<number>);
+      if (prop.type === "string") {
+        const store: RemoteResourceStringStore = {
+          prevPtr: 0,
+          value: "",
+          view: view as Uint32Array,
+          resourceIdView: new Uint32Array([0]),
+        };
+
+        if (initialValue) {
+          this.manager.setString(initialValue as string, store);
         }
-      } else if (prop.default !== undefined) {
-        if (prop.size === 1) {
-          arr[0] = prop.default as number;
-        } else {
-          arr.set(prop.default as ArrayLike<number>);
+
+        this.__props[propName] = store;
+      } else {
+        if (initialValue !== undefined) {
+          if (prop.size === 1) {
+            view[0] = initialValue as number;
+          } else {
+            view.set(initialValue as ArrayLike<number>);
+          }
         }
+
+        this.__props[propName] = view;
       }
-
-      this.__props[propName] = arr;
     }
   }
 
@@ -75,22 +84,32 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     const prop = schema[propName];
 
     if (prop.type === "string") {
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<Def>, value?: string) {
+              this.manager.setString(value, this.__props[propName]);
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: PrivateRemoteResource<Def>) {
-          const byteOffset = this.__props[propName][0];
-          return this.manager.getString(byteOffset);
+        ...setter,
+        get(this: RemoteResource<Def>) {
+          return this.manager.getString(this.__props[propName]);
         },
       });
     } else if (prop.type === "ref" || prop.type === "arraybuffer") {
+      // TODO
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: PrivateRemoteResource<Def>) {
+        get(this: RemoteResource<Def>) {
           const resourceId = this.__props[propName][0];
           return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
         },
       });
     } else if (prop.type === "refArray") {
+      // TODO
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: PrivateRemoteResource<Def>) {
+        get(this: RemoteResource<Def>) {
           const arr = this.__props[propName];
           const resources = [];
 
@@ -106,14 +125,32 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         },
       });
     } else if (prop.size === 1) {
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<Def>, value: number) {
+              this.__props[propName][0] = value;
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: PrivateRemoteResource<Def>) {
+        ...setter,
+        get(this: RemoteResource<Def>) {
           return this.__props[propName][0];
         },
       });
     } else {
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<Def>, value: ArrayLike<number>) {
+              this.__props[propName].set(value);
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: PrivateRemoteResource<Def>) {
+        ...setter,
+        get(this: RemoteResource<Def>) {
           return this.__props[propName];
         },
       });

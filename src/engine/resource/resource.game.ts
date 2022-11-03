@@ -188,6 +188,10 @@ export function createResource<Props>(
   return id;
 }
 
+export function createStringResource(ctx: GameState, value: string): ResourceId {
+  return createResource(ctx, Thread.Shared, "string", value);
+}
+
 export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
   const resourceModule = getModule(ctx, ResourceModule);
 

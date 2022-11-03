@@ -29,6 +29,7 @@ typedef struct Light {
 
 import(wasgi) Light *get_light_by_name(const char *name);
 import(wasgi) Light *create_light();
+import(wasgi) int set_light_name(Light *light, const char *name);
 import(wasgi) void dispose_light(Light *light);
 
 #endif

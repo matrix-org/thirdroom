@@ -73,7 +73,7 @@ static JSValue js_light_set_name(JSContext *ctx, JSValueConst this_val, JSValue 
   if (!jsLight) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->name = JS_ToCString(ctx, val);
+    set_light_name(jsLight->light, JS_ToCString(ctx, val));
     return JS_UNDEFINED;
   }
 }

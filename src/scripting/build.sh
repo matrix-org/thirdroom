@@ -5,6 +5,7 @@ QUICKJS_CONFIG_VERSION=$(cat $QUICKJS_ROOT/VERSION)
 
 emcc \
   -O2 \
+  -g \
   --no-entry \
   --emit-symbol-map \
   -s ALLOW_MEMORY_GROWTH=0 \

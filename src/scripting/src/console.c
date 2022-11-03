@@ -34,3 +34,11 @@ void js_define_console_api(JSContext *ctx, JSValue *target) {
   JS_SetPropertyStr(ctx, console, "log", JS_NewCFunction(ctx, js_console_log, "log", 1));
   JS_SetPropertyStr(ctx, *target, "console", console);
 }
+
+void js_log_error(JSContext *ctx, JSValue *error) {
+  emscripten_console_errorf(
+    "%s\n  %s",
+    JS_ToCString(ctx, *error),
+    JS_ToCString(ctx, JS_GetPropertyStr(ctx, *error, "stack"))
+  );
+}

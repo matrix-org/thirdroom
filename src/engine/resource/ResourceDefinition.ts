@@ -456,14 +456,21 @@ export type Resource<Def extends ResourceDefinition, MutResource extends boolean
 } & { [Prop in keyof Def["schema"]]: ResourcePropValueMut<Def, Prop, MutResource> };
 
 export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true> & {
+  manager: IRemoteResourceManager;
+  __props: { [key: string]: any };
   initialized: boolean;
   byteView: Uint8Array;
+  translationIndices: Uint32Array;
+  translationValues: Uint32Array;
   byteOffset: number;
   addRef(): void;
   removeRef(): void;
 } & { constructor: { name: string; resourceDef: Def } };
 
-export type LocalResource<Def extends ResourceDefinition> = Resource<Def, false>;
+export type LocalResource<Def extends ResourceDefinition> = Resource<Def, false> & {
+  manager: ILocalResourceManager;
+  __props: { [key: string]: any };
+};
 
 type RequiredProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
@@ -475,10 +482,17 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
   [Prop in RequiredProps<Def>]: ResourcePropValue<Def, Prop, true>;
 };
 
+export interface RemoteResourceStringStore {
+  prevPtr: number;
+  value: string;
+  view: Uint32Array;
+  resourceIdView: Uint32Array;
+}
+
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
-  getString(byteOffset: number): string;
-  setString(byteOffset: number, value: string): void;
+  getString(store: RemoteResourceStringStore): string;
+  setString(value: string | undefined, store: RemoteResourceStringStore): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
@@ -488,6 +502,5 @@ export interface IRemoteResourceManager {
 
 export interface ILocalResourceManager {
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): LocalResource<Def> | undefined;
+  getString(resourceId: number): string;
 }
-
-export const MAX_C_STRING_BYTE_LENGTH = 1024;

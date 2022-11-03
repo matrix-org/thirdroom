@@ -9,8 +9,9 @@ import { defineLocalResourceClass } from "./LocalResourceClass";
 
 export type ResourceId = number;
 
+export const StringResourceType = "string";
+
 export enum ResourceMessageType {
-  InitResources = "init-resources",
   LoadResources = "load-resources",
   ResourceLoaded = "resource-loaded",
   ResourceDisposed = "resource-disposed",
@@ -96,6 +97,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       return createDisposables([
         registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
         registerMessageHandler(ctx, ResourceMessageType.ResourceDisposed, onDisposeResource),
+        registerResourceLoader(ctx, StringResourceType, onLoadStringResource),
       ]);
     },
   });
@@ -194,7 +196,8 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     const manager: ILocalResourceManager = {
       getResource: <Def extends ResourceDefinition>(resourceDef: Def, resourceId: ResourceId) =>
-        getLocalResource<Def>(ctx, resourceId) as NewLocalResource<Def> | undefined,
+        getLocalResource<Def>(ctx, resourceId)?.resource as NewLocalResource<Def> | undefined,
+      getString: (resourceId: number): string => getLocalResource<string>(ctx, resourceId)?.resource || "",
     };
 
     const LocalResourceClass = defineLocalResourceClass(resourceDef);
@@ -202,7 +205,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
-      if (prop.type === "ref" || prop.type === "arraybuffer") {
+      if (prop.type === "string" || prop.type === "ref" || prop.type === "arraybuffer") {
         dependencyByteOffsets.push(prop.byteOffset);
       } else if (prop.type === "refArray") {
         for (let i = 0; i < prop.size; i++) {
@@ -281,6 +284,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     const resourceModule = getModule(ctx, ResourceModule);
     const resource = resourceModule.resources.get(resourceId);
     return resource ? resource.statusView[1] : ResourceStatus.None;
+  }
+
+  async function onLoadStringResource<ThreadContext extends BaseThreadContext>(
+    ctx: ThreadContext,
+    id: ResourceId,
+    value: string
+  ): Promise<string> {
+    return value;
   }
 
   function ResourceDisposalSystem(ctx: ThreadContext) {

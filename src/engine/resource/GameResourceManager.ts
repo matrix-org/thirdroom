@@ -1,13 +1,19 @@
-import { createTripleBuffer } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import { createResource, getRemoteResource, setRemoteResource } from "./resource.game";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialResourceProps,
+  IRemoteResourceManager,
+  RemoteResource,
+  RemoteResourceStringStore,
+  ResourceDefinition,
+} from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager {
-  private resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>> = new Map();
+  private resourceConstructors = new Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
   constructor(private ctx: GameState) {}
@@ -43,10 +49,30 @@ export class GameResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
   }
 
-  getString(byteOffset: number): string {
-    // TODO
-    return "";
+  getString(store: RemoteResourceStringStore): string {
+    return store.value;
   }
 
-  setString(byteOffset: number, value: string): void {}
+  setString(value: string, store: RemoteResourceStringStore): void {
+    store.value = value;
+  }
+
+  commitResources() {
+    const resources = this.resources;
+
+    for (let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+      const byteView = resource.byteView;
+
+      if (resource.initialized) {
+        copyToWriteBuffer(resource.tripleBuffer, byteView);
+      } else {
+        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+        tripleBufferByteViews[0].set(byteView);
+        tripleBufferByteViews[1].set(byteView);
+        tripleBufferByteViews[2].set(byteView);
+        resource.initialized = true;
+      }
+    }
+  }
 }

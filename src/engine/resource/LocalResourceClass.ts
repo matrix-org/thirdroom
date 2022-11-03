@@ -2,11 +2,6 @@ import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import { ILocalResourceManager, LocalResource, ResourceDefinition } from "./ResourceDefinition";
 
-type PrivateLocalResource<Def extends ResourceDefinition> = LocalResource<Def> & {
-  manager: ILocalResourceManager;
-  __props: { [key: string]: any };
-};
-
 interface ILocalResourceClass<Def extends ResourceDefinition> {
   new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<Def>;
   resourceDef: Def;
@@ -16,7 +11,7 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
   const { name, schema } = resourceDef;
 
   function LocalResourceClass(
-    this: PrivateLocalResource<Def>,
+    this: LocalResource<Def>,
     manager: ILocalResourceManager,
     resourceId: number,
     tripleBuffer: TripleBuffer
@@ -30,12 +25,12 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
     const schema = (LocalResourceClass as unknown as ILocalResourceClass<Def>).resourceDef.schema;
 
     for (const propName in schema) {
-      const { arrayType, byteOffset, size } = schema[propName];
+      const prop = schema[propName];
 
       this.__props[propName] = [
-        new arrayType(buffers[0], byteOffset, size),
-        new arrayType(buffers[1], byteOffset, size),
-        new arrayType(buffers[2], byteOffset, size),
+        new prop.arrayType(buffers[0], prop.byteOffset, prop.size),
+        new prop.arrayType(buffers[1], prop.byteOffset, prop.size),
+        new prop.arrayType(buffers[2], prop.byteOffset, prop.size),
       ];
     }
   }
@@ -48,9 +43,17 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "ref" || prop.type === "string" || prop.type === "arraybuffer") {
+    if (prop.type === "string") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: PrivateLocalResource<Def>) {
+        get(this: LocalResource<Def>) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          const resourceId = this.__props[propName][index][0];
+          return this.manager.getString(resourceId);
+        },
+      });
+    } else if (prop.type === "ref" || prop.type === "arraybuffer") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const resourceId = this.__props[propName][index][0];
           return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
@@ -58,7 +61,7 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
       });
     } else if (prop.type === "refArray") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: PrivateLocalResource<Def>) {
+        get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const arr = this.__props[propName][index];
           const resources = [];
@@ -76,14 +79,14 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
       });
     } else if (prop.size === 1) {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: PrivateLocalResource<Def>) {
+        get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
           return this.__props[propName][index][0];
         },
       });
     } else {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: PrivateLocalResource<Def>) {
+        get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
           return this.__props[propName][index];
         },

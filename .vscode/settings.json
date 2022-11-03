@@ -11,7 +11,9 @@
     "cutils.h": "c",
     "quickjs.h": "c",
     "math.h": "c",
-    "inttypes.h": "c"
+    "inttypes.h": "c",
+    "typeinfo": "c",
+    "*.inc": "c"
   },
   "typescript.tsdk": "node_modules/typescript/lib"
 }

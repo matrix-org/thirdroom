@@ -1,25 +1,62 @@
-import { createTripleBuffer } from "../allocator/TripleBuffer";
+import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
-import { createResource, getRemoteResource, setRemoteResource } from "./resource.game";
+import {
+  createResource,
+  createStringResource,
+  disposeResource,
+  getRemoteResource,
+  setRemoteResource,
+} from "./resource.game";
 import {
   InitialResourceProps,
   IRemoteResourceManager,
-  MAX_C_STRING_BYTE_LENGTH,
   RemoteResource,
+  RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { LightResource } from "./schema";
+import { decodeString } from "./strings";
+
+type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
+
+function defineResourceIdTransform<Def extends ResourceDefinition>(resourceDef: Def): ResourceTransformFunction {
+  const buffer = new ArrayBuffer(resourceDef.byteLength);
+  const byteView = new Uint8Array(buffer);
+
+  const resourceIdViews: { propName: string; view: Uint32Array }[] = [];
+
+  const schema = resourceDef.schema;
+
+  for (const propName in schema) {
+    const prop = schema[propName];
+
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arraybuffer") {
+      resourceIdViews.push({ propName, view: new Uint32Array(buffer, prop.byteOffset, prop.size) });
+    }
+  }
+
+  return (resource: RemoteResource<ResourceDefinition>): Uint8Array => {
+    byteView.set(resource.byteView);
+
+    for (let i = 0; i < resourceIdViews.length; i++) {
+      const resourceIdView = resourceIdViews[i];
+      resourceIdView.view.set(resource.__props[resourceIdView.propName].resourceIdView);
+    }
+
+    return byteView;
+  };
+}
 
 export class ScriptResourceManager implements IRemoteResourceManager {
   public memory: WebAssembly.Memory;
   public buffer: ArrayBuffer | SharedArrayBuffer;
   public U8Heap: Uint8Array;
   public U32Heap: Uint32Array;
-  public textDecoder: TextDecoder;
-  public textEncoder: TextEncoder;
+  private textDecoder = new TextDecoder();
+  private textEncoder = new TextEncoder();
 
   private instance?: WebAssembly.Instance;
 
@@ -37,6 +74,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   private ptrToResourceId: Map<number, number> = new Map();
   private ctx: GameState;
   private resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>> = new Map();
+  private resourceIdTransforms: Map<ResourceDefinition, ResourceTransformFunction> = new Map();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
   constructor(ctx: GameState) {
@@ -45,8 +83,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.buffer = this.memory.buffer;
     this.U8Heap = new Uint8Array(this.buffer);
     this.U32Heap = new Uint32Array(this.buffer);
-    this.textDecoder = new TextDecoder();
-    this.textEncoder = new TextEncoder();
   }
 
   setInstance(instance: WebAssembly.Instance): void {
@@ -65,6 +101,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
         resourceDef,
         resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
       );
+      this.resourceIdTransforms.set(resourceDef, defineResourceIdTransform(resourceDef));
     }
 
     const buffer = this.memory.buffer;
@@ -88,34 +125,58 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
   }
 
-  getString(ptr: number): string {
-    if (!ptr) {
-      return "";
+  getString(store: RemoteResourceStringStore): string {
+    const ptr = store.view[0];
+
+    if (store.prevPtr !== store.view[0]) {
+      store.value = decodeString(ptr, this.U8Heap);
+      store.prevPtr = ptr;
     }
 
-    const maxPtr = ptr + MAX_C_STRING_BYTE_LENGTH;
-    let end = ptr;
-
-    // Find the end of the null-terminated C string on the heap
-    while (!(end >= maxPtr) && this.U8Heap[end]) {
-      ++end;
-    }
-
-    // create a new subarray to store the string so that this always works with SharedArrayBuffer
-    return this.textDecoder.decode(this.U8Heap.subarray(ptr, end));
+    return store.value;
   }
 
-  setString(ptr: number, value: string): void {
-    if (!ptr || !value) {
-      return;
+  setString(value: string, store: RemoteResourceStringStore): void {
+    if (store.prevPtr) {
+      this.deallocate(store.prevPtr);
     }
 
     const arr = this.textEncoder.encode(value);
     const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
     nullTerminatedArr.set(arr);
-    const strPtr = this.allocate(nullTerminatedArr.byteLength);
-    this.U8Heap.set(nullTerminatedArr, strPtr);
-    this.U32Heap[ptr / Uint32Array.BYTES_PER_ELEMENT] = strPtr;
+
+    const scriptStrPtr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, scriptStrPtr);
+
+    store.value = value;
+    store.prevPtr = scriptStrPtr;
+    store.view[0] = scriptStrPtr;
+
+    if (store.resourceIdView[0]) {
+      disposeResource(this.ctx, store.resourceIdView[0]);
+    }
+
+    store.resourceIdView[0] = createStringResource(this.ctx, value);
+  }
+
+  commitResources() {
+    const resources = this.resources;
+
+    for (let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+      const transform = this.resourceIdTransforms.get(resource.constructor.resourceDef)!;
+      const byteView = transform(resource);
+
+      if (resource.initialized) {
+        copyToWriteBuffer(resource.tripleBuffer, byteView);
+      } else {
+        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+        tripleBufferByteViews[0].set(byteView);
+        tripleBufferByteViews[1].set(byteView);
+        tripleBufferByteViews[2].set(byteView);
+        resource.initialized = true;
+      }
+    }
   }
 
   allocate(byteLength: number): number {
@@ -155,7 +216,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       wasgi: {
         get_light_by_name: (namePtr: number) => {
           const resources = this.resources;
-          const name = this.getString(namePtr);
+          const name = decodeString(namePtr, this.U8Heap);
 
           for (let i = 0; i < resources.length; i++) {
             const resource = resources[i];
@@ -171,6 +232,33 @@ export class ScriptResourceManager implements IRemoteResourceManager {
         create_light: () => {
           const resource = this.createResource(LightResource, {});
           return resource.byteOffset;
+        },
+        set_light_name: (lightPtr: number, strPtr: number): number => {
+          const resourceId = this.ptrToResourceId.get(lightPtr);
+
+          if (!resourceId) {
+            return 0;
+          }
+
+          const resource = this.getResource(LightResource, resourceId);
+
+          if (!resource) {
+            return 0;
+          }
+
+          const value = decodeString(strPtr, this.U8Heap);
+          const store = resource.__props["name"];
+          store.value = value;
+          store.prevPtr = strPtr;
+          store.view[0] = strPtr;
+
+          if (store.resourceId) {
+            disposeResource(this.ctx, store.resourceId);
+          }
+
+          store.resourceId = createStringResource(this.ctx, value);
+
+          return 1;
         },
         dispose_light: (ptr: number) => {},
       },

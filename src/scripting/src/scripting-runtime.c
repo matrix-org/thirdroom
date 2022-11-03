@@ -50,13 +50,7 @@ export int32_t evalJS(const char * code) {
 
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
-
-    emscripten_console_errorf(
-      "Error calling update(): %s\n  %s",
-      JS_ToCString(ctx, error),
-      JS_ToCString(ctx, JS_GetPropertyStr(ctx, error, "stack"))
-    ); 
-
+    js_log_error(ctx, &error);
     JS_FreeValue(ctx, error);
 
     return -1;
@@ -88,9 +82,7 @@ export int32_t update(float_t dt) {
 
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
-
-    emscripten_console_errorf("Error calling update(): %s", JS_ToCString(ctx, error));
-
+    js_log_error(ctx, &error);
     JS_FreeValue(ctx, error);
 
     ret = -1;
