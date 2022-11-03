@@ -57,9 +57,9 @@ import {
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
 import {
+  addScriptComponent,
   loadJSScript,
   loadWASMScript,
-  runScript,
   Script,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
@@ -280,6 +280,10 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
         script = await loadWASMScript(ctx, scriptBuffer);
       }
     }
+
+    if (script) {
+      addScriptComponent(ctx, newScene, script);
+    }
   }
 
   const sceneGltf = await inflateGLTFScene(ctx, newScene, url, {
@@ -332,7 +336,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   }
 
   if (script) {
-    runScript(script);
+    script.ready = true;
   }
 }
 

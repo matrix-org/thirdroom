@@ -27,7 +27,7 @@ import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
-import { ScriptingModule, ScriptingSystem } from "./scripting/scripting.game";
+import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
 
 export default defineConfig<GameState>({
@@ -41,7 +41,6 @@ export default defineConfig<GameState>({
     StatsModule,
     EditorModule,
     RendererModule,
-    ScriptingModule,
     ThirdRoomModule,
     FirstPersonCameraModule,
     PhysicsCharacterControllerModule,

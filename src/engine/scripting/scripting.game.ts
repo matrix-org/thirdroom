@@ -1,6 +1,7 @@
+import { addComponent, defineQuery, exitQuery } from "bitecs";
+
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
 export enum ScriptExecutionEnvironment {
@@ -11,14 +12,15 @@ export enum ScriptExecutionEnvironment {
 export type ScriptWebAssemblyInstance<Env extends ScriptExecutionEnvironment> = WebAssembly.Instance &
   (Env extends ScriptExecutionEnvironment.WASM ? { exports: ScriptExports } : { exports: JSScriptExports });
 
-export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment.WASM> {
+export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment> {
   environment: Env;
   module: WebAssembly.Module;
   instance: ScriptWebAssemblyInstance<Env>;
   resourceManager: ScriptResourceManager;
-  dispose: boolean;
   U8Heap: Uint8Array;
   source?: string;
+  ready: boolean;
+  initialized: boolean;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
@@ -32,34 +34,50 @@ interface JSScriptExports extends ScriptExports {
   evalJS(ptr: number): void;
 }
 
-interface ScriptingModuleState {
-  scripts: Script<ScriptExecutionEnvironment>[];
+export const ScriptComponent = new Map<number, Script>();
+
+export const scriptQuery = defineQuery([ScriptComponent]);
+const scriptExitQuery = exitQuery(scriptQuery);
+
+export function addScriptComponent(ctx: GameState, eid: number, script: Script) {
+  addComponent(ctx.world, ScriptComponent, eid);
+  ScriptComponent.set(eid, script);
 }
 
-export const ScriptingModule = defineModule<GameState, ScriptingModuleState>({
-  name: "scripting",
-  async create() {
-    return {
-      scripts: [],
-    };
-  },
-  init(ctx) {},
-});
-
 export function ScriptingSystem(ctx: GameState) {
-  const { scripts } = getModule(ctx, ScriptingModule);
+  const entities = scriptQuery(ctx.world);
 
-  for (let i = scripts.length - 1; i >= 0; i--) {
-    const script = scripts[i];
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
 
-    if (script.dispose) {
-      scripts.splice(i, 1);
+    const script = ScriptComponent.get(eid);
+
+    if (script) {
+      if (script.ready && !script.initialized) {
+        script.instance.exports.initialize();
+
+        if (script.environment === ScriptExecutionEnvironment.JS) {
+          const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
+          const arr = new TextEncoder().encode(script.source);
+          const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+          const codePtr = jsScript.instance.exports.allocate(nullTerminatedArr.byteLength);
+          nullTerminatedArr.set(arr);
+          jsScript.U8Heap.set(nullTerminatedArr, codePtr);
+          jsScript.instance.exports.evalJS(codePtr);
+        }
+
+        script.initialized = true;
+      }
+
+      script.instance.exports.update(ctx.dt);
     }
   }
 
-  for (let i = 0; i < scripts.length; i++) {
-    const script = scripts[i];
-    script.instance.exports.update(ctx.dt);
+  const removedEntities = scriptExitQuery(ctx.world);
+
+  for (let i = 0; i < removedEntities.length; i++) {
+    const eid = removedEntities[i];
+    ScriptComponent.delete(eid);
   }
 }
 
@@ -103,31 +121,10 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     module: result.module,
     environment,
     resourceManager,
-    dispose: false,
+    ready: false,
+    initialized: false,
     U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
 
-  const { scripts } = getModule(ctx, ScriptingModule);
-
-  scripts.push(script);
-
   return script;
-}
-
-export function runScript<Env extends ScriptExecutionEnvironment>(script: Script<Env>) {
-  script.instance.exports.initialize();
-
-  if (script.environment === ScriptExecutionEnvironment.JS) {
-    const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
-    const arr = new TextEncoder().encode(script.source);
-    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-    const codePtr = jsScript.instance.exports.allocate(nullTerminatedArr.byteLength);
-    nullTerminatedArr.set(arr);
-    jsScript.U8Heap.set(nullTerminatedArr, codePtr);
-    jsScript.instance.exports.evalJS(codePtr);
-  }
-}
-
-export function disposeScript(script: Script) {
-  script.dispose = true;
 }

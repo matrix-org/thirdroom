@@ -1,4 +1,4 @@
-const directionalLight = WebSG.getLightByName("DirectionalLight");
+let directionalLight = WebSG.getLightByName("DirectionalLight");
 const pointLight = WebSG.getLightByName("PointLight");
 const spotLight = WebSG.getLightByName("SpotLight");
 
@@ -16,7 +16,15 @@ const spotLightColors = [
 
 onupdate = (dt) => {
   elapsed += dt;
-  directionalLight.color[0] = (Math.sin(elapsed) + 1) / 2;
+
+  if (directionalLight) {
+    directionalLight.color[0] = (Math.sin(elapsed) + 1) / 2;
+  }
+
   pointLight.color[1] = (1 * (Math.cos(elapsed) + 1)) / 2;
   spotLight.color.set(spotLightColors[Math.round(elapsed % (spotLightColors.length - 1))]);
+
+  if (directionalLight && elapsed > 5) {
+    directionalLight = undefined;
+  }
 };

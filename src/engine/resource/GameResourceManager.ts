@@ -3,7 +3,7 @@ import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
-import { createResource, getRemoteResource, setRemoteResource } from "./resource.game";
+import { addResourceRef, createResource, disposeResource, getRemoteResource, setRemoteResource } from "./resource.game";
 import {
   InitialResourceProps,
   IRemoteResourceManager,
@@ -34,7 +34,15 @@ export class GameResourceManager implements IRemoteResourceManager {
 
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
+    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer, {
+      dispose: () => {
+        const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
+
+        if (index !== -1) {
+          this.resources.splice(index, 1);
+        }
+      },
+    });
     const resource = new resourceConstructor(this, resourceId, buffer, 0, tripleBuffer, props);
     setRemoteResource(this.ctx, resourceId, resource);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
@@ -55,6 +63,14 @@ export class GameResourceManager implements IRemoteResourceManager {
 
   setString(value: string, store: RemoteResourceStringStore): void {
     store.value = value;
+  }
+
+  addRef(resourceId: number) {
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  removeRef(resourceId: number) {
+    disposeResource(this.ctx, resourceId);
   }
 
   commitResources() {

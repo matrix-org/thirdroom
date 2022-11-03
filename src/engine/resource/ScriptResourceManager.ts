@@ -4,6 +4,7 @@ import { Thread } from "../module/module.common";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import {
+  addResourceRef,
   createResource,
   createStringResource,
   disposeResource,
@@ -107,7 +108,17 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     const buffer = this.memory.buffer;
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
+    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer, {
+      dispose: () => {
+        const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
+
+        if (index !== -1) {
+          this.resources.splice(index, 1);
+        }
+
+        this.ptrToResourceId.delete(ptr);
+      },
+    });
     const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer, props);
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);
@@ -153,7 +164,17 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       disposeResource(this.ctx, store.resourceIdView[0]);
     }
 
-    store.resourceIdView[0] = createStringResource(this.ctx, value);
+    const resourceId = createStringResource(this.ctx, value);
+    store.resourceIdView[0] = resourceId;
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  addRef(resourceId: number) {
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  removeRef(resourceId: number) {
+    disposeResource(this.ctx, resourceId);
   }
 
   commitResources() {
@@ -257,7 +278,19 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
           return 1;
         },
-        dispose_light: (ptr: number) => {},
+        dispose_light: (ptr: number) => {
+          const resourceId = this.ptrToResourceId.get(ptr);
+
+          if (!resourceId) {
+            return 0;
+          }
+
+          if (disposeResource(this.ctx, resourceId)) {
+            return 1;
+          }
+
+          return 0;
+        },
       },
       wasi_snapshot_preview1: {
         environ_sizes_get: () => {

@@ -80,6 +80,44 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     resourceDef: { value: resourceDef },
   });
 
+  Object.defineProperties(RemoteResourceClass.prototype, {
+    addRef: {
+      value(this: RemoteResource<Def>) {
+        this.manager.addRef(this.resourceId);
+      },
+    },
+    removeRef: {
+      value(this: RemoteResource<Def>) {
+        this.manager.removeRef(this.resourceId);
+      },
+    },
+    dispose: {
+      value(this: RemoteResource<Def>) {
+        for (const propName in schema) {
+          const prop = schema[propName];
+
+          if (prop.type === "ref" || prop.type === "string" || prop.type === "arraybuffer") {
+            const resourceId = this.__props[propName].resourceIdView[0];
+
+            if (resourceId) {
+              this.manager.removeRef(resourceId);
+            }
+          } else if (prop.type === "refArray") {
+            const resourceIds = this.__props[propName].resourceIdView;
+
+            for (let i = 0; i < resourceIds.length; i++) {
+              const resourceId = resourceIds[i];
+
+              if (resourceId) {
+                this.manager.removeRef(resourceId);
+              }
+            }
+          }
+        }
+      },
+    },
+  });
+
   for (const propName in schema) {
     const prop = schema[propName];
 

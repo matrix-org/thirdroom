@@ -60,7 +60,7 @@ function useLoadWorld() {
         sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
       }
 
-      if (scriptUrl.startsWith("mxc:")) {
+      if (scriptUrl && scriptUrl.startsWith("mxc:")) {
         scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
       }
 

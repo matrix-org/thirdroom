@@ -203,7 +203,6 @@ static JSValue js_light_set_outer_cone_angle(JSContext *ctx, JSValueConst this_v
   }
 }
 
-
 static void js_light_finalizer(JSRuntime *rt, JSValue val) {
   JSLight *jsLight = JS_GetOpaque(val, js_light_class_id);
   dispose_light(jsLight->light);

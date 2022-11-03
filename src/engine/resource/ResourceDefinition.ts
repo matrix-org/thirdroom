@@ -498,6 +498,8 @@ export interface IRemoteResourceManager {
     props: InitialResourceProps<Def>
   ): RemoteResource<Def>;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
+  addRef(resourceId: number): void;
+  removeRef(resourceId: number): void;
 }
 
 export interface ILocalResourceManager {

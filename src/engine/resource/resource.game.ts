@@ -230,6 +230,13 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
   resourceInfo.statusView[1] = 1;
 
   resourceModule.resourceInfos.delete(resourceId);
+
+  const resource = resourceModule.resources.get(resourceId);
+
+  if (resource && resource.dispose) {
+    resource.dispose();
+  }
+
   resourceModule.resources.delete(resourceId);
 
   if (resourceInfo.thread === Thread.Main || resourceInfo.thread === Thread.Shared) {

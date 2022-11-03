@@ -4,7 +4,7 @@ import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResource } from "../resource/resource.render";
+import { getLocalResource, getResourceDisposed } from "../resource/resource.render";
 import { LightType, LocalLight } from "../resource/schema";
 
 export function updateNodeLight(
@@ -17,6 +17,15 @@ export function updateNodeLight(
   const nextLightResourceId = nodeReadView.light[0];
 
   // TODO: Handle node.visible
+
+  if (getResourceDisposed(ctx, nextLightResourceId)) {
+    if (node.lightObject) {
+      scene.remove(node.lightObject);
+      node.lightObject = undefined;
+    }
+
+    node.light = undefined;
+  }
 
   if (currentLightResourceId !== nextLightResourceId) {
     if (node.lightObject) {
