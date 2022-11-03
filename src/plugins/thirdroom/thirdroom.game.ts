@@ -56,8 +56,13 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { loadJSScript, runScript } from "../../engine/scripting/scripting.game";
-import lightExampleCode from "../../scripting/examples/light.js?raw";
+import {
+  loadJSScript,
+  loadWASMScript,
+  runScript,
+  Script,
+  ScriptExecutionEnvironment,
+} from "../../engine/scripting/scripting.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -156,7 +161,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
-    await loadEnvironment(ctx, message.url);
+    await loadEnvironment(ctx, message.url, message.scriptUrl);
 
     loadPreviewCamera(ctx);
 
@@ -214,7 +219,7 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
   try {
-    await loadEnvironment(ctx, message.url, message.fileMap);
+    await loadEnvironment(ctx, message.url, undefined, message.fileMap);
     loadPlayerRig(ctx);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
@@ -237,7 +242,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   }
 }
 
-async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string, string>) {
+async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (ctx.activeScene) {
@@ -259,12 +264,28 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const script = await loadJSScript(ctx, lightExampleCode);
+  let script: Script<ScriptExecutionEnvironment> | undefined;
+
+  if (scriptUrl) {
+    const response = await fetch(scriptUrl);
+
+    const contentType = response.headers.get("content-type");
+
+    if (contentType) {
+      if (contentType.startsWith("text/javascript")) {
+        const scriptSource = await response.text();
+        script = await loadJSScript(ctx, scriptSource);
+      } else if (contentType.startsWith("application/wasm")) {
+        const scriptBuffer = await response.arrayBuffer();
+        script = await loadWASMScript(ctx, scriptBuffer);
+      }
+    }
+  }
 
   const sceneGltf = await inflateGLTFScene(ctx, newScene, url, {
     fileMap,
     isStatic: true,
-    resourceManager: script.resourceManager,
+    resourceManager: script?.resourceManager,
   });
 
   thirdroom.sceneGLTF = sceneGltf;
@@ -310,7 +331,9 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
     addChild(newScene, collisionGeo);
   }
 
-  runScript(script);
+  if (script) {
+    runScript(script);
+  }
 }
 
 const spawnPointQuery = defineQuery([SpawnPoint]);

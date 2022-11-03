@@ -11,7 +11,7 @@ export enum ScriptExecutionEnvironment {
 export type ScriptWebAssemblyInstance<Env extends ScriptExecutionEnvironment> = WebAssembly.Instance &
   (Env extends ScriptExecutionEnvironment.WASM ? { exports: ScriptExports } : { exports: JSScriptExports });
 
-interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment.WASM> {
+export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment.WASM> {
   environment: Env;
   module: WebAssembly.Module;
   instance: ScriptWebAssemblyInstance<Env>;
@@ -71,9 +71,10 @@ export async function loadJSScript(ctx: GameState, source: string): Promise<Scri
   return script;
 }
 
-export async function loadWASMScript(ctx: GameState, url: string): Promise<Script<ScriptExecutionEnvironment.WASM>> {
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
+export async function loadWASMScript(
+  ctx: GameState,
+  buffer: ArrayBuffer
+): Promise<Script<ScriptExecutionEnvironment.WASM>> {
   const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer);
   return script;
 }
