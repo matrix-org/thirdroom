@@ -196,9 +196,9 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                       </SettingTile>
                     </div>
                     <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>Script</Label>}>
+                      <SettingTile className="grow basis-0" label={<Label>Script (EXPERIMENTAL)</Label>}>
                         <AutoFileUpload
-                          mimeType=".js"
+                          mimeType=".js,.wasm"
                           onUploadInfo={setScriptInfo}
                           renderButton={(pickFile) => (
                             <Button fill="outline" onClick={pickFile}>

@@ -7,7 +7,7 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 
-#include "./wasgi.h"
+#include "./websg.h"
 #include "./console.h"
 #include "./light.h"
 
@@ -19,7 +19,7 @@ JSRuntime *rt;
 JSContext *ctx;
 
 /**
- * Web Assembly Scene Graph Interface (WASGI) Implementation
+ * Web Scene Graph (WebSG) Implementation
  **/
 
 JSAtom onUpdateAtom;
@@ -28,7 +28,7 @@ JSAtom onUpdateAtom;
  * Exported Functions
  *********************/
 
-export int32_t initialize() {
+export int32_t websg_initialize() {
   rt = JS_NewRuntime();
   ctx = JS_NewContext(rt);
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
@@ -45,7 +45,7 @@ export int32_t initialize() {
 
 // NONSTANDARD: execute the provided code in the JS context
 // Should be called immediately after initialize()
-export int32_t evalJS(const char * code) {
+export int32_t thirdroom_evalJS(const char * code) {
   JSValue val = JS_Eval(ctx, code, strlen(code), "<module>", JS_EVAL_TYPE_GLOBAL);
 
   if (JS_IsException(val)) {
@@ -59,7 +59,7 @@ export int32_t evalJS(const char * code) {
   return 0;
 }
 
-export int32_t update(float_t dt) {
+export int32_t websg_update(float_t dt) {
   int32_t ret;
 
   JSValue global = JS_GetGlobalObject(ctx);

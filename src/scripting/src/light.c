@@ -8,7 +8,7 @@
 #include "../include/quickjs/quickjs.h"
 
 #include "jsutils.h"
-#include "wasgi.h"
+#include "websg.h"
 #include "light.h"
 
 /**
@@ -30,14 +30,14 @@ static JSLight *create_js_light(JSContext *ctx, Light *light) {
 static JSClassID js_light_class_id;
 
 static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  Light *light = create_light();
+  Light *light = websg_create_light();
   JSValue lightObj = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
 
   // TODO: parse and set args on node
 
   if (JS_IsException(proto)) {
-    dispose_light(light);
+    websg_dispose_light(light);
     JS_FreeValue(ctx, lightObj);
     return JS_EXCEPTION;
   }
@@ -46,7 +46,7 @@ static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int
   JS_FreeValue(ctx, proto);
 
   if (JS_IsException(lightObj)) {
-    dispose_light(light);
+    websg_dispose_light(light);
     JS_FreeValue(ctx, lightObj);
     return JS_EXCEPTION;
   }
@@ -73,7 +73,7 @@ static JSValue js_light_set_name(JSContext *ctx, JSValueConst this_val, JSValue 
   if (!jsLight) {
     return JS_EXCEPTION;
   } else {
-    set_light_name(jsLight->light, JS_ToCString(ctx, val));
+    websg_set_light_name(jsLight->light, JS_ToCString(ctx, val));
     return JS_UNDEFINED;
   }
 }
@@ -205,7 +205,7 @@ static JSValue js_light_set_outer_cone_angle(JSContext *ctx, JSValueConst this_v
 
 static void js_light_finalizer(JSRuntime *rt, JSValue val) {
   JSLight *jsLight = JS_GetOpaque(val, js_light_class_id);
-  dispose_light(jsLight->light);
+  websg_dispose_light(jsLight->light);
   js_free_rt(rt, jsLight);
 }
 
@@ -247,7 +247,7 @@ static JSValue js_define_light_class(JSContext *ctx) {
 
 static JSValue js_get_light_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   const char *name = JS_ToCString(ctx, argv[0]);
-  Light *light = get_light_by_name(name);
+  Light *light = websg_get_light_by_name(name);
   JS_FreeCString(ctx, name);
 
   if (!light) {

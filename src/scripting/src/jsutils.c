@@ -7,7 +7,7 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 #include "jsutils.h"
-#include "wasgi.h"
+#include "websg.h"
 
 JSValue JS_CreateFloat32Array(JSContext *ctx, float_t *target, int size) {
   JSValue global = JS_GetGlobalObject(ctx);

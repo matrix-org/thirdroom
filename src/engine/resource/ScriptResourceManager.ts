@@ -1,6 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
+import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import {
@@ -58,8 +59,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   public U32Heap: Uint32Array;
   private textDecoder = new TextDecoder();
   private textEncoder = new TextEncoder();
-
-  private instance?: WebAssembly.Instance;
+  private instance?: ScriptWebAssemblyInstance;
 
   // When allocating resource, allocate space in WASM memory and a triplebuffer
   // At end of frame copy each resource to triple buffer using ptr and byteLength
@@ -86,7 +86,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.U32Heap = new Uint32Array(this.buffer);
   }
 
-  setInstance(instance: WebAssembly.Instance): void {
+  setInstance(instance: ScriptWebAssemblyInstance): void {
     this.instance = instance;
   }
 
@@ -182,27 +182,38 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
-      const transform = this.resourceIdTransforms.get(resource.constructor.resourceDef)!;
-      const byteView = transform(resource);
+      const transform = this.resourceIdTransforms.get(resource.constructor.resourceDef);
 
-      if (resource.initialized) {
-        copyToWriteBuffer(resource.tripleBuffer, byteView);
-      } else {
-        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
-        tripleBufferByteViews[0].set(byteView);
-        tripleBufferByteViews[1].set(byteView);
-        tripleBufferByteViews[2].set(byteView);
-        resource.initialized = true;
+      if (transform) {
+        const byteView = transform(resource);
+
+        if (resource.initialized) {
+          copyToWriteBuffer(resource.tripleBuffer, byteView);
+        } else {
+          const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+          tripleBufferByteViews[0].set(byteView);
+          tripleBufferByteViews[1].set(byteView);
+          tripleBufferByteViews[2].set(byteView);
+          resource.initialized = true;
+        }
       }
     }
   }
 
   allocate(byteLength: number): number {
-    return (this.instance!.exports.allocate as Function)(byteLength);
+    if (!this.instance) {
+      throw new Error("Called allocate before instance was set.");
+    }
+
+    return this.instance.exports.websg_allocate(byteLength);
   }
 
   deallocate(ptr: number): void {
-    (this.instance!.exports.deallocate as Function)(ptr);
+    if (!this.instance) {
+      throw new Error("Called deallocate before instance was set.");
+    }
+
+    this.instance.exports.websg_deallocate(ptr);
   }
 
   createImports(): WebAssembly.Imports {
@@ -231,7 +242,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       env: {
         memory: this.memory,
       },
-      wasgi: {
+      websg: {
         get_light_by_name: (namePtr: number) => {
           const resources = this.resources;
           const name = decodeString(namePtr, this.U8Heap);

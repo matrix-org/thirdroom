@@ -9,8 +9,9 @@ export enum ScriptExecutionEnvironment {
   WASM,
 }
 
-export type ScriptWebAssemblyInstance<Env extends ScriptExecutionEnvironment> = WebAssembly.Instance &
-  (Env extends ScriptExecutionEnvironment.WASM ? { exports: ScriptExports } : { exports: JSScriptExports });
+export type ScriptWebAssemblyInstance<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment> =
+  WebAssembly.Instance &
+    (Env extends ScriptExecutionEnvironment.WASM ? { exports: ScriptExports } : { exports: JSScriptExports });
 
 export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecutionEnvironment> {
   environment: Env;
@@ -24,14 +25,14 @@ export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecution
 }
 
 interface ScriptExports extends WebAssembly.Exports {
-  allocate(size: number): number;
-  deallocate(ptr: number): void;
-  initialize(): void;
-  update(dt: number): void;
+  websg_allocate(size: number): number;
+  websg_deallocate(ptr: number): void;
+  websg_initialize(): void;
+  websg_update(dt: number): void;
 }
 
 interface JSScriptExports extends ScriptExports {
-  evalJS(ptr: number): void;
+  thirdroom_evalJS(ptr: number): void;
 }
 
 export const ScriptComponent = new Map<number, Script>();
@@ -54,22 +55,22 @@ export function ScriptingSystem(ctx: GameState) {
 
     if (script) {
       if (script.ready && !script.initialized) {
-        script.instance.exports.initialize();
+        script.instance.exports.websg_initialize();
 
         if (script.environment === ScriptExecutionEnvironment.JS) {
           const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
           const arr = new TextEncoder().encode(script.source);
           const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-          const codePtr = jsScript.instance.exports.allocate(nullTerminatedArr.byteLength);
+          const codePtr = jsScript.instance.exports.websg_allocate(nullTerminatedArr.byteLength);
           nullTerminatedArr.set(arr);
           jsScript.U8Heap.set(nullTerminatedArr, codePtr);
-          jsScript.instance.exports.evalJS(codePtr);
+          jsScript.instance.exports.thirdroom_evalJS(codePtr);
         }
 
         script.initialized = true;
       }
 
-      script.instance.exports.update(ctx.dt);
+      script.instance.exports.websg_update(ctx.dt);
     }
   }
 

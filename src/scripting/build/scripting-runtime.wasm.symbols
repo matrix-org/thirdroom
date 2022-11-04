@@ -1,6 +1,6 @@
-0:get_light_by_name
-1:create_light
-2:dispose_light
+0:websg_get_light_by_name
+1:websg_create_light
+2:websg_dispose_light
 3:__wasi_clock_time_get
 4:__wasi_fd_close
 5:__wasi_proc_exit
@@ -29,11 +29,11 @@
 28:js_light_set_inner_cone_angle
 29:js_light_get_outer_cone_angle
 30:js_light_set_outer_cone_angle
-31:initialize
-32:evalJS
-33:update
-34:allocate
-35:deallocate
+31:websg_initialize
+32:thirdroom_evalJS
+33:websg_update
+34:websg_allocate
+35:websg_deallocate
 36:js_free_rt
 37:js_realloc_rt
 38:js_malloc
