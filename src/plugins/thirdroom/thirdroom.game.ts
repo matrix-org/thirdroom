@@ -279,7 +279,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
       ) {
         const scriptSource = await response.text();
         script = await loadJSScript(ctx, scriptSource);
-      } else if (contentType.startsWith("application/wasm")) {
+      } else if (contentType === "application/wasm") {
         const scriptBuffer = await response.arrayBuffer();
         script = await loadWASMScript(ctx, scriptBuffer);
       }
