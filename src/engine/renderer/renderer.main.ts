@@ -2,9 +2,10 @@ import { defineModule, Thread } from "../module/module.common";
 import { IMainThreadContext } from "../MainThread";
 import { WorkerMessageType } from "../WorkerMessage";
 import { RendererMessageType, rendererModuleName } from "./renderer.common";
-import { registerResourceLoader } from "../resource/resource.main";
+import { registerResourceLoader, registerResource } from "../resource/resource.main";
 import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { createDisposables } from "../utils/createDisposables";
+import { LightResource } from "../resource/schema";
 
 type MainRendererModuleState = {};
 
@@ -39,6 +40,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
     return createDisposables([
       registerResizeEventHandler(ctx),
       registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
+      registerResource(ctx, LightResource),
     ]);
   },
 });

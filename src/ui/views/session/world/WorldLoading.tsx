@@ -49,6 +49,7 @@ function useLoadWorld() {
     async (roomId: string, event: StateEvent | undefined) => {
       if (!roomId) return;
       let sceneUrl = event?.content?.scene_url;
+      let scriptUrl = event?.content?.script_url;
       const maxObjectCap = event?.content?.max_member_object_cap;
 
       if (typeof sceneUrl !== "string") {
@@ -59,8 +60,12 @@ function useLoadWorld() {
         sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
       }
 
+      if (scriptUrl && scriptUrl.startsWith("mxc:")) {
+        scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
+      }
+
       try {
-        await loadWorld(mainThread, sceneUrl);
+        await loadWorld(mainThread, sceneUrl, scriptUrl);
 
         // set max obj cap
         if (maxObjectCap !== undefined)

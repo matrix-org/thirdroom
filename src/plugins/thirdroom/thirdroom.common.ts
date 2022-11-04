@@ -28,6 +28,7 @@ export interface LoadWorldMessage {
   type: ThirdRoomMessageType.LoadWorld;
   id: number;
   url: string;
+  scriptUrl: string;
 }
 
 export interface WorldLoadedMessage {

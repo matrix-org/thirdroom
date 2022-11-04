@@ -89,6 +89,7 @@ export const mockNetworkState = () => ({
 export const mockResourceModule = () => ({
   resourceIdMap: new Map(),
   resources: new Map(),
+  resourceInfos: new Map(),
   deferredResources: new Map(),
   renderThreadMessageQueue: [],
   renderThreadTransferList: [],

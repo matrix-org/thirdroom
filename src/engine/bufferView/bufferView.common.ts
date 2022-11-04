@@ -3,6 +3,12 @@ import { ResourceId } from "../resource/resource.common";
 
 export const BufferViewResourceType = "buffer-view";
 
+export enum BufferViewTarget {
+  None = 0,
+  ArrayBuffer = 34962,
+  ElementArrayBuffer = 34963,
+}
+
 export interface BufferViewResourceProps {
   buffer: ArrayBuffer | SharedArrayBuffer;
   byteStride: number;
