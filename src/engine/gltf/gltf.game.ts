@@ -1,5 +1,5 @@
 import { addComponent, addEntity } from "bitecs";
-import { mat4, vec2, vec3 } from "gl-matrix";
+import { mat4, vec2 } from "gl-matrix";
 import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -312,7 +312,7 @@ async function _inflateGLTFNode(
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
       node.extensions?.KHR_lights_punctual?.light !== undefined
-        ? loadGLTFLight(ctx, resource, node.extensions.KHR_lights_punctual.light)
+        ? loadGLTFLight(resource, node.extensions.KHR_lights_punctual.light)
         : undefined,
     audioEmitter: loadNodeAudioEmitter(ctx, resource, node),
     colliderMesh: hasMeshCollider(resource.root, node)
@@ -1303,21 +1303,21 @@ const GLTFLightTypeToLightType: { [key: string]: LightType } = {
   spot: LightType.Spot,
 };
 
-export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
+export async function loadGLTFLight(resource: GLTFResource, index: number): Promise<RemoteLight> {
   let lightPromise = resource.lightPromises.get(index);
 
   if (lightPromise) {
     return lightPromise;
   }
 
-  lightPromise = _loadGLTFLight(ctx, resource, index);
+  lightPromise = _loadGLTFLight(resource, index);
 
   resource.lightPromises.set(index, lightPromise);
 
   return lightPromise;
 }
 
-async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
+async function _loadGLTFLight(resource: GLTFResource, index: number): Promise<RemoteLight> {
   if (!resource.root.extensions?.KHR_lights_punctual) {
     throw new Error("glTF file has no KHR_lights_punctual extension");
   }
@@ -1328,21 +1328,16 @@ async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: num
     throw new Error(`Light ${index} not found`);
   }
 
-  const light = lightExtension.lights[index];
-
-  const color = light.color ? vec3.fromValues(light.color[0], light.color[1], light.color[2]) : vec3.create();
-  const intensity = light.intensity;
-  const range = light.range;
+  const { name, type, color, intensity, range, spot } = lightExtension.lights[index];
 
   const lightResource = resource.manager.createResource(LightResource, {
-    name: light.name,
-    type: GLTFLightTypeToLightType[light.type],
+    name,
+    type: GLTFLightTypeToLightType[type],
     color,
     intensity,
     range,
-    innerConeAngle: light.spot?.innerConeAngle,
-    outerConeAngle: light.spot?.outerConeAngle,
-    castShadow: true,
+    innerConeAngle: spot?.innerConeAngle,
+    outerConeAngle: spot?.outerConeAngle,
   });
 
   resource.lights.set(index, lightResource);

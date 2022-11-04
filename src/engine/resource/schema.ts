@@ -139,7 +139,7 @@ export const LightResource = defineResource("light", {
   color: PropType.rgb({ default: [1, 1, 1], script: true }),
   intensity: PropType.f32({ default: 1, script: true }),
   range: PropType.f32({ default: 1, script: true }),
-  castShadow: PropType.bool({ default: false, script: true }),
+  castShadow: PropType.bool({ default: true, script: true }),
   innerConeAngle: PropType.f32({ default: 1, script: true }),
   outerConeAngle: PropType.f32({ default: 1, script: true }),
 });
