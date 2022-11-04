@@ -32,8 +32,6 @@ import {
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
-import { createRemoteSampler } from "../../engine/sampler/sampler.game";
-import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
@@ -63,6 +61,7 @@ import {
   Script,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
+import { SamplerMapping, SamplerResource } from "../../engine/resource/schema";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -300,6 +299,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
+  const resourceManager = script?.resourceManager || ctx.resourceManager;
+
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
     const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
       name: "Environment Map Texture",
@@ -308,7 +309,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
         uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
       }),
-      sampler: createRemoteSampler(ctx, {
+      sampler: resourceManager.createResource(SamplerResource, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
       }),
     });

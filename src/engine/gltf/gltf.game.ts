@@ -33,7 +33,6 @@ import {
 } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
-import { createRemoteSampler, RemoteSampler } from "../sampler/sampler.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { TextureEncoding } from "../texture/texture.common";
 import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
@@ -57,7 +56,6 @@ import {
 } from "./OMI_collider";
 import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_reflection_probes";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
-import { SamplerMapping } from "../sampler/sampler.common";
 import { hasBackgroundExtension, loadGLTFBackgroundTexture } from "./MX_background";
 import { getEmissiveStrength } from "./KHR_materials_emissive_strength";
 import { getTransmissionFactor, getTransmissionTextureInfo } from "./KHR_materials_transmission";
@@ -67,7 +65,14 @@ import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
-import { LightResource, LightType, RemoteLight } from "../resource/schema";
+import {
+  LightResource,
+  LightType,
+  RemoteLight,
+  RemoteSampler,
+  SamplerMapping,
+  SamplerResource,
+} from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 
 export interface GLTFResource {
@@ -786,7 +791,6 @@ interface SamplerOptions {
 }
 
 export async function loadGLTFSampler(
-  ctx: GameState,
   resource: GLTFResource,
   index: number,
   options?: SamplerOptions
@@ -797,7 +801,7 @@ export async function loadGLTFSampler(
     return samplerPromise;
   }
 
-  samplerPromise = _loadGLTFSampler(ctx, resource, index, options);
+  samplerPromise = _loadGLTFSampler(resource, index, options);
 
   resource.samplerPromises.set(index, samplerPromise);
 
@@ -805,7 +809,6 @@ export async function loadGLTFSampler(
 }
 
 export async function _loadGLTFSampler(
-  ctx: GameState,
   resource: GLTFResource,
   index: number,
   options?: SamplerOptions
@@ -814,15 +817,15 @@ export async function _loadGLTFSampler(
     throw new Error(`Sampler ${index} not found`);
   }
 
-  const sampler = resource.root.samplers[index];
+  const { name, magFilter, minFilter, wrapS, wrapT } = resource.root.samplers[index];
 
-  const remoteSampler = createRemoteSampler(ctx, {
-    name: sampler.name,
-    magFilter: sampler.magFilter,
-    minFilter: sampler.minFilter,
-    wrapS: sampler.wrapS,
-    wrapT: sampler.wrapT,
-    mapping: options?.mapping || undefined,
+  const remoteSampler = resource.manager.createResource(SamplerResource, {
+    name,
+    magFilter,
+    minFilter,
+    wrapS,
+    wrapT,
+    mapping: options?.mapping,
   });
 
   resource.samplers.set(index, remoteSampler);
@@ -877,9 +880,7 @@ async function _loadGLTFTexture(
     image: isBasis
       ? loadBasisuImage(ctx, resource, texture)
       : loadGLTFImage(ctx, resource, texture.source!, { flipY: options?.flipY }),
-    sampler: texture.sampler
-      ? loadGLTFSampler(ctx, resource, texture.sampler, { mapping: options?.mapping })
-      : undefined,
+    sampler: texture.sampler ? loadGLTFSampler(resource, texture.sampler, { mapping: options?.mapping }) : undefined,
   });
 
   const remoteTexture = createRemoteTexture(ctx, {

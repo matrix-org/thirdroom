@@ -1,5 +1,5 @@
 import { GameState } from "../GameTypes";
-import { SamplerMapping } from "../sampler/sampler.common";
+import { SamplerMapping } from "../resource/schema";
 import { RemoteTexture } from "../texture/texture.game";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFTexture } from "./gltf.game";

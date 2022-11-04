@@ -1,6 +1,6 @@
 import { GameState } from "../GameTypes";
 import { createReflectionProbeResource, RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
-import { SamplerMapping } from "../sampler/sampler.common";
+import { SamplerMapping } from "../resource/schema";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFTexture } from "./gltf.game";
 

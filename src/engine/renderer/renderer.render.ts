@@ -28,8 +28,6 @@ import {
 } from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
-import { SamplerResourceType } from "../sampler/sampler.common";
-import { onLoadSampler } from "../sampler/sampler.render";
 import { SceneResourceType } from "../scene/scene.common";
 import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
@@ -82,7 +80,7 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import { LightResource } from "../resource/schema";
+import { LightResource, SamplerResource } from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -205,7 +203,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResourceLoader(ctx, SamplerResourceType, onLoadSampler),
+      registerResource(ctx, SamplerResource),
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
       registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
       registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),

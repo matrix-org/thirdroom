@@ -5,7 +5,6 @@ import { BufferViewTarget } from "../bufferView/bufferView.common";
 import { CameraType } from "../camera/camera.common";
 import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
-import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap } from "../sampler/sampler.common";
 import { TextureEncoding } from "../texture/texture.common";
 
 export const NametagResource = defineResource("nametag", {
@@ -16,6 +15,31 @@ export const NametagResource = defineResource("nametag", {
   inFrustum: PropType.bool(),
 });
 
+export enum SamplerMagFilter {
+  NEAREST = 9728,
+  LINEAR = 9729,
+}
+export enum SamplerMinFilter {
+  NEAREST = 9728,
+  LINEAR = 9729,
+  NEAREST_MIPMAP_NEAREST = 9984,
+  LINEAR_MIPMAP_NEAREST = 9985,
+  NEAREST_MIPMAP_LINEAR = 9986,
+  LINEAR_MIPMAP_LINEAR = 9987,
+}
+export enum SamplerWrap {
+  CLAMP_TO_EDGE = 33071,
+  MIRRORED_REPEAT = 33648,
+  REPEAT = 10497,
+}
+export enum SamplerMapping {
+  UVMapping,
+  CubeReflectionMapping,
+  CubeRefractionMapping,
+  EquirectangularReflectionMapping,
+  EquirectangularRefractionMapping,
+  CubeUVReflectionMapping,
+}
 export const SamplerResource = defineResource("sampler", {
   name: PropType.string({ default: "Sampler", script: true }),
   magFilter: PropType.enum(SamplerMagFilter, { default: SamplerMagFilter.LINEAR, script: true, mutable: false }),
@@ -28,6 +52,8 @@ export const SamplerResource = defineResource("sampler", {
   wrapT: PropType.enum(SamplerWrap, { default: SamplerWrap.REPEAT, script: true, mutable: false }),
   mapping: PropType.enum(SamplerMapping, { default: SamplerMapping.UVMapping, script: true, mutable: false }),
 });
+export type RemoteSampler = RemoteResource<typeof SamplerResource>;
+export type LocalSampler = LocalResource<typeof SamplerResource>;
 
 export const BufferViewResource = defineResource("buffer-view", {
   name: PropType.string({ default: "BufferView", script: true }),
