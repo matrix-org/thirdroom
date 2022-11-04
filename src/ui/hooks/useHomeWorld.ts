@@ -79,7 +79,12 @@ export function useHomeWorld() {
     async function run() {
       const homeAccountData = await session.getAccountData("org.matrix.msc3815.world.home");
 
-      if (homeAccountData && homeAccountData.version && homeAccountData.version >= 4) {
+      if (
+        homeAccountData &&
+        homeAccountData.version &&
+        homeAccountData.version >= 4 &&
+        session.rooms.get(homeAccountData.room_id)
+      ) {
         if (homeAccountData.version < defaultWorlds.home.version) {
           await updateHomeWorld(session, homeAccountData);
 
@@ -96,10 +101,8 @@ export function useHomeWorld() {
         }
 
         const roomBeingCreated = await createHomeWorld(session);
-
-        setHomeWorldId(roomBeingCreated.id);
-
         const homeWorld = await waitToCreateRoom(session, roomBeingCreated);
+        setHomeWorldId(homeWorld!.id);
 
         await session.setAccountData("org.matrix.msc3815.world.home", {
           version: defaultWorlds.home.version,
