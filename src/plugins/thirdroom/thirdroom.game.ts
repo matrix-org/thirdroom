@@ -272,15 +272,17 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     const contentType = response.headers.get("content-type");
 
     if (contentType) {
-      if (contentType.startsWith("text/javascript")) {
+      if (
+        contentType === "application/javascript" ||
+        contentType === "application/x-javascript" ||
+        contentType.startsWith("text/javascript")
+      ) {
         const scriptSource = await response.text();
         script = await loadJSScript(ctx, scriptSource);
       } else if (contentType.startsWith("application/wasm")) {
         const scriptBuffer = await response.arrayBuffer();
         script = await loadWASMScript(ctx, scriptBuffer);
       }
-
-      console.log(contentType);
     }
 
     if (script) {
