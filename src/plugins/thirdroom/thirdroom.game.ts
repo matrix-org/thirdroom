@@ -279,6 +279,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
         const scriptBuffer = await response.arrayBuffer();
         script = await loadWASMScript(ctx, scriptBuffer);
       }
+
+      console.log(contentType);
     }
 
     if (script) {
