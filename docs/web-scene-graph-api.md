@@ -41,7 +41,7 @@ export void update(float_t dt) {
 }
 ```
 
-These examples (including a compiled version of the C example) are availiable in the [examples](examples/) directory.
+These examples (including a compiled version of the C example) are availiable in the [examples](https://github.com/matrix-org/thirdroom/tree/main/examples/) directory.
 
 ## JS API
 
