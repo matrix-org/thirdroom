@@ -39,6 +39,7 @@ export enum SamplerMapping {
   EquirectangularRefractionMapping,
   CubeUVReflectionMapping,
 }
+
 export const SamplerResource = defineResource("sampler", {
   name: PropType.string({ default: "Sampler", script: true }),
   magFilter: PropType.enum(SamplerMagFilter, { default: SamplerMagFilter.LINEAR, script: true, mutable: false }),
@@ -54,14 +55,24 @@ export const SamplerResource = defineResource("sampler", {
 export type RemoteSampler = RemoteResource<typeof SamplerResource>;
 export type LocalSampler = LocalResource<typeof SamplerResource>;
 
+export const BufferResource = defineResource("buffer", {
+  name: PropType.string({ default: "Buffer", script: true }),
+  uri: PropType.string({ script: true, mutable: false }),
+  data: PropType.arrayBuffer({ script: true }),
+});
+export type RemoteBuffer = RemoteResource<typeof BufferResource>;
+export type LocalBuffer = LocalResource<typeof BufferResource>;
+
 export const BufferViewResource = defineResource("buffer-view", {
   name: PropType.string({ default: "BufferView", script: true }),
-  buffer: PropType.arraybuffer({ mutable: false, required: true, script: true }),
+  buffer: PropType.ref(BufferResource, { mutable: false, required: true, script: true }),
   byteOffset: PropType.u32({ mutable: false, script: true }),
   byteLength: PropType.u32({ mutable: false, required: true, script: true }),
   byteStride: PropType.u32({ min: 4, max: 252, mutable: false, script: true }),
   target: PropType.enum(BufferViewTarget, { default: BufferViewTarget.None, mutable: false, script: true }),
 });
+export type RemoteBufferView = RemoteResource<typeof BufferViewResource>;
+export type LocalBufferView = LocalResource<typeof BufferViewResource>;
 
 export const AudioDataResource = defineResource("audio-data", {
   name: PropType.string({ default: "AudioData", script: true }),

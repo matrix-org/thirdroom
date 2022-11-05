@@ -19,7 +19,7 @@ type ProcessedSchema<S extends Schema> = {
 
 export interface ResourcePropDef<
   Key extends string,
-  Value,
+  DefaultValue,
   Mut extends boolean,
   Req extends boolean,
   Enum = undefined,
@@ -31,7 +31,7 @@ export interface ResourcePropDef<
   required: Req;
   mutable: Mut;
   script: boolean;
-  default: Value;
+  default: DefaultValue;
   enumType?: Enum;
   resourceDef?: Def;
   min?: number;
@@ -269,20 +269,17 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
   };
 }
 
-function createArrayBufferPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: number;
-  mutable?: Mut;
-  required?: Req;
+function createArrayBufferPropDef(options?: {
   script?: boolean;
-}): ResourcePropDef<"arraybuffer", number, Mut | true, Req | false> {
+}): ResourcePropDef<"arrayBuffer", undefined, false, true> {
   return {
-    type: "arraybuffer",
+    type: "arrayBuffer",
     size: 1,
     arrayType: Uint32Array,
-    mutable: true,
-    required: false,
+    mutable: false,
+    required: true,
     script: false,
-    default: 0,
+    default: undefined,
     ...options,
   };
 }
@@ -361,7 +358,7 @@ export const PropType = {
   bitmask: createBitmaskPropDef,
   enum: createEnumPropDef,
   string: createStringPropDef,
-  arraybuffer: createArrayBufferPropDef,
+  arrayBuffer: createArrayBufferPropDef,
   ref: createRefPropDef,
   refArray: createRefArrayPropDef,
   selfRef: createSelfRefPropDef,
@@ -405,7 +402,7 @@ type ResourcePropValue<
   : Def["schema"][Prop]["type"] extends "u32"
   ? number
   : Def["schema"][Prop]["type"] extends "arrayBuffer"
-  ? ArrayBuffer
+  ? SharedArrayBuffer
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
   : Def["schema"][Prop]["type"] extends "mat4"
@@ -489,10 +486,18 @@ export interface RemoteResourceStringStore {
   resourceIdView: Uint32Array;
 }
 
+export interface RemoteResourceArrayBufferStore {
+  value: SharedArrayBuffer | undefined;
+  view: Uint32Array;
+  resourceIdView: Uint32Array;
+}
+
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
   getString(store: RemoteResourceStringStore): string;
   setString(value: string | undefined, store: RemoteResourceStringStore): void;
+  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer;
+  setArrayBuffer(value: SharedArrayBuffer | undefined, store: RemoteResourceArrayBufferStore): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
@@ -505,4 +510,5 @@ export interface IRemoteResourceManager {
 export interface ILocalResourceManager {
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): LocalResource<Def> | undefined;
   getString(resourceId: number): string;
+  getArrayBuffer(resourceId: number): SharedArrayBuffer | undefined;
 }

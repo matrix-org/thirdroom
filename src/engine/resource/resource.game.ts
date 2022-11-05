@@ -2,6 +2,7 @@ import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
+  ArrayBufferResourceType,
   LoadResourcesMessage,
   ResourceDisposedError,
   ResourceDisposedMessage,
@@ -9,6 +10,7 @@ import {
   ResourceLoadedMessage,
   ResourceMessageType,
   ResourceStatus,
+  StringResourceType,
 } from "./resource.common";
 import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
 
@@ -192,7 +194,11 @@ export function createResource<Props>(
 }
 
 export function createStringResource(ctx: GameState, value: string): ResourceId {
-  return createResource(ctx, Thread.Shared, "string", value);
+  return createResource(ctx, Thread.Shared, StringResourceType, value);
+}
+
+export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
+  return createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
 }
 
 export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {

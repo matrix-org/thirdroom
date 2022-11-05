@@ -6,6 +6,7 @@ import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourc
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
+  createArrayBufferResource,
   createResource,
   createStringResource,
   disposeResource,
@@ -16,6 +17,7 @@ import {
   InitialResourceProps,
   IRemoteResourceManager,
   RemoteResource,
+  RemoteResourceArrayBufferStore,
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
@@ -35,7 +37,7 @@ function defineResourceIdTransform<Def extends ResourceDefinition>(resourceDef: 
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arraybuffer") {
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arrayBuffer") {
       resourceIdViews.push({ propName, view: new Uint32Array(buffer, prop.byteOffset, prop.size) });
     }
   }
@@ -165,6 +167,29 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     }
 
     const resourceId = createStringResource(this.ctx, value);
+    store.resourceIdView[0] = resourceId;
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer {
+    if (!store.value) {
+      throw new Error("arrayBuffer field not initialized.");
+    }
+
+    return store.value;
+  }
+
+  setArrayBuffer(value: SharedArrayBuffer, store: RemoteResourceArrayBufferStore): void {
+    if (store.value) {
+      throw new Error("You cannot mutate an existing arrayBuffer field.");
+    }
+
+    const ptr = this.allocate(value.byteLength);
+    const readView = new Uint8Array(value);
+    this.U8Heap.set(readView, ptr);
+    store.view[0] = ptr;
+    store.value = value;
+    const resourceId = createArrayBufferResource(this.ctx, value);
     store.resourceIdView[0] = resourceId;
     addResourceRef(this.ctx, resourceId);
   }

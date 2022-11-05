@@ -77,7 +77,7 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import { CameraResource, CameraType, LightResource, SamplerResource } from "../resource/schema";
+import { BufferResource, CameraResource, CameraType, LightResource, SamplerResource } from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -208,6 +208,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResource(ctx, CameraResource),
+      registerResource(ctx, BufferResource),
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
       registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),

@@ -10,6 +10,7 @@ import { defineLocalResourceClass } from "./LocalResourceClass";
 export type ResourceId = number;
 
 export const StringResourceType = "string";
+export const ArrayBufferResourceType = "arrayBuffer";
 
 export enum ResourceMessageType {
   LoadResources = "load-resources",
@@ -98,6 +99,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
         registerMessageHandler(ctx, ResourceMessageType.ResourceDisposed, onDisposeResource),
         registerResourceLoader(ctx, StringResourceType, onLoadStringResource),
+        registerResourceLoader(ctx, ArrayBufferResourceType, onLoadArrayBufferResource),
       ]);
     },
   });
@@ -207,6 +209,8 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       getResource: <Def extends ResourceDefinition>(resourceDef: Def, resourceId: ResourceId) =>
         getLocalResource<Def>(ctx, resourceId)?.resource as LocalResource<Def> | undefined,
       getString: (resourceId: number): string => getLocalResource<string>(ctx, resourceId)?.resource || "",
+      getArrayBuffer: (resourceId: number): SharedArrayBuffer | undefined =>
+        getLocalResource<SharedArrayBuffer>(ctx, resourceId)?.resource,
     };
 
     const LocalResourceClass = defineLocalResourceClass(resourceDef);
@@ -214,7 +218,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
-      if (prop.type === "string" || prop.type === "ref" || prop.type === "arraybuffer") {
+      if (prop.type === "string" || prop.type === "ref" || prop.type === "arrayBuffer") {
         dependencyByteOffsets.push(prop.byteOffset);
       } else if (prop.type === "refArray") {
         for (let i = 0; i < prop.size; i++) {
@@ -303,6 +307,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     id: ResourceId,
     value: string
   ): Promise<string> {
+    return value;
+  }
+
+  async function onLoadArrayBufferResource<ThreadContext extends BaseThreadContext>(
+    ctx: ThreadContext,
+    id: ResourceId,
+    value: SharedArrayBuffer
+  ): Promise<SharedArrayBuffer> {
     return value;
   }
 
