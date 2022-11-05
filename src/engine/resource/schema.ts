@@ -2,7 +2,6 @@ import { defineResource, LocalResource, PropType, RemoteResource } from "./Resou
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
 import { BufferViewTarget } from "../bufferView/bufferView.common";
-import { CameraType } from "../camera/camera.common";
 import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
 import { TextureEncoding } from "../texture/texture.common";
@@ -172,6 +171,10 @@ export const LightResource = defineResource("light", {
 export type RemoteLight = RemoteResource<typeof LightResource>;
 export type LocalLight = LocalResource<typeof LightResource>;
 
+export enum CameraType {
+  Perspective,
+  Orthographic,
+}
 export const CameraResource = defineResource("camera", {
   // Shared properties between camera types
   name: PropType.string({ default: "Camera", script: true }),
@@ -187,8 +190,10 @@ export const CameraResource = defineResource("camera", {
   yfov: PropType.f32({ minExclusive: 0, script: true }),
   // 0 means auto aspect ratio
   aspectRatio: PropType.f32({ min: 0, default: 0, script: true }),
-  projectionMatrixNeedsUpdate: PropType.bool({ default: true, script: false, mutable: false }),
+  projectionMatrixNeedsUpdate: PropType.bool({ default: true, script: true }),
 });
+export type RemoteCamera = RemoteResource<typeof CameraResource>;
+export type LocalCamera = LocalResource<typeof CameraResource>;
 
 export const SparseAccessorResource = defineResource("sparse-accessor", {
   count: PropType.u32({ min: 1, mutable: false, required: true, script: true }),

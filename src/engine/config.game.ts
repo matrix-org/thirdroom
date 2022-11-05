@@ -29,6 +29,7 @@ import { InteractionModule, InteractionSystem } from "../plugins/interaction/int
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
+import { RemoteCameraSystem } from "./camera/camera.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -79,6 +80,7 @@ export default defineConfig<GameState>({
 
     GameAudioSystem,
     RenderableSystem,
+    RemoteCameraSystem,
     RemoteNodeSystem,
     RemoteSceneSystem,
     ResourceLoaderSystem,

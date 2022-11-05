@@ -5,7 +5,7 @@ import { RendererMessageType, rendererModuleName } from "./renderer.common";
 import { registerResourceLoader, registerResource } from "../resource/resource.main";
 import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { createDisposables } from "../utils/createDisposables";
-import { LightResource, SamplerResource } from "../resource/schema";
+import { CameraResource, LightResource, SamplerResource } from "../resource/schema";
 
 type MainRendererModuleState = {};
 
@@ -42,6 +42,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
       registerResource(ctx, LightResource),
       registerResource(ctx, SamplerResource),
+      registerResource(ctx, CameraResource),
     ]);
   },
 });

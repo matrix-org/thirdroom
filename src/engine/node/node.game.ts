@@ -7,7 +7,6 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { RemotePositionalAudioEmitter } from "../audio/audio.game";
-import { RemoteCamera } from "../camera/camera.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh, RemoteLightMap } from "../mesh/mesh.game";
@@ -27,7 +26,7 @@ import {
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
-import { RemoteLight } from "../resource/schema";
+import { RemoteCamera, RemoteLight } from "../resource/schema";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;

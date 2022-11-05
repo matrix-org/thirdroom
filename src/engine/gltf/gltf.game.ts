@@ -6,7 +6,6 @@ import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game"
 import { AudioEmitterOutput } from "../audio/audio.common";
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { createRemoteBufferView, RemoteBufferView } from "../bufferView/bufferView.game";
-import { createRemoteOrthographicCamera, createRemotePerspectiveCamera, RemoteCamera } from "../camera/camera.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
 import {
@@ -66,8 +65,11 @@ import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
+  CameraResource,
+  CameraType,
   LightResource,
   LightType,
+  RemoteCamera,
   RemoteLight,
   RemoteSampler,
   SamplerMapping,
@@ -1274,16 +1276,18 @@ async function _loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: nu
   let remoteCamera: RemoteCamera;
 
   if (camera.perspective) {
-    remoteCamera = createRemotePerspectiveCamera(ctx, {
+    remoteCamera = resource.manager.createResource(CameraResource, {
       name: camera.name,
+      type: CameraType.Perspective,
       aspectRatio: camera.perspective.aspectRatio,
       yfov: camera.perspective.yfov,
       zfar: camera.perspective.zfar,
       znear: camera.perspective.znear,
     });
   } else if (camera.orthographic) {
-    remoteCamera = createRemoteOrthographicCamera(ctx, {
+    remoteCamera = resource.manager.createResource(CameraResource, {
       name: camera.name,
+      type: CameraType.Orthographic,
       xmag: camera.orthographic.xmag,
       ymag: camera.orthographic.ymag,
       zfar: camera.orthographic.zfar,
