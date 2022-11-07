@@ -1,9 +1,10 @@
 import { SidebarTab } from "../../components/sidebar-tab/SidebarTab";
 import PlanetIC from "../../../../../res/ic/planet.svg";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
+import ExploreIC from "../../../../../res/ic/explore.svg";
 import NotificationIC from "../../../../../res/ic/notification.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { SidebarTabs, useStore } from "../../../hooks/useStore";
+import { OverlayWindow, SidebarTabs, useStore } from "../../../hooks/useStore";
 import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
 import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 import { useInviteList } from "../../../hooks/useInviteList";
@@ -17,7 +18,7 @@ export function SpacesView() {
   const [rooms] = useRoomsOfType(session, RoomTypes.Room);
   const [directs] = useRoomsOfType(session, RoomTypes.Direct);
   const { selectedSidebarTab, selectSidebarTab } = useStore((state) => state.overlaySidebar);
-  const { selectedWindow } = useStore((state) => state.overlayWindow);
+  const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
 
   const roomsNotifCount = rooms.reduce((total, room) => total + room.notificationCount, 0);
   const directsNotifCount = directs.reduce((total, room) => total + room.notificationCount, 0);
@@ -54,6 +55,13 @@ export function SpacesView() {
             variant="surface-low"
           />
         </BadgeWrapper>
+        <SidebarTab
+          onClick={() => selectWindow(OverlayWindow.Discover)}
+          isActive={selectedWindow === OverlayWindow.Discover}
+          name="Discover"
+          iconSrc={ExploreIC}
+          variant="danger"
+        />
       </div>
       <div className="shrink-0 flex flex-column items-center gap-xs">
         <UserMenu />

@@ -31,6 +31,7 @@ import { NowPlayingControls } from "./NowPlayingControls";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
+import { DiscoverView } from "../discover/DiscoverView";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -102,6 +103,7 @@ export function Overlay() {
           {selectedWindow === OverlayWindow.WorldSettings && worldSettingsId && (
             <WorldSettings roomId={worldSettingsId} />
           )}
+          {selectedWindow === OverlayWindow.Discover && <DiscoverView />}
         </div>
       ) : (
         <div className="Overlay__content grow">
