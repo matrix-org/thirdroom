@@ -54,8 +54,8 @@ export const getReadView = (tb: TripleBuffer) => tb.byteViews[getReadBufferIndex
 
 export const getWriteBufferIndex = (tb: TripleBuffer) => (Atomics.load(tb.flags, 0) & 0x30) >> 4;
 export const getWriteBuffer = (tb: TripleBuffer) => tb.buffers[getWriteBufferIndex(tb)];
-export const copyToWriteBuffer = (tb: TripleBuffer, buffer: ArrayBuffer) =>
-  tb.byteViews[getWriteBufferIndex(tb)].set(new Uint8Array(buffer));
+export const copyToWriteBuffer = (tb: TripleBuffer, byteView: Uint8Array) =>
+  tb.byteViews[getWriteBufferIndex(tb)].set(byteView);
 
 export const swapReadBuffer = (tb: TripleBuffer) => {
   const flags = Atomics.load(tb.flags, 0);

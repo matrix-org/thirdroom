@@ -29,14 +29,6 @@ import {
   SceneRenderedNotificationMessage,
 } from "./renderer.common";
 import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
-import {
-  RemoteDirectionalLight,
-  RemotePointLight,
-  RemoteSpotLight,
-  updateRemoteDirectionalLights,
-  updateRemotePointLights,
-  updateRemoteRemoteSpotLights,
-} from "../light/light.game";
 import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
@@ -52,9 +44,6 @@ export interface GameRendererModuleState {
   textures: RemoteTexture[];
   unlitMaterials: RemoteUnlitMaterial[];
   standardMaterials: RemoteStandardMaterial[];
-  directionalLights: RemoteDirectionalLight[];
-  pointLights: RemotePointLight[];
-  spotLights: RemoteSpotLight[];
   perspectiveCameras: RemotePerspectiveCamera[];
   orthographicCameras: RemoteOrthographicCamera[];
   meshPrimitives: RemoteMeshPrimitive[];
@@ -140,9 +129,6 @@ export const RenderableSystem = (state: GameState) => {
   updateRendererRemoteScenes(renderer.scenes);
   updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
-  updateRemotePointLights(renderer.pointLights);
-  updateRemoteDirectionalLights(renderer.directionalLights);
-  updateRemoteRemoteSpotLights(renderer.spotLights);
   updateRemoteCameras(state);
 };
 

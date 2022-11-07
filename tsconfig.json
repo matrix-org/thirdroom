@@ -16,5 +16,13 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["./src", "deps.d.ts", "./test", "./preview-server.ts", "./vite.config.ts"]
+  "include": [
+    "./src",
+    "deps.d.ts",
+    "./test",
+    "./preview-server.ts",
+    "./vite.config.ts",
+    "types/WebSG.d.ts",
+    "docs/examples/light/light.js"
+  ]
 }

@@ -59,6 +59,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
 
   const [sceneInfo, setSceneInfo] = useState<AutoUploadInfo>({});
   const [previewInfo, setPreviewInfo] = useState<AutoUploadInfo>({});
+  const [scriptInfo, setScriptInfo] = useState<AutoUploadInfo>({});
 
   useEffect(() => {
     if (room) {
@@ -115,7 +116,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
         name: newName,
       });
     }
-    if (sceneInfo.mxc || previewInfo.mxc || maxObjectCap !== maxObjectCapRef.current) {
+    if (sceneInfo.mxc || previewInfo.mxc || maxObjectCap !== maxObjectCapRef.current || scriptInfo.mxc) {
       Promise.all([room.getStateEvent("m.world"), room.getStateEvent("org.matrix.msc3815.world")]).then(
         ([oldEvent, event]) => {
           const oldContent = oldEvent?.event?.content;
@@ -124,6 +125,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
             max_member_object_cap: maxObjectCap,
             scene_url: sceneInfo.mxc ?? (content?.scene_url || oldContent?.scene_url),
             scene_preview_url: previewInfo.mxc ?? (content?.scene_preview_url || oldContent?.scene_preview_url),
+            script_url: scriptInfo.mxc,
           });
         }
       );
@@ -193,6 +195,20 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         <Input type="number" value={maxObjectCap} onChange={handleMaxObjectCapChange} required />
                       </SettingTile>
                     </div>
+                    <div className="flex gap-lg">
+                      <SettingTile className="grow basis-0" label={<Label>Script (EXPERIMENTAL)</Label>}>
+                        <AutoFileUpload
+                          mimeType=".js,.wasm"
+                          onUploadInfo={setScriptInfo}
+                          renderButton={(pickFile) => (
+                            <Button fill="outline" onClick={pickFile}>
+                              <Icon src={UploadIC} color="primary" />
+                              Change Script
+                            </Button>
+                          )}
+                        />
+                      </SettingTile>
+                    </div>
                   </div>
                 </Scroll>
               }
@@ -213,7 +229,8 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
                         roomName === newName &&
                         !sceneInfo.mxc &&
                         !previewInfo.mxc &&
-                        maxObjectCap === maxObjectCapRef.current
+                        maxObjectCap === maxObjectCapRef.current &&
+                        !scriptInfo.mxc
                       }
                     >
                       Save

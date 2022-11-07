@@ -1,76 +1,11 @@
 import { DirectionalLight, Light, PointLight, Scene, SpotLight } from "three";
 
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource } from "../resource/resource.render";
-import {
-  DirectionalLightTripleBuffer,
-  LightType,
-  PointLightTripleBuffer,
-  SharedDirectionalLightResource,
-  SharedPointLightResource,
-  SharedSpotLightResource,
-  SpotLightTripleBuffer,
-} from "./light.common";
-
-export interface LocalDirectionalLightResource {
-  resourceId: ResourceId;
-  type: LightType.Directional;
-  lightTripleBuffer: DirectionalLightTripleBuffer;
-}
-
-export interface LocalPointLightResource {
-  resourceId: ResourceId;
-  type: LightType.Point;
-  lightTripleBuffer: PointLightTripleBuffer;
-}
-
-export interface LocalSpotLightResource {
-  resourceId: ResourceId;
-  type: LightType.Spot;
-  lightTripleBuffer: SpotLightTripleBuffer;
-}
-
-export type LocalLightResource = LocalDirectionalLightResource | LocalPointLightResource | LocalSpotLightResource;
-
-export async function onLoadLocalDirectionalLightResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, lightTripleBuffer }: SharedDirectionalLightResource
-): Promise<LocalDirectionalLightResource> {
-  return {
-    resourceId,
-    type,
-    lightTripleBuffer,
-  };
-}
-
-export async function onLoadLocalPointLightResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, lightTripleBuffer }: SharedPointLightResource
-): Promise<LocalPointLightResource> {
-  return {
-    resourceId,
-    type,
-    lightTripleBuffer,
-  };
-}
-
-export async function onLoadLocalSpotLightResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, lightTripleBuffer }: SharedSpotLightResource
-): Promise<LocalSpotLightResource> {
-  return {
-    resourceId,
-    type,
-    lightTripleBuffer,
-  };
-}
+import { getLocalResource, getResourceDisposed } from "../resource/resource.render";
+import { LightType, LocalLight } from "../resource/schema";
 
 export function updateNodeLight(
   ctx: RenderThreadState,
@@ -83,6 +18,15 @@ export function updateNodeLight(
 
   // TODO: Handle node.visible
 
+  if (getResourceDisposed(ctx, nextLightResourceId)) {
+    if (node.lightObject) {
+      scene.remove(node.lightObject);
+      node.lightObject = undefined;
+    }
+
+    node.light = undefined;
+  }
+
   if (currentLightResourceId !== nextLightResourceId) {
     if (node.lightObject) {
       scene.remove(node.lightObject);
@@ -90,7 +34,7 @@ export function updateNodeLight(
     }
 
     if (nextLightResourceId) {
-      node.light = getLocalResource<LocalLightResource>(ctx, nextLightResourceId)?.resource;
+      node.light = getLocalResource<LocalLight>(ctx, nextLightResourceId)?.resource;
     } else {
       node.light = undefined;
     }
@@ -103,6 +47,8 @@ export function updateNodeLight(
   const lightType = node.light.type;
 
   let light: Light | undefined;
+
+  const localLight = node.light;
 
   if (lightType === LightType.Directional) {
     let directionalLight = node.lightObject as DirectionalLight | undefined;
@@ -127,11 +73,9 @@ export function updateNodeLight(
       scene.add(directionalLight);
     }
 
-    const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);
-
-    directionalLight.color.fromArray(sharedLight.color);
-    directionalLight.intensity = sharedLight.intensity[0];
-    directionalLight.castShadow = !!sharedLight.castShadow[0];
+    directionalLight.color.fromArray(localLight.color);
+    directionalLight.intensity = localLight.intensity;
+    directionalLight.castShadow = localLight.castShadow;
 
     light = directionalLight;
   } else if (lightType === LightType.Point) {
@@ -144,12 +88,10 @@ export function updateNodeLight(
       scene.add(pointLight);
     }
 
-    const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);
-
-    pointLight.color.fromArray(sharedLight.color);
-    pointLight.intensity = sharedLight.intensity[0];
-    pointLight.castShadow = !!sharedLight.castShadow[0];
-    pointLight.distance = sharedLight.range[0];
+    pointLight.color.fromArray(localLight.color);
+    pointLight.intensity = localLight.intensity;
+    pointLight.castShadow = localLight.castShadow;
+    pointLight.distance = localLight.range;
 
     light = pointLight;
   } else if (lightType === LightType.Spot) {
@@ -157,19 +99,19 @@ export function updateNodeLight(
 
     if (!spotLight) {
       spotLight = new SpotLight();
+      spotLight.target.position.set(0, 0, -1);
+      spotLight.add(spotLight.target);
       spotLight.decay = 2;
 
       scene.add(spotLight);
     }
 
-    const sharedLight = getReadObjectBufferView(node.light.lightTripleBuffer);
-
-    spotLight.color.fromArray(sharedLight.color);
-    spotLight.intensity = sharedLight.intensity[0];
-    spotLight.castShadow = !!sharedLight.castShadow[0];
-    spotLight.distance = sharedLight.range[0];
-    spotLight.angle = sharedLight.outerConeAngle[0];
-    spotLight.penumbra = 1.0 - sharedLight.innerConeAngle[0] / sharedLight.outerConeAngle[0];
+    spotLight.color.fromArray(localLight.color);
+    spotLight.intensity = localLight.intensity;
+    spotLight.castShadow = localLight.castShadow;
+    spotLight.distance = localLight.range;
+    spotLight.angle = localLight.outerConeAngle;
+    spotLight.penumbra = 1.0 - localLight.innerConeAngle / localLight.outerConeAngle;
 
     light = spotLight;
   }

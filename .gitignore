@@ -7,3 +7,4 @@ lerna-debug.log
 *.tsbuildinfo
 .yarn-error.log
 coverage
+src/scripting/build/scripting-runtime.wat

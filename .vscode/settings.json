@@ -1,4 +1,19 @@
 {
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.associations": {
+    "availability.h": "c",
+    "console.h": "c",
+    "emscripten.h": "c",
+    "__node_handle": "c",
+    "regex": "c",
+    "wasgi.h": "c",
+    "cutils.h": "c",
+    "quickjs.h": "c",
+    "math.h": "c",
+    "inttypes.h": "c",
+    "typeinfo": "c",
+    "*.inc": "c"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
