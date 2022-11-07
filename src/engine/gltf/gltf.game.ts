@@ -1,5 +1,5 @@
 import { addComponent, addEntity } from "bitecs";
-import { mat4, vec2, vec3 } from "gl-matrix";
+import { mat4, vec2 } from "gl-matrix";
 import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
@@ -18,12 +18,6 @@ import {
 } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteImage, createRemoteImageFromBufferView, RemoteImage } from "../image/image.game";
-import {
-  createDirectionalLightResource,
-  createPointLightResource,
-  createSpotLightResource,
-  RemoteLight,
-} from "../light/light.game";
 import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import {
@@ -45,14 +39,7 @@ import { TextureEncoding } from "../texture/texture.common";
 import { createRemoteTexture, RemoteTexture } from "../texture/texture.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
-import {
-  GLTFRoot,
-  GLTFMeshPrimitive,
-  GLTFLightType,
-  GLTFInstancedMeshExtension,
-  GLTFNode,
-  GLTFLightmapExtension,
-} from "./GLTF";
+import { GLTFRoot, GLTFMeshPrimitive, GLTFInstancedMeshExtension, GLTFNode, GLTFLightmapExtension } from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
@@ -80,6 +67,8 @@ import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
+import { LightResource, LightType, RemoteLight } from "../resource/schema";
+import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 
 export interface GLTFResource {
   url: string;
@@ -118,6 +107,7 @@ export interface GLTFResource {
   audioPromises: Map<number, Promise<RemoteAudioData>>;
   audioSourcePromises: Map<number, Promise<RemoteAudioSource>>;
   audioEmitterPromises: Map<number, { output: AudioEmitterOutput; promise: Promise<RemoteAudioEmitter> }>;
+  manager: IRemoteResourceManager;
 }
 
 export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
@@ -132,17 +122,20 @@ interface GLTFSceneOptions {
   // TODO: temporary hack for spawning avatars without static trimesh
   createTrimesh?: boolean;
   isStatic?: boolean;
+  resourceManager?: IRemoteResourceManager;
 }
 
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  { fileMap, sceneIndex, createTrimesh = true, isStatic }: GLTFSceneOptions = {}
+  { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
-  const resource = await loadGLTFResource(ctx, uri, fileMap);
+  const _resourceManager = resourceManager || ctx.resourceManager;
+
+  const resource = await loadGLTFResource(ctx, _resourceManager, uri, fileMap);
 
   if (sceneIndex === undefined) {
     sceneIndex = resource.root.scene;
@@ -319,7 +312,7 @@ async function _inflateGLTFNode(
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
       node.extensions?.KHR_lights_punctual?.light !== undefined
-        ? loadGLTFLight(ctx, resource, node.extensions.KHR_lights_punctual.light)
+        ? loadGLTFLight(resource, node.extensions.KHR_lights_punctual.light)
         : undefined,
     audioEmitter: loadNodeAudioEmitter(ctx, resource, node),
     colliderMesh: hasMeshCollider(resource.root, node)
@@ -385,7 +378,8 @@ async function _inflateGLTFNode(
           addRemoteNodeComponent(ctx, nodeEid, { name: node.name, static: isStatic });
 
         if (!remoteNode.light) {
-          remoteNode.light = createDirectionalLightResource(ctx, {
+          remoteNode.light = resource.manager.createResource(LightResource, {
+            type: LightType.Directional,
             castShadow: true,
             intensity: 0.8,
           });
@@ -446,6 +440,7 @@ export function disposeGLTFResource(resource: GLTFResource): boolean {
 
 export async function loadGLTFResource(
   ctx: GameState,
+  resourceManager: IRemoteResourceManager,
   uri: string,
   fileMap?: Map<string, string>
 ): Promise<GLTFResource> {
@@ -459,7 +454,7 @@ export async function loadGLTFResource(
   //   return cachedGltf.promise;
   // }
 
-  const promise = _loadGLTFResource(ctx, url.href, fileMap);
+  const promise = _loadGLTFResource(ctx, resourceManager, url.href, fileMap);
 
   // gltfCache.set(url.href, {
   //   refCount: 1,
@@ -469,7 +464,12 @@ export async function loadGLTFResource(
   return promise;
 }
 
-async function _loadGLTFResource(ctx: GameState, url: string, fileMap?: Map<string, string>) {
+async function _loadGLTFResource(
+  ctx: GameState,
+  resourceManager: IRemoteResourceManager,
+  url: string,
+  fileMap?: Map<string, string>
+) {
   const res = await fetchWithProgress(ctx, url);
 
   console.log(`Fetching glTF resource: ${url} Content-Length: ${res.headers.get("Content-Length")}`);
@@ -488,11 +488,11 @@ async function _loadGLTFResource(ctx: GameState, url: string, fileMap?: Map<stri
   }
 
   if (isGLB) {
-    return loadGLB(buffer, url, fileMap);
+    return loadGLB(resourceManager, buffer, url, fileMap);
   } else {
     const jsonStr = new TextDecoder().decode(buffer);
     const json = JSON.parse(jsonStr);
-    return loadGLTF(json, url, undefined, fileMap);
+    return loadGLTF(resourceManager, json, url, undefined, fileMap);
   }
 }
 
@@ -503,7 +503,12 @@ const ChunkType = {
 
 const CHUNK_HEADER_BYTE_LENGTH = 8;
 
-async function loadGLB(buffer: ArrayBuffer, url: string, fileMap?: Map<string, string>): Promise<GLTFResource> {
+async function loadGLB(
+  resourceManager: IRemoteResourceManager,
+  buffer: ArrayBuffer,
+  url: string,
+  fileMap?: Map<string, string>
+): Promise<GLTFResource> {
   let jsonChunkData: string | undefined;
   let binChunkData: ArrayBuffer | undefined;
 
@@ -537,10 +542,11 @@ async function loadGLB(buffer: ArrayBuffer, url: string, fileMap?: Map<string, s
     throw new Error("Invalid glb. Glb has no JSON chunk.");
   }
 
-  return loadGLTF(jsonChunkData, url, binChunkData, fileMap);
+  return loadGLTF(resourceManager, jsonChunkData, url, binChunkData, fileMap);
 }
 
 async function loadGLTF(
+  resourceManager: IRemoteResourceManager,
   json: unknown,
   url: string,
   binaryChunk?: ArrayBuffer,
@@ -606,6 +612,7 @@ async function loadGLTF(
     audioPromises: new Map(),
     audioSourcePromises: new Map(),
     audioEmitterPromises: new Map(),
+    manager: resourceManager,
   };
 
   return resource;
@@ -1290,21 +1297,27 @@ async function _loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: nu
   return remoteCamera;
 }
 
-export async function loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
+const GLTFLightTypeToLightType: { [key: string]: LightType } = {
+  directional: LightType.Directional,
+  point: LightType.Point,
+  spot: LightType.Spot,
+};
+
+export async function loadGLTFLight(resource: GLTFResource, index: number): Promise<RemoteLight> {
   let lightPromise = resource.lightPromises.get(index);
 
   if (lightPromise) {
     return lightPromise;
   }
 
-  lightPromise = _loadGLTFLight(ctx, resource, index);
+  lightPromise = _loadGLTFLight(resource, index);
 
   resource.lightPromises.set(index, lightPromise);
 
   return lightPromise;
 }
 
-async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteLight> {
+async function _loadGLTFLight(resource: GLTFResource, index: number): Promise<RemoteLight> {
   if (!resource.root.extensions?.KHR_lights_punctual) {
     throw new Error("glTF file has no KHR_lights_punctual extension");
   }
@@ -1315,44 +1328,19 @@ async function _loadGLTFLight(ctx: GameState, resource: GLTFResource, index: num
     throw new Error(`Light ${index} not found`);
   }
 
-  const light = lightExtension.lights[index];
+  const { name, type, color, intensity, range, spot } = lightExtension.lights[index];
 
-  const color = light.color ? vec3.fromValues(light.color[0], light.color[1], light.color[2]) : vec3.create();
-  const intensity = light.intensity;
-  const range = light.range;
+  const lightResource = resource.manager.createResource(LightResource, {
+    name,
+    type: GLTFLightTypeToLightType[type],
+    color,
+    intensity,
+    range,
+    innerConeAngle: spot?.innerConeAngle,
+    outerConeAngle: spot?.outerConeAngle,
+  });
 
-  let remoteLight: RemoteLight;
+  resource.lights.set(index, lightResource);
 
-  if (light.type === GLTFLightType.Directional) {
-    remoteLight = createDirectionalLightResource(ctx, {
-      name: light.name,
-      color,
-      intensity,
-      castShadow: true,
-    });
-  } else if (light.type === GLTFLightType.Point) {
-    remoteLight = createPointLightResource(ctx, {
-      name: light.name,
-      color,
-      intensity,
-      range,
-      castShadow: true,
-    });
-  } else if (light.type === GLTFLightType.Spot) {
-    remoteLight = createSpotLightResource(ctx, {
-      name: light.name,
-      color,
-      intensity,
-      range,
-      innerConeAngle: light.spot?.innerConeAngle,
-      outerConeAngle: light.spot?.outerConeAngle,
-      castShadow: true,
-    });
-  } else {
-    throw new Error("Light was of unknown type");
-  }
-
-  resource.lights.set(index, remoteLight);
-
-  return remoteLight;
+  return lightResource;
 }

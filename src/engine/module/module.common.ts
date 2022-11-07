@@ -23,6 +23,7 @@ export enum Thread {
   Main = "main",
   Game = "game",
   Render = "render",
+  Shared = "shared",
 }
 
 export interface ModuleLoader {

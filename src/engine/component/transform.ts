@@ -16,6 +16,7 @@ import { GameState, World } from "../GameTypes";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { hierarchyObjectBufferSchema } from "./transform.common";
 import { Networked } from "../network/network.game";
+import { RigidBody } from "../physics/physics.game";
 
 export const Hidden = defineComponent();
 
@@ -514,7 +515,7 @@ export function removeRecursive(world: World, rootEid: number) {
     const components = getEntityComponents(world, eid);
 
     for (let i = 0; i < components.length; i++) {
-      if (components[i] === Networked) {
+      if (components[i] === Networked || components[i] === RigidBody) {
         removeComponent(world, components[i], eid, false);
       } else {
         removeComponent(world, components[i], eid, true);

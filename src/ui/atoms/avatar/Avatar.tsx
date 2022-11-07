@@ -6,6 +6,7 @@ import { Text } from "../text/Text";
 
 interface IAvatar {
   className?: string;
+  style?: CSSProperties;
   name: string;
   bgColor: string;
   fgColor?: string;
@@ -17,6 +18,7 @@ interface IAvatar {
 
 export function Avatar({
   className,
+  style,
   name,
   bgColor,
   fgColor = "white",
@@ -41,7 +43,7 @@ export function Avatar({
     "noselect"
   );
 
-  const style: CSSProperties = {};
+  style = style ?? {};
   if (isFallback || !imageSrc) style.backgroundColor = bgColor;
   const props = {
     className: avatarClass,

@@ -1,11 +1,12 @@
-import { useState, ReactNode, useMemo, useEffect } from "react";
-import { Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
+import { useState, ReactNode, useReducer } from "react";
+import { Member, Room, RoomMember } from "@thirdroom/hydrogen-view-sdk";
 
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from ".././../../../../res/ic/cross.svg";
 import AddUserIC from ".././../../../../res/ic/add-user.svg";
+import VolumeUpIC from ".././../../../../res/ic/volume-up.svg";
 import { MemberTile } from "../../components/member-tile/MemberTile";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Text } from "../../../atoms/text/Text";
@@ -23,47 +24,49 @@ import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { Icon } from "../../../atoms/icon/Icon";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { Dots } from "../../../atoms/loading/Dots";
-import { useWorld } from "../../../hooks/useRoomIdFromAlias";
-import { useCalls } from "../../../hooks/useCalls";
 import { isPeerMuted, removePeer, toggleMutePeer } from "../../../../engine/network/network.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { InviteDialog } from "./InviteDialog";
-import { useStore } from "../../../hooks/useStore";
+import { useCalls } from "../../../hooks/useCalls";
+import { useRoomCall } from "../../../hooks/useRoomCall";
+import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
+import { useAnimationFrame } from "../nametags/Nametags";
 
 interface MemberListDialogProps {
   room: Room;
   requestClose: () => void;
 }
 
+type SpeakingRoomMember = Member & { volumeDetector: { isSpeaking: boolean } };
+
+function ActiveMemberTile({
+  members,
+  renderTile,
+  isSpeaking,
+}: {
+  members: RoomMember[];
+  renderTile: (member: RoomMember, isSpeaking: boolean) => JSX.Element;
+  isSpeaking: (userId: string) => boolean;
+}) {
+  const [, forceUpdate] = useReducer((state) => state + 1, 0);
+
+  useAnimationFrame(() => {
+    forceUpdate();
+  });
+
+  return <>{members.map((member) => renderTile(member, isSpeaking(member.userId)))}</>;
+}
+
 export function MemberListDialog({ room, requestClose }: MemberListDialogProps) {
   const { session, platform } = useHydrogen(true);
 
-  const { invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
+  const { active, invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const { isEnteredWorld, worldId } = useStore((state) => state.world);
-
-  const [, world] = useWorld();
-
   const isWorld = room.type === "org.matrix.msc3815.world";
-
-  const calls = useCalls(session);
-  const activeCall = useMemo(() => {
-    const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === world?.id ? call : []));
-    return roomCalls.length ? roomCalls[0] : undefined;
-  }, [calls, world]);
-
-  const [active, setActive] = useState<RoomMember[]>();
   const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
-
-  useEffect(() => {
-    if (worldId === room?.id && isEnteredWorld && activeCall) {
-      const me = joined?.find((m) => m.userId === session.userId);
-      const activeCallMember = Array.from(new Map(activeCall.members).values());
-      setActive((me ? [me] : []).concat(activeCallMember.filter((m) => m.isConnected).map((m) => m.member)));
-    }
-  }, [activeCall, joined, session, worldId, isEnteredWorld, room]);
 
   const { canDoAction, getPowerLevel } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
@@ -86,7 +89,24 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const engine = useMainThreadContext();
   const toggleMute = (userId: string) => toggleMutePeer(engine, userId);
 
-  const renderMemberTile = (member: RoomMember) => {
+  const calls = useCalls(session);
+  const groupCall = useRoomCall(calls, room.id);
+  const callMembers = Array.from(new Map(groupCall?.members).values());
+
+  const isSpeaking = (userId: string) => {
+    const memberCall = callMembers.find((m) => m.userId === userId && m.isConnected);
+    const volumeDetector =
+      (memberCall && (memberCall as SpeakingRoomMember).volumeDetector) ||
+      (memberCall?.remoteMedia?.userMedia &&
+        ((memberCall as SpeakingRoomMember).volumeDetector = (platform.mediaDevices as any).createVolumeMeasurer(
+          memberCall?.remoteMedia?.userMedia,
+          () => {}
+        )));
+
+    return volumeDetector?.isSpeaking;
+  };
+
+  const renderMemberTile = (member: RoomMember, isSpeaking?: boolean) => {
     const { userId, name, avatarUrl, membership } = member;
     const userPL = getPowerLevel(userId);
 
@@ -144,12 +164,23 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
       <MemberTile
         key={userId}
         avatar={
-          <Avatar
-            shape="circle"
-            name={name}
-            imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
-            bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
-          />
+          <BadgeWrapper
+            badge={
+              isSpeaking ? (
+                <NotificationBadge
+                  variant="secondary"
+                  content={<Icon color="on-secondary" size="xs" src={VolumeUpIC} />}
+                />
+              ) : null
+            }
+          >
+            <Avatar
+              shape="circle"
+              name={name}
+              imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
+              bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
+            />
+          </BadgeWrapper>
         }
         content={
           <>
@@ -172,6 +203,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
       />
     );
   };
+
   return (
     <>
       <Header
@@ -206,7 +238,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {invitedCat && invited.map(renderMemberTile)}
+                  {invitedCat && invited.map((member) => renderMemberTile(member))}
                 </Category>
               )}
 
@@ -220,7 +252,9 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {activeCat && active.map(renderMemberTile)}
+                  {activeCat && (
+                    <ActiveMemberTile members={active} renderTile={renderMemberTile} isSpeaking={isSpeaking} />
+                  )}
                 </Category>
               )}
 
@@ -234,7 +268,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {joinedCat && filteredJoined.map(renderMemberTile)}
+                  {joinedCat && filteredJoined.map((member) => renderMemberTile(member))}
                 </Category>
               )}
 
@@ -248,7 +282,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {banCat && banned.map(renderMemberTile)}
+                  {banCat && banned.map((member) => renderMemberTile(member))}
                 </Category>
               )}
               {!!leaved?.length && (
@@ -261,7 +295,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
                     />
                   }
                 >
-                  {leaveCat && leaved.map(renderMemberTile)}
+                  {leaveCat && leaved.map((member) => renderMemberTile(member))}
                 </Category>
               )}
             </div>

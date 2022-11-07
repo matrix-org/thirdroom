@@ -1,7 +1,6 @@
 import { ResourceId } from "../resource/resource.common";
 
 export const AccessorResourceType = "accessor";
-export const SparseAccessorResourceType = "sparse-accessor";
 
 export type AccessorTypedArrayConstructor =
   | Int8ArrayConstructor

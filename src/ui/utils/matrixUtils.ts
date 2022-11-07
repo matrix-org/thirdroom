@@ -7,6 +7,8 @@ import {
   HomeServerApi,
   RoomBeingCreated,
   Session,
+  GroupCall,
+  BaseObservableMap,
 } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
@@ -59,18 +61,33 @@ export async function isRoomAliasAvailable(homeserver: string, alias: string): P
   return false;
 }
 
-export function getRoomWithAlias(rooms: ObservableMap<string, Room>, alias: string): Room | void {
-  if (alias.startsWith("#") === false) return;
-
+export function aliasToRoomId(rooms: ObservableMap<string, Room>, alias: string) {
   for (const room of rooms.values()) {
-    if (room.canonicalAlias === alias) return room;
+    if (room.canonicalAlias === alias) return room.id;
   }
+}
+
+export function roomIdToAlias(rooms: ObservableMap<string, Room>, roomId: string) {
+  return rooms.get(roomId)?.canonicalAlias ?? undefined;
 }
 
 export function getProfileRoom(rooms: ObservableMap<string, Room>) {
   const type = "org.matrix.msc3815.profile";
   for (const room of rooms.values()) {
     if (room.type === type) return room;
+  }
+}
+export async function updateWorldProfile(session: Session, world: Room) {
+  const profileRoom = getProfileRoom(session.rooms);
+
+  if (profileRoom) {
+    const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
+
+    if (profileEvent && profileEvent.event.content.avatar_url) {
+      await session.hsApi.sendState(world.id, "org.matrix.msc3815.world.member", session.userId, {
+        avatar_url: profileEvent.event.content.avatar_url,
+      });
+    }
   }
 }
 
@@ -93,9 +110,8 @@ export async function waitToCreateRoom(
     const unSubs = roomBeingCreated.disposableOn("change", () => {
       unSubs();
       if (!roomBeingCreated.roomId) return resolve(undefined);
-      const profileRoom = session.rooms.get(roomBeingCreated.roomId);
-      if (!profileRoom) return resolve(undefined);
-      resolve(profileRoom);
+      const room = session.rooms.get(roomBeingCreated.roomId);
+      resolve(room);
     });
   });
 }
@@ -193,4 +209,10 @@ export function parseMatrixUri(uri: string): ParsedMatrixURI | URL {
 
 export function parsedMatrixUriToString(uri: ParsedMatrixURI | URL) {
   return uri instanceof URL ? uri.href : uri.mxid1;
+}
+
+export function getRoomCall(calls: Map<string, GroupCall> | BaseObservableMap<string, GroupCall>, roomId?: string) {
+  if (!roomId) return undefined;
+  const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === roomId ? call : []));
+  return roomCalls.length ? roomCalls[0] : undefined;
 }

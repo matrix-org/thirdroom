@@ -11,13 +11,16 @@ export type TypedArray =
   | BigInt64Array;
 
 export type TypedArrayConstructor =
-  | Float32ArrayConstructor
+  | TypedArrayConstructor32
   | Float64ArrayConstructor
+  | BigUint64ArrayConstructor
+  | BigInt64ArrayConstructor;
+
+export type TypedArrayConstructor32 =
+  | Float32ArrayConstructor
   | Uint8ArrayConstructor
   | Int8ArrayConstructor
   | Uint16ArrayConstructor
   | Int16ArrayConstructor
   | Uint32ArrayConstructor
-  | Int32ArrayConstructor
-  | BigUint64ArrayConstructor
-  | BigInt64ArrayConstructor;
+  | Int32ArrayConstructor;

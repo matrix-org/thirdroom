@@ -10,7 +10,6 @@ import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { RemoteCamera } from "../camera/camera.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteLight } from "../light/light.game";
 import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh, RemoteLightMap } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
@@ -28,6 +27,7 @@ import {
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
+import { RemoteLight } from "../resource/schema";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -321,11 +321,11 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     },
     set light(light: RemoteLight | undefined) {
       if (light) {
-        addResourceRef(ctx, light.resourceId);
+        light.addRef();
       }
 
       if (_light) {
-        disposeResource(ctx, _light.resourceId);
+        _light.removeRef();
       }
 
       _light = light;
