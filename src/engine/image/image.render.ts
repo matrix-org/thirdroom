@@ -2,11 +2,9 @@ import { CompressedTexture, DataTexture } from "three";
 
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalBufferView } from "../resource/schema";
+import { getLocalResources, getResourceDisposed } from "../resource/resource.render";
+import { ImageResource, LocalImage } from "../resource/schema";
 import { toArrayBuffer } from "../utils/arraybuffer";
-import { ImageResourceProps } from "./image.common";
 
 const HDRMimeType = "image/vnd.radiance";
 const HDRExtension = ".hdr";
@@ -18,81 +16,66 @@ export enum ImageFormat {
   RGBE = "rgbe",
 }
 
-export interface RGBELocalImageResource {
-  resourceId: ResourceId;
+export interface RGBELocalImageResourceProps {
   format: ImageFormat.RGBE;
   texture: DataTexture;
 }
 
-export interface RGBALocalImageResource {
-  resourceId: ResourceId;
+export interface RGBALocalImageResourceProps {
   format: ImageFormat.RGBA;
   image: ImageBitmap;
 }
 
-export interface CompressedLocalImageResource {
-  resourceId: ResourceId;
+export interface CompressedLocalImageResourceProps {
   format: ImageFormat.RGBA;
   texture: CompressedTexture;
 }
 
-export type LocalImageResource = RGBALocalImageResource | RGBELocalImageResource | CompressedLocalImageResource;
+export type LocalImageResource = LocalImage &
+  (RGBALocalImageResourceProps | RGBELocalImageResourceProps | CompressedLocalImageResourceProps);
 
 export async function onLoadLocalImageResource(
   ctx: RenderThreadState,
-  resourceId: ResourceId,
-  props: ImageResourceProps
+  localImage: LocalImage
 ): Promise<LocalImageResource> {
-  const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY, images } = getModule(ctx, RendererModule);
+  const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY } = getModule(ctx, RendererModule);
 
   let uri: string;
   let isObjectUrl = false;
 
-  if ("bufferView" in props) {
-    const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
+  if (localImage.bufferView) {
+    const bufferView = localImage.bufferView;
     const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
 
     const blob = new Blob([buffer], {
-      type: props.mimeType,
+      type: localImage.mimeType,
     });
 
     uri = URL.createObjectURL(blob);
     isObjectUrl = true;
   } else {
-    uri = props.uri;
+    uri = localImage.uri;
   }
 
-  const isRGBE = uri.endsWith(HDRExtension) || ("mimeType" in props && props.mimeType === HDRMimeType);
-  const isKTX2 = uri.endsWith(KTX2Extension) || ("mimeType" in props && props.mimeType === KTX2MimeType);
+  const isRGBE = uri.endsWith(HDRExtension) || localImage.mimeType === HDRMimeType;
+  const isKTX2 = uri.endsWith(KTX2Extension) || localImage.mimeType === KTX2MimeType;
 
-  let localImageResource: LocalImageResource;
+  const localImageResource = localImage as LocalImageResource;
 
   try {
     if (isRGBE) {
       const texture = await rgbeLoader.loadAsync(uri);
-
-      localImageResource = {
-        resourceId,
-        format: ImageFormat.RGBE,
-        texture,
-      };
+      localImageResource.format = ImageFormat.RGBE;
+      (localImageResource as RGBELocalImageResourceProps).texture = texture;
     } else if (isKTX2) {
       const texture = await ktx2Loader.loadAsync(uri);
-
-      localImageResource = {
-        resourceId,
-        format: ImageFormat.RGBA,
-        texture,
-      };
+      localImageResource.format = ImageFormat.RGBA;
+      (localImageResource as CompressedLocalImageResourceProps).texture = texture;
     } else {
-      const loader = props.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
+      const loader = localImage.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
       const image = await loader.loadAsync(uri);
-
-      localImageResource = {
-        resourceId,
-        format: ImageFormat.RGBA,
-        image,
-      };
+      localImageResource.format = ImageFormat.RGBA;
+      (localImageResource as RGBALocalImageResourceProps).image = image;
     }
   } finally {
     if (isObjectUrl) {
@@ -100,12 +83,12 @@ export async function onLoadLocalImageResource(
     }
   }
 
-  images.push(localImageResource);
-
   return localImageResource;
 }
 
-export function updateLocalImageResources(ctx: RenderThreadState, images: LocalImageResource[]) {
+export function LocalImageResourceSystem(ctx: RenderThreadState) {
+  const images = getLocalResources(ctx, ImageResource) as unknown as LocalImageResource[];
+
   for (let i = images.length - 1; i >= 0; i--) {
     const imageResource = images[i];
 

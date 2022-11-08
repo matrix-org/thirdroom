@@ -1,12 +1,11 @@
 import { vec2 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
-import { RemoteImage } from "../image/image.game";
 import { getModule, Thread } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteSampler } from "../resource/schema";
+import { RemoteImage, RemoteSampler } from "../resource/schema";
 import { TextureEncoding, SharedTextureResource, TextureResourceType } from "./texture.common";
 
 export interface RemoteTexture {

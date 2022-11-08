@@ -7,5 +7,5 @@ export function hasBasisuExtension(property: GLTFTexture) {
 }
 
 export function loadBasisuImage(ctx: GameState, resource: GLTFResource, property: GLTFTexture) {
-  return loadGLTFImage(ctx, resource, property.extensions!.KHR_texture_basisu!.source);
+  return loadGLTFImage(resource, property.extensions!.KHR_texture_basisu!.source);
 }

@@ -119,6 +119,10 @@ export const AudioEmitterResource = defineResource("audio-emitter", {
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
 });
 
+export enum ImageFormat {
+  RGBA = "rgba",
+  RGBE = "rgbe",
+}
 export const ImageResource = defineResource("image", {
   name: PropType.string({ default: "Image", script: true }),
   uri: PropType.string({ script: true, mutable: false }),
@@ -126,6 +130,8 @@ export const ImageResource = defineResource("image", {
   bufferView: PropType.ref(BufferViewResource, { script: true, mutable: false }),
   flipY: PropType.bool({ script: true, mutable: false }),
 });
+export type RemoteImage = RemoteResource<typeof ImageResource>;
+export type LocalImage = LocalResource<typeof ImageResource>;
 
 export const TextureResource = defineResource("texture", {
   name: PropType.string({ default: "Texture", script: true }),

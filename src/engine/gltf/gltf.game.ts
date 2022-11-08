@@ -15,7 +15,6 @@ import {
   updateMatrixWorld,
 } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { createRemoteImage, createRemoteImageFromBufferView, RemoteImage } from "../image/image.game";
 import { MaterialAlphaMode } from "../material/material.common";
 import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import {
@@ -67,11 +66,13 @@ import {
   BufferViewResource,
   CameraResource,
   CameraType,
+  ImageResource,
   LightResource,
   LightType,
   RemoteBuffer,
   RemoteBufferView,
   RemoteCamera,
+  RemoteImage,
   RemoteLight,
   RemoteSampler,
   SamplerMapping,
@@ -714,7 +715,6 @@ interface ImageOptions {
 }
 
 export async function loadGLTFImage(
-  ctx: GameState,
   resource: GLTFResource,
   index: number,
   options?: ImageOptions
@@ -725,42 +725,41 @@ export async function loadGLTFImage(
     return imagePromise;
   }
 
-  imagePromise = _loadGLTFImage(ctx, resource, index, options);
+  imagePromise = _loadGLTFImage(resource, index, options);
 
   resource.imagePromises.set(index, imagePromise);
 
   return imagePromise;
 }
 
-async function _loadGLTFImage(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number,
-  options?: ImageOptions
-): Promise<RemoteImage> {
+async function _loadGLTFImage(resource: GLTFResource, index: number, options?: ImageOptions): Promise<RemoteImage> {
   if (!resource.root.images || !resource.root.images[index]) {
     throw new Error(`Image ${index} not found`);
   }
 
-  const image = resource.root.images[index];
+  const { name, uri, bufferView: bufferViewIndex, mimeType } = resource.root.images[index];
 
   let remoteImage: RemoteImage;
 
-  if (image.uri) {
-    const uri = resource.fileMap.get(image.uri) || image.uri;
-    const resolvedUri = resolveURL(uri, resource.baseUrl);
-    remoteImage = createRemoteImage(ctx, { name: image.name, uri: resolvedUri, flipY: options?.flipY });
-  } else if (image.bufferView !== undefined) {
-    if (!image.mimeType) {
+  if (uri) {
+    const filePath = resource.fileMap.get(uri) || uri;
+    const resolvedUri = resolveURL(filePath, resource.baseUrl);
+    remoteImage = resource.manager.createResource(ImageResource, {
+      name,
+      uri: resolvedUri,
+      flipY: options?.flipY,
+    });
+  } else if (bufferViewIndex !== undefined) {
+    if (!mimeType) {
       throw new Error(`image[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(resource, image.bufferView);
+    const bufferView = await loadGLTFBufferView(resource, bufferViewIndex);
 
-    remoteImage = createRemoteImageFromBufferView(ctx, {
-      name: image.name,
-      bufferView: remoteBufferView,
-      mimeType: image.mimeType,
+    remoteImage = resource.manager.createResource(ImageResource, {
+      name,
+      bufferView,
+      mimeType,
       flipY: options?.flipY,
     });
   } else {
@@ -865,7 +864,7 @@ async function _loadGLTFTexture(
   const { image, sampler } = await promiseObject({
     image: isBasis
       ? loadBasisuImage(ctx, resource, texture)
-      : loadGLTFImage(ctx, resource, texture.source!, { flipY: options?.flipY }),
+      : loadGLTFImage(resource, texture.source!, { flipY: options?.flipY }),
     sampler: texture.sampler ? loadGLTFSampler(resource, texture.sampler, { mapping: options?.mapping }) : undefined,
   });
 

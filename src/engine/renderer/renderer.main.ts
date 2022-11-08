@@ -4,7 +4,14 @@ import { WorkerMessageType } from "../WorkerMessage";
 import { RendererMessageType, rendererModuleName } from "./renderer.common";
 import { registerResource } from "../resource/resource.main";
 import { createDisposables } from "../utils/createDisposables";
-import { BufferResource, BufferViewResource, CameraResource, LightResource, SamplerResource } from "../resource/schema";
+import {
+  BufferResource,
+  BufferViewResource,
+  CameraResource,
+  ImageResource,
+  LightResource,
+  SamplerResource,
+} from "../resource/schema";
 
 type MainRendererModuleState = {};
 
@@ -43,6 +50,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, CameraResource),
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),
+      registerResource(ctx, ImageResource),
     ]);
   },
 });

@@ -72,6 +72,11 @@ export type ResourceLoader<ThreadContext extends BaseThreadContext, Props, Resou
   props: Props
 ) => Promise<Resource>;
 
+export type ResourceDefLoader<ThreadContext extends BaseThreadContext, Def extends ResourceDefinition> = (
+  ctx: ThreadContext,
+  resource: LocalResource<Def>
+) => Promise<LocalResource<Def>>;
+
 interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
   disposedResources: ResourceId[];
   resourceInfos: Map<ResourceId, LocalResourceInfo>;
@@ -200,7 +205,11 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     };
   }
 
-  function registerResource<Def extends ResourceDefinition>(ctx: ThreadContext, resourceDef: Def) {
+  function registerResource<Def extends ResourceDefinition>(
+    ctx: ThreadContext,
+    resourceDef: Def,
+    onLoad?: ResourceDefLoader<ThreadContext, Def>
+  ) {
     const resourceModule = getModule(ctx, ResourceModule);
 
     const dependencyByteOffsets: number[] = [];
@@ -246,7 +255,13 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     async function loadLocalResource(ctx: ThreadContext, resourceId: number, tripleBuffer: TripleBuffer) {
       const resource = new LocalResourceClass(manager, resourceId, tripleBuffer);
+
       await Promise.all(waitForLocalResourceDependencies(resource));
+
+      if (onLoad) {
+        await onLoad(ctx, resource);
+      }
+
       return resource;
     }
 
@@ -293,7 +308,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     resourceDef: Def
   ): LocalResourceInfo<Def>[] {
     const resourceModule = getModule(ctx, ResourceModule);
-    return resourceModule.resourcesByType.get(resourceDef.name) as LocalResourceInfo<Def>[];
+    return (resourceModule.resourcesByType.get(resourceDef.name) || []) as LocalResourceInfo<Def>[];
   }
 
   function getResourceDisposed(ctx: ThreadContext, resourceId: ResourceId): ResourceStatus {
