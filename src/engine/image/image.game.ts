@@ -1,22 +1,22 @@
 import { GameState } from "../GameTypes";
 import { ImageResourceProps, ImageResourceType } from "./image.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
+import { RemoteBufferView } from "../resource/schema";
 
 export interface RemoteImage {
   name: string;
   resourceId: ResourceId;
   uri?: string;
-  bufferView?: RemoteBufferView<Thread.Render, undefined>;
+  bufferView?: RemoteBufferView;
   mimeType?: string;
   flipY: boolean;
 }
 
 export interface BufferViewRemoteImageProps {
   name?: string;
-  bufferView: RemoteBufferView<Thread.Render, undefined>;
+  bufferView: RemoteBufferView;
   mimeType: string;
   flipY?: boolean;
 }

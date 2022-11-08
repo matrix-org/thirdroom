@@ -4,7 +4,6 @@ import { createLocalResourceModule } from "./resource.common";
 const {
   ResourceModule,
   getLocalResource,
-  getLocalResources,
   waitForLocalResource,
   registerResource,
   registerResourceLoader,
@@ -15,7 +14,6 @@ const {
 export {
   ResourceModule,
   getLocalResource,
-  getLocalResources,
   waitForLocalResource,
   registerResource,
   registerResourceLoader,

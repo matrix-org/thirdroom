@@ -6,6 +6,7 @@ import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourc
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
+  createArrayBufferResource,
   createResource,
   createStringResource,
   disposeResource,
@@ -16,10 +17,12 @@ import {
   InitialResourceProps,
   IRemoteResourceManager,
   RemoteResource,
+  RemoteResourceArrayBufferStore,
+  RemoteResourceRefStore,
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
-import { LightResource } from "./schema";
+import { LightResource, LightType } from "./schema";
 import { decodeString } from "./strings";
 
 type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
@@ -35,7 +38,7 @@ function defineResourceIdTransform<Def extends ResourceDefinition>(resourceDef: 
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arraybuffer") {
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arrayBuffer") {
       resourceIdViews.push({ propName, view: new Uint32Array(buffer, prop.byteOffset, prop.size) });
     }
   }
@@ -169,6 +172,42 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     addResourceRef(this.ctx, resourceId);
   }
 
+  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer {
+    if (!store.value) {
+      throw new Error("arrayBuffer field not initialized.");
+    }
+
+    return store.value;
+  }
+
+  setArrayBuffer(value: SharedArrayBuffer, store: RemoteResourceArrayBufferStore): void {
+    if (store.value) {
+      throw new Error("You cannot mutate an existing arrayBuffer field.");
+    }
+
+    // TODO: Add a function to actually get a range of buffer data in script context
+    // We shouldn't allocate all the buffer data on the script heap because if you aren't using it,
+    // it's a waste of memory.
+    store.view[0] = 0;
+    store.value = value;
+    const resourceId = createArrayBufferResource(this.ctx, value);
+    store.resourceIdView[0] = resourceId;
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  getRef<Def extends ResourceDefinition>(
+    resourceDef: Def,
+    store: RemoteResourceRefStore
+  ): RemoteResource<Def> | undefined {
+    return getRemoteResource<RemoteResource<Def>>(this.ctx, store.resourceIdView[0]);
+  }
+
+  setRef(value: RemoteResource<ResourceDefinition>, store: RemoteResourceRefStore): void {
+    store.value = value;
+    store.resourceIdView[0] = value.resourceId;
+    store.view[0] = value.ptr;
+  }
+
   addRef(resourceId: number) {
     addResourceRef(this.ctx, resourceId);
   }
@@ -252,15 +291,17 @@ export class ScriptResourceManager implements IRemoteResourceManager {
             const def = resource.constructor.resourceDef;
 
             if (def === LightResource && resource.name === name) {
-              return resource.byteOffset;
+              return resource.ptr;
             }
           }
 
           return 0;
         },
-        create_light: () => {
-          const resource = this.createResource(LightResource, {});
-          return resource.byteOffset;
+        create_light: (type: LightType) => {
+          const resource = this.createResource(LightResource, {
+            type,
+          });
+          return resource.ptr;
         },
         set_light_name: (lightPtr: number, strPtr: number): number => {
           const resourceId = this.ptrToResourceId.get(lightPtr);

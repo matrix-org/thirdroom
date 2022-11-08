@@ -470,7 +470,7 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -488,7 +488,7 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);

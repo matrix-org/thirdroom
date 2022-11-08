@@ -36,6 +36,7 @@ import {
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
 import { RigidBody } from "../../../src/engine/physics/physics.game";
+import { addPrefabComponent } from "../../../src/engine/prefab/prefab.game";
 
 const clearComponentData = () => {
   new Uint8Array(Transform.position[0].buffer).fill(0);
@@ -463,6 +464,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
@@ -476,7 +478,7 @@ describe("Network Tests", () => {
 
       ents.forEach((eid) => {
         strictEqual(readUint32(reader), eid);
-        strictEqual(readString(reader), "cube");
+        strictEqual(readString(reader), "test-prefab");
       });
     });
     it("should #deserializeCreates()", () => {
@@ -493,6 +495,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       const localEntities = ownedNetworkedQuery(state.world);
@@ -531,6 +534,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
@@ -563,6 +567,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);

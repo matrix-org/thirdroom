@@ -4,12 +4,7 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import {
-  createRemotePerspectiveCamera,
-  RemoteOrthographicCamera,
-  RemotePerspectiveCamera,
-  updateRemoteCameras,
-} from "../camera/camera.game";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
@@ -44,8 +39,6 @@ export interface GameRendererModuleState {
   textures: RemoteTexture[];
   unlitMaterials: RemoteUnlitMaterial[];
   standardMaterials: RemoteStandardMaterial[];
-  perspectiveCameras: RemotePerspectiveCamera[];
-  orthographicCameras: RemoteOrthographicCamera[];
   meshPrimitives: RemoteMeshPrimitive[];
   canvasWidth: number;
   canvasHeight: number;
@@ -129,7 +122,6 @@ export const RenderableSystem = (state: GameState) => {
   updateRendererRemoteScenes(renderer.scenes);
   updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
-  updateRemoteCameras(state);
 };
 
 export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {

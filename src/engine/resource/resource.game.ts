@@ -2,6 +2,7 @@ import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
+  ArrayBufferResourceType,
   LoadResourcesMessage,
   ResourceDisposedError,
   ResourceDisposedMessage,
@@ -9,7 +10,9 @@ import {
   ResourceLoadedMessage,
   ResourceMessageType,
   ResourceStatus,
+  StringResourceType,
 } from "./resource.common";
+import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
 
 interface RemoteResourceInfo {
   id: ResourceId;
@@ -28,6 +31,7 @@ interface RemoteResourceInfo {
 interface ResourceModuleState {
   resourceIdCounter: number;
   resources: Map<ResourceId, any>;
+  resourcesByType: Map<ResourceDefinition, RemoteResource<any>[]>;
   resourceInfos: Map<ResourceId, RemoteResourceInfo>;
   resourceIdMap: Map<string, Map<any, ResourceId>>;
   deferredResources: Map<ResourceId, Deferred<undefined>>;
@@ -43,6 +47,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     return {
       resourceIdCounter: 1,
       resources: new Map(),
+      resourcesByType: new Map(),
       resourceInfos: new Map(),
       resourceIdMap: new Map(),
       deferredResources: new Map(),
@@ -189,7 +194,11 @@ export function createResource<Props>(
 }
 
 export function createStringResource(ctx: GameState, value: string): ResourceId {
-  return createResource(ctx, Thread.Shared, "string", value);
+  return createResource(ctx, Thread.Shared, StringResourceType, value);
+}
+
+export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
+  return createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
 }
 
 export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
@@ -233,8 +242,22 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
 
   const resource = resourceModule.resources.get(resourceId);
 
-  if (resource && resource.dispose) {
-    resource.dispose();
+  if (resource) {
+    const resourceDef = resource.constructor.resourceDef;
+
+    const resourceArr = resourceModule.resourcesByType.get(resourceDef);
+
+    if (resourceArr) {
+      const index = resourceArr.indexOf(resource);
+
+      if (index !== -1) {
+        resourceArr.splice(index, 1);
+      }
+    }
+
+    if (resource.dispose) {
+      resource.dispose();
+    }
   }
 
   resourceModule.resources.delete(resourceId);
@@ -283,12 +306,35 @@ export function getResourceStatus(ctx: GameState, resourceId: ResourceId): Resou
   return resourceInfo ? resourceInfo.statusView[0] : ResourceStatus.None;
 }
 
-export function setRemoteResource<Res>(ctx: GameState, resourceId: ResourceId, resource: Res): void {
-  getModule(ctx, ResourceModule).resources.set(resourceId, resource);
+export function setRemoteResource<Res extends RemoteResource<any>>(
+  ctx: GameState,
+  resourceId: ResourceId,
+  resource: Res
+): void {
+  const { resources, resourcesByType } = getModule(ctx, ResourceModule);
+
+  resources.set(resourceId, resource);
+
+  const resourceDef = resource.constructor.resourceDef;
+  let resourceArr = resourcesByType.get(resourceDef);
+
+  if (!resourceArr) {
+    resourceArr = [];
+    resourcesByType.set(resourceDef, resourceArr);
+  }
+
+  resourceArr.push(resource);
 }
 
 export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
   return getModule(ctx, ResourceModule).resources.get(resourceId) as Res | undefined;
+}
+
+export function getRemoteResources<Def extends ResourceDefinition>(
+  ctx: GameState,
+  resourceDef: Def
+): RemoteResource<Def>[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceDef) || []) as unknown as RemoteResource<Def>[];
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {

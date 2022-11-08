@@ -30,7 +30,17 @@ static JSLight *create_js_light(JSContext *ctx, Light *light) {
 static JSClassID js_light_class_id;
 
 static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  Light *light = websg_create_light();
+  if (argc < 1 || !JS_IsNumber(argv[0])) {
+    JS_ThrowTypeError(ctx, "new Light() expects LightType as its first paramater.");
+  }
+
+  int32_t lightType;
+
+  if (JS_ToInt32(ctx, &lightType, argv[0])) {
+    return JS_EXCEPTION;
+  }
+
+  Light *light = websg_create_light((LightType)lightType);
   JSValue lightObj = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
 
@@ -234,7 +244,7 @@ static JSValue js_define_light_class(JSContext *ctx) {
   JSValue light_proto = JS_NewObject(ctx);
   JS_SetPropertyFunctionList(ctx, light_proto, js_light_proto_funcs, countof(js_light_proto_funcs));
   
-  JSValue light_class = JS_NewCFunction2(ctx, js_light_constructor, "Light", 1, JS_CFUNC_constructor, 0);
+  JSValue light_class = JS_NewCFunction2(ctx, js_light_constructor, "Light", 1, JS_CFUNC_constructor, 1);
   JS_SetConstructor(ctx, light_class, light_proto);
   JS_SetClassProto(ctx, js_light_class_id, light_proto);
 

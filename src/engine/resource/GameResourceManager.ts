@@ -3,11 +3,21 @@ import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
-import { addResourceRef, createResource, disposeResource, getRemoteResource, setRemoteResource } from "./resource.game";
+import {
+  addResourceRef,
+  createArrayBufferResource,
+  createResource,
+  createStringResource,
+  disposeResource,
+  getRemoteResource,
+  setRemoteResource,
+} from "./resource.game";
 import {
   InitialResourceProps,
   IRemoteResourceManager,
   RemoteResource,
+  RemoteResourceArrayBufferStore,
+  RemoteResourceRefStore,
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
@@ -63,6 +73,44 @@ export class GameResourceManager implements IRemoteResourceManager {
 
   setString(value: string, store: RemoteResourceStringStore): void {
     store.value = value;
+
+    if (store.view[0]) {
+      disposeResource(this.ctx, store.view[0]);
+    }
+
+    const resourceId = createStringResource(this.ctx, value);
+    store.view[0] = resourceId;
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer {
+    if (!store.value) {
+      throw new Error("arrayBuffer field not initialized.");
+    }
+
+    return store.value;
+  }
+
+  setArrayBuffer(value: SharedArrayBuffer, store: RemoteResourceArrayBufferStore): void {
+    if (store.value) {
+      throw new Error("You cannot mutate an existing arrayBuffer field.");
+    }
+    store.value = value;
+    const resourceId = createArrayBufferResource(this.ctx, value);
+    store.view[0] = resourceId;
+    addResourceRef(this.ctx, resourceId);
+  }
+
+  getRef<Def extends ResourceDefinition>(
+    resourceDef: Def,
+    store: RemoteResourceRefStore
+  ): RemoteResource<Def> | undefined {
+    return getRemoteResource<RemoteResource<Def>>(this.ctx, store.view[0]);
+  }
+
+  setRef(value: RemoteResource<ResourceDefinition>, store: RemoteResourceRefStore): void {
+    store.value = value;
+    store.view[0] = value.resourceId;
   }
 
   addRef(resourceId: number) {

@@ -1,7 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState, World } from "../GameTypes";
-import { createPhysicsCube } from "../mesh/mesh.game";
 import { defineModule, getModule } from "../module/module.common";
 
 interface PrefabModuleState {
@@ -66,18 +65,15 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return template;
 }
 
-// TODO: make a loading entity prefab to display if prefab template hasn't been loaded before deserializing
-// add component+system for loading and swapping the prefab
-export const createLoadingEntity = createPhysicsCube;
-
 export const createPrefabEntity = (state: GameState, prefab: string, remote = false) => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
-  if (create) {
-    return create(state, remote);
-  } else {
-    return createLoadingEntity(state, 1);
+
+  if (!create) {
+    throw new Error(`Could not find prefab "${prefab}"`);
   }
+
+  return create(state, remote);
 };
 
 export const addPrefabComponent = (world: World, eid: number, prefab: string) => {

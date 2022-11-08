@@ -35,7 +35,6 @@ import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { createFlyPlayerRig, FlyPlayerRig } from "../FlyCharacterController";
@@ -62,6 +61,7 @@ import {
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
 import { SamplerMapping, SamplerResource } from "../../engine/resource/schema";
+import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;

@@ -51,7 +51,15 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
           return this.manager.getString(resourceId);
         },
       });
-    } else if (prop.type === "ref" || prop.type === "arraybuffer") {
+    } else if (prop.type === "arrayBuffer") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource<Def>) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          const resourceId = this.__props[propName][index][0];
+          return this.manager.getArrayBuffer(resourceId);
+        },
+      });
+    } else if (prop.type === "ref") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);

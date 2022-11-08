@@ -1,10 +1,11 @@
 import { CompressedTexture, DataTexture } from "three";
 
-import { LocalBufferView } from "../bufferView/bufferView.common";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { LocalBufferView } from "../resource/schema";
+import { toArrayBuffer } from "../utils/arraybuffer";
 import { ImageResourceProps } from "./image.common";
 
 const HDRMimeType = "image/vnd.radiance";
@@ -48,7 +49,8 @@ export async function onLoadLocalImageResource(
   let isObjectUrl = false;
 
   if ("bufferView" in props) {
-    const { buffer } = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
+    const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
+    const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
 
     const blob = new Blob([buffer], {
       type: props.mimeType,
