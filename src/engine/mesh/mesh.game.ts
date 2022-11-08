@@ -13,7 +13,6 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { createRemoteBufferView } from "../bufferView/bufferView.game";
 import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
@@ -23,6 +22,7 @@ import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
+import { BufferResource, BufferViewResource } from "../resource/schema";
 import { RemoteTexture } from "../texture/texture.game";
 import {
   SharedMeshResource,
@@ -50,8 +50,8 @@ export interface RemoteMeshPrimitive {
   resourceId: number;
   meshPrimitiveBufferView: MeshPrimitiveBufferView;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
-  indices?: RemoteAccessor<any, any>;
+  attributes: { [key: string]: RemoteAccessor<any> };
+  indices?: RemoteAccessor<any>;
   mode?: number;
   get material(): RemoteMaterial | undefined;
   set material(value: RemoteMaterial | undefined);
@@ -69,8 +69,8 @@ export interface RemoteMeshProps {
 }
 
 export interface MeshPrimitiveProps {
-  attributes: { [key: string]: RemoteAccessor<any, any> };
-  indices?: RemoteAccessor<any, any>;
+  attributes: { [key: string]: RemoteAccessor<any> };
+  indices?: RemoteAccessor<any>;
   material?: RemoteMaterial;
   mode?: number;
 }
@@ -78,25 +78,25 @@ export interface MeshPrimitiveProps {
 export interface RemoteInstancedMesh {
   name: string;
   resourceId: number;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
+  attributes: { [key: string]: RemoteAccessor<any> };
 }
 
 export interface RemoteInstancedMeshProps {
   name?: string;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
+  attributes: { [key: string]: RemoteAccessor<any> };
 }
 
 export interface RemoteSkinnedMesh {
   name: string;
   resourceId: number;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any, any>;
+  inverseBindMatrices?: RemoteAccessor<any>;
 }
 
 export interface RemoteSkinnedMeshProps {
   name?: string;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any, any>;
+  inverseBindMatrices?: RemoteAccessor<any>;
 }
 
 export interface RemoteLightMap {
@@ -162,7 +162,7 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
 
   const initialProps: PrimitiveResourceProps = {
     attributes: Object.fromEntries(
-      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
+      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [
         name,
         accessor.resourceId,
       ])
@@ -258,10 +258,7 @@ export function createRemoteInstancedMesh(ctx: GameState, props: RemoteInstanced
 
   const sharedResource: SharedInstancedMeshResource = {
     attributes: Object.fromEntries(
-      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
-        name,
-        accessor.resourceId,
-      ])
+      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [name, accessor.resourceId])
     ),
   };
 
@@ -363,20 +360,23 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const normArr = geometry.attributes.normal.array as Float32Array;
   const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const buffer = new SharedArrayBuffer(
-    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
-  );
+  const data = new SharedArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
 
-  const indices = new Uint16Array(buffer, 0, indicesArr.length);
+  const indices = new Uint16Array(data, 0, indicesArr.length);
   indices.set(indicesArr);
-  const position = new Float32Array(buffer, indices.byteLength, posArr.length);
+  const position = new Float32Array(data, indices.byteLength, posArr.length);
   position.set(posArr);
-  const normal = new Float32Array(buffer, position.byteOffset + position.byteLength, normArr.length);
+  const normal = new Float32Array(data, position.byteOffset + position.byteLength, normArr.length);
   normal.set(normArr);
-  const uv = new Float32Array(buffer, normal.byteOffset + normal.byteLength, uvArr.length);
+  const uv = new Float32Array(data, normal.byteOffset + normal.byteLength, uvArr.length);
   uv.set(uvArr);
 
-  const bufferView = createRemoteBufferView(ctx, { thread: Thread.Render, buffer });
+  const bufferView = ctx.resourceManager.createResource(BufferViewResource, {
+    buffer: ctx.resourceManager.createResource(BufferResource, {
+      data,
+    }),
+    byteLength: data.byteLength,
+  });
 
   const remoteMesh = createRemoteMesh(ctx, {
     primitives: [

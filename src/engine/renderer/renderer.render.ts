@@ -12,17 +12,8 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
-import { CameraType } from "../camera/camera.common";
-import { onLoadOrthographicCamera, onLoadPerspectiveCamera } from "../camera/camera.render";
 import { ImageResourceType } from "../image/image.common";
 import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
-import { DirectionalLightResourceType, PointLightResourceType, SpotLightResourceType } from "../light/light.common";
-import {
-  onLoadLocalDirectionalLightResource,
-  onLoadLocalPointLightResource,
-  onLoadLocalSpotLightResource,
-} from "../light/light.render";
 import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
 import {
   LocalStandardMaterialResource,
@@ -33,9 +24,7 @@ import {
   updateLocalUnlitMaterialResources,
 } from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResourceLoader } from "../resource/resource.render";
-import { SamplerResourceType } from "../sampler/sampler.common";
-import { onLoadSampler } from "../sampler/sampler.render";
+import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
 import { SceneResourceType } from "../scene/scene.common";
 import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
@@ -55,7 +44,6 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
 import {
@@ -88,6 +76,14 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
+import {
+  BufferResource,
+  BufferViewResource,
+  CameraResource,
+  CameraType,
+  LightResource,
+  SamplerResource,
+} from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -210,19 +206,17 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResourceLoader(ctx, SamplerResourceType, onLoadSampler),
+      registerResource(ctx, SamplerResource),
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
       registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
       registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
       registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
-      registerResourceLoader(ctx, DirectionalLightResourceType, onLoadLocalDirectionalLightResource),
-      registerResourceLoader(ctx, PointLightResourceType, onLoadLocalPointLightResource),
-      registerResourceLoader(ctx, SpotLightResourceType, onLoadLocalSpotLightResource),
+      registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
-      registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
-      registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
+      registerResource(ctx, CameraResource),
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
-      registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
+      registerResource(ctx, BufferResource),
+      registerResource(ctx, BufferViewResource),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
@@ -297,9 +291,7 @@ export function RendererSystem(ctx: RenderThreadState) {
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
       activeCameraNode.camera.type === CameraType.Perspective
     ) {
-      const cameraStateView = getReadObjectBufferView(activeCameraNode.camera.cameraTripleBuffer);
-
-      if (cameraStateView.aspectRatio[0] === 0) {
+      if (activeCameraNode.camera.aspectRatio === 0) {
         activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
       }
     }

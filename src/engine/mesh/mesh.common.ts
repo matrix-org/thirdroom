@@ -71,10 +71,29 @@ export enum MeshPrimitiveAttribute {
   WEIGHTS_0 = "WEIGHTS_0",
 }
 
+export enum MeshPrimitiveAttributeIndex {
+  POSITION,
+  NORMAL,
+  TANGENT,
+  TEXCOORD_0,
+  TEXCOORD_1,
+  COLOR_0,
+  JOINTS_0,
+  WEIGHTS_0,
+}
+
 export enum InstancedMeshAttribute {
   TRANSLATION = "TRANSLATION",
   ROTATION = "ROTATION",
   SCALE = "SCALE",
   LIGHTMAP_OFFSET = "_LIGHTMAP_OFFSET",
   LIGHTMAP_SCALE = "_LIGHTMAP_SCALE",
+}
+
+export enum InstancedMeshAttributeIndex {
+  TRANSLATION,
+  ROTATION,
+  SCALE,
+  LIGHTMAP_OFFSET,
+  LIGHTMAP_SCALE,
 }

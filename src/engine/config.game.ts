@@ -30,6 +30,9 @@ import { AnimationSystem } from "./animation/animation.game";
 import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
+import { ScriptingSystem } from "./scripting/scripting.game";
+import { GameResourceSystem } from "./resource/GameResourceSystem";
+import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
 
@@ -70,6 +73,10 @@ export default defineConfig<GameState>({
     SpawnableSystem,
     ThirdroomSystem,
 
+    // Copy Transform to RemoteNode
+    ScriptingSystem,
+    // Copy RemoteNode to Transform
+
     UpdateMatrixWorldSystem,
 
     NametagSystem,
@@ -80,8 +87,10 @@ export default defineConfig<GameState>({
 
     GameAudioSystem,
     RenderableSystem,
+    RemoteCameraSystem,
     RemoteNodeSystem,
     RemoteSceneSystem,
+    GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
     NameSystem,

@@ -49,6 +49,7 @@ function useLoadWorld() {
     async (roomId: string, event: StateEvent | undefined) => {
       if (!roomId) return;
       let sceneUrl = event?.content?.scene_url;
+      let scriptUrl = event?.content?.script_url;
       const maxObjectCap = event?.content?.max_member_object_cap;
 
       if (typeof sceneUrl !== "string") {
@@ -59,8 +60,12 @@ function useLoadWorld() {
         sceneUrl = session.mediaRepository.mxcUrl(sceneUrl);
       }
 
+      if (scriptUrl && scriptUrl.startsWith("mxc:")) {
+        scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
+      }
+
       try {
-        await loadWorld(mainThread, sceneUrl);
+        await loadWorld(mainThread, sceneUrl, scriptUrl);
 
         // set max obj cap
         if (maxObjectCap !== undefined)
@@ -92,10 +97,7 @@ function useEnterWorld() {
 
       let stream;
       try {
-        // TODO: Re-enable when we fix issues with joining without microphone enabled
-        // if (localStorage.getItem("microphone") === "true") {
         stream = await platform.mediaDevices.getMediaTracks(true, false);
-        // }
       } catch (err) {
         console.error(err);
       }
@@ -128,6 +130,13 @@ function useEnterWorld() {
 
       const audio = getModule(mainThread, AudioModule);
       audio.context.resume();
+
+      const { muteSettings } = groupCall;
+      // Mute after connecting based on user preference
+      if (muteSettings?.microphone === false && localStorage.getItem("microphone") !== "true") {
+        groupCall.setMuted(muteSettings.toggleMicrophone());
+      }
+
       return disposer;
     },
     [session, mainThread, client, connectGroupCall]

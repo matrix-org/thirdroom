@@ -28,7 +28,6 @@ import {
   waitForLocalResource,
 } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
-import { LocalBufferView } from "../bufferView/bufferView.common";
 import { AudioNodeTripleBuffer, NodeResourceType } from "../node/node.common";
 import { MainNode, onLoadMainNode } from "../node/node.main";
 import {
@@ -41,6 +40,8 @@ import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
 import { LocalNametag, onLoadMainNametag, updateNametag } from "../nametag/nametag.main";
 import { NametagResourceType } from "../nametag/nametag.common";
+import { LocalBufferView } from "../resource/schema";
+import { toArrayBuffer } from "../utils/arraybuffer";
 
 /*********
  * Types *
@@ -175,7 +176,7 @@ const onLoadAudioData = async (
 
   if ("bufferView" in props) {
     const bufferView = await waitForLocalResource<LocalBufferView>(ctx, props.bufferView);
-    buffer = bufferView.buffer;
+    buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
     mimeType = props.mimeType;
   } else {
     const response = await fetch(props.uri);

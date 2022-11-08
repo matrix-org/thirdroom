@@ -2,6 +2,7 @@ import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
+  ArrayBufferResourceType,
   LoadResourcesMessage,
   ResourceDisposedError,
   ResourceDisposedMessage,
@@ -9,9 +10,11 @@ import {
   ResourceLoadedMessage,
   ResourceMessageType,
   ResourceStatus,
+  StringResourceType,
 } from "./resource.common";
+import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
 
-interface RemoteResource {
+interface RemoteResourceInfo {
   id: ResourceId;
   name: string;
   thread: Thread;
@@ -27,7 +30,9 @@ interface RemoteResource {
 
 interface ResourceModuleState {
   resourceIdCounter: number;
-  resources: Map<ResourceId, RemoteResource>;
+  resources: Map<ResourceId, any>;
+  resourcesByType: Map<ResourceDefinition, RemoteResource<any>[]>;
+  resourceInfos: Map<ResourceId, RemoteResourceInfo>;
   resourceIdMap: Map<string, Map<any, ResourceId>>;
   deferredResources: Map<ResourceId, Deferred<undefined>>;
   mainThreadMessageQueue: any[];
@@ -42,6 +47,8 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     return {
       resourceIdCounter: 1,
       resources: new Map(),
+      resourcesByType: new Map(),
+      resourceInfos: new Map(),
       resourceIdMap: new Map(),
       deferredResources: new Map(),
       mainThreadMessageQueue: [],
@@ -58,9 +65,9 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
 function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resource = resourceModule.resources.get(id);
+  const resourceInfo = resourceModule.resourceInfos.get(id);
 
-  if (!resource) {
+  if (!resourceInfo) {
     return;
   }
 
@@ -70,8 +77,8 @@ function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedM
     return;
   }
 
-  resource.loaded = loaded;
-  resource.error = error;
+  resourceInfo.loaded = loaded;
+  resourceInfo.error = error;
 
   if (error) {
     deferred.reject(error);
@@ -122,7 +129,7 @@ export function createResource<Props>(
 
   const name = options?.name || UNKNOWN_RESOURCE_NAME;
 
-  resourceModule.resources.set(id, {
+  resourceModule.resourceInfos.set(id, {
     id,
     name,
     thread,
@@ -159,49 +166,65 @@ export function createResource<Props>(
     statusView,
   };
 
-  if (thread === Thread.Main) {
+  if (thread === Thread.Game) {
+    throw new Error("Invalid resource thread target");
+  }
+
+  if (thread === Thread.Shared && options?.transferList) {
+    throw new Error("Cannot transfer resources to multiple threads");
+  }
+
+  if (thread === Thread.Main || thread === Thread.Shared) {
     resourceModule.mainThreadMessageQueue.push(message);
 
     if (options?.transferList) {
       resourceModule.mainThreadTransferList.push(...options.transferList);
     }
-  } else if (thread === Thread.Render) {
+  }
+
+  if (thread === Thread.Render || thread === Thread.Shared) {
     resourceModule.renderThreadMessageQueue.push(message);
 
     if (options?.transferList) {
       resourceModule.renderThreadTransferList.push(...options.transferList);
     }
-  } else {
-    throw new Error("Invalid resource thread target");
   }
 
   return id;
 }
 
+export function createStringResource(ctx: GameState, value: string): ResourceId {
+  return createResource(ctx, Thread.Shared, StringResourceType, value);
+}
+
+export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
+  return createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
+}
+
 export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resource = resourceModule.resources.get(resourceId);
+  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
 
-  if (!resource) {
+  if (!resourceInfo) {
     return false;
   }
 
-  resource.refCount--;
+  resourceInfo.refCount--;
 
-  if (resource.refCount > 0) {
+  if (resourceInfo.refCount > 0) {
     return false;
   }
 
-  if (resource.dispose) {
-    resource.dispose();
+  if (resourceInfo.dispose) {
+    resourceInfo.dispose();
   }
 
-  if (resource.cacheKey) {
-    const resourceTypeCache = resourceModule.resourceIdMap.get(resource.resourceType);
+  if (resourceInfo.cacheKey) {
+    const resourceTypeCache = resourceModule.resourceIdMap.get(resourceInfo.resourceType);
 
     if (resourceTypeCache) {
-      resourceTypeCache.delete(resource.cacheKey);
+      resourceTypeCache.delete(resourceInfo.cacheKey);
     }
   }
 
@@ -213,14 +236,45 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
   }
 
   // Set dispose flag
-  resource.statusView[1] = 1;
+  resourceInfo.statusView[1] = 1;
+
+  resourceModule.resourceInfos.delete(resourceId);
+
+  const resource = resourceModule.resources.get(resourceId);
+
+  if (resource) {
+    const resourceDef = resource.constructor.resourceDef;
+
+    const resourceArr = resourceModule.resourcesByType.get(resourceDef);
+
+    if (resourceArr) {
+      const index = resourceArr.indexOf(resource);
+
+      if (index !== -1) {
+        resourceArr.splice(index, 1);
+      }
+    }
+
+    if (resource.dispose) {
+      resource.dispose();
+    }
+  }
 
   resourceModule.resources.delete(resourceId);
 
-  ctx.sendMessage<ResourceDisposedMessage>(resource.thread, {
-    type: ResourceMessageType.ResourceDisposed,
-    id: resourceId,
-  });
+  if (resourceInfo.thread === Thread.Main || resourceInfo.thread === Thread.Shared) {
+    ctx.sendMessage<ResourceDisposedMessage>(Thread.Main, {
+      type: ResourceMessageType.ResourceDisposed,
+      id: resourceId,
+    });
+  }
+
+  if (resourceInfo.thread === Thread.Render || resourceInfo.thread === Thread.Shared) {
+    ctx.sendMessage<ResourceDisposedMessage>(Thread.Render, {
+      type: ResourceMessageType.ResourceDisposed,
+      id: resourceId,
+    });
+  }
 
   return true;
 }
@@ -228,10 +282,10 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
 export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resource = resourceModule.resources.get(resourceId);
+  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
 
-  if (resource) {
-    resource.refCount++;
+  if (resourceInfo) {
+    resourceInfo.refCount++;
   }
 }
 
@@ -248,8 +302,39 @@ export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): P
 
 export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
   const resourceModule = getModule(ctx, ResourceModule);
-  const resource = resourceModule.resources.get(resourceId);
-  return resource ? resource.statusView[0] : ResourceStatus.None;
+  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
+  return resourceInfo ? resourceInfo.statusView[0] : ResourceStatus.None;
+}
+
+export function setRemoteResource<Res extends RemoteResource<any>>(
+  ctx: GameState,
+  resourceId: ResourceId,
+  resource: Res
+): void {
+  const { resources, resourcesByType } = getModule(ctx, ResourceModule);
+
+  resources.set(resourceId, resource);
+
+  const resourceDef = resource.constructor.resourceDef;
+  let resourceArr = resourcesByType.get(resourceDef);
+
+  if (!resourceArr) {
+    resourceArr = [];
+    resourcesByType.set(resourceDef, resourceArr);
+  }
+
+  resourceArr.push(resource);
+}
+
+export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
+  return getModule(ctx, ResourceModule).resources.get(resourceId) as Res | undefined;
+}
+
+export function getRemoteResources<Def extends ResourceDefinition>(
+  ctx: GameState,
+  resourceDef: Def
+): RemoteResource<Def>[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceDef) || []) as unknown as RemoteResource<Def>[];
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {

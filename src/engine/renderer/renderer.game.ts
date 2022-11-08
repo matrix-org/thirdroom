@@ -4,12 +4,7 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import {
-  createRemotePerspectiveCamera,
-  RemoteOrthographicCamera,
-  RemotePerspectiveCamera,
-  updateRemoteCameras,
-} from "../camera/camera.game";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
@@ -29,14 +24,6 @@ import {
   SceneRenderedNotificationMessage,
 } from "./renderer.common";
 import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
-import {
-  RemoteDirectionalLight,
-  RemotePointLight,
-  RemoteSpotLight,
-  updateRemoteDirectionalLights,
-  updateRemotePointLights,
-  updateRemoteRemoteSpotLights,
-} from "../light/light.game";
 import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
@@ -52,11 +39,6 @@ export interface GameRendererModuleState {
   textures: RemoteTexture[];
   unlitMaterials: RemoteUnlitMaterial[];
   standardMaterials: RemoteStandardMaterial[];
-  directionalLights: RemoteDirectionalLight[];
-  pointLights: RemotePointLight[];
-  spotLights: RemoteSpotLight[];
-  perspectiveCameras: RemotePerspectiveCamera[];
-  orthographicCameras: RemoteOrthographicCamera[];
   meshPrimitives: RemoteMeshPrimitive[];
   canvasWidth: number;
   canvasHeight: number;
@@ -140,10 +122,6 @@ export const RenderableSystem = (state: GameState) => {
   updateRendererRemoteScenes(renderer.scenes);
   updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
-  updateRemotePointLights(renderer.pointLights);
-  updateRemoteDirectionalLights(renderer.directionalLights);
-  updateRemoteRemoteSpotLights(renderer.spotLights);
-  updateRemoteCameras(state);
 };
 
 export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {

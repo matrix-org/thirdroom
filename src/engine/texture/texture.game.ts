@@ -6,7 +6,7 @@ import { getModule, Thread } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteSampler } from "../sampler/sampler.game";
+import { RemoteSampler } from "../resource/schema";
 import { TextureEncoding, SharedTextureResource, TextureResourceType } from "./texture.common";
 
 export interface RemoteTexture {

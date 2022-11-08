@@ -35,8 +35,6 @@ import {
 import { createRemoteImage } from "../../engine/image/image.game";
 import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
-import { createRemoteSampler } from "../../engine/sampler/sampler.game";
-import { SamplerMapping } from "../../engine/sampler/sampler.common";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
@@ -76,6 +74,15 @@ import {
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
+import {
+  addScriptComponent,
+  loadJSScript,
+  loadWASMScript,
+  Script,
+  ScriptExecutionEnvironment,
+} from "../../engine/scripting/scripting.game";
+import { SamplerMapping, SamplerResource } from "../../engine/resource/schema";
+import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -211,7 +218,7 @@ const actionMap: ActionMap = {
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
-    await loadEnvironment(ctx, message.url);
+    await loadEnvironment(ctx, message.url, message.scriptUrl);
 
     loadPreviewCamera(ctx);
 
@@ -286,7 +293,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
 
-    await loadEnvironment(ctx, message.url, message.fileMap);
+    await loadEnvironment(ctx, message.url, undefined, message.fileMap);
 
     loadPlayerRig(ctx, physics, input, network);
 
@@ -310,7 +317,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   }
 }
 
-async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string, string>) {
+async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (ctx.activeScene) {
@@ -332,11 +339,43 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
 
   const newScene = addEntity(ctx.world);
 
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, { fileMap, isStatic: true });
+  let script: Script<ScriptExecutionEnvironment> | undefined;
+
+  if (scriptUrl) {
+    const response = await fetch(scriptUrl);
+
+    const contentType = response.headers.get("content-type");
+
+    if (contentType) {
+      if (
+        contentType === "application/javascript" ||
+        contentType === "application/x-javascript" ||
+        contentType.startsWith("text/javascript")
+      ) {
+        const scriptSource = await response.text();
+        script = await loadJSScript(ctx, scriptSource);
+      } else if (contentType === "application/wasm") {
+        const scriptBuffer = await response.arrayBuffer();
+        script = await loadWASMScript(ctx, scriptBuffer);
+      }
+    }
+
+    if (script) {
+      addScriptComponent(ctx, newScene, script);
+    }
+  }
+
+  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, {
+    fileMap,
+    isStatic: true,
+    resourceManager: script?.resourceManager,
+  });
 
   thirdroom.sceneGLTF = sceneGltf;
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
+
+  const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
     const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
@@ -346,7 +385,7 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
         uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
       }),
-      sampler: createRemoteSampler(ctx, {
+      sampler: resourceManager.createResource(SamplerResource, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
       }),
     });
@@ -375,6 +414,10 @@ async function loadEnvironment(ctx: GameState, url: string, fileMap?: Map<string
       isStatic: true,
     });
     addChild(newScene, collisionGeo);
+  }
+
+  if (script) {
+    script.ready = true;
   }
 }
 
