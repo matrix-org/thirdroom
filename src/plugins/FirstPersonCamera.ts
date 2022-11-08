@@ -163,9 +163,13 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const controller = getInputController(input, parent);
     applyPitch(ctx, controller, eid);
 
-    // network the camera's avatar
+    // network the avatar's camera
+    const haveConnectedPeers = network.peers.length > 0;
+    const hosting = network.authoritative && isHost(network);
     const avatar = getAvatar(ctx, parent);
-    if (avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent)) {
+    const isOwnedAvatar =
+      avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
+    if (hosting && haveConnectedPeers && isOwnedAvatar) {
       const camera = getCamera(ctx, parent);
       const msg = createUpdateCameraMessage(ctx, parent, camera);
       if (msg.byteLength > 0) {

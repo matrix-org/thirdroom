@@ -1,5 +1,6 @@
 import { defineQuery, enterQuery, exitQuery, Not, defineComponent, Types, addComponent } from "bitecs";
 import murmurHash from "murmurhash-js";
+import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { removeRecursive } from "../component/transform";
@@ -22,8 +23,8 @@ import {
   deserializeFullUpdate,
   deserializeInformPlayerNetworkId,
   deserializeNewPeerSnapshot,
-  deserializeAssignPeerIndex,
   deserializeSnapshot,
+  deserializeUpdateNetworkId,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
   embodyAvatar,
@@ -31,11 +32,12 @@ import {
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
-import { NetworkRingBuffer } from "./RingBuffer";
+import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
 import { deserializeCommand } from "./commands.game";
 import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
+import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 
 /*********
  * Types *
@@ -112,7 +114,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.Delete, deserializeDeletes);
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
     registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
-    registerInboundMessageHandler(network, NetworkAction.AssignPeerIndex, deserializeAssignPeerIndex);
+    registerInboundMessageHandler(network, NetworkAction.UpdateNetworkId, deserializeUpdateNetworkId);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
@@ -123,6 +125,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       registerMessageHandler(ctx, NetworkMessageType.SetPeerId, onSetPeerId),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, onRemovePeerId),
+      registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
     ];
 
     return () => {
@@ -194,6 +197,23 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   }
 };
 
+const onExitWorld = (ctx: GameState, message: ExitWorldMessage) => {
+  const network = getModule(ctx, NetworkModule);
+  network.hostId = "";
+  network.peers = [];
+  network.newPeers = [];
+  network.peerIdToEntityId.clear();
+  network.entityIdToPeerId.clear();
+  network.networkIdToEntityId.clear();
+  network.localIdCount = 0;
+  network.removedLocalIds = [];
+  network.commands = [];
+  // drain ring buffers
+  const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+  while (availableRead(network.outgoingRingBuffer)) dequeueNetworkRingBuffer(network.outgoingRingBuffer, ringOut);
+  while (availableRead(network.incomingRingBuffer)) dequeueNetworkRingBuffer(network.incomingRingBuffer, ringOut);
+};
+
 // Set local peer id
 const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
   const network = getModule(ctx, NetworkModule);
@@ -225,6 +245,9 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
 
     // if host was re-elected, transfer ownership of old host's networked entities to new host
     if (newHostElected) {
+      network.localIdCount = 0;
+      network.removedLocalIds = [];
+
       const ents = remoteNetworkedQuery(ctx.world);
       // update peerIdIndex of the networkId to new host's peerId
       for (let i = 0; i < ents.length; i++) {
@@ -243,7 +266,9 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
           addComponent(ctx.world, Owned, eid);
         } else {
           // TODO: re-send this from the host side either via explicit message or via creation message
-          Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
+          // or deterministically set it here
+          // explicit message: NID -> NID
+          // Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
         }
       }
     }

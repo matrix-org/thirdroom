@@ -19,8 +19,7 @@ export interface MainNetworkState {
   reliableChannels: Map<string, RTCDataChannel>;
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
-  // event listener references here for access upon disposal (removeEventListener)
-  onIncomingMessage?: ({ data }: { data: ArrayBuffer }) => void;
+  incomingMessageHandlers: Map<string, ({ data }: { data: ArrayBuffer }) => void>;
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   peerId?: string;
@@ -44,10 +43,11 @@ export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>(
     });
 
     return {
-      reliableChannels: new Map<string, RTCDataChannel>(),
-      unreliableChannels: new Map<string, RTCDataChannel>(),
       incomingRingBuffer,
       outgoingRingBuffer,
+      reliableChannels: new Map(),
+      unreliableChannels: new Map(),
+      incomingMessageHandlers: new Map(),
     };
   },
   init(ctx) {},
@@ -70,9 +70,12 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
   const unreliableChannel = unreliableChannels.get(peerId);
-  if (network.onIncomingMessage) {
-    reliableChannel?.removeEventListener("message", network.onIncomingMessage);
-    unreliableChannel?.removeEventListener("message", network.onIncomingMessage);
+
+  const handler = network.incomingMessageHandlers.get(peerId);
+  if (handler) {
+    reliableChannel?.removeEventListener("message", handler);
+    unreliableChannel?.removeEventListener("message", handler);
+    network.incomingMessageHandlers.delete(peerId);
   }
 
   reliableChannels.delete(peerId);
@@ -185,8 +188,9 @@ export function addPeer(
       onPeerLeft(mainThread, peerId);
     };
 
-    network.onIncomingMessage = onIncomingMessage(mainThread, network, peerId);
-    dataChannel.addEventListener("message", network.onIncomingMessage);
+    const handler = onIncomingMessage(mainThread, network, peerId);
+    network.incomingMessageHandlers.set(peerId, handler);
+    dataChannel.addEventListener("message", handler);
     dataChannel.addEventListener("close", onClose);
 
     mainThread.sendMessage(Thread.Game, {

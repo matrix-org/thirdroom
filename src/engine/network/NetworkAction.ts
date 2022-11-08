@@ -6,10 +6,10 @@ export enum NetworkAction {
   FullChanged,
   FullSnapshot,
   Prefab,
-  AssignPeerIndex,
   InformPlayerNetworkId,
   NewPeerSnapshot,
   RemoveOwnershipMessage,
   Command,
   UpdateCamera,
+  UpdateNetworkId,
 }

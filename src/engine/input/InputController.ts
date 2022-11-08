@@ -51,7 +51,7 @@ export function getInputController(input: GameInputModule, eid: number) {
  * @param eid number
  */
 export function setActiveInputController(input: GameInputModule, eid: number) {
-  const controller = getInputController(input, eid) || createInputController();
+  const controller = input.controllers.get(eid) || createInputController(input.defaultController);
   controller.inputRingBuffer = input.defaultController.inputRingBuffer;
   input.activeController = controller;
 }

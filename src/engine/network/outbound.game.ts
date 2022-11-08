@@ -20,6 +20,7 @@ import {
   createNewPeerSnapshotMessage,
   createFullChangedMessage,
   createInformPlayerNetworkIdMessage,
+  createUpdateNetworkIdMessage,
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
@@ -42,17 +43,23 @@ export const sendUnreliable = (state: GameState, peerId: string, packet: ArrayBu
   throw new Error("sendUnreliable not implemented");
 };
 
-const assignNetworkIds = (state: GameState) => {
-  const network = getModule(state, NetworkModule);
-  const entered = enteredNetworkIdQuery(state.world);
+const assignNetworkIds = (ctx: GameState) => {
+  const network = getModule(ctx, NetworkModule);
+  const entered = enteredNetworkIdQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
-    const nid = createNetworkId(state) || 0;
+    const nid = createNetworkId(ctx) || 0;
+
+    const hostReelected = Networked.networkId[eid] !== 0;
+    if (network.authoritative && isHost(network) && hostReelected) {
+      broadcastReliable(ctx, network, createUpdateNetworkIdMessage(ctx, Networked.networkId[eid], nid));
+    }
+
     Networked.networkId[eid] = nid;
     console.log("networkId", nid, "assigned to eid", eid);
     network.networkIdToEntityId.set(nid, eid);
   }
-  return state;
+  return ctx;
 };
 
 const deleteNetworkIds = (state: GameState) => {
@@ -104,13 +111,13 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
         if (theirPeerId) {
-          // send out the snapshot first so entities that the next messages may reference exist
+          // send out a snapshot first so entity references in the following messages exist
           sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
 
           // inform new peer of this host avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
-          // inform everyone of the new peer avatar's networkId
+          // inform everyone of new peer
           broadcastReliable(ctx, network, createInformPlayerNetworkIdMessage(ctx, theirPeerId));
         }
       }
@@ -178,8 +185,12 @@ export function OutboundNetworkSystem(ctx: GameState) {
   assignNetworkIds(ctx);
 
   // serialize and send all outgoing updates
-  if (network.authoritative) sendUpdatesAuthoritative(ctx);
-  else sendUpdatesPeerToPeer(ctx);
+  try {
+    if (network.authoritative) sendUpdatesAuthoritative(ctx);
+    else sendUpdatesPeerToPeer(ctx);
+  } catch (e) {
+    console.error(e);
+  }
 
   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
   deleteNetworkIds(ctx);

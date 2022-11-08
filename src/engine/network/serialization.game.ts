@@ -20,7 +20,6 @@ import {
   writeFloat32,
   writePropIfChanged,
   writeString,
-  writeUint16,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
@@ -58,6 +57,9 @@ import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 
 export type NetPipeData = [GameState, CursorView, string];
+
+// ad-hoc messages view
+const messageView = createCursorView(new ArrayBuffer(1000));
 
 export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   const [, v] = input;
@@ -248,7 +250,7 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
       writeUint32(v, nid);
       writeString(v, prefabName);
     } else {
-      console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
+      throw new Error(`could not write entity prefab name, ${eid} does not exist in entityPrefabMap`);
     }
   }
   return input;
@@ -267,7 +269,7 @@ export function serializeCreates(input: NetPipeData) {
       writeString(v, prefabName);
       console.log("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
-      console.error("could not write entity prefab name,", eid, "does not exist in entityPrefabMap");
+      throw new Error(`could not write entity prefab name, ${eid} does not exist in entityPrefabMap`);
     }
   }
   return input;
@@ -315,6 +317,7 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
     }
 
+    // if eid is undefined, this skips reading and moves the view cursor forward by the appropriate amount
     deserializeTransformSnapshot(v, eid);
 
     if (eid && Transform.skipLerp[eid]) {
@@ -397,73 +400,59 @@ export function deserializeDeletes(input: NetPipeData) {
   return input;
 }
 
-/* PeerId Message */
+/* Update NetworkId Message */
 
-// host sends peerIdIndex to new peers
-export function serializeAssignPeerIndex(input: NetPipeData, peerId: string) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
-  const peerIdIndex = network.peerIdToIndex.get(peerId);
+export const serializeUpdateNetworkId = (from: number, to: number) => (data: NetPipeData) => {
+  console.log("serializeUpdateNetworkId", from, "->", to);
+  const [, cv] = data;
+  writeUint32(cv, from);
+  writeUint32(cv, to);
+  return data;
+};
+export function deserializeUpdateNetworkId(data: NetPipeData) {
+  const [ctx, cv] = data;
+  const network = getModule(ctx, NetworkModule);
 
-  // console.log("sending peerIdIndex", peerId, peerIdIndex);
-  if (peerIdIndex === undefined) {
-    // console.error(`unable to serialize peerIdIndex message - peerIdIndex not set for ${peerId}`);
-    throw new Error(`unable to serialize peerIdIndex message - peerIdIndex not set for ${peerId}`);
-  }
+  const from = readUint32(cv);
+  const to = readUint32(cv);
 
-  writeString(v, peerId);
-  writeUint16(v, peerIdIndex);
+  const eid = network.networkIdToEntityId.get(from);
+  if (!eid) throw new Error("could not find entity for nid: " + from);
 
-  return input;
+  Networked.networkId[eid] = to;
+
+  console.log("deserializeUpdateNetworkId", from, "->", to);
+
+  return data;
 }
-
-// peer decodes the peerIdIndex
-export function deserializeAssignPeerIndex(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
-  const peerId = readString(v);
-  const peerIdIndex = readUint16(v);
-
-  network.peerIdToIndex.set(peerId, peerIdIndex);
-  network.indexToPeerId.set(peerIdIndex, peerId);
-  console.log("recieving peerIdIndex", peerId, peerIdIndex);
-  return input;
-}
-
-// ad-hoc messages view
-const messageView = createCursorView(new ArrayBuffer(1000));
-
-export function createAssignPeerIndexMessage(state: GameState, peerId: string) {
-  const input: NetPipeData = [state, messageView, ""];
-  writeMessageType(NetworkAction.AssignPeerIndex)(input);
-  writeElapsed(input);
-  serializeAssignPeerIndex(input, peerId);
+export function createUpdateNetworkIdMessage(ctx: GameState, from: number, to: number) {
+  const input: NetPipeData = [ctx, messageView, ""];
+  writeMetadata(NetworkAction.UpdateNetworkId)(input);
+  serializeUpdateNetworkId(from, to)(input);
   return sliceCursorView(messageView);
 }
 
 /* Player NetworkId Message */
 
-export function serializeInformPlayerNetworkId(input: NetPipeData, peerId: string) {
-  const [state, cv] = input;
+export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipeData) => {
+  console.log("serializeInformPlayerNetworkId", peerId);
+  const [state, cv] = data;
   const network = getModule(state, NetworkModule);
   const peerEid = network.peerIdToEntityId.get(peerId);
   if (peerEid === undefined) {
-    console.error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerId} not set on peerIdToEntity map`);
-    return input;
+    throw new Error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerId} not set on peerIdToEntity map`);
   }
 
   const peerNid = Networked.networkId[peerEid];
   if (peerNid === NOOP) {
-    console.error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerEid} has no networkId assigned`);
-    return input;
+    throw new Error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerEid} has no networkId assigned`);
   }
 
   writeString(cv, peerId);
   writeUint32(cv, peerNid);
 
-  return input;
-}
-
+  return data;
+};
 export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
@@ -475,12 +464,11 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
 
-  console.log("deserializeInformPlayerNetworkId for peer", peerId);
+  console.log("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
 
   const peid = network.networkIdToEntityId.get(peerNid);
   if (peid === undefined) {
-    console.error("could not find peer's networkId for eid", peid);
-    return data;
+    throw new Error("could not find peer's networkId for eid", peid);
   }
 
   associatePeerWithEntity(network, peerId, peid);
@@ -523,41 +511,39 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   return data;
 }
+export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
+  const input: NetPipeData = [ctx, messageView, ""];
+  writeMetadata(NetworkAction.InformPlayerNetworkId)(input);
+  serializeInformPlayerNetworkId(peerId)(input);
+  return sliceCursorView(messageView);
+}
 
 // TODO: move this to a plugin (along with InformPlayerNetworkId OR register another hook into InformPlayerNetworkId)
-export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, peid: number) {
+export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, eid: number) {
   // remove the nametag
   try {
-    const nametag = getNametag(ctx, peid);
+    const nametag = getNametag(ctx, eid);
     removeComponent(ctx.world, NametagComponent, nametag);
   } catch {}
 
   // hide our avatar
   try {
-    const avatar = getAvatar(ctx, peid);
+    const avatar = getAvatar(ctx, eid);
     addComponent(ctx.world, Hidden, avatar);
   } catch {}
 
   // mark entity as our player entity
-  addComponent(ctx.world, OurPlayer, peid);
+  addComponent(ctx.world, OurPlayer, eid);
 
   // disable the collision group so we are unable to focus our own rigidbody
-  removeInteractableComponent(ctx, physics, peid);
+  removeInteractableComponent(ctx, physics, eid);
 
   // set the active camera & input controller to this entity's
-  setActiveCamera(ctx, peid);
-  setActiveInputController(input, peid);
+  setActiveCamera(ctx, eid);
+  setActiveInputController(input, eid);
 }
 
 /* Message Factories */
-
-export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
-  const input: NetPipeData = [ctx, messageView, ""];
-  writeMessageType(NetworkAction.InformPlayerNetworkId)(input);
-  writeElapsed(input);
-  serializeInformPlayerNetworkId(input, peerId);
-  return sliceCursorView(messageView);
-}
 
 // New Peer Snapshot Update
 export const createNewPeerSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
