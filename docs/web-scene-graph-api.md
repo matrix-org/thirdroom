@@ -86,7 +86,7 @@ typedef struct Light {
 } Light;
 
 Light *websg_get_light_by_name(const char *name);
-Light *websg_create_light();
+Light *websg_create_light(LightType type);
 int websg_set_light_name(Light *light, const char *name);
 int websg_dispose_light(Light *light);
 ```

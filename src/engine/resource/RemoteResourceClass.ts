@@ -6,6 +6,7 @@ import {
   IRemoteResourceManager,
   RemoteResource,
   RemoteResourceArrayBufferStore,
+  RemoteResourceRefStore,
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
@@ -15,7 +16,7 @@ export interface IRemoteResourceClass<Def extends ResourceDefinition> {
     manager: IRemoteResourceManager,
     resourceId: ResourceId,
     buffer: ArrayBuffer,
-    byteOffset: number,
+    ptr: number,
     tripleBuffer: TripleBuffer,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def>;
@@ -30,15 +31,15 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     manager: IRemoteResourceManager,
     resourceId: ResourceId,
     buffer: ArrayBuffer,
-    byteOffset: number,
+    ptr: number,
     tripleBuffer: TripleBuffer,
     props: InitialResourceProps<Def>
   ) {
     this.initialized = false;
     this.manager = manager;
-    this.byteOffset = byteOffset;
+    this.ptr = ptr;
     this.resourceId = resourceId;
-    this.byteView = new Uint8Array(buffer, byteOffset, resourceDef.byteLength);
+    this.byteView = new Uint8Array(buffer, ptr, resourceDef.byteLength);
     this.tripleBuffer = tripleBuffer;
     this.__props = {};
 
@@ -47,7 +48,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     for (const propName in schema) {
       const prop = schema[propName];
       const initialValue = props[propName] !== undefined ? props[propName] : prop.default;
-      const view = new prop.arrayType(buffer, this.byteOffset + prop.byteOffset, prop.size);
+      const view = new prop.arrayType(buffer, this.ptr + prop.byteOffset, prop.size);
 
       if (prop.type === "string") {
         const store: RemoteResourceStringStore = {
@@ -71,6 +72,18 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
         if (initialValue) {
           this.manager.setArrayBuffer(initialValue as SharedArrayBuffer, store);
+        }
+
+        this.__props[propName] = store;
+      } else if (prop.type === "ref") {
+        const store: RemoteResourceRefStore = {
+          value: undefined,
+          view: view as Uint32Array,
+          resourceIdView: new Uint32Array([0]),
+        };
+
+        if (initialValue) {
+          this.manager.setRef(initialValue, store);
         }
 
         this.__props[propName] = store;
@@ -159,8 +172,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       // TODO
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: RemoteResource<Def>) {
-          const resourceId = this.__props[propName][0];
-          return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
+          return this.manager.getRef((this.constructor as any).resourceDef, this.__props[propName]);
         },
       });
     } else if (prop.type === "refArray") {

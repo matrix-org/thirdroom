@@ -12,7 +12,6 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
 import { ImageResourceType } from "../image/image.common";
 import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
 import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
@@ -77,7 +76,14 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import { BufferResource, CameraResource, CameraType, LightResource, SamplerResource } from "../resource/schema";
+import {
+  BufferResource,
+  BufferViewResource,
+  CameraResource,
+  CameraType,
+  LightResource,
+  SamplerResource,
+} from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -208,9 +214,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResource(ctx, CameraResource),
-      registerResource(ctx, BufferResource),
       registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
-      registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
+      registerResource(ctx, BufferResource),
+      registerResource(ctx, BufferViewResource),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),

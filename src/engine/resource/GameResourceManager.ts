@@ -17,6 +17,7 @@ import {
   IRemoteResourceManager,
   RemoteResource,
   RemoteResourceArrayBufferStore,
+  RemoteResourceRefStore,
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
@@ -98,6 +99,18 @@ export class GameResourceManager implements IRemoteResourceManager {
     const resourceId = createArrayBufferResource(this.ctx, value);
     store.view[0] = resourceId;
     addResourceRef(this.ctx, resourceId);
+  }
+
+  getRef<Def extends ResourceDefinition>(
+    resourceDef: Def,
+    store: RemoteResourceRefStore
+  ): RemoteResource<Def> | undefined {
+    return getRemoteResource<RemoteResource<Def>>(this.ctx, store.view[0]);
+  }
+
+  setRef(value: RemoteResource<ResourceDefinition>, store: RemoteResourceRefStore): void {
+    store.value = value;
+    store.view[0] = value.resourceId;
   }
 
   addRef(resourceId: number) {

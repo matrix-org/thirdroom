@@ -83,11 +83,10 @@ export default defineConfig<GameState>({
     RemoteCameraSystem,
     RemoteNodeSystem,
     RemoteSceneSystem,
+    GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
     NameSystem,
-
-    GameResourceSystem,
 
     ResetInputSystem,
     GameWorkerStatsSystem,

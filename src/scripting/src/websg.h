@@ -27,7 +27,7 @@ typedef struct Light {
 } Light;
 
 import_websg(get_light_by_name) Light *websg_get_light_by_name(const char *name);
-import_websg(create_light) Light *websg_create_light();
+import_websg(create_light) Light *websg_create_light(LightType type);
 import_websg(set_light_name) int websg_set_light_name(Light *light, const char *name);
 import_websg(dispose_light) int websg_dispose_light(Light *light);
 

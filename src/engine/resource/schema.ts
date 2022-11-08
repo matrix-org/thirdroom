@@ -1,7 +1,6 @@
 import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
-import { BufferViewTarget } from "../bufferView/bufferView.common";
 import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
 import { TextureEncoding } from "../texture/texture.common";
@@ -63,6 +62,11 @@ export const BufferResource = defineResource("buffer", {
 export type RemoteBuffer = RemoteResource<typeof BufferResource>;
 export type LocalBuffer = LocalResource<typeof BufferResource>;
 
+export enum BufferViewTarget {
+  None = 0,
+  ArrayBuffer = 34962,
+  ElementArrayBuffer = 34963,
+}
 export const BufferViewResource = defineResource("buffer-view", {
   name: PropType.string({ default: "BufferView", script: true }),
   buffer: PropType.ref(BufferResource, { mutable: false, required: true, script: true }),

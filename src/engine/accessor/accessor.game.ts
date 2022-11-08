@@ -1,9 +1,9 @@
 import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "three";
 
-import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
+import { RemoteBufferView } from "../resource/schema";
 import {
   AccessorComponentType,
   AccessorComponentTypeToTypedArray,
@@ -17,20 +17,17 @@ import {
   AccessorTypeToItemSize,
 } from "./accessor.common";
 
-export interface RemoteAccessor<
-  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
-  S extends AccessorSparseProps | undefined
-> {
+export interface RemoteAccessor<S extends AccessorSparseProps | undefined> {
   name: string;
   resourceId: number;
-  bufferView: B;
+  bufferView: RemoteBufferView | undefined;
   sparse: S extends AccessorSparseProps
     ? {
         indices: {
-          bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
+          bufferView: RemoteBufferView;
         };
         values: {
-          bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
+          bufferView: RemoteBufferView;
         };
       }
     : undefined;
@@ -38,13 +35,13 @@ export interface RemoteAccessor<
 }
 
 interface AccessorSparseIndicesProps {
-  bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
+  bufferView: RemoteBufferView;
   byteOffset?: number;
   componentType: AccessorSparseIndicesComponentType;
 }
 
 interface AccessorSparseValuesProps {
-  bufferView: RemoteBufferView<Thread.Render, SharedArrayBuffer>;
+  bufferView: RemoteBufferView;
   byteOffset?: number;
 }
 
@@ -54,14 +51,11 @@ interface AccessorSparseProps {
   values: AccessorSparseValuesProps;
 }
 
-interface AccessorProps<
-  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
-  S extends AccessorSparseProps | undefined
-> {
+interface AccessorProps<S extends AccessorSparseProps | undefined> {
   name?: string;
   type: AccessorType;
   componentType: AccessorComponentType;
-  bufferView: B;
+  bufferView: RemoteBufferView | undefined;
   count: number;
   byteOffset?: number;
   normalized?: boolean;
@@ -72,10 +66,10 @@ interface AccessorProps<
 
 const DEFAULT_ACCESSOR_NAME = "Accessor";
 
-export function createRemoteAccessor<
-  B extends RemoteBufferView<Thread.Render, SharedArrayBuffer> | undefined,
-  S extends AccessorSparseProps | undefined
->(ctx: GameState, props: AccessorProps<B, S>): RemoteAccessor<B, S> {
+export function createRemoteAccessor<S extends AccessorSparseProps | undefined>(
+  ctx: GameState,
+  props: AccessorProps<S>
+): RemoteAccessor<S> {
   const name = props.name || DEFAULT_ACCESSOR_NAME;
 
   if (props.bufferView) {
@@ -142,8 +136,8 @@ export function createRemoteAccessor<
   if (bufferView && bufferView.byteStride && bufferView.byteStride !== itemBytes) {
     const interleavedBufferSlice = Math.floor((props.byteOffset || 0) / bufferView.byteStride);
     array = new arrConstructor(
-      bufferView.buffer,
-      interleavedBufferSlice * bufferView.byteStride,
+      bufferView.buffer.data,
+      interleavedBufferSlice * bufferView.byteStride + bufferView.byteOffset,
       (props.count * bufferView.byteStride) / arrConstructor.BYTES_PER_ELEMENT
     );
     // TODO: Should we be caching these? https://github.com/mrdoob/three.js/blob/dev/examples/js/loaders/GLTFLoader.js#L2625
@@ -154,9 +148,21 @@ export function createRemoteAccessor<
       ((props.byteOffset || 0) % bufferView.byteStride) / arrConstructor.BYTES_PER_ELEMENT,
       props.normalized
     );
+
+    if (array.byteLength > bufferView.byteLength) {
+      throw new Error("Accessor extends beyond length of bufferView");
+    }
   } else {
     if (bufferView) {
-      array = new arrConstructor(bufferView.buffer, props.byteOffset, props.count * itemSize);
+      array = new arrConstructor(
+        bufferView.buffer.data,
+        (props.byteOffset || 0) + bufferView.byteOffset,
+        props.count * itemSize
+      );
+
+      if (array.byteLength > bufferView.byteLength) {
+        throw new Error("Accessor extends beyond length of bufferView");
+      }
     } else {
       array = new arrConstructor(props.count * itemSize);
     }
@@ -170,15 +176,15 @@ export function createRemoteAccessor<
       props.sparse.indices.componentType
     ] as AccessorSparseIndicesArrayConstructor;
     const indicesArr = new indicesArrConstructor(
-      indicesBufferView.buffer,
-      props.sparse.indices.byteOffset,
+      indicesBufferView.buffer.data,
+      (props.sparse.indices.byteOffset || 0) + (bufferView?.byteOffset || 0),
       props.sparse.count
     );
 
     const valuesBufferView = props.sparse.values.bufferView;
     const valuesArr = new arrConstructor(
-      valuesBufferView.buffer,
-      props.sparse.values.byteOffset,
+      valuesBufferView.buffer.data,
+      (props.sparse.values.byteOffset || 0) + (bufferView?.byteOffset || 0),
       props.sparse.count * itemSize
     );
 
@@ -212,5 +218,5 @@ export function createRemoteAccessor<
           },
         }
       : undefined,
-  } as RemoteAccessor<B, S>;
+  } as RemoteAccessor<S>;
 }

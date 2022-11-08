@@ -32,10 +32,10 @@ import {
 } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteBufferView } from "../bufferView/bufferView.game";
 import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RemoteNametag, updateRemoteNametags } from "../nametag/nametag.game";
+import { RemoteBufferView } from "../resource/schema";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
@@ -80,12 +80,12 @@ export interface RemoteAudioData {
   name: string;
   resourceId: number;
   uri?: string;
-  bufferView?: RemoteBufferView<Thread.Main, undefined>;
+  bufferView?: RemoteBufferView;
 }
 
 export interface BufferViewAudioDataProps {
   name?: string;
-  bufferView: RemoteBufferView<Thread.Main, undefined>;
+  bufferView: RemoteBufferView;
   mimeType: string;
 }
 

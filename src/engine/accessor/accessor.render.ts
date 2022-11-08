@@ -1,9 +1,9 @@
 import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "three";
 
-import { LocalBufferView } from "../bufferView/bufferView.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { waitForLocalResource } from "../resource/resource.render";
+import { LocalBufferView } from "../resource/schema";
 import {
   AccessorComponentTypeToTypedArray,
   AccessorResourceProps,
@@ -51,8 +51,8 @@ export async function onLoadLocalAccessorResource(
   if (bufferView && bufferView.byteStride && bufferView.byteStride !== itemBytes) {
     const interleavedBufferSlice = Math.floor(props.byteOffset / bufferView.byteStride);
     array = new arrConstructor(
-      bufferView.buffer,
-      interleavedBufferSlice * bufferView.byteStride,
+      bufferView.buffer.data,
+      interleavedBufferSlice * bufferView.byteStride + bufferView.byteOffset,
       (props.count * bufferView.byteStride) / arrConstructor.BYTES_PER_ELEMENT
     );
     // TODO: Should we be caching these? https://github.com/mrdoob/three.js/blob/dev/examples/js/loaders/GLTFLoader.js#L2625
@@ -65,7 +65,11 @@ export async function onLoadLocalAccessorResource(
     );
   } else {
     if (bufferView) {
-      array = new arrConstructor(bufferView.buffer, props.byteOffset, props.count * itemSize);
+      array = new arrConstructor(
+        bufferView.buffer.data,
+        props.byteOffset + bufferView.byteOffset,
+        props.count * itemSize
+      );
     } else {
       array = new arrConstructor(props.count * itemSize);
     }
@@ -79,15 +83,15 @@ export async function onLoadLocalAccessorResource(
       props.sparse.indices.componentType
     ] as AccessorSparseIndicesArrayConstructor;
     const indicesArr = new indicesArrConstructor(
-      indicesBufferView.buffer,
-      props.sparse.indices.byteOffset,
+      indicesBufferView.buffer.data,
+      props.sparse.indices.byteOffset + (bufferView?.byteOffset || 0),
       props.sparse.count
     );
 
     const valuesBufferView = bufferViews[2]!;
     const valuesArr = new arrConstructor(
-      valuesBufferView.buffer,
-      props.sparse.values.byteOffset,
+      valuesBufferView.buffer.data,
+      props.sparse.values.byteOffset + (bufferView?.byteOffset || 0),
       props.sparse.count * itemSize
     );
 
