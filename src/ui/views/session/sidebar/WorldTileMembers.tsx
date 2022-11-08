@@ -31,10 +31,9 @@ export function WorldTileMembers({ session, platform, groupCall }: WorldTileMemb
       {Array.from(members.values())
         .slice(0, maxAvatars)
         .map(({ member }, index) => (
-          <Tooltip content={member.name} side="top">
+          <Tooltip content={member.name} side="top" key={member.userId}>
             <Avatar
               style={index > 0 ? { marginLeft: "calc(-1 * var(--av-xxs) / 4)" } : {}}
-              key={member.userId}
               name={member.displayName || getMxIdUsername(member.userId)}
               bgColor={`var(--usercolor${getIdentifierColorNumber(member.userId)})`}
               imageSrc={

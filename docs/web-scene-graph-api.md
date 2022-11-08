@@ -8,7 +8,7 @@ The Web Scene Graph API (WebSG) is a WebAssembly and JavaScript API for scene gr
 
 ## Example
 
-The following is a JavaScript program using the WebSG API which finds a light in the provided scene and changes it's color every frame:
+The following is a JavaScript program using the WebSG API which finds a light in the provided scene and changes its color every frame:
 
 ```js
 const directionalLight = WebSG.getLightByName("DirectionalLight");
@@ -41,7 +41,7 @@ export void update(float_t dt) {
 }
 ```
 
-These examples (including a compiled version of the C example) are availiable in the [examples](examples/) directory.
+These examples (including a compiled version of the C example) are availiable in the [examples](https://github.com/matrix-org/thirdroom/tree/main/examples/) directory.
 
 ## JS API
 
