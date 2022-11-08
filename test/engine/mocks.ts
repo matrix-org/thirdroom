@@ -11,27 +11,7 @@ import { ResourceModule } from "../../src/engine/resource/resource.game";
 
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
-    name: "random-cube",
-    create: () => addEntity(state.world),
-  });
-  registerPrefab(state, {
-    name: "red-cube",
-    create: () => addEntity(state.world),
-  });
-  registerPrefab(state, {
-    name: "musical-cube",
-    create: () => addEntity(state.world),
-  });
-  registerPrefab(state, {
-    name: "green-cube",
-    create: () => addEntity(state.world),
-  });
-  registerPrefab(state, {
-    name: "blue-cube",
-    create: () => addEntity(state.world),
-  });
-  registerPrefab(state, {
-    name: "player-cube",
+    name: "test-prefab",
     create: () => addEntity(state.world),
   });
 }
@@ -100,6 +80,10 @@ export const mockPrefabState = () => ({
   prefabTemplateMap: new Map(),
 });
 
+export const mockResourceManager = () => ({
+  createResource: () => ({}),
+});
+
 export const mockGameState = () => {
   const ctx = {
     world: createWorld(),
@@ -111,6 +95,7 @@ export const mockGameState = () => {
     messageHandlers: new Map(),
     scopes: new Map(),
     modules: new Map(),
+    resourceManager: mockResourceManager(),
   } as unknown as GameState;
 
   ctx.modules.set(PhysicsModule, mockPhysicsState());
