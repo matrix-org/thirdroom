@@ -29,7 +29,6 @@ import {
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
-import { createRemoteTexture } from "../../engine/texture/texture.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
 import { NOOP } from "../../engine/config.common";
@@ -59,7 +58,7 @@ import {
   Script,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
-import { ImageResource, SamplerMapping, SamplerResource } from "../../engine/resource/schema";
+import { ImageResource, SamplerMapping, SamplerResource, TextureResource } from "../../engine/resource/schema";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 
 interface ThirdRoomModuleState {
@@ -301,9 +300,9 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
-    const defaultEnvironmentMapTexture = createRemoteTexture(ctx, {
+    const defaultEnvironmentMapTexture = ctx.resourceManager.createResource(TextureResource, {
       name: "Environment Map Texture",
-      image: ctx.resourceManager.createResource(ImageResource, {
+      source: ctx.resourceManager.createResource(ImageResource, {
         name: "Environment Map Image",
         uri: "/cubemap/clouds_2k.hdr",
         flipY: true,

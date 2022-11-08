@@ -46,7 +46,7 @@ async function _loadGLTFReflectionProbe(
   const reflectionProbeDef = extension.reflectionProbes[index];
 
   const reflectionProbe = createReflectionProbeResource(ctx, {
-    reflectionProbeTexture: await loadGLTFTexture(ctx, resource, reflectionProbeDef.reflectionProbeTexture.index, {
+    reflectionProbeTexture: await loadGLTFTexture(resource, reflectionProbeDef.reflectionProbeTexture.index, {
       mapping: SamplerMapping.EquirectangularReflectionMapping,
       flipY: false,
     }),

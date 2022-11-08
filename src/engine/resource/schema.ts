@@ -3,7 +3,6 @@ import { AccessorComponentType, AccessorType } from "../accessor/accessor.common
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
 import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
-import { TextureEncoding } from "../texture/texture.common";
 
 export const NametagResource = defineResource("nametag", {
   name: PropType.string(),
@@ -133,12 +132,18 @@ export const ImageResource = defineResource("image", {
 export type RemoteImage = RemoteResource<typeof ImageResource>;
 export type LocalImage = LocalResource<typeof ImageResource>;
 
+export enum TextureEncoding {
+  Linear = 3000,
+  sRGB = 3001,
+}
 export const TextureResource = defineResource("texture", {
   name: PropType.string({ default: "Texture", script: true }),
   sampler: PropType.ref(SamplerResource, { script: true, mutable: false }),
   source: PropType.ref(ImageResource, { script: true, mutable: false }),
   encoding: PropType.enum(TextureEncoding, { default: TextureEncoding.Linear, script: true, mutable: false }),
 });
+export type RemoteTexture = RemoteResource<typeof TextureResource>;
+export type LocalTexture = LocalResource<typeof TextureResource>;
 
 export const ReflectionProbeResource = defineResource("reflection-probe", {
   name: PropType.string({ default: "ReflectionProbe", script: true }),

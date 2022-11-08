@@ -27,12 +27,7 @@ import { getLocalResource, registerResourceLoader, registerResource } from "../r
 import { SceneResourceType } from "../scene/scene.common";
 import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
-import { TextureResourceType } from "../texture/texture.common";
-import {
-  LocalTextureResource,
-  onLoadLocalTextureResource,
-  updateLocalTextureResources,
-} from "../texture/texture.render";
+import { LocalTextureResource, onLoadLocalTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
@@ -83,6 +78,7 @@ import {
   ImageResource,
   LightResource,
   SamplerResource,
+  TextureResource,
 } from "../resource/schema";
 
 export interface RenderThreadState extends BaseThreadContext {
@@ -208,7 +204,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
       registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
       registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
-      registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
+      registerResource(ctx, TextureResource, onLoadLocalTextureResource),
       registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResource(ctx, CameraResource),
@@ -301,7 +297,6 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
-  updateLocalTextureResources(ctx, rendererModule.textures);
   updateLocalSceneResources(ctx, rendererModule.scenes);
   updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
   updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);

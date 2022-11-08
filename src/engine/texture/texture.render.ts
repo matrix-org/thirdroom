@@ -3,7 +3,6 @@ import {
   LinearMipmapLinearFilter,
   RepeatWrapping,
   Texture,
-  TextureEncoding,
   ClampToEdgeWrapping,
   CubeReflectionMapping,
   CubeRefractionMapping,
@@ -24,10 +23,15 @@ import {
 import { ImageFormat, LocalImageResource } from "../image/image.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalSampler, SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap } from "../resource/schema";
-import { SharedTextureResource } from "./texture.common";
+import { getLocalResources, getResourceDisposed } from "../resource/resource.render";
+import {
+  LocalTexture,
+  SamplerMagFilter,
+  SamplerMapping,
+  SamplerMinFilter,
+  SamplerWrap,
+  TextureResource,
+} from "../resource/schema";
 
 const ThreeMinFilters: { [key: number]: TextureFilter } = {
   [SamplerMinFilter.NEAREST]: NearestFilter,
@@ -58,24 +62,18 @@ const ThreeMapping: { [key: number]: Mapping } = {
   [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
 };
 
-export interface LocalTextureResource {
-  resourceId: ResourceId;
-  image: LocalImageResource;
+export type LocalTextureResource = LocalTexture & {
   texture: Texture;
-}
+};
 
 export async function onLoadLocalTextureResource(
   ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { initialProps }: SharedTextureResource
+  localTexture: LocalTexture
 ): Promise<LocalTextureResource> {
   const rendererModule = getModule(ctx, RendererModule);
 
-  const [image, sampler] = await Promise.all([
-    waitForLocalResource<LocalImageResource>(ctx, initialProps.image),
-    initialProps.sampler ? waitForLocalResource<LocalSampler>(ctx, initialProps.sampler) : undefined,
-  ]);
-
+  const image = localTexture.source as LocalImageResource;
+  const sampler = localTexture.sampler;
   // TODO: Add ImageBitmap to Texture types
   const texture = "texture" in image ? image.texture : new Texture(image.image as any);
 
@@ -98,7 +96,7 @@ export async function onLoadLocalTextureResource(
   if (image.format === ImageFormat.RGBA) {
     texture.flipY = false;
     // TODO: Can we determine texture encoding when applying to the material?
-    texture.encoding = initialProps.encoding as unknown as TextureEncoding;
+    texture.encoding = localTexture.encoding;
     texture.needsUpdate = true;
   }
 
@@ -107,23 +105,20 @@ export async function onLoadLocalTextureResource(
   // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
   texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
 
-  const localTexture: LocalTextureResource = {
-    resourceId,
-    image,
-    texture,
-  };
+  const localTextureResource = localTexture as LocalTextureResource;
+  localTextureResource.texture = texture;
 
-  rendererModule.textures.push(localTexture);
-
-  return localTexture;
+  return localTextureResource;
 }
 
-export function updateLocalTextureResources(ctx: RenderThreadState, textures: LocalTextureResource[]) {
+export function LocalTextureResourceSystem(ctx: RenderThreadState) {
+  const textures = getLocalResources(ctx, TextureResource) as unknown as LocalTextureResource[];
+
   for (let i = textures.length - 1; i >= 0; i--) {
     const textureResource = textures[i];
 
     if (getResourceDisposed(ctx, textureResource.resourceId)) {
-      if (textureResource.image.format === ImageFormat.RGBA) {
+      if ((textureResource.source as LocalImageResource).format === ImageFormat.RGBA) {
         textureResource.texture.dispose();
       }
 

@@ -13,7 +13,6 @@ import {
   RemoteSceneComponent,
   updateRendererRemoteScenes,
 } from "../scene/scene.game";
-import { RemoteTexture } from "../texture/texture.game";
 import {
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
@@ -36,7 +35,6 @@ export interface GameRendererModuleState {
   rendererStateBufferView: RendererStateBufferView;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: RemoteScene[];
-  textures: RemoteTexture[];
   unlitMaterials: RemoteUnlitMaterial[];
   standardMaterials: RemoteStandardMaterial[];
   meshPrimitives: RemoteMeshPrimitive[];
@@ -64,14 +62,8 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       rendererStateBufferView,
       rendererStateTripleBuffer,
       scenes: [],
-      textures: [],
       unlitMaterials: [],
       standardMaterials: [],
-      directionalLights: [],
-      pointLights: [],
-      spotLights: [],
-      perspectiveCameras: [],
-      orthographicCameras: [],
       meshPrimitives: [],
       canvasWidth: 0,
       canvasHeight: 0,

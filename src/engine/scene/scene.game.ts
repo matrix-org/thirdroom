@@ -13,7 +13,7 @@ import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteTexture } from "../texture/texture.game";
+import { RemoteTexture } from "../resource/schema";
 import {
   audioSceneSchema,
   AudioSceneTripleBuffer,

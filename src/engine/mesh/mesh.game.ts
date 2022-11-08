@@ -22,8 +22,7 @@ import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { BufferResource, BufferViewResource } from "../resource/schema";
-import { RemoteTexture } from "../texture/texture.game";
+import { BufferResource, BufferViewResource, RemoteTexture } from "../resource/schema";
 import {
   SharedMeshResource,
   MeshResourceType,
