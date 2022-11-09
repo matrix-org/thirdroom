@@ -8,12 +8,12 @@ export default function RoomPreviewCardStories() {
   return (
     <div>
       <RoomPreviewCard
-        avatar={<Avatar size="lg" bgColor="blue" name="Arch linux" />}
+        avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
         name="Arch Linux"
         desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
         memberCount={234}
         options={
-          <Button variant="secondary" onClick={() => console.log("clicked")}>
+          <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
             Join
           </Button>
         }

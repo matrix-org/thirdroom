@@ -22,7 +22,7 @@ export function RoomPreviewCard({ className, avatar, name, desc, memberCount, op
       <div className="shrink-0">{avatar}</div>
       <div className="grow flex items-center gap-md">
         <div className="grow">
-          <Text className="truncate" weight="medium">
+          <Text variant="b2" className="truncate" weight="medium">
             {name}
           </Text>
           <div className="flex items-center gap-xxs">
