@@ -22,7 +22,7 @@ interface FeaturedSceneThumbnailProps {
   alt: string;
 }
 export function FeaturedSceneThumbnail({ className, src, alt }: FeaturedSceneThumbnailProps) {
-  return <img className={classNames("FeaturedScene__Thumbnail", className)} src={src} alt={alt} />;
+  return <img className={classNames("FeaturedScene__Thumbnail", className)} draggable="false" src={src} alt={alt} />;
 }
 
 interface FeaturedSceneContentProps {
