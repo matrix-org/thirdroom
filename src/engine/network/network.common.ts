@@ -19,6 +19,7 @@ export enum NetworkMessageType {
 export interface InitializeNetworkStateMessage extends Message<NetworkMessageType.InitializeNetworkState> {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  authoritative: boolean;
 }
 
 // Game -> Main

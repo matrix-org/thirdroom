@@ -75,10 +75,9 @@ export interface GameNetworkState {
 export const NetworkModule = defineModule<GameState, GameNetworkState>({
   name: "network",
   create: async (ctx, { waitForMessage }): Promise<GameNetworkState> => {
-    const { incomingRingBuffer, outgoingRingBuffer } = await waitForMessage<InitializeNetworkStateMessage>(
-      Thread.Main,
-      NetworkMessageType.InitializeNetworkState
-    );
+    const { incomingRingBuffer, outgoingRingBuffer, authoritative } =
+      await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
+
     return {
       incomingRingBuffer,
       outgoingRingBuffer,
@@ -101,7 +100,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       interpolate: false,
       // TODO: this causes desync atm
       clientSidePrediction: false,
-      authoritative: false,
+      authoritative,
     };
   },
   init(ctx: GameState) {
