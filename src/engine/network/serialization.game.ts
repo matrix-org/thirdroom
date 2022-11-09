@@ -55,6 +55,7 @@ import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.ga
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
+import { waitUntil } from "../utils/waitUntil";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -453,7 +454,7 @@ export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipe
 
   return data;
 };
-export function deserializeInformPlayerNetworkId(data: NetPipeData) {
+export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
   const physics = getModule(ctx, PhysicsModule);
@@ -466,10 +467,9 @@ export function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   console.log("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
 
-  const peid = network.networkIdToEntityId.get(peerNid);
-  if (peid === undefined) {
-    throw new Error("could not find peer's networkId for eid", peid);
-  }
+  // BUG: entity creation happens after this message for some reason
+  // HACK: await the entity's creation
+  const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
   associatePeerWithEntity(network, peerId, peid);
 
