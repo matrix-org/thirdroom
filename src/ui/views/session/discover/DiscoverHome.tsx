@@ -7,6 +7,13 @@ import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewC
 import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
 import "./DiscoverHome.css";
 import { DiscoverGroup, DiscoverGroupGrid, DiscoverMoreButton } from "../../components/discover-group/DiscoverGroup";
+import LogoSvg from "../../../../../res/svg/logo.svg";
+import {
+  FeaturedScene,
+  FeaturedSceneContent,
+  FeaturedSceneThumbnail,
+} from "../../components/featured-scene/FeaturedScene";
+import { Text } from "../../../atoms/text/Text";
 
 export function DiscoverHome() {
   return (
@@ -65,6 +72,39 @@ export function DiscoverHome() {
           footer={
             <div className="flex justify-end">
               <DiscoverMoreButton text="Browse All Public Worlds" iconSrc={ArrowForwardIC} />
+            </div>
+          }
+        />
+        <DiscoverGroup
+          label={<Label>Featured Scenes</Label>}
+          content={
+            <DiscoverGroupGrid itemMinWidth={300} gap="md">
+              <FeaturedScene onClick={() => false}>
+                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
+                <FeaturedSceneContent>
+                  <Text variant="b3">Rad Designs</Text>
+                  <Text>Zombie city</Text>
+                </FeaturedSceneContent>
+              </FeaturedScene>
+              <FeaturedScene onClick={() => false}>
+                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
+                <FeaturedSceneContent>
+                  <Text variant="b3">Rad Designs</Text>
+                  <Text>Zombie city</Text>
+                </FeaturedSceneContent>
+              </FeaturedScene>
+              <FeaturedScene onClick={() => false}>
+                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
+                <FeaturedSceneContent>
+                  <Text variant="b3">Rad Designs</Text>
+                  <Text>Zombie city</Text>
+                </FeaturedSceneContent>
+              </FeaturedScene>
+            </DiscoverGroupGrid>
+          }
+          footer={
+            <div className="flex justify-end">
+              <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
             </div>
           }
         />

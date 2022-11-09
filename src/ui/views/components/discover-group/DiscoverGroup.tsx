@@ -25,7 +25,7 @@ interface DiscoverGroupGridProps {
   className?: string;
   itemMinWidth?: number;
   gap?: "xxs" | "xs" | "sm" | "md" | "lg" | "xs";
-  children: ReactNode[];
+  children: ReactNode | ReactNode[];
 }
 export function DiscoverGroupGrid({ className, itemMinWidth = 475, gap = "xs", children }: DiscoverGroupGridProps) {
   return (
