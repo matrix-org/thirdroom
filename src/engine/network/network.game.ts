@@ -186,11 +186,6 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     }
 
     network.peers.splice(peerArrIndex, 1);
-
-    // TODO: don't delete these until the host has been re-elected (or ever? not that much mem at all)
-    // network.peerIdToIndex.delete(peerId);
-    // network.indexToPeerId.delete(peerIndex);
-    // network.peerIdToHistorian.delete(peerId);
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
