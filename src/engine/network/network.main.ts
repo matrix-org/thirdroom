@@ -103,14 +103,14 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
   ws.binaryType = "arraybuffer";
 
   ws.addEventListener("open", () => {
-    console.log("connected to websocket server");
+    console.info("connected to websocket server");
   });
 
   ws.addEventListener("close", () => {});
 
   const setHostFn = (data: { data: any }) => {
     if (data.data === "setHost") {
-      console.log("ws - setHost");
+      console.info("ws - setHost");
       mainThread.sendMessage(Thread.Game, {
         type: NetworkMessageType.SetHost,
         value: true,
@@ -124,7 +124,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
     try {
       const d: any = JSON.parse(data.data);
       if (d.setPeerId) {
-        console.log("ws - setPeerId", d.setPeerId);
+        console.info("ws - setPeerId", d.setPeerId);
         mainThread.sendMessage(Thread.Game, {
           type: NetworkMessageType.SetPeerId,
           peerId: d.setPeerId,
@@ -142,7 +142,7 @@ export function connectToTestNet(mainThread: IMainThreadContext) {
     try {
       const d: any = JSON.parse(data.data);
       if (d.addPeerId) {
-        console.log("ws - addPeerId", d.addPeerId);
+        console.info("ws - addPeerId", d.addPeerId);
         mainThread.sendMessage(Thread.Game, {
           type: NetworkMessageType.AddPeerId,
           peerId: d.addPeerId,
@@ -158,7 +158,7 @@ export function setHost(mainThread: IMainThreadContext, hostId: string) {
   const hostChanged = network.hostId !== hostId;
 
   if (hostChanged) {
-    console.log("electing new host", hostId);
+    console.info("electing new host", hostId);
     network.hostId = hostId;
     mainThread.sendMessage<SetHostMessage>(Thread.Game, {
       type: NetworkMessageType.SetHost,

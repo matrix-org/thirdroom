@@ -56,7 +56,7 @@ const assignNetworkIds = (ctx: GameState) => {
     }
 
     Networked.networkId[eid] = nid;
-    console.log("networkId", nid, "assigned to eid", eid);
+    console.info("networkId", nid, "assigned to eid", eid);
     network.networkIdToEntityId.set(nid, eid);
   }
   return ctx;
@@ -66,7 +66,7 @@ const deleteNetworkIds = (state: GameState) => {
   const exited = exitedNetworkIdQuery(state.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
-    console.log("networkId", Networked.networkId[eid], "deleted from eid", eid);
+    console.info("networkId", Networked.networkId[eid], "deleted from eid", eid);
     deleteNetworkId(state, Networked.networkId[eid]);
     Networked.networkId[eid] = NOOP;
   }

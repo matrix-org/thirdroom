@@ -280,7 +280,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
 
 const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
   const peerIndex = murmurHash(peerId) >>> 16;
-  console.log("new peerIndex", peerId, peerIndex);
+  console.info("new peerIndex", peerId, peerIndex);
   network.peerIdToIndex.set(peerId, peerIndex);
   network.indexToPeerId.set(peerIndex, peerId);
 };
@@ -304,7 +304,7 @@ export const createNetworkId = (state: GameState) => {
     throw new Error("could not create networkId, peerId not set in peerIdToIndex map");
   }
 
-  console.log("createNetworkId - localId:", localId, "; peerIndex:", peerIndex);
+  console.info("createNetworkId - localId:", localId, "; peerIndex:", peerIndex);
 
   // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
   // logical right shift by 0 to treat as an unsigned integer

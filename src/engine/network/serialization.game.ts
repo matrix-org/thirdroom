@@ -268,7 +268,7 @@ export function serializeCreates(input: NetPipeData) {
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
-      console.log("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
+      console.info("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
       throw new Error(`could not write entity prefab name, ${eid} does not exist in entityPrefabMap`);
     }
@@ -286,7 +286,7 @@ export function deserializeCreates(input: NetPipeData) {
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
     const eid = createRemoteNetworkedEntity(state, network, nid, prefabName);
-    console.log("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
+    console.info("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
   }
   return input;
 }
@@ -378,7 +378,7 @@ export function serializeDeletes(input: NetPipeData) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
     writeUint32(v, nid);
-    console.log("serialized deletion for nid", nid, "eid", eid);
+    console.info("serialized deletion for nid", nid, "eid", eid);
   }
   return input;
 }
@@ -393,7 +393,7 @@ export function deserializeDeletes(input: NetPipeData) {
     if (!eid) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
-      console.log("deserialized deletion for nid", nid, "eid", eid);
+      console.info("deserialized deletion for nid", nid, "eid", eid);
       removeRecursive(state.world, eid);
       network.networkIdToEntityId.delete(nid);
     }
@@ -404,7 +404,7 @@ export function deserializeDeletes(input: NetPipeData) {
 /* Update NetworkId Message */
 
 export const serializeUpdateNetworkId = (from: number, to: number) => (data: NetPipeData) => {
-  console.log("serializeUpdateNetworkId", from, "->", to);
+  console.info("serializeUpdateNetworkId", from, "->", to);
   const [, cv] = data;
   writeUint32(cv, from);
   writeUint32(cv, to);
@@ -422,7 +422,7 @@ export function deserializeUpdateNetworkId(data: NetPipeData) {
 
   Networked.networkId[eid] = to;
 
-  console.log("deserializeUpdateNetworkId", from, "->", to);
+  console.info("deserializeUpdateNetworkId", from, "->", to);
 
   return data;
 }
@@ -436,7 +436,7 @@ export function createUpdateNetworkIdMessage(ctx: GameState, from: number, to: n
 /* Player NetworkId Message */
 
 export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipeData) => {
-  console.log("serializeInformPlayerNetworkId", peerId);
+  console.info("serializeInformPlayerNetworkId", peerId);
   const [state, cv] = data;
   const network = getModule(state, NetworkModule);
   const peerEid = network.peerIdToEntityId.get(peerId);
@@ -465,7 +465,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peerId = readString(cv);
   const peerNid = readUint32(cv);
 
-  console.log("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
+  console.info("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
 
   // BUG: entity creation happens after this message for some reason
   // HACK: await the entity's creation
@@ -478,7 +478,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   // if our own avatar
   if (network.authoritative && !isHost(network) && peerId === network.peerId) {
     // unset our old avatar
-    console.log("unset our old avatar. ourPlayerQuery", ourPlayerQuery(ctx.world));
+    console.info("unset our old avatar. ourPlayerQuery", ourPlayerQuery(ctx.world));
     const old = ourPlayerQuery(ctx.world)[0];
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
