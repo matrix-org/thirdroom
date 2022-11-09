@@ -82,7 +82,6 @@ import {
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
 import { SamplerMapping, SamplerResource } from "../../engine/resource/schema";
-import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
