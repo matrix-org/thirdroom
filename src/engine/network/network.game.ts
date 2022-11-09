@@ -101,7 +101,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       interpolate: false,
       // TODO: this causes desync atm
       clientSidePrediction: false,
-      authoritative: true,
+      authoritative: false,
     };
   },
   init(ctx: GameState) {
