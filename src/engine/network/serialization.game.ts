@@ -467,7 +467,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   console.info("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
 
-  // BUG: entity creation happens after this message for some reason
+  // BUG: entity creation message is parsed after this message for some reason
   // HACK: await the entity's creation
   const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
@@ -478,18 +478,13 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   // if our own avatar
   if (network.authoritative && !isHost(network) && peerId === network.peerId) {
     // unset our old avatar
-    console.info("unset our old avatar. ourPlayerQuery", ourPlayerQuery(ctx.world));
     const old = ourPlayerQuery(ctx.world)[0];
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
     removeComponent(ctx.world, Networked, old);
-    // removeComponent(ctx.world, Owned, old);
 
     // embody new avatar
     embodyAvatar(ctx, physics, input, peid);
-
-    // don't add voip
-    // return data;
   }
 
   if (peerId !== network.peerId) {

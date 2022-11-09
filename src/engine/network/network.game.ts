@@ -280,7 +280,6 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
 
 const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
   const peerIndex = murmurHash(peerId) >>> 16;
-  console.info("new peerIndex", peerId, peerIndex);
   network.peerIdToIndex.set(peerId, peerIndex);
   network.indexToPeerId.set(peerIndex, peerId);
 };
