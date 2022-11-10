@@ -1,10 +1,8 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, addEntity, defineComponent, defineQuery } from "bitecs";
+import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { createCamera } from "../engine/camera/camera.game";
-import { Player } from "../engine/component/Player";
-import { addChild, addTransformComponent, Transform } from "../engine/component/transform";
+import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -14,13 +12,12 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
+import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { associatePeerWithEntity, Networked, Owned } from "../engine/network/network.game";
+import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { addPrefabComponent } from "../engine/prefab/prefab.game";
-import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "./FirstPersonCamera";
+import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -93,10 +90,16 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
   create() {
     return {};
   },
-  init(state) {
-    enableActionMap(state, PhysicsCharacterControllerActionMap);
+  init(ctx) {
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, PhysicsCharacterControllerActionMap);
   },
 });
+
+export const PhysicsControls = defineComponent();
+export const physicsControlsQuery = defineQuery([PhysicsControls]);
+export const enteredPhysicsControlsQuery = enterQuery(physicsControlsQuery);
 
 const obj = new Object3D();
 
@@ -129,152 +132,131 @@ const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-export const PlayerRig = defineComponent();
-export const playerRigQuery = defineQuery([PlayerRig]);
-
-export const createPlayerRig = (state: GameState, setActiveCamera = true) => {
-  const { world } = state;
-  const { physicsWorld } = getModule(state, PhysicsModule);
-  const network = getModule(state, NetworkModule);
-
-  const playerRig = addEntity(world);
-  addTransformComponent(world, playerRig);
-
-  // how this player looks to others
-  addPrefabComponent(world, playerRig, Math.random() > 0.5 ? "mixamo-x" : "mixamo-y");
-
-  associatePeerWithEntity(network, network.peerId, playerRig);
-
-  addComponent(world, PlayerRig, playerRig);
-
-  addCameraYawTargetComponent(world, playerRig);
+export function addPhysicsControls(ctx: GameState, { physicsWorld }: PhysicsModuleState, playerRig: number) {
+  addComponent(ctx.world, PhysicsControls, playerRig);
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
   colliderDesc.setCollisionGroups(playerCollisionGroups);
-  // colliderDesc.setTranslation(0, -1, 0);
-
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(state, playerRig, rigidBody);
+  addRigidBody(ctx, playerRig, rigidBody);
+}
 
-  const camera = createCamera(state, setActiveCamera);
-  addCameraPitchTargetComponent(world, camera);
-  addChild(playerRig, camera);
-  const cameraPosition = Transform.position[camera];
-  cameraPosition[1] = 1.2;
-
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  addComponent(world, Owned, playerRig);
-  addComponent(world, Player, playerRig);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(world, Networked, playerRig, true);
-
-  return playerRig;
-};
-
-export const PlayerControllerSystem = (state: GameState) => {
-  const { physicsWorld } = getModule(state, PhysicsModule);
-  const input = getModule(state, InputModule);
-  const playerRig = playerRigQuery(state.world)[0];
-
-  if (!playerRig) {
+function updatePhysicsControls(
+  ctx: GameState,
+  { physicsWorld }: PhysicsModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  rig: number
+) {
+  const body = RigidBody.store.get(rig);
+  if (!body) {
     return;
   }
 
-  const body = RigidBody.store.get(playerRig);
-  if (body) {
-    obj.quaternion.x = Transform.quaternion[playerRig][0];
-    obj.quaternion.y = Transform.quaternion[playerRig][1];
-    obj.quaternion.z = Transform.quaternion[playerRig][2];
-    obj.quaternion.w = Transform.quaternion[playerRig][3];
-    body.setRotation(obj.quaternion, true);
+  const peerId = network.entityIdToPeerId.get(rig);
+  if (!peerId) {
+    return;
+  }
 
-    // Handle Input
-    const moveVec = input.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-    const jump = input.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-    const crouch = input.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-    const sprint = input.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+  obj.quaternion.x = Transform.quaternion[rig][0];
+  obj.quaternion.y = Transform.quaternion[rig][1];
+  obj.quaternion.z = Transform.quaternion[rig][2];
+  obj.quaternion.w = Transform.quaternion[rig][3];
+  body.setRotation(obj.quaternion, true);
 
-    linearVelocity.copy(body.linvel() as Vector3);
+  // Handle Input
+  const moveVec = controller.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+  const jump = controller.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+  const crouch = controller.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+  const sprint = controller.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
-    shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
-    shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
+  linearVelocity.copy(body.linvel() as Vector3);
 
-    // todo: tune interaction groups
-    const shapeCastResult = physicsWorld.castShape(
-      shapeCastPosition,
-      shapeCastRotation,
-      physicsWorld.gravity,
-      colliderShape,
-      state.dt * 6,
-      playerShapeCastCollisionGroups
-    );
+  shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
+  shapeCastRotation.copy(obj.quaternion).multiply(shapeRotationOffset);
 
-    const isGrounded = !!shapeCastResult;
-    const isSprinting = isGrounded && sprint.held && !isSliding;
+  // todo: tune interaction groups
+  const shapeCastResult = physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    physicsWorld.gravity,
+    colliderShape,
+    ctx.dt * 6,
+    playerShapeCastCollisionGroups
+  );
 
-    const speed = linearVelocity.length();
-    const maxSpeed = isSprinting ? maxSprintSpeed : maxWalkSpeed;
+  const isGrounded = !!shapeCastResult;
+  const isSprinting = isGrounded && sprint.held && !isSliding;
 
-    if (speed < maxSpeed) {
-      moveForce
-        .set(moveVec[0], 0, -moveVec[1])
-        .normalize()
-        .applyQuaternion(obj.quaternion)
-        .multiplyScalar(walkSpeed * state.dt);
+  const speed = linearVelocity.length();
+  const maxSpeed = isSprinting ? maxSprintSpeed : maxWalkSpeed;
 
-      if (!isGrounded) {
-        moveForce.multiplyScalar(inAirModifier);
-      } else if (isGrounded && crouch.held && !isSliding) {
-        moveForce.multiplyScalar(crouchModifier);
-      } else if (isGrounded && sprint.held && !isSliding) {
-        moveForce.multiplyScalar(sprintModifier);
-      }
+  if (speed < maxSpeed) {
+    moveForce
+      .set(moveVec[0], 0, -moveVec[1])
+      .normalize()
+      .applyQuaternion(obj.quaternion)
+      .multiplyScalar(walkSpeed * ctx.dt);
+
+    if (!isGrounded) {
+      moveForce.multiplyScalar(inAirModifier);
+    } else if (isGrounded && crouch.held && !isSliding) {
+      moveForce.multiplyScalar(crouchModifier);
+    } else if (isGrounded && sprint.held && !isSliding) {
+      moveForce.multiplyScalar(sprintModifier);
+    }
+  }
+
+  // TODO: Check to see if velocity matches orientation before sliding
+  if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
+    slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
+    moveForce.add(slideForce);
+    isSliding = true;
+    lastSlideTime = ctx.elapsed;
+  } else if (crouch.released || ctx.dt > lastSlideTime + slideCooldown) {
+    isSliding = false;
+  }
+
+  if (speed !== 0) {
+    let dragMultiplier = drag;
+
+    if (isSliding) {
+      dragMultiplier = slideDrag;
+    } else if (!isGrounded) {
+      dragMultiplier = inAirDrag;
     }
 
-    // TODO: Check to see if velocity matches orientation before sliding
-    if (
-      crouch.pressed &&
-      speed > minSlideSpeed &&
-      isGrounded &&
-      !isSliding &&
-      state.dt > lastSlideTime + slideCooldown
-    ) {
-      slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
-      moveForce.add(slideForce);
-      isSliding = true;
-      lastSlideTime = state.elapsed;
-    } else if (crouch.released || state.dt > lastSlideTime + slideCooldown) {
-      isSliding = false;
-    }
+    dragForce
+      .copy(linearVelocity)
+      .negate()
+      .multiplyScalar(dragMultiplier * ctx.dt);
 
-    if (speed !== 0) {
-      let dragMultiplier = drag;
+    dragForce.y = 0;
 
-      if (isSliding) {
-        dragMultiplier = slideDrag;
-      } else if (!isGrounded) {
-        dragMultiplier = inAirDrag;
-      }
+    moveForce.add(dragForce);
+  }
 
-      dragForce
-        .copy(linearVelocity)
-        .negate()
-        .multiplyScalar(dragMultiplier * state.dt);
+  if (jump.pressed && isGrounded) {
+    const jumpModifier = crouch.held ? crouchJumpModifier : 1;
+    moveForce.y += jumpForce * jumpModifier;
+  }
 
-      dragForce.y = 0;
+  body.applyImpulse(moveForce, true);
+  body.applyForce(physicsWorld.gravity as Vector3, true);
+}
 
-      moveForce.add(dragForce);
-    }
+export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
+  const physics = getModule(ctx, PhysicsModule);
+  const input = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
 
-    if (jump.pressed && isGrounded) {
-      const jumpModifier = crouch.held ? crouchJumpModifier : 1;
-      moveForce.y += jumpForce * jumpModifier;
-    }
-
-    body.applyImpulse(moveForce, true);
-    body.applyForce(physicsWorld.gravity as Vector3, true);
+  const rigs = inputControllerQuery(ctx.world);
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const controller = getInputController(input, eid);
+    updatePhysicsControls(ctx, physics, network, controller, eid);
   }
 };

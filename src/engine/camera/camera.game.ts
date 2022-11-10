@@ -1,13 +1,16 @@
-import { addEntity } from "bitecs";
+import { addComponent, addEntity, defineComponent, defineQuery, hasComponent } from "bitecs";
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
-import { addTransformComponent, Transform } from "../component/transform";
+import { addTransformComponent, findChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { getRemoteResources } from "../resource/resource.game";
 import { CameraResource, CameraType, RemoteCamera } from "../resource/schema";
+
+export const CameraComponent = defineComponent();
+export const cameraComponentQuery = defineQuery([CameraComponent]);
 
 export function RemoteCameraSystem(ctx: GameState) {
   const cameras = getRemoteResources(ctx, CameraResource);
@@ -27,9 +30,10 @@ export function createRemotePerspectiveCamera(ctx: GameState) {
   });
 }
 
-export function createCamera(ctx: GameState, setActive = true): number {
+export function createCamera(ctx: GameState, setActive = false): number {
   const eid = addEntity(ctx.world);
   addTransformComponent(ctx.world, eid);
+  addComponent(ctx.world, CameraComponent, eid);
 
   addRemoteNodeComponent(ctx, eid, {
     camera: createRemotePerspectiveCamera(ctx),
@@ -110,4 +114,26 @@ function makePerspective(
   m[15] = 0;
 
   return m;
+}
+
+/**
+ * Obtains the last added camera on the provided entity if one exists, throws if not
+ *
+ * @param ctx GameState
+ * @param eid number
+ */
+export function getCamera(ctx: GameState, eid: number) {
+  const camera = findChild(eid, (child) => hasComponent(ctx.world, CameraComponent, child));
+  if (!camera) throw new Error("camera not found on entity " + eid);
+  return camera;
+}
+
+/**
+ * Sets the the active camera to the last camera added to the provided entity
+ *
+ * @param ctx GameState
+ * @param eid number
+ */
+export function setActiveCamera(ctx: GameState, eid: number) {
+  ctx.activeCamera = getCamera(ctx, eid);
 }
