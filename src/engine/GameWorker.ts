@@ -116,23 +116,24 @@ async function onInit({
 
   console.log("GameWorker initialized");
 
-  const target = 1000 / tickRate;
-  let then = performance.now();
-  let delta = 0;
+  let interval: any;
 
-  const rafLoop = () => {
-    requestAnimationFrame(rafLoop);
-
-    delta += performance.now() - then;
-    then = performance.now();
-
-    if (delta > target) {
+  const gameLoop = () => {
+    interval = setInterval(() => {
+      const then = performance.now();
       update(state);
-      delta = delta % target;
-    }
+      const elapsed = performance.now() - then;
+      if (elapsed > 1000 / tickRate) {
+        console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
+        clearInterval(interval);
+        update(state);
+        interval = gameLoop();
+      }
+    }, 1000 / tickRate);
+    return interval;
   };
 
-  rafLoop();
+  gameLoop();
 }
 
 function update(ctx: GameState) {
