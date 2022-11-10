@@ -462,7 +462,9 @@ type ResourcePropValue<
     number
   : Def["schema"][Prop]["type"] extends "ref"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
+      : Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition

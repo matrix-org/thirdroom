@@ -1336,14 +1336,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   type TextBinding<T> = (v: T) => string | number | boolean | undefined | null;
   export type Child<T> = string | Text | ViewNode | TextBinding<T>;
   export type Children<T> = Child<T> | Child<T>[];
-  export type RenderFn<T> = (t: Builder<T>, vm: T) => ViewNode;
+  export type RenderFn<T extends IObservableValue> = (t: Builder<T>, vm: T) => ViewNode;
   type EventHandler = (event: Event) => void;
   type AttributeStaticValue = string | boolean;
   type AttributeBinding<T> = (value: T) => AttributeStaticValue;
   export type AttrValue<T> = AttributeStaticValue | AttributeBinding<T> | EventHandler | ClassNames<T>;
   export type Attributes<T> = { [attribute: string]: AttrValue<T> };
   type ElementFn<T> = (attributes?: Attributes<T> | Children<T>, children?: Children<T>) => Element;
-  export type Builder<T> = TemplateBuilder<T> & { [tagName: string]: ElementFn<T> };
+  export type Builder<T extends IObservableValue> = TemplateBuilder<T> & { [tagName: string]: ElementFn<T> };
 
   export class TimelineView extends TemplateView<TimelineViewModel> {
     constructor(vm: TimelineViewModel, viewClassForTile: ViewClassForEntryFn);
