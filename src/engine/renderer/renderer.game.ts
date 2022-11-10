@@ -13,7 +13,6 @@ import {
   RemoteSceneComponent,
   updateRendererRemoteScenes,
 } from "../scene/scene.game";
-import { RemoteTexture } from "../texture/texture.game";
 import {
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
@@ -23,7 +22,6 @@ import {
   RendererStateTripleBuffer,
   SceneRenderedNotificationMessage,
 } from "./renderer.common";
-import { RemoteUnlitMaterial, RemoteStandardMaterial, updateRemoteMaterials } from "../material/material.game";
 import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
@@ -36,9 +34,6 @@ export interface GameRendererModuleState {
   rendererStateBufferView: RendererStateBufferView;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: RemoteScene[];
-  textures: RemoteTexture[];
-  unlitMaterials: RemoteUnlitMaterial[];
-  standardMaterials: RemoteStandardMaterial[];
   meshPrimitives: RemoteMeshPrimitive[];
   canvasWidth: number;
   canvasHeight: number;
@@ -64,14 +59,8 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       rendererStateBufferView,
       rendererStateTripleBuffer,
       scenes: [],
-      textures: [],
       unlitMaterials: [],
       standardMaterials: [],
-      directionalLights: [],
-      pointLights: [],
-      spotLights: [],
-      perspectiveCameras: [],
-      orthographicCameras: [],
       meshPrimitives: [],
       canvasWidth: 0,
       canvasHeight: 0,
@@ -120,7 +109,6 @@ export const RenderableSystem = (state: GameState) => {
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
 
   updateRendererRemoteScenes(renderer.scenes);
-  updateRemoteMaterials(state);
   updateRemoteMeshPrimitives(renderer.meshPrimitives);
 };
 

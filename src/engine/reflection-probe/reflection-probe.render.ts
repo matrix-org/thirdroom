@@ -9,13 +9,13 @@ import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
 import { RendererSceneTripleBuffer } from "../scene/scene.common";
 import { LocalSceneResource } from "../scene/scene.render";
-import { LocalTextureResource } from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { SharedReflectionProbeResource } from "./reflection-probe.common";
 import { ReflectionProbe } from "./ReflectionProbe";
 
 export interface LocalReflectionProbeResource {
   resourceId: ResourceId;
-  reflectionProbeTexture: LocalTextureResource;
+  reflectionProbeTexture: RendererTextureResource;
   textureArrayIndex: number;
   size?: Vector3;
 }
@@ -27,7 +27,7 @@ export async function onLoadLocalReflectionProbeResource(
 ): Promise<LocalReflectionProbeResource> {
   return {
     resourceId,
-    reflectionProbeTexture: await waitForLocalResource<LocalTextureResource>(
+    reflectionProbeTexture: await waitForLocalResource<RendererTextureResource>(
       ctx,
       reflectionProbeTexture,
       "Reflection Probe Texture"

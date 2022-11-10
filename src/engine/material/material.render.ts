@@ -1,162 +1,73 @@
-import { vec3 } from "gl-matrix";
+import { ReadonlyVec3, vec3 } from "gl-matrix";
 import {
   Color,
   DoubleSide,
   FrontSide,
   LineBasicMaterial,
-  Material,
   MaterialParameters,
+  Matrix3,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PointsMaterial,
-  Vector2,
+  Uniform,
+  Vector3,
 } from "three";
 
-import { LocalAccessor } from "../accessor/accessor.render";
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { MeshPrimitiveAttribute, MeshPrimitiveMode } from "../mesh/mesh.common";
-import { LocalMeshPrimitive } from "../mesh/mesh.render";
+import { LocalMeshPrimitiveAttributes } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalTextureResource } from "../texture/texture.render";
-import { promiseObject } from "../utils/promiseObject";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { getLocalResources } from "../resource/resource.render";
+import { LocalMaterial, MaterialAlphaMode, MaterialResource, MaterialType } from "../resource/schema";
+import { RendererTextureResource } from "../texture/texture.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
-import {
-  UnlitMaterialTripleBuffer,
-  MaterialType,
-  StandardMaterialTripleBuffer,
-  SharedUnlitMaterialResource,
-  MaterialAlphaMode,
-  SharedStandardMaterialResource,
-} from "./material.common";
-
-/* Local Resource Types */
-
-export interface LocalUnlitMaterialResource {
-  resourceId: number;
-  type: MaterialType.Unlit;
-  baseColorTexture?: LocalTextureResource;
-  materialTripleBuffer: UnlitMaterialTripleBuffer;
-}
-
-export interface LocalStandardMaterialResource {
-  resourceId: number;
-  type: MaterialType.Standard;
-  baseColorTexture?: LocalTextureResource;
-  metallicRoughnessTexture?: LocalTextureResource;
-  normalTexture?: LocalTextureResource;
-  occlusionTexture?: LocalTextureResource;
-  emissiveTexture?: LocalTextureResource;
-  transmissionTexture?: LocalTextureResource;
-  thicknessTexture?: LocalTextureResource;
-  materialTripleBuffer: StandardMaterialTripleBuffer;
-}
-
-export type LocalMaterialResource = LocalUnlitMaterialResource | LocalStandardMaterialResource;
 
 export type PrimitiveUnlitMaterial = MeshBasicMaterial | LineBasicMaterial | PointsMaterial;
-
 export type PrimitiveStandardMaterial =
   | MeshStandardMaterial
   | MeshPhysicalMaterial
   | LineBasicMaterial
   | PointsMaterial;
-
 export type PrimitiveMaterial = PrimitiveStandardMaterial | PrimitiveUnlitMaterial;
 
-/* Resource Loaders */
+interface MaterialCacheEntry {
+  mode: MeshPrimitiveMode;
+  useDerivativeTangents: boolean;
+  vertexColors: boolean;
+  flatShading: boolean;
+  material: PrimitiveMaterial;
+  refCount: number;
+}
 
-export async function onLoadLocalUnlitMaterialResource(
+const defaultMaterialCache: MaterialCacheEntry[] = [];
+
+const matchMaterial =
+  (mode: MeshPrimitiveMode, vertexColors: boolean, flatShading: boolean, useDerivativeTangents: boolean) =>
+  (cacheEntry: MaterialCacheEntry) =>
+    mode === cacheEntry.mode &&
+    vertexColors === cacheEntry.vertexColors &&
+    flatShading === cacheEntry.flatShading &&
+    useDerivativeTangents === cacheEntry.useDerivativeTangents;
+
+export function getDefaultMaterialForMeshPrimitive(
   ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, materialTripleBuffer }: SharedUnlitMaterialResource
-): Promise<LocalUnlitMaterialResource> {
-  const rendererModule = getModule(ctx, RendererModule);
+  mode: MeshPrimitiveMode,
+  attributes: LocalMeshPrimitiveAttributes
+) {
+  const vertexColors = MeshPrimitiveAttribute.COLOR_0 in attributes;
+  const flatShading = !(MeshPrimitiveAttribute.NORMAL in attributes);
+  const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
 
-  let baseColorTexture: LocalTextureResource | undefined;
+  const cacheEntry = defaultMaterialCache.find(matchMaterial(mode, vertexColors, flatShading, useDerivativeTangents));
 
-  const materialView = getReadObjectBufferView(materialTripleBuffer);
-
-  const baseColorTextureResourceId = materialView.baseColorTexture[0];
-
-  if (baseColorTextureResourceId) {
-    baseColorTexture = await waitForLocalResource<LocalTextureResource>(ctx, baseColorTextureResourceId);
+  if (cacheEntry) {
+    cacheEntry.refCount++;
+    return cacheEntry.material;
   }
 
-  const localUnlitMaterial: LocalUnlitMaterialResource = {
-    resourceId,
-    type,
-    baseColorTexture,
-    materialTripleBuffer,
-  };
-
-  rendererModule.unlitMaterials.push(localUnlitMaterial);
-
-  return localUnlitMaterial;
-}
-
-export async function onLoadLocalStandardMaterialResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, materialTripleBuffer }: SharedStandardMaterialResource
-): Promise<LocalStandardMaterialResource> {
-  const rendererModule = getModule(ctx, RendererModule);
-
-  const materialView = getReadObjectBufferView(materialTripleBuffer);
-
-  const baseColorTextureResourceId = materialView.baseColorTexture[0];
-  const metallicRoughnessTextureResourceId = materialView.metallicRoughnessTexture[0];
-  const normalTextureResourceId = materialView.normalTexture[0];
-  const occlusionTextureResourceId = materialView.occlusionTexture[0];
-  const emissiveTextureResourceId = materialView.emissiveTexture[0];
-  const transmissionTextureResourceId = materialView.transmissionTexture[0];
-  const thicknessTextureResourceId = materialView.thicknessTexture[0];
-
-  const textures = await promiseObject({
-    baseColorTexture: baseColorTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, baseColorTextureResourceId)
-      : undefined,
-    metallicRoughnessTexture: metallicRoughnessTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, metallicRoughnessTextureResourceId)
-      : undefined,
-    normalTexture: normalTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, normalTextureResourceId)
-      : undefined,
-    occlusionTexture: occlusionTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, occlusionTextureResourceId)
-      : undefined,
-    emissiveTexture: emissiveTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, emissiveTextureResourceId)
-      : undefined,
-    transmissionTexture: transmissionTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, transmissionTextureResourceId)
-      : undefined,
-    thicknessTexture: thicknessTextureResourceId
-      ? waitForLocalResource<LocalTextureResource>(ctx, thicknessTextureResourceId)
-      : undefined,
-  });
-
-  const localMaterialResource: LocalStandardMaterialResource = {
-    resourceId,
-    type,
-    ...textures,
-    materialTripleBuffer,
-  };
-
-  rendererModule.standardMaterials.push(localMaterialResource);
-
-  return localMaterialResource;
-}
-
-/* Material factories (Used in mesh.renderer.ts) */
-
-type PrimitiveAttributes = { [key: string]: LocalAccessor | ResourceId };
-
-export function createDefaultMaterial(attributes: PrimitiveAttributes) {
-  return new MeshStandardMaterial({
+  const material = new MeshStandardMaterial({
     color: 0xffffff,
     emissive: 0x000000,
     metalness: 1,
@@ -164,318 +75,323 @@ export function createDefaultMaterial(attributes: PrimitiveAttributes) {
     transparent: false,
     depthTest: true,
     side: FrontSide,
-    flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
-    vertexColors: MeshPrimitiveAttribute.COLOR_0 in attributes,
+    flatShading,
+    vertexColors,
   });
+
+  defaultMaterialCache.push({
+    material,
+    flatShading,
+    vertexColors,
+    mode,
+    useDerivativeTangents,
+    refCount: 1,
+  });
+
+  patchMaterial(ctx, material);
+
+  return material;
 }
 
-export function createPrimitiveUnlitMaterial(
-  mode: MeshPrimitiveMode,
-  attributes: PrimitiveAttributes,
-  material: LocalUnlitMaterialResource
-): Material {
-  const materialView = getReadObjectBufferView(material.materialTripleBuffer);
+export class RendererMaterialResource extends defineLocalResourceClass<typeof MaterialResource, RenderThreadState>(
+  MaterialResource
+) {
+  declare baseColorTexture: RendererTextureResource | undefined;
+  declare metallicRoughnessTexture: RendererTextureResource | undefined;
+  declare normalTexture: RendererTextureResource | undefined;
+  declare occlusionTexture: RendererTextureResource | undefined;
+  declare emissiveTexture: RendererTextureResource | undefined;
+  declare transmissionTexture: RendererTextureResource | undefined;
+  declare thicknessTexture: RendererTextureResource | undefined;
 
-  const baseParameters = getLocalMaterialBaseParameters(attributes, materialView);
-  const color = new Color().fromArray(materialView.baseColorFactor);
+  materialCache: MaterialCacheEntry[] = [];
 
-  if (
-    mode === MeshPrimitiveMode.TRIANGLES ||
-    mode === MeshPrimitiveMode.TRIANGLE_FAN ||
-    mode === MeshPrimitiveMode.TRIANGLE_STRIP
-  ) {
-    return new MeshBasicMaterial(
-      removeUndefinedProperties({
-        ...baseParameters,
-        color,
-        map: material.baseColorTexture?.texture,
-        toneMapped: false,
-      })
-    );
-  } else if (
-    mode === MeshPrimitiveMode.LINES ||
-    mode === MeshPrimitiveMode.LINE_STRIP ||
-    mode === MeshPrimitiveMode.LINE_LOOP
-  ) {
-    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color, toneMapped: false }));
-  } else if (mode === MeshPrimitiveMode.POINTS) {
-    return new PointsMaterial(
-      removeUndefinedProperties({
-        ...baseParameters,
-        map: material.baseColorTexture?.texture,
-        sizeAttenuation: false,
-        toneMapped: false,
-      })
-    );
-  }
+  getMaterialForMeshPrimitive(
+    ctx: RenderThreadState,
+    mode: MeshPrimitiveMode,
+    attributes: LocalMeshPrimitiveAttributes
+  ): PrimitiveMaterial {
+    const vertexColors = MeshPrimitiveAttribute.COLOR_0 in attributes;
+    const flatShading = !(MeshPrimitiveAttribute.NORMAL in attributes);
+    const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
 
-  throw new Error(`Unsupported mesh mode ${mode}`);
-}
+    const cacheEntry = this.materialCache.find(matchMaterial(mode, vertexColors, flatShading, useDerivativeTangents));
 
-export function createPrimitiveStandardMaterial(
-  mode: MeshPrimitiveMode,
-  attributes: PrimitiveAttributes,
-  materialResource: LocalStandardMaterialResource
-): Material {
-  const {
-    materialTripleBuffer,
-    baseColorTexture,
-    metallicRoughnessTexture,
-    occlusionTexture,
-    emissiveTexture,
-    normalTexture,
-    transmissionTexture,
-    thicknessTexture,
-  } = materialResource;
-  const materialView = getReadObjectBufferView(materialTripleBuffer);
-  const baseParameters = getLocalMaterialBaseParameters(attributes, materialView);
-  const color = new Color().fromArray(materialView.baseColorFactor);
-
-  if (
-    mode === MeshPrimitiveMode.TRIANGLES ||
-    mode === MeshPrimitiveMode.TRIANGLE_FAN ||
-    mode === MeshPrimitiveMode.TRIANGLE_STRIP
-  ) {
-    if (isPhysicalMaterial(materialResource, materialView)) {
-      return new MeshPhysicalMaterial(
-        removeUndefinedProperties({
-          ...baseParameters,
-          color,
-          map: baseColorTexture?.texture,
-          metalnessMap: metallicRoughnessTexture?.texture,
-          roughnessMap: metallicRoughnessTexture?.texture,
-          aoMap: occlusionTexture?.texture,
-          emissiveMap: emissiveTexture?.texture,
-          normalMap: normalTexture?.texture,
-          metalness: materialView.metallicFactor[0], // 🤘
-          roughness: materialView.roughnessFactor[0],
-          normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
-          aoMapIntensity: materialView.occlusionTextureStrength[0],
-          emissive: new Color().fromArray(materialView.emissiveFactor),
-          emissiveIntensity: materialView.emissiveStrength[0],
-          flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
-          ior: materialView.ior[0],
-          thickness: materialView.thicknessFactor[0],
-          thicknessMap: thicknessTexture?.texture,
-          attenuationDistance: materialView.attenuationDistance[0],
-          attenuationColor: new Color().fromArray(materialView.attenuationColor),
-          transmission: materialView.transmissionFactor[0],
-          transmissionMap: transmissionTexture?.texture,
-        })
-      );
-    } else {
-      return new MeshStandardMaterial(
-        removeUndefinedProperties({
-          ...baseParameters,
-          color,
-          map: baseColorTexture?.texture,
-          metalnessMap: metallicRoughnessTexture?.texture,
-          roughnessMap: metallicRoughnessTexture?.texture,
-          aoMap: occlusionTexture?.texture,
-          emissiveMap: emissiveTexture?.texture,
-          normalMap: normalTexture?.texture,
-          metalness: materialView.metallicFactor[0], // 🤘
-          roughness: materialView.roughnessFactor[0],
-          normalScale: updateNormalScale(attributes, new Vector2(), materialView.normalTextureScale[0]),
-          aoMapIntensity: materialView.occlusionTextureStrength[0],
-          emissive: new Color().fromArray(materialView.emissiveFactor),
-          emissiveIntensity: materialView.emissiveStrength[0],
-          flatShading: !(MeshPrimitiveAttribute.NORMAL in attributes),
-        })
-      );
+    if (cacheEntry) {
+      cacheEntry.refCount++;
+      return cacheEntry.material;
     }
-  } else if (
-    mode === MeshPrimitiveMode.LINES ||
-    mode === MeshPrimitiveMode.LINE_STRIP ||
-    mode === MeshPrimitiveMode.LINE_LOOP
-  ) {
-    return new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color }));
-  } else if (mode === MeshPrimitiveMode.POINTS) {
-    return new PointsMaterial(
-      removeUndefinedProperties({
-        ...baseParameters,
-        color,
-        map: baseColorTexture?.texture,
-        sizeAttenuation: false,
-      })
-    );
+
+    let material: PrimitiveMaterial;
+
+    const baseParameters: MaterialParameters = {
+      opacity: this.baseColorFactor[3],
+      side: this.doubleSided ? DoubleSide : FrontSide,
+      transparent: this.alphaMode === MaterialAlphaMode.BLEND,
+      depthWrite: this.alphaMode !== MaterialAlphaMode.BLEND,
+      alphaTest:
+        this.alphaMode === MaterialAlphaMode.MASK
+          ? this.alphaCutoff !== undefined
+            ? this.alphaCutoff
+            : 0.5
+          : undefined,
+      vertexColors,
+    };
+
+    const color = new Color().fromArray(this.baseColorFactor);
+
+    if (this.type === MaterialType.Unlit) {
+      if (
+        mode === MeshPrimitiveMode.TRIANGLES ||
+        mode === MeshPrimitiveMode.TRIANGLE_FAN ||
+        mode === MeshPrimitiveMode.TRIANGLE_STRIP
+      ) {
+        material = new MeshBasicMaterial(
+          removeUndefinedProperties({
+            ...baseParameters,
+            color,
+            map: this.baseColorTexture?.texture,
+            toneMapped: false,
+          })
+        );
+      } else if (
+        mode === MeshPrimitiveMode.LINES ||
+        mode === MeshPrimitiveMode.LINE_STRIP ||
+        mode === MeshPrimitiveMode.LINE_LOOP
+      ) {
+        material = new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color, toneMapped: false }));
+      } else if (mode === MeshPrimitiveMode.POINTS) {
+        material = new PointsMaterial(
+          removeUndefinedProperties({
+            ...baseParameters,
+            map: this.baseColorTexture?.texture,
+            sizeAttenuation: false,
+            toneMapped: false,
+          })
+        );
+      } else {
+        throw new Error(`Unsupported mesh mode ${mode}`);
+      }
+    } else if (this.type === MaterialType.Standard) {
+      if (
+        mode === MeshPrimitiveMode.TRIANGLES ||
+        mode === MeshPrimitiveMode.TRIANGLE_FAN ||
+        mode === MeshPrimitiveMode.TRIANGLE_STRIP
+      ) {
+        if (isPhysicalMaterial(this)) {
+          material = new MeshPhysicalMaterial(
+            removeUndefinedProperties({
+              ...baseParameters,
+              color,
+              map: this.baseColorTexture?.texture,
+              metalnessMap: this.metallicRoughnessTexture?.texture,
+              roughnessMap: this.metallicRoughnessTexture?.texture,
+              aoMap: this.occlusionTexture?.texture,
+              emissiveMap: this.emissiveTexture?.texture,
+              normalMap: this.normalTexture?.texture,
+              metalness: this.metallicFactor, // 🤘
+              roughness: this.roughnessFactor,
+              aoMapIntensity: this.occlusionTextureStrength,
+              emissive: new Color().fromArray(this.emissiveFactor),
+              emissiveIntensity: this.emissiveStrength,
+              flatShading,
+              ior: this.ior,
+              thickness: this.thicknessFactor as any, // TODO: Add thickness to MeshStandardMaterialParameters types
+              thicknessMap: this.thicknessTexture?.texture,
+              attenuationDistance: this.attenuationDistance,
+              attenuationColor: new Color().fromArray(this.attenuationColor),
+              transmission: this.transmissionFactor,
+              transmissionMap: this.transmissionTexture?.texture,
+            })
+          );
+
+          material.normalScale.set(
+            this.normalTextureScale,
+            useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
+          );
+        } else {
+          material = new MeshStandardMaterial(
+            removeUndefinedProperties({
+              ...baseParameters,
+              color,
+              map: this.baseColorTexture?.texture,
+              metalnessMap: this.metallicRoughnessTexture?.texture,
+              roughnessMap: this.metallicRoughnessTexture?.texture,
+              aoMap: this.occlusionTexture?.texture,
+              emissiveMap: this.emissiveTexture?.texture,
+              normalMap: this.normalTexture?.texture,
+              metalness: this.metallicFactor, // 🤘
+              roughness: this.roughnessFactor,
+              aoMapIntensity: this.occlusionTextureStrength,
+              emissive: new Color().fromArray(this.emissiveFactor),
+              emissiveIntensity: this.emissiveStrength,
+              flatShading,
+            })
+          );
+
+          material.normalScale.set(
+            this.normalTextureScale,
+            useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
+          );
+        }
+
+        patchMaterial(ctx, material);
+      } else if (
+        mode === MeshPrimitiveMode.LINES ||
+        mode === MeshPrimitiveMode.LINE_STRIP ||
+        mode === MeshPrimitiveMode.LINE_LOOP
+      ) {
+        material = new LineBasicMaterial(removeUndefinedProperties({ ...baseParameters, color }));
+      } else if (mode === MeshPrimitiveMode.POINTS) {
+        material = new PointsMaterial(
+          removeUndefinedProperties({
+            ...baseParameters,
+            color,
+            map: this.baseColorTexture?.texture,
+            sizeAttenuation: false,
+          })
+        );
+      } else {
+        throw new Error(`Unsupported mesh mode ${mode}`);
+      }
+    } else {
+      throw new Error(`Unsupported material type ${this.type}`);
+    }
+
+    this.materialCache.push({
+      material,
+      flatShading,
+      vertexColors,
+      mode,
+      useDerivativeTangents,
+      refCount: 1,
+    });
+
+    return material;
   }
 
-  throw new Error(`Unsupported mesh mode ${mode}`);
+  disposeMeshPrimitiveMaterial(material: PrimitiveMaterial) {
+    const index = this.materialCache.findIndex((entry) => entry.material === material);
+
+    if (index === -1) {
+      return;
+    }
+
+    const cacheEntry = this.materialCache[index];
+
+    cacheEntry.refCount--;
+
+    if (cacheEntry.refCount <= 0) {
+      material.dispose();
+      this.materialCache.splice(index, 1);
+    }
+  }
+}
+
+function patchMaterial(ctx: RenderThreadState, material: PrimitiveMaterial) {
+  const rendererModule = getModule(ctx, RendererModule);
+
+  if (!material.defines) {
+    material.defines = {};
+  }
+
+  if (!("isMeshBasicMaterial" in material)) {
+    material.defines.USE_ENVMAP = "";
+    material.defines.ENVMAP_MODE_REFLECTION = "";
+    material.defines.ENVMAP_TYPE_CUBE_UV = "";
+    material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
+    material.defines.ENVMAP_BLENDING_NONE = "";
+    material.defines.USE_REFLECTION_PROBES = "";
+  }
+
+  if (!material.userData.beforeCompileHook) {
+    const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
+    const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
+    const reflectionProbeParams = new Uniform(new Vector3());
+    const reflectionProbeSampleParams = new Uniform(new Vector3());
+
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.lightMapTransform = lightMapTransform;
+      shader.uniforms.reflectionProbesMap = reflectionProbesMap;
+      shader.uniforms.reflectionProbeParams = reflectionProbeParams;
+      shader.uniforms.reflectionProbeSampleParams = reflectionProbeSampleParams;
+    };
+
+    material.userData.beforeCompileHook = true;
+    material.userData.lightMapTransform = lightMapTransform;
+    material.userData.reflectionProbesMap = reflectionProbesMap;
+    material.userData.reflectionProbeParams = reflectionProbeParams;
+    material.userData.reflectionProbeSampleParams = reflectionProbeSampleParams;
+
+    material.needsUpdate = true;
+  }
+}
+
+export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
+  const localMaterials = getLocalResources(ctx, RendererMaterialResource);
+
+  for (let i = 0; i < localMaterials.length; i++) {
+    const localMaterial = localMaterials[i];
+    const materialCache = localMaterial.materialCache;
+
+    for (let j = 0; j < materialCache.length; j++) {
+      const { useDerivativeTangents, material } = materialCache[j];
+      material.color.fromArray(localMaterial.baseColorFactor);
+      material.opacity = localMaterial.baseColorFactor[3];
+      material.side = localMaterial.doubleSided ? DoubleSide : FrontSide;
+      material.transparent = localMaterial.alphaMode === MaterialAlphaMode.BLEND;
+      material.depthWrite = localMaterial.alphaMode !== MaterialAlphaMode.BLEND;
+      material.alphaTest = localMaterial.alphaMode === MaterialAlphaMode.MASK ? localMaterial.alphaCutoff : 0;
+
+      if ("map" in material) {
+        material.map = localMaterial.baseColorTexture?.texture || null;
+      }
+
+      if ("isMeshStandardMaterial" in material) {
+        material.metalness = localMaterial.metallicFactor; // 🤘
+        material.metalnessMap = localMaterial.metallicRoughnessTexture?.texture || null;
+        material.roughness = localMaterial.roughnessFactor;
+        material.roughnessMap = localMaterial.metallicRoughnessTexture?.texture || null;
+        material.normalScale.set(
+          localMaterial.normalTextureScale,
+          useDerivativeTangents ? -localMaterial.normalTextureScale : localMaterial.normalTextureScale
+        );
+        material.normalMap = localMaterial.normalTexture?.texture || null;
+        material.aoMapIntensity = localMaterial.occlusionTextureStrength;
+        material.aoMap = localMaterial.occlusionTexture?.texture || null;
+        material.emissive.fromArray(localMaterial.emissiveFactor);
+        material.emissiveIntensity = localMaterial.emissiveStrength;
+        material.emissiveMap = localMaterial.emissiveTexture?.texture || null;
+      }
+
+      if ("isMeshPhysicalMaterial" in material) {
+        const physicalMaterial = material as MeshPhysicalMaterial;
+        physicalMaterial.ior = localMaterial.ior;
+        physicalMaterial.thickness = localMaterial.thicknessFactor;
+        physicalMaterial.attenuationDistance = localMaterial.attenuationDistance;
+        physicalMaterial.attenuationColor.fromArray(localMaterial.attenuationColor);
+        physicalMaterial.transmission = localMaterial.transmissionFactor;
+        physicalMaterial.transmissionMap = localMaterial.transmissionTexture?.texture || null;
+        physicalMaterial.thicknessMap = localMaterial.thicknessTexture?.texture || null;
+      }
+    }
+  }
 }
 
 const defaultAttenuationColor = vec3.fromValues(1, 1, 1);
 
-function isPhysicalMaterial(
-  materialResource: LocalStandardMaterialResource,
-  materialView: ReadObjectTripleBufferView<StandardMaterialTripleBuffer>
-) {
+function isPhysicalMaterial(localMaterial: LocalMaterial) {
   if (
-    materialResource.transmissionTexture ||
-    materialResource.thicknessTexture ||
-    materialView.ior[0] !== 1.5 ||
-    materialView.transmissionFactor[0] !== 0 ||
-    materialView.thicknessFactor[0] !== 0 ||
-    materialView.attenuationDistance[0] !== 0 ||
-    vec3.equals(materialView.attenuationColor, defaultAttenuationColor)
+    localMaterial.transmissionTexture ||
+    localMaterial.thicknessTexture ||
+    localMaterial.ior !== 1.5 ||
+    localMaterial.transmissionFactor !== 0 ||
+    localMaterial.thicknessFactor !== 0 ||
+    localMaterial.attenuationDistance !== 0 ||
+    !vec3.equals(localMaterial.attenuationColor as ReadonlyVec3, defaultAttenuationColor)
   ) {
     return true;
   }
 
   return false;
-}
-
-function getLocalMaterialBaseParameters(
-  attributes: PrimitiveAttributes,
-  materialView: ReadObjectTripleBufferView<UnlitMaterialTripleBuffer | StandardMaterialTripleBuffer>
-): MaterialParameters {
-  const baseParameters: MaterialParameters = {
-    opacity: materialView.baseColorFactor[3],
-    side: materialView.doubleSided[0] ? DoubleSide : FrontSide,
-    transparent: materialView.alphaMode[0] === MaterialAlphaMode.BLEND,
-    depthWrite: materialView.alphaMode[0] !== MaterialAlphaMode.BLEND,
-    alphaTest:
-      materialView.alphaMode[0] === MaterialAlphaMode.MASK
-        ? materialView.alphaCutoff[0] !== undefined
-          ? materialView.alphaCutoff[0]
-          : 0.5
-        : undefined,
-    vertexColors: MeshPrimitiveAttribute.COLOR_0 in attributes,
-  };
-
-  return baseParameters;
-}
-
-/* Local material update systems (Used in renderer.renderer.ts) */
-
-export function updateLocalUnlitMaterialResources(
-  ctx: RenderThreadState,
-  unlitMaterials: LocalUnlitMaterialResource[]
-) {
-  for (let i = unlitMaterials.length - 1; i >= 0; i--) {
-    const unlitMaterialResource = unlitMaterials[i];
-
-    if (getResourceDisposed(ctx, unlitMaterialResource.resourceId)) {
-      unlitMaterials.splice(i, 1);
-    }
-  }
-
-  for (let i = 0; i < unlitMaterials.length; i++) {
-    const unlitMaterial = unlitMaterials[i];
-    const materialView = getReadObjectBufferView(unlitMaterial.materialTripleBuffer);
-
-    updateSharedTextureResource(ctx, unlitMaterial, materialView, "baseColorTexture");
-  }
-}
-
-export function updateLocalStandardMaterialResources(
-  ctx: RenderThreadState,
-  standardMaterials: LocalStandardMaterialResource[]
-) {
-  for (let i = standardMaterials.length - 1; i >= 0; i--) {
-    const standardMaterialResource = standardMaterials[i];
-
-    if (getResourceDisposed(ctx, standardMaterialResource.resourceId)) {
-      standardMaterials.splice(i, 1);
-    }
-  }
-
-  for (let i = 0; i < standardMaterials.length; i++) {
-    const standardMaterial = standardMaterials[i];
-    const materialView = getReadObjectBufferView(standardMaterial.materialTripleBuffer);
-
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "baseColorTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "metallicRoughnessTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "occlusionTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "emissiveTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "normalTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "transmissionTexture");
-    updateSharedTextureResource(ctx, standardMaterial, materialView, "thicknessTexture");
-  }
-}
-
-function updateSharedTextureResource<Resource extends LocalMaterialResource>(
-  ctx: RenderThreadState,
-  materialResource: Resource,
-  materialView: ReadObjectTripleBufferView<UnlitMaterialTripleBuffer | StandardMaterialTripleBuffer>,
-  mapName: keyof Resource
-) {
-  const anyMaterialResource = materialResource as any;
-  const anyCurrentSharedMaterial = materialView as any;
-
-  if (anyCurrentSharedMaterial[mapName][0] !== (anyMaterialResource[mapName]?.resourceId || 0)) {
-    const textureResource = getLocalResource<LocalTextureResource>(ctx, anyCurrentSharedMaterial[mapName][0]);
-
-    // Only update if the texture resource is loaded
-    if (textureResource) {
-      anyMaterialResource[mapName] = textureResource?.resource;
-    }
-  }
-}
-
-/* Local material update functions (Used in mesh.renderer.ts) */
-
-export function updatePrimitiveUnlitMaterial(
-  material: PrimitiveUnlitMaterial,
-  materialResource: LocalUnlitMaterialResource
-) {
-  const materialView = getReadObjectBufferView(materialResource.materialTripleBuffer);
-
-  updatePrimitiveBaseMaterial(material, materialView);
-
-  if ("map" in material) {
-    material.map = materialResource.baseColorTexture?.texture || null;
-  }
-}
-
-function updateNormalScale(attributes: PrimitiveAttributes, normalScale: Vector2, value: number): Vector2 {
-  normalScale.setScalar(value);
-
-  const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
-
-  if (useDerivativeTangents) {
-    normalScale.y *= -1;
-  }
-
-  return normalScale;
-}
-
-export function updatePrimitiveStandardMaterial(
-  meshPrimitive: LocalMeshPrimitive,
-  material: PrimitiveStandardMaterial,
-  materialResource: LocalStandardMaterialResource
-) {
-  const materialView = getReadObjectBufferView(materialResource.materialTripleBuffer);
-
-  updatePrimitiveBaseMaterial(material, materialView);
-
-  if ("isMeshStandardMaterial" in material) {
-    material.metalness = materialView.metallicFactor[0]; // 🤘
-    material.roughness = materialView.roughnessFactor[0];
-    updateNormalScale(meshPrimitive.attributes, material.normalScale, materialView.normalTextureScale[0]);
-    material.aoMapIntensity = materialView.occlusionTextureStrength[0];
-    material.emissive.fromArray(materialView.emissiveFactor);
-    material.emissiveIntensity = materialView.emissiveStrength[0];
-  }
-
-  if ("isMeshPhysicalMaterial" in material) {
-    const physicalMaterial = material as MeshPhysicalMaterial;
-    physicalMaterial.ior = materialView.ior[0];
-    physicalMaterial.thickness = materialView.thicknessFactor[0];
-    physicalMaterial.attenuationDistance = materialView.attenuationDistance[0];
-    physicalMaterial.attenuationColor.fromArray(materialView.attenuationColor);
-    physicalMaterial.transmission = materialView.transmissionFactor[0];
-  }
-}
-
-function updatePrimitiveBaseMaterial(
-  material: PrimitiveMaterial,
-  materialView: ReadObjectTripleBufferView<UnlitMaterialTripleBuffer | StandardMaterialTripleBuffer>
-) {
-  material.color.fromArray(materialView.baseColorFactor);
-  material.opacity = materialView.baseColorFactor[3];
-  material.side = materialView.doubleSided[0] ? DoubleSide : FrontSide;
-  material.transparent = materialView.alphaMode[0] === MaterialAlphaMode.BLEND;
-  material.depthWrite = materialView.alphaMode[0] !== MaterialAlphaMode.BLEND;
-  material.alphaTest = materialView.alphaMode[0] === MaterialAlphaMode.MASK ? materialView.alphaCutoff[0] : 0;
 }

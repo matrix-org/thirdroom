@@ -12,28 +12,12 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { ImageResourceType } from "../image/image.common";
-import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
-import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
-import {
-  LocalStandardMaterialResource,
-  LocalUnlitMaterialResource,
-  onLoadLocalStandardMaterialResource,
-  onLoadLocalUnlitMaterialResource,
-  updateLocalStandardMaterialResources,
-  updateLocalUnlitMaterialResources,
-} from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
 import { SceneResourceType } from "../scene/scene.common";
 import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
-import { TextureResourceType } from "../texture/texture.common";
-import {
-  LocalTextureResource,
-  onLoadLocalTextureResource,
-  updateLocalTextureResources,
-} from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
@@ -84,6 +68,8 @@ import {
   LightResource,
   SamplerResource,
 } from "../resource/schema";
+import { RendererImageResource } from "../image/image.render";
+import { RendererMaterialResource } from "../material/material.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -104,10 +90,6 @@ export interface RendererModuleState {
   ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
-  unlitMaterials: LocalUnlitMaterialResource[]; // done
-  standardMaterials: LocalStandardMaterialResource[]; // done
-  images: LocalImageResource[]; // done
-  textures: LocalTextureResource[]; // done
   meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
   nodes: LocalNode[]; // done
   reflectionProbes: ReflectionProbe[];
@@ -180,10 +162,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
       scenes: [],
-      images: [],
-      textures: [],
-      unlitMaterials: [],
-      standardMaterials: [],
       directionalLights: [],
       pointLights: [],
       spotLights: [],
@@ -208,15 +186,14 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerResource(ctx, SamplerResource),
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
-      registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
-      registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
-      registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
+      registerResource(ctx, RendererTextureResource),
+      registerResource(ctx, RendererMaterialResource),
       registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
       registerResource(ctx, CameraResource),
-      registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),
+      registerResource(ctx, RendererImageResource),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
@@ -303,11 +280,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
-  updateLocalImageResources(ctx, rendererModule.images);
-  updateLocalTextureResources(ctx, rendererModule.textures);
   updateLocalSceneResources(ctx, rendererModule.scenes);
-  updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
-  updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 

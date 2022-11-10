@@ -1,9 +1,7 @@
 import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
-import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
-import { TextureEncoding } from "../texture/texture.common";
 
 export const NametagResource = defineResource("nametag", {
   name: PropType.string(),
@@ -119,6 +117,10 @@ export const AudioEmitterResource = defineResource("audio-emitter", {
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
 });
 
+export enum ImageFormat {
+  RGBA = "rgba",
+  RGBE = "rgbe",
+}
 export const ImageResource = defineResource("image", {
   name: PropType.string({ default: "Image", script: true }),
   uri: PropType.string({ script: true, mutable: false }),
@@ -126,13 +128,21 @@ export const ImageResource = defineResource("image", {
   bufferView: PropType.ref(BufferViewResource, { script: true, mutable: false }),
   flipY: PropType.bool({ script: true, mutable: false }),
 });
+export type RemoteImage = RemoteResource<typeof ImageResource>;
+export type LocalImage = LocalResource<typeof ImageResource>;
 
+export enum TextureEncoding {
+  Linear = 3000,
+  sRGB = 3001,
+}
 export const TextureResource = defineResource("texture", {
   name: PropType.string({ default: "Texture", script: true }),
   sampler: PropType.ref(SamplerResource, { script: true, mutable: false }),
   source: PropType.ref(ImageResource, { script: true, mutable: false }),
   encoding: PropType.enum(TextureEncoding, { default: TextureEncoding.Linear, script: true, mutable: false }),
 });
+export type RemoteTexture = RemoteResource<typeof TextureResource>;
+export type LocalTexture = LocalResource<typeof TextureResource>;
 
 export const ReflectionProbeResource = defineResource("reflection-probe", {
   name: PropType.string({ default: "ReflectionProbe", script: true }),
@@ -140,6 +150,15 @@ export const ReflectionProbeResource = defineResource("reflection-probe", {
   size: PropType.vec3({ script: true, mutable: false }),
 });
 
+export enum MaterialAlphaMode {
+  OPAQUE,
+  MASK,
+  BLEND,
+}
+export enum MaterialType {
+  Standard,
+  Unlit,
+}
 export const MaterialResource = defineResource("material", {
   name: PropType.string({ default: "Material", script: true }),
   type: PropType.enum(MaterialType, { required: true, script: true }),
@@ -156,7 +175,7 @@ export const MaterialResource = defineResource("material", {
   occlusionTextureStrength: PropType.f32({ default: 1, script: true }),
   occlusionTexture: PropType.ref(TextureResource, { script: true }),
   emissiveStrength: PropType.f32({ default: 1, script: true }),
-  emissiveFactor: PropType.rgb({ default: [1, 1, 1], script: true }),
+  emissiveFactor: PropType.rgb({ default: [0, 0, 0], script: true }),
   emissiveTexture: PropType.ref(TextureResource, { script: true }),
   ior: PropType.f32({ default: 1.5, script: true }),
   transmissionFactor: PropType.f32({ default: 0, script: true }),
@@ -167,6 +186,8 @@ export const MaterialResource = defineResource("material", {
   attenuationDistance: PropType.f32({ default: 0, script: true }),
   attenuationColor: PropType.rgb({ default: [1, 1, 1], script: true }),
 });
+export type RemoteMaterial = RemoteResource<typeof MaterialResource>;
+export type LocalMaterial = LocalResource<typeof MaterialResource>;
 
 export enum LightType {
   Directional,

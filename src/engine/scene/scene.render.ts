@@ -7,14 +7,14 @@ import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalTextureResource } from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   resourceId: ResourceId;
   scene: Scene;
-  backgroundTexture?: LocalTextureResource;
+  backgroundTexture?: RendererTextureResource;
   reflectionProbe?: LocalReflectionProbeResource;
   reflectionProbeNeedsUpdate: boolean;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
@@ -31,7 +31,7 @@ export async function onLoadLocalSceneResource(
 
   await promiseObject({
     backgroundTexture: sceneView.backgroundTexture[0]
-      ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])
+      ? waitForLocalResource<RendererTextureResource>(ctx, sceneView.backgroundTexture[0])
       : undefined,
   });
 
@@ -68,7 +68,7 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
     if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
       if (sceneView.backgroundTexture[0]) {
-        const nextBackgroundTexture = getLocalResource<LocalTextureResource>(
+        const nextBackgroundTexture = getLocalResource<RendererTextureResource>(
           ctx,
           sceneView.backgroundTexture[0]
         )?.resource;

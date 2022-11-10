@@ -2,7 +2,6 @@ import { vec2 } from "gl-matrix";
 import {
   Mesh,
   BufferGeometry,
-  Material,
   Line,
   LineSegments,
   Points,
@@ -14,7 +13,6 @@ import {
   Bone,
   SkinnedMesh,
   Skeleton,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   Matrix3,
   Uniform,
@@ -27,18 +25,11 @@ import {
 
 import { LocalAccessor } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-// import { Skeleton, SkinnedMesh } from "../animation/Skeleton";
 import { GLTFMesh } from "../gltf/GLTF";
-import { MaterialType } from "../material/material.common";
 import {
-  createDefaultMaterial,
-  createPrimitiveStandardMaterial,
-  createPrimitiveUnlitMaterial,
-  LocalMaterialResource,
-  PrimitiveStandardMaterial,
-  PrimitiveUnlitMaterial,
-  updatePrimitiveStandardMaterial as updateMeshPrimitiveStandardMaterial,
-  updatePrimitiveUnlitMaterial as updateMeshPrimitiveUnlitMaterial,
+  getDefaultMaterialForMeshPrimitive,
+  PrimitiveMaterial,
+  RendererMaterialResource,
 } from "../material/material.render";
 import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
@@ -47,7 +38,7 @@ import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
 import { LocalSceneResource } from "../scene/scene.render";
-import { LocalTextureResource } from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
@@ -64,15 +55,18 @@ import {
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
 
+export type LocalMeshPrimitiveAttributes = { [key: string]: LocalAccessor };
+
 export interface LocalMeshPrimitive {
   resourceId: ResourceId;
   attributes: { [key: string]: LocalAccessor };
   mode: MeshPrimitiveMode;
   indices?: LocalAccessor;
-  material?: LocalMaterialResource;
+  material?: RendererMaterialResource;
   targets?: number[] | Float32Array;
   geometryObj: BufferGeometry;
-  materialObj: Material;
+  materialObjResourceId: ResourceId;
+  materialObj: PrimitiveMaterial;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
 
@@ -126,58 +120,55 @@ export async function onLoadLocalMeshPrimitiveResource(
     );
   }
 
-  const results = await promiseObject({
+  const { indices, attributes, material } = await promiseObject({
     indices: initialProps.indices
       ? waitForLocalResource<LocalAccessor>(ctx, initialProps.indices, "mesh-primitive.indices accessor")
       : undefined,
     attributes: promiseObject(attributePromises),
     material: meshPrimitiveView.material[0]
-      ? waitForLocalResource<LocalMaterialResource>(ctx, meshPrimitiveView.material[0], "mesh-primitive material")
+      ? waitForLocalResource<RendererMaterialResource>(ctx, meshPrimitiveView.material[0], "mesh-primitive material")
       : undefined,
   });
 
   const mode = initialProps.mode;
 
-  let geometry = new BufferGeometry();
+  let geometryObj = new BufferGeometry();
 
-  if (results.indices) {
-    if ("isInterleavedBufferAttribute" in results.indices.attribute) {
+  if (indices) {
+    if ("isInterleavedBufferAttribute" in indices.attribute) {
       throw new Error("Interleaved attributes are not supported as mesh indices.");
     }
 
-    geometry.setIndex(results.indices.attribute);
+    geometryObj.setIndex(indices.attribute);
   }
 
-  for (const attributeName in results.attributes) {
-    geometry.setAttribute(ThreeAttributes[attributeName], results.attributes[attributeName].attribute);
+  for (const attributeName in attributes) {
+    geometryObj.setAttribute(ThreeAttributes[attributeName], attributes[attributeName].attribute);
   }
 
   if (mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
-    geometry = toTrianglesDrawMode(geometry, MeshPrimitiveMode.TRIANGLE_STRIP);
+    geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_STRIP);
   } else if (mode === MeshPrimitiveMode.TRIANGLE_FAN) {
-    geometry = toTrianglesDrawMode(geometry, MeshPrimitiveMode.TRIANGLE_FAN);
+    geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_FAN);
   }
 
-  let material: Material;
+  let materialObj: PrimitiveMaterial;
 
-  if (!results.material) {
-    material = createDefaultMaterial(results.attributes);
-  } else if (results.material.type === MaterialType.Unlit) {
-    material = createPrimitiveUnlitMaterial(mode, results.attributes, results.material);
-  } else if (results.material.type === MaterialType.Standard) {
-    material = createPrimitiveStandardMaterial(mode, results.attributes, results.material);
+  if (!material) {
+    materialObj = getDefaultMaterialForMeshPrimitive(ctx, mode, attributes);
   } else {
-    throw new Error("Unsupported material type");
+    materialObj = material.getMaterialForMeshPrimitive(ctx, mode, attributes);
   }
 
   const localMeshPrimitive: LocalMeshPrimitive = {
     resourceId,
     mode,
-    attributes: results.attributes,
-    indices: results.indices,
-    material: results.material,
-    geometryObj: geometry,
-    materialObj: material,
+    attributes,
+    indices,
+    material,
+    geometryObj,
+    materialObjResourceId: material?.resourceId || 0,
+    materialObj,
     meshPrimitiveTripleBuffer,
   };
 
@@ -225,7 +216,7 @@ export async function onLoadLocalInstancedMeshResource(
 
 export interface LocalLightMap {
   resourceId: ResourceId;
-  texture: LocalTextureResource;
+  texture: RendererTextureResource;
   offset: vec2;
   scale: vec2;
   intensity: number;
@@ -236,7 +227,7 @@ export async function onLoadLocalLightMapResource(
   resourceId: ResourceId,
   props: SharedLightMapResource
 ): Promise<LocalLightMap> {
-  const lightMapResource = await waitForLocalResource<LocalTextureResource>(ctx, props.texture, "light-map");
+  const lightMapResource = await waitForLocalResource<RendererTextureResource>(ctx, props.texture, "light-map");
 
   const localLightMap: LocalLightMap = {
     resourceId,
@@ -441,43 +432,6 @@ function createMeshPrimitiveObject(
 
     // Patch material with per-mesh uniforms
 
-    const material = materialObj as MeshBasicMaterial | MeshStandardMaterial;
-
-    if (!material.defines) {
-      material.defines = {};
-    }
-
-    if (!("isMeshBasicMaterial" in material)) {
-      material.defines.USE_ENVMAP = "";
-      material.defines.ENVMAP_MODE_REFLECTION = "";
-      material.defines.ENVMAP_TYPE_CUBE_UV = "";
-      material.defines.CUBEUV_2D_SAMPLER_ARRAY = "";
-      material.defines.ENVMAP_BLENDING_NONE = "";
-      material.defines.USE_REFLECTION_PROBES = "";
-    }
-
-    if (!material.userData.beforeCompileHook) {
-      const lightMapTransform = new Uniform(new Matrix3().setUvTransform(0, 0, 1, 1, 0, 0, 0));
-      const reflectionProbesMap = new Uniform(rendererModule.reflectionProbesMap);
-      const reflectionProbeParams = new Uniform(new Vector3());
-      const reflectionProbeSampleParams = new Uniform(new Vector3());
-
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms.lightMapTransform = lightMapTransform;
-        shader.uniforms.reflectionProbesMap = reflectionProbesMap;
-        shader.uniforms.reflectionProbeParams = reflectionProbeParams;
-        shader.uniforms.reflectionProbeSampleParams = reflectionProbeSampleParams;
-      };
-
-      material.userData.beforeCompileHook = true;
-      material.userData.lightMapTransform = lightMapTransform;
-      material.userData.reflectionProbesMap = reflectionProbesMap;
-      material.userData.reflectionProbeParams = reflectionProbeParams;
-      material.userData.reflectionProbeSampleParams = reflectionProbeSampleParams;
-
-      material.needsUpdate = true;
-    }
-
     mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
       const meshMaterial = material as MeshStandardMaterial;
 
@@ -559,7 +513,11 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
 
     if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
       meshPrimitiveResource.geometryObj.dispose();
-      meshPrimitiveResource.materialObj.dispose();
+
+      if (meshPrimitiveResource.material) {
+        meshPrimitiveResource.material.disposeMeshPrimitiveMaterial(meshPrimitiveResource.materialObj);
+      }
+
       meshPrimitives.splice(i, 1);
     }
   }
@@ -567,46 +525,31 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
     const sharedMeshPrimitive = getReadObjectBufferView(meshPrimitive.meshPrimitiveTripleBuffer);
-
-    const currentMaterialResourceId = meshPrimitive.material?.resourceId || 0;
     const nextMaterialResourceId = sharedMeshPrimitive.material[0];
 
-    const nextMaterialResource = getLocalResource<LocalMaterialResource>(ctx, nextMaterialResourceId)?.resource;
+    const nextMaterialResource = getLocalResource<RendererMaterialResource>(ctx, nextMaterialResourceId)?.resource;
 
-    if (currentMaterialResourceId !== nextMaterialResourceId) {
-      if (!nextMaterialResource) {
-        meshPrimitive.materialObj = createDefaultMaterial(meshPrimitive.attributes);
-      } else if (nextMaterialResource.type === MaterialType.Unlit) {
-        meshPrimitive.materialObj = createPrimitiveUnlitMaterial(
-          meshPrimitive.mode,
-          meshPrimitive.attributes,
-          nextMaterialResource
-        );
-      } else if (nextMaterialResource.type === MaterialType.Standard) {
-        meshPrimitive.materialObj = createPrimitiveStandardMaterial(
-          meshPrimitive.mode,
-          meshPrimitive.attributes,
-          nextMaterialResource
-        );
+    const newMaterialObj = nextMaterialResource
+      ? nextMaterialResource.getMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes)
+      : getDefaultMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes);
+
+    if (newMaterialObj !== meshPrimitive.materialObj) {
+      console.log("material changed");
+      if (meshPrimitive.materialObj) {
+        if (meshPrimitive.material) {
+          meshPrimitive.material.disposeMeshPrimitiveMaterial(meshPrimitive.materialObj);
+        }
       }
 
-      if (
-        (meshPrimitive.materialObj as any).aoMap &&
-        meshPrimitive.geometryObj.attributes.uv2 === undefined &&
-        meshPrimitive.geometryObj.attributes.uv !== undefined
-      ) {
-        meshPrimitive.geometryObj.setAttribute("uv2", meshPrimitive.geometryObj.attributes.uv);
-      }
+      meshPrimitive.materialObj = newMaterialObj;
     }
 
-    if (nextMaterialResource && nextMaterialResource.type === MaterialType.Standard) {
-      updateMeshPrimitiveStandardMaterial(
-        meshPrimitive,
-        meshPrimitive.materialObj as PrimitiveStandardMaterial,
-        nextMaterialResource
-      );
-    } else if (nextMaterialResource && nextMaterialResource.type === MaterialType.Unlit) {
-      updateMeshPrimitiveUnlitMaterial(meshPrimitive.materialObj as PrimitiveUnlitMaterial, nextMaterialResource);
+    if (
+      (meshPrimitive.materialObj as any).aoMap &&
+      meshPrimitive.geometryObj.attributes.uv2 === undefined &&
+      meshPrimitive.geometryObj.attributes.uv !== undefined
+    ) {
+      meshPrimitive.geometryObj.setAttribute("uv2", meshPrimitive.geometryObj.attributes.uv);
     }
   }
 }
