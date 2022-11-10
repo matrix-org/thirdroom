@@ -9,6 +9,7 @@ import { MXPortalExtension } from "./extensions/MXPortalExtension";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
+import { OMILinkExtension } from "./extensions/OMILinkExtension";
 import { compressTextures } from "./functions/compressTextures";
 import { dedupeProperties } from "./functions/dedupeProperties";
 import { extensionAwareInstance } from "./functions/extensionAwareInstance";
@@ -23,6 +24,7 @@ export function registerExtensions(io: PlatformIO) {
     MXBackgroundExtension,
     MXSpawnPointExtension,
     MXPortalExtension,
+    OMILinkExtension,
     OMIColliderExtension,
   ]);
 }
