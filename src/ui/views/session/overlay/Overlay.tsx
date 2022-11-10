@@ -32,6 +32,7 @@ import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { DiscoverView } from "../discover/DiscoverView";
+import config from "../../../../../config.json";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -59,6 +60,8 @@ export function Overlay() {
     isEnteredWorld: state.world.entered,
     selectedWorldId: state.overlayWorld.selectedWorldId,
   }));
+
+  const repositoryRoom = useRoom(session, config.repositoryRoomIdOrAlias);
 
   const activeCall = useRoomCall(calls, worldId);
   const { exitWorld } = useWorldAction(session);
@@ -103,7 +106,7 @@ export function Overlay() {
           {selectedWindow === OverlayWindow.WorldSettings && worldSettingsId && (
             <WorldSettings roomId={worldSettingsId} />
           )}
-          {selectedWindow === OverlayWindow.Discover && <DiscoverView />}
+          {selectedWindow === OverlayWindow.Discover && repositoryRoom && <DiscoverView room={repositoryRoom} />}
         </div>
       ) : (
         <div className="Overlay__content grow">

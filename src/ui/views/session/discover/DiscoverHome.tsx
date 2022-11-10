@@ -1,3 +1,5 @@
+import { Room } from "@thirdroom/hydrogen-view-sdk";
+
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
 import { Content } from "../../../atoms/content/Content";
@@ -14,8 +16,11 @@ import {
   FeaturedSceneThumbnail,
 } from "../../components/featured-scene/FeaturedScene";
 import { Text } from "../../../atoms/text/Text";
+import { useStateEvents } from "../../../hooks/useStateEvents";
 
-export function DiscoverHome() {
+export function DiscoverHome({ room }: { room: Room }) {
+  useStateEvents(room, "m.room.name");
+
   return (
     <Scroll>
       <Content className="DiscoverHome__content">
@@ -23,39 +28,6 @@ export function DiscoverHome() {
           label={<Label>Featured Public Worlds</Label>}
           content={
             <DiscoverGroupGrid>
-              <RoomPreviewCard
-                avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
-                name="Arch Linux"
-                desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
-                memberCount={234}
-                options={
-                  <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                    Join
-                  </Button>
-                }
-              />
-              <RoomPreviewCard
-                avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
-                name="Arch Linux"
-                desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
-                memberCount={234}
-                options={
-                  <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                    Join
-                  </Button>
-                }
-              />
-              <RoomPreviewCard
-                avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
-                name="Arch Linux"
-                desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
-                memberCount={234}
-                options={
-                  <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                    Join
-                  </Button>
-                }
-              />
               <RoomPreviewCard
                 avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
                 name="Arch Linux"
@@ -79,20 +51,6 @@ export function DiscoverHome() {
           label={<Label>Featured Scenes</Label>}
           content={
             <DiscoverGroupGrid itemMinWidth={300} gap="md">
-              <FeaturedScene onClick={() => false}>
-                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
-                <FeaturedSceneContent>
-                  <Text variant="b3">Rad Designs</Text>
-                  <Text>Zombie city</Text>
-                </FeaturedSceneContent>
-              </FeaturedScene>
-              <FeaturedScene onClick={() => false}>
-                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
-                <FeaturedSceneContent>
-                  <Text variant="b3">Rad Designs</Text>
-                  <Text>Zombie city</Text>
-                </FeaturedSceneContent>
-              </FeaturedScene>
               <FeaturedScene onClick={() => false}>
                 <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
                 <FeaturedSceneContent>
