@@ -225,6 +225,7 @@ static JSClassDef js_light_class = {
 };
 
 static const JSCFunctionListEntry js_light_proto_funcs[] = {
+  JS_CGETSET_DEF("name", js_light_get_name, js_light_set_name),
   JS_CGETSET_DEF("type", js_light_get_type, NULL),
   JS_CGETSET_DEF("color", js_light_get_color, NULL),
   JS_CGETSET_DEF("intensity", js_light_get_intensity, js_light_set_intensity),

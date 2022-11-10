@@ -10,6 +10,7 @@
 #include "./websg.h"
 #include "./console.h"
 #include "./light.h"
+#include "./material.h"
 
 /**
  * Global State
@@ -38,6 +39,7 @@ export int32_t websg_initialize() {
 
   JSValue jsSceneGraphNamespace = JS_NewObject(ctx);
   js_define_light_api(ctx, &jsSceneGraphNamespace);
+  js_define_material_api(ctx, &jsSceneGraphNamespace);
   JS_SetPropertyStr(ctx, global, "WebSG", jsSceneGraphNamespace);
 
   return 0; 
