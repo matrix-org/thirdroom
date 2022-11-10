@@ -442,8 +442,10 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
 };
 
 export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial, remote = false) => {
+  const physics = getModule(ctx, PhysicsModule);
+  const { physicsWorld } = physics;
   const { world } = ctx;
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
@@ -469,7 +471,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   addRigidBody(ctx, eid, rigidBody);
 
-  addInteractableComponent(ctx, eid, InteractableType.Object);
+  addInteractableComponent(ctx, physics, eid, InteractableType.Object);
 
   return eid;
 };

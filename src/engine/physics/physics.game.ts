@@ -19,7 +19,7 @@ import { defineModule, getModule } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, disposeResource } from "../resource/resource.game";
 
-interface PhysicsModuleState {
+export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;

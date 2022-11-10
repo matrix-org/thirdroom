@@ -1,14 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import {
-  defineComponent,
-  Types,
-  defineQuery,
-  removeComponent,
-  addComponent,
-  hasComponent,
-  enterQuery,
-  exitQuery,
-} from "bitecs";
+import { defineComponent, Types, removeComponent, addComponent, hasComponent } from "bitecs";
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
@@ -20,6 +11,8 @@ import {
   RemoteAudioSource,
   RemoteGlobalAudioEmitter,
 } from "../../engine/audio/audio.game";
+import { getCamera } from "../../engine/camera/camera.game";
+import { OurPlayer } from "../../engine/component/Player";
 import { removeRecursive, Transform } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
@@ -31,9 +24,12 @@ import {
   ButtonActionState,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
+import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { isHost } from "../../engine/network/network.common";
 import {
-  getPeerIdIndexFromNetworkId,
+  GameNetworkState,
+  getPeerIndexFromNetworkId,
   Networked,
   NetworkModule,
   Owned,
@@ -46,8 +42,9 @@ import {
   focusShapeCastCollisionGroups,
   GrabCollisionGroup,
   grabShapeCastCollisionGroups,
+  removeCollisionGroupMembership,
 } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
@@ -66,7 +63,7 @@ import { InteractableAction, InteractableType, InteractionMessage, InteractionMe
 
 type InteractionModuleState = {
   clickEmitter?: RemoteGlobalAudioEmitter;
-  // HACK: - add duplicate obj cap config to interaction module until import issue is resolved
+  // HACK: add duplicate obj cap config to interaction module until import issue is resolved
   maxObjCap: number;
 };
 
@@ -108,7 +105,9 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
 
     addResourceRef(ctx, module.clickEmitter.resourceId);
 
-    enableActionMap(ctx, InteractionActionMap);
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, InteractionActionMap);
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
@@ -119,7 +118,7 @@ function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
   module.maxObjCap = message.value;
 }
 
-export const InteractionActionMap: ActionMap = {
+const InteractionActionMap: ActionMap = {
   id: "interaction",
   actions: [
     {
@@ -195,18 +194,14 @@ export const Interactable = defineComponent({
   type: Types.ui8,
 });
 
-const FocusComponent = defineComponent();
-
-export const GrabComponent = defineComponent({
-  handle1: Types.ui32,
-  handle2: Types.ui32,
-  joint: [Types.f32, 3],
+const FocusComponent = defineComponent({
+  focusedEntity: Types.eid,
 });
 
-const focusQuery = defineQuery([FocusComponent]);
-const enterFocusQuery = enterQuery(focusQuery);
-const exitFocusQuery = exitQuery(focusQuery);
-const grabQuery = defineQuery([GrabComponent]);
+export const GrabComponent = defineComponent({
+  grabbedEntity: Types.eid,
+  joint: [Types.f32, 3],
+});
 
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
@@ -240,23 +235,41 @@ let lastActiveScene = 0;
 let heldOffset = 0;
 
 export function InteractionSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
 
-  // hack - add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
+  // HACK: add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
   if (lastActiveScene !== ctx.activeScene) {
     const remoteScene = RemoteSceneComponent.get(ctx.activeScene);
-    if (remoteScene && interaction.clickEmitter) {
+    if (remoteScene && interaction.clickEmitter && !remoteScene.audioEmitters.includes(interaction.clickEmitter)) {
       remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
     }
     lastActiveScene = ctx.activeScene;
   }
 
-  // Focus
+  const rigs = inputControllerQuery(ctx.world);
 
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const camera = getCamera(ctx, eid);
+    const controller = getInputController(input, eid);
+
+    updateFocus(ctx, physics, eid, camera);
+
+    const authoritativeAndHosting = network.authoritative && isHost(network);
+
+    if (authoritativeAndHosting || !network.authoritative) {
+      updateDeletion(ctx, interaction, controller, eid);
+      updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
+    }
+  }
+}
+
+function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, camera: number) {
   // raycast outward from camera
-  const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+  const cameraMatrix = Transform.worldMatrix[camera];
   mat4.getRotation(_cameraWorldQuat, cameraMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
@@ -285,50 +298,61 @@ export function InteractionSystem(ctx: GameState) {
     eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
-    } else if (eid !== focusQuery(ctx.world)[0]) {
-      focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
-      addComponent(ctx.world, FocusComponent, eid);
+    } else {
+      addComponent(ctx.world, FocusComponent, rig);
+      FocusComponent.focusedEntity[rig] = eid;
     }
   } else {
     // clear focus
-    focusQuery(ctx.world).forEach((eid) => removeComponent(ctx.world, FocusComponent, eid));
+    removeComponent(ctx.world, FocusComponent, rig, true);
   }
 
-  const entered = enterFocusQuery(ctx.world);
+  // only update UI if it's our player
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+  if (ourPlayer) {
+    if (FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
+    if (!FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+  }
+}
 
-  if (entered[0]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
-
-  const exited = exitFocusQuery(ctx.world);
-
-  if (exited[0] && focusQuery(ctx.world).length === 0) sendInteractionMessage(ctx, InteractableAction.Unfocus);
-
-  // deletion
-  const deleteBtn = input.actions.get("Delete") as ButtonActionState;
+function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
+  const deleteBtn = controller.actions.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
-    const focused = focusQuery(ctx.world)[0];
+    const focused = FocusComponent.focusedEntity[rig];
     // TODO: For now we only delete owned objects
     if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
       removeRecursive(ctx.world, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }
+}
 
-  // Grab / Throw
-  let heldEntity = grabQuery(ctx.world)[0];
+function updateGrabThrow(
+  ctx: GameState,
+  interaction: InteractionModuleState,
+  physics: PhysicsModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  rig: number,
+  camera: number
+) {
+  let heldEntity = GrabComponent.grabbedEntity[rig];
 
-  const grabBtn = input.actions.get("Grab") as ButtonActionState;
-  const grabBtn2 = input.actions.get("Grab2") as ButtonActionState;
-  const throwBtn = input.actions.get("Throw") as ButtonActionState;
-  const throwBtn2 = input.actions.get("Throw2") as ButtonActionState;
+  const grabBtn = controller.actions.get("Grab") as ButtonActionState;
+  const grabBtn2 = controller.actions.get("Grab2") as ButtonActionState;
+  const throwBtn = controller.actions.get("Throw") as ButtonActionState;
+  const throwBtn2 = controller.actions.get("Throw2") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
 
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+
   // if holding and entity and throw is pressed
   if (heldEntity && throwPressed) {
-    removeComponent(ctx.world, GrabComponent, heldEntity);
+    removeComponent(ctx.world, GrabComponent, rig, true);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
@@ -337,8 +361,10 @@ export function InteractionSystem(ctx: GameState) {
     _impulse.fromArray(direction);
     RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
 
-    sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    if (ourPlayer) {
+      sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
@@ -347,9 +373,12 @@ export function InteractionSystem(ctx: GameState) {
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
-    removeComponent(ctx.world, GrabComponent, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    removeComponent(ctx.world, GrabComponent, rig, true);
+
+    if (ourPlayer) {
+      sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
@@ -358,7 +387,7 @@ export function InteractionSystem(ctx: GameState) {
     // if grab is pressed
   } else if (grabPressed) {
     // raycast outward from camera
-    const cameraMatrix = Transform.worldMatrix[ctx.activeCamera];
+    const cameraMatrix = Transform.worldMatrix[camera];
     mat4.getRotation(_cameraWorldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
@@ -398,29 +427,32 @@ export function InteractionSystem(ctx: GameState) {
             });
           } else {
             // otherwise attempt to take ownership
-            const newEid = takeOwnership(ctx, eid);
+            const newEid = takeOwnership(ctx, network, eid);
 
             if (newEid !== NOOP) {
-              addComponent(ctx.world, GrabComponent, newEid);
-              sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+              addComponent(ctx.world, GrabComponent, rig);
+              GrabComponent.grabbedEntity[rig] = newEid;
               heldEntity = newEid;
+              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
             } else {
-              addComponent(ctx.world, GrabComponent, eid);
-              sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              addComponent(ctx.world, GrabComponent, rig);
+              GrabComponent.grabbedEntity[rig] = eid;
+              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
             }
           }
         } else {
-          sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
       }
     }
   }
 
   // if still holding entity, move towards the held point
-  heldEntity = grabQuery(ctx.world)[0];
+  heldEntity = GrabComponent.grabbedEntity[rig];
+
   if (heldEntity) {
     // move held point upon scrolling
-    const [, scrollY] = input.actions.get("Scroll") as vec2;
+    const [, scrollY] = controller.actions.get("Scroll") as vec2;
     if (scrollY !== 0) {
       heldOffset += scrollY / 1000;
     }
@@ -429,9 +461,9 @@ export function InteractionSystem(ctx: GameState) {
     const heldPosition = Transform.position[heldEntity];
 
     const target = _target;
-    mat4.getTranslation(target, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getTranslation(target, Transform.worldMatrix[camera]);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
@@ -453,6 +485,7 @@ export function InteractionSystem(ctx: GameState) {
 
 function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
+
   const interactableType = Interactable.type[eid];
 
   if (!eid || !interactableType) {
@@ -470,7 +503,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     let ownerId;
 
     if (interactableType === InteractableType.Object) {
-      const ownerIdIndex = getPeerIdIndexFromNetworkId(Networked.networkId[eid]);
+      const ownerIdIndex = getPeerIndexFromNetworkId(Networked.networkId[eid]);
       ownerId = network.indexToPeerId.get(ownerIdIndex);
       if (hasComponent(ctx.world, Owned, eid)) {
         ownerId = peerId;
@@ -496,30 +529,61 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
   }
 }
 
-export function addInteractableComponent(ctx: GameState, eid: number, interactableType: InteractableType) {
+export function addInteractableComponent(
+  ctx: GameState,
+  physics: PhysicsModuleState,
+  eid: number,
+  interactableType: InteractableType
+) {
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
 
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const { physicsWorld } = physics;
 
   const rigidBody = RigidBody.store.get(eid);
-
-  if (rigidBody) {
-    for (let i = 0; i < rigidBody.numColliders(); i++) {
-      const colliderHandle = rigidBody.collider(i);
-      const collider = physicsWorld.getCollider(colliderHandle);
-
-      let collisionGroups = collider.collisionGroups();
-
-      collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
-      collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
-
-      collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
-      collider.setCollisionGroups(collisionGroups);
-    }
-  } else {
+  if (!rigidBody) {
     console.warn(
       `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
     );
+    return;
+  }
+
+  for (let i = 0; i < rigidBody.numColliders(); i++) {
+    const colliderHandle = rigidBody.collider(i);
+    const collider = physicsWorld.getCollider(colliderHandle);
+
+    let collisionGroups = collider.collisionGroups();
+
+    collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
+    collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
+
+    collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+    collider.setCollisionGroups(collisionGroups);
+  }
+}
+
+export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, eid: number) {
+  removeComponent(ctx.world, Interactable, eid);
+
+  const { physicsWorld } = physics;
+
+  const rigidBody = RigidBody.store.get(eid);
+  if (!rigidBody) {
+    console.warn(
+      `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
+    );
+    return;
+  }
+
+  for (let i = 0; i < rigidBody.numColliders(); i++) {
+    const colliderHandle = rigidBody.collider(i);
+    const collider = physicsWorld.getCollider(colliderHandle);
+
+    let collisionGroups = collider.collisionGroups();
+
+    collisionGroups = removeCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
+    collisionGroups = removeCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
+
+    collider.setCollisionGroups(collisionGroups);
   }
 }

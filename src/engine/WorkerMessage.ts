@@ -85,51 +85,9 @@ export interface SaveGLTFMessage extends WorkerMessage {
   buffer: ArrayBuffer;
 }
 
-export interface ReliableNetworkMessage extends WorkerMessage {
-  type: WorkerMessageType.ReliableNetworkMessage;
-  peerId: string;
-  packet: ArrayBuffer;
-}
-
-export interface UnreliableNetworkMessage extends WorkerMessage {
-  type: WorkerMessageType.UnreliableNetworkMessage;
-  peerId: string;
-  packet: ArrayBuffer;
-}
-
-export interface ReliableNetworkBroadcast extends WorkerMessage {
-  type: WorkerMessageType.ReliableNetworkBroadcast;
-  packet: ArrayBuffer;
-}
-
-export interface UnreliableNetworkBroadcast extends WorkerMessage {
-  type: WorkerMessageType.UnreliableNetworkBroadcast;
-  packet: ArrayBuffer;
-}
-
-export interface SetPeerIdMessage extends WorkerMessage {
-  type: WorkerMessageType.SetPeerId;
-  peerId: string;
-}
-
-export interface AddPeerIdMessage extends WorkerMessage {
-  type: WorkerMessageType.AddPeerId;
-  peerId: string;
-}
-
-export interface RemovePeerIdMessage extends WorkerMessage {
-  type: WorkerMessageType.RemovePeerId;
-  peerId: string;
-}
-
 export interface StateChangedMessage extends WorkerMessage {
   type: WorkerMessageType.StateChanged;
   state: any;
-}
-
-export interface SetHostMessage extends WorkerMessage {
-  type: WorkerMessageType.SetHost;
-  value: boolean;
 }
 
 export interface PlayAudioMessage extends WorkerMessage {
@@ -161,15 +119,7 @@ export type WorkerMessages =
   | StartGameWorkerMessage
   | ExportSceneMessage
   | SaveGLTFMessage
-  | ReliableNetworkMessage
-  | UnreliableNetworkMessage
-  | ReliableNetworkBroadcast
-  | UnreliableNetworkBroadcast
-  | SetPeerIdMessage
-  | AddPeerIdMessage
-  | RemovePeerIdMessage
   | StateChangedMessage
-  | SetHostMessage
   | PlayAudioMessage
   | SetAudioListenerMessage
   | SetAudioPeerEntityMessage;

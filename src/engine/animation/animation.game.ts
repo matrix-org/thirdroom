@@ -1,5 +1,5 @@
 import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery, enterQuery, IWorld, removeComponent } from "bitecs";
+import { addComponent, defineQuery, enterQuery, hasComponent, IWorld, removeComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
@@ -8,7 +8,8 @@ import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { Networked } from "../network/network.game";
+import { Networked, Owned } from "../network/network.game";
+// import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 
@@ -129,7 +130,12 @@ function processAnimations(ctx: GameState) {
     const animation = AnimationComponent.get(eid);
 
     // avatars exist within a parent container which has all other components for this entity
-    const parent = Transform.parent[eid] || eid;
+    const parent = Transform.parent[eid];
+    if (!parent) {
+      console.warn("cannot find parent container for avatar:", eid);
+      continue;
+    }
+
     const rigidBody = RigidBody.store.get(parent);
 
     if (animation && rigidBody) {
@@ -203,14 +209,17 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
 function getClipActionsUsingVelocity(
   ctx: GameState,
   physicsWorld: RAPIER.World,
-  parent: number,
+  eid: number,
   rigidBody: RAPIER.RigidBody,
   animation: IAnimationComponent
 ): AnimationAction[] {
-  const quaternion = Transform.quaternion[parent];
+  const quaternion = Transform.quaternion[eid];
 
-  const linvel = new Vector3().fromArray(Networked.velocity[parent]);
-  const vel = vec3.copy(_vel, Networked.velocity[parent]);
+  // if remote object, take velocity from Networked component
+  // otherwise, take velocity from entity's RigidBody
+  const remote = hasComponent(ctx.world, Networked, eid) && !hasComponent(ctx.world, Owned, eid);
+  const linvel = remote ? new Vector3().fromArray(Networked.velocity[eid]) : rigidBody.linvel();
+  const vel = remote ? vec3.copy(_vel, Networked.velocity[eid]) : vec3.set(_vel, linvel.x, linvel.y, linvel.z);
   const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
   const pitch = getPitch(quaternion);
@@ -227,11 +236,11 @@ function getClipActionsUsingVelocity(
   const strafingRight = angle2 < 50;
 
   const yRot = roll;
-  const yRotLast = lastYrot[parent];
+  const yRotLast = lastYrot[eid];
   const turningLeft = yRot - yRotLast > 0.1 * ctx.dt;
   const turningRight = yRot - yRotLast < -0.1 * ctx.dt;
   if (yRotLast !== yRot) {
-    lastYrot[parent] = yRot;
+    lastYrot[eid] = yRot;
   }
 
   const jumping = !isGrounded(ctx, physicsWorld, rigidBody);

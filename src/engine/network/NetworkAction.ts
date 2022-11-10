@@ -1,0 +1,15 @@
+export enum NetworkAction {
+  Create,
+  Delete,
+  UpdateChanged,
+  UpdateSnapshot,
+  FullChanged,
+  FullSnapshot,
+  Prefab,
+  InformPlayerNetworkId,
+  NewPeerSnapshot,
+  RemoveOwnershipMessage,
+  Command,
+  UpdateCamera,
+  UpdateNetworkId,
+}
