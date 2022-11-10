@@ -1,13 +1,23 @@
 import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
+import { BaseThreadContext } from "../module/module.common";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import { ILocalResourceManager, LocalResource, ResourceDefinition } from "./ResourceDefinition";
 
-interface ILocalResourceClass<Def extends ResourceDefinition> {
-  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<Def>;
+export interface ILocalResourceClass<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<
+    Def,
+    ThreadContext
+  >;
   resourceDef: Def;
 }
 
-export function defineLocalResourceClass<Def extends ResourceDefinition>(resourceDef: Def): ILocalResourceClass<Def> {
+export function defineLocalResourceClass<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+>(resourceDef: Def): ILocalResourceClass<Def, ThreadContext> {
   const { name, schema } = resourceDef;
 
   function LocalResourceClass(
@@ -38,6 +48,15 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
   Object.defineProperties(LocalResourceClass, {
     name: { value: kebabToPascalCase(name) },
     resourceDef: { value: resourceDef },
+  });
+
+  Object.defineProperties(LocalResourceClass.prototype, {
+    load: {
+      value() {
+        return Promise.resolve();
+      },
+    },
+    dispose: { value() {} },
   });
 
   for (const propName in schema) {
@@ -102,5 +121,5 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
     }
   }
 
-  return LocalResourceClass as unknown as ILocalResourceClass<Def>;
+  return LocalResourceClass as unknown as ILocalResourceClass<Def, ThreadContext>;
 }

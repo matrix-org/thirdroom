@@ -23,7 +23,6 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { Networked, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
@@ -32,6 +31,7 @@ import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGrou
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
+import { MaterialResource, MaterialType, RemoteMaterial } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { InteractableType } from "../interaction/interaction.common";
@@ -220,8 +220,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     const ballAudioData3 = createRemoteAudioData(ctx, { name: "Ball Audio Data 3", uri: "/audio/clink2.wav" });
     addResourceRef(ctx, ballAudioData3.resourceId);
 
-    const emissiveMaterial = createRemoteStandardMaterial(ctx, {
+    const emissiveMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Emissive Material",
+      type: MaterialType.Standard,
       baseColorFactor: [0, 0.3, 1, 1],
       emissiveFactor: [0.7, 0.7, 0.7],
       metallicFactor: 0,
@@ -230,16 +231,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     addResourceRef(ctx, emissiveMaterial.resourceId);
 
-    const mirrorMaterial = createRemoteStandardMaterial(ctx, {
+    const mirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Mirror Material",
+      type: MaterialType.Standard,
       baseColorFactor: [1, 1, 1, 1],
       metallicFactor: 1,
       roughnessFactor: 0,
     });
     addResourceRef(ctx, mirrorMaterial.resourceId);
 
-    const blackMirrorMaterial = createRemoteStandardMaterial(ctx, {
+    const blackMirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Black Mirror Material",
+      type: MaterialType.Standard,
       baseColorFactor: [0, 0, 0, 1],
       metallicFactor: 1,
       roughnessFactor: 0,

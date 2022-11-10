@@ -1,7 +1,6 @@
 import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
 import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
-import { MaterialAlphaMode, MaterialType } from "../material/material.common";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
 
 export const NametagResource = defineResource("nametag", {
@@ -151,6 +150,15 @@ export const ReflectionProbeResource = defineResource("reflection-probe", {
   size: PropType.vec3({ script: true, mutable: false }),
 });
 
+export enum MaterialAlphaMode {
+  OPAQUE,
+  MASK,
+  BLEND,
+}
+export enum MaterialType {
+  Standard,
+  Unlit,
+}
 export const MaterialResource = defineResource("material", {
   name: PropType.string({ default: "Material", script: true }),
   type: PropType.enum(MaterialType, { required: true, script: true }),
@@ -167,7 +175,7 @@ export const MaterialResource = defineResource("material", {
   occlusionTextureStrength: PropType.f32({ default: 1, script: true }),
   occlusionTexture: PropType.ref(TextureResource, { script: true }),
   emissiveStrength: PropType.f32({ default: 1, script: true }),
-  emissiveFactor: PropType.rgb({ default: [1, 1, 1], script: true }),
+  emissiveFactor: PropType.rgb({ default: [0, 0, 0], script: true }),
   emissiveTexture: PropType.ref(TextureResource, { script: true }),
   ior: PropType.f32({ default: 1.5, script: true }),
   transmissionFactor: PropType.f32({ default: 0, script: true }),
@@ -178,6 +186,8 @@ export const MaterialResource = defineResource("material", {
   attenuationDistance: PropType.f32({ default: 0, script: true }),
   attenuationColor: PropType.rgb({ default: [1, 1, 1], script: true }),
 });
+export type RemoteMaterial = RemoteResource<typeof MaterialResource>;
+export type LocalMaterial = LocalResource<typeof MaterialResource>;
 
 export enum LightType {
   Directional,

@@ -1,9 +1,9 @@
-import { CompressedTexture, DataTexture } from "three";
+import { CompressedTexture, Texture } from "three";
 
-import { getModule } from "../module/module.common";
+import { BaseThreadContext, getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResources, getResourceDisposed } from "../resource/resource.render";
-import { ImageResource, LocalImage } from "../resource/schema";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { ImageResource } from "../resource/schema";
 import { toArrayBuffer } from "../utils/arraybuffer";
 
 const HDRMimeType = "image/vnd.radiance";
@@ -16,90 +16,63 @@ export enum ImageFormat {
   RGBE = "rgbe",
 }
 
-export interface RGBELocalImageResourceProps {
-  format: ImageFormat.RGBE;
-  texture: DataTexture;
-}
+export class RendererImageResource extends defineLocalResourceClass<typeof ImageResource, RenderThreadState>(
+  ImageResource
+) {
+  format?: ImageFormat;
+  image?: ImageBitmap;
+  texture?: Texture | CompressedTexture;
 
-export interface RGBALocalImageResourceProps {
-  format: ImageFormat.RGBA;
-  image: ImageBitmap;
-}
+  async load(ctx: RenderThreadState) {
+    const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY } = getModule(ctx, RendererModule);
 
-export interface CompressedLocalImageResourceProps {
-  format: ImageFormat.RGBA;
-  texture: CompressedTexture;
-}
+    let uri: string;
+    let isObjectUrl = false;
 
-export type LocalImageResource = LocalImage &
-  (RGBALocalImageResourceProps | RGBELocalImageResourceProps | CompressedLocalImageResourceProps);
+    if (this.bufferView) {
+      const bufferView = this.bufferView;
+      const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
 
-export async function onLoadLocalImageResource(
-  ctx: RenderThreadState,
-  localImage: LocalImage
-): Promise<LocalImageResource> {
-  const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY } = getModule(ctx, RendererModule);
+      const blob = new Blob([buffer], {
+        type: this.mimeType,
+      });
 
-  let uri: string;
-  let isObjectUrl = false;
-
-  if (localImage.bufferView) {
-    const bufferView = localImage.bufferView;
-    const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
-
-    const blob = new Blob([buffer], {
-      type: localImage.mimeType,
-    });
-
-    uri = URL.createObjectURL(blob);
-    isObjectUrl = true;
-  } else {
-    uri = localImage.uri;
-  }
-
-  const isRGBE = uri.endsWith(HDRExtension) || localImage.mimeType === HDRMimeType;
-  const isKTX2 = uri.endsWith(KTX2Extension) || localImage.mimeType === KTX2MimeType;
-
-  const localImageResource = localImage as LocalImageResource;
-
-  try {
-    if (isRGBE) {
-      const texture = await rgbeLoader.loadAsync(uri);
-      localImageResource.format = ImageFormat.RGBE;
-      (localImageResource as RGBELocalImageResourceProps).texture = texture;
-    } else if (isKTX2) {
-      const texture = await ktx2Loader.loadAsync(uri);
-      localImageResource.format = ImageFormat.RGBA;
-      (localImageResource as CompressedLocalImageResourceProps).texture = texture;
+      uri = URL.createObjectURL(blob);
+      isObjectUrl = true;
     } else {
-      const loader = localImage.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
-      const image = await loader.loadAsync(uri);
-      localImageResource.format = ImageFormat.RGBA;
-      (localImageResource as RGBALocalImageResourceProps).image = image;
+      uri = this.uri;
     }
-  } finally {
-    if (isObjectUrl) {
-      URL.revokeObjectURL(uri);
+
+    const isRGBE = uri.endsWith(HDRExtension) || this.mimeType === HDRMimeType;
+    const isKTX2 = uri.endsWith(KTX2Extension) || this.mimeType === KTX2MimeType;
+
+    try {
+      if (isRGBE) {
+        const texture = await rgbeLoader.loadAsync(uri);
+        this.format = ImageFormat.RGBE;
+        this.texture = texture;
+      } else if (isKTX2) {
+        const texture = await ktx2Loader.loadAsync(uri);
+        this.format = ImageFormat.RGBA;
+        this.texture = texture;
+      } else {
+        const loader = this.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
+        const image = await loader.loadAsync(uri);
+        this.format = ImageFormat.RGBA;
+        this.image = image;
+      }
+    } finally {
+      if (isObjectUrl) {
+        URL.revokeObjectURL(uri);
+      }
     }
   }
 
-  return localImageResource;
-}
-
-export function LocalImageResourceSystem(ctx: RenderThreadState) {
-  const images = getLocalResources(ctx, ImageResource) as unknown as LocalImageResource[];
-
-  for (let i = images.length - 1; i >= 0; i--) {
-    const imageResource = images[i];
-
-    if (getResourceDisposed(ctx, imageResource.resourceId)) {
-      if ("image" in imageResource) {
-        imageResource.image.close();
-      } else {
-        imageResource.texture.dispose();
-      }
-
-      images.splice(i, 1);
+  dispose(ctx: BaseThreadContext) {
+    if (this.image) {
+      this.image.close();
+    } else if (this.texture) {
+      this.texture.dispose();
     }
   }
 }

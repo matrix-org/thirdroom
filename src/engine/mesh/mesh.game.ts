@@ -15,14 +15,20 @@ import {
 } from "../allocator/ObjectBufferView";
 import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { BufferResource, BufferViewResource, RemoteTexture } from "../resource/schema";
+import {
+  BufferResource,
+  BufferViewResource,
+  MaterialResource,
+  MaterialType,
+  RemoteMaterial,
+  RemoteTexture,
+} from "../resource/schema";
 import {
   SharedMeshResource,
   MeshResourceType,
@@ -412,7 +418,8 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
         },
         material:
           material ||
-          createRemoteStandardMaterial(ctx, {
+          ctx.resourceManager.createResource(MaterialResource, {
+            type: MaterialType.Standard,
             baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
             roughnessFactor: 0.8,
             metallicFactor: 0.8,
@@ -440,7 +447,8 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  createRemoteStandardMaterial(ctx, {
+  ctx.resourceManager.createResource(MaterialResource, {
+    type: MaterialType.Standard,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
     roughnessFactor: 0.8,
     metallicFactor: 0.8,
@@ -471,7 +479,8 @@ export const createSimpleCube = (ctx: GameState, size: number, material?: Remote
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  createRemoteStandardMaterial(ctx, {
+  ctx.resourceManager.createResource(MaterialResource, {
+    type: MaterialType.Standard,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
     roughnessFactor: 0.8,
     metallicFactor: 0.8,

@@ -15,8 +15,6 @@ import {
   updateMatrixWorld,
 } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { MaterialAlphaMode } from "../material/material.common";
-import { createRemoteStandardMaterial, createRemoteUnlitMaterial, RemoteMaterial } from "../material/material.game";
 import {
   createRemoteInstancedMesh,
   createRemoteLightMap,
@@ -67,11 +65,15 @@ import {
   ImageResource,
   LightResource,
   LightType,
+  MaterialAlphaMode,
+  MaterialResource,
+  MaterialType,
   RemoteBuffer,
   RemoteBufferView,
   RemoteCamera,
   RemoteImage,
   RemoteLight,
+  RemoteMaterial,
   RemoteSampler,
   RemoteTexture,
   SamplerMapping,
@@ -879,14 +881,14 @@ async function _loadGLTFTexture(
   return remoteTexture;
 }
 
-export async function loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteMaterial> {
+export async function loadGLTFMaterial(resource: GLTFResource, index: number): Promise<RemoteMaterial> {
   let materialPromise = resource.materialPromises.get(index);
 
   if (materialPromise) {
     return materialPromise;
   }
 
-  materialPromise = _loadGLTFMaterial(ctx, resource, index);
+  materialPromise = _loadGLTFMaterial(resource, index);
 
   resource.materialPromises.set(index, materialPromise);
 
@@ -899,7 +901,7 @@ const GLTFAlphaModes: { [key: string]: MaterialAlphaMode } = {
   BLEND: MaterialAlphaMode.BLEND,
 };
 
-async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteMaterial> {
+async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise<RemoteMaterial> {
   if (!resource.root.materials || !resource.root.materials[index]) {
     throw new Error(`Material ${index} not found`);
   }
@@ -931,7 +933,8 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
           : undefined,
     });
 
-    remoteMaterial = createRemoteUnlitMaterial(ctx, {
+    remoteMaterial = resource.manager.createResource(MaterialResource, {
+      type: MaterialType.Unlit,
       name,
       doubleSided,
       alphaMode: alphaMode ? GLTFAlphaModes[alphaMode] : undefined,
@@ -974,7 +977,8 @@ async function _loadGLTFMaterial(ctx: GameState, resource: GLTFResource, index: 
         : undefined,
       thicknessTexture: thicknessTextureInfo ? loadGLTFTexture(resource, thicknessTextureInfo.index) : undefined,
     });
-    remoteMaterial = createRemoteStandardMaterial(ctx, {
+    remoteMaterial = resource.manager.createResource(MaterialResource, {
+      type: MaterialType.Standard,
       name,
       doubleSided,
       alphaMode: alphaMode ? GLTFAlphaModes[alphaMode] : undefined,
@@ -1122,7 +1126,7 @@ async function _createGLTFMeshPrimitive(
   const { indices, attributes, material } = await promiseObject({
     indices: primitive.indices !== undefined ? loadGLTFAccessor(ctx, resource, primitive.indices) : undefined,
     attributes: promiseObject(attributesPromises),
-    material: primitive.material !== undefined ? loadGLTFMaterial(ctx, resource, primitive.material) : undefined,
+    material: primitive.material !== undefined ? loadGLTFMaterial(resource, primitive.material) : undefined,
   });
 
   return {

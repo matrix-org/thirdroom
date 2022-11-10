@@ -2,6 +2,7 @@ import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import { TypedArrayConstructor32 } from "../allocator/types";
+import { BaseThreadContext } from "../module/module.common";
 
 export interface ResourceDefinition<S extends Schema = Schema> {
   name: string;
@@ -461,7 +462,7 @@ type ResourcePropValue<
     number
   : Def["schema"][Prop]["type"] extends "ref"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
+    ? Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
@@ -498,9 +499,14 @@ export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true>
   removeRef(): void;
 } & { constructor: { name: string; resourceDef: Def } };
 
-export type LocalResource<Def extends ResourceDefinition> = Resource<Def, false> & {
+export type LocalResource<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> = Resource<Def, false> & {
   manager: ILocalResourceManager;
   __props: { [key: string]: any };
+  load(ctx: ThreadContext): Promise<void>;
+  dispose(ctx: ThreadContext): void;
 };
 
 type RequiredProps<Def extends ResourceDefinition> = {
