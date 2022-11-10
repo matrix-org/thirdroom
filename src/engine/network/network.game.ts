@@ -78,6 +78,8 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     const { incomingRingBuffer, outgoingRingBuffer, authoritative } =
       await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
 
+    if (authoritative) console.info("Authoritative networking activated");
+
     return {
       incomingRingBuffer,
       outgoingRingBuffer,
