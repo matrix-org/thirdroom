@@ -22,7 +22,7 @@ import {
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
-import { LightResource, LightType } from "./schema";
+import { LightResource, LightType, MaterialResource, MaterialType } from "./schema";
 import { decodeString } from "./strings";
 
 type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
@@ -331,6 +331,67 @@ export class ScriptResourceManager implements IRemoteResourceManager {
           return 1;
         },
         dispose_light: (ptr: number) => {
+          const resourceId = this.ptrToResourceId.get(ptr);
+
+          if (!resourceId) {
+            return 0;
+          }
+
+          if (disposeResource(this.ctx, resourceId)) {
+            return 1;
+          }
+
+          return 0;
+        },
+        get_material_by_name: (namePtr: number) => {
+          const resources = this.resources;
+          const name = decodeString(namePtr, this.U8Heap);
+
+          for (let i = 0; i < resources.length; i++) {
+            const resource = resources[i];
+            const def = resource.constructor.resourceDef;
+
+            if (def === MaterialResource && resource.name === name) {
+              return resource.ptr;
+            }
+          }
+
+          return 0;
+        },
+        create_material: (type: MaterialType) => {
+          const resource = this.createResource(MaterialResource, {
+            type,
+          });
+          return resource.ptr;
+        },
+        set_material_name: (materialPtr: number, strPtr: number): number => {
+          const resourceId = this.ptrToResourceId.get(materialPtr);
+
+          if (!resourceId) {
+            return 0;
+          }
+
+          const resource = this.getResource(MaterialResource, resourceId);
+
+          if (!resource) {
+            return 0;
+          }
+
+          const value = decodeString(strPtr, this.U8Heap);
+          const store = resource.__props["name"];
+          store.value = value;
+          store.prevPtr = strPtr;
+          store.view[0] = strPtr;
+
+          if (store.resourceId) {
+            disposeResource(this.ctx, store.resourceId);
+          }
+
+          store.resourceId = createStringResource(this.ctx, value);
+
+          return 1;
+        },
+        dispose_material: (ptr: number) => {
           const resourceId = this.ptrToResourceId.get(ptr);
 
           if (!resourceId) {
