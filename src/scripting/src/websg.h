@@ -31,9 +31,27 @@ import_websg(create_light) Light *websg_create_light(LightType type);
 import_websg(set_light_name) int websg_set_light_name(Light *light, const char *name);
 import_websg(dispose_light) int websg_dispose_light(Light *light);
 
+typedef struct BufferView {} BufferView;
+
 typedef struct Sampler {} Sampler;
 
-typedef struct Image {} Image;
+typedef struct Image {
+  const char *name;
+  const char *uri;
+  const char *mime_type;
+  BufferView *buffer_view;
+  bool flip_y;
+} Image;
+
+import_websg(get_image_by_name) Light *websg_get_image_by_name(const char *name);
+import_websg(create_image_from_uri) Light *websg_create_image_from_uri(const char *uri, bool flipY);
+import_websg(create_image_from_buffer_view) Light *websg_create_image_from_buffer_view(
+  BufferView *bufferView,
+  const char *mimeType, 
+  bool flipY
+);
+import_websg(set_image_name) int websg_set_image_name(Image *image, const char *name);
+import_websg(dispose_image) int websg_dispose_image(Image *image);
 
 typedef enum {
   Linear = 3000,

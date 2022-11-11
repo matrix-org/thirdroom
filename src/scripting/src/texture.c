@@ -10,6 +10,7 @@
 #include "jsutils.h"
 #include "websg.h"
 #include "texture.h"
+#include "image.h"
 
 /**
  * WebSG.Texture
@@ -17,25 +18,16 @@
 
 typedef struct JSTexture {
   Texture *texture;
+  JSValue source;
 } JSTexture;
-
-static JSTexture *create_js_texture(JSContext *ctx, Texture *texture) {
-  JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
-  jsTexture->texture = texture;
-  return jsTexture;
-}
 
 JSClassID js_texture_class_id;
 
 static JSValue js_texture_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  if (argc < 3 || !JS_IsNumber(argv[0]) || !JS_IsNumber(argv[1]) || !JS_IsNumber(argv[2])) {
+  Image *source = JS_GetOpaque(argv[0], js_image_class_id);
+
+  if (argc < 3 || !source || !JS_IsNumber(argv[1]) || !JS_IsNumber(argv[2])) {
     JS_ThrowTypeError(ctx, "new Texture() expects 3 arguments: source, sampler, and encoding.");
-  }
-
-  int32_t source;
-
-  if (JS_ToInt32(ctx, &source, argv[0])) {
-    return JS_EXCEPTION;
   }
 
   int32_t sampler;
@@ -50,11 +42,9 @@ static JSValue js_texture_constructor(JSContext *ctx, JSValueConst new_target, i
     return JS_EXCEPTION;
   }
 
-  Texture *texture = websg_create_texture((Image*)source, (Sampler*)sampler, (TextureEncoding)encoding);
+  Texture *texture = websg_create_texture(source, (Sampler*)sampler, (TextureEncoding)encoding);
   JSValue textureObj = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  // TODO: parse and set args on node
 
   if (JS_IsException(proto)) {
     websg_dispose_texture(texture);
@@ -71,7 +61,9 @@ static JSValue js_texture_constructor(JSContext *ctx, JSValueConst new_target, i
     return JS_EXCEPTION;
   }
 
-  JSTexture *jsTexture = create_js_texture(ctx, texture);
+  JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
+  jsTexture->texture = texture;
+  jsTexture->source = JS_DupValue(ctx, argv[0]);
   JS_SetOpaque(textureObj, jsTexture);
 
   return textureObj;
@@ -149,15 +141,8 @@ static JSValue js_get_texture_by_name(JSContext *ctx, JSValueConst this_val, int
   const char *name = JS_ToCString(ctx, argv[0]);
   Texture *texture = websg_get_texture_by_name(name);
   JS_FreeCString(ctx, name);
-
-  if (!texture) {
-    return JS_UNDEFINED;
-  } else {
-    JSValue textureObj = JS_NewObjectClass(ctx, js_texture_class_id);
-    JSTexture *jsTexture = create_js_texture(ctx, texture);
-    JS_SetOpaque(textureObj, jsTexture);
-    return textureObj;
-  }
+  // TODO: Look up existing JS texture objects before creating a new one
+  return create_texture_from_ptr(ctx, texture);
 }
 
 JSValue create_texture_from_ptr(JSContext *ctx, Texture *texture) {
@@ -166,7 +151,9 @@ JSValue create_texture_from_ptr(JSContext *ctx, Texture *texture) {
   }
 
   JSValue textureObj = JS_NewObjectClass(ctx, js_texture_class_id);
-  JSTexture *jsTexture = create_js_texture(ctx, texture);
+  JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
+  jsTexture->texture = texture;
+  jsTexture->source = create_image_from_ptr(ctx, texture->source);
   JS_SetOpaque(textureObj, jsTexture);
 
   return textureObj;

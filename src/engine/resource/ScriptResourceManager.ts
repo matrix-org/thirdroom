@@ -22,7 +22,17 @@ import {
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
-import { LightResource, LightType, MaterialResource, MaterialType, TextureResource } from "./schema";
+import {
+  BufferViewResource,
+  ImageResource,
+  LightResource,
+  LightType,
+  MaterialResource,
+  MaterialType,
+  RemoteSampler,
+  SamplerResource,
+  TextureResource,
+} from "./schema";
 import { decodeString } from "./strings";
 
 type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
@@ -382,9 +392,66 @@ export class ScriptResourceManager implements IRemoteResourceManager {
         },
         set_light_name: stringSetter(LightResource, "name"),
         dispose_light: resourceDisposer,
+        get_image_by_name: getResourceByName(ImageResource),
+        create_image_from_uri: (uriPtr: number, flipY: number) => {
+          const uri = decodeString(uriPtr, this.U8Heap);
+          const resource = this.createResource(ImageResource, {
+            uri,
+            flipY: !!flipY,
+          });
+          return resource.ptr;
+        },
+        create_image_from_buffer_view: (bufferViewPtr: number, mimeTypePtr: number, flipY: number) => {
+          const bufferViewResourceId = this.ptrToResourceId.get(bufferViewPtr);
+
+          if (!bufferViewResourceId) {
+            return 0;
+          }
+
+          const bufferViewResource = this.getResource(BufferViewResource, bufferViewResourceId);
+
+          if (!bufferViewResource) {
+            return 0;
+          }
+
+          const mimeType = decodeString(mimeTypePtr, this.U8Heap);
+          const resource = this.createResource(ImageResource, {
+            mimeType,
+            bufferView: bufferViewResource,
+          });
+
+          return resource.ptr;
+        },
+        set_image_name: stringSetter(ImageResource, "name"),
+        dispose_image: resourceDisposer,
         get_texture_by_name: getResourceByName(TextureResource),
         create_texture: (sourcePtr: number, samplerPtr: number, encoding: number) => {
-          return 0;
+          const sourceResourceId = this.ptrToResourceId.get(sourcePtr);
+
+          if (!sourceResourceId) {
+            return 0;
+          }
+
+          const sourceResource = this.getResource(ImageResource, sourceResourceId);
+
+          if (!sourceResource) {
+            return 0;
+          }
+
+          let samplerResource: RemoteSampler | undefined = undefined;
+          const samplerResourceId = this.ptrToResourceId.get(samplerPtr);
+
+          if (samplerResourceId) {
+            samplerResource = this.getResource(SamplerResource, samplerResourceId);
+          }
+
+          const resource = this.createResource(TextureResource, {
+            source: sourceResource,
+            sampler: samplerResource,
+            encoding: encoding || undefined,
+          });
+
+          return resource.ptr;
         },
         set_texture_name: stringSetter(TextureResource, "name"),
         dispose_texture: resourceDisposer,

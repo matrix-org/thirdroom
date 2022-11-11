@@ -1,6 +1,7 @@
 #ifndef __texture_h
 #define __texture_h
 #include "../include/quickjs/quickjs.h"
+#include "./websg.h";
 
 JSValue create_texture_from_ptr(JSContext *ctx, Texture *texture);
 

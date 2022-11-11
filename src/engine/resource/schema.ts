@@ -138,7 +138,7 @@ export enum TextureEncoding {
 export const TextureResource = defineResource("texture", {
   name: PropType.string({ default: "Texture", script: true }),
   sampler: PropType.ref(SamplerResource, { script: true, mutable: false }),
-  source: PropType.ref(ImageResource, { script: true, mutable: false }),
+  source: PropType.ref(ImageResource, { script: true, mutable: false, required: true }),
   encoding: PropType.enum(TextureEncoding, { default: TextureEncoding.Linear, script: true, mutable: false }),
 });
 export type RemoteTexture = RemoteResource<typeof TextureResource>;
