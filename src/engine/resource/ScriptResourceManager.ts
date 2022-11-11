@@ -22,7 +22,7 @@ import {
   RemoteResourceStringStore,
   ResourceDefinition,
 } from "./ResourceDefinition";
-import { LightResource, LightType, MaterialResource, MaterialType } from "./schema";
+import { LightResource, LightType, MaterialResource, MaterialType, TextureResource } from "./schema";
 import { decodeString } from "./strings";
 
 type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
@@ -124,6 +124,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     });
     const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer, props);
     setRemoteResource(this.ctx, resourceId, resource);
+    console.log("alloc", ptr, resourceId);
     this.ptrToResourceId.set(ptr, resourceId);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
     return resource;
@@ -277,133 +278,136 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       }
     };
 
+    const getResourceByName = (resourceType: ResourceDefinition) => (namePtr: number) => {
+      const resources = this.resources;
+      const name = decodeString(namePtr, this.U8Heap);
+
+      for (let i = 0; i < resources.length; i++) {
+        const resource = resources[i];
+        const def = resource.constructor.resourceDef;
+
+        if (def === resourceType && resource.name === name) {
+          return resource.ptr;
+        }
+      }
+
+      return 0;
+    };
+
+    const stringSetter =
+      (resourceType: ResourceDefinition, propName: string) => (resourcePtr: number, strPtr: number) => {
+        const resourceId = this.ptrToResourceId.get(resourcePtr);
+
+        if (!resourceId) {
+          return 0;
+        }
+
+        const resource = this.getResource(resourceType, resourceId);
+
+        if (!resource) {
+          return 0;
+        }
+
+        const value = decodeString(strPtr, this.U8Heap);
+        const store = resource.__props[propName] as RemoteResourceStringStore;
+        store.value = value;
+        store.prevPtr = strPtr;
+        store.view[0] = strPtr;
+
+        if (store.resourceIdView[0]) {
+          disposeResource(this.ctx, store.resourceIdView[0]);
+        }
+
+        store.resourceIdView[0] = createStringResource(this.ctx, value);
+
+        return 1;
+      };
+
+    const refSetter =
+      (resourceType: ResourceDefinition, refType: ResourceDefinition, propName: string) =>
+      (resourcePtr: number, refPtr: number): number => {
+        const resourceId = this.ptrToResourceId.get(resourcePtr);
+
+        if (!resourceId) {
+          return 0;
+        }
+
+        const resource = this.getResource(resourceType, resourceId);
+
+        if (!resource) {
+          return 0;
+        }
+
+        const refResourceId = this.ptrToResourceId.get(refPtr) || 0;
+        const refResource = this.getResource(refType, refResourceId);
+        const store = resource.__props[propName] as RemoteResourceRefStore;
+        console.log(propName, resourcePtr, refPtr, resourceId, refResourceId, refResource);
+        store.value = refResource;
+        store.view[0] = refPtr;
+
+        if (store.resourceIdView[0]) {
+          disposeResource(this.ctx, store.resourceIdView[0]);
+        }
+
+        store.resourceIdView[0] = refResourceId;
+
+        return 1;
+      };
+
+    const resourceDisposer = (resourcePtr: number) => {
+      const resourceId = this.ptrToResourceId.get(resourcePtr);
+
+      if (!resourceId) {
+        return 0;
+      }
+
+      if (disposeResource(this.ctx, resourceId)) {
+        return 1;
+      }
+
+      return 0;
+    };
+
     return {
       env: {
         memory: this.memory,
       },
       websg: {
-        get_light_by_name: (namePtr: number) => {
-          const resources = this.resources;
-          const name = decodeString(namePtr, this.U8Heap);
-
-          for (let i = 0; i < resources.length; i++) {
-            const resource = resources[i];
-            const def = resource.constructor.resourceDef;
-
-            if (def === LightResource && resource.name === name) {
-              return resource.ptr;
-            }
-          }
-
-          return 0;
-        },
+        get_light_by_name: getResourceByName(LightResource),
         create_light: (type: LightType) => {
           const resource = this.createResource(LightResource, {
             type,
           });
           return resource.ptr;
         },
-        set_light_name: (lightPtr: number, strPtr: number): number => {
-          const resourceId = this.ptrToResourceId.get(lightPtr);
-
-          if (!resourceId) {
-            return 0;
-          }
-
-          const resource = this.getResource(LightResource, resourceId);
-
-          if (!resource) {
-            return 0;
-          }
-
-          const value = decodeString(strPtr, this.U8Heap);
-          const store = resource.__props["name"];
-          store.value = value;
-          store.prevPtr = strPtr;
-          store.view[0] = strPtr;
-
-          if (store.resourceId) {
-            disposeResource(this.ctx, store.resourceId);
-          }
-
-          store.resourceId = createStringResource(this.ctx, value);
-
-          return 1;
-        },
-        dispose_light: (ptr: number) => {
-          const resourceId = this.ptrToResourceId.get(ptr);
-
-          if (!resourceId) {
-            return 0;
-          }
-
-          if (disposeResource(this.ctx, resourceId)) {
-            return 1;
-          }
-
+        set_light_name: stringSetter(LightResource, "name"),
+        dispose_light: resourceDisposer,
+        get_texture_by_name: getResourceByName(TextureResource),
+        create_texture: (sourcePtr: number, samplerPtr: number, encoding: number) => {
           return 0;
         },
-        get_material_by_name: (namePtr: number) => {
-          const resources = this.resources;
-          const name = decodeString(namePtr, this.U8Heap);
-
-          for (let i = 0; i < resources.length; i++) {
-            const resource = resources[i];
-            const def = resource.constructor.resourceDef;
-
-            if (def === MaterialResource && resource.name === name) {
-              return resource.ptr;
-            }
-          }
-
-          return 0;
-        },
+        set_texture_name: stringSetter(TextureResource, "name"),
+        dispose_texture: resourceDisposer,
+        get_material_by_name: getResourceByName(MaterialResource),
         create_material: (type: MaterialType) => {
           const resource = this.createResource(MaterialResource, {
             type,
           });
           return resource.ptr;
         },
-        set_material_name: (materialPtr: number, strPtr: number): number => {
-          const resourceId = this.ptrToResourceId.get(materialPtr);
-
-          if (!resourceId) {
-            return 0;
-          }
-
-          const resource = this.getResource(MaterialResource, resourceId);
-
-          if (!resource) {
-            return 0;
-          }
-
-          const value = decodeString(strPtr, this.U8Heap);
-          const store = resource.__props["name"];
-          store.value = value;
-          store.prevPtr = strPtr;
-          store.view[0] = strPtr;
-
-          if (store.resourceId) {
-            disposeResource(this.ctx, store.resourceId);
-          }
-
-          store.resourceId = createStringResource(this.ctx, value);
-
-          return 1;
-        },
-        dispose_material: (ptr: number) => {
-          const resourceId = this.ptrToResourceId.get(ptr);
-
-          if (!resourceId) {
-            return 0;
-          }
-
-          if (disposeResource(this.ctx, resourceId)) {
-            return 1;
-          }
-
-          return 0;
-        },
+        set_material_name: stringSetter(MaterialResource, "name"),
+        set_material_base_color_texture: refSetter(MaterialResource, TextureResource, "baseColorTexture"),
+        set_material_metallic_roughness_texture: refSetter(
+          MaterialResource,
+          TextureResource,
+          "metallicRoughnessTexture"
+        ),
+        set_material_normal_texture: refSetter(MaterialResource, TextureResource, "normalTexture"),
+        set_material_occlusion_texture: refSetter(MaterialResource, TextureResource, "occlusionTexture"),
+        set_material_emissive_texture: refSetter(MaterialResource, TextureResource, "emissiveTexture"),
+        set_material_thickness_texture: refSetter(MaterialResource, TextureResource, "thicknessTexture"),
+        set_material_transmission_texture: refSetter(MaterialResource, TextureResource, "transmissionTexture"),
+        dispose_material: resourceDisposer,
       },
       wasi_snapshot_preview1: {
         environ_sizes_get: () => {

@@ -10,6 +10,7 @@
 #include "jsutils.h"
 #include "websg.h"
 #include "material.h"
+#include "texture.h"
 
 /**
  * WebSG.Material
@@ -20,6 +21,13 @@ typedef struct JSMaterial {
   JSValue baseColorFactor;
   JSValue emissiveFactor;
   JSValue attenuationColor;
+  JSValue baseColorTexture;
+  JSValue metallicRoughnessTexture;
+  JSValue normalTexture;
+  JSValue occlusionTexture;
+  JSValue emissiveTexture;
+  JSValue thicknessTexture;
+  JSValue transmissionTexture;
 } JSMaterial;
 
 static JSMaterial *create_js_material(JSContext *ctx, Material *material) {
@@ -28,6 +36,13 @@ static JSMaterial *create_js_material(JSContext *ctx, Material *material) {
   jsMaterial->baseColorFactor = JS_CreateFloat32Array(ctx, material->base_color_factor, 4);
   jsMaterial->emissiveFactor = JS_CreateFloat32Array(ctx, material->emissive_factor, 3);
   jsMaterial->attenuationColor = JS_CreateFloat32Array(ctx, material->attenuation_color, 3);
+  jsMaterial->baseColorTexture = create_texture_from_ptr(ctx, material->base_color_texture);
+  jsMaterial->metallicRoughnessTexture = create_texture_from_ptr(ctx, material->metallic_roughness_texture);
+  jsMaterial->normalTexture = create_texture_from_ptr(ctx, material->normal_texture);
+  jsMaterial->occlusionTexture = create_texture_from_ptr(ctx, material->occlusion_texture);
+  jsMaterial->emissiveTexture = create_texture_from_ptr(ctx, material->emissive_texture);
+  jsMaterial->thicknessTexture = create_texture_from_ptr(ctx, material->thickness_texture);
+  jsMaterial->transmissionTexture = create_texture_from_ptr(ctx, material->transmission_texture);
   return jsMaterial;
 }
 
@@ -175,6 +190,31 @@ static JSValue js_material_get_base_color_factor(JSContext *ctx, JSValueConst th
   }
 }
 
+static JSValue js_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->baseColorTexture);
+  }
+}
+
+static JSValue js_material_set_base_color_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_base_color_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->baseColorTexture);
+    jsMaterial->baseColorTexture = val;
+
+    return JS_UNDEFINED;
+  }
+}
+
 static JSValue js_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val) {
   JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
 
@@ -217,6 +257,30 @@ static JSValue js_material_set_roughness_factor(JSContext *ctx, JSValueConst thi
   }
 }
 
+static JSValue js_material_get_metallic_roughness_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->metallicRoughnessTexture);
+  }
+}
+
+static JSValue js_material_set_metallic_roughness_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_metallic_roughness_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->metallicRoughnessTexture);
+    jsMaterial->metallicRoughnessTexture = val;
+    return JS_UNDEFINED;
+  }
+}
+
 static JSValue js_material_get_normal_texture_scale(JSContext *ctx, JSValueConst this_val) {
   JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
 
@@ -238,6 +302,31 @@ static JSValue js_material_set_normal_texture_scale(JSContext *ctx, JSValueConst
   }
 }
 
+static JSValue js_material_get_normal_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->normalTexture);
+  }
+}
+
+static JSValue js_material_set_normal_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_normal_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->normalTexture);
+    jsMaterial->normalTexture = val;
+
+    return JS_UNDEFINED;
+  }
+}
+
 static JSValue js_material_get_occlusion_texture_strength(JSContext *ctx, JSValueConst this_val) {
   JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
 
@@ -255,6 +344,30 @@ static JSValue js_material_set_occlusion_texture_strength(JSContext *ctx, JSValu
     return JS_EXCEPTION;
   } else {
     jsMaterial->material->occlusion_texture_strength = JS_VALUE_GET_FLOAT64(val);
+    return JS_UNDEFINED;
+  }
+}
+
+static JSValue js_material_get_occlusion_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->occlusionTexture);
+  }
+}
+
+static JSValue js_material_set_occlusion_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_occlusion_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->occlusionTexture);
+    jsMaterial->occlusionTexture = val;
     return JS_UNDEFINED;
   }
 }
@@ -287,6 +400,30 @@ static JSValue js_material_get_emissive_factor(JSContext *ctx, JSValueConst this
     return JS_EXCEPTION;
   } else {
     return JS_DupValue(ctx, jsMaterial->emissiveFactor);
+  }
+}
+
+static JSValue js_material_get_emissive_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->emissiveTexture);
+  }
+}
+
+static JSValue js_material_set_emissive_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_emissive_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->emissiveTexture);
+    jsMaterial->emissiveTexture = val;
+    return JS_UNDEFINED;
   }
 }
 
@@ -332,6 +469,30 @@ static JSValue js_material_set_transmission_factor(JSContext *ctx, JSValueConst 
   }
 }
 
+static JSValue js_material_get_transmission_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->transmissionTexture);
+  }
+}
+
+static JSValue js_material_set_transmission_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_transmission_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->transmissionTexture);
+    jsMaterial->transmissionTexture = val;
+    return JS_UNDEFINED;
+  }
+}
+
 static JSValue js_material_get_thickness_factor(JSContext *ctx, JSValueConst this_val) {
   JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
 
@@ -349,6 +510,30 @@ static JSValue js_material_set_thickness_factor(JSContext *ctx, JSValueConst thi
     return JS_EXCEPTION;
   } else {
     jsMaterial->material->thickness_factor = JS_VALUE_GET_FLOAT64(val);
+    return JS_UNDEFINED;
+  }
+}
+
+static JSValue js_material_get_thickness_texture(JSContext *ctx, JSValueConst this_val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DupValue(ctx, jsMaterial->thicknessTexture);
+  }
+}
+
+static JSValue js_material_set_thickness_texture(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  JSMaterial *jsMaterial = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!jsMaterial) {
+    return JS_EXCEPTION;
+  } else {
+    Texture *texture = get_texture_from_js_val(ctx, val);
+    websg_set_material_thickness_texture(jsMaterial->material, texture);
+    JS_FreeValue(ctx, jsMaterial->thicknessTexture);
+    jsMaterial->thicknessTexture = val;
     return JS_UNDEFINED;
   }
 }
@@ -402,19 +587,50 @@ static const JSCFunctionListEntry js_material_proto_funcs[] = {
   JS_CGETSET_DEF("alphaCutoff", js_material_get_alpha_cutoff, js_material_set_alpha_cutoff),
   JS_CGETSET_DEF("alphaMode", js_material_get_alpha_mode, js_material_set_alpha_mode),
   JS_CGETSET_DEF("baseColorFactor", js_material_get_base_color_factor, NULL),
+  JS_CGETSET_DEF("baseColorTexture", js_material_get_base_color_texture, js_material_set_base_color_texture),
   JS_CGETSET_DEF("metallicFactor", js_material_get_metallic_factor, js_material_set_metallic_factor),
   JS_CGETSET_DEF("roughnessFactor", js_material_get_roughness_factor, js_material_set_roughness_factor),
+  JS_CGETSET_DEF(
+    "metallicRoughnessTexture",
+    js_material_get_metallic_roughness_texture,
+    js_material_set_metallic_roughness_texture
+  ),
   JS_CGETSET_DEF("normalTextureScale", js_material_get_normal_texture_scale, js_material_set_normal_texture_scale),
+  JS_CGETSET_DEF(
+    "normalTexture",
+    js_material_get_normal_texture,
+    js_material_set_normal_texture
+  ),
   JS_CGETSET_DEF(
     "occlusionTextureStrength",
     js_material_get_occlusion_texture_strength,
     js_material_set_occlusion_texture_strength
   ),
+  JS_CGETSET_DEF(
+    "occlusionTexture",
+    js_material_get_occlusion_texture,
+    js_material_set_occlusion_texture
+  ),
   JS_CGETSET_DEF("emissiveStrength", js_material_get_emissive_strength, js_material_set_emissive_strength),
   JS_CGETSET_DEF("emissiveFactor", js_material_get_emissive_factor, NULL),
+  JS_CGETSET_DEF(
+    "emissiveTexture",
+    js_material_get_emissive_texture,
+    js_material_set_emissive_texture
+  ),
   JS_CGETSET_DEF("ior", js_material_get_ior, js_material_set_ior),
   JS_CGETSET_DEF("transmissionFactor", js_material_get_transmission_factor, js_material_set_transmission_factor),
+  JS_CGETSET_DEF(
+    "transmissionTexture",
+    js_material_get_transmission_texture,
+    js_material_set_transmission_texture
+  ),
   JS_CGETSET_DEF("thicknessFactor", js_material_get_thickness_factor, js_material_set_thickness_factor),
+  JS_CGETSET_DEF(
+    "transmissionTexture",
+    js_material_get_transmission_texture,
+    js_material_set_transmission_texture
+  ),
   JS_CGETSET_DEF("attenuationDistance", js_material_get_attenuation_distance, js_material_set_attenuation_distance),
   JS_CGETSET_DEF("attenuationColor", js_material_get_attenuation_color, NULL),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Material", JS_PROP_CONFIGURABLE),

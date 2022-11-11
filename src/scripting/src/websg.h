@@ -31,6 +31,27 @@ import_websg(create_light) Light *websg_create_light(LightType type);
 import_websg(set_light_name) int websg_set_light_name(Light *light, const char *name);
 import_websg(dispose_light) int websg_dispose_light(Light *light);
 
+typedef struct Sampler {} Sampler;
+
+typedef struct Image {} Image;
+
+typedef enum {
+  Linear = 3000,
+  sRGB = 3001,
+} TextureEncoding;
+
+typedef struct Texture {
+  const char *name;
+  Sampler *sampler;
+  Image *source;
+  TextureEncoding encoding;
+} Texture;
+
+import_websg(get_texture_by_name) Texture *websg_get_texture_by_name(const char *name);
+import_websg(create_texture) Texture *websg_create_texture(Image *source, Sampler *sampler, TextureEncoding encoding);
+import_websg(set_texture_name) int websg_set_texture_name(Texture *texture, const char *name);
+import_websg(dispose_texture) int websg_dispose_texture(Texture *texture);
+
 typedef enum  {
   Standard,
   Unlit,
@@ -41,8 +62,6 @@ typedef enum {
   MASK,
   BLEND,
 } MaterialAlphaMode;
-
-typedef struct Texture {} Texture;
 
 typedef struct Material {
   const char *name;
@@ -74,6 +93,34 @@ typedef struct Material {
 import_websg(get_material_by_name) Material *websg_get_material_by_name(const char *name);
 import_websg(create_material) Material *websg_create_material(MaterialType type);
 import_websg(set_material_name) int websg_set_material_name(Material *material, const char *name);
+import_websg(set_material_base_color_texture) int websg_set_material_base_color_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_metallic_roughness_texture) int websg_set_material_metallic_roughness_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_normal_texture) int websg_set_material_normal_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_occlusion_texture) int websg_set_material_occlusion_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_emissive_texture) int websg_set_material_emissive_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_transmission_texture) int websg_set_material_transmission_texture(
+  Material *material,
+  Texture *texture
+);
+import_websg(set_material_thickness_texture) int websg_set_material_thickness_texture(
+  Material *material,
+  Texture *texture
+);
 import_websg(dispose_material) int websg_dispose_material(Material *material);
 
 #endif
