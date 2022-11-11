@@ -51,7 +51,7 @@ export class OMIColliderExtension extends Extension {
 
       if (colliderDef.extents !== undefined) collider.setExtents(colliderDef.extents);
       if (colliderDef.radius !== undefined) collider.setRadius(colliderDef.radius);
-      if (colliderDef.height !== undefined) collider.setRadius(colliderDef.height);
+      if (colliderDef.height !== undefined) collider.setHeight(colliderDef.height);
       if (colliderDef.mesh !== undefined) collider.setMesh(context.meshes[colliderDef.mesh!]);
 
       return collider;
