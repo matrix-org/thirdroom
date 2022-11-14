@@ -17,36 +17,104 @@ import {
 } from "../../components/featured-scene/FeaturedScene";
 import { Text } from "../../../atoms/text/Text";
 import { useStateEvents } from "../../../hooks/useStateEvents";
+import { RepositoryEvents } from "./DiscoverView";
+import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
+import { getAvatarHttpUrl } from "../../../utils/avatar";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 
 export function DiscoverHome({ room }: { room: Room }) {
-  useStateEvents(room, "m.room.name");
+  const { session, platform } = useHydrogen(true);
+  const featuredRooms = useStateEvents(room, RepositoryEvents.FeaturedRooms);
+  const featuredWorlds = useStateEvents(room, RepositoryEvents.FeaturedWorlds);
+  // const FeaturedScenes = useStateEvents(room, RepositoryEvents.FeaturedScenes);
 
   return (
     <Scroll>
       <Content className="DiscoverHome__content">
-        <DiscoverGroup
-          label={<Label>Featured Public Worlds</Label>}
-          content={
-            <DiscoverGroupGrid>
-              <RoomPreviewCard
-                avatar={<Avatar shape="circle" size="lg" bgColor="blue" name="Arch linux" />}
-                name="Arch Linux"
-                desc="Free play games room | No harrassment or spam | !games for full list | Chat channel: #gamer-zone:matrix.org"
-                memberCount={234}
-                options={
-                  <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                    Join
-                  </Button>
-                }
-              />
-            </DiscoverGroupGrid>
-          }
-          footer={
-            <div className="flex justify-end">
-              <DiscoverMoreButton text="Browse All Public Worlds" iconSrc={ArrowForwardIC} />
-            </div>
-          }
-        />
+        {featuredRooms.size === 0 ? null : (
+          <DiscoverGroup
+            label={<Label>Featured Public Rooms</Label>}
+            content={
+              <DiscoverGroupGrid>
+                {[...featuredRooms].map(([eventId, stateEvent]) => (
+                  <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
+                    {(summaryData) => (
+                      <RoomPreviewCard
+                        avatar={
+                          <Avatar
+                            imageSrc={
+                              summaryData.avatarUrl &&
+                              getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
+                            }
+                            shape="rounded"
+                            size="lg"
+                            bgColor="blue"
+                            name={summaryData.name}
+                          />
+                        }
+                        name={summaryData.name}
+                        desc={summaryData.topic}
+                        memberCount={summaryData.memberCount}
+                        options={
+                          <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
+                            Join
+                          </Button>
+                        }
+                      />
+                    )}
+                  </RoomSummaryProvider>
+                ))}
+              </DiscoverGroupGrid>
+            }
+            footer={
+              <div className="flex justify-end">
+                <DiscoverMoreButton text="Browse All Public Rooms" iconSrc={ArrowForwardIC} />
+              </div>
+            }
+          />
+        )}
+        {featuredWorlds.size === 0 ? null : (
+          <DiscoverGroup
+            label={<Label>Featured Public Worlds</Label>}
+            content={
+              <DiscoverGroupGrid>
+                {[...featuredWorlds].map(([eventId, stateEvent]) => (
+                  <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
+                    {(summaryData) => (
+                      <RoomPreviewCard
+                        avatar={
+                          <Avatar
+                            imageSrc={
+                              summaryData.avatarUrl &&
+                              getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
+                            }
+                            shape="circle"
+                            size="lg"
+                            bgColor="blue"
+                            name={summaryData.name}
+                          />
+                        }
+                        name={summaryData.name}
+                        desc={summaryData.topic}
+                        memberCount={summaryData.memberCount}
+                        options={
+                          <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
+                            Join
+                          </Button>
+                        }
+                      />
+                    )}
+                  </RoomSummaryProvider>
+                ))}
+              </DiscoverGroupGrid>
+            }
+            footer={
+              <div className="flex justify-end">
+                <DiscoverMoreButton text="Browse All Public Worlds" iconSrc={ArrowForwardIC} />
+              </div>
+            }
+          />
+        )}
         <DiscoverGroup
           label={<Label>Featured Scenes</Label>}
           content={

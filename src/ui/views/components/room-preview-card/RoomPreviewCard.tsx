@@ -9,31 +9,37 @@ import "./RoomPreviewCard.css";
 
 interface RoomPreviewCardProps {
   className?: string;
-  avatar: ReactNode;
-  name: string | ReactNode;
-  desc: string | ReactNode;
-  memberCount: number;
+  avatar?: ReactNode;
+  name?: string | ReactNode;
+  desc?: string | ReactNode;
+  memberCount?: number;
   options?: ReactNode;
 }
 
 export function RoomPreviewCard({ className, avatar, name, desc, memberCount, options }: RoomPreviewCardProps) {
   return (
     <div className={classNames("RoomPreviewCard", "flex items-center gap-xs", className)}>
-      <div className="shrink-0">{avatar}</div>
+      <div className="shrink-0 flex">{avatar}</div>
       <div className="grow flex items-center gap-md">
         <div className="grow">
-          <Text variant="b2" className="truncate" weight="medium">
-            {name}
-          </Text>
-          <div className="flex items-center gap-xxs">
-            <Icon size="sm" src={PeoplesIC} />
-            <Text variant="b3" weight="bold">
-              {memberCount}
+          {name && (
+            <Text variant="b2" className="truncate" weight="medium">
+              {name}
             </Text>
-          </div>
-          <Text className="truncate" variant="b3">
-            {desc}
-          </Text>
+          )}
+          {memberCount && (
+            <div className="flex items-center gap-xxs">
+              <Icon size="sm" src={PeoplesIC} />
+              <Text variant="b3" weight="bold">
+                {memberCount}
+              </Text>
+            </div>
+          )}
+          {desc && (
+            <Text className="truncate" variant="b3">
+              {desc}
+            </Text>
+          )}
         </div>
         {options && <div className="shrink-0">{options}</div>}
       </div>
