@@ -1,7 +1,4 @@
 import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
-import { AccessorComponentType, AccessorType } from "../accessor/accessor.common";
-import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../audio/audio.common";
-import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../mesh/mesh.common";
 
 export const NametagResource = defineResource("nametag", {
   name: PropType.string(),
@@ -103,6 +100,20 @@ export const MediaStreamSourceResource = defineResource("media-stream-source", {
   gain: PropType.f32({ default: 1, min: 0, script: true }),
 });
 
+export enum AudioEmitterType {
+  Positional,
+  Global,
+}
+export enum AudioEmitterOutput {
+  Environment,
+  Music,
+  Voice,
+}
+export enum AudioEmitterDistanceModel {
+  Linear,
+  Inverse,
+  Exponential,
+}
 export const AudioEmitterResource = defineResource("audio-emitter", {
   name: PropType.string({ default: "AudioEmitter", script: true }),
   type: PropType.enum(AudioEmitterType, { required: true, script: true }),
@@ -117,10 +128,6 @@ export const AudioEmitterResource = defineResource("audio-emitter", {
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
 });
 
-export enum ImageFormat {
-  RGBA = "rgba",
-  RGBE = "rgbe",
-}
 export const ImageResource = defineResource("image", {
   name: PropType.string({ default: "Image", script: true }),
   uri: PropType.string({ script: true, mutable: false }),
@@ -147,7 +154,7 @@ export type LocalTexture = LocalResource<typeof TextureResource>;
 export const ReflectionProbeResource = defineResource("reflection-probe", {
   name: PropType.string({ default: "ReflectionProbe", script: true }),
   reflectionProbeTexture: PropType.ref(TextureResource, { script: true, mutable: false }),
-  size: PropType.vec3({ script: true, mutable: false }),
+  size: PropType.vec3({ script: true }),
 });
 
 export enum MaterialAlphaMode {
@@ -231,6 +238,14 @@ export const CameraResource = defineResource("camera", {
 export type RemoteCamera = RemoteResource<typeof CameraResource>;
 export type LocalCamera = LocalResource<typeof CameraResource>;
 
+export enum AccessorComponentType {
+  Int8 = 5120,
+  Uint8 = 5121,
+  Int16 = 5122,
+  Uint16 = 5123,
+  Uint32 = 5125,
+  Float32 = 5126,
+}
 export const SparseAccessorResource = defineResource("sparse-accessor", {
   count: PropType.u32({ min: 1, mutable: false, required: true, script: true }),
   indicesBufferView: PropType.ref(BufferViewResource, { mutable: false, required: true, script: true }),
@@ -240,6 +255,15 @@ export const SparseAccessorResource = defineResource("sparse-accessor", {
   valuesByteOffset: PropType.u32({ mutable: false, script: true }),
 });
 
+export enum AccessorType {
+  SCALAR,
+  VEC2,
+  VEC3,
+  VEC4,
+  MAT2,
+  MAT3,
+  MAT4,
+}
 export const AccessorResource = defineResource("accessor", {
   name: PropType.string({ default: "Accessor", script: true }),
   bufferView: PropType.ref(BufferViewResource, { mutable: false, script: true }),
@@ -254,6 +278,32 @@ export const AccessorResource = defineResource("accessor", {
   sparse: PropType.ref(SparseAccessorResource, { mutable: false, script: true }),
 });
 
+export enum MeshPrimitiveMode {
+  POINTS,
+  LINES,
+  LINE_LOOP,
+  LINE_STRIP,
+  TRIANGLES,
+  TRIANGLE_STRIP,
+  TRIANGLE_FAN,
+}
+export enum MeshPrimitiveAttributeIndex {
+  POSITION,
+  NORMAL,
+  TANGENT,
+  TEXCOORD_0,
+  TEXCOORD_1,
+  COLOR_0,
+  JOINTS_0,
+  WEIGHTS_0,
+}
+export enum InstancedMeshAttributeIndex {
+  TRANSLATION,
+  ROTATION,
+  SCALE,
+  LIGHTMAP_OFFSET,
+  LIGHTMAP_SCALE,
+}
 export const MeshPrimitiveResource = defineResource("mesh-primitive", {
   name: PropType.string({ default: "MeshPrimitive", script: true }),
   // Max 8 attributes, indexed by MeshPrimitiveAttributeIndex
@@ -309,10 +359,10 @@ export const SkinResource = defineResource("skin", {
 export const NodeResource = defineResource("node", {
   eid: PropType.u32({ script: false }),
   name: PropType.string({ default: "Node", script: true }),
-  parent: PropType.selfRef({ mutable: false }),
-  firstChild: PropType.selfRef({ mutable: false }),
-  prevSibling: PropType.selfRef({ mutable: false }),
-  nextSibling: PropType.selfRef({ mutable: false }),
+  parent: PropType.selfRef(),
+  firstChild: PropType.selfRef(),
+  prevSibling: PropType.selfRef(),
+  nextSibling: PropType.selfRef(),
   position: PropType.vec3({ script: true }),
   quaternion: PropType.quat({ script: true }),
   scale: PropType.vec3({ script: true, default: [1, 1, 1] }),
@@ -320,7 +370,7 @@ export const NodeResource = defineResource("node", {
   worldMatrix: PropType.mat4({ script: true, mutable: false }),
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
-  static: PropType.bool({ script: true, default: true }),
+  isStatic: PropType.bool({ script: true, default: true }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),
   instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),

@@ -41,3 +41,8 @@ int JS_DefineReadOnlyPropertyValueStr(JSContext *ctx, JSValueConst this_obj, con
   JS_FreeAtom(ctx, atom);
   return ret;
 }
+
+JSValue JS_NewIteratorFromPtr(JSContext *ctx, void *arr, int size) {
+
+}
+

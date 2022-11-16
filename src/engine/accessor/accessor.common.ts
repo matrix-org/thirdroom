@@ -1,4 +1,5 @@
 import { ResourceId } from "../resource/resource.common";
+import { AccessorComponentType, AccessorType } from "../resource/schema";
 
 export const AccessorResourceType = "accessor";
 
@@ -19,29 +20,10 @@ export type AccessorSparseIndicesArrayConstructor =
 
 export type AccessorSparseIndicesArray = Uint8Array | Uint16Array | Uint32Array;
 
-export enum AccessorComponentType {
-  Int8 = 5120,
-  Uint8 = 5121,
-  Int16 = 5122,
-  Uint16 = 5123,
-  Uint32 = 5125,
-  Float32 = 5126,
-}
-
 export type AccessorSparseIndicesComponentType =
   | AccessorComponentType.Uint8
   | AccessorComponentType.Uint16
   | AccessorComponentType.Uint32;
-
-export enum AccessorType {
-  SCALAR = "SCALAR",
-  VEC2 = "VEC2",
-  VEC3 = "VEC3",
-  VEC4 = "VEC4",
-  MAT2 = "MAT2",
-  MAT3 = "MAT3",
-  MAT4 = "MAT4",
-}
 
 export const AccessorComponentTypeToTypedArray: {
   [key: number]: AccessorTypedArrayConstructor;

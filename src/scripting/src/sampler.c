@@ -7,70 +7,79 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 
-#include "script-context.h"
 #include "jsutils.h"
 #include "websg.h"
-#include "texture.h"
-#include "image.h"
+#include "sampler.h"
 
 /**
  * WebSG.Texture
  */
 
-typedef struct JSTexture {
-  Texture *texture;
-} JSTexture;
+typedef struct JSSampler {
+  Sampler *sampler;
+} JSSampler;
 
-JSClassID js_texture_class_id;
+JSClassID js_sampler_class_id;
 
-static JSValue js_texture_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  Image *source = JS_GetOpaque(argv[0], js_image_class_id);
+static JSValue js_sampler_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
+  int32_t magFilter = 0;
 
-  if (argc < 3 || !source || !JS_IsNumber(argv[1]) || !JS_IsNumber(argv[2])) {
-    JS_ThrowTypeError(ctx, "new Texture() expects 3 arguments: source, sampler, and encoding.");
+  if (argc > 0 && JS_ToInt32(ctx, &magFilter, argv[0])) {
+    JS_ThrowTypeError(ctx, "magFilter should be an integer.");
   }
 
-  int32_t sampler;
+  int32_t minFilter = 0;
 
-  if (JS_ToInt32(ctx, &sampler, argv[1])) {
-    return JS_EXCEPTION;
-  }
-  
-  int32_t encoding;
-
-  if (JS_ToInt32(ctx, &encoding, argv[2])) {
-    return JS_EXCEPTION;
+  if (argc > 1 && JS_ToInt32(ctx, &minFilter, argv[1])) {
+    JS_ThrowTypeError(ctx, "minFilter should be an integer.");
   }
 
-  Texture *texture = websg_create_texture(source, (Sampler*)sampler, (TextureEncoding)encoding);
-  JSValue textureObj = JS_UNDEFINED;
+  int32_t wrapS = 0;
+
+  if (argc > 2 && JS_ToInt32(ctx, &wrapS, argv[2])) {
+    JS_ThrowTypeError(ctx, "wrapS should be an integer.");
+  }
+
+  int32_t wrapT = 0;
+
+  if (argc > 3 && JS_ToInt32(ctx, &wrapT, argv[3])) {
+    JS_ThrowTypeError(ctx, "wrapT should be an integer.");
+  }
+
+  int32_t mapping = 0;
+
+  if (argc > 4 && JS_ToInt32(ctx, &mapping, argv[4])) {
+    JS_ThrowTypeError(ctx, "mapping should be an integer.");
+  }
+
+  Sampler *sampler = websg_create_sampler(magFilter, minFilter, wrapS, wrapT, mapping);
+  JSValue samplerObj = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
 
   if (JS_IsException(proto)) {
-    websg_dispose_texture(texture);
-    JS_FreeValue(ctx, textureObj);
+    websg_dispose_sampler(sampler);
+    JS_FreeValue(ctx, samplerObj);
     return JS_EXCEPTION;
   }
     
-  textureObj = JS_NewObjectProtoClass(ctx, proto, js_texture_class_id);
+  samplerObj = JS_NewObjectProtoClass(ctx, proto, js_sampler_class_id);
   JS_FreeValue(ctx, proto);
 
-  if (JS_IsException(textureObj)) {
-    websg_dispose_texture(texture);
-    JS_FreeValue(ctx, textureObj);
+  if (JS_IsException(samplerObj)) {
+    websg_dispose_sampler(sampler);
+    JS_FreeValue(ctx, samplerObj);
     return JS_EXCEPTION;
   }
 
-  JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
-  jsTexture->texture = texture;
-  JS_SetOpaque(textureObj, jsTexture);
-  set_js_val_from_ptr(ctx, texture, textureObj);
+  JSSampler *jsSampler = js_malloc(ctx, sizeof(JSSampler));
+  jsSampler->sampler = sampler;
+  JS_SetOpaque(samplerObj, jsSampler);
 
-  return textureObj;
+  return samplerObj;
 }
 
 static JSValue js_texture_get_name(JSContext *ctx, JSValueConst this_val) {
-  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
+  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_sampler_class_id);
 
   if (!jsTexture) {
     return JS_EXCEPTION;
@@ -80,7 +89,7 @@ static JSValue js_texture_get_name(JSContext *ctx, JSValueConst this_val) {
 }
 
 static JSValue js_texture_set_name(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
+  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_sampler_class_id);
 
   if (!jsTexture) {
     return JS_EXCEPTION;
@@ -91,7 +100,7 @@ static JSValue js_texture_set_name(JSContext *ctx, JSValueConst this_val, JSValu
 }
 
 static JSValue js_texture_get_encoding(JSContext *ctx, JSValueConst this_val) {
-  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
+  JSTexture *jsTexture = JS_GetOpaque2(ctx, this_val, js_sampler_class_id);
 
   if (!jsTexture) {
     return JS_EXCEPTION;
@@ -101,10 +110,9 @@ static JSValue js_texture_get_encoding(JSContext *ctx, JSValueConst this_val) {
 }
 
 static void js_texture_finalizer(JSRuntime *rt, JSValue val) {
-  JSTexture *jsTexture = JS_GetOpaque(val, js_texture_class_id);
+  JSTexture *jsTexture = JS_GetOpaque(val, js_sampler_class_id);
   websg_dispose_texture(jsTexture->texture);
   js_free_rt(rt, jsTexture);
-  
 }
 
 static JSClassDef js_texture_class = {
@@ -121,15 +129,15 @@ static const JSCFunctionListEntry js_texture_proto_funcs[] = {
 static JSValue js_define_texture_class(JSContext *ctx) {
   JSRuntime *rt = JS_GetRuntime(ctx);
 
-  JS_NewClassID(&js_texture_class_id);
-  JS_NewClass(rt, js_texture_class_id, &js_texture_class);
+  JS_NewClassID(&js_sampler_class_id);
+  JS_NewClass(rt, js_sampler_class_id, &js_texture_class);
 
   JSValue texture_proto = JS_NewObject(ctx);
   JS_SetPropertyFunctionList(ctx, texture_proto, js_texture_proto_funcs, countof(js_texture_proto_funcs));
   
-  JSValue texture_class = JS_NewCFunction2(ctx, js_texture_constructor, "Texture", 1, JS_CFUNC_constructor, 1);
+  JSValue texture_class = JS_NewCFunction2(ctx, js_sampler_constructor, "Texture", 1, JS_CFUNC_constructor, 1);
   JS_SetConstructor(ctx, texture_class, texture_proto);
-  JS_SetClassProto(ctx, js_texture_class_id, texture_proto);
+  JS_SetClassProto(ctx, js_sampler_class_id, texture_proto);
 
   return texture_class;
 }
@@ -151,16 +159,11 @@ JSValue create_texture_from_ptr(JSContext *ctx, Texture *texture) {
     return JS_UNDEFINED;
   }
 
-  JSValue textureObj = get_js_val_from_ptr(ctx, texture);
-
-  if (JS_IsUndefined(textureObj)) {
-    JSValue textureObj = JS_NewObjectClass(ctx, js_texture_class_id);
-    JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
-    jsTexture->texture = texture;
-    jsTexture->source = create_image_from_ptr(ctx, texture->source);
-    JS_SetOpaque(textureObj, jsTexture);
-    set_js_val_from_ptr(ctx, texture, textureObj);
-  }
+  JSValue textureObj = JS_NewObjectClass(ctx, js_sampler_class_id);
+  JSTexture *jsTexture = js_malloc(ctx, sizeof(JSTexture));
+  jsTexture->texture = texture;
+  jsTexture->source = create_image_from_ptr(ctx, texture->source);
+  JS_SetOpaque(textureObj, jsTexture);
 
   return textureObj;
 }
@@ -170,7 +173,7 @@ Texture *get_texture_from_js_val(JSContext *ctx, JSValue val) {
     return NULL;
   }
 
-  JSTexture *jsTexture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+  JSTexture *jsTexture = JS_GetOpaque2(ctx, val, js_sampler_class_id);
 
   if (!jsTexture) {
     return NULL;

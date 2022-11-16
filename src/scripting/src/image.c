@@ -7,6 +7,7 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 
+#include "script-context.h"
 #include "jsutils.h"
 #include "websg.h"
 #include "image.h"
@@ -192,10 +193,15 @@ JSValue create_image_from_ptr(JSContext *ctx, Image *image) {
     return JS_UNDEFINED;
   }
 
-  JSValue imageObj = JS_NewObjectClass(ctx, js_image_class_id);
-  JSImage *jsImage = js_malloc(ctx, sizeof(JSImage));
-  jsImage->image = image;
-  JS_SetOpaque(imageObj, jsImage);
+  JSValue imageObj = get_js_val_from_ptr(ctx, image);
+
+  if (JS_IsUndefined(imageObj)) {
+    imageObj = JS_NewObjectClass(ctx, js_image_class_id);
+    JSImage *jsImage = js_malloc(ctx, sizeof(JSImage));
+    jsImage->image = image;
+    JS_SetOpaque(imageObj, jsImage);
+    set_js_val_from_ptr(ctx, image, imageObj);
+  }
 
   return imageObj;
 }

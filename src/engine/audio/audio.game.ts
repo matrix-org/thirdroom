@@ -1,7 +1,6 @@
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
-  AudioEmitterDistanceModel,
   AudioMessageType,
   AudioResourceProps,
   audioStateSchema,
@@ -21,8 +20,6 @@ import {
   SharedAudioSourceResource,
   SharedMediaStreamResource,
   SharedAudioEmitterResource,
-  AudioEmitterType,
-  AudioEmitterOutput,
 } from "./audio.common";
 import {
   commitToObjectTripleBuffer,
@@ -35,7 +32,7 @@ import { addResourceRef, createResource, disposeResource } from "../resource/res
 import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RemoteNametag, updateRemoteNametags } from "../nametag/nametag.game";
-import { RemoteBufferView } from "../resource/schema";
+import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType, RemoteBufferView } from "../resource/schema";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;

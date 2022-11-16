@@ -15,13 +15,19 @@ import {
   Vector3,
 } from "three";
 
-import { MeshPrimitiveAttribute, MeshPrimitiveMode } from "../mesh/mesh.common";
+import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
 import { LocalMeshPrimitiveAttributes } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { getLocalResources } from "../resource/resource.render";
-import { LocalMaterial, MaterialAlphaMode, MaterialResource, MaterialType } from "../resource/schema";
+import {
+  LocalMaterial,
+  MaterialAlphaMode,
+  MaterialResource,
+  MaterialType,
+  MeshPrimitiveMode,
+} from "../resource/schema";
 import { RendererTextureResource } from "../texture/texture.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
 

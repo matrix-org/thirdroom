@@ -33,7 +33,54 @@ import_websg(dispose_light) int websg_dispose_light(Light *light);
 
 typedef struct BufferView {} BufferView;
 
-typedef struct Sampler {} Sampler;
+typedef enum SamplerMagFilter {
+  NEAREST = 9728,
+  LINEAR = 9729,
+} SamplerMagFilter;
+
+typedef enum SamplerMinFilter {
+  NEAREST = 9728,
+  LINEAR = 9729,
+  NEAREST_MIPMAP_NEAREST = 9984,
+  LINEAR_MIPMAP_NEAREST = 9985,
+  NEAREST_MIPMAP_LINEAR = 9986,
+  LINEAR_MIPMAP_LINEAR = 9987,
+} SamplerMinFilter;
+
+typedef enum SamplerWrap {
+  CLAMP_TO_EDGE = 33071,
+  MIRRORED_REPEAT = 33648,
+  REPEAT = 10497,
+} SamplerWrap;
+
+typedef enum SamplerMapping {
+  UVMapping,
+  CubeReflectionMapping,
+  CubeRefractionMapping,
+  EquirectangularReflectionMapping,
+  EquirectangularRefractionMapping,
+  CubeUVReflectionMapping,
+} SamplerMapping;
+
+typedef struct Sampler {
+  const char *name;
+  SamplerMagFilter mag_filter;
+  SamplerMinFilter min_filter;
+  SamplerWrap wrap_s;
+  SamplerWrap wrap_t; 
+  SamplerMapping mapping;
+} Sampler;
+
+import_websg(get_sampler_by_name) Sampler *websg_get_sampler_by_name(const char *name);
+import_websg(create_sampler) Sampler *websg_create_sampler(
+  SamplerMagFilter mag_filter,
+  SamplerMinFilter min_filter,
+  SamplerWrap wrap_s,
+  SamplerWrap wrap_t,
+  SamplerMapping mapping
+);
+import_websg(set_sampler_name) int websg_set_sampler_name(Sampler *sampler, const char *name);
+import_websg(dispose_sampler) int websg_dispose_sampler(Sampler *sampler);
 
 typedef struct Image {
   const char *name;

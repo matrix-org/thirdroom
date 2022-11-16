@@ -7,6 +7,7 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 
+#include "./script-context.h"
 #include "./websg.h"
 #include "./console.h"
 #include "./light.h"
@@ -33,6 +34,10 @@ JSAtom onUpdateAtom;
 export int32_t websg_initialize() {
   rt = JS_NewRuntime();
   ctx = JS_NewContext(rt);
+
+  ScriptContext *script = malloc(sizeof(ScriptContext));
+  script->ptr_to_val = JS_NewObject(ctx);
+
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
 
   JSValue global = JS_GetGlobalObject(ctx);

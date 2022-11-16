@@ -3,7 +3,6 @@ import { mat4, vec2 } from "gl-matrix";
 import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
-import { AudioEmitterOutput } from "../audio/audio.common";
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
@@ -58,6 +57,8 @@ import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./MX_portal";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
+  AccessorType,
+  AudioEmitterOutput,
   BufferResource,
   BufferViewResource,
   CameraResource,
@@ -1008,6 +1009,16 @@ async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise
   return remoteMaterial;
 }
 
+const GLTFAccessorTypeToAccessorType: { [key: string]: AccessorType } = {
+  SCALAR: AccessorType.SCALAR,
+  VEC2: AccessorType.VEC2,
+  VEC3: AccessorType.VEC3,
+  VEC4: AccessorType.VEC4,
+  MAT2: AccessorType.MAT2,
+  MAT3: AccessorType.MAT3,
+  MAT4: AccessorType.MAT4,
+};
+
 export async function loadGLTFAccessor(
   ctx: GameState,
   resource: GLTFResource,
@@ -1052,7 +1063,7 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
   const remoteAccessor = createRemoteAccessor(ctx, {
     name: accessor.name,
     bufferView,
-    type: accessor.type,
+    type: GLTFAccessorTypeToAccessorType[accessor.type],
     componentType: accessor.componentType,
     count: accessor.count,
     byteOffset: accessor.byteOffset,
