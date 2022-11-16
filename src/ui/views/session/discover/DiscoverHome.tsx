@@ -19,121 +19,133 @@ import { Text } from "../../../atoms/text/Text";
 import { useStateEvents } from "../../../hooks/useStateEvents";
 import { RepositoryEvents } from "./DiscoverView";
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
-import { getAvatarHttpUrl } from "../../../utils/avatar";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 
 export function DiscoverHome({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
-  const featuredRooms = useStateEvents(room, RepositoryEvents.FeaturedRooms);
-  const featuredWorlds = useStateEvents(room, RepositoryEvents.FeaturedWorlds);
+  const featuredRoomsMap = useStateEvents(room, RepositoryEvents.FeaturedRooms);
+  const featuredRooms = [...featuredRoomsMap].filter(
+    ([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0
+  );
+  const featuredWorldsMap = useStateEvents(room, RepositoryEvents.FeaturedWorlds);
+  const featuredWorlds = [...featuredWorldsMap].filter(
+    ([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0
+  );
   // const FeaturedScenes = useStateEvents(room, RepositoryEvents.FeaturedScenes);
 
   return (
     <Scroll>
       <Content className="DiscoverHome__content">
-        {featuredRooms.size === 0 ? null : (
+        <div className="flex flex-column gap-md">
+          {featuredRooms.length === 0 ? null : (
+            <DiscoverGroup
+              label={<Label>Featured Public Rooms</Label>}
+              content={
+                <DiscoverGroupGrid>
+                  {featuredRooms.slice(0, 4).map(([eventId, stateEvent]) => (
+                    <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
+                      {(summaryData) => (
+                        <RoomPreviewCard
+                          avatar={
+                            <Avatar
+                              imageSrc={
+                                summaryData.avatarUrl &&
+                                getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
+                              }
+                              shape="rounded"
+                              size="lg"
+                              bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
+                              name={summaryData.name}
+                            />
+                          }
+                          name={summaryData.name}
+                          desc={summaryData.topic}
+                          memberCount={summaryData.memberCount}
+                          options={
+                            <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
+                              Join
+                            </Button>
+                          }
+                        />
+                      )}
+                    </RoomSummaryProvider>
+                  ))}
+                </DiscoverGroupGrid>
+              }
+              footer={
+                featuredRooms.length > 4 && (
+                  <div className="flex justify-end">
+                    <DiscoverMoreButton text="Browse All Public Rooms" iconSrc={ArrowForwardIC} />
+                  </div>
+                )
+              }
+            />
+          )}
+          {featuredWorlds.length === 0 ? null : (
+            <DiscoverGroup
+              label={<Label>Featured Public Worlds</Label>}
+              content={
+                <DiscoverGroupGrid>
+                  {featuredWorlds.slice(0, 4).map(([eventId, stateEvent]) => (
+                    <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
+                      {(summaryData) => (
+                        <RoomPreviewCard
+                          avatar={
+                            <Avatar
+                              imageSrc={
+                                summaryData.avatarUrl &&
+                                getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
+                              }
+                              shape="circle"
+                              size="lg"
+                              bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
+                              name={summaryData.name}
+                            />
+                          }
+                          name={summaryData.name}
+                          desc={summaryData.topic}
+                          memberCount={summaryData.memberCount}
+                          options={
+                            <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
+                              Join
+                            </Button>
+                          }
+                        />
+                      )}
+                    </RoomSummaryProvider>
+                  ))}
+                </DiscoverGroupGrid>
+              }
+              footer={
+                featuredWorlds.length > 4 && (
+                  <div className="flex justify-end">
+                    <DiscoverMoreButton text="Browse All Public Worlds" iconSrc={ArrowForwardIC} />
+                  </div>
+                )
+              }
+            />
+          )}
           <DiscoverGroup
-            label={<Label>Featured Public Rooms</Label>}
+            label={<Label>Featured Scenes</Label>}
             content={
-              <DiscoverGroupGrid>
-                {[...featuredRooms].map(([eventId, stateEvent]) => (
-                  <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
-                    {(summaryData) => (
-                      <RoomPreviewCard
-                        avatar={
-                          <Avatar
-                            imageSrc={
-                              summaryData.avatarUrl &&
-                              getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
-                            }
-                            shape="rounded"
-                            size="lg"
-                            bgColor="blue"
-                            name={summaryData.name}
-                          />
-                        }
-                        name={summaryData.name}
-                        desc={summaryData.topic}
-                        memberCount={summaryData.memberCount}
-                        options={
-                          <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                            Join
-                          </Button>
-                        }
-                      />
-                    )}
-                  </RoomSummaryProvider>
-                ))}
+              <DiscoverGroupGrid itemMinWidth={300} gap="md">
+                <FeaturedScene onClick={() => false}>
+                  <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
+                  <FeaturedSceneContent>
+                    <Text variant="b3">Rad Designs</Text>
+                    <Text>Zombie city</Text>
+                  </FeaturedSceneContent>
+                </FeaturedScene>
               </DiscoverGroupGrid>
             }
             footer={
               <div className="flex justify-end">
-                <DiscoverMoreButton text="Browse All Public Rooms" iconSrc={ArrowForwardIC} />
+                <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
               </div>
             }
           />
-        )}
-        {featuredWorlds.size === 0 ? null : (
-          <DiscoverGroup
-            label={<Label>Featured Public Worlds</Label>}
-            content={
-              <DiscoverGroupGrid>
-                {[...featuredWorlds].map(([eventId, stateEvent]) => (
-                  <RoomSummaryProvider key={eventId} roomIdOrAlias={eventId} fallback={() => <RoomPreviewCard />}>
-                    {(summaryData) => (
-                      <RoomPreviewCard
-                        avatar={
-                          <Avatar
-                            imageSrc={
-                              summaryData.avatarUrl &&
-                              getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
-                            }
-                            shape="circle"
-                            size="lg"
-                            bgColor="blue"
-                            name={summaryData.name}
-                          />
-                        }
-                        name={summaryData.name}
-                        desc={summaryData.topic}
-                        memberCount={summaryData.memberCount}
-                        options={
-                          <Button variant="secondary" size="sm" onClick={() => console.log("clicked")}>
-                            Join
-                          </Button>
-                        }
-                      />
-                    )}
-                  </RoomSummaryProvider>
-                ))}
-              </DiscoverGroupGrid>
-            }
-            footer={
-              <div className="flex justify-end">
-                <DiscoverMoreButton text="Browse All Public Worlds" iconSrc={ArrowForwardIC} />
-              </div>
-            }
-          />
-        )}
-        <DiscoverGroup
-          label={<Label>Featured Scenes</Label>}
-          content={
-            <DiscoverGroupGrid itemMinWidth={300} gap="md">
-              <FeaturedScene onClick={() => false}>
-                <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
-                <FeaturedSceneContent>
-                  <Text variant="b3">Rad Designs</Text>
-                  <Text>Zombie city</Text>
-                </FeaturedSceneContent>
-              </FeaturedScene>
-            </DiscoverGroupGrid>
-          }
-          footer={
-            <div className="flex justify-end">
-              <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
-            </div>
-          }
-        />
+        </div>
       </Content>
     </Scroll>
   );

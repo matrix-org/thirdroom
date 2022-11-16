@@ -12,6 +12,7 @@ import { SegmentControl } from "../../../atoms/segment-control/SegmentControl";
 import { SegmentControlItem } from "../../../atoms/segment-control/SegmentControlItem";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { useHydrogen } from "../../../hooks/useHydrogen";
+import { DiscoverAdmin } from "./DiscoverAdmin";
 
 export enum RepositoryEvents {
   FeaturedWorlds = "tr.repository_room.featured_worlds",
@@ -66,6 +67,7 @@ export function DiscoverView({ room }: { room: Room }) {
         }
       >
         {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} />}
+        {discoverTab === DiscoverTab.Admin && room && <DiscoverAdmin room={room} />}
       </Content>
     </Window>
   );
