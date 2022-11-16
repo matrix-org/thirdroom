@@ -16,8 +16,8 @@ import { getInputController, InputController, inputControllerQuery } from "../en
 import { defineModule, getModule } from "../engine/module/module.common";
 import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
-import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
+import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -132,16 +132,8 @@ const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-export function addPhysicsControls(ctx: GameState, { physicsWorld }: PhysicsModuleState, playerRig: number) {
-  addComponent(ctx.world, PhysicsControls, playerRig);
-
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
-  colliderDesc.setCollisionGroups(playerCollisionGroups);
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(ctx, playerRig, rigidBody);
+export function addPhysicsControls(ctx: GameState, eid: number) {
+  addComponent(ctx.world, PhysicsControls, eid);
 }
 
 function updatePhysicsControls(
@@ -156,15 +148,7 @@ function updatePhysicsControls(
     return;
   }
 
-  const peerId = network.entityIdToPeerId.get(rig);
-  if (!peerId) {
-    return;
-  }
-
-  obj.quaternion.x = Transform.quaternion[rig][0];
-  obj.quaternion.y = Transform.quaternion[rig][1];
-  obj.quaternion.z = Transform.quaternion[rig][2];
-  obj.quaternion.w = Transform.quaternion[rig][3];
+  obj.quaternion.fromArray(Transform.quaternion[rig]);
   body.setRotation(obj.quaternion, true);
 
   // Handle Input

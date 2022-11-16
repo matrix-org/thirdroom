@@ -12,7 +12,7 @@ import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat"
 import { Quaternion, Vector3 } from "three";
 
 import { GameState, World } from "../GameTypes";
-import { setQuaternionFromEuler, Transform } from "../component/transform";
+import { Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
@@ -115,9 +115,6 @@ export const PhysicsSystem = (state: GameState) => {
 
     if (body) {
       if (!body.isStatic()) {
-        const rotation = Transform.rotation[eid];
-        const quaternion = Transform.quaternion[eid];
-        setQuaternionFromEuler(quaternion, rotation);
         applyTransformToRigidBody(body, eid);
       }
 
