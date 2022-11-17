@@ -237,13 +237,22 @@ function FeatureWorld({ room }: { room: Room }) {
   );
 }
 
-export function DiscoverAdmin({ room }: { room: Room }) {
+export function DiscoverAdmin({
+  room,
+  permissions,
+}: {
+  room: Room;
+  permissions: {
+    canFeatureRooms: boolean;
+    canFeatureWorlds: boolean;
+  };
+}) {
   return (
     <Scroll>
       <Content className="DiscoverAdmin__content">
         <div className="flex flex-column gap-md">
-          <FeatureRoom room={room} />
-          <FeatureWorld room={room} />
+          {permissions.canFeatureRooms && <FeatureRoom room={room} />}
+          {permissions.canFeatureWorlds && <FeatureWorld room={room} />}
         </div>
       </Content>
     </Scroll>

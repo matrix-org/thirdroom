@@ -29,12 +29,13 @@ enum DiscoverTab {
 
 export function DiscoverView({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
-  const { getPowerLevel } = usePowerLevels(room);
+  const { getPowerLevel, canSendStateEvent } = usePowerLevels(room);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
   const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
 
-  // TODO: use proper state event permission to find edit permission.
-  const isAdmin = getPowerLevel(session.userId) >= 50;
+  const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, getPowerLevel(session.userId));
+  const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorlds, getPowerLevel(session.userId));
+  const isAdmin = canFeatureRooms || canFeatureWorlds;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
   }
@@ -89,11 +90,35 @@ export function DiscoverView({ room }: { room: Room }) {
         }
       >
         {loadEvents ? (
-          <DiscoverAll eventType={loadEvents} room={room} />
+          <DiscoverAll
+            eventType={loadEvents}
+            room={room}
+            permissions={{
+              canFeatureRooms,
+              canFeatureWorlds,
+            }}
+          />
         ) : (
           <>
-            {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} onLoadEvents={setLoadEvents} />}
-            {discoverTab === DiscoverTab.Admin && room && <DiscoverAdmin room={room} />}
+            {discoverTab === DiscoverTab.Home && room && (
+              <DiscoverHome
+                room={room}
+                onLoadEvents={setLoadEvents}
+                permissions={{
+                  canFeatureRooms,
+                  canFeatureWorlds,
+                }}
+              />
+            )}
+            {discoverTab === DiscoverTab.Admin && room && (
+              <DiscoverAdmin
+                room={room}
+                permissions={{
+                  canFeatureRooms,
+                  canFeatureWorlds,
+                }}
+              />
+            )}
           </>
         )}
       </Content>

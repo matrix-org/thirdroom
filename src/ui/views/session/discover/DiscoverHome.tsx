@@ -7,6 +7,7 @@ import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Label } from "../../../atoms/text/Label";
 import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewCard";
 import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
+import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import "./DiscoverHome.css";
 import { DiscoverGroup, DiscoverGroupGrid, DiscoverMoreButton } from "../../components/discover-group/DiscoverGroup";
 import LogoSvg from "../../../../../res/svg/logo.svg";
@@ -23,6 +24,10 @@ import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avata
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { Dots } from "../../../atoms/loading/Dots";
+import { IconButton } from "../../../atoms/button/IconButton";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { SidebarTabs, useStore } from "../../../hooks/useStore";
 
 export function useFeaturedRooms(repoRoom: Room) {
   const featuredRoomsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedRooms);
@@ -84,14 +89,28 @@ export function JoinRoomProvider({
 export function FeaturedRoomCard({
   session,
   platform,
+  repoRoomId,
   roomId,
+  canEdit,
 }: {
   session: Session;
   platform: Platform;
+  repoRoomId: string;
   roomId: string;
+  canEdit: boolean;
 }) {
+  const handleRemoveFeatured = () => {
+    session.hsApi.sendState(repoRoomId, RepositoryEvents.FeaturedRooms, roomId, {});
+  };
+  const handleViewRoom = () => {
+    const state = useStore.getState();
+    state.overlayChat.selectChat(roomId);
+    state.overlaySidebar.selectSidebarTab(SidebarTabs.Home);
+    state.overlayWindow.closeWindow();
+  };
+
   return (
-    <RoomSummaryProvider key={roomId} roomIdOrAlias={roomId} fallback={() => <RoomPreviewCard />}>
+    <RoomSummaryProvider roomIdOrAlias={roomId} fallback={() => <RoomPreviewCard />}>
       {(summaryData) => (
         <RoomPreviewCard
           avatar={
@@ -109,20 +128,33 @@ export function FeaturedRoomCard({
           desc={summaryData.topic}
           memberCount={summaryData.memberCount}
           options={
-            <JoinRoomProvider session={session} roomId={roomId}>
-              {(join, isJoined, loading, error) =>
-                isJoined ? (
-                  <Button variant="secondary" fill="outline" size="sm" onClick={() => console.log("clicked")}>
-                    View
-                  </Button>
-                ) : (
-                  <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
-                    {loading && <Dots size="sm" color="on-secondary" />}
-                    {loading ? "Joining" : "Join"}
-                  </Button>
-                )
-              }
-            </JoinRoomProvider>
+            <div className="flex items-center gap-xs">
+              {canEdit && (
+                <DropdownMenu
+                  content={
+                    <DropdownMenuItem onSelect={handleRemoveFeatured} variant="danger">
+                      Remove Featured
+                    </DropdownMenuItem>
+                  }
+                >
+                  <IconButton label="Options" iconSrc={MoreHorizontalIC} />
+                </DropdownMenu>
+              )}
+              <JoinRoomProvider session={session} roomId={roomId}>
+                {(join, isJoined, loading, error) =>
+                  isJoined ? (
+                    <Button variant="secondary" fill="outline" size="sm" onClick={handleViewRoom}>
+                      View
+                    </Button>
+                  ) : (
+                    <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
+                      {loading && <Dots size="sm" color="on-secondary" />}
+                      {loading ? "Joining" : "Join"}
+                    </Button>
+                  )
+                }
+              </JoinRoomProvider>
+            </div>
           }
         />
       )}
@@ -133,14 +165,28 @@ export function FeaturedRoomCard({
 export function FeaturedWorldCard({
   session,
   platform,
+  repoRoomId,
   roomId,
+  canEdit,
 }: {
   session: Session;
   platform: Platform;
+  repoRoomId: string;
   roomId: string;
+  canEdit: boolean;
 }) {
+  const handleRemoveFeatured = () => {
+    session.hsApi.sendState(repoRoomId, RepositoryEvents.FeaturedWorlds, roomId, {});
+  };
+  const handleViewWorld = () => {
+    const state = useStore.getState();
+    state.overlayWorld.selectWorld(roomId);
+    state.overlaySidebar.selectSidebarTab(SidebarTabs.Home);
+    state.overlayWindow.closeWindow();
+  };
+
   return (
-    <RoomSummaryProvider key={roomId} roomIdOrAlias={roomId} fallback={() => <RoomPreviewCard />}>
+    <RoomSummaryProvider roomIdOrAlias={roomId} fallback={() => <RoomPreviewCard />}>
       {(summaryData) => (
         <RoomPreviewCard
           avatar={
@@ -158,20 +204,33 @@ export function FeaturedWorldCard({
           desc={summaryData.topic}
           memberCount={summaryData.memberCount}
           options={
-            <JoinRoomProvider session={session} roomId={roomId}>
-              {(join, isJoined, loading, error) =>
-                isJoined ? (
-                  <Button variant="secondary" fill="outline" size="sm" onClick={() => console.log("clicked")}>
-                    View
-                  </Button>
-                ) : (
-                  <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
-                    {loading && <Dots size="sm" color="on-secondary" />}
-                    {loading ? "Joining" : "Join"}
-                  </Button>
-                )
-              }
-            </JoinRoomProvider>
+            <div className="flex items-center gap-xs">
+              {canEdit && (
+                <DropdownMenu
+                  content={
+                    <DropdownMenuItem onSelect={handleRemoveFeatured} variant="danger">
+                      Remove Featured
+                    </DropdownMenuItem>
+                  }
+                >
+                  <IconButton label="Options" iconSrc={MoreHorizontalIC} />
+                </DropdownMenu>
+              )}
+              <JoinRoomProvider session={session} roomId={roomId}>
+                {(join, isJoined, loading, error) =>
+                  isJoined ? (
+                    <Button variant="secondary" fill="outline" size="sm" onClick={handleViewWorld}>
+                      View
+                    </Button>
+                  ) : (
+                    <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
+                      {loading && <Dots size="sm" color="on-secondary" />}
+                      {loading ? "Joining" : "Join"}
+                    </Button>
+                  )
+                }
+              </JoinRoomProvider>
+            </div>
           }
         />
       )}
@@ -182,8 +241,12 @@ export function FeaturedWorldCard({
 interface DiscoverHomeProps {
   room: Room;
   onLoadEvents: (eventType: RepositoryEvents) => void;
+  permissions: {
+    canFeatureRooms: boolean;
+    canFeatureWorlds: boolean;
+  };
 }
-export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
+export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   return (
@@ -198,7 +261,14 @@ export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
                   content={
                     <DiscoverGroupGrid>
                       {featuredRooms.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedRoomCard session={session} platform={platform} roomId={stateKey} />
+                        <FeaturedRoomCard
+                          key={stateKey}
+                          session={session}
+                          platform={platform}
+                          repoRoomId={room.id}
+                          roomId={stateKey}
+                          canEdit={permissions.canFeatureRooms}
+                        />
                       ))}
                     </DiscoverGroupGrid>
                   }
@@ -225,7 +295,14 @@ export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
                   content={
                     <DiscoverGroupGrid>
                       {featuredWorlds.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedWorldCard session={session} platform={platform} roomId={stateKey} />
+                        <FeaturedWorldCard
+                          key={stateKey}
+                          session={session}
+                          platform={platform}
+                          repoRoomId={room.id}
+                          roomId={stateKey}
+                          canEdit={permissions.canFeatureWorlds}
+                        />
                       ))}
                     </DiscoverGroupGrid>
                   }

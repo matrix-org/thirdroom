@@ -8,7 +8,18 @@ import { FeaturedRoomCard, FeaturedRoomsProvider, FeaturedWorldCard, FeaturedWor
 import { RepositoryEvents } from "./DiscoverView";
 import "./DiscoverAll.css";
 
-export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; room: Room }) {
+export function DiscoverAll({
+  eventType,
+  room,
+  permissions,
+}: {
+  eventType: RepositoryEvents;
+  room: Room;
+  permissions: {
+    canFeatureRooms: boolean;
+    canFeatureWorlds: boolean;
+  };
+}) {
   const { session, platform } = useHydrogen(true);
 
   return (
@@ -21,7 +32,14 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
                 featuredRooms.length === 0 ? null : (
                   <>
                     {featuredRooms.map(([stateKey, stateEvent]) => (
-                      <FeaturedRoomCard session={session} platform={platform} roomId={stateKey} />
+                      <FeaturedRoomCard
+                        key={stateKey}
+                        session={session}
+                        platform={platform}
+                        repoRoomId={room.id}
+                        roomId={stateKey}
+                        canEdit={permissions.canFeatureRooms}
+                      />
                     ))}
                   </>
                 )
@@ -36,7 +54,14 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
                 featuredWorlds.length === 0 ? null : (
                   <>
                     {featuredWorlds.map(([stateKey, stateEvent]) => (
-                      <FeaturedWorldCard session={session} platform={platform} roomId={stateKey} />
+                      <FeaturedWorldCard
+                        key={stateKey}
+                        session={session}
+                        platform={platform}
+                        repoRoomId={room.id}
+                        roomId={stateKey}
+                        canEdit={permissions.canFeatureWorlds}
+                      />
                     ))}
                   </>
                 )
