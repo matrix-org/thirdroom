@@ -5,6 +5,7 @@ import { Content } from "../../../atoms/content/Content";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import ExploreIC from "../../../../../res/ic/explore.svg";
+import ChevronRightIC from "../../../../../res/ic/chevron-right.svg";
 import { Icon } from "../../../atoms/icon/Icon";
 import { Window } from "../../components/window/Window";
 import { DiscoverHome } from "./DiscoverHome";
@@ -13,6 +14,7 @@ import { SegmentControlItem } from "../../../atoms/segment-control/SegmentContro
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { DiscoverAdmin } from "./DiscoverAdmin";
+import { DiscoverAll } from "./DiscoverAll";
 
 export enum RepositoryEvents {
   FeaturedWorlds = "tr.repository_room.featured_worlds",
@@ -29,6 +31,7 @@ export function DiscoverView({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
   const { getPowerLevel } = usePowerLevels(room);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
+  const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
 
   const isAdmin = getPowerLevel(session.userId) >= 50;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
@@ -41,33 +44,57 @@ export function DiscoverView({ room }: { room: Room }) {
         top={
           <Header
             left={
-              <HeaderTitle icon={<Icon color="surface" className="shrink-0" src={ExploreIC} />}>Discover</HeaderTitle>
+              <div className="flex items-center gap-xxs">
+                <button style={{ cursor: "pointer" }} onClick={() => setLoadEvents(undefined)}>
+                  <HeaderTitle icon={<Icon color="surface" className="shrink-0" src={ExploreIC} />}>
+                    Discover
+                  </HeaderTitle>
+                </button>
+                {loadEvents ? (
+                  <>
+                    <Icon src={ChevronRightIC} />
+                    <HeaderTitle>{`All Public ${(() => {
+                      if (loadEvents === RepositoryEvents.FeaturedRooms) return "Rooms";
+                      if (loadEvents === RepositoryEvents.FeaturedWorlds) return "Worlds";
+                      if (loadEvents === RepositoryEvents.FeaturedScenes) return "Scenes";
+                    })()}`}</HeaderTitle>
+                  </>
+                ) : null}
+              </div>
             }
             center={
-              <SegmentControl>
-                <SegmentControlItem
-                  value={DiscoverTab.Home}
-                  isSelected={DiscoverTab.Home === discoverTab}
-                  onSelect={setDiscoverTab}
-                >
-                  Home
-                </SegmentControlItem>
-                {isAdmin && (
+              loadEvents ? null : (
+                <SegmentControl>
                   <SegmentControlItem
-                    value={DiscoverTab.Admin}
-                    isSelected={DiscoverTab.Admin === discoverTab}
+                    value={DiscoverTab.Home}
+                    isSelected={DiscoverTab.Home === discoverTab}
                     onSelect={setDiscoverTab}
                   >
-                    Admin
+                    Home
                   </SegmentControlItem>
-                )}
-              </SegmentControl>
+                  {isAdmin && (
+                    <SegmentControlItem
+                      value={DiscoverTab.Admin}
+                      isSelected={DiscoverTab.Admin === discoverTab}
+                      onSelect={setDiscoverTab}
+                    >
+                      Admin
+                    </SegmentControlItem>
+                  )}
+                </SegmentControl>
+              )
             }
           />
         }
       >
-        {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} />}
-        {discoverTab === DiscoverTab.Admin && room && <DiscoverAdmin room={room} />}
+        {loadEvents ? (
+          <DiscoverAll eventType={loadEvents} room={room} />
+        ) : (
+          <>
+            {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} onLoadEvents={setLoadEvents} />}
+            {discoverTab === DiscoverTab.Admin && room && <DiscoverAdmin room={room} />}
+          </>
+        )}
       </Content>
     </Window>
   );
