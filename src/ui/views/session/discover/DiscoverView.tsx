@@ -33,6 +33,7 @@ export function DiscoverView({ room }: { room: Room }) {
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
   const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
 
+  // TODO: use proper state event permission to find edit permission.
   const isAdmin = getPowerLevel(session.userId) >= 50;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
