@@ -48,7 +48,13 @@ function defineResourceIdTransform<Def extends ResourceDefinition>(resourceDef: 
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arrayBuffer") {
+    if (
+      prop.type === "ref" ||
+      prop.type === "refArray" ||
+      prop.type === "refMap" ||
+      prop.type === "string" ||
+      prop.type === "arrayBuffer"
+    ) {
       resourceIdViews.push({ propName, view: new Uint32Array(buffer, prop.byteOffset, prop.size) });
     }
   }

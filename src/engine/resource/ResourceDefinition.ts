@@ -6,6 +6,7 @@ import { BaseThreadContext } from "../module/module.common";
 
 export interface ResourceDefinition<S extends Schema = Schema> {
   name: string;
+  resourceType: number;
   schema: ProcessedSchema<S>;
   byteLength: number;
 }
@@ -304,7 +305,7 @@ function createArrayBufferPropDef(options?: {
   };
 }
 
-function createRefPropDef<Def extends ResourceDefinition, Mut extends boolean, Req extends boolean>(
+function createRefPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
   resourceDef: Def,
   options?: {
     mutable?: Mut;
@@ -344,6 +345,36 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
   const { size, ...rest } = options;
   return {
     type: "refArray",
+    size,
+    arrayType: Uint32Array,
+    resourceDef,
+    mutable: true as any,
+    required: false as any,
+    script: false,
+    default: new Uint32Array(size),
+    ...rest,
+  };
+}
+
+function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
+  resourceDef: Def,
+  options: {
+    size: number;
+    mutable?: Mut;
+    required?: Req;
+    script?: boolean;
+  }
+): ResourcePropDef<
+  "refMap",
+  ArrayLike<number>,
+  Mut extends true ? true : false,
+  Req extends false ? false : true,
+  undefined,
+  Def
+> {
+  const { size, ...rest } = options;
+  return {
+    type: "refMap",
     size,
     arrayType: Uint32Array,
     resourceDef,
@@ -396,12 +427,18 @@ export const PropType = {
   arrayBuffer: createArrayBufferPropDef,
   ref: createRefPropDef,
   refArray: createRefArrayPropDef,
+  refMap: createRefMapPropDef,
   selfRef: createSelfRefPropDef,
 };
 
-export const defineResource = <S extends Schema>(name: string, schema: S): ResourceDefinition<S> => {
+export const defineResource = <S extends Schema>(
+  name: string,
+  resourceType: number,
+  schema: S
+): ResourceDefinition<S> => {
   const resourceDef: ResourceDefinition<S> = {
     name,
+    resourceType,
     schema: schema as unknown as ProcessedSchema<S>,
     byteLength: 0,
   };
@@ -467,6 +504,10 @@ type ResourcePropValue<
       : Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Resource<Def["schema"][Prop]["resourceDef"]>[]
     : unknown[]

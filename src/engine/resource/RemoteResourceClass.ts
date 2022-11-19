@@ -128,7 +128,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
             if (resourceId) {
               this.manager.removeRef(resourceId);
             }
-          } else if (prop.type === "refArray") {
+          } else if (prop.type === "refArray" || prop.type === "refMap") {
             const resourceIds = this.__props[propName].resourceIdView;
 
             for (let i = 0; i < resourceIds.length; i++) {
@@ -188,6 +188,24 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
             }
 
             resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+          }
+
+          return resources;
+        },
+      });
+    } else if (prop.type === "refMap") {
+      // TODO
+      Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        get(this: RemoteResource<Def>) {
+          const arr = this.__props[propName];
+          const resources = [];
+
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i]) {
+              resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+            } else {
+              resources.push(undefined);
+            }
           }
 
           return resources;

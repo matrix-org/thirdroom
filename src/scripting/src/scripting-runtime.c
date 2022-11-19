@@ -8,11 +8,10 @@
 #include "../include/quickjs/quickjs.h"
 
 #include "./script-context.h"
-#include "./websg.h"
+#include "./jsutils.h"
 #include "./console.h"
-#include "./light.h"
-#include "./texture.h"
-#include "./material.h"
+#include "./generated/websg.h"
+#include "./generated/websg-js.h"
 
 /**
  * Global State
@@ -40,15 +39,13 @@ export int32_t websg_initialize() {
 
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
 
+  JS_DefineRefArrayIterator(ctx);
+  JS_DefineRefMapIterator(ctx);
+  JS_DefineNodeIterator(ctx);
+
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
-
-  JSValue jsSceneGraphNamespace = JS_NewObject(ctx);
-  js_define_light_api(ctx, &jsSceneGraphNamespace);
-  js_define_image_api(ctx, &jsSceneGraphNamespace);
-  js_define_texture_api(ctx, &jsSceneGraphNamespace);
-  js_define_material_api(ctx, &jsSceneGraphNamespace);
-  JS_SetPropertyStr(ctx, global, "WebSG", jsSceneGraphNamespace);
+  js_define_websg_api(ctx, &global);
 
   return 0; 
 }

@@ -231,7 +231,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
       if (prop.type === "string" || prop.type === "ref" || prop.type === "arrayBuffer") {
         dependencyByteOffsets.push(prop.byteOffset);
-      } else if (prop.type === "refArray") {
+      } else if (prop.type === "refArray" || prop.type === "refMap") {
         for (let i = 0; i < prop.size; i++) {
           dependencyByteOffsets.push(prop.byteOffset + i * Uint32Array.BYTES_PER_ELEMENT);
         }

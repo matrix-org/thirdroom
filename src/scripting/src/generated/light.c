@@ -4,10 +4,12 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "../include/quickjs/cutils.h"
-#include "../include/quickjs/quickjs.h"
+#include "../../include/quickjs/cutils.h"
+#include "../../include/quickjs/quickjs.h"
 
-#include "jsutils.h"
+#include "../jsutils.h"
+#include "../websg-utils.h"
+#include "../script-context.h"
 #include "websg.h"
 #include "light.h"
 
@@ -15,208 +17,210 @@
  * WebSG.Light
  */
 
-typedef struct JSLight {
-  Light *light;
-  JSValue color;
-} JSLight;
-
-static JSLight *create_js_light(JSContext *ctx, Light *light) {
-  JSLight *jsLight = js_malloc(ctx, sizeof(JSLight));
-  jsLight->light = light;
-  jsLight->color = JS_CreateFloat32Array(ctx, light->color, 3);
-  return jsLight;
-}
-
-static JSClassID js_light_class_id;
-
 static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  if (argc < 1 || !JS_IsNumber(argv[0])) {
-    JS_ThrowTypeError(ctx, "new Light() expects LightType as its first paramater.");
-  }
+  Light *light = js_mallocz(ctx, sizeof(Light));
 
-  int32_t lightType;
+  
 
-  if (JS_ToInt32(ctx, &lightType, argv[0])) {
+  if (websg_create_resource(ResourceType_Light, light)) {
     return JS_EXCEPTION;
   }
 
-  Light *light = websg_create_light((LightType)lightType);
-  JSValue lightObj = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
 
-  // TODO: parse and set args on node
-
   if (JS_IsException(proto)) {
-    websg_dispose_light(light);
-    JS_FreeValue(ctx, lightObj);
+    websg_dispose_resource(light);
+    JS_FreeValue(ctx, proto);
     return JS_EXCEPTION;
   }
-    
-  lightObj = JS_NewObjectProtoClass(ctx, proto, js_light_class_id);
+
+  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_light_class_id);
   JS_FreeValue(ctx, proto);
 
-  if (JS_IsException(lightObj)) {
-    websg_dispose_light(light);
-    JS_FreeValue(ctx, lightObj);
+  if (JS_IsException(val)) {
+    websg_dispose_resource(light);
+    JS_FreeValue(ctx, val);
     return JS_EXCEPTION;
   }
 
-  JSLight *jsLight = create_js_light(ctx, light);
-  JS_SetOpaque(lightObj, jsLight);
+  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "color", light->color, 3);
 
-  return lightObj;
+  JS_SetOpaque(val, light);
+  set_js_val_from_ptr(ctx, light, val);
+
+  return val;
 }
+
 
 static JSValue js_light_get_name(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewString(ctx, jsLight->light->name);
+    JSValue val;
+    val = JS_NewString(ctx, light->name);
+    return val;
   }
 }
+
 
 static JSValue js_light_set_name(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    websg_set_light_name(jsLight->light, JS_ToCString(ctx, val));
+    light->name = JS_ToCString(ctx, val);
     return JS_UNDEFINED;
   }
 }
+
 
 static JSValue js_light_get_type(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewUint32(ctx, jsLight->light->type);
+    JSValue val;
+    val = JS_NewUint32(ctx, light->type);
+    return val;
   }
 }
 
-static JSValue js_light_get_color(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
-
-  if (!jsLight) {
-    return JS_EXCEPTION;
-  } else {
-    return JS_DupValue(ctx, jsLight->color);
-  }
-}
 
 static JSValue js_light_get_intensity(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewFloat64(ctx, jsLight->light->intensity);
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)light->intensity);
+    return val;
   }
 }
+
 
 static JSValue js_light_set_intensity(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->intensity = JS_VALUE_GET_FLOAT64(val);
+    if (JS_ToFloat32(ctx, &light->intensity, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
+
 
 static JSValue js_light_get_range(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewFloat64(ctx, jsLight->light->range);
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)light->range);
+    return val;
   }
 }
+
 
 static JSValue js_light_set_range(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->range = JS_VALUE_GET_FLOAT64(val);
+    if (JS_ToFloat32(ctx, &light->range, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
+
 
 static JSValue js_light_get_cast_shadow(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewBool(ctx, jsLight->light->cast_shadow);
+    JSValue val;
+    val = JS_NewBool(ctx, light->cast_shadow);
+    return val;
   }
 }
+
 
 static JSValue js_light_set_cast_shadow(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->cast_shadow = JS_VALUE_GET_BOOL(val) ? 1 : 0;
+    light->cast_shadow = JS_ToBool(ctx, val);
     return JS_UNDEFINED;
   }
 }
+
 
 static JSValue js_light_get_inner_cone_angle(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewFloat64(ctx, jsLight->light->inner_cone_angle);
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)light->inner_cone_angle);
+    return val;
   }
 }
+
 
 static JSValue js_light_set_inner_cone_angle(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->inner_cone_angle = JS_VALUE_GET_FLOAT64(val);
+    if (JS_ToFloat32(ctx, &light->inner_cone_angle, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
+
 
 static JSValue js_light_get_outer_cone_angle(JSContext *ctx, JSValueConst this_val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    return JS_NewFloat64(ctx, jsLight->light->outer_cone_angle);
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)light->outer_cone_angle);
+    return val;
   }
 }
 
-static JSValue js_light_set_outer_cone_angle(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque2(ctx, this_val, js_light_class_id);
 
-  if (!jsLight) {
+static JSValue js_light_set_outer_cone_angle(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Light *light = JS_GetOpaque2(ctx, this_val, js_light_class_id);
+
+  if (!light) {
     return JS_EXCEPTION;
   } else {
-    jsLight->light->outer_cone_angle = JS_VALUE_GET_FLOAT64(val);
+    if (JS_ToFloat32(ctx, &light->outer_cone_angle, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
 
+
+
+
 static void js_light_finalizer(JSRuntime *rt, JSValue val) {
-  JSLight *jsLight = JS_GetOpaque(val, js_light_class_id);
-  websg_dispose_light(jsLight->light);
-  js_free_rt(rt, jsLight);
+  Light *light = JS_GetOpaque(val, js_light_class_id);
+  websg_dispose_resource(light);
+  js_free_rt(rt, light);
 }
 
 static JSClassDef js_light_class = {
@@ -227,7 +231,6 @@ static JSClassDef js_light_class = {
 static const JSCFunctionListEntry js_light_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_light_get_name, js_light_set_name),
   JS_CGETSET_DEF("type", js_light_get_type, NULL),
-  JS_CGETSET_DEF("color", js_light_get_color, NULL),
   JS_CGETSET_DEF("intensity", js_light_get_intensity, js_light_set_intensity),
   JS_CGETSET_DEF("range", js_light_get_range, js_light_set_range),
   JS_CGETSET_DEF("castShadow", js_light_get_cast_shadow, js_light_set_cast_shadow),
@@ -253,25 +256,39 @@ static JSValue js_define_light_class(JSContext *ctx) {
 }
 
 /**
- * WebSG light related functions
+ * WebSG.Light related functions
 */
 
-static JSValue js_get_light_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+static JSValue js_get_light_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   const char *name = JS_ToCString(ctx, argv[0]);
-  Light *light = websg_get_light_by_name(name);
+  Light *light = websg_get_resource_by_name(ResourceType_Light, name);
   JS_FreeCString(ctx, name);
+  return create_light_from_ptr(ctx, light);
+}
 
+JSValue create_light_from_ptr(JSContext *ctx, Light *light) {
   if (!light) {
     return JS_UNDEFINED;
-  } else {
-    JSValue lightObj = JS_NewObjectClass(ctx, js_light_class_id);
-    JSLight *jsLight = create_js_light(ctx, light);
-    JS_SetOpaque(lightObj, jsLight);
-    return lightObj;
   }
+
+  JSValue val = get_js_val_from_ptr(ctx, light);
+
+  if (JS_IsUndefined(val)) {
+    val = JS_NewObjectClass(ctx, js_light_class_id);
+    JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "color", light->color, 3);
+    JS_SetOpaque(val, light);
+    set_js_val_from_ptr(ctx, light, val);
+  }
+
+  return val;
 }
 
 void js_define_light_api(JSContext *ctx, JSValue *target) {
   JS_SetPropertyStr(ctx, *target, "Light", js_define_light_class(ctx));
-  JS_SetPropertyStr(ctx, *target, "getLightByName", JS_NewCFunction(ctx, js_get_light_by_name, "getLightByName", 1));
+  JS_SetPropertyStr(
+    ctx,
+    *target,
+    "getLightByName",
+    JS_NewCFunction(ctx, js_get_light_by_name, "getLightByName", 1)
+  );
 }

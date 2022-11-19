@@ -9,6 +9,7 @@ import kebabToPascalCase from "../utils/kebabToPascalCase";
 import kebabToSnakeCase from "../utils/kebabToSnakeCase";
 import { ResourceDefinition, ResourcePropDef } from "./ResourceDefinition";
 import * as SchemaModule from "./schema";
+import camelToPascalCase from "../utils/camelToPascalCase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,9 +40,15 @@ function resolveRefDefinition(resourceDef: ResourceDefinition | string): Resourc
   return resourceDef;
 }
 
+// This works well enough for our schema as of now. Will need to be expanded on later.
+function depluralize(str: string): string {
+  return str.endsWith("s") ? str.substring(0, str.length - 1) : str;
+}
+
 function generateProp(
   propNameCamel: string,
-  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
+  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>,
+  resourceDef: ResourceDefinition
 ): string {
   const propNameSnake = camelToSnakeCase(propNameCamel);
 
@@ -55,21 +62,21 @@ function generateProp(
 
     return `${enumName} ${propNameSnake}`;
   } else if (propDef.type === "ref") {
-    const resourceDef = propDef.resourceDef as ResourceDefinition | undefined;
+    const refDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
 
-    if (!resourceDef) {
+    if (!refDef) {
       throw new Error(`Cannot define ref property ${propNameCamel}: resourceDef is undefined.`);
     }
 
-    return `${kebabToPascalCase(resourceDef.name)} *${propNameSnake}`;
-  } else if (propDef.type === "refArray") {
-    const resourceDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
+    return `${kebabToPascalCase(refDef.name)} *${propNameSnake}`;
+  } else if (propDef.type === "refArray" || propDef.type === "refMap") {
+    const refDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
 
-    if (!resourceDef) {
-      throw new Error(`Cannot define refArray property ${propNameCamel}: resourceDef is undefined.`);
+    if (!refDef) {
+      throw new Error(`Cannot define ${propDef.type} property ${propNameCamel}: resourceDef is undefined.`);
     }
 
-    return `${kebabToPascalCase(resourceDef.name)} *${propNameSnake}[${propDef.size}]`;
+    return `${kebabToPascalCase(refDef.name)} *${propNameSnake}[${propDef.size}]`;
   } else if (propDef.type === "bool") {
     return `int ${propNameSnake}`;
   } else if (propDef.type === "bitmask") {
@@ -84,6 +91,8 @@ function generateProp(
     }
 
     return `${typeName} ${propNameSnake}[${propDef.size}]`;
+  } else if (propDef.type === "arrayBuffer") {
+    return `ArrayBuffer ${propNameSnake}`;
   } else {
     const typeName = arrayToCType.get(propDef.arrayType);
 
@@ -93,30 +102,6 @@ function generateProp(
 
     return `${typeName} ${propNameSnake}`;
   }
-}
-
-function generatePropSetter(
-  classNameSnake: string,
-  classNamePascal: string,
-  propNameCamel: string,
-  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
-): string | undefined {
-  const propType = propDef.type;
-
-  if (!(propType === "string" || propType === "arrayBuffer" || propType === "ref" || propType === "refArray")) {
-    return undefined;
-  }
-
-  if (!propDef.mutable) {
-    return undefined;
-  }
-
-  const propNameSnake = camelToSnakeCase(propNameCamel);
-
-  return `import_websg(set_${classNameSnake}_${propNameSnake}) int websg_set_${classNameSnake}_${propNameSnake}(${classNamePascal} *${classNameSnake}, ${generateProp(
-    propNameCamel,
-    propDef
-  )});`;
 }
 
 function generateWebSGHeader() {
@@ -132,51 +117,67 @@ function generateWebSGHeader() {
 #define export __attribute__((used))
 
 export void *websg_allocate(int size);
-export void websg_deallocate(void *ptr);`);
+export void websg_deallocate(void *ptr);
+
+typedef struct ArrayBuffer {
+  unsigned int size;
+  unsigned char *buf;
+} ArrayBuffer;`);
+
+  const predefinedStructs = new Set<string>();
+
+  for (const value of Object.values(SchemaModule)) {
+    if ("schema" in value) {
+      for (const prop of Object.values(value.schema)) {
+        if ((prop.type === "ref" || prop.type === "refArray") && typeof prop.resourceDef === "string") {
+          predefinedStructs.add(value.name);
+          predefinedStructs.add(prop.resourceDef);
+        }
+      }
+    }
+  }
+
+  for (const predefinedStruct of predefinedStructs) {
+    const classNamePascal = kebabToPascalCase(predefinedStruct);
+    chunks.push(`typedef struct _${classNamePascal} ${classNamePascal};`);
+  }
 
   for (const [name, value] of Object.entries(SchemaModule)) {
     if ("schema" in value) {
       const classNamePascal = kebabToPascalCase(value.name);
-      const classNameSnake = kebabToSnakeCase(value.name);
 
       // ResourceDefinitions
       chunks.push(/* c */ `
-typedef struct ${classNamePascal} {
+typedef struct ${predefinedStructs.has(value.name) ? "_" : ""}${classNamePascal} {
 ${Object.entries(value.schema)
-  .map(([propName, propDef]) => `  ${generateProp(propName, propDef)};`)
+  .map(([propName, propDef]) => `  ${generateProp(propName, propDef, value)};`)
   .filter((val) => !!val)
   .join("\n")}
 } ${classNamePascal};`);
-
-      // WebSG APIs
-      chunks.push(/* c */ `
-import_websg(get_${classNameSnake}_by_name) ${classNamePascal} *websg_get_${classNameSnake}_by_name(const char *name);
-import_websg(create_${classNameSnake}) websg_create_${classNameSnake}(${classNamePascal} *${classNameSnake});
-${Object.entries(value.schema)
-  .map(([propName, propDef]) => generatePropSetter(classNameSnake, classNamePascal, propName, propDef))
-  .filter((val) => !!val)
-  .join("\n")}
-import_websg(dispose_${classNameSnake}) int websg_dispose_${classNameSnake}(${classNamePascal} *${classNameSnake});
-  `);
     } else {
       // enums
       chunks.push(/* c */ `
-  typedef enum ${name} {
-  ${Object.entries(value)
-    .filter(([k, v]) => typeof v === "number")
-    .map(([k, v]) => `  ${k} = ${v},`)
-    .join("\n")}
-  } ${name};`);
+typedef enum ${name} {
+${Object.entries(value)
+  .filter(([k, v]) => typeof v === "number")
+  .map(([k, v]) => `  ${name}_${k} = ${v},`)
+  .join("\n")}
+} ${name};`);
     }
   }
 
-  chunks.push(`#endif`);
+  chunks.push(`
+import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);
+import_websg(create_resource) int websg_create_resource(ResourceType type, void *resource);
+import_websg(dispose_resource) int websg_dispose_resource(void *resource);
+
+#endif`);
 
   return chunks.map((chunk) => chunk.trim()).join("\n\n");
 }
 
 function isRefType(propType: string): boolean {
-  return propType === "ref" || propType === "refArray";
+  return propType === "ref" || propType === "refArray" || propType === "refMap";
 }
 
 function getRefDependencies(resourceDef: ResourceDefinition): string[] {
@@ -193,77 +194,53 @@ function getRefDependencies(resourceDef: ResourceDefinition): string[] {
   return Array.from(dependencies);
 }
 
-function getJSValueConstructor(
-  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>,
-  paramName: string
+function generateJSPropGetValueStatement(
+  destNameSnake: string,
+  srcNameSnake: string,
+  propNameSnake: string,
+  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
 ): string {
-  if (propDef.type === "refArray") {
-    return `JSValue val = JS_NewIteratorFromPtr(ctx, ${paramName}, countof(${paramName}));`;
-  } else if (propDef.type === "string") {
-    return `JSValue val = JS_NewString(ctx, ${paramName});`;
-  } else if (propDef.type === "i32") {
-    return `JSValue val = JS_NewInt32(ctx, ${paramName});`;
-  } else if (propDef.type === "enum" || propDef.type === "u32" || propDef.type === "bitmask") {
-    return `JSValue val = JS_NewUint32(ctx, ${paramName});`;
-  } else if (propDef.type === "f32") {
-    return `JSValue val = JS_NewFloat64(ctx, ${paramName});`;
+  const srcVar = `${srcNameSnake}->${propNameSnake}`;
+  if (propDef.type === "string") {
+    return /* c */ `${destNameSnake} = JS_NewString(ctx, ${srcVar});`;
   } else if (propDef.type === "bool") {
-    return `JSValue val = JS_NewBool(ctx, ${paramName});`;
+    return /* c */ `${destNameSnake} = JS_NewBool(ctx, ${srcVar});`;
+  } else if (propDef.type === "i32") {
+    return /* c */ `${destNameSnake} = JS_NewInt32(ctx, ${srcVar});`;
+  } else if (propDef.type === "enum" || propDef.type === "u32" || propDef.type === "bitmask") {
+    return /* c */ `${destNameSnake} = JS_NewUint32(ctx, ${srcVar});`;
+  } else if (propDef.type === "f32") {
+    return /* c */ `${destNameSnake} = JS_NewFloat64(ctx, (double)${srcVar});`;
   } else if (propDef.type === "ref") {
-    const refName = kebabToSnakeCase((propDef.resourceDef as ResourceDefinition).name);
-    return `JSValue val = create_${refName}_from_ptr(ctx, ${paramName});`;
+    const refResourceDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
+    const classNameSnake = kebabToSnakeCase(refResourceDef.name);
+    return /* c */ `${destNameSnake} = create_${classNameSnake}_from_ptr(ctx, ${srcVar});`;
   } else {
-    throw new Error(`undefined setter for ${propDef.type}`);
+    throw new Error(`undefined getter for ${propDef.type}`);
   }
 }
 
-function getJSValueDeserializer(
-  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>,
-  valName = "val",
-  varName = "result"
+function generateJSPropSetValueStatement(
+  srcNameSnake: string,
+  destNameSnake: string,
+  propNameSnake: string,
+  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
 ): string {
+  const destVar = `${destNameSnake}->${propNameSnake}`;
   if (propDef.type === "string") {
-    return `const char *${varName} = JS_ToCString(ctx, ${valName});`;
-  } else if (propDef.type === "i32") {
-    return `
-int32_t ${varName};
-
-if (JS_ToInt32(ctx, &${varName}, ${valName})) {
-  return JS_EXCEPTION;
-}`;
-  } else if (propDef.type === "enum" || propDef.type === "u32" || propDef.type === "bitmask") {
-    return `
-uint32_t ${varName};
-
-if (JS_ToUint32(ctx, &${varName}, ${valName})) {
-  return JS_EXCEPTION;
-}`;
-  } else if (propDef.type === "f32") {
-    return `
-float_t ${varName};
-
-if (JS_ToFloat64(ctx, &${varName}, ${valName})) {
-  return JS_EXCEPTION;
-}`;
+    return /* c */ `${destVar} = JS_ToCString(ctx, ${srcNameSnake});`;
   } else if (propDef.type === "bool") {
-    return `int ${varName} = JS_ToBool(ctx, ${valName});`;
+    return /* c */ `${destVar} = JS_ToBool(ctx, ${srcNameSnake});`;
+  } else if (propDef.type === "i32") {
+    return /* c */ `if (JS_ToInt32(ctx, &${destVar}, ${srcNameSnake})) return JS_EXCEPTION;`;
+  } else if (propDef.type === "enum" || propDef.type === "u32" || propDef.type === "bitmask") {
+    return /* c */ `if (JS_ToUint32(ctx, &${destVar}, ${srcNameSnake})) return JS_EXCEPTION;`;
+  } else if (propDef.type === "f32") {
+    return /* c */ `if (JS_ToFloat32(ctx, &${destVar}, ${srcNameSnake})) return JS_EXCEPTION;`;
   } else if (propDef.type === "ref") {
     const refResourceDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
-    const classNamePascal = kebabToPascalCase(refResourceDef.name);
     const classNameSnake = kebabToSnakeCase(refResourceDef.name);
-    return `${classNamePascal} *${varName} = get_${classNameSnake}_from_js_val(ctx, ${valName});`;
-  } else if (propDef.type === "refArray") {
-    const refResourceDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
-
-    return /* c */ `
-      ${kebabToPascalCase(refResourceDef.name)} *${varName}[${propDef.size}] = malloc(sizeof(size_t) * ${propDef.size});
-      JSValue len = JS_GetProperty(ctx, ${valName}, "length");
-      int size = JS_VALUE_GET_INT(len);
-
-      for (int i = 0; i < size && i < ${propDef.size}; i++) {
-        ${varName}[i] = JS_GetPropertyUint32(ctx, ${valName}, i);
-      }
-    `;
+    return /* c */ `${destVar} = JS_GetOpaque2(ctx, ${srcNameSnake}, js_${classNameSnake}_class_id);`;
   } else {
     throw new Error(`undefined setter for ${propDef.type}`);
   }
@@ -276,21 +253,16 @@ function generateJSPropGetter(
   propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
 ): string {
   const propNameSnake = camelToSnakeCase(propNameCamel);
-  const jsValueConstructor = getJSValueConstructor(
-    propDef,
-    propDef.size > 1 && propDef.type !== "refArray"
-      ? `js${classNamePascal}->${propNameSnake}`
-      : `js${classNamePascal}->${classNameSnake}->${propNameSnake}`
-  );
 
   return `
 static JSValue js_${classNameSnake}_get_${propNameSnake}(JSContext *ctx, JSValueConst this_val) {
-  JS${classNamePascal} *js${classNamePascal} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
 
-  if (!js${classNamePascal}) {
+  if (!${classNameSnake}) {
     return JS_EXCEPTION;
   } else {
-    ${jsValueConstructor}
+    JSValue val;
+    ${generateJSPropGetValueStatement("val", classNameSnake, propNameSnake, propDef)}
     return val;
   }
 }
@@ -307,17 +279,110 @@ function generateJSPropSetter(
 
   return `
 static JSValue js_${classNameSnake}_set_${propNameSnake}(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  JS${classNamePascal} *js${classNamePascal} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
 
-  if (!js${classNamePascal}) {
+  if (!${classNameSnake}) {
     return JS_EXCEPTION;
   } else {
-    ${getJSValueDeserializer(propDef)}
-    websg_set_${classNameSnake}_${propNameSnake}(js${classNamePascal}->${classNameSnake}, result);
+    ${generateJSPropSetValueStatement("val", classNameSnake, propNameSnake, propDef)}
     return JS_UNDEFINED;
   }
 }
 `;
+}
+
+function generateJSRefArrayPropFunctions(
+  classNameSnake: string,
+  classNamePascal: string,
+  propNameCamel: string,
+  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
+): string {
+  const propNameSnake = camelToSnakeCase(propNameCamel);
+  const refDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
+  const refClassNameSnake = kebabToSnakeCase(refDef.name);
+  const depluralizedPropNameSnake = depluralize(propNameSnake);
+
+  return /* c */ `static JSValue js_${classNameSnake}_${propNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_NewRefArrayIterator(ctx, (JSValue (*)(JSContext *ctx, void *res))&create_${refClassNameSnake}_from_ptr, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}));
+  }
+}
+
+static JSValue js_${classNameSnake}_add_${depluralizedPropNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_AddRefArrayItem(ctx, js_${refClassNameSnake}_class_id, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}), argv[0]);
+  }
+}
+
+static JSValue js_${classNameSnake}_remove_${depluralizedPropNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_RemoveRefArrayItem(ctx, js_${refClassNameSnake}_class_id, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}), argv[0]);
+  }
+}`;
+}
+
+function generateJSRefMapPropFunctions(
+  classNameSnake: string,
+  classNamePascal: string,
+  propNameCamel: string,
+  propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
+): string {
+  const propNameSnake = camelToSnakeCase(propNameCamel);
+  const refDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
+  const refClassNameSnake = kebabToSnakeCase(refDef.name);
+  const depluralizedPropNameSnake = depluralize(propNameSnake);
+
+  return /* c */ `static JSValue js_${classNameSnake}_${propNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_NewRefMapIterator(ctx, (JSValue (*)(JSContext *ctx, void *res))&create_${refClassNameSnake}_from_ptr, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}));
+  }
+}
+  
+static JSValue js_${classNameSnake}_get_${depluralizedPropNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_GetRefMapItem(ctx, (JSValue (*)(JSContext *ctx, void *res))&create_${refClassNameSnake}_from_ptr, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}), argv[0]);
+  }
+}
+
+static JSValue js_${classNameSnake}_set_${depluralizedPropNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_SetRefMapItem(ctx, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}), argv[0], argv[1]);
+  }
+}
+
+static JSValue js_${classNameSnake}_delete_${depluralizedPropNameSnake}(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque2(ctx, this_val, js_${classNameSnake}_class_id);
+
+  if (!${classNameSnake}) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DeleteRefMapItem(ctx, (void **)${classNameSnake}->${propNameSnake}, countof(${classNameSnake}->${propNameSnake}), argv[0]);
+  }
+}`;
 }
 
 function generateJSPropBinding(
@@ -326,92 +391,277 @@ function generateJSPropBinding(
   propNameCamel: string,
   propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
 ): string {
-  if (!propDef.script || propDef.size !== 1 || propDef.type === "arrayBuffer") {
+  if (
+    !propDef.script ||
+    (propDef.size !== 1 && propDef.type !== "refArray" && propDef.type !== "refMap") ||
+    propDef.type == "arrayBuffer"
+  ) {
     return "";
   }
 
   const chunks: string[] = [];
 
-  chunks.push(generateJSPropGetter(classNameSnake, classNamePascal, propNameCamel, propDef));
+  if (propDef.type === "refArray") {
+    chunks.push(generateJSRefArrayPropFunctions(classNameSnake, classNamePascal, propNameCamel, propDef));
+  } else if (propDef.type === "refMap") {
+    chunks.push(generateJSRefMapPropFunctions(classNameSnake, classNamePascal, propNameCamel, propDef));
+  } else {
+    chunks.push(generateJSPropGetter(classNameSnake, classNamePascal, propNameCamel, propDef));
 
-  if (propDef.mutable) {
-    chunks.push(generateJSPropSetter(classNameSnake, classNamePascal, propNameCamel, propDef));
+    if (propDef.mutable) {
+      chunks.push(generateJSPropSetter(classNameSnake, classNamePascal, propNameCamel, propDef));
+    }
   }
 
   return chunks.join("\n");
 }
-function generateJSPropFunctionListEntry(
+function generateJSPropFunctionListEntries(
   classNameSnake: string,
   propName: string,
   propDef: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>
-): string | undefined {
-  if (!propDef.script || propDef.type === "arrayBuffer" || propDef.size !== 1) {
-    return undefined;
+): string[] {
+  if (
+    !propDef.script ||
+    propDef.type === "arrayBuffer" ||
+    (propDef.size !== 1 && propDef.type !== "refArray" && propDef.type !== "refMap")
+  ) {
+    return [];
   }
 
   const propNameSnake = camelToSnakeCase(propName);
+  const depluralizedPropNameSnake = depluralize(propNameSnake);
+  const propNamePascal = depluralize(camelToPascalCase(propName));
 
-  if (propDef.mutable) {
-    return `JS_CGETSET_DEF("${propName}", js_${classNameSnake}_get_${propNameSnake}, js_${classNameSnake}_set_${propNameSnake}),`;
+  if (propDef.type === "refArray") {
+    return [
+      `JS_CFUNC_DEF("${propName}", 0, js_${classNameSnake}_${propNameSnake})`,
+      `JS_CFUNC_DEF("add${propNamePascal}", 1, js_${classNameSnake}_add_${depluralizedPropNameSnake})`,
+      `JS_CFUNC_DEF("remove${propNamePascal}", 1, js_${classNameSnake}_remove_${depluralizedPropNameSnake})`,
+    ];
+  } else if (propDef.type === "refMap") {
+    return [
+      `JS_CFUNC_DEF("${propName}", 0, js_${classNameSnake}_${propNameSnake})`,
+      `JS_CFUNC_DEF("get${propNamePascal}", 1, js_${classNameSnake}_get_${depluralizedPropNameSnake})`,
+      `JS_CFUNC_DEF("set${propNamePascal}", 1, js_${classNameSnake}_set_${depluralizedPropNameSnake})`,
+      `JS_CFUNC_DEF("delete${propNamePascal}", 1, js_${classNameSnake}_delete_${depluralizedPropNameSnake})`,
+    ];
+  } else {
+    if (propDef.mutable) {
+      return [
+        `JS_CGETSET_DEF("${propName}", js_${classNameSnake}_get_${propNameSnake}, js_${classNameSnake}_set_${propNameSnake})`,
+      ];
+    }
+
+    return [`JS_CGETSET_DEF("${propName}", js_${classNameSnake}_get_${propNameSnake}, NULL)`];
   }
-
-  return `JS_CGETSET_DEF("${propName}", js_${classNameSnake}_get_${propNameSnake}, NULL),`;
 }
 
-function getConstructorArgParams(resourceDef: ResourceDefinition): string {
-  const chunks: string[] = [];
+function generateSceneFunctions(): string {
+  return /* c */ `static JSValue js_scene_nodes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  for (const propName in resourceDef.schema) {
-    const prop = resourceDef.schema[propName];
-
-    if (prop.required) {
-      chunks.push(camelToSnakeCase(propName));
-    }
+  if (!scene) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_NewNodeIterator(ctx, scene->first_node);
   }
-
-  for (const propName in resourceDef.schema) {
-    const prop = resourceDef.schema[propName];
-
-    if (!prop.required && !prop.mutable) {
-      chunks.push(camelToSnakeCase(propName));
-    }
-  }
-
-  return chunks.join(", ");
 }
 
-function generateConstructorArgParsing(resourceDef: ResourceDefinition, varName: string): string {
-  const chunks: string[] = [];
+static JSValue js_scene_add_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  for (const propName in resourceDef.schema) {
-    const prop = resourceDef.schema[propName];
+  if (!scene) {
+    return JS_EXCEPTION;
+  }
 
-    if (prop.required && prop.type !== "arrayBuffer") {
-      chunks.push(getJSValueDeserializer(prop, camelToSnakeCase(propName)));
+  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  }
+
+  Node *before;
+
+  if (argc > 1) {
+    before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+    if (!before) {
+      return JS_EXCEPTION;
     }
   }
 
-  for (const propName in resourceDef.schema) {
-    const prop = resourceDef.schema[propName];
-
-    if (!prop.required && !prop.mutable && prop.type !== "arrayBuffer") {
-      chunks.push(getJSValueDeserializer(prop, camelToSnakeCase(propName)));
+  if (before) {
+    if (scene_add_node_before(scene, before, node)) {
+      return JS_EXCEPTION;
     }
+
+    return JS_UNDEFINED;
+  }
+
+  if (scene_append_node(scene, node)) {
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_scene_remove_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+
+  if (!scene) {
+    return JS_EXCEPTION;
+  }
+
+  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  }
+
+  if (scene_remove_node(scene, node)) {
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}`;
+}
+
+function generateNodeFunctions(): string {
+  return /* c */ `static JSValue js_node_get_parent(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  }
+
+  if (node->parent) {
+    return create_node_from_ptr(ctx, node->parent);
+  } else if (node->parent_scene) {
+    return create_scene_from_ptr(ctx, node->parent_scene);
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_node_children(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_NewNodeIterator(ctx, node->first_child);
+  }
+}
+
+static JSValue js_node_add_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!parent) {
+    return JS_EXCEPTION;
+  }
+
+  Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+  if (!child) {
+    return JS_EXCEPTION;
+  }
+
+  Node *before;
+
+  if (argc > 1) {
+    before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+    if (!before) {
+      return JS_EXCEPTION;
+    }
+  }
+
+  if (before) {
+    if (node_add_child_before(parent, before, child)) {
+      return JS_EXCEPTION;
+    }
+
+    return JS_UNDEFINED;
+  }
+
+  if (node_append_child(parent, child)) {
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_node_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!parent) {
+    return JS_EXCEPTION;
+  }
+
+  Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+
+  if (!child) {
+    return JS_EXCEPTION;
+  }
+
+  if (node_remove_child(parent, child)) {
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}`;
+}
+
+function generateResourceSpecificFunctions(resourceDef: ResourceDefinition): string {
+  const chunks: string[] = [];
+
+  if (resourceDef.name === "scene") {
+    chunks.push(generateSceneFunctions());
+  } else if (resourceDef.name === "node") {
+    chunks.push(generateNodeFunctions());
   }
 
   return chunks.join("\n");
 }
 
-function generateTypedArrayPropDefinitions(resourceDef: ResourceDefinition): string {
+function generateResourceSpecificFunctionListEntries(resourceDef: ResourceDefinition): string[] {
+  const entries: string[] = [];
+
+  if (resourceDef.name === "scene") {
+    entries.push(
+      `JS_CFUNC_DEF("nodes", 0, js_scene_nodes)`,
+      `JS_CFUNC_DEF("addNode", 2, js_scene_add_node)`,
+      `JS_CFUNC_DEF("removeNode", 1, js_scene_remove_node)`
+    );
+  } else if (resourceDef.name === "node") {
+    entries.push(
+      `JS_CGETSET_DEF("parent", js_node_get_parent, NULL)`,
+      `JS_CFUNC_DEF("children", 0, js_node_children)`,
+      `JS_CFUNC_DEF("addChild", 2, js_node_add_child)`,
+      `JS_CFUNC_DEF("removeChild", 1, js_node_remove_child)`
+    );
+  }
+
+  return entries;
+}
+
+function generateConstructorArgParsing(resourceDef: ResourceDefinition, varName: string): string {
+  // TODO
+  return "";
+}
+
+function generateArrayPropDefinitions(resourceDef: ResourceDefinition): string {
   const chunks: string[] = [];
 
   for (const propName in resourceDef.schema) {
     const prop = resourceDef.schema[propName];
 
-    if (prop.size > 1) {
+    if (prop.size > 1 && prop.type !== "refArray" && prop.type !== "refMap") {
       const propVar = `${kebabToSnakeCase(resourceDef.name)}->${camelToSnakeCase(propName)}`;
-      chunks.push(`JSValue arr = JS_CreateFloat32Array(ctx, ${propVar}, ${prop.size});
-JS_DefineReadOnlyPropertyValueStr(ctx, val, "${propName}", arr);`);
+      chunks.push(`JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "${propName}", ${propVar}, ${prop.size});`);
+    } else if (prop.type === "arrayBuffer") {
+      const propVar = `${kebabToSnakeCase(resourceDef.name)}->${camelToSnakeCase(propName)}`;
+      chunks.push(`JS_DefineReadOnlyArrayBufferProperty(ctx, val, "${propName}", ${propVar});`);
     }
   }
 
@@ -437,6 +687,7 @@ function generateResourceJSBindings(resourceDef: ResourceDefinition) {
 #include "../../include/quickjs/quickjs.h"
 
 #include "../jsutils.h"
+#include "../websg-utils.h"
 #include "../script-context.h"
 #include "websg.h"
 ${dependencies.map((name) => `#include "${name}.h"`).join("\n")}
@@ -445,44 +696,35 @@ ${dependencies.map((name) => `#include "${name}.h"`).join("\n")}
  * WebSG.${classNamePascal}
  */
 
-typedef struct JS${classNamePascal} {
-  ${classNamePascal} *${classNameSnake};
-} JS${classNamePascal};
-
-static JSClassID js_${classNameSnake}_class_id;
-
 static JSValue js_${classNameSnake}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-  ${classNamePascal} *${classNameSnake} = malloc(sizeof(${classNamePascal}));
+  ${classNamePascal} *${classNameSnake} = js_mallocz(ctx, sizeof(${classNamePascal}));
 
   ${generateConstructorArgParsing(resourceDef, classNameSnake)}
 
-  if (websg_create_${classNameSnake}(${classNameSnake})) {
+  if (websg_create_resource(ResourceType_${classNamePascal}, ${classNameSnake})) {
     return JS_EXCEPTION;
   }
 
-  JSValue val = JS_UNDEFINED;
   JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
 
   if (JS_IsException(proto)) {
-    websg_dispose_${classNameSnake}(${classNameSnake});
+    websg_dispose_resource(${classNameSnake});
     JS_FreeValue(ctx, proto);
     return JS_EXCEPTION;
   }
-    
-  val = JS_NewObjectProtoClass(ctx, proto, js_${classNameSnake}_class_id);
+
+  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_${classNameSnake}_class_id);
   JS_FreeValue(ctx, proto);
 
   if (JS_IsException(val)) {
-    websg_dispose_texture(${classNameSnake});
+    websg_dispose_resource(${classNameSnake});
     JS_FreeValue(ctx, val);
     return JS_EXCEPTION;
   }
 
-  ${generateTypedArrayPropDefinitions(resourceDef)}
+  ${generateArrayPropDefinitions(resourceDef)}
 
-  JS${classNamePascal} *js${classNamePascal} = js_malloc(ctx, sizeof(JS${classNamePascal}));
-  js${classNamePascal}->${classNameSnake} = ${classNameSnake};
-  JS_SetOpaque(val, js${classNamePascal});
+  JS_SetOpaque(val, ${classNameSnake});
   set_js_val_from_ptr(ctx, ${classNameSnake}, val);
 
   return val;
@@ -493,10 +735,12 @@ ${Object.entries(resourceDef.schema)
   .filter((val) => !!val)
   .join("\n")}
 
+${generateResourceSpecificFunctions(resourceDef)}
+
 static void js_${classNameSnake}_finalizer(JSRuntime *rt, JSValue val) {
-  JS${classNamePascal} *js${classNamePascal} = JS_GetOpaque(val, js_${classNameSnake}_class_id);
-  websg_dispose_${classNameSnake}(js${classNamePascal}->${classNameSnake});
-  js_free_rt(rt, js${classNamePascal});
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque(val, js_${classNameSnake}_class_id);
+  websg_dispose_resource(${classNameSnake});
+  js_free_rt(rt, ${classNameSnake});
 }
 
 static JSClassDef js_${classNameSnake}_class = {
@@ -506,9 +750,10 @@ static JSClassDef js_${classNameSnake}_class = {
 
 static const JSCFunctionListEntry js_${classNameSnake}_proto_funcs[] = {
 ${Object.entries(resourceDef.schema)
-  .map(([propName, propDef]) => generateJSPropFunctionListEntry(classNameSnake, propName, propDef))
+  .flatMap(([propName, propDef]) => generateJSPropFunctionListEntries(classNameSnake, propName, propDef))
+  .concat(generateResourceSpecificFunctionListEntries(resourceDef))
   .filter((val) => !!val)
-  .map((val) => `  ${val}`)
+  .map((val) => `  ${val},`)
   .join("\n")}
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "${classNamePascal}", JS_PROP_CONFIGURABLE),
 };
@@ -535,7 +780,7 @@ static JSValue js_define_${classNameSnake}_class(JSContext *ctx) {
 
 static JSValue js_get_${classNameSnake}_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   const char *name = JS_ToCString(ctx, argv[0]);
-  ${classNamePascal} *${classNameSnake} = websg_get_${classNameSnake}_by_name(name);
+  ${classNamePascal} *${classNameSnake} = websg_get_resource_by_name(ResourceType_${classNamePascal}, name);
   JS_FreeCString(ctx, name);
   return create_${classNameSnake}_from_ptr(ctx, ${classNameSnake});
 }
@@ -549,27 +794,12 @@ JSValue create_${classNameSnake}_from_ptr(JSContext *ctx, ${classNamePascal} *${
 
   if (JS_IsUndefined(val)) {
     val = JS_NewObjectClass(ctx, js_${classNameSnake}_class_id);
-    JS${classNamePascal} *js${classNamePascal} = js_malloc(ctx, sizeof(JS${classNamePascal}));
-    js${classNamePascal}->${classNameSnake} = ${classNameSnake};
-    JS_SetOpaque(val, js${classNamePascal});
+    ${generateArrayPropDefinitions(resourceDef)}
+    JS_SetOpaque(val, ${classNameSnake});
     set_js_val_from_ptr(ctx, ${classNameSnake}, val);
   }
 
   return val;
-}
-
-${classNamePascal} *get_${classNameSnake}_from_js_val(JSContext *ctx, JSValue val) {
-  if (JS_IsUndefined(val) || JS_IsNull(val)) {
-    return NULL;
-  }
-
-  JS${classNamePascal} *js${classNamePascal} = JS_GetOpaque2(ctx, val, js_${classNameSnake}_class_id);
-
-  if (!js${classNamePascal}) {
-    return NULL;
-  }
-
-  return js${classNamePascal}->${classNameSnake};
 }
 
 void js_define_${classNameSnake}_api(JSContext *ctx, JSValue *target) {
@@ -594,11 +824,11 @@ function generateResourceJSHeader(resourceDef: ResourceDefinition) {
 #ifndef __${classNameSnake}_h
 #define __${classNameSnake}_h
 #include "../../include/quickjs/quickjs.h"
-#include "websg.h";
+#include "websg.h"
+
+static JSClassID js_${classNameSnake}_class_id;
 
 JSValue create_${classNameSnake}_from_ptr(JSContext *ctx, ${classNamePascal} *${classNameSnake});
-
-${classNamePascal} *get_${classNameSnake}_from_js_val(JSContext *ctx, JSValue ${classNameSnake});
 
 void js_define_${classNameSnake}_api(JSContext *ctx, JSValue *target);
 

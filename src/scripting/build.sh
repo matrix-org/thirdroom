@@ -18,4 +18,5 @@ emcc \
   -DCONFIG_VERSION=\"$QUICKJS_CONFIG_VERSION\" \
   -DCONFIG_STACK_CHECK \
   src/*.c \
+  src/generated/*.c \
   include/quickjs/{quickjs,cutils,libregexp,libunicode}.c
