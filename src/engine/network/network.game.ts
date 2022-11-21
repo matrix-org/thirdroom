@@ -33,11 +33,12 @@ import {
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
-import { deserializeCommand } from "./commands.game";
+import { deserializeCommands } from "./commands.game";
 import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+// import { Action, ActionState } from "../input/ActionMappingSystem";
 
 /*********
  * Types *
@@ -46,7 +47,7 @@ import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/
 export interface GameNetworkState {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  commands: ArrayBuffer[];
+  commands: [number, ArrayBuffer][];
   hostId: string;
   peerId: string;
   peers: string[];
@@ -119,7 +120,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
-    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommand);
+    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommands);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
@@ -261,10 +262,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
         if (amNewHost) {
           addComponent(ctx.world, Owned, eid);
         } else {
-          // TODO: re-send this from the host side either via explicit message or via creation message
-          // or deterministically set it here
-          // explicit message: NID -> NID
-          // Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
+          // NOTE: if not new host, then the host sends networkId updates (outbound.game.ts#assignNetworkIds)
         }
       }
     }

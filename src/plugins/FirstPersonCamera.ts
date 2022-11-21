@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm, quat } from "gl-matrix";
 
 import {
@@ -11,19 +11,15 @@ import {
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
-import { NOOP } from "../engine/config.common";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
-import { isHost } from "../engine/network/network.common";
-import { Networked, NetworkModule, Owned } from "../engine/network/network.game";
+import { Networked, NetworkModule } from "../engine/network/network.game";
 import { NetworkAction } from "../engine/network/NetworkAction";
-import { broadcastReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
-import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
 
@@ -73,7 +69,7 @@ export const FirstPersonCameraActions = {
 
 export const FirstPersonCameraActionMap: ActionMap = {
   id: "first-person-camera",
-  actions: [
+  actionDefs: [
     {
       id: "look",
       path: FirstPersonCameraActions.Look,
@@ -85,6 +81,8 @@ export const FirstPersonCameraActionMap: ActionMap = {
           y: "Mouse/movementY",
         },
       ],
+      // TODO: remove this, client will send absolute camera values
+      networked: true,
     },
   ],
 };
@@ -116,7 +114,7 @@ export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget,
 export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
 
 function applyYaw(ctx: GameState, controller: InputController, eid: number) {
-  const [lookX] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
+  const [lookX] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
@@ -126,7 +124,7 @@ function applyYaw(ctx: GameState, controller: InputController, eid: number) {
 }
 
 function applyPitch(ctx: GameState, controller: InputController, eid: number) {
-  const [, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
+  const [, lookY] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
     const rotation = Transform.rotation[eid];
@@ -148,10 +146,10 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
 }
 
 export function FirstPersonCameraSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
-    return;
-  }
+  // const network = getModule(ctx, NetworkModule);
+  // if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+  //   return;
+  // }
 
   const input = getModule(ctx, InputModule);
 
@@ -163,19 +161,20 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const controller = getInputController(input, parent);
     applyPitch(ctx, controller, eid);
 
+    // TODO: decouple this logic from this system
     // network the avatar's camera
-    const haveConnectedPeers = network.peers.length > 0;
-    const hosting = network.authoritative && isHost(network);
-    const avatar = getAvatar(ctx, parent);
-    const isOwnedAvatar =
-      avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
-    if (hosting && haveConnectedPeers && isOwnedAvatar) {
-      const camera = getCamera(ctx, parent);
-      const msg = createUpdateCameraMessage(ctx, parent, camera);
-      if (msg.byteLength > 0) {
-        broadcastReliable(ctx, network, msg);
-      }
-    }
+    // const haveConnectedPeers = network.peers.length > 0;
+    // const hosting = network.authoritative && isHost(network);
+    // const avatar = getAvatar(ctx, parent);
+    // const isOwnedAvatar =
+    //   avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
+    // if (hosting && haveConnectedPeers && isOwnedAvatar) {
+    //   const camera = getCamera(ctx, parent);
+    //   const msg = createUpdateCameraMessage(ctx, parent, camera);
+    //   if (msg.byteLength > 0) {
+    //     broadcastReliable(ctx, network, msg);
+    //   }
+    // }
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);

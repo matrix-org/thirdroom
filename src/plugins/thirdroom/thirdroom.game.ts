@@ -198,7 +198,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
 const actionMap: ActionMap = {
   id: "fly-mode-toggle",
-  actions: [
+  actionDefs: [
     {
       id: "toggleFlyMode",
       path: "toggleFlyMode",
@@ -560,7 +560,7 @@ export function ThirdroomSystem(ctx: GameState) {
 }
 
 function updateThirdroom(ctx: GameState, controller: InputController, player: number) {
-  const toggleFlyMode = controller.actions.get("toggleFlyMode") as ButtonActionState;
+  const toggleFlyMode = controller.actionStates.get("toggleFlyMode") as ButtonActionState;
   if (toggleFlyMode.pressed) {
     if (hasComponent(ctx.world, FlyControls, player)) {
       swapToPlayerRig(ctx, player);

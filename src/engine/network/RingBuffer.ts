@@ -68,6 +68,7 @@ export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
 
   moveCursorView(view, 0);
 
+  // TODO: write peerIndex instead
   writePeerId(view, peerId);
 
   writeUint8(view, broadcast ? 1 : 0);

@@ -2,8 +2,8 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { isHost } from "../network/network.common";
-import { NetworkModule } from "../network/network.game";
+// import { isHost } from "../network/network.common";
+// import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
 import {
@@ -79,25 +79,12 @@ export function applyMouseScroll(raw: { [path: string]: number }, o: typeof out)
 }
 
 export function ApplyInputSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
   const input = getModule(ctx, InputModule);
 
   const { inputRingBuffer, raw } = input.activeController;
 
   while (availableRead(inputRingBuffer)) {
-    const command = dequeueInputRingBuffer(inputRingBuffer, out);
-    if (!command) continue;
-
-    const haveConnectedPeers = network.peers.length > 0;
-    if (network.authoritative && !isHost(network) && haveConnectedPeers) {
-      // collect commands to send to host
-      network.commands.push(command);
-
-      // skip applying inputs if we aren't hosting and client-side prediction is off
-      if (!network.clientSidePrediction) {
-        continue;
-      }
-    }
+    dequeueInputRingBuffer(inputRingBuffer, out);
 
     switch (out.keyCode) {
       case KeyCodes.MouseButtons:

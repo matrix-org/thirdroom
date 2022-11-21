@@ -1,37 +1,41 @@
 import {
   createCursorView,
-  readFloat32,
+  readArrayBuffer,
+  readUint16,
   readUint8,
   sliceCursorView,
   writeArrayBuffer,
+  writeUint16,
   writeUint8,
 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { applyMouseButtons, applyMouseMovement, applyMouseScroll, InputModule } from "../input/input.game";
+import { ActionTypesToBindings } from "../input/ActionMappingSystem";
+import { InputModule } from "../input/input.game";
 import { getInputController } from "../input/InputController";
-import { KeyCodes, Keys } from "../input/KeyCodes";
 import { getModule } from "../module/module.common";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { NetPipeData, writeMetadata } from "./serialization.game";
 
 const MAX_MESSAGES = 1000;
-const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
+const MESSAGE_SIZE = 2 * Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
-const messageView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
+const writeView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
 
-export const createCommandMessage = (ctx: GameState, commands: ArrayBuffer[]) => {
-  writeMetadata(NetworkAction.Command)([ctx, messageView]);
-  writeUint8(messageView, commands.length);
-  for (const command of commands) {
-    writeArrayBuffer(messageView, command);
+export const createCommandsMessage = (ctx: GameState, actions: [number, ArrayBuffer][]) => {
+  writeMetadata(NetworkAction.Command)([ctx, writeView]);
+  writeUint8(writeView, actions.length);
+  for (let i = 0; i < actions.length; i++) {
+    const [actionId, buffer] = actions[i];
+    writeUint8(writeView, actionId);
+    writeUint16(writeView, buffer.byteLength);
+    writeArrayBuffer(writeView, buffer);
   }
-  return sliceCursorView(messageView);
+  return sliceCursorView(writeView);
 };
 
-const out: { keyCode: number; values: [number, number] } = { keyCode: 0, values: [0, 0] };
-export const deserializeCommand = (data: NetPipeData) => {
-  const [ctx, cv, peerId] = data;
+export const deserializeCommands = (data: NetPipeData) => {
+  const [ctx, readView, peerId] = data;
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
@@ -43,27 +47,18 @@ export const deserializeCommand = (data: NetPipeData) => {
 
   const controller = getInputController(input, eid);
 
-  const count = readUint8(cv);
+  const count = readUint8(readView);
   for (let i = 0; i < count; i++) {
-    out.keyCode = readUint8(cv);
-    out.values[0] = readFloat32(cv);
-    out.values[1] = readFloat32(cv);
+    const id = readUint8(readView);
+    const byteLength = readUint16(readView);
+    const encodedAction = readArrayBuffer(readView, byteLength);
 
-    const { raw } = controller;
-
-    switch (out.keyCode) {
-      case KeyCodes.MouseButtons:
-        applyMouseButtons(raw, out);
-        break;
-      case KeyCodes.MouseMovement:
-        applyMouseMovement(raw, out);
-        break;
-      case KeyCodes.MouseScroll:
-        applyMouseScroll(raw, out);
-        break;
-      default:
-        raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
-    }
+    const path = controller.idToPath.get(id)!;
+    const actionDef = controller.pathToDef.get(path)!;
+    const action = ActionTypesToBindings[actionDef.type];
+    const decodedAction = action.decode(encodedAction);
+    controller.actionStates.set(path, decodedAction);
+    console.log("deserializeCommandMessage", path, decodedAction);
   }
 
   return data;

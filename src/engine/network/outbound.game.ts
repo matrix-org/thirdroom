@@ -1,7 +1,7 @@
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { createCommandMessage } from "./commands.game";
+import { createCommandsMessage } from "./commands.game";
 import { isHost } from "./network.common";
 import {
   NetworkModule,
@@ -130,7 +130,7 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
     if (haveNewPeers) network.newPeers = [];
 
     // send commands to host if not hosting
-    const msg = createCommandMessage(ctx, network.commands);
+    const msg = createCommandsMessage(ctx, network.commands);
     if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);
     network.commands.length = 0;
   }

@@ -14,6 +14,7 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
+import { isHost } from "../engine/network/network.common";
 import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerCollisionGroups, playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
@@ -32,7 +33,7 @@ export const PhysicsCharacterControllerActions = {
 
 export const PhysicsCharacterControllerActionMap: ActionMap = {
   id: "physics-character-controller",
-  actions: [
+  actionDefs: [
     {
       id: "move",
       path: PhysicsCharacterControllerActions.Move,
@@ -46,6 +47,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
+      networked: true,
     },
     {
       id: "jump",
@@ -57,6 +59,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/Space",
         },
       ],
+      networked: true,
     },
     {
       id: "crouch",
@@ -68,6 +71,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/KeyC",
         },
       ],
+      networked: true,
     },
     {
       id: "sprint",
@@ -79,6 +83,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
+      networked: true,
     },
   ],
 };
@@ -168,10 +173,10 @@ function updatePhysicsControls(
   body.setRotation(obj.quaternion, true);
 
   // Handle Input
-  const moveVec = controller.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-  const jump = controller.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-  const crouch = controller.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-  const sprint = controller.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+  const moveVec = controller.actionStates.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+  const jump = controller.actionStates.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+  const crouch = controller.actionStates.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+  const sprint = controller.actionStates.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
   linearVelocity.copy(body.linvel() as Vector3);
 
@@ -252,6 +257,10 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+
+  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+    return;
+  }
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {

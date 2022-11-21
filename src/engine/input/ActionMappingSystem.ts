@@ -1,8 +1,19 @@
 import { vec2 } from "gl-matrix";
 
+import {
+  createCursorView,
+  moveCursorView,
+  readFloat32,
+  readUint8,
+  sliceCursorView,
+  writeFloat32,
+  writeUint8,
+} from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { InputModule } from "./input.game";
+import { isHost } from "../network/network.common";
+import { GameNetworkState, NetworkModule } from "../network/network.game";
+import { GameInputModule, InputModule } from "./input.game";
 import { InputController } from "./InputController";
 
 export enum ActionType {
@@ -20,7 +31,7 @@ export type ActionState = number | vec2 | ButtonActionState;
 
 export interface ActionMap {
   id: string;
-  actions: ActionDefinition[];
+  actionDefs: ActionDefinition[];
 }
 
 export interface ActionDefinition {
@@ -28,6 +39,7 @@ export interface ActionDefinition {
   path: string;
   type: ActionType;
   bindings: ActionBindingTypes[];
+  networked?: boolean;
 }
 
 export enum BindingType {
@@ -61,37 +73,113 @@ export interface DirectionalButtonsBinding extends ActionBinding {
 
 export type ActionBindingTypes = AxesBinding | ButtonBinding | DirectionalButtonsBinding | ActionBinding;
 
-const ActionTypesToBindings: {
-  [key: string]: {
-    create: () => any;
-    bindings: {
-      [key: string]: (input: InputController, path: string, bindingDef: ActionBinding) => void;
-    };
+export interface Action {
+  create: () => any;
+  bindings: {
+    [key: string]: (input: InputController, path: string, bindingDef: ActionBinding) => ActionState | false;
   };
-} = {
-  [ActionType.Button]: {
-    create: () => ({ pressed: false, released: false, held: false }),
-    bindings: {
-      [BindingType.Button]: (controller: InputController, path: string, bindingDef: ActionBinding) => {
-        const down = controller.raw[(bindingDef as any).path];
-        const value = controller.actions.get(path) as ButtonActionState;
+  encode: (actionState: ActionState) => ArrayBuffer;
+  decode: (buffer: ArrayBuffer) => ActionState;
+}
 
-        value.pressed = !value.held && !!down;
-        value.released = value.held && !down;
-        value.held = !!down;
+export interface ActionTypesSchema {
+  [key: string]: Action;
+}
+
+const writeView = createCursorView(new ArrayBuffer(1000));
+export const ActionTypesToBindings: ActionTypesSchema = {
+  [ActionType.Button]: {
+    // TODO: replace create/encode/decode with resource schema
+    /**
+     * binary format
+     * pressed:   0b001
+     * released:  0b010
+     * held:      0b100
+     */
+    create: () => ({ pressed: false, released: false, held: false }),
+    encode: (actionState: ActionState) => {
+      moveCursorView(writeView, 0);
+      actionState = actionState as ButtonActionState;
+      let mask = 0;
+      mask |= (actionState.pressed ? 1 : 0) << 0;
+      mask |= (actionState.released ? 1 : 0) << 1;
+      mask |= (actionState.held ? 1 : 0) << 2;
+      writeUint8(writeView, mask);
+      return sliceCursorView(writeView);
+    },
+    decode: (buffer: ArrayBuffer) => {
+      const readView = createCursorView(buffer);
+      const mask = readUint8(readView);
+      const pressed = (mask & (1 << 0)) !== 0;
+      const released = (mask & (1 << 1)) !== 0;
+      const held = (mask & (1 << 2)) !== 0;
+      return {
+        pressed,
+        released,
+        held,
+      } as ButtonActionState;
+    },
+    bindings: {
+      [BindingType.Button]: (
+        controller: InputController,
+        path: string,
+        bindingDef: ActionBinding
+      ): ActionState | false => {
+        const down = controller.raw[(bindingDef as any).path];
+        const actionState = controller.actionStates.get(path) as ButtonActionState;
+
+        const pressed = !actionState.held && !!down;
+        const released = actionState.held && !down;
+        const held = !!down;
+
+        const changed =
+          pressed !== actionState.pressed || released !== actionState.released || held !== actionState.held;
+
+        actionState.pressed = pressed;
+        actionState.released = released;
+        actionState.held = held;
+
+        return changed && actionState;
       },
     },
   },
   [ActionType.Vector2]: {
     create: () => vec2.create(),
+    encode: (actionState: ActionState) => {
+      moveCursorView(writeView, 0);
+      actionState = actionState as vec2;
+      writeFloat32(writeView, actionState[0]);
+      writeFloat32(writeView, actionState[1]);
+      return sliceCursorView(writeView);
+    },
+    decode: (buffer: ArrayBuffer) => {
+      const readView = createCursorView(buffer);
+      return [readFloat32(readView), readFloat32(readView)] as vec2;
+    },
     bindings: {
-      [BindingType.Axes]: (controller: InputController, path: string, bindingDef: ActionBinding) => {
+      [BindingType.Axes]: (
+        controller: InputController,
+        path: string,
+        bindingDef: ActionBinding
+      ): ActionState | false => {
         const { x, y } = bindingDef as AxesBinding;
-        const value = controller.actions.get(path) as vec2;
-        value[0] = controller.raw[x] || 0;
-        value[1] = controller.raw[y] || 0;
+        const rawX = controller.raw[x];
+        const rawY = controller.raw[y];
+
+        const actionState = controller.actionStates.get(path) as vec2;
+
+        const changed = rawX ? rawX !== actionState[0] : false || rawY ? rawY !== actionState[1] : false;
+
+        actionState[0] = rawX || 0;
+        actionState[1] = rawY || 0;
+
+        return changed && actionState;
       },
-      [BindingType.DirectionalButtons]: (controller: InputController, path: string, bindingDef: ActionBinding) => {
+      [BindingType.DirectionalButtons]: (
+        controller: InputController,
+        path: string,
+        bindingDef: ActionBinding
+      ): ActionState | false => {
         const { up, down, left, right } = bindingDef as DirectionalButtonsBinding;
 
         let x = 0;
@@ -113,31 +201,56 @@ const ActionTypesToBindings: {
           x += 1;
         }
 
-        const value = controller.actions.get(path) as vec2;
-        value[0] = x;
-        value[1] = y;
+        const actionState = controller.actionStates.get(path) as vec2;
+
+        const changed = x !== actionState[0] || y !== actionState[1];
+
+        actionState[0] = x;
+        actionState[1] = y;
+
+        return changed && actionState;
       },
     },
   },
 };
 
 export function ActionMappingSystem(state: GameState) {
+  const network = getModule(state, NetworkModule);
   const input = getModule(state, InputModule);
   for (const controller of input.controllers.values()) {
-    updateActionMaps(controller);
+    updateActionMaps(input, network, controller);
   }
 }
 
 // Note not optimized at all
-function updateActionMaps(controller: InputController) {
+function updateActionMaps(input: GameInputModule, network: GameNetworkState, controller: InputController) {
   for (const actionMap of controller.actionMaps) {
-    for (const action of actionMap.actions) {
-      if (!controller.actions.has(action.path)) {
-        controller.actions.set(action.path, ActionTypesToBindings[action.type].create());
+    for (const actionDef of actionMap.actionDefs) {
+      if (!controller.actionStates.has(actionDef.path)) {
+        controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
+        // set ID maps for serialization
+        controller.pathToId.set(actionDef.path, controller.actionStates.size);
+        controller.pathToDef.set(actionDef.path, actionDef);
+        controller.idToPath.set(controller.actionStates.size, actionDef.path);
       }
 
-      for (const binding of action.bindings) {
-        ActionTypesToBindings[action.type].bindings[binding.type](controller, action.path, binding);
+      if (
+        network.authoritative &&
+        isHost(network) &&
+        controller.inputRingBuffer !== input.defaultController.inputRingBuffer
+      ) {
+        continue;
+      }
+
+      for (const binding of actionDef.bindings) {
+        const action = ActionTypesToBindings[actionDef.type];
+        const actionState = action.bindings[binding.type](controller, actionDef.path, binding);
+
+        const shouldSendActionToHost = network.authoritative && !isHost(network) && actionDef.networked && actionState;
+        if (shouldSendActionToHost) {
+          const actionId = controller.pathToId.get(actionDef.path)!;
+          network.commands.push([actionId, action.encode(actionState)]);
+        }
       }
     }
   }

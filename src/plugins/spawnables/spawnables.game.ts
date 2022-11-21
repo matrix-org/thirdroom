@@ -424,7 +424,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     const controller = input.defaultController;
     enableActionMap(controller, {
       id: "spawnables",
-      actions,
+      actionDefs: actions,
     });
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
@@ -467,7 +467,7 @@ export const updateSpawnables = (
   controller: InputController,
   camera: number
 ) => {
-  const pressedActions = actions.filter((a) => (controller.actions.get(a.path) as ButtonActionState)?.pressed);
+  const pressedActions = actions.filter((a) => (controller.actionStates.get(a.path) as ButtonActionState)?.pressed);
 
   if (pressedActions.length) {
     // bounce out of the system if we hit the max object cap

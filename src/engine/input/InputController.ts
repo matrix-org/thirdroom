@@ -1,27 +1,37 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
 import { World } from "../GameTypes";
-import { ActionState, ActionMap } from "./ActionMappingSystem";
+import { ActionState, ActionMap, ActionDefinition } from "./ActionMappingSystem";
 import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
 export interface InputController {
   inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
-  actions: Map<string, ActionState>;
+  actionStates: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
+  // for networking
+  pathToId: Map<string, number>;
+  pathToDef: Map<string, ActionDefinition>;
+  idToPath: Map<number, string>;
 }
 
 export interface InputControllerProps {
   inputRingBuffer?: InputRingBuffer<Float32ArrayConstructor>;
-  actions?: Map<string, ActionState>;
+  actionStates?: Map<string, ActionState>;
   actionMaps?: ActionMap[];
+  pathToId?: Map<string, number>;
+  pathToDef?: Map<string, ActionDefinition>;
+  idToPath?: Map<number, string>;
 }
 
 export const createInputController = (props?: InputControllerProps): InputController => ({
   inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
   actionMaps: (props && props.actionMaps) || [],
-  actions: (props && props.actions) || new Map(),
+  actionStates: (props && props.actionStates) || new Map(),
+  pathToId: (props && props.pathToId) || new Map(),
+  pathToDef: (props && props.pathToId) || new Map(),
+  idToPath: (props && props.idToPath) || new Map(),
   raw: {},
 });
 

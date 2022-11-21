@@ -24,7 +24,7 @@ export const FlyCharacterControllerActions = {
 
 export const FlyCharacterControllerActionMap: ActionMap = {
   id: "fly-character-controller",
-  actions: [
+  actionDefs: [
     {
       id: "move",
       path: FlyCharacterControllerActions.Move,
@@ -38,6 +38,7 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
+      networked: true,
     },
     {
       id: "boost",
@@ -49,6 +50,7 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
+      networked: true,
     },
   ],
 };
@@ -85,8 +87,8 @@ export function addFlyControls(ctx: GameState, eid: number) {
 
 function applyFlyControls(playerRig: number, controller: InputController, camera: number, ctx: GameState) {
   const { speed } = FlyControls.get(playerRig)!;
-  const moveVec = controller.actions.get(FlyCharacterControllerActions.Move) as Float32Array;
-  const boost = controller.actions.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
+  const moveVec = controller.actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
+  const boost = controller.actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
 
   const boostModifier = boost.held ? 2 : 1;
 
