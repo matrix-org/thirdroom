@@ -656,7 +656,7 @@ function generateArrayPropDefinitions(resourceDef: ResourceDefinition): string {
   for (const propName in resourceDef.schema) {
     const prop = resourceDef.schema[propName];
 
-    if (prop.size > 1 && prop.type !== "refArray" && prop.type !== "refMap") {
+    if (prop.size > 1 && prop.type !== "refArray" && prop.type !== "refMap" && prop.type !== "arrayBuffer") {
       const propVar = `${kebabToSnakeCase(resourceDef.name)}->${camelToSnakeCase(propName)}`;
       chunks.push(`JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "${propName}", ${propVar}, ${prop.size});`);
     } else if (prop.type === "arrayBuffer") {

@@ -1,7 +1,7 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
-import { TypedArrayConstructor32 } from "../allocator/types";
+import { TypedArray32, TypedArrayConstructor32 } from "../allocator/types";
 import { BaseThreadContext } from "../module/module.common";
 
 export interface ResourceDefinition<S extends Schema = Schema> {
@@ -294,7 +294,7 @@ function createArrayBufferPropDef(options?: {
 }): ResourcePropDef<"arrayBuffer", undefined, false, true> {
   return {
     type: "arrayBuffer",
-    size: 1,
+    size: 2,
     arrayType: Uint32Array,
     mutable: false,
     required: true,
@@ -531,8 +531,9 @@ export type Resource<Def extends ResourceDefinition, MutResource extends boolean
 } & { [Prop in keyof Def["schema"]]: ResourcePropValueMut<Def, Prop, MutResource> };
 
 export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true> & {
+  resourceType: number;
   manager: IRemoteResourceManager;
-  __props: { [key: string]: any };
+  __props: { [key: string]: TypedArray32 };
   initialized: boolean;
   byteView: Uint8Array;
   translationIndices: Uint32Array;
@@ -547,7 +548,7 @@ export type LocalResource<
   ThreadContext extends BaseThreadContext = BaseThreadContext
 > = Resource<Def, false> & {
   manager: ILocalResourceManager;
-  __props: { [key: string]: any };
+  __props: { [key: string]: TypedArray32[] };
   load(ctx: ThreadContext): Promise<void>;
   dispose(ctx: ThreadContext): void;
 };
@@ -562,41 +563,20 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]?: ResourcePropValue<Def, Prop, true>;
 };
 
-export interface RemoteResourceStringStore {
-  prevPtr: number;
-  value: string;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
-export interface RemoteResourceArrayBufferStore {
-  value: SharedArrayBuffer | undefined;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
-export interface RemoteResourceRefStore {
-  value: unknown;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
-  getString(store: RemoteResourceStringStore): string;
-  setString(value: string | undefined, store: RemoteResourceStringStore): void;
-  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer;
-  setArrayBuffer(value: SharedArrayBuffer | undefined, store: RemoteResourceArrayBufferStore): void;
+  getString(store: Uint32Array): string;
+  setString(value: string | undefined, store: Uint32Array): void;
+  getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
+  setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def>;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
-  getRef<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    store: RemoteResourceRefStore
-  ): RemoteResource<Def> | undefined;
-  setRef(value: unknown, store: RemoteResourceRefStore): void;
+  disposeResource(resourceId: number): void;
+  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
+  setRef(value: unknown | undefined, store: Uint32Array): void;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }

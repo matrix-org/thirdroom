@@ -74,7 +74,7 @@ export function defineLocalResourceClass<
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
-          const resourceId = this.__props[propName][index][0];
+          const resourceId = this.__props[propName][index][1];
           return this.manager.getArrayBuffer(resourceId);
         },
       });
