@@ -68,7 +68,7 @@ export function FeaturedWorldCard({
                   <IconButton label="Options" iconSrc={MoreHorizontalIC} />
                 </DropdownMenu>
               )}
-              <JoinRoomProvider session={session}>
+              <JoinRoomProvider session={session} roomId={roomId}>
                 {(join, isJoined, loading, error) =>
                   isJoined ? (
                     <Button variant="secondary" fill="outline" size="sm" onClick={handleViewWorld}>

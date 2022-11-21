@@ -4,9 +4,11 @@ import { useAsyncCallback } from "../../hooks/useAsyncCallback";
 
 export function JoinRoomProvider({
   session,
+  roomId,
   children,
 }: {
   session: Session;
+  roomId: string;
   children: (
     join: (aliasOrId: string) => Promise<unknown>,
     isJoined: boolean,
@@ -23,7 +25,7 @@ export function JoinRoomProvider({
     [session]
   );
 
-  const isJoined = typeof value === "string";
+  const isJoined = typeof value === "string" || !!session.rooms.get(roomId);
 
   return children(callback, isJoined, loading, error);
 }
