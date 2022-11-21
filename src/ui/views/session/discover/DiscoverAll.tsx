@@ -4,9 +4,12 @@ import { Content } from "../../../atoms/content/Content";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { DiscoverGroupGrid } from "../../components/discover-group/DiscoverGroup";
-import { FeaturedRoomCard, FeaturedRoomsProvider, FeaturedWorldCard, FeaturedWorldsProvider } from "./DiscoverHome";
 import { RepositoryEvents } from "./DiscoverView";
 import "./DiscoverAll.css";
+import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
+import { FeaturedWorldsProvider } from "../../components/FeaturedWorldssProvider";
+import { FeaturedRoomCard } from "./FeaturedRoomCard";
+import { FeaturedWorldCard } from "./FeaturedWorldCard";
 
 export function DiscoverAll({
   eventType,
