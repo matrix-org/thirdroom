@@ -69,17 +69,20 @@ export function JoinRoomProvider({
   session: Session;
   roomId: string;
   children: (
-    join: () => Promise<unknown>,
+    join: (aliasOrId: string) => Promise<unknown>,
     isJoined: boolean,
     loading: boolean,
     error: Error | undefined
   ) => JSX.Element | null;
 }) {
-  const { value, loading, error, callback } = useAsyncCallback(async () => {
-    const res = await session.hsApi.joinIdOrAlias(roomId).response();
-    const rId = res?.room_id ?? undefined;
-    return rId;
-  }, [session, roomId]);
+  const { value, loading, error, callback } = useAsyncCallback(
+    async (aliasOrId: string) => {
+      const res = await session.hsApi.joinIdOrAlias(aliasOrId).response();
+      const rId = res?.room_id ?? undefined;
+      return rId;
+    },
+    [session, roomId]
+  );
 
   const isJoined = value ? true : !!session.rooms.get(roomId);
 
@@ -147,7 +150,12 @@ export function FeaturedRoomCard({
                       View
                     </Button>
                   ) : (
-                    <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
+                    <Button
+                      disabled={loading}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => join(summaryData.alias ?? roomId)}
+                    >
                       {loading && <Dots size="sm" color="on-secondary" />}
                       {loading ? "Joining" : "Join"}
                     </Button>
@@ -223,7 +231,12 @@ export function FeaturedWorldCard({
                       View
                     </Button>
                   ) : (
-                    <Button disabled={loading} variant="secondary" size="sm" onClick={join}>
+                    <Button
+                      disabled={loading}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => join(summaryData.alias ?? roomId)}
+                    >
                       {loading && <Dots size="sm" color="on-secondary" />}
                       {loading ? "Joining" : "Join"}
                     </Button>
