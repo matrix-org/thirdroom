@@ -58,7 +58,6 @@ export const deserializeCommands = (data: NetPipeData) => {
     const action = ActionTypesToBindings[actionDef.type];
     const decodedAction = action.decode(encodedAction);
     controller.actionStates.set(path, decodedAction);
-    console.log("deserializeCommandMessage", path, decodedAction);
   }
 
   return data;
