@@ -322,7 +322,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
 }
 
 function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
-  const deleteBtn = controller.actions.get("Delete") as ButtonActionState;
+  const deleteBtn = controller.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focused = FocusComponent.focusedEntity[rig];
     // TODO: For now we only delete owned objects
@@ -344,10 +344,10 @@ function updateGrabThrow(
 ) {
   let heldEntity = GrabComponent.grabbedEntity[rig];
 
-  const grabBtn = controller.actions.get("Grab") as ButtonActionState;
-  const grabBtn2 = controller.actions.get("Grab2") as ButtonActionState;
-  const throwBtn = controller.actions.get("Throw") as ButtonActionState;
-  const throwBtn2 = controller.actions.get("Throw2") as ButtonActionState;
+  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+  const grabBtn2 = controller.actionStates.get("Grab2") as ButtonActionState;
+  const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
+  const throwBtn2 = controller.actionStates.get("Throw2") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
@@ -458,7 +458,7 @@ function updateGrabThrow(
 
   if (heldEntity) {
     // move held point upon scrolling
-    const [, scrollY] = controller.actions.get("Scroll") as vec2;
+    const [, scrollY] = controller.actionStates.get("Scroll") as vec2;
     if (scrollY !== 0) {
       heldOffset += scrollY / 1000;
     }
