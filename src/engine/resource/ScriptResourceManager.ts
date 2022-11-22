@@ -292,6 +292,10 @@ export class ScriptResourceManager implements IRemoteResourceManager {
           }
         }
 
+        // if (resource.resourceType === ResourceType.Material && resource.name === "Default") {
+        //   console.log(resource.name, nextResourceId);
+        // }
+
         refView[refOffset] = nextResourceId || 0;
       }
 

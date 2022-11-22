@@ -17,6 +17,8 @@
  * WebSG.Sampler
  */
 
+JSClassID js_sampler_class_id;
+
 static JSValue js_sampler_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Sampler *sampler = js_mallocz(ctx, sizeof(Sampler));
 

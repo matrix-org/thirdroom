@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_audio_emitter_class_id;
+extern JSClassID js_audio_emitter_class_id;
 
 JSValue create_audio_emitter_from_ptr(JSContext *ctx, AudioEmitter *audio_emitter);
 

@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_light_class_id;
+extern JSClassID js_light_class_id;
 
 JSValue create_light_from_ptr(JSContext *ctx, Light *light);
 

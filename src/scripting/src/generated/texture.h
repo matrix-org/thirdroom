@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_texture_class_id;
+extern JSClassID js_texture_class_id;
 
 JSValue create_texture_from_ptr(JSContext *ctx, Texture *texture);
 

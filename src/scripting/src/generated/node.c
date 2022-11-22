@@ -28,6 +28,8 @@
  * WebSG.Node
  */
 
+JSClassID js_node_class_id;
+
 static JSValue js_node_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Node *node = js_mallocz(ctx, sizeof(Node));
 
@@ -211,7 +213,7 @@ static JSValue js_node_set_mesh(JSContext *ctx, JSValueConst this_val, JSValue v
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->mesh = JS_GetOpaque2(ctx, val, js_mesh_class_id);
+    node->mesh = JS_GetOpaque(val, js_mesh_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -236,7 +238,7 @@ static JSValue js_node_set_instanced_mesh(JSContext *ctx, JSValueConst this_val,
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->instanced_mesh = JS_GetOpaque2(ctx, val, js_instanced_mesh_class_id);
+    node->instanced_mesh = JS_GetOpaque(val, js_instanced_mesh_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -261,7 +263,7 @@ static JSValue js_node_set_light_map(JSContext *ctx, JSValueConst this_val, JSVa
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->light_map = JS_GetOpaque2(ctx, val, js_light_map_class_id);
+    node->light_map = JS_GetOpaque(val, js_light_map_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -286,7 +288,7 @@ static JSValue js_node_set_skin(JSContext *ctx, JSValueConst this_val, JSValue v
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->skin = JS_GetOpaque2(ctx, val, js_skin_class_id);
+    node->skin = JS_GetOpaque(val, js_skin_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -311,7 +313,7 @@ static JSValue js_node_set_light(JSContext *ctx, JSValueConst this_val, JSValue 
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->light = JS_GetOpaque2(ctx, val, js_light_class_id);
+    node->light = JS_GetOpaque(val, js_light_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -336,7 +338,7 @@ static JSValue js_node_set_reflection_probe(JSContext *ctx, JSValueConst this_va
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->reflection_probe = JS_GetOpaque2(ctx, val, js_reflection_probe_class_id);
+    node->reflection_probe = JS_GetOpaque(val, js_reflection_probe_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -361,7 +363,7 @@ static JSValue js_node_set_camera(JSContext *ctx, JSValueConst this_val, JSValue
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->camera = JS_GetOpaque2(ctx, val, js_camera_class_id);
+    node->camera = JS_GetOpaque(val, js_camera_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -386,7 +388,7 @@ static JSValue js_node_set_audio_emitter(JSContext *ctx, JSValueConst this_val, 
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->audio_emitter = JS_GetOpaque2(ctx, val, js_audio_emitter_class_id);
+    node->audio_emitter = JS_GetOpaque(val, js_audio_emitter_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -411,7 +413,7 @@ static JSValue js_node_set_tiles_renderer(JSContext *ctx, JSValueConst this_val,
   if (!node) {
     return JS_EXCEPTION;
   } else {
-    node->tiles_renderer = JS_GetOpaque2(ctx, val, js_tiles_renderer_class_id);
+    node->tiles_renderer = JS_GetOpaque(val, js_tiles_renderer_class_id);
     return JS_UNDEFINED;
   }
 }

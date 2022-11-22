@@ -17,6 +17,8 @@
  * WebSG.Buffer
  */
 
+JSClassID js_buffer_class_id;
+
 static JSValue js_buffer_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Buffer *buffer = js_mallocz(ctx, sizeof(Buffer));
 

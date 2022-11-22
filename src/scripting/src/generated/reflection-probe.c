@@ -18,6 +18,8 @@
  * WebSG.ReflectionProbe
  */
 
+JSClassID js_reflection_probe_class_id;
+
 static JSValue js_reflection_probe_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   ReflectionProbe *reflection_probe = js_mallocz(ctx, sizeof(ReflectionProbe));
 

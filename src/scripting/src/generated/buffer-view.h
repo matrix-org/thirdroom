@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_buffer_view_class_id;
+extern JSClassID js_buffer_view_class_id;
 
 JSValue create_buffer_view_from_ptr(JSContext *ctx, BufferView *buffer_view);
 

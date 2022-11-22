@@ -18,6 +18,8 @@
  * WebSG.AudioSource
  */
 
+JSClassID js_audio_source_class_id;
+
 static JSValue js_audio_source_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   AudioSource *audio_source = js_mallocz(ctx, sizeof(AudioSource));
 
@@ -97,7 +99,7 @@ static JSValue js_audio_source_set_audio(JSContext *ctx, JSValueConst this_val, 
   if (!audio_source) {
     return JS_EXCEPTION;
   } else {
-    audio_source->audio = JS_GetOpaque2(ctx, val, js_audio_data_class_id);
+    audio_source->audio = JS_GetOpaque(val, js_audio_data_class_id);
     return JS_UNDEFINED;
   }
 }

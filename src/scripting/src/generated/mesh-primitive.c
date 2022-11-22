@@ -19,6 +19,8 @@
  * WebSG.MeshPrimitive
  */
 
+JSClassID js_mesh_primitive_class_id;
+
 static JSValue js_mesh_primitive_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   MeshPrimitive *mesh_primitive = js_mallocz(ctx, sizeof(MeshPrimitive));
 
@@ -150,7 +152,7 @@ static JSValue js_mesh_primitive_set_material(JSContext *ctx, JSValueConst this_
   if (!mesh_primitive) {
     return JS_EXCEPTION;
   } else {
-    mesh_primitive->material = JS_GetOpaque2(ctx, val, js_material_class_id);
+    mesh_primitive->material = JS_GetOpaque(val, js_material_class_id);
     return JS_UNDEFINED;
   }
 }

@@ -18,6 +18,8 @@
  * WebSG.Image
  */
 
+JSClassID js_image_class_id;
+
 static JSValue js_image_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Image *image = js_mallocz(ctx, sizeof(Image));
 

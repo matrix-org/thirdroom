@@ -18,6 +18,8 @@
  * WebSG.AudioEmitter
  */
 
+JSClassID js_audio_emitter_class_id;
+
 static JSValue js_audio_emitter_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   AudioEmitter *audio_emitter = js_mallocz(ctx, sizeof(AudioEmitter));
 

@@ -22,13 +22,14 @@ export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecution
   U8Heap: Uint8Array;
   source?: string;
   ready: boolean;
-  initialized: boolean;
+  loadedCalled: boolean;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
   websg_allocate(size: number): number;
   websg_deallocate(ptr: number): void;
   websg_initialize(): void;
+  websg_loaded(): void;
   websg_update(dt: number): void;
 }
 
@@ -55,7 +56,7 @@ export function ScriptingSystem(ctx: GameState) {
     const script = ScriptComponent.get(eid);
 
     if (script) {
-      if (script.ready && !script.initialized) {
+      if (script.ready && !script.loadedCalled) {
         if (script.environment === ScriptExecutionEnvironment.JS) {
           const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
           const arr = new TextEncoder().encode(script.source);
@@ -66,10 +67,16 @@ export function ScriptingSystem(ctx: GameState) {
           jsScript.instance.exports.thirdroom_evalJS(codePtr);
         }
 
-        script.initialized = true;
+        if ("websg_loaded" in script.instance.exports) {
+          script.instance.exports.websg_loaded();
+        }
+
+        script.loadedCalled = true;
       }
 
-      script.instance.exports.websg_update(ctx.dt);
+      if ("websg_update" in script.instance.exports) {
+        script.instance.exports.websg_update(ctx.dt);
+      }
     }
   }
 
@@ -122,17 +129,19 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     (instance.exports._initialize as Function)();
   }
 
-  instance.exports.websg_initialize();
-
   const script: Script<Env> = {
     instance,
     module: result.module,
     environment,
     resourceManager,
     ready: false,
-    initialized: false,
+    loadedCalled: false,
     U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
+
+  if ("websg_initialize" in script.instance.exports) {
+    instance.exports.websg_initialize();
+  }
 
   return script;
 }

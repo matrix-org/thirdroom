@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_scene_class_id;
+extern JSClassID js_scene_class_id;
 
 JSValue create_scene_from_ptr(JSContext *ctx, Scene *scene);
 

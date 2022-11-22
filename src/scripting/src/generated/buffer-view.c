@@ -18,6 +18,8 @@
  * WebSG.BufferView
  */
 
+JSClassID js_buffer_view_class_id;
+
 static JSValue js_buffer_view_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   BufferView *buffer_view = js_mallocz(ctx, sizeof(BufferView));
 

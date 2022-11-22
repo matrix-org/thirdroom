@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_tiles_renderer_class_id;
+extern JSClassID js_tiles_renderer_class_id;
 
 JSValue create_tiles_renderer_from_ptr(JSContext *ctx, TilesRenderer *tiles_renderer);
 

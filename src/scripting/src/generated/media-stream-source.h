@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_media_stream_source_class_id;
+extern JSClassID js_media_stream_source_class_id;
 
 JSValue create_media_stream_source_from_ptr(JSContext *ctx, MediaStreamSource *media_stream_source);
 

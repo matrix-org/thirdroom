@@ -21,6 +21,8 @@
  * WebSG.Scene
  */
 
+JSClassID js_scene_class_id;
+
 static JSValue js_scene_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Scene *scene = js_mallocz(ctx, sizeof(Scene));
 
@@ -100,7 +102,7 @@ static JSValue js_scene_set_background_texture(JSContext *ctx, JSValueConst this
   if (!scene) {
     return JS_EXCEPTION;
   } else {
-    scene->background_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    scene->background_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -125,7 +127,7 @@ static JSValue js_scene_set_reflection_probe(JSContext *ctx, JSValueConst this_v
   if (!scene) {
     return JS_EXCEPTION;
   } else {
-    scene->reflection_probe = JS_GetOpaque2(ctx, val, js_reflection_probe_class_id);
+    scene->reflection_probe = JS_GetOpaque(val, js_reflection_probe_class_id);
     return JS_UNDEFINED;
   }
 }

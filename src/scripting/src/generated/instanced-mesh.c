@@ -18,6 +18,8 @@
  * WebSG.InstancedMesh
  */
 
+JSClassID js_instanced_mesh_class_id;
+
 static JSValue js_instanced_mesh_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   InstancedMesh *instanced_mesh = js_mallocz(ctx, sizeof(InstancedMesh));
 

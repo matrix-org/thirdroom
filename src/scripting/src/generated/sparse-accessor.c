@@ -18,6 +18,8 @@
  * WebSG.SparseAccessor
  */
 
+JSClassID js_sparse_accessor_class_id;
+
 static JSValue js_sparse_accessor_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   SparseAccessor *sparse_accessor = js_mallocz(ctx, sizeof(SparseAccessor));
 

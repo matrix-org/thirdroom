@@ -18,6 +18,8 @@
  * WebSG.Material
  */
 
+JSClassID js_material_class_id;
+
 static JSValue js_material_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Material *material = js_mallocz(ctx, sizeof(Material));
 
@@ -199,7 +201,7 @@ static JSValue js_material_set_base_color_texture(JSContext *ctx, JSValueConst t
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->base_color_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->base_color_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -274,7 +276,7 @@ static JSValue js_material_set_metallic_roughness_texture(JSContext *ctx, JSValu
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->metallic_roughness_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->metallic_roughness_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -324,7 +326,7 @@ static JSValue js_material_set_normal_texture(JSContext *ctx, JSValueConst this_
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->normal_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->normal_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -374,7 +376,7 @@ static JSValue js_material_set_occlusion_texture(JSContext *ctx, JSValueConst th
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->occlusion_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->occlusion_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -424,7 +426,7 @@ static JSValue js_material_set_emissive_texture(JSContext *ctx, JSValueConst thi
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->emissive_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->emissive_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -499,7 +501,7 @@ static JSValue js_material_set_transmission_texture(JSContext *ctx, JSValueConst
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->transmission_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->transmission_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -549,7 +551,7 @@ static JSValue js_material_set_thickness_texture(JSContext *ctx, JSValueConst th
   if (!material) {
     return JS_EXCEPTION;
   } else {
-    material->thickness_texture = JS_GetOpaque2(ctx, val, js_texture_class_id);
+    material->thickness_texture = JS_GetOpaque(val, js_texture_class_id);
     return JS_UNDEFINED;
   }
 }

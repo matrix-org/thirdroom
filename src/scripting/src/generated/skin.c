@@ -19,6 +19,8 @@
  * WebSG.Skin
  */
 
+JSClassID js_skin_class_id;
+
 static JSValue js_skin_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Skin *skin = js_mallocz(ctx, sizeof(Skin));
 
@@ -127,7 +129,7 @@ static JSValue js_skin_set_inverse_bind_matrices(JSContext *ctx, JSValueConst th
   if (!skin) {
     return JS_EXCEPTION;
   } else {
-    skin->inverse_bind_matrices = JS_GetOpaque2(ctx, val, js_accessor_class_id);
+    skin->inverse_bind_matrices = JS_GetOpaque(val, js_accessor_class_id);
     return JS_UNDEFINED;
   }
 }

@@ -17,6 +17,8 @@
  * WebSG.MediaStreamSource
  */
 
+JSClassID js_media_stream_source_class_id;
+
 static JSValue js_media_stream_source_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   MediaStreamSource *media_stream_source = js_mallocz(ctx, sizeof(MediaStreamSource));
 

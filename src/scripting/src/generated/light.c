@@ -17,6 +17,8 @@
  * WebSG.Light
  */
 
+JSClassID js_light_class_id;
+
 static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Light *light = js_mallocz(ctx, sizeof(Light));
 

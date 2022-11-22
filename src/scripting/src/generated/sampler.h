@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_sampler_class_id;
+extern JSClassID js_sampler_class_id;
 
 JSValue create_sampler_from_ptr(JSContext *ctx, Sampler *sampler);
 

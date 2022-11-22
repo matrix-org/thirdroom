@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_material_class_id;
+extern JSClassID js_material_class_id;
 
 JSValue create_material_from_ptr(JSContext *ctx, Material *material);
 

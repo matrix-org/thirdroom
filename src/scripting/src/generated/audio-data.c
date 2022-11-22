@@ -18,6 +18,8 @@
  * WebSG.AudioData
  */
 
+JSClassID js_audio_data_class_id;
+
 static JSValue js_audio_data_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   AudioData *audio_data = js_mallocz(ctx, sizeof(AudioData));
 

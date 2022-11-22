@@ -30,16 +30,13 @@ JSAtom onUpdateAtom;
  * Exported Functions
  *********************/
 
-export int32_t websg_initialize() {
+export void websg_initialize() {
   rt = JS_NewRuntime();
   ctx = JS_NewContext(rt);
 
-  ScriptContext *script = malloc(sizeof(ScriptContext));
-  script->ptr_to_val = JS_NewObject(ctx);
-  JS_SetContextOpaque(ctx, script);
-
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
 
+  define_script_context(ctx);
   JS_DefineRefArrayIterator(ctx);
   JS_DefineRefMapIterator(ctx);
   JS_DefineNodeIterator(ctx);
@@ -47,8 +44,6 @@ export int32_t websg_initialize() {
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
   js_define_websg_api(ctx, &global);
-
-  return 0; 
 }
 
 export void *websg_allocate(int size) {

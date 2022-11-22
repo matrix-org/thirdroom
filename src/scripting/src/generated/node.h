@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_node_class_id;
+extern JSClassID js_node_class_id;
 
 JSValue create_node_from_ptr(JSContext *ctx, Node *node);
 

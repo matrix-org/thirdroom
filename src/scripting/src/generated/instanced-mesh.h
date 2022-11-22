@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_instanced_mesh_class_id;
+extern JSClassID js_instanced_mesh_class_id;
 
 JSValue create_instanced_mesh_from_ptr(JSContext *ctx, InstancedMesh *instanced_mesh);
 

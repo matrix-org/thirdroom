@@ -19,6 +19,8 @@
  * WebSG.Texture
  */
 
+JSClassID js_texture_class_id;
+
 static JSValue js_texture_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Texture *texture = js_mallocz(ctx, sizeof(Texture));
 

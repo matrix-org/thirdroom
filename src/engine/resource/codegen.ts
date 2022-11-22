@@ -237,7 +237,7 @@ function generateJSPropSetValueStatement(
   } else if (propDef.type === "ref") {
     const refResourceDef = resolveRefDefinition(propDef.resourceDef as ResourceDefinition | string);
     const classNameSnake = kebabToSnakeCase(refResourceDef.name);
-    return /* c */ `${destVar} = JS_GetOpaque2(ctx, ${srcNameSnake}, js_${classNameSnake}_class_id);`;
+    return /* c */ `${destVar} = JS_GetOpaque(${srcNameSnake}, js_${classNameSnake}_class_id);`;
   } else {
     throw new Error(`undefined setter for ${propDef.type}`);
   }
@@ -693,6 +693,8 @@ ${dependencies.map((name) => `#include "${name}.h"`).join("\n")}
  * WebSG.${classNamePascal}
  */
 
+JSClassID js_${classNameSnake}_class_id;
+
 static JSValue js_${classNameSnake}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   ${classNamePascal} *${classNameSnake} = js_mallocz(ctx, sizeof(${classNamePascal}));
 
@@ -824,7 +826,7 @@ function generateResourceJSHeader(resourceDef: ResourceDefinition) {
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_${classNameSnake}_class_id;
+extern JSClassID js_${classNameSnake}_class_id;
 
 JSValue create_${classNameSnake}_from_ptr(JSContext *ctx, ${classNamePascal} *${classNameSnake});
 

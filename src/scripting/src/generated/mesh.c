@@ -18,6 +18,8 @@
  * WebSG.Mesh
  */
 
+JSClassID js_mesh_class_id;
+
 static JSValue js_mesh_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Mesh *mesh = js_mallocz(ctx, sizeof(Mesh));
 

@@ -17,6 +17,8 @@
  * WebSG.Camera
  */
 
+JSClassID js_camera_class_id;
+
 static JSValue js_camera_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Camera *camera = js_mallocz(ctx, sizeof(Camera));
 

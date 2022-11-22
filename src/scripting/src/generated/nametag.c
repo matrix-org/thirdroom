@@ -17,6 +17,8 @@
  * WebSG.Nametag
  */
 
+JSClassID js_nametag_class_id;
+
 static JSValue js_nametag_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Nametag *nametag = js_mallocz(ctx, sizeof(Nametag));
 

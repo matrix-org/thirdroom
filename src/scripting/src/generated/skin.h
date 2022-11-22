@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_skin_class_id;
+extern JSClassID js_skin_class_id;
 
 JSValue create_skin_from_ptr(JSContext *ctx, Skin *skin);
 

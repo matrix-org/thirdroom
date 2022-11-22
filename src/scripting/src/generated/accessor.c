@@ -19,6 +19,8 @@
  * WebSG.Accessor
  */
 
+JSClassID js_accessor_class_id;
+
 static JSValue js_accessor_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   Accessor *accessor = js_mallocz(ctx, sizeof(Accessor));
 

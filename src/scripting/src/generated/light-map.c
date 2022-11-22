@@ -18,6 +18,8 @@
  * WebSG.LightMap
  */
 
+JSClassID js_light_map_class_id;
+
 static JSValue js_light_map_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   LightMap *light_map = js_mallocz(ctx, sizeof(LightMap));
 

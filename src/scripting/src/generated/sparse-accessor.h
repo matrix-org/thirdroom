@@ -4,7 +4,7 @@
 #include "../../include/quickjs/quickjs.h"
 #include "websg.h"
 
-static JSClassID js_sparse_accessor_class_id;
+extern JSClassID js_sparse_accessor_class_id;
 
 JSValue create_sparse_accessor_from_ptr(JSContext *ctx, SparseAccessor *sparse_accessor);
 

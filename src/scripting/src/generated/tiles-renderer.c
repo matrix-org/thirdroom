@@ -17,6 +17,8 @@
  * WebSG.TilesRenderer
  */
 
+JSClassID js_tiles_renderer_class_id;
+
 static JSValue js_tiles_renderer_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
   TilesRenderer *tiles_renderer = js_mallocz(ctx, sizeof(TilesRenderer));
 
