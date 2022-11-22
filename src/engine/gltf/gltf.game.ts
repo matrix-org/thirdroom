@@ -54,7 +54,7 @@ import { getThicknessTextureInfo, getVolumeMaterialProperties } from "./KHR_mate
 import { getMaterialIOR } from "./KHR_materials_ior";
 import { loadNodeAudioEmitter, loadSceneAudioEmitters } from "./KHR_audio";
 import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
-import { inflatePortalComponent } from "./MX_portal";
+import { inflatePortalComponent } from "./OMI_link";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
   AccessorType,

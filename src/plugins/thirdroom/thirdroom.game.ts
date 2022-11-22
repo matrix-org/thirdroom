@@ -43,9 +43,9 @@ import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
 import { addAvatar } from "../avatars/avatar.game";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
-import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
-import { boundsCheckCollisionGroups, playerCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, Player } from "../../engine/component/Player";
 import {
   ActionMap,
@@ -70,7 +70,7 @@ import {
   inputControllerQuery,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
-import { removeInteractableComponent } from "../interaction/interaction.game";
+import { addInteractableComponent, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import {
   addScriptComponent,
@@ -82,6 +82,8 @@ import {
 import { ImageResource, SamplerMapping, SamplerResource, TextureResource } from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
+import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
+import { InteractableType } from "../interaction/interaction.common";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -120,13 +122,15 @@ const createAvatarRig =
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
       addFlyControls(ctx, eid);
     } else {
-      addPhysicsControls(ctx, physics, eid);
+      addPhysicsControls(ctx, eid);
     }
 
     addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
-      kinematic: false,
       nametag: true,
     });
+
+    addAvatarRigidBody(ctx, physics, eid);
+    addInteractableComponent(ctx, physics, eid, InteractableType.Player);
 
     return eid;
   };
@@ -521,29 +525,19 @@ function loadRemotePlayerRig(
   }
 }
 
-function swapToFlyPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, PhysicsControls, playerRig);
-  removeComponent(ctx.world, RigidBody, playerRig);
+function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: number) {
+  removeComponent(ctx.world, PhysicsControls, eid);
+  removeComponent(ctx.world, RigidBody, eid);
 
-  addComponent(ctx.world, FlyControls, playerRig);
-  FlyControls.set(playerRig, { speed: 10 });
+  addComponent(ctx.world, FlyControls, eid);
+  FlyControls.set(eid, { speed: 10 });
 }
 
-function swapToPlayerRig(ctx: GameState, playerRig: number) {
-  removeComponent(ctx.world, FlyControls, playerRig);
+function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: number) {
+  removeComponent(ctx.world, FlyControls, eid);
 
-  addComponent(ctx.world, PhysicsControls, playerRig);
-
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.capsule(0.5, 0.5);
-  colliderDesc.setCollisionGroups(playerCollisionGroups);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
-  addRigidBody(ctx, playerRig, rigidBody);
+  addComponent(ctx.world, PhysicsControls, eid);
+  addAvatarRigidBody(ctx, physics, eid);
 }
 
 export function ThirdroomSystem(ctx: GameState) {
@@ -553,22 +547,23 @@ export function ThirdroomSystem(ctx: GameState) {
   }
 
   const input = getModule(ctx, InputModule);
+  const physics = getModule(ctx, PhysicsModule);
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const controller = getInputController(input, eid);
-    updateThirdroom(ctx, controller, eid);
+    updateThirdroom(ctx, physics, controller, eid);
   }
 }
 
-function updateThirdroom(ctx: GameState, controller: InputController, player: number) {
+function updateThirdroom(ctx: GameState, physics: PhysicsModuleState, controller: InputController, player: number) {
   const toggleFlyMode = controller.actions.get("toggleFlyMode") as ButtonActionState;
   if (toggleFlyMode.pressed) {
     if (hasComponent(ctx.world, FlyControls, player)) {
-      swapToPlayerRig(ctx, player);
+      swapToPlayerRig(ctx, physics, player);
     } else {
-      swapToFlyPlayerRig(ctx, player);
+      swapToFlyPlayerRig(ctx, physics, player);
     }
   }
 }

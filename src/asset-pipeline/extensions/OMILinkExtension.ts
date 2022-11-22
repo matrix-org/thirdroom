@@ -8,20 +8,19 @@ import {
   WriterContext,
 } from "@gltf-transform/core";
 
-const EXTENSION_NAME = "MX_portal";
-const PROPERTY_TYPE = "Portal";
+const EXTENSION_NAME = "OMI_link";
+const PROPERTY_TYPE = "Link";
 
-interface PortalExtensionDef {
+interface LinkExtensionDef {
   uri: string;
 }
 
-// NOTE: MX_portal is deprecated. Use OMI_link instead.
-export class MXPortalExtension extends Extension {
+export class OMILinkExtension extends Extension {
   public static readonly EXTENSION_NAME = EXTENSION_NAME;
   public readonly extensionName = EXTENSION_NAME;
 
-  public createPortal(): MXPortal {
-    return new MXPortal(this.document.getGraph());
+  public createLink(): OMILink {
+    return new OMILink(this.document.getGraph());
   }
 
   public read(context: ReaderContext): this {
@@ -30,13 +29,13 @@ export class MXPortalExtension extends Extension {
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
       if (nodeDef.extensions && nodeDef.extensions[EXTENSION_NAME]) {
-        const portal = this.createPortal();
+        const link = this.createLink();
 
-        const extension = nodeDef.extensions[EXTENSION_NAME] as PortalExtensionDef;
+        const extension = nodeDef.extensions[EXTENSION_NAME] as LinkExtensionDef;
 
-        portal.setUri(extension.uri);
+        link.setUri(extension.uri);
 
-        context.nodes[nodeIndex].setExtension(EXTENSION_NAME, portal);
+        context.nodes[nodeIndex].setExtension(EXTENSION_NAME, link);
       }
     });
 
@@ -50,14 +49,14 @@ export class MXPortalExtension extends Extension {
       .getRoot()
       .listNodes()
       .forEach((node) => {
-        const portal = node.getExtension<MXPortal>(EXTENSION_NAME);
+        const link = node.getExtension<OMILink>(EXTENSION_NAME);
 
-        if (portal) {
+        if (link) {
           const nodeIndex = context.nodeIndexMap.get(node)!;
           const nodeDef = jsonDoc.json.nodes![nodeIndex];
           nodeDef.extensions = nodeDef.extensions || {};
           nodeDef.extensions[EXTENSION_NAME] = {
-            uri: portal.getUri(),
+            uri: link.getUri(),
           };
         }
       });
@@ -66,11 +65,11 @@ export class MXPortalExtension extends Extension {
   }
 }
 
-interface IMXPortal extends IProperty {
+interface IOMILink extends IProperty {
   uri: string;
 }
 
-export class MXPortal extends ExtensionProperty<IMXPortal> {
+export class OMILink extends ExtensionProperty<IOMILink> {
   public static readonly EXTENSION_NAME = EXTENSION_NAME;
   public declare extensionName: typeof EXTENSION_NAME;
   public declare propertyType: typeof PROPERTY_TYPE;
@@ -82,7 +81,7 @@ export class MXPortal extends ExtensionProperty<IMXPortal> {
     this.parentTypes = [PropertyType.NODE];
   }
 
-  protected getDefaults(): Nullable<IMXPortal> {
+  protected getDefaults(): Nullable<IOMILink> {
     return Object.assign(super.getDefaults() as IProperty, {
       uri: null,
     });
