@@ -2,8 +2,6 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
-// import { isHost } from "../network/network.common";
-// import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
 import {

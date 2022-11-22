@@ -132,14 +132,16 @@ export const ActionTypesToBindings: ActionTypesSchema = {
         const released = actionState.held && !down;
         const held = !!down;
 
-        const changed =
-          pressed !== actionState.pressed || released !== actionState.released || held !== actionState.held;
+        // TODO: only send changed actions (current change detection does not send the zeroed out states)
+        // const changed =
+        //   pressed !== actionState.pressed || released !== actionState.released || held !== actionState.held;
 
         actionState.pressed = pressed;
         actionState.released = released;
         actionState.held = held;
 
-        return changed && actionState;
+        return actionState;
+        // return changed && actionState;
       },
     },
   },
@@ -168,12 +170,13 @@ export const ActionTypesToBindings: ActionTypesSchema = {
 
         const actionState = controller.actionStates.get(path) as vec2;
 
-        const changed = rawX ? rawX !== actionState[0] : false || rawY ? rawY !== actionState[1] : false;
+        // const changed = rawX ? rawX !== actionState[0] : false || rawY ? rawY !== actionState[1] : false;
 
         actionState[0] = rawX || 0;
         actionState[1] = rawY || 0;
 
-        return changed && actionState;
+        return actionState;
+        // return changed && actionState;
       },
       [BindingType.DirectionalButtons]: (
         controller: InputController,
@@ -203,12 +206,13 @@ export const ActionTypesToBindings: ActionTypesSchema = {
 
         const actionState = controller.actionStates.get(path) as vec2;
 
-        const changed = x !== actionState[0] || y !== actionState[1];
+        // const changed = x !== actionState[0] || y !== actionState[1];
 
         actionState[0] = x;
         actionState[1] = y;
 
-        return changed && actionState;
+        return actionState;
+        // return changed && actionState;
       },
     },
   },
@@ -226,6 +230,7 @@ export function ActionMappingSystem(state: GameState) {
 function updateActionMaps(input: GameInputModule, network: GameNetworkState, controller: InputController) {
   for (const actionMap of controller.actionMaps) {
     for (const actionDef of actionMap.actionDefs) {
+      // initialize action state if not already
       if (!controller.actionStates.has(actionDef.path)) {
         controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
         // set ID maps for serialization
@@ -234,18 +239,9 @@ function updateActionMaps(input: GameInputModule, network: GameNetworkState, con
         controller.idToPath.set(controller.actionStates.size, actionDef.path);
       }
 
-      if (
-        network.authoritative &&
-        isHost(network) &&
-        controller.inputRingBuffer !== input.defaultController.inputRingBuffer
-      ) {
-        continue;
-      }
-
       for (const binding of actionDef.bindings) {
         const action = ActionTypesToBindings[actionDef.type];
         const actionState = action.bindings[binding.type](controller, actionDef.path, binding);
-
         const shouldSendActionToHost = network.authoritative && !isHost(network) && actionDef.networked && actionState;
         if (shouldSendActionToHost) {
           const actionId = controller.pathToId.get(actionDef.path)!;
