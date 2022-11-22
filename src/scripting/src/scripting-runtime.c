@@ -36,6 +36,7 @@ export int32_t websg_initialize() {
 
   ScriptContext *script = malloc(sizeof(ScriptContext));
   script->ptr_to_val = JS_NewObject(ctx);
+  JS_SetContextOpaque(ctx, script);
 
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
 
@@ -48,6 +49,14 @@ export int32_t websg_initialize() {
   js_define_websg_api(ctx, &global);
 
   return 0; 
+}
+
+export void *websg_allocate(int size) {
+  return js_mallocz_rt(rt, size);
+}
+
+export void websg_deallocate(void *ptr) {
+  js_free_rt(rt, ptr);
 }
 
 // NONSTANDARD: execute the provided code in the JS context

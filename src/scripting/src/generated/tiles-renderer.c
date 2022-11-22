@@ -67,19 +67,20 @@ static JSValue js_tiles_renderer_get_uri(JSContext *ctx, JSValueConst this_val) 
 
 
 
-static void js_tiles_renderer_finalizer(JSRuntime *rt, JSValue val) {
-  TilesRenderer *tiles_renderer = JS_GetOpaque(val, js_tiles_renderer_class_id);
+static JSValue js_tiles_renderer_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  TilesRenderer *tiles_renderer = JS_GetOpaque(this_val, js_tiles_renderer_class_id);
   websg_dispose_resource(tiles_renderer);
-  js_free_rt(rt, tiles_renderer);
+  js_free(ctx, tiles_renderer);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_tiles_renderer_class = {
-  "TilesRenderer",
-  .finalizer = js_tiles_renderer_finalizer
+  "TilesRenderer"
 };
 
 static const JSCFunctionListEntry js_tiles_renderer_proto_funcs[] = {
   JS_CGETSET_DEF("uri", js_tiles_renderer_get_uri, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_tiles_renderer_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "TilesRenderer", JS_PROP_CONFIGURABLE),
 };
 

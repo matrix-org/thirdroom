@@ -168,15 +168,15 @@ static JSValue js_audio_source_set_loop(JSContext *ctx, JSValueConst this_val, J
 
 
 
-static void js_audio_source_finalizer(JSRuntime *rt, JSValue val) {
-  AudioSource *audio_source = JS_GetOpaque(val, js_audio_source_class_id);
+static JSValue js_audio_source_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  AudioSource *audio_source = JS_GetOpaque(this_val, js_audio_source_class_id);
   websg_dispose_resource(audio_source);
-  js_free_rt(rt, audio_source);
+  js_free(ctx, audio_source);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_audio_source_class = {
-  "AudioSource",
-  .finalizer = js_audio_source_finalizer
+  "AudioSource"
 };
 
 static const JSCFunctionListEntry js_audio_source_proto_funcs[] = {
@@ -185,6 +185,7 @@ static const JSCFunctionListEntry js_audio_source_proto_funcs[] = {
   JS_CGETSET_DEF("gain", js_audio_source_get_gain, js_audio_source_set_gain),
   JS_CGETSET_DEF("autoPlay", js_audio_source_get_auto_play, NULL),
   JS_CGETSET_DEF("loop", js_audio_source_get_loop, js_audio_source_set_loop),
+  JS_CFUNC_DEF("dispose", 0, js_audio_source_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioSource", JS_PROP_CONFIGURABLE),
 };
 

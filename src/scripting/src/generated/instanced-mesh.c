@@ -119,15 +119,15 @@ static JSValue js_instanced_mesh_delete_attribute(JSContext *ctx, JSValueConst t
 
 
 
-static void js_instanced_mesh_finalizer(JSRuntime *rt, JSValue val) {
-  InstancedMesh *instanced_mesh = JS_GetOpaque(val, js_instanced_mesh_class_id);
+static JSValue js_instanced_mesh_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  InstancedMesh *instanced_mesh = JS_GetOpaque(this_val, js_instanced_mesh_class_id);
   websg_dispose_resource(instanced_mesh);
-  js_free_rt(rt, instanced_mesh);
+  js_free(ctx, instanced_mesh);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_instanced_mesh_class = {
-  "InstancedMesh",
-  .finalizer = js_instanced_mesh_finalizer
+  "InstancedMesh"
 };
 
 static const JSCFunctionListEntry js_instanced_mesh_proto_funcs[] = {
@@ -136,6 +136,7 @@ static const JSCFunctionListEntry js_instanced_mesh_proto_funcs[] = {
   JS_CFUNC_DEF("getAttribute", 1, js_instanced_mesh_get_attribute),
   JS_CFUNC_DEF("setAttribute", 1, js_instanced_mesh_set_attribute),
   JS_CFUNC_DEF("deleteAttribute", 1, js_instanced_mesh_delete_attribute),
+  JS_CFUNC_DEF("dispose", 0, js_instanced_mesh_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "InstancedMesh", JS_PROP_CONFIGURABLE),
 };
 

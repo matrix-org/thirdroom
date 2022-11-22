@@ -144,15 +144,15 @@ static JSValue js_sampler_get_mapping(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_sampler_finalizer(JSRuntime *rt, JSValue val) {
-  Sampler *sampler = JS_GetOpaque(val, js_sampler_class_id);
+static JSValue js_sampler_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Sampler *sampler = JS_GetOpaque(this_val, js_sampler_class_id);
   websg_dispose_resource(sampler);
-  js_free_rt(rt, sampler);
+  js_free(ctx, sampler);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_sampler_class = {
-  "Sampler",
-  .finalizer = js_sampler_finalizer
+  "Sampler"
 };
 
 static const JSCFunctionListEntry js_sampler_proto_funcs[] = {
@@ -162,6 +162,7 @@ static const JSCFunctionListEntry js_sampler_proto_funcs[] = {
   JS_CGETSET_DEF("wrapS", js_sampler_get_wrap_s, NULL),
   JS_CGETSET_DEF("wrapT", js_sampler_get_wrap_t, NULL),
   JS_CGETSET_DEF("mapping", js_sampler_get_mapping, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_sampler_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Sampler", JS_PROP_CONFIGURABLE),
 };
 

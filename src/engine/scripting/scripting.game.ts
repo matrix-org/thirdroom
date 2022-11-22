@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
+import { ResourceDefinition } from "../resource/ResourceDefinition";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
 export enum ScriptExecutionEnvironment {
@@ -55,8 +56,6 @@ export function ScriptingSystem(ctx: GameState) {
 
     if (script) {
       if (script.ready && !script.initialized) {
-        script.instance.exports.websg_initialize();
-
         if (script.environment === ScriptExecutionEnvironment.JS) {
           const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
           const arr = new TextEncoder().encode(script.source);
@@ -82,30 +81,36 @@ export function ScriptingSystem(ctx: GameState) {
   }
 }
 
-export async function loadJSScript(ctx: GameState, source: string): Promise<Script<ScriptExecutionEnvironment.JS>> {
+export async function loadJSScript(
+  ctx: GameState,
+  source: string,
+  allowedResources: ResourceDefinition[]
+): Promise<Script<ScriptExecutionEnvironment.JS>> {
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
-  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer, allowedResources);
   script.source = source;
   return script;
 }
 
 export async function loadWASMScript(
   ctx: GameState,
-  buffer: ArrayBuffer
+  buffer: ArrayBuffer,
+  allowedResources: ResourceDefinition[]
 ): Promise<Script<ScriptExecutionEnvironment.WASM>> {
-  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer, allowedResources);
   return script;
 }
 
 async function loadScript<Env extends ScriptExecutionEnvironment>(
   ctx: GameState,
   environment: Env,
-  buffer: ArrayBuffer
+  buffer: ArrayBuffer,
+  allowedResources: ResourceDefinition[]
 ): Promise<Script<Env>> {
   let instance: ScriptWebAssemblyInstance<Env> | undefined = undefined;
 
-  const resourceManager = new ScriptResourceManager(ctx);
+  const resourceManager = new ScriptResourceManager(ctx, allowedResources);
 
   const result = await WebAssembly.instantiate(buffer, resourceManager.createImports());
 
@@ -116,6 +121,8 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
   if ("_initialize" in instance.exports) {
     (instance.exports._initialize as Function)();
   }
+
+  instance.exports.websg_initialize();
 
   const script: Script<Env> = {
     instance,

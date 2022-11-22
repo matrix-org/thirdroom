@@ -132,15 +132,15 @@ static JSValue js_image_get_flip_y(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_image_finalizer(JSRuntime *rt, JSValue val) {
-  Image *image = JS_GetOpaque(val, js_image_class_id);
+static JSValue js_image_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Image *image = JS_GetOpaque(this_val, js_image_class_id);
   websg_dispose_resource(image);
-  js_free_rt(rt, image);
+  js_free(ctx, image);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_image_class = {
-  "Image",
-  .finalizer = js_image_finalizer
+  "Image"
 };
 
 static const JSCFunctionListEntry js_image_proto_funcs[] = {
@@ -149,6 +149,7 @@ static const JSCFunctionListEntry js_image_proto_funcs[] = {
   JS_CGETSET_DEF("mimeType", js_image_get_mime_type, NULL),
   JS_CGETSET_DEF("bufferView", js_image_get_buffer_view, NULL),
   JS_CGETSET_DEF("flipY", js_image_get_flip_y, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_image_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Image", JS_PROP_CONFIGURABLE),
 };
 

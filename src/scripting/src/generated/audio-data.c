@@ -119,15 +119,15 @@ static JSValue js_audio_data_get_uri(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_audio_data_finalizer(JSRuntime *rt, JSValue val) {
-  AudioData *audio_data = JS_GetOpaque(val, js_audio_data_class_id);
+static JSValue js_audio_data_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  AudioData *audio_data = JS_GetOpaque(this_val, js_audio_data_class_id);
   websg_dispose_resource(audio_data);
-  js_free_rt(rt, audio_data);
+  js_free(ctx, audio_data);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_audio_data_class = {
-  "AudioData",
-  .finalizer = js_audio_data_finalizer
+  "AudioData"
 };
 
 static const JSCFunctionListEntry js_audio_data_proto_funcs[] = {
@@ -135,6 +135,7 @@ static const JSCFunctionListEntry js_audio_data_proto_funcs[] = {
   JS_CGETSET_DEF("bufferView", js_audio_data_get_buffer_view, NULL),
   JS_CGETSET_DEF("mimeType", js_audio_data_get_mime_type, NULL),
   JS_CGETSET_DEF("uri", js_audio_data_get_uri, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_audio_data_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioData", JS_PROP_CONFIGURABLE),
 };
 

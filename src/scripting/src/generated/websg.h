@@ -6,9 +6,6 @@
 
 #define export __attribute__((used))
 
-export void *websg_allocate(int size);
-export void websg_deallocate(void *ptr);
-
 typedef struct ArrayBuffer {
   unsigned int size;
   unsigned char *buf;

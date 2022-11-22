@@ -228,15 +228,15 @@ static JSValue js_scene_remove_node(JSContext *ctx, JSValueConst this_val, int a
   return JS_UNDEFINED;
 }
 
-static void js_scene_finalizer(JSRuntime *rt, JSValue val) {
-  Scene *scene = JS_GetOpaque(val, js_scene_class_id);
+static JSValue js_scene_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Scene *scene = JS_GetOpaque(this_val, js_scene_class_id);
   websg_dispose_resource(scene);
-  js_free_rt(rt, scene);
+  js_free(ctx, scene);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_scene_class = {
-  "Scene",
-  .finalizer = js_scene_finalizer
+  "Scene"
 };
 
 static const JSCFunctionListEntry js_scene_proto_funcs[] = {
@@ -249,6 +249,7 @@ static const JSCFunctionListEntry js_scene_proto_funcs[] = {
   JS_CFUNC_DEF("nodes", 0, js_scene_nodes),
   JS_CFUNC_DEF("addNode", 2, js_scene_add_node),
   JS_CFUNC_DEF("removeNode", 1, js_scene_remove_node),
+  JS_CFUNC_DEF("dispose", 0, js_scene_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Scene", JS_PROP_CONFIGURABLE),
 };
 

@@ -109,15 +109,15 @@ static JSValue js_mesh_remove_primitive(JSContext *ctx, JSValueConst this_val, i
 
 
 
-static void js_mesh_finalizer(JSRuntime *rt, JSValue val) {
-  Mesh *mesh = JS_GetOpaque(val, js_mesh_class_id);
+static JSValue js_mesh_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Mesh *mesh = JS_GetOpaque(this_val, js_mesh_class_id);
   websg_dispose_resource(mesh);
-  js_free_rt(rt, mesh);
+  js_free(ctx, mesh);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_mesh_class = {
-  "Mesh",
-  .finalizer = js_mesh_finalizer
+  "Mesh"
 };
 
 static const JSCFunctionListEntry js_mesh_proto_funcs[] = {
@@ -125,6 +125,7 @@ static const JSCFunctionListEntry js_mesh_proto_funcs[] = {
   JS_CFUNC_DEF("primitives", 0, js_mesh_primitives),
   JS_CFUNC_DEF("addPrimitive", 1, js_mesh_add_primitive),
   JS_CFUNC_DEF("removePrimitive", 1, js_mesh_remove_primitive),
+  JS_CFUNC_DEF("dispose", 0, js_mesh_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Mesh", JS_PROP_CONFIGURABLE),
 };
 

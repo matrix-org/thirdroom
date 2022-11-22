@@ -135,15 +135,15 @@ static JSValue js_skin_set_inverse_bind_matrices(JSContext *ctx, JSValueConst th
 
 
 
-static void js_skin_finalizer(JSRuntime *rt, JSValue val) {
-  Skin *skin = JS_GetOpaque(val, js_skin_class_id);
+static JSValue js_skin_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Skin *skin = JS_GetOpaque(this_val, js_skin_class_id);
   websg_dispose_resource(skin);
-  js_free_rt(rt, skin);
+  js_free(ctx, skin);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_skin_class = {
-  "Skin",
-  .finalizer = js_skin_finalizer
+  "Skin"
 };
 
 static const JSCFunctionListEntry js_skin_proto_funcs[] = {
@@ -152,6 +152,7 @@ static const JSCFunctionListEntry js_skin_proto_funcs[] = {
   JS_CFUNC_DEF("addJoint", 1, js_skin_add_joint),
   JS_CFUNC_DEF("removeJoint", 1, js_skin_remove_joint),
   JS_CGETSET_DEF("inverseBindMatrices", js_skin_get_inverse_bind_matrices, js_skin_set_inverse_bind_matrices),
+  JS_CFUNC_DEF("dispose", 0, js_skin_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Skin", JS_PROP_CONFIGURABLE),
 };
 

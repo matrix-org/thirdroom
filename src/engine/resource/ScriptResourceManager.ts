@@ -56,12 +56,16 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   private resourceStorage: Map<number, ScriptResourceStore> = new Map();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
-  constructor(ctx: GameState) {
+  constructor(ctx: GameState, allowedResources: ResourceDefinition[]) {
     this.ctx = ctx;
-    this.memory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
+    this.memory = new WebAssembly.Memory({ initial: 1024, maximum: 1024 });
     this.buffer = this.memory.buffer;
     this.U8Heap = new Uint8Array(this.buffer);
     this.U32Heap = new Uint32Array(this.buffer);
+
+    for (const resourceDef of allowedResources) {
+      this.registerResource(resourceDef);
+    }
   }
 
   setInstance(instance: ScriptWebAssemblyInstance): void {
@@ -119,8 +123,9 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     const buffer = this.memory.buffer;
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
+    const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer, props);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-    const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer, props);
+    resource.resourceId = resourceId;
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
@@ -218,8 +223,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     const resourceId = createArrayBufferResource(this.ctx, value);
     addResourceRef(this.ctx, resourceId);
     this.ptrToResourceId.set(ptr, resourceId);
-
-    console.log(value, store, resourceId);
   }
 
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined {
@@ -228,13 +231,13 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   }
 
   setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
-    if (store[0]) {
-      const prevResourceId = this.ptrToResourceId.get(store[0]);
+    // if (store[0]) {
+    //   const prevResourceId = this.ptrToResourceId.get(store[0]);
 
-      if (prevResourceId) {
-        disposeResource(this.ctx, prevResourceId);
-      }
-    }
+    //   if (prevResourceId) {
+    //     disposeResource(this.ctx, prevResourceId);
+    //   }
+    // }
 
     if (value) {
       addResourceRef(this.ctx, value.resourceId);
@@ -269,21 +272,22 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       writeView.set(resource.byteView);
 
       for (let j = 0; j < refOffsets.length; j++) {
-        const refOffset = refOffsets[j];
+        const refOffset = refOffsets[j] / Uint32Array.BYTES_PER_ELEMENT;
         const nextRefPtr = resourceStore.refView[refOffset];
         const prevRefPtr = resourceStore.prevRefs[j];
         let nextResourceId = this.ptrToResourceId.get(nextRefPtr);
 
-        if (nextRefPtr !== prevRefPtr) {
+        if (nextRefPtr !== prevRefPtr && refIsString[j]) {
           const prevResourceId = this.ptrToResourceId.get(prevRefPtr);
 
           if (prevResourceId) {
+            // TODO: Dispose non-string resources automatically when they are no longer referenced?
             disposeResource(this.ctx, prevResourceId);
           }
 
           resourceStore.prevRefs[j] = nextRefPtr;
 
-          if (!nextResourceId && refIsString[j]) {
+          if (!nextResourceId) {
             nextResourceId = createStringResource(this.ctx, decodeString(nextRefPtr, this.U8Heap));
           }
         }
@@ -292,7 +296,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       }
 
       if (resource.initialized) {
-        copyToWriteBuffer(resource.tripleBuffer, resource.byteView);
+        copyToWriteBuffer(resource.tripleBuffer, writeView);
       } else {
         const tripleBufferByteViews = resource.tripleBuffer.byteViews;
         tripleBufferByteViews[0].set(writeView);
@@ -380,8 +384,9 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
           const buffer = this.memory.buffer;
           const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
+          const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer);
           const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-          const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer);
+          resource.resourceId = resourceId;
           setRemoteResource(this.ctx, resourceId, resource);
           this.ptrToResourceId.set(ptr, resourceId);
           this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);

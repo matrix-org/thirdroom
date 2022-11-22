@@ -171,15 +171,15 @@ static JSValue js_mesh_primitive_get_mode(JSContext *ctx, JSValueConst this_val)
 
 
 
-static void js_mesh_primitive_finalizer(JSRuntime *rt, JSValue val) {
-  MeshPrimitive *mesh_primitive = JS_GetOpaque(val, js_mesh_primitive_class_id);
+static JSValue js_mesh_primitive_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque(this_val, js_mesh_primitive_class_id);
   websg_dispose_resource(mesh_primitive);
-  js_free_rt(rt, mesh_primitive);
+  js_free(ctx, mesh_primitive);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_mesh_primitive_class = {
-  "MeshPrimitive",
-  .finalizer = js_mesh_primitive_finalizer
+  "MeshPrimitive"
 };
 
 static const JSCFunctionListEntry js_mesh_primitive_proto_funcs[] = {
@@ -191,6 +191,7 @@ static const JSCFunctionListEntry js_mesh_primitive_proto_funcs[] = {
   JS_CGETSET_DEF("indices", js_mesh_primitive_get_indices, NULL),
   JS_CGETSET_DEF("material", js_mesh_primitive_get_material, js_mesh_primitive_set_material),
   JS_CGETSET_DEF("mode", js_mesh_primitive_get_mode, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_mesh_primitive_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "MeshPrimitive", JS_PROP_CONFIGURABLE),
 };
 

@@ -173,15 +173,15 @@ static JSValue js_accessor_get_sparse(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_accessor_finalizer(JSRuntime *rt, JSValue val) {
-  Accessor *accessor = JS_GetOpaque(val, js_accessor_class_id);
+static JSValue js_accessor_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Accessor *accessor = JS_GetOpaque(this_val, js_accessor_class_id);
   websg_dispose_resource(accessor);
-  js_free_rt(rt, accessor);
+  js_free(ctx, accessor);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_accessor_class = {
-  "Accessor",
-  .finalizer = js_accessor_finalizer
+  "Accessor"
 };
 
 static const JSCFunctionListEntry js_accessor_proto_funcs[] = {
@@ -193,6 +193,7 @@ static const JSCFunctionListEntry js_accessor_proto_funcs[] = {
   JS_CGETSET_DEF("count", js_accessor_get_count, NULL),
   JS_CGETSET_DEF("type", js_accessor_get_type, NULL),
   JS_CGETSET_DEF("sparse", js_accessor_get_sparse, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_accessor_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Accessor", JS_PROP_CONFIGURABLE),
 };
 

@@ -501,15 +501,15 @@ static JSValue js_node_remove_child(JSContext *ctx, JSValueConst this_val, int a
   return JS_UNDEFINED;
 }
 
-static void js_node_finalizer(JSRuntime *rt, JSValue val) {
-  Node *node = JS_GetOpaque(val, js_node_class_id);
+static JSValue js_node_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Node *node = JS_GetOpaque(this_val, js_node_class_id);
   websg_dispose_resource(node);
-  js_free_rt(rt, node);
+  js_free(ctx, node);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_node_class = {
-  "Node",
-  .finalizer = js_node_finalizer
+  "Node"
 };
 
 static const JSCFunctionListEntry js_node_proto_funcs[] = {
@@ -531,6 +531,7 @@ static const JSCFunctionListEntry js_node_proto_funcs[] = {
   JS_CFUNC_DEF("children", 0, js_node_children),
   JS_CFUNC_DEF("addChild", 2, js_node_add_child),
   JS_CFUNC_DEF("removeChild", 1, js_node_remove_child),
+  JS_CFUNC_DEF("dispose", 0, js_node_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Node", JS_PROP_CONFIGURABLE),
 };
 

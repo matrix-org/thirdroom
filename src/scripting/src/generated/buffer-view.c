@@ -145,15 +145,15 @@ static JSValue js_buffer_view_get_target(JSContext *ctx, JSValueConst this_val) 
 
 
 
-static void js_buffer_view_finalizer(JSRuntime *rt, JSValue val) {
-  BufferView *buffer_view = JS_GetOpaque(val, js_buffer_view_class_id);
+static JSValue js_buffer_view_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  BufferView *buffer_view = JS_GetOpaque(this_val, js_buffer_view_class_id);
   websg_dispose_resource(buffer_view);
-  js_free_rt(rt, buffer_view);
+  js_free(ctx, buffer_view);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_buffer_view_class = {
-  "BufferView",
-  .finalizer = js_buffer_view_finalizer
+  "BufferView"
 };
 
 static const JSCFunctionListEntry js_buffer_view_proto_funcs[] = {
@@ -163,6 +163,7 @@ static const JSCFunctionListEntry js_buffer_view_proto_funcs[] = {
   JS_CGETSET_DEF("byteLength", js_buffer_view_get_byte_length, NULL),
   JS_CGETSET_DEF("byteStride", js_buffer_view_get_byte_stride, NULL),
   JS_CGETSET_DEF("target", js_buffer_view_get_target, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_buffer_view_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "BufferView", JS_PROP_CONFIGURABLE),
 };
 

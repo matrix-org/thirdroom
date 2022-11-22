@@ -133,15 +133,15 @@ static JSValue js_sparse_accessor_get_values_byte_offset(JSContext *ctx, JSValue
 
 
 
-static void js_sparse_accessor_finalizer(JSRuntime *rt, JSValue val) {
-  SparseAccessor *sparse_accessor = JS_GetOpaque(val, js_sparse_accessor_class_id);
+static JSValue js_sparse_accessor_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  SparseAccessor *sparse_accessor = JS_GetOpaque(this_val, js_sparse_accessor_class_id);
   websg_dispose_resource(sparse_accessor);
-  js_free_rt(rt, sparse_accessor);
+  js_free(ctx, sparse_accessor);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_sparse_accessor_class = {
-  "SparseAccessor",
-  .finalizer = js_sparse_accessor_finalizer
+  "SparseAccessor"
 };
 
 static const JSCFunctionListEntry js_sparse_accessor_proto_funcs[] = {
@@ -151,6 +151,7 @@ static const JSCFunctionListEntry js_sparse_accessor_proto_funcs[] = {
   JS_CGETSET_DEF("indicesComponentType", js_sparse_accessor_get_indices_component_type, NULL),
   JS_CGETSET_DEF("valuesBufferView", js_sparse_accessor_get_values_buffer_view, NULL),
   JS_CGETSET_DEF("valuesByteOffset", js_sparse_accessor_get_values_byte_offset, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_sparse_accessor_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "SparseAccessor", JS_PROP_CONFIGURABLE),
 };
 

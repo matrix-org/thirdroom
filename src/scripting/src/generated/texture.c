@@ -120,15 +120,15 @@ static JSValue js_texture_get_encoding(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_texture_finalizer(JSRuntime *rt, JSValue val) {
-  Texture *texture = JS_GetOpaque(val, js_texture_class_id);
+static JSValue js_texture_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Texture *texture = JS_GetOpaque(this_val, js_texture_class_id);
   websg_dispose_resource(texture);
-  js_free_rt(rt, texture);
+  js_free(ctx, texture);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_texture_class = {
-  "Texture",
-  .finalizer = js_texture_finalizer
+  "Texture"
 };
 
 static const JSCFunctionListEntry js_texture_proto_funcs[] = {
@@ -136,6 +136,7 @@ static const JSCFunctionListEntry js_texture_proto_funcs[] = {
   JS_CGETSET_DEF("sampler", js_texture_get_sampler, NULL),
   JS_CGETSET_DEF("source", js_texture_get_source, NULL),
   JS_CGETSET_DEF("encoding", js_texture_get_encoding, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_texture_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Texture", JS_PROP_CONFIGURABLE),
 };
 

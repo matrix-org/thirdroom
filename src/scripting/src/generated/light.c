@@ -217,15 +217,15 @@ static JSValue js_light_set_outer_cone_angle(JSContext *ctx, JSValueConst this_v
 
 
 
-static void js_light_finalizer(JSRuntime *rt, JSValue val) {
-  Light *light = JS_GetOpaque(val, js_light_class_id);
+static JSValue js_light_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Light *light = JS_GetOpaque(this_val, js_light_class_id);
   websg_dispose_resource(light);
-  js_free_rt(rt, light);
+  js_free(ctx, light);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_light_class = {
-  "Light",
-  .finalizer = js_light_finalizer
+  "Light"
 };
 
 static const JSCFunctionListEntry js_light_proto_funcs[] = {
@@ -236,6 +236,7 @@ static const JSCFunctionListEntry js_light_proto_funcs[] = {
   JS_CGETSET_DEF("castShadow", js_light_get_cast_shadow, js_light_set_cast_shadow),
   JS_CGETSET_DEF("innerConeAngle", js_light_get_inner_cone_angle, js_light_set_inner_cone_angle),
   JS_CGETSET_DEF("outerConeAngle", js_light_get_outer_cone_angle, js_light_set_outer_cone_angle),
+  JS_CFUNC_DEF("dispose", 0, js_light_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Light", JS_PROP_CONFIGURABLE),
 };
 

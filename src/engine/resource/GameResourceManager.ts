@@ -36,8 +36,9 @@ export class GameResourceManager implements IRemoteResourceManager {
 
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
+    const resource = new resourceConstructor(this, buffer, 0, tripleBuffer, props);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-    const resource = new resourceConstructor(this, resourceId, buffer, 0, tripleBuffer, props);
+    resource.resourceId = resourceId;
     setRemoteResource(this.ctx, resourceId, resource);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
 

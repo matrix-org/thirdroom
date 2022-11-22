@@ -93,20 +93,21 @@ static JSValue js_reflection_probe_get_reflection_probe_texture(JSContext *ctx, 
 
 
 
-static void js_reflection_probe_finalizer(JSRuntime *rt, JSValue val) {
-  ReflectionProbe *reflection_probe = JS_GetOpaque(val, js_reflection_probe_class_id);
+static JSValue js_reflection_probe_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ReflectionProbe *reflection_probe = JS_GetOpaque(this_val, js_reflection_probe_class_id);
   websg_dispose_resource(reflection_probe);
-  js_free_rt(rt, reflection_probe);
+  js_free(ctx, reflection_probe);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_reflection_probe_class = {
-  "ReflectionProbe",
-  .finalizer = js_reflection_probe_finalizer
+  "ReflectionProbe"
 };
 
 static const JSCFunctionListEntry js_reflection_probe_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_reflection_probe_get_name, js_reflection_probe_set_name),
   JS_CGETSET_DEF("reflectionProbeTexture", js_reflection_probe_get_reflection_probe_texture, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_reflection_probe_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "ReflectionProbe", JS_PROP_CONFIGURABLE),
 };
 

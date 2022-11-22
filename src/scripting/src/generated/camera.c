@@ -292,15 +292,15 @@ static JSValue js_camera_set_projection_matrix_needs_update(JSContext *ctx, JSVa
 
 
 
-static void js_camera_finalizer(JSRuntime *rt, JSValue val) {
-  Camera *camera = JS_GetOpaque(val, js_camera_class_id);
+static JSValue js_camera_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Camera *camera = JS_GetOpaque(this_val, js_camera_class_id);
   websg_dispose_resource(camera);
-  js_free_rt(rt, camera);
+  js_free(ctx, camera);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_camera_class = {
-  "Camera",
-  .finalizer = js_camera_finalizer
+  "Camera"
 };
 
 static const JSCFunctionListEntry js_camera_proto_funcs[] = {
@@ -314,6 +314,7 @@ static const JSCFunctionListEntry js_camera_proto_funcs[] = {
   JS_CGETSET_DEF("yfov", js_camera_get_yfov, js_camera_set_yfov),
   JS_CGETSET_DEF("aspectRatio", js_camera_get_aspect_ratio, js_camera_set_aspect_ratio),
   JS_CGETSET_DEF("projectionMatrixNeedsUpdate", js_camera_get_projection_matrix_needs_update, js_camera_set_projection_matrix_needs_update),
+  JS_CFUNC_DEF("dispose", 0, js_camera_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Camera", JS_PROP_CONFIGURABLE),
 };
 

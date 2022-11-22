@@ -116,9 +116,6 @@ function generateWebSGHeader() {
 
 #define export __attribute__((used))
 
-export void *websg_allocate(int size);
-export void websg_deallocate(void *ptr);
-
 typedef struct ArrayBuffer {
   unsigned int size;
   unsigned char *buf;
@@ -737,15 +734,15 @@ ${Object.entries(resourceDef.schema)
 
 ${generateResourceSpecificFunctions(resourceDef)}
 
-static void js_${classNameSnake}_finalizer(JSRuntime *rt, JSValue val) {
-  ${classNamePascal} *${classNameSnake} = JS_GetOpaque(val, js_${classNameSnake}_class_id);
+static JSValue js_${classNameSnake}_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ${classNamePascal} *${classNameSnake} = JS_GetOpaque(this_val, js_${classNameSnake}_class_id);
   websg_dispose_resource(${classNameSnake});
-  js_free_rt(rt, ${classNameSnake});
+  js_free(ctx, ${classNameSnake});
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_${classNameSnake}_class = {
-  "${classNamePascal}",
-  .finalizer = js_${classNameSnake}_finalizer
+  "${classNamePascal}"
 };
 
 static const JSCFunctionListEntry js_${classNameSnake}_proto_funcs[] = {
@@ -755,6 +752,7 @@ ${Object.entries(resourceDef.schema)
   .filter((val) => !!val)
   .map((val) => `  ${val},`)
   .join("\n")}
+  JS_CFUNC_DEF("dispose", 0, js_${classNameSnake}_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "${classNamePascal}", JS_PROP_CONFIGURABLE),
 };
 

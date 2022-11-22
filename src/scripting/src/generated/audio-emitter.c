@@ -309,15 +309,15 @@ static JSValue js_audio_emitter_set_rolloff_factor(JSContext *ctx, JSValueConst 
 
 
 
-static void js_audio_emitter_finalizer(JSRuntime *rt, JSValue val) {
-  AudioEmitter *audio_emitter = JS_GetOpaque(val, js_audio_emitter_class_id);
+static JSValue js_audio_emitter_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  AudioEmitter *audio_emitter = JS_GetOpaque(this_val, js_audio_emitter_class_id);
   websg_dispose_resource(audio_emitter);
-  js_free_rt(rt, audio_emitter);
+  js_free(ctx, audio_emitter);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_audio_emitter_class = {
-  "AudioEmitter",
-  .finalizer = js_audio_emitter_finalizer
+  "AudioEmitter"
 };
 
 static const JSCFunctionListEntry js_audio_emitter_proto_funcs[] = {
@@ -333,6 +333,7 @@ static const JSCFunctionListEntry js_audio_emitter_proto_funcs[] = {
   JS_CGETSET_DEF("maxDistance", js_audio_emitter_get_max_distance, js_audio_emitter_set_max_distance),
   JS_CGETSET_DEF("refDistance", js_audio_emitter_get_ref_distance, js_audio_emitter_set_ref_distance),
   JS_CGETSET_DEF("rolloffFactor", js_audio_emitter_get_rolloff_factor, js_audio_emitter_set_rolloff_factor),
+  JS_CFUNC_DEF("dispose", 0, js_audio_emitter_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioEmitter", JS_PROP_CONFIGURABLE),
 };
 

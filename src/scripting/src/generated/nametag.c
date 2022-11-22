@@ -55,19 +55,20 @@ static JSValue js_nametag_constructor(JSContext *ctx, JSValueConst new_target, i
 
 
 
-static void js_nametag_finalizer(JSRuntime *rt, JSValue val) {
-  Nametag *nametag = JS_GetOpaque(val, js_nametag_class_id);
+static JSValue js_nametag_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Nametag *nametag = JS_GetOpaque(this_val, js_nametag_class_id);
   websg_dispose_resource(nametag);
-  js_free_rt(rt, nametag);
+  js_free(ctx, nametag);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_nametag_class = {
-  "Nametag",
-  .finalizer = js_nametag_finalizer
+  "Nametag"
 };
 
 static const JSCFunctionListEntry js_nametag_proto_funcs[] = {
 
+  JS_CFUNC_DEF("dispose", 0, js_nametag_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Nametag", JS_PROP_CONFIGURABLE),
 };
 

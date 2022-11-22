@@ -92,20 +92,21 @@ static JSValue js_buffer_get_uri(JSContext *ctx, JSValueConst this_val) {
 
 
 
-static void js_buffer_finalizer(JSRuntime *rt, JSValue val) {
-  Buffer *buffer = JS_GetOpaque(val, js_buffer_class_id);
+static JSValue js_buffer_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Buffer *buffer = JS_GetOpaque(this_val, js_buffer_class_id);
   websg_dispose_resource(buffer);
-  js_free_rt(rt, buffer);
+  js_free(ctx, buffer);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_buffer_class = {
-  "Buffer",
-  .finalizer = js_buffer_finalizer
+  "Buffer"
 };
 
 static const JSCFunctionListEntry js_buffer_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_buffer_get_name, js_buffer_set_name),
   JS_CGETSET_DEF("uri", js_buffer_get_uri, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_buffer_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Buffer", JS_PROP_CONFIGURABLE),
 };
 

@@ -1,12 +1,10 @@
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
-import { ResourceId } from "./resource.common";
 import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
 
 export interface IRemoteResourceClass<Def extends ResourceDefinition> {
   new (
     manager: IRemoteResourceManager,
-    resourceId: ResourceId,
     buffer: ArrayBuffer,
     ptr: number,
     tripleBuffer: TripleBuffer,
@@ -21,17 +19,16 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
   function RemoteResourceClass(
     this: RemoteResource<Def>,
     manager: IRemoteResourceManager,
-    resourceId: ResourceId,
     buffer: ArrayBuffer,
     ptr: number,
     tripleBuffer: TripleBuffer,
     props?: InitialResourceProps<Def>
   ) {
+    this.resourceId = 0;
     this.resourceType = resourceType;
     this.initialized = false;
     this.manager = manager;
     this.ptr = ptr;
-    this.resourceId = resourceId;
     this.byteView = new Uint8Array(buffer, ptr, resourceDef.byteLength);
     this.tripleBuffer = tripleBuffer;
     this.__props = {};

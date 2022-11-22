@@ -454,9 +454,11 @@ export const defineResource = <S extends Schema>(
         required: prop.required,
         script: prop.script,
       }) as unknown as any;
+      (schema[propName] as any).byteOffset = cursor;
+    } else {
+      prop.byteOffset = cursor;
     }
 
-    prop.byteOffset = cursor;
     cursor += prop.arrayType.BYTES_PER_ELEMENT * prop.size;
   }
 

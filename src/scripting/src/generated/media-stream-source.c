@@ -129,21 +129,22 @@ static JSValue js_media_stream_source_set_gain(JSContext *ctx, JSValueConst this
 
 
 
-static void js_media_stream_source_finalizer(JSRuntime *rt, JSValue val) {
-  MediaStreamSource *media_stream_source = JS_GetOpaque(val, js_media_stream_source_class_id);
+static JSValue js_media_stream_source_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MediaStreamSource *media_stream_source = JS_GetOpaque(this_val, js_media_stream_source_class_id);
   websg_dispose_resource(media_stream_source);
-  js_free_rt(rt, media_stream_source);
+  js_free(ctx, media_stream_source);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_media_stream_source_class = {
-  "MediaStreamSource",
-  .finalizer = js_media_stream_source_finalizer
+  "MediaStreamSource"
 };
 
 static const JSCFunctionListEntry js_media_stream_source_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_media_stream_source_get_name, js_media_stream_source_set_name),
   JS_CGETSET_DEF("stream", js_media_stream_source_get_stream, js_media_stream_source_set_stream),
   JS_CGETSET_DEF("gain", js_media_stream_source_get_gain, js_media_stream_source_set_gain),
+  JS_CFUNC_DEF("dispose", 0, js_media_stream_source_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "MediaStreamSource", JS_PROP_CONFIGURABLE),
 };
 

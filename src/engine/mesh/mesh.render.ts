@@ -534,7 +534,6 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
       : getDefaultMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes);
 
     if (newMaterialObj !== meshPrimitive.materialObj) {
-      console.log("material changed");
       if (meshPrimitive.materialObj) {
         if (meshPrimitive.material) {
           meshPrimitive.material.disposeMeshPrimitiveMaterial(meshPrimitive.materialObj);

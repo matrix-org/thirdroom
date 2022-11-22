@@ -107,21 +107,22 @@ static JSValue js_light_map_get_intensity(JSContext *ctx, JSValueConst this_val)
 
 
 
-static void js_light_map_finalizer(JSRuntime *rt, JSValue val) {
-  LightMap *light_map = JS_GetOpaque(val, js_light_map_class_id);
+static JSValue js_light_map_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  LightMap *light_map = JS_GetOpaque(this_val, js_light_map_class_id);
   websg_dispose_resource(light_map);
-  js_free_rt(rt, light_map);
+  js_free(ctx, light_map);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_light_map_class = {
-  "LightMap",
-  .finalizer = js_light_map_finalizer
+  "LightMap"
 };
 
 static const JSCFunctionListEntry js_light_map_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_light_map_get_name, js_light_map_set_name),
   JS_CGETSET_DEF("texture", js_light_map_get_texture, NULL),
   JS_CGETSET_DEF("intensity", js_light_map_get_intensity, NULL),
+  JS_CFUNC_DEF("dispose", 0, js_light_map_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "LightMap", JS_PROP_CONFIGURABLE),
 };
 

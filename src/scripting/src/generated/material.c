@@ -582,15 +582,15 @@ static JSValue js_material_set_attenuation_distance(JSContext *ctx, JSValueConst
 
 
 
-static void js_material_finalizer(JSRuntime *rt, JSValue val) {
-  Material *material = JS_GetOpaque(val, js_material_class_id);
+static JSValue js_material_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  Material *material = JS_GetOpaque(this_val, js_material_class_id);
   websg_dispose_resource(material);
-  js_free_rt(rt, material);
+  js_free(ctx, material);
+  return JS_UNDEFINED;
 }
 
 static JSClassDef js_material_class = {
-  "Material",
-  .finalizer = js_material_finalizer
+  "Material"
 };
 
 static const JSCFunctionListEntry js_material_proto_funcs[] = {
@@ -615,6 +615,7 @@ static const JSCFunctionListEntry js_material_proto_funcs[] = {
   JS_CGETSET_DEF("thicknessFactor", js_material_get_thickness_factor, js_material_set_thickness_factor),
   JS_CGETSET_DEF("thicknessTexture", js_material_get_thickness_texture, js_material_set_thickness_texture),
   JS_CGETSET_DEF("attenuationDistance", js_material_get_attenuation_distance, js_material_set_attenuation_distance),
+  JS_CFUNC_DEF("dispose", 0, js_material_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Material", JS_PROP_CONFIGURABLE),
 };
 
