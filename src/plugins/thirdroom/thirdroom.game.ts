@@ -213,6 +213,7 @@ const actionMap: ActionMap = {
           path: "Keyboard/KeyB",
         },
       ],
+      networked: true,
     },
   ],
 };

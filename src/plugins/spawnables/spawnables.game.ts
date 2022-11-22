@@ -54,17 +54,20 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   create() {
     const actions = Array(6)
       .fill(null)
-      .map((_, i) => ({
-        id: `${i + 1}`,
-        path: `${i + 1}`,
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit${i + 1}`,
-          },
-        ],
-      }));
+      .map(
+        (_, i): ActionDefinition => ({
+          id: `${i + 1}`,
+          path: `${i + 1}`,
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: `Keyboard/Digit${i + 1}`,
+            },
+          ],
+          networked: true,
+        })
+      );
 
     return {
       hitAudioEmitters: new Map(),
