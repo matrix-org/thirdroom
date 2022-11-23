@@ -19,7 +19,7 @@ import { Icon } from "../../../atoms/icon/Icon";
 import UploadIC from "../../../../../res/ic/upload.svg";
 import { Input } from "../../../atoms/input/Input";
 
-interface SceneData {
+export interface SceneData {
   sceneUrl: string;
   scenePreviewUrl: string;
   sceneName: string;
