@@ -22,6 +22,7 @@ export enum RepositoryEvents {
   FeaturedWorlds = "tr.repository_room.featured_worlds",
   FeaturedRooms = "tr.repository_room.featured_rooms",
   FeaturedScenes = "tr.repository_room.featured_scenes",
+  Scene = "tr.repository_room.scene",
 }
 
 enum DiscoverTab {
@@ -38,6 +39,7 @@ export function DiscoverView({ room }: { room: Room }) {
 
   const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, getPowerLevel(session.userId));
   const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorlds, getPowerLevel(session.userId));
+  const canFeatureScenes = canSendStateEvent(RepositoryEvents.FeaturedScenes, getPowerLevel(session.userId));
   const isAdmin = canFeatureRooms || canFeatureWorlds;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
@@ -127,6 +129,7 @@ export function DiscoverView({ room }: { room: Room }) {
                 permissions={{
                   canFeatureRooms,
                   canFeatureWorlds,
+                  canFeatureScenes,
                 }}
               />
             )}

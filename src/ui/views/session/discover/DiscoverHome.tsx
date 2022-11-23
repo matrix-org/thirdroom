@@ -6,17 +6,14 @@ import { Label } from "../../../atoms/text/Label";
 import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
 import "./DiscoverHome.css";
 import { DiscoverGroup, DiscoverGroupGrid, DiscoverMoreButton } from "../../components/discover-group/DiscoverGroup";
-import LogoSvg from "../../../../../res/svg/logo.svg";
-import { FeaturedScene, FeaturedSceneContent } from "../../components/featured-scene/FeaturedScene";
-import { Text } from "../../../atoms/text/Text";
 import { RepositoryEvents } from "./DiscoverView";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { FeaturedWorldsProvider } from "../../components/FeaturedWorldssProvider";
+import { FeaturedWorldsProvider } from "../../components/FeaturedWorldsProvider";
 import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
 import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
-import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
+import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
+import { FeaturedSceneCard } from "./FeaturedSceneCard";
 
 interface DiscoverHomeProps {
   room: Room;
@@ -101,59 +98,34 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
               )
             }
           </FeaturedWorldsProvider>
-          <DiscoverGroup
-            label={<Label>Featured Scenes</Label>}
-            content={
-              <DiscoverGroupGrid itemMinWidth={300} gap="md">
-                <FeaturedScene
-                  thumbnail={
-                    <Thumbnail size="lg" wide>
-                      <ThumbnailImg src={LogoSvg} alt="scene" />
-                    </Thumbnail>
+          <FeaturedScenesProvider room={room}>
+            {(featuredScenes) =>
+              featuredScenes.length === 0 ? null : (
+                <DiscoverGroup
+                  label={<Label>Featured Scenes</Label>}
+                  content={
+                    <DiscoverGroupGrid itemMinWidth={300} gap="md">
+                      {featuredScenes.slice(0, 3).map(([stateKey, stateEvent]) => (
+                        <FeaturedSceneCard
+                          key={stateKey}
+                          session={session}
+                          roomId={room.id}
+                          eventId={stateEvent.content.event_id}
+                        />
+                      ))}
+                    </DiscoverGroupGrid>
                   }
-                  options={<></>}
-                >
-                  <FeaturedSceneContent>
-                    <Text variant="b3">Rad Designs</Text>
-                    <Text>Zombie city</Text>
-                  </FeaturedSceneContent>
-                </FeaturedScene>
-                <FeaturedScene
-                  thumbnail={
-                    <Thumbnail size="lg" wide>
-                      <ThumbnailImg src={LogoSvg} alt="scene" />
-                    </Thumbnail>
+                  footer={
+                    featuredScenes.length > 3 && (
+                      <div className="flex justify-end">
+                        <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
+                      </div>
+                    )
                   }
-                  options={<></>}
-                >
-                  <FeaturedSceneContent>
-                    <Text variant="b3">Rad Designs</Text>
-                    <Text>Zombie city</Text>
-                  </FeaturedSceneContent>
-                </FeaturedScene>
-                <FeaturedScene
-                  thumbnail={
-                    <Thumbnail size="lg" wide>
-                      <ThumbnailImg src={LogoSvg} alt="scene" />
-                    </Thumbnail>
-                  }
-                  options={<></>}
-                >
-                  <FeaturedSceneContent>
-                    <Text variant="b3">Rad Designs</Text>
-                    <Text>Zombie city</Text>
-                  </FeaturedSceneContent>
-                </FeaturedScene>
-              </DiscoverGroupGrid>
-            }
-            footer={
-              true && (
-                <div className="flex justify-end">
-                  <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
-                </div>
+                />
               )
             }
-          />
+          </FeaturedScenesProvider>
         </div>
       </Content>
     </Scroll>

@@ -7,7 +7,7 @@ import { DiscoverGroupGrid } from "../../components/discover-group/DiscoverGroup
 import { RepositoryEvents } from "./DiscoverView";
 import "./DiscoverAll.css";
 import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
-import { FeaturedWorldsProvider } from "../../components/FeaturedWorldssProvider";
+import { FeaturedWorldsProvider } from "../../components/FeaturedWorldsProvider";
 import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
 
