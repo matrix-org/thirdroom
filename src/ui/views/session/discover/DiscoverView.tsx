@@ -15,6 +15,8 @@ import { usePowerLevels } from "../../../hooks/usePowerLevels";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { DiscoverAdmin } from "./DiscoverAdmin";
 import { DiscoverAll } from "./DiscoverAll";
+import { DiscoverCreator } from "./DiscoverCreator";
+import "./DiscoverView.css";
 
 export enum RepositoryEvents {
   FeaturedWorlds = "tr.repository_room.featured_worlds",
@@ -25,6 +27,7 @@ export enum RepositoryEvents {
 enum DiscoverTab {
   Home = "Home",
   Admin = "Admin",
+  Creator = "Creator",
 }
 
 export function DiscoverView({ room }: { room: Room }) {
@@ -41,7 +44,7 @@ export function DiscoverView({ room }: { room: Room }) {
   }
 
   return (
-    <Window>
+    <Window className="DiscoverView">
       <Content
         top={
           <Header
@@ -73,6 +76,13 @@ export function DiscoverView({ room }: { room: Room }) {
                     onSelect={setDiscoverTab}
                   >
                     Home
+                  </SegmentControlItem>
+                  <SegmentControlItem
+                    value={DiscoverTab.Creator}
+                    isSelected={DiscoverTab.Creator === discoverTab}
+                    onSelect={setDiscoverTab}
+                  >
+                    Creator
                   </SegmentControlItem>
                   {isAdmin && (
                     <SegmentControlItem
@@ -110,6 +120,7 @@ export function DiscoverView({ room }: { room: Room }) {
                 }}
               />
             )}
+            {discoverTab === DiscoverTab.Creator && room && <DiscoverCreator room={room} />}
             {discoverTab === DiscoverTab.Admin && room && (
               <DiscoverAdmin
                 room={room}

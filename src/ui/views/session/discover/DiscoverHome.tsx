@@ -7,11 +7,7 @@ import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
 import "./DiscoverHome.css";
 import { DiscoverGroup, DiscoverGroupGrid, DiscoverMoreButton } from "../../components/discover-group/DiscoverGroup";
 import LogoSvg from "../../../../../res/svg/logo.svg";
-import {
-  FeaturedScene,
-  FeaturedSceneContent,
-  FeaturedSceneThumbnail,
-} from "../../components/featured-scene/FeaturedScene";
+import { FeaturedScene, FeaturedSceneContent } from "../../components/featured-scene/FeaturedScene";
 import { Text } from "../../../atoms/text/Text";
 import { RepositoryEvents } from "./DiscoverView";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -19,6 +15,8 @@ import { FeaturedWorldsProvider } from "../../components/FeaturedWorldssProvider
 import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
 import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
+import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
+import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 
 interface DiscoverHomeProps {
   room: Room;
@@ -107,8 +105,40 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
             label={<Label>Featured Scenes</Label>}
             content={
               <DiscoverGroupGrid itemMinWidth={300} gap="md">
-                <FeaturedScene onClick={() => false}>
-                  <FeaturedSceneThumbnail src={LogoSvg} alt="scene" />
+                <FeaturedScene
+                  thumbnail={
+                    <Thumbnail size="lg" wide>
+                      <ThumbnailImg src={LogoSvg} alt="scene" />
+                    </Thumbnail>
+                  }
+                  options={<></>}
+                >
+                  <FeaturedSceneContent>
+                    <Text variant="b3">Rad Designs</Text>
+                    <Text>Zombie city</Text>
+                  </FeaturedSceneContent>
+                </FeaturedScene>
+                <FeaturedScene
+                  thumbnail={
+                    <Thumbnail size="lg" wide>
+                      <ThumbnailImg src={LogoSvg} alt="scene" />
+                    </Thumbnail>
+                  }
+                  options={<></>}
+                >
+                  <FeaturedSceneContent>
+                    <Text variant="b3">Rad Designs</Text>
+                    <Text>Zombie city</Text>
+                  </FeaturedSceneContent>
+                </FeaturedScene>
+                <FeaturedScene
+                  thumbnail={
+                    <Thumbnail size="lg" wide>
+                      <ThumbnailImg src={LogoSvg} alt="scene" />
+                    </Thumbnail>
+                  }
+                  options={<></>}
+                >
                   <FeaturedSceneContent>
                     <Text variant="b3">Rad Designs</Text>
                     <Text>Zombie city</Text>
@@ -117,9 +147,11 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
               </DiscoverGroupGrid>
             }
             footer={
-              <div className="flex justify-end">
-                <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
-              </div>
+              true && (
+                <div className="flex justify-end">
+                  <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
+                </div>
+              )
             }
           />
         </div>
