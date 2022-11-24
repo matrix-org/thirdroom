@@ -1,11 +1,14 @@
-.FeaturedScene__Thumbnail {
-  height: 250px;
-  width: 100%;
-  object-fit: cover;
-  background-color: black;
+.FeaturedScene {
+  background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
+  overflow: hidden;
+
+  & .Thumbnail {
+    border-radius: 0;
+  }
 }
 
 .FeaturedScene__Content {
-  width: 100%;
+  padding: var(--sp-xs);
+  padding-top: 0;
 }

@@ -6,25 +6,22 @@ import "./FeaturedScene.css";
 interface FeaturedSceneProps {
   className?: string;
   thumbnail: ReactNode;
-  options: ReactNode;
   children: ReactNode;
 }
-export function FeaturedScene({ className, thumbnail, options, children }: FeaturedSceneProps) {
+export function FeaturedScene({ className, thumbnail, children }: FeaturedSceneProps) {
   return (
     <div className={classNames("FeaturedScene flex flex-column gap-xs", className)}>
       {thumbnail}
-      <div className="flex items-start gap-xxs">
-        {children}
-        {options}
-      </div>
+      {children}
     </div>
   );
 }
 
 interface FeaturedSceneContentProps {
+  className?: string;
   children: ReactNode;
 }
 
-export function FeaturedSceneContent({ children }: FeaturedSceneContentProps) {
-  return <span className="FeaturedScene__Content grow flex flex-column gap-xxs">{children}</span>;
+export function FeaturedSceneContent({ className, children }: FeaturedSceneContentProps) {
+  return <span className={classNames("FeaturedScene__Content flex gap-xs", className)}>{children}</span>;
 }
