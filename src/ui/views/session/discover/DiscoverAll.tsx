@@ -10,6 +10,8 @@ import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
 import { FeaturedWorldsProvider } from "../../components/FeaturedWorldsProvider";
 import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
+import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
+import { FeaturedSceneCard } from "./FeaturedSceneCard";
 
 export function DiscoverAll({
   eventType,
@@ -70,6 +72,26 @@ export function DiscoverAll({
                 )
               }
             </FeaturedWorldsProvider>
+          </DiscoverGroupGrid>
+        )}
+        {eventType === RepositoryEvents.FeaturedScenes && (
+          <DiscoverGroupGrid>
+            <FeaturedScenesProvider room={room}>
+              {(featuredScenes) =>
+                featuredScenes.length === 0 ? null : (
+                  <DiscoverGroupGrid itemMinWidth={300} gap="md">
+                    {featuredScenes.map(([stateKey, stateEvent]) => (
+                      <FeaturedSceneCard
+                        key={stateKey}
+                        session={session}
+                        roomId={room.id}
+                        eventId={stateEvent.content.event_id}
+                      />
+                    ))}
+                  </DiscoverGroupGrid>
+                )
+              }
+            </FeaturedScenesProvider>
           </DiscoverGroupGrid>
         )}
       </Content>

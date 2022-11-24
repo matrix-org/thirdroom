@@ -118,7 +118,11 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                   footer={
                     featuredScenes.length > 3 && (
                       <div className="flex justify-end">
-                        <DiscoverMoreButton text="Browse All Scenes" iconSrc={ArrowForwardIC} />
+                        <DiscoverMoreButton
+                          onClick={() => onLoadEvents(RepositoryEvents.FeaturedScenes)}
+                          text="Browse All Scenes"
+                          iconSrc={ArrowForwardIC}
+                        />
                       </div>
                     )
                   }
