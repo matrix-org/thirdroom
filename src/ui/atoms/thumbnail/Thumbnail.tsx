@@ -8,7 +8,7 @@ interface ThumbnailProps {
   size?: "lg" | "md" | "sm";
   outlined?: boolean;
   wide?: boolean;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function Thumbnail({ className, bgColor, size = "md", outlined, wide, children }: ThumbnailProps) {
