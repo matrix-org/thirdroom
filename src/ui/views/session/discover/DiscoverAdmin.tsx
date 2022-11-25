@@ -251,6 +251,7 @@ function FeatureScene({ room }: { room: Room }) {
           scene_description: data.sceneDescription,
           scene_author_name: data.sceneAuthorName,
           scene_license: data.sceneLicense,
+          scene_version: data.sceneVersion,
           scene_author_url: data.sceneAuthorUrl,
           scene_source_url: data.sceneSourceUrl,
         })
