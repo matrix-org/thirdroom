@@ -61,17 +61,18 @@ export function AliasAvailabilityProvider({
   return <>{children(available, handleAliasChange)}</>;
 }
 
+export type CreateWorldContent = {
+  scene_url: string;
+  scene_preview_url: string;
+  max_member_object_cap?: number;
+} & Record<string, any>;
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
   name: string;
   topic?: string;
   visibility: RoomVisibility;
   alias?: string;
-  content: {
-    scene_url: string;
-    scene_preview_url: string;
-    max_member_object_cap?: number;
-  } & Record<string, any>;
+  content: CreateWorldContent;
 }
 
 export async function createWorld(
@@ -184,18 +185,26 @@ export function CreateWorldForm({ sceneEvent, onSceneChange, onCreate, onClose }
       maxObjectCapInput: HTMLInputElement;
     };
     const alias = aliasInput.getAttribute("data-ui-state") === "error" ? undefined : aliasInput.value || undefined;
+    let content: CreateWorldContent = {
+      scene_url: selectedScene.url,
+      scene_preview_url: selectedScene.previewUrl,
+      max_member_object_cap: parseInt(maxObjectCapInput.value) || undefined,
+    };
+    if (controlledScene && sceneEvent) {
+      content = {
+        ...content,
+        ...(sceneEvent?.content ?? {}),
+        scene_event_id: sceneEvent.event_id,
+        scene_room_id: sceneEvent.room_id,
+      };
+    }
     handleCreateWorld({
       visibility: isPrivateInput.checked ? RoomVisibility.Private : RoomVisibility.Public,
       name: nameInput.value,
       topic: topicInput.value || undefined,
       avatar: avatarData.blob,
       alias,
-      content: {
-        scene_url: selectedScene.url,
-        scene_preview_url: selectedScene.previewUrl,
-        max_member_object_cap: parseInt(maxObjectCapInput.value) || undefined,
-        ...(controlledScene ? sceneEvent?.content ?? {} : {}),
-      },
+      content,
     });
   };
 

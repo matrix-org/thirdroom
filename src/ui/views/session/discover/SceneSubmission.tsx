@@ -59,8 +59,8 @@ export function SceneSubmission({ onSave, renderTrigger }: SceneSubmissionProps)
     const sceneDescription = sceneDescriptionInput.value.trim();
     const sceneAuthorName = authorNameInput.value.trim();
     const sceneLicense = licenseInput.value.trim();
-    const sceneAuthorUrl = authorURLInput.value.trim();
-    const sceneSourceUrl = sourceURLInput.value.trim();
+    const sceneAuthorUrl = authorURLInput.value.trim() || undefined;
+    const sceneSourceUrl = sourceURLInput.value.trim() || undefined;
 
     if (sceneInfo.mxc && previewInfo.mxc) {
       onSave({

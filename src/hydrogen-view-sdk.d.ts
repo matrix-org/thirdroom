@@ -2051,6 +2051,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     content: Content;
     type: string;
     event_id: string;
+    room_id: string;
     sender: string;
     origin_server_ts: number;
     unsigned?: Content;
