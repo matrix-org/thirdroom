@@ -13,46 +13,19 @@ import {
   getRemoteResource,
   setRemoteResource,
 } from "./resource.game";
-import {
-  InitialResourceProps,
-  IRemoteResourceManager,
-  RemoteResource,
-  RemoteResourceArrayBufferStore,
-  RemoteResourceRefStore,
-  RemoteResourceStringStore,
-  ResourceDefinition,
-} from "./ResourceDefinition";
-import { LightResource, LightType } from "./schema";
+import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
 import { decodeString } from "./strings";
 
-type ResourceTransformFunction = (resource: RemoteResource<ResourceDefinition>) => Uint8Array;
+interface ResourceTransformData {
+  writeView: Uint8Array;
+  refView: Uint32Array;
+  refOffsets: number[];
+  refIsString: boolean[];
+}
 
-function defineResourceIdTransform<Def extends ResourceDefinition>(resourceDef: Def): ResourceTransformFunction {
-  const buffer = new ArrayBuffer(resourceDef.byteLength);
-  const byteView = new Uint8Array(buffer);
-
-  const resourceIdViews: { propName: string; view: Uint32Array }[] = [];
-
-  const schema = resourceDef.schema;
-
-  for (const propName in schema) {
-    const prop = schema[propName];
-
-    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "string" || prop.type === "arrayBuffer") {
-      resourceIdViews.push({ propName, view: new Uint32Array(buffer, prop.byteOffset, prop.size) });
-    }
-  }
-
-  return (resource: RemoteResource<ResourceDefinition>): Uint8Array => {
-    byteView.set(resource.byteView);
-
-    for (let i = 0; i < resourceIdViews.length; i++) {
-      const resourceIdView = resourceIdViews[i];
-      resourceIdView.view.set(resource.__props[resourceIdView.propName].resourceIdView);
-    }
-
-    return byteView;
-  };
+interface ScriptResourceStore {
+  refView: Uint32Array;
+  prevRefs: number[];
 }
 
 export class ScriptResourceManager implements IRemoteResourceManager {
@@ -75,57 +48,91 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   // Strings are allocated on a single shared buffer. They are assumed to be immutable.
   // In the same way we check to see if the string ptr has changed before we decode it
   // we should
-  private ptrToResourceId: Map<number, number> = new Map();
   private ctx: GameState;
+  private resourceDefByType: Map<number, ResourceDefinition> = new Map();
   private resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>> = new Map();
-  private resourceIdTransforms: Map<ResourceDefinition, ResourceTransformFunction> = new Map();
+  private resourceTransformData: Map<number, ResourceTransformData> = new Map();
+  private ptrToResourceId: Map<number, number> = new Map();
+  private resourceStorage: Map<number, ScriptResourceStore> = new Map();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
-  constructor(ctx: GameState) {
+  constructor(ctx: GameState, allowedResources: ResourceDefinition[]) {
     this.ctx = ctx;
-    this.memory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
+    this.memory = new WebAssembly.Memory({ initial: 1024, maximum: 1024 });
     this.buffer = this.memory.buffer;
     this.U8Heap = new Uint8Array(this.buffer);
     this.U32Heap = new Uint32Array(this.buffer);
+
+    for (const resourceDef of allowedResources) {
+      this.registerResource(resourceDef);
+    }
   }
 
   setInstance(instance: ScriptWebAssemblyInstance): void {
     this.instance = instance;
   }
 
+  registerResource<Def extends ResourceDefinition>(resourceDef: Def) {
+    this.resourceDefByType.set(resourceDef.resourceType, resourceDef);
+    const resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
+    this.resourceConstructors.set(
+      resourceDef,
+      resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
+    );
+
+    const buffer = new ArrayBuffer(resourceDef.byteLength);
+    const writeView = new Uint8Array(buffer);
+    const refView = new Uint32Array(buffer);
+    const refOffsets: number[] = [];
+    const refIsString: boolean[] = [];
+
+    const schema = resourceDef.schema;
+
+    for (const propName in schema) {
+      const prop = schema[propName];
+
+      if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
+        for (let i = 0; i < prop.size; i++) {
+          refOffsets.push(prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT);
+          refIsString.push(prop.type === "string");
+        }
+      } else if (prop.type === "arrayBuffer") {
+        refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+        refIsString.push(false);
+      }
+    }
+
+    this.resourceTransformData.set(resourceDef.resourceType, {
+      writeView,
+      refView,
+      refOffsets,
+      refIsString,
+    });
+  }
+
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def> {
-    let resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
+    const resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
 
     if (!resourceConstructor) {
-      resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
-      this.resourceConstructors.set(
-        resourceDef,
-        resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
-      );
-      this.resourceIdTransforms.set(resourceDef, defineResourceIdTransform(resourceDef));
+      throw new Error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
     }
 
     const buffer = this.memory.buffer;
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer, {
-      dispose: () => {
-        const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
-
-        if (index !== -1) {
-          this.resources.splice(index, 1);
-        }
-
-        this.ptrToResourceId.delete(ptr);
-      },
-    });
-    const resource = new resourceConstructor(this, resourceId, buffer, ptr, tripleBuffer, props);
+    const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer, props);
+    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
+    resource.resourceId = resourceId;
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);
     this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
+    this.resourceStorage.set(resourceId, {
+      refView: new Uint32Array(buffer, ptr, resourceDef.byteLength),
+      prevRefs: [],
+    });
     return resource;
   }
 
@@ -136,76 +143,108 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
   }
 
-  getString(store: RemoteResourceStringStore): string {
-    const ptr = store.view[0];
+  disposeResource(resourceId: number): void {
+    const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
 
-    if (store.prevPtr !== store.view[0]) {
-      store.value = decodeString(ptr, this.U8Heap);
-      store.prevPtr = ptr;
+    if (index === -1) {
+      return;
     }
 
-    return store.value;
+    const resource = this.resources[index];
+
+    const { refOffsets } = this.resourceTransformData.get(resource.resourceType)!;
+    const resourceStore = this.resourceStorage.get(resource.resourceId)!;
+
+    for (let i = 0; i < refOffsets.length; i++) {
+      const refOffset = refOffsets[i];
+      const refPtr = resourceStore.refView[refOffset];
+
+      if (refPtr) {
+        const resourceId = this.ptrToResourceId.get(refPtr);
+
+        if (resourceId) {
+          disposeResource(this.ctx, resourceId);
+        }
+      }
+    }
+
+    this.deallocate(resource.ptr);
+
+    this.ptrToResourceId.delete(resource.ptr);
+    this.resources.splice(index, 1);
+    this.resourceStorage.delete(resourceId);
   }
 
-  setString(value: string, store: RemoteResourceStringStore): void {
-    if (store.prevPtr) {
-      this.deallocate(store.prevPtr);
+  getString(store: Uint32Array): string {
+    const resourceId = this.ptrToResourceId.get(store[0]);
+    return getRemoteResource<string>(this.ctx, resourceId!)!;
+  }
+
+  setString(value: string, store: Uint32Array): void {
+    if (store[0]) {
+      this.deallocate(store[0]);
     }
 
     const arr = this.textEncoder.encode(value);
     const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
     nullTerminatedArr.set(arr);
 
-    const scriptStrPtr = this.allocate(nullTerminatedArr.byteLength);
-    this.U8Heap.set(nullTerminatedArr, scriptStrPtr);
-
-    store.value = value;
-    store.prevPtr = scriptStrPtr;
-    store.view[0] = scriptStrPtr;
-
-    if (store.resourceIdView[0]) {
-      disposeResource(this.ctx, store.resourceIdView[0]);
-    }
+    const ptr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, ptr);
+    store[0] = ptr;
 
     const resourceId = createStringResource(this.ctx, value);
-    store.resourceIdView[0] = resourceId;
     addResourceRef(this.ctx, resourceId);
+    this.ptrToResourceId.set(ptr, resourceId);
   }
 
-  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer {
-    if (!store.value) {
+  getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
+    if (!store[1]) {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    return store.value;
+    const resourceId = this.ptrToResourceId.get(store[1]);
+    return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId!)!;
   }
 
-  setArrayBuffer(value: SharedArrayBuffer, store: RemoteResourceArrayBufferStore): void {
-    if (store.value) {
+  setArrayBuffer(value: SharedArrayBuffer, store: Uint32Array): void {
+    if (store[1]) {
       throw new Error("You cannot mutate an existing arrayBuffer field.");
     }
 
     // TODO: Add a function to actually get a range of buffer data in script context
     // We shouldn't allocate all the buffer data on the script heap because if you aren't using it,
     // it's a waste of memory.
-    store.view[0] = 0;
-    store.value = value;
+    store[0] = value.byteLength;
+    const ptr = this.allocate(value.byteLength);
+    const bufView = new Uint8Array(value);
+    this.U8Heap.set(bufView, ptr);
+    store[1] = ptr;
     const resourceId = createArrayBufferResource(this.ctx, value);
-    store.resourceIdView[0] = resourceId;
     addResourceRef(this.ctx, resourceId);
+    this.ptrToResourceId.set(ptr, resourceId);
   }
 
-  getRef<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    store: RemoteResourceRefStore
-  ): RemoteResource<Def> | undefined {
-    return getRemoteResource<RemoteResource<Def>>(this.ctx, store.resourceIdView[0]);
+  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined {
+    const resourceId = this.ptrToResourceId.get(store[0]);
+    return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId!);
   }
 
-  setRef(value: RemoteResource<ResourceDefinition>, store: RemoteResourceRefStore): void {
-    store.value = value;
-    store.resourceIdView[0] = value.resourceId;
-    store.view[0] = value.ptr;
+  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
+    // if (store[0]) {
+    //   const prevResourceId = this.ptrToResourceId.get(store[0]);
+
+    //   if (prevResourceId) {
+    //     disposeResource(this.ctx, prevResourceId);
+    //   }
+    // }
+
+    if (value) {
+      addResourceRef(this.ctx, value.resourceId);
+      store[0] = value.ptr;
+    } else {
+      store[0] = 0;
+    }
   }
 
   addRef(resourceId: number) {
@@ -216,25 +255,58 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     disposeResource(this.ctx, resourceId);
   }
 
+  /**
+   * After the script has finished running its update method we need to copy resource
+   * data into the triple buffer to go to the other threads. However, the resources
+   * store refs as pointers within the WASM heap. So we need to translate those to
+   * resource ids. In addition we need strings and arraybuffers to exist on the other threads.
+   */
   commitResources() {
     const resources = this.resources;
 
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
-      const transform = this.resourceIdTransforms.get(resource.constructor.resourceDef);
+      const { writeView, refView, refOffsets, refIsString } = this.resourceTransformData.get(resource.resourceType)!;
+      const resourceStore = this.resourceStorage.get(resource.resourceId)!;
 
-      if (transform) {
-        const byteView = transform(resource);
+      writeView.set(resource.byteView);
 
-        if (resource.initialized) {
-          copyToWriteBuffer(resource.tripleBuffer, byteView);
-        } else {
-          const tripleBufferByteViews = resource.tripleBuffer.byteViews;
-          tripleBufferByteViews[0].set(byteView);
-          tripleBufferByteViews[1].set(byteView);
-          tripleBufferByteViews[2].set(byteView);
-          resource.initialized = true;
+      for (let j = 0; j < refOffsets.length; j++) {
+        const refOffset = refOffsets[j] / Uint32Array.BYTES_PER_ELEMENT;
+        const nextRefPtr = resourceStore.refView[refOffset];
+        const prevRefPtr = resourceStore.prevRefs[j];
+        let nextResourceId = this.ptrToResourceId.get(nextRefPtr);
+
+        if (nextRefPtr !== prevRefPtr && refIsString[j]) {
+          const prevResourceId = this.ptrToResourceId.get(prevRefPtr);
+
+          if (prevResourceId) {
+            // TODO: Dispose non-string resources automatically when they are no longer referenced?
+            disposeResource(this.ctx, prevResourceId);
+          }
+
+          resourceStore.prevRefs[j] = nextRefPtr;
+
+          if (!nextResourceId) {
+            nextResourceId = createStringResource(this.ctx, decodeString(nextRefPtr, this.U8Heap));
+          }
         }
+
+        // if (resource.resourceType === ResourceType.Material && resource.name === "Default") {
+        //   console.log(resource.name, nextResourceId);
+        // }
+
+        refView[refOffset] = nextResourceId || 0;
+      }
+
+      if (resource.initialized) {
+        copyToWriteBuffer(resource.tripleBuffer, writeView);
+      } else {
+        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+        tripleBufferByteViews[0].set(writeView);
+        tripleBufferByteViews[1].set(writeView);
+        tripleBufferByteViews[2].set(writeView);
+        resource.initialized = true;
       }
     }
   }
@@ -282,7 +354,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
         memory: this.memory,
       },
       websg: {
-        get_light_by_name: (namePtr: number) => {
+        get_resource_by_name: (resourceType: number, namePtr: number) => {
           const resources = this.resources;
           const name = decodeString(namePtr, this.U8Heap);
 
@@ -290,47 +362,45 @@ export class ScriptResourceManager implements IRemoteResourceManager {
             const resource = resources[i];
             const def = resource.constructor.resourceDef;
 
-            if (def === LightResource && resource.name === name) {
+            if (def.resourceType === resourceType && resource.name === name) {
               return resource.ptr;
             }
           }
 
           return 0;
         },
-        create_light: (type: LightType) => {
-          const resource = this.createResource(LightResource, {
-            type,
+        create_resource: (type: number, ptr: number) => {
+          const resourceDef = this.resourceDefByType.get(type);
+
+          if (!resourceDef) {
+            console.error(`Tried to create resource with type: ${type} but it has not been registered.`);
+            return -1;
+          }
+
+          const resourceConstructor = this.resourceConstructors.get(resourceDef) as
+            | IRemoteResourceClass<ResourceDefinition>
+            | undefined;
+
+          if (!resourceConstructor) {
+            throw console.error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
+            return -1;
+          }
+
+          const buffer = this.memory.buffer;
+          const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
+          const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer);
+          const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
+          resource.resourceId = resourceId;
+          setRemoteResource(this.ctx, resourceId, resource);
+          this.ptrToResourceId.set(ptr, resourceId);
+          this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
+          this.resourceStorage.set(resourceId, {
+            refView: new Uint32Array(buffer, ptr, resourceDef.byteLength),
+            prevRefs: [],
           });
-          return resource.ptr;
+          return 0;
         },
-        set_light_name: (lightPtr: number, strPtr: number): number => {
-          const resourceId = this.ptrToResourceId.get(lightPtr);
-
-          if (!resourceId) {
-            return 0;
-          }
-
-          const resource = this.getResource(LightResource, resourceId);
-
-          if (!resource) {
-            return 0;
-          }
-
-          const value = decodeString(strPtr, this.U8Heap);
-          const store = resource.__props["name"];
-          store.value = value;
-          store.prevPtr = strPtr;
-          store.view[0] = strPtr;
-
-          if (store.resourceId) {
-            disposeResource(this.ctx, store.resourceId);
-          }
-
-          store.resourceId = createStringResource(this.ctx, value);
-
-          return 1;
-        },
-        dispose_light: (ptr: number) => {
+        dispose_resource: (ptr: number) => {
           const resourceId = this.ptrToResourceId.get(ptr);
 
           if (!resourceId) {

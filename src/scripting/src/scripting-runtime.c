@@ -7,9 +7,11 @@
 #include "../include/quickjs/cutils.h"
 #include "../include/quickjs/quickjs.h"
 
-#include "./websg.h"
+#include "./script-context.h"
+#include "./jsutils.h"
 #include "./console.h"
-#include "./light.h"
+#include "./generated/websg.h"
+#include "./generated/websg-js.h"
 
 /**
  * Global State
@@ -28,19 +30,28 @@ JSAtom onUpdateAtom;
  * Exported Functions
  *********************/
 
-export int32_t websg_initialize() {
+export void websg_initialize() {
   rt = JS_NewRuntime();
   ctx = JS_NewContext(rt);
+
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
+
+  define_script_context(ctx);
+  JS_DefineRefArrayIterator(ctx);
+  JS_DefineRefMapIterator(ctx);
+  JS_DefineNodeIterator(ctx);
 
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
+  js_define_websg_api(ctx, &global);
+}
 
-  JSValue jsSceneGraphNamespace = JS_NewObject(ctx);
-  js_define_light_api(ctx, &jsSceneGraphNamespace);
-  JS_SetPropertyStr(ctx, global, "WebSG", jsSceneGraphNamespace);
+export void *websg_allocate(int size) {
+  return js_mallocz_rt(rt, size);
+}
 
-  return 0; 
+export void websg_deallocate(void *ptr) {
+  js_free_rt(rt, ptr);
 }
 
 // NONSTANDARD: execute the provided code in the JS context

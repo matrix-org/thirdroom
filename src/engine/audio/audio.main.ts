@@ -16,9 +16,7 @@ import {
   SharedAudioSourceResource,
   ReadAudioSourceTripleBuffer,
   WriteAudioSourceTripleBuffer,
-  AudioEmitterType,
   SharedAudioEmitterResource,
-  AudioEmitterOutput,
   AudioEmitterDistanceModelMap,
 } from "./audio.common";
 import {
@@ -40,7 +38,7 @@ import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
 import { LocalNametag, onLoadMainNametag, updateNametag } from "../nametag/nametag.main";
 import { NametagResourceType } from "../nametag/nametag.common";
-import { LocalBufferView } from "../resource/schema";
+import { AudioEmitterOutput, AudioEmitterType, LocalBufferView } from "../resource/schema";
 import { toArrayBuffer } from "../utils/arraybuffer";
 
 /*********

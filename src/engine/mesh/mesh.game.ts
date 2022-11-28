@@ -5,7 +5,6 @@ import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { InteractableType } from "../../plugins/interaction/interaction.common";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
   commitToObjectTripleBuffer,
@@ -22,10 +21,13 @@ import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import {
+  AccessorComponentType,
+  AccessorType,
   BufferResource,
   BufferViewResource,
   MaterialResource,
   MaterialType,
+  MeshPrimitiveMode,
   RemoteMaterial,
   RemoteTexture,
 } from "../resource/schema";
@@ -35,7 +37,6 @@ import {
   MeshResourceProps,
   PrimitiveResourceProps,
   meshPrimitiveSchema,
-  MeshPrimitiveMode,
   SharedMeshPrimitiveResource,
   MeshPrimitiveResourceType,
   MeshPrimitiveTripleBuffer,

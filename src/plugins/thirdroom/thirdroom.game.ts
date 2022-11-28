@@ -80,6 +80,8 @@ import {
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
 import { ImageResource, SamplerMapping, SamplerResource, TextureResource } from "../../engine/resource/schema";
+import * as Schema from "../../engine/resource/schema";
+import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { InteractableType } from "../interaction/interaction.common";
 
@@ -343,6 +345,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   let script: Script<ScriptExecutionEnvironment> | undefined;
 
   if (scriptUrl) {
+    const allowedResources = Object.values(Schema).filter((val) => "schema" in val) as ResourceDefinition[];
     const response = await fetch(scriptUrl);
 
     const contentType = response.headers.get("content-type");
@@ -354,10 +357,10 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
         contentType.startsWith("text/javascript")
       ) {
         const scriptSource = await response.text();
-        script = await loadJSScript(ctx, scriptSource);
+        script = await loadJSScript(ctx, scriptSource, allowedResources);
       } else if (contentType === "application/wasm") {
         const scriptBuffer = await response.arrayBuffer();
-        script = await loadWASMScript(ctx, scriptBuffer);
+        script = await loadWASMScript(ctx, scriptBuffer, allowedResources);
       }
     }
 

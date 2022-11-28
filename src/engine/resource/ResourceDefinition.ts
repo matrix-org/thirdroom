@@ -1,11 +1,12 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
-import { TypedArrayConstructor32 } from "../allocator/types";
+import { TypedArray32, TypedArrayConstructor32 } from "../allocator/types";
 import { BaseThreadContext } from "../module/module.common";
 
 export interface ResourceDefinition<S extends Schema = Schema> {
   name: string;
+  resourceType: number;
   schema: ProcessedSchema<S>;
   byteLength: number;
 }
@@ -293,7 +294,7 @@ function createArrayBufferPropDef(options?: {
 }): ResourcePropDef<"arrayBuffer", undefined, false, true> {
   return {
     type: "arrayBuffer",
-    size: 1,
+    size: 2,
     arrayType: Uint32Array,
     mutable: false,
     required: true,
@@ -304,7 +305,7 @@ function createArrayBufferPropDef(options?: {
   };
 }
 
-function createRefPropDef<Def extends ResourceDefinition, Mut extends boolean, Req extends boolean>(
+function createRefPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
   resourceDef: Def,
   options?: {
     mutable?: Mut;
@@ -344,6 +345,36 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
   const { size, ...rest } = options;
   return {
     type: "refArray",
+    size,
+    arrayType: Uint32Array,
+    resourceDef,
+    mutable: true as any,
+    required: false as any,
+    script: false,
+    default: new Uint32Array(size),
+    ...rest,
+  };
+}
+
+function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
+  resourceDef: Def,
+  options: {
+    size: number;
+    mutable?: Mut;
+    required?: Req;
+    script?: boolean;
+  }
+): ResourcePropDef<
+  "refMap",
+  ArrayLike<number>,
+  Mut extends true ? true : false,
+  Req extends false ? false : true,
+  undefined,
+  Def
+> {
+  const { size, ...rest } = options;
+  return {
+    type: "refMap",
     size,
     arrayType: Uint32Array,
     resourceDef,
@@ -396,12 +427,18 @@ export const PropType = {
   arrayBuffer: createArrayBufferPropDef,
   ref: createRefPropDef,
   refArray: createRefArrayPropDef,
+  refMap: createRefMapPropDef,
   selfRef: createSelfRefPropDef,
 };
 
-export const defineResource = <S extends Schema>(name: string, schema: S): ResourceDefinition<S> => {
+export const defineResource = <S extends Schema>(
+  name: string,
+  resourceType: number,
+  schema: S
+): ResourceDefinition<S> => {
   const resourceDef: ResourceDefinition<S> = {
     name,
+    resourceType,
     schema: schema as unknown as ProcessedSchema<S>,
     byteLength: 0,
   };
@@ -417,9 +454,11 @@ export const defineResource = <S extends Schema>(name: string, schema: S): Resou
         required: prop.required,
         script: prop.script,
       }) as unknown as any;
+      (schema[propName] as any).byteOffset = cursor;
+    } else {
+      prop.byteOffset = cursor;
     }
 
-    prop.byteOffset = cursor;
     cursor += prop.arrayType.BYTES_PER_ELEMENT * prop.size;
   }
 
@@ -470,6 +509,10 @@ type ResourcePropValue<
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Resource<Def["schema"][Prop]["resourceDef"]>[]
     : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    : unknown[]
   : Def["schema"][Prop]["type"] extends "selfRef"
   ? Resource<Def, MutResource>
   : never;
@@ -490,8 +533,9 @@ export type Resource<Def extends ResourceDefinition, MutResource extends boolean
 } & { [Prop in keyof Def["schema"]]: ResourcePropValueMut<Def, Prop, MutResource> };
 
 export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true> & {
+  resourceType: number;
   manager: IRemoteResourceManager;
-  __props: { [key: string]: any };
+  __props: { [key: string]: TypedArray32 };
   initialized: boolean;
   byteView: Uint8Array;
   translationIndices: Uint32Array;
@@ -506,7 +550,7 @@ export type LocalResource<
   ThreadContext extends BaseThreadContext = BaseThreadContext
 > = Resource<Def, false> & {
   manager: ILocalResourceManager;
-  __props: { [key: string]: any };
+  __props: { [key: string]: TypedArray32[] };
   load(ctx: ThreadContext): Promise<void>;
   dispose(ctx: ThreadContext): void;
 };
@@ -521,41 +565,20 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]?: ResourcePropValue<Def, Prop, true>;
 };
 
-export interface RemoteResourceStringStore {
-  prevPtr: number;
-  value: string;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
-export interface RemoteResourceArrayBufferStore {
-  value: SharedArrayBuffer | undefined;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
-export interface RemoteResourceRefStore {
-  value: unknown;
-  view: Uint32Array;
-  resourceIdView: Uint32Array;
-}
-
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
-  getString(store: RemoteResourceStringStore): string;
-  setString(value: string | undefined, store: RemoteResourceStringStore): void;
-  getArrayBuffer(store: RemoteResourceArrayBufferStore): SharedArrayBuffer;
-  setArrayBuffer(value: SharedArrayBuffer | undefined, store: RemoteResourceArrayBufferStore): void;
+  getString(store: Uint32Array): string;
+  setString(value: string | undefined, store: Uint32Array): void;
+  getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
+  setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def>;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
-  getRef<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    store: RemoteResourceRefStore
-  ): RemoteResource<Def> | undefined;
-  setRef(value: unknown, store: RemoteResourceRefStore): void;
+  disposeResource(resourceId: number): void;
+  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
+  setRef(value: unknown | undefined, store: Uint32Array): void;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }
