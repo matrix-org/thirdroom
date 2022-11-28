@@ -1146,8 +1146,6 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
     }),
   });
 
-  console.log(remoteMesh.scriptMesh);
-
   resource.meshes.set(index, remoteMesh);
 
   return remoteMesh;
