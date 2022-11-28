@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineComponent, Types, removeComponent, addComponent, hasComponent } from "bitecs";
+import { defineComponent, Types, removeComponent, addComponent, hasComponent, defineQuery } from "bitecs";
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
@@ -36,6 +36,7 @@ import {
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
 import { takeOwnership } from "../../engine/network/ownership.game";
+import { RemoteNodeComponent } from "../../engine/node/node.game";
 import {
   addCollisionGroupMembership,
   FocusCollisionGroup,
@@ -47,6 +48,7 @@ import {
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
+import { InteractableType } from "../../engine/resource/schema";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
@@ -56,7 +58,7 @@ import {
   SetObjectCapMessage,
   SetObjectCapMessageType,
 } from "../spawnables/spawnables.common";
-import { InteractableAction, InteractableType, InteractionMessage, InteractionMessageType } from "./interaction.common";
+import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -234,6 +236,9 @@ let lastActiveScene = 0;
 
 let heldOffset = 0;
 
+const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
+const interactableQuery = defineQuery([Interactable]);
+
 export function InteractionSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
@@ -247,6 +252,21 @@ export function InteractionSystem(ctx: GameState) {
       remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
     }
     lastActiveScene = ctx.activeScene;
+  }
+
+  const remoteNodeEntities = remoteNodeQuery(ctx.world);
+
+  for (let i = 0; i < remoteNodeEntities.length; i++) {
+    const eid = remoteNodeEntities[i];
+    const remoteNode = RemoteNodeComponent.get(eid);
+    const interactable = remoteNode?.scriptNode?.interactable;
+    const hasInteractable = hasComponent(ctx.world, Interactable, eid);
+
+    if (interactable && !hasInteractable) {
+      addInteractableComponent(ctx, physics, eid, interactable.type);
+    } else if (!interactable && hasInteractable) {
+      removeInteractableComponent(ctx, physics, eid);
+    }
   }
 
   const rigs = inputControllerQuery(ctx.world);
@@ -310,6 +330,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
   // only update UI if it's our player
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
   if (ourPlayer) {
+    // TODO: only send these messages when they change
     if (FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
     if (!FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
   }
@@ -320,7 +341,11 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
   if (deleteBtn.pressed) {
     const focused = FocusComponent.focusedEntity[rig];
     // TODO: For now we only delete owned objects
-    if (focused && hasComponent(ctx.world, Owned, focused) && Interactable.type[focused] === InteractableType.Object) {
+    if (
+      focused &&
+      hasComponent(ctx.world, Owned, focused) &&
+      Interactable.type[focused] === InteractableType.Grabbable
+    ) {
       removeRecursive(ctx.world, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
@@ -416,7 +441,7 @@ function updateGrabThrow(
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
       } else {
-        if (Interactable.type[eid] === InteractableType.Object) {
+        if (Interactable.type[eid] === InteractableType.Grabbable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
 
           const ownedEnts = ownedNetworkedQuery(ctx.world);
@@ -440,9 +465,61 @@ function updateGrabThrow(
               if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
             }
           }
+        } else if (Interactable.type[eid] === InteractableType.Interactable) {
+          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
+          const remoteNode = RemoteNodeComponent.get(eid);
+          const interactable = remoteNode?.scriptNode?.interactable;
+
+          if (interactable) {
+            interactable.pressed = true;
+            interactable.released = false;
+            interactable.held = true;
+          }
         } else {
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
+      }
+    }
+  }
+
+  if (grabBtn.released) {
+    const interactableEntities = interactableQuery(ctx.world);
+
+    for (let i = 0; i < interactableEntities.length; i++) {
+      const eid = interactableEntities[i];
+
+      if (Interactable.type[eid] !== InteractableType.Interactable) {
+        continue;
+      }
+
+      const remoteNode = RemoteNodeComponent.get(eid);
+      const interactable = remoteNode?.scriptNode?.interactable;
+
+      if (interactable) {
+        interactable.pressed = false;
+        interactable.released = true;
+        interactable.held = false;
+      }
+    }
+  }
+
+  if (!grabBtn.pressed && !grabBtn.released) {
+    const interactableEntities = interactableQuery(ctx.world);
+
+    for (let i = 0; i < interactableEntities.length; i++) {
+      const eid = interactableEntities[i];
+
+      if (Interactable.type[eid] !== InteractableType.Interactable) {
+        continue;
+      }
+
+      const remoteNode = RemoteNodeComponent.get(eid);
+      const interactable = remoteNode?.scriptNode?.interactable;
+
+      if (interactable) {
+        interactable.pressed = false;
+        interactable.released = false;
       }
     }
   }
@@ -496,13 +573,13 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
   } else {
     let peerId;
 
-    if (interactableType === InteractableType.Object || interactableType === InteractableType.Player) {
+    if (interactableType === InteractableType.Grabbable || interactableType === InteractableType.Player) {
       peerId = network.entityIdToPeerId.get(eid);
     }
 
     let ownerId;
 
-    if (interactableType === InteractableType.Object) {
+    if (interactableType === InteractableType.Grabbable) {
       const ownerIdIndex = getPeerIndexFromNetworkId(Networked.networkId[eid]);
       ownerId = network.indexToPeerId.get(ownerIdIndex);
       if (hasComponent(ctx.world, Owned, eid)) {
@@ -519,7 +596,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,
       interactableType,
-      name: Prefab.get(eid),
+      name: Prefab.get(eid) || RemoteNodeComponent.get(eid)?.name,
       held: hasComponent(ctx.world, GrabComponent, eid),
       action,
       peerId,

@@ -30,30 +30,7 @@ static JSValue js_accessor_constructor(JSContext *ctx, JSValueConst new_target, 
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(accessor);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_accessor_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(accessor);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "max", accessor->max, 16);
-JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "min", accessor->min, 16);
-
-  JS_SetOpaque(val, accessor);
-  set_js_val_from_ptr(ctx, accessor, val);
-
-  return val;
+  return create_accessor_from_ptr(ctx, accessor);
 }
 
 

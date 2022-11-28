@@ -40,7 +40,27 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       const store = new prop.arrayType(buffer, this.ptr + prop.byteOffset, prop.size);
 
       // TODO handle setting defaults and prop validation when creating from ptr
-      const initialValue = props ? (props[propName] !== undefined ? props[propName] : prop.default) : undefined;
+      let initialValue: any;
+
+      if (props) {
+        initialValue = props[propName] !== undefined ? props[propName] : prop.default;
+      } else {
+        if (
+          prop.default !== undefined &&
+          prop.type !== "string" &&
+          prop.type !== "arrayBuffer" &&
+          prop.type !== "ref" &&
+          prop.type !== "refArray" &&
+          prop.type !== "refMap" &&
+          !store[0]
+        ) {
+          if (prop.size === 1) {
+            store[0] = prop.default as number;
+          } else {
+            store.set(prop.default as ArrayLike<number>);
+          }
+        }
+      }
 
       if (prop.type === "string") {
         if (initialValue) {
@@ -57,6 +77,17 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       } else if (prop.type === "ref") {
         if (initialValue) {
           this.manager.setRef(initialValue, store as Uint32Array);
+        }
+
+        this.__props[propName] = store;
+      } else if (prop.type === "refArray") {
+        if (initialValue !== undefined) {
+          const refs = initialValue as RemoteResource<ResourceDefinition>[];
+
+          for (let i = 0; i < refs.length; i++) {
+            const ref = refs[i];
+            store[i] = ref.ptr || ref.resourceId;
+          }
         }
 
         this.__props[propName] = store;

@@ -29,29 +29,7 @@ static JSValue js_buffer_view_constructor(JSContext *ctx, JSValueConst new_targe
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(buffer_view);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_buffer_view_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(buffer_view);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, buffer_view);
-  set_js_val_from_ptr(ctx, buffer_view, val);
-
-  return val;
+  return create_buffer_view_from_ptr(ctx, buffer_view);
 }
 
 

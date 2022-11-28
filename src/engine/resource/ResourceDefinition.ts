@@ -32,6 +32,7 @@ export interface ResourcePropDef<
   arrayType: TypedArrayConstructor32;
   required: Req;
   mutable: Mut;
+  mutableScript: boolean;
   script: boolean;
   default: DefaultValue;
   enumType?: Enum;
@@ -45,6 +46,7 @@ export interface ResourcePropDef<
 function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: boolean;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"bool", boolean, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -54,6 +56,7 @@ function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
     // TODO: look into byte alignment to make this smaller like using a Uin8tArray
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: false,
@@ -65,6 +68,7 @@ function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: number;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
   min?: number;
@@ -77,6 +81,7 @@ function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 1,
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: 0,
@@ -88,6 +93,7 @@ function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: number;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
   min?: number;
@@ -100,6 +106,7 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 1,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: 0,
@@ -111,6 +118,7 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"vec2", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -119,6 +127,7 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 2,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: vec2.create(),
@@ -130,6 +139,7 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"vec3", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -138,6 +148,7 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 3,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: true,
     required: false as any,
     script: false,
     default: vec3.create(),
@@ -149,6 +160,7 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"rgb", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -157,6 +169,7 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 3,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: vec3.create(),
@@ -168,6 +181,7 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"rgba", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -176,6 +190,7 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 4,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: vec4.create(),
@@ -187,6 +202,7 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"quat", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -195,6 +211,7 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 4,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: quat.create(),
@@ -206,6 +223,7 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: ArrayLike<number>;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"mat4", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -214,6 +232,7 @@ function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
     size: 16,
     arrayType: Float32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: mat4.create(),
@@ -225,6 +244,7 @@ function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
 function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: number;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"bitmask", number, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -233,6 +253,7 @@ function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?
     size: 1,
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: 0,
@@ -246,6 +267,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
   options: {
     default?: T[keyof T];
     mutable?: Mut;
+    mutableScript?: boolean;
     required?: Req;
     script?: boolean;
   }
@@ -262,6 +284,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
     size: 1,
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: undefined,
@@ -273,6 +296,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
 function createStringPropDef<Mut extends boolean, Req extends boolean>(options?: {
   default?: string;
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<"string", string, Mut extends true ? true : false, Req extends false ? false : true> {
@@ -281,6 +305,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
     size: 1,
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: "",
@@ -297,6 +322,7 @@ function createArrayBufferPropDef(options?: {
     size: 2,
     arrayType: Uint32Array,
     mutable: false,
+    mutableScript: false,
     required: true,
     script: false,
     default: undefined,
@@ -309,6 +335,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
   resourceDef: Def,
   options?: {
     mutable?: Mut;
+    mutableScript?: boolean;
     required?: Req;
     script?: boolean;
   }
@@ -319,6 +346,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     arrayType: Uint32Array,
     resourceDef,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: 0,
@@ -331,6 +359,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
   options: {
     size: number;
     mutable?: Mut;
+    mutableScript?: boolean;
     required?: Req;
     script?: boolean;
   }
@@ -349,6 +378,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     arrayType: Uint32Array,
     resourceDef,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: new Uint32Array(size),
@@ -361,6 +391,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
   options: {
     size: number;
     mutable?: Mut;
+    mutableScript?: boolean;
     required?: Req;
     script?: boolean;
   }
@@ -379,6 +410,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     arrayType: Uint32Array,
     resourceDef,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: new Uint32Array(size),
@@ -388,6 +420,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
 
 function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolean, Req extends boolean>(options?: {
   mutable?: Mut;
+  mutableScript?: boolean;
   required?: Req;
   script?: boolean;
 }): ResourcePropDef<
@@ -403,6 +436,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
     size: 1,
     arrayType: Uint32Array,
     mutable: true as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : true,
     required: false as any,
     script: false,
     default: 0,

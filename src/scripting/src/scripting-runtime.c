@@ -39,7 +39,7 @@ export void websg_initialize() {
   define_script_context(ctx);
   JS_DefineRefArrayIterator(ctx);
   JS_DefineRefMapIterator(ctx);
-  JS_DefineNodeIterator(ctx);
+  //JS_DefineNodeIterator(ctx);
 
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
@@ -71,34 +71,42 @@ export int32_t thirdroom_evalJS(const char * code) {
 }
 
 export int32_t websg_update(float_t dt) {
-  int32_t ret;
-
   JSValue global = JS_GetGlobalObject(ctx);
 
   JSValue updateFn = JS_GetProperty(ctx, global, onUpdateAtom);
 
-  if (!JS_IsFunction(ctx, updateFn)) {
+  if (JS_IsException(updateFn)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
     JS_FreeValue(ctx, updateFn);
+    return -1;
+  } else if (JS_IsUndefined(updateFn)) {
     return 0;
   }
 
   JSValue dtVal = JS_NewFloat64(ctx, dt);
 
-  int argc = 1;
-  JSValueConst argv[1] = { dtVal };
+  if (JS_IsException(dtVal)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    JS_FreeValue(ctx, dtVal);
+    return -1;
+  }
 
-  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, argc, argv);
+  JSValueConst args[] = { dtVal };
+  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, 1, args);
 
   JS_FreeValue(ctx, updateFn);
+
+  int32_t ret;
 
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
     js_log_error(ctx, &error);
     JS_FreeValue(ctx, error);
-
     ret = -1;
-  } else {
-    ret = 0;
   }
 
   JS_FreeValue(ctx, val);

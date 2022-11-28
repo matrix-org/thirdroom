@@ -9,8 +9,12 @@ import {
   BufferViewResource,
   CameraResource,
   ImageResource,
+  InteractableResource,
   LightResource,
   MaterialResource,
+  MeshPrimitiveResource,
+  MeshResource,
+  NodeResource,
   SamplerResource,
   TextureResource,
 } from "../resource/schema";
@@ -55,6 +59,10 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, ImageResource),
       registerResource(ctx, MaterialResource),
       registerResource(ctx, TextureResource),
+      registerResource(ctx, MeshResource),
+      registerResource(ctx, NodeResource),
+      registerResource(ctx, MeshPrimitiveResource),
+      registerResource(ctx, InteractableResource),
     ]);
   },
 });

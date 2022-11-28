@@ -28,29 +28,7 @@ static JSValue js_nametag_constructor(JSContext *ctx, JSValueConst new_target, i
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(nametag);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_nametag_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(nametag);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, nametag);
-  set_js_val_from_ptr(ctx, nametag, val);
-
-  return val;
+  return create_nametag_from_ptr(ctx, nametag);
 }
 
 

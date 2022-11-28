@@ -28,29 +28,7 @@ static JSValue js_tiles_renderer_constructor(JSContext *ctx, JSValueConst new_ta
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(tiles_renderer);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_tiles_renderer_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(tiles_renderer);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, tiles_renderer);
-  set_js_val_from_ptr(ctx, tiles_renderer, val);
-
-  return val;
+  return create_tiles_renderer_from_ptr(ctx, tiles_renderer);
 }
 
 

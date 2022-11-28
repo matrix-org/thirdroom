@@ -24,6 +24,7 @@ export enum ResourceType {
   LightMap,
   TilesRenderer,
   Skin,
+  Interactable,
   Node,
   Scene,
 }
@@ -333,19 +334,20 @@ export enum InstancedMeshAttributeIndex {
   LIGHTMAP_SCALE,
 }
 export const MeshPrimitiveResource = defineResource("mesh-primitive", ResourceType.MeshPrimitive, {
-  name: PropType.string({ default: "MeshPrimitive", script: true }),
   // Max 8 attributes, indexed by MeshPrimitiveAttributeIndex
-  attributes: PropType.refMap(AccessorResource, {
-    size: Object.values(MeshPrimitiveAttributeIndex).length,
-    mutable: false,
-    required: true,
-    script: true,
-  }),
-  indices: PropType.ref(AccessorResource, { mutable: false, script: true }),
+  // attributes: PropType.refMap(AccessorResource, {
+  //   size: Object.values(MeshPrimitiveAttributeIndex).length,
+  //   mutable: false,
+  //   required: true,
+  //   script: true,
+  // }),
+  //indices: PropType.ref(AccessorResource, { mutable: false, script: true }),
   material: PropType.ref(MaterialResource, { script: true }),
-  mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
+  //mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
   // TODO: targets
 });
+export type RemoteMeshPrimitive = RemoteResource<typeof MeshPrimitiveResource>;
+export type LocalMeshPrimitive = LocalResource<typeof MeshPrimitiveResource>;
 
 export const InstancedMeshResource = defineResource("instanced-mesh", ResourceType.InstancedMesh, {
   name: PropType.string({ default: "InstancedMesh", script: true }),
@@ -364,6 +366,8 @@ export const MeshResource = defineResource("mesh", ResourceType.Mesh, {
   primitives: PropType.refArray(MeshPrimitiveResource, { size: 16, script: true }),
   // TODO: weights
 });
+export type RemoteMesh = RemoteResource<typeof MeshResource>;
+export type LocalMesh = LocalResource<typeof MeshResource>;
 
 export const LightMapResource = defineResource("light-map", ResourceType.LightMap, {
   name: PropType.string({ default: "LightMap", script: true }),
@@ -384,34 +388,57 @@ export const SkinResource = defineResource("skin", ResourceType.Skin, {
   inverseBindMatrices: PropType.ref(AccessorResource, { script: true }),
 });
 
-export const NodeResource = defineResource("node", ResourceType.Node, {
-  eid: PropType.u32({ script: false }),
-  name: PropType.string({ default: "Node", script: true }),
-  parentScene: PropType.ref("scene"),
-  parent: PropType.selfRef(),
-  firstChild: PropType.selfRef(),
-  prevSibling: PropType.selfRef(),
-  nextSibling: PropType.selfRef(),
-  position: PropType.vec3({ script: true }),
-  quaternion: PropType.quat({ script: true }),
-  scale: PropType.vec3({ script: true, default: [1, 1, 1] }),
-  localMatrix: PropType.mat4({ script: true }),
-  worldMatrix: PropType.mat4({ script: true }),
-  visible: PropType.bool({ script: true, default: true }),
-  enabled: PropType.bool({ script: true, default: true }),
-  isStatic: PropType.bool({ script: true, default: true }),
-  layers: PropType.bitmask({ default: 1, script: true }),
-  mesh: PropType.ref(MeshResource, { script: true }),
-  instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),
-  lightMap: PropType.ref(LightMapResource, { script: true }),
-  skin: PropType.ref(SkinResource, { script: true }),
-  light: PropType.ref(LightResource, { script: true }),
-  reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
-  camera: PropType.ref(CameraResource, { script: true }),
-  audioEmitter: PropType.ref(AudioEmitterResource, { script: true }),
-  tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
-  nametag: PropType.ref(NametagResource, { script: false }),
+export enum InteractableType {
+  Interactable = 1,
+  Grabbable = 2,
+  Player = 3,
+  Portal = 4,
+}
+
+export const InteractableResource = defineResource("interactable", ResourceType.Interactable, {
+  name: PropType.string({ default: "Interactable", script: true }),
+  type: PropType.enum(InteractableType, {
+    required: true,
+    mutable: false,
+    default: InteractableType.Interactable,
+    script: true,
+  }),
+  pressed: PropType.bool({ mutableScript: false, script: true }),
+  held: PropType.bool({ mutableScript: false, script: true }),
+  released: PropType.bool({ mutableScript: false, script: true }),
 });
+
+export const NodeResource = defineResource("node", ResourceType.Node, {
+  //eid: PropType.u32({ script: false }),
+  name: PropType.string({ default: "Node", script: true }),
+  // parentScene: PropType.ref("scene"),
+  // parent: PropType.selfRef(),
+  // firstChild: PropType.selfRef(),
+  // prevSibling: PropType.selfRef(),
+  // nextSibling: PropType.selfRef(),
+  // position: PropType.vec3({ script: true }),
+  // quaternion: PropType.quat({ script: true }),
+  // scale: PropType.vec3({ script: true, default: [1, 1, 1] }),
+  // localMatrix: PropType.mat4({ script: true }),
+  // worldMatrix: PropType.mat4({ script: true }),
+  // visible: PropType.bool({ script: true, default: true }),
+  // enabled: PropType.bool({ script: true, default: true }),
+  // isStatic: PropType.bool({ script: true, default: true }),
+  // layers: PropType.bitmask({ default: 1, script: true }),
+  mesh: PropType.ref(MeshResource, { script: true }),
+  // instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),
+  // lightMap: PropType.ref(LightMapResource, { script: true }),
+  // skin: PropType.ref(SkinResource, { script: true }),
+  light: PropType.ref(LightResource, { script: true }),
+  // reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
+  // camera: PropType.ref(CameraResource, { script: true }),
+  // audioEmitter: PropType.ref(AudioEmitterResource, { script: true }),
+  // tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
+  // nametag: PropType.ref(NametagResource, { script: false }),
+  interactable: PropType.ref(InteractableResource, { script: true }),
+});
+export type RemoteNode = RemoteResource<typeof NodeResource>;
+export type LocalNode = LocalResource<typeof NodeResource>;
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
   name: PropType.string({ default: "Scene", script: true }),

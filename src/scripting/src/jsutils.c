@@ -151,9 +151,14 @@ static JSValue js_ref_array_iterator_next(
   return val;
 }
 
+static JSValue js_ref_array_iterator(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  return JS_DupValue(ctx, this_val);
+}
+
 static const JSCFunctionListEntry js_ref_array_iterator_proto_funcs[] = {
   JS_ITERATOR_NEXT_DEF("next", 0, js_ref_array_iterator_next, 0),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RefArrayIterator", JS_PROP_CONFIGURABLE),
+  JS_CFUNC_DEF("[Symbol.iterator]", 0, js_ref_array_iterator),
 };
 
 JSValue JS_NewRefArrayIterator(
@@ -336,9 +341,14 @@ static JSValue js_ref_map_iterator_next(
   return arr;
 }
 
+static JSValue js_ref_map_iterator(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  return JS_DupValue(ctx, this_val);
+}
+
 static const JSCFunctionListEntry js_ref_map_iterator_proto_funcs[] = {
   JS_ITERATOR_NEXT_DEF("next", 0, js_ref_map_iterator_next, 0),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RefMapIterator", JS_PROP_CONFIGURABLE),
+  JS_CFUNC_DEF("[Symbol.iterator]", 0, js_ref_map_iterator),
 };
 
 JSValue JS_NewRefMapIterator(
@@ -452,100 +462,100 @@ JSValue JS_DeleteRefMapItem(JSContext *ctx, void **arr, int size, JSValue key) {
  * SceneNodesIterator
  */
 
-typedef struct JSNodeIteratorData {
-    Node *cur;
-} JSNodeIteratorData;
+// typedef struct JSNodeIteratorData {
+//     Node *cur;
+// } JSNodeIteratorData;
 
-static JSClassID js_node_iterator_class_id;
+// static JSClassID js_node_iterator_class_id;
 
-static void js_node_iterator_finalizer(JSRuntime *rt, JSValue val) {
-  JSNodeIteratorData *it = JS_GetOpaque(val, js_node_iterator_class_id);
+// static void js_node_iterator_finalizer(JSRuntime *rt, JSValue val) {
+//   JSNodeIteratorData *it = JS_GetOpaque(val, js_node_iterator_class_id);
 
-  if (it) {
-    js_free_rt(rt, it);
-  }
-}
+//   if (it) {
+//     js_free_rt(rt, it);
+//   }
+// }
 
-static JSClassDef js_node_iterator_class = {
-  "NodeIterator",
-  .finalizer = js_node_iterator_finalizer
-};
+// static JSClassDef js_node_iterator_class = {
+//   "NodeIterator",
+//   .finalizer = js_node_iterator_finalizer
+// };
 
-static JSValue js_node_iterator_next(
-  JSContext *ctx,
-  JSValueConst this_val,
-  int argc,
-  JSValueConst *argv,
-  BOOL *pdone,
-  int magic
-) {
-  JSNodeIteratorData *it = JS_GetOpaque2(ctx, this_val, js_node_iterator_class_id);
+// static JSValue js_node_iterator_next(
+//   JSContext *ctx,
+//   JSValueConst this_val,
+//   int argc,
+//   JSValueConst *argv,
+//   BOOL *pdone,
+//   int magic
+// ) {
+//   JSNodeIteratorData *it = JS_GetOpaque2(ctx, this_val, js_node_iterator_class_id);
 
-  if (!it) {
-    *pdone = FALSE;
-    return JS_EXCEPTION;
-  }
+//   if (!it) {
+//     *pdone = FALSE;
+//     return JS_EXCEPTION;
+//   }
 
-  if (!it->cur) {
-    *pdone = TRUE;
-    return JS_UNDEFINED;
-  }
+//   if (!it->cur) {
+//     *pdone = TRUE;
+//     return JS_UNDEFINED;
+//   }
 
-  *pdone = FALSE;
-  JSValue val = create_node_from_ptr(ctx, it->cur);
+//   *pdone = FALSE;
+//   JSValue val = create_node_from_ptr(ctx, it->cur);
 
-  if (JS_IsException(val)) {
-    return JS_EXCEPTION;
-  }
+//   if (JS_IsException(val)) {
+//     return JS_EXCEPTION;
+//   }
 
-  it->cur = it->cur->next_sibling;
+//   it->cur = it->cur->next_sibling;
 
-  return val;
-}
+//   return val;
+// }
 
-static const JSCFunctionListEntry js_node_iterator_proto_funcs[] = {
-  JS_ITERATOR_NEXT_DEF("next", 0, js_node_iterator_next, 0),
-  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "NodeIterator", JS_PROP_CONFIGURABLE),
-};
+// static const JSCFunctionListEntry js_node_iterator_proto_funcs[] = {
+//   JS_ITERATOR_NEXT_DEF("next", 0, js_node_iterator_next, 0),
+//   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "NodeIterator", JS_PROP_CONFIGURABLE),
+// };
 
-JSValue JS_NewNodeIterator(
-  JSContext *ctx,
-  Node *first_node
-) {
-  JSValue iter_obj = JS_NewObjectClass(ctx, js_node_iterator_class_id);
+// JSValue JS_NewNodeIterator(
+//   JSContext *ctx,
+//   Node *first_node
+// ) {
+//   JSValue iter_obj = JS_NewObjectClass(ctx, js_node_iterator_class_id);
 
-  if (JS_IsException(iter_obj)) {
-    return JS_EXCEPTION;
-  }
+//   if (JS_IsException(iter_obj)) {
+//     return JS_EXCEPTION;
+//   }
 
-  JSNodeIteratorData *it = js_malloc(ctx, sizeof(JSNodeIteratorData));
+//   JSNodeIteratorData *it = js_malloc(ctx, sizeof(JSNodeIteratorData));
   
-  if (!it) {
-    JS_FreeValue(ctx, iter_obj);
-    return JS_EXCEPTION;
-  }
+//   if (!it) {
+//     JS_FreeValue(ctx, iter_obj);
+//     return JS_EXCEPTION;
+//   }
 
-  it->cur = first_node;
+//   it->cur = first_node;
 
-  JS_SetOpaque(iter_obj, it);
+//   JS_SetOpaque(iter_obj, it);
 
-  return iter_obj;
-}
+//   return iter_obj;
+// }
 
-void JS_DefineNodeIterator(JSContext *ctx) {
-  JSRuntime *rt = JS_GetRuntime(ctx);
+// void JS_DefineNodeIterator(JSContext *ctx) {
+//   JSRuntime *rt = JS_GetRuntime(ctx);
 
-  JS_NewClassID(&js_node_iterator_class_id);
-  JS_NewClass(rt, js_node_iterator_class_id, &js_node_iterator_class);
+//   JS_NewClassID(&js_node_iterator_class_id);
+//   JS_NewClass(rt, js_node_iterator_class_id, &js_node_iterator_class);
 
-  JSValue ref_arr_proto = JS_NewObject(ctx);
-  JS_SetPropertyFunctionList(
-    ctx,
-    ref_arr_proto,
-    js_node_iterator_proto_funcs,
-    countof(js_node_iterator_proto_funcs)
-  );
+//   JSValue ref_arr_proto = JS_NewObject(ctx);
+//   JS_SetPropertyFunctionList(
+//     ctx,
+//     ref_arr_proto,
+//     js_node_iterator_proto_funcs,
+//     countof(js_node_iterator_proto_funcs)
+//   );
 
-  JS_SetClassProto(ctx, js_node_iterator_class_id, ref_arr_proto);
-}
+//   JS_SetClassProto(ctx, js_node_iterator_class_id, ref_arr_proto);
+// }
 

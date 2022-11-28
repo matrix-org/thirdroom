@@ -32,29 +32,7 @@ static JSValue js_scene_constructor(JSContext *ctx, JSValueConst new_target, int
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(scene);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_scene_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(scene);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, scene);
-  set_js_val_from_ptr(ctx, scene, val);
-
-  return val;
+  return create_scene_from_ptr(ctx, scene);
 }
 
 
@@ -162,73 +140,7 @@ static JSValue js_scene_remove_audio_emitter(JSContext *ctx, JSValueConst this_v
   }
 }
 
-static JSValue js_scene_nodes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  if (!scene) {
-    return JS_EXCEPTION;
-  } else {
-    return JS_NewNodeIterator(ctx, scene->first_node);
-  }
-}
-
-static JSValue js_scene_add_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
-
-  if (!scene) {
-    return JS_EXCEPTION;
-  }
-
-  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
-
-  if (!node) {
-    return JS_EXCEPTION;
-  }
-
-  Node *before;
-
-  if (argc > 1) {
-    before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
-
-    if (!before) {
-      return JS_EXCEPTION;
-    }
-  }
-
-  if (before) {
-    if (scene_add_node_before(scene, before, node)) {
-      return JS_EXCEPTION;
-    }
-
-    return JS_UNDEFINED;
-  }
-
-  if (scene_append_node(scene, node)) {
-    return JS_EXCEPTION;
-  }
-
-  return JS_UNDEFINED;
-}
-
-static JSValue js_scene_remove_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
-
-  if (!scene) {
-    return JS_EXCEPTION;
-  }
-
-  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
-
-  if (!node) {
-    return JS_EXCEPTION;
-  }
-
-  if (scene_remove_node(scene, node)) {
-    return JS_EXCEPTION;
-  }
-
-  return JS_UNDEFINED;
-}
 
 static JSValue js_scene_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   Scene *scene = JS_GetOpaque(this_val, js_scene_class_id);
@@ -248,9 +160,6 @@ static const JSCFunctionListEntry js_scene_proto_funcs[] = {
   JS_CFUNC_DEF("audioEmitters", 0, js_scene_audio_emitters),
   JS_CFUNC_DEF("addAudioEmitter", 1, js_scene_add_audio_emitter),
   JS_CFUNC_DEF("removeAudioEmitter", 1, js_scene_remove_audio_emitter),
-  JS_CFUNC_DEF("nodes", 0, js_scene_nodes),
-  JS_CFUNC_DEF("addNode", 2, js_scene_add_node),
-  JS_CFUNC_DEF("removeNode", 1, js_scene_remove_node),
   JS_CFUNC_DEF("dispose", 0, js_scene_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Scene", JS_PROP_CONFIGURABLE),
 };

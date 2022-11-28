@@ -28,29 +28,7 @@ static JSValue js_buffer_constructor(JSContext *ctx, JSValueConst new_target, in
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(buffer);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_buffer_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(buffer);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyArrayBufferProperty(ctx, val, "data", buffer->data);
-
-  JS_SetOpaque(val, buffer);
-  set_js_val_from_ptr(ctx, buffer, val);
-
-  return val;
+  return create_buffer_from_ptr(ctx, buffer);
 }
 
 

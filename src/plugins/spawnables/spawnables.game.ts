@@ -34,10 +34,9 @@ import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGrou
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
-import { MaterialResource, MaterialType, RemoteMaterial } from "../../engine/resource/schema";
+import { InteractableType, MaterialResource, MaterialType, RemoteMaterial } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
-import { InteractableType } from "../interaction/interaction.common";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 
@@ -116,7 +115,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -163,7 +162,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -209,7 +208,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -271,7 +270,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -311,7 +310,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -353,7 +352,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: ballAudioData,

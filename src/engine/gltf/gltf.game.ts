@@ -81,6 +81,10 @@ import {
   SamplerResource,
   TextureEncoding,
   TextureResource,
+  NodeResource as ScriptNodeResource,
+  MeshResource as ScriptMeshResource,
+  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
+  RemoteMeshPrimitive as ScriptRemoteMeshPrimitive,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -377,7 +381,16 @@ async function _inflateGLTFNode(
         results.reflectionProbe ||
         hasTilesRendererExtension(node))
     ) {
-      addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name, static: isStatic });
+      addRemoteNodeComponent(ctx, nodeEid, {
+        ...(results as any),
+        name: node.name,
+        static: isStatic,
+        scriptNode: resource.manager.createResource(ScriptNodeResource, {
+          name: node.name,
+          mesh: results.mesh?.scriptMesh,
+          light: results.light,
+        }),
+      });
     }
 
     if (hasHubsComponentsExtension(resource.root)) {
@@ -1116,7 +1129,24 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
     mesh.primitives.map((primitive) => _createGLTFMeshPrimitive(ctx, resource, primitive))
   );
 
-  const remoteMesh = createRemoteMesh(ctx, { name: mesh.name, primitives });
+  const scriptPrimitives: ScriptRemoteMeshPrimitive[] = [];
+
+  for (const primitive of primitives) {
+    if (primitive.scriptMeshPrimitive) {
+      scriptPrimitives.push(primitive.scriptMeshPrimitive);
+    }
+  }
+
+  const remoteMesh = createRemoteMesh(ctx, {
+    name: mesh.name,
+    primitives,
+    scriptMesh: resource.manager.createResource(ScriptMeshResource, {
+      name: mesh.name,
+      primitives: scriptPrimitives,
+    }),
+  });
+
+  console.log(remoteMesh.scriptMesh);
 
   resource.meshes.set(index, remoteMesh);
 
@@ -1145,6 +1175,9 @@ async function _createGLTFMeshPrimitive(
     attributes,
     material,
     mode: primitive.mode,
+    scriptMeshPrimitive: resource.manager.createResource(ScriptMeshPrimitiveResource, {
+      material,
+    }),
   };
 }
 

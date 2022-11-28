@@ -28,29 +28,7 @@ static JSValue js_light_constructor(JSContext *ctx, JSValueConst new_target, int
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(light);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_light_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(light);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "color", light->color, 3);
-
-  JS_SetOpaque(val, light);
-  set_js_val_from_ptr(ctx, light, val);
-
-  return val;
+  return create_light_from_ptr(ctx, light);
 }
 
 
