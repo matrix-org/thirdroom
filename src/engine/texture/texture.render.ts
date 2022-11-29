@@ -104,7 +104,7 @@ export class RendererTextureResource extends defineLocalResourceClass<typeof Tex
   }
 
   dispose(ctx: RenderThreadState) {
-    if (this.source.format === ImageFormat.RGBA && this.source.texture) {
+    if (this.source && this.source.format === ImageFormat.RGBA && this.source.texture) {
       this.source.texture.dispose();
     }
   }

@@ -37,6 +37,7 @@ import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../nod
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
+import { MeshPrimitiveMode } from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
@@ -44,7 +45,6 @@ import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import {
   InstancedMeshAttribute,
   MeshPrimitiveAttribute,
-  MeshPrimitiveMode,
   MeshPrimitiveTripleBuffer,
   SharedInstancedMeshResource,
   SharedLightMapResource,
@@ -534,7 +534,6 @@ export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPr
       : getDefaultMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes);
 
     if (newMaterialObj !== meshPrimitive.materialObj) {
-      console.log("material changed");
       if (meshPrimitive.materialObj) {
         if (meshPrimitive.material) {
           meshPrimitive.material.disposeMeshPrimitiveMaterial(meshPrimitive.materialObj);

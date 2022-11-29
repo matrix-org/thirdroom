@@ -74,7 +74,7 @@ export function defineLocalResourceClass<
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
-          const resourceId = this.__props[propName][index][0];
+          const resourceId = this.__props[propName][index][1];
           return this.manager.getArrayBuffer(resourceId);
         },
       });
@@ -86,7 +86,7 @@ export function defineLocalResourceClass<
           return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
         },
       });
-    } else if (prop.type === "refArray") {
+    } else if (prop.type === "refArray" || prop.type === "refMap") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);

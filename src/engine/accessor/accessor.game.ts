@@ -3,15 +3,13 @@ import { BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute } from "
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteBufferView } from "../resource/schema";
+import { AccessorComponentType, AccessorType, RemoteBufferView } from "../resource/schema";
 import {
-  AccessorComponentType,
   AccessorComponentTypeToTypedArray,
   AccessorResourceProps,
   AccessorResourceType,
   AccessorSparseIndicesArrayConstructor,
   AccessorSparseIndicesComponentType,
-  AccessorType,
   AccessorTypedArray,
   AccessorTypedArrayConstructor,
   AccessorTypeToItemSize,

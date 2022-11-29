@@ -67,6 +67,10 @@ import {
   CameraType,
   LightResource,
   SamplerResource,
+  NodeResource as ScriptNodeResource,
+  MeshResource as ScriptMeshResource,
+  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
+  InteractableResource,
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
@@ -194,6 +198,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),
       registerResource(ctx, RendererImageResource),
+      registerResource(ctx, ScriptMeshResource),
+      registerResource(ctx, ScriptMeshPrimitiveResource),
+      registerResource(ctx, ScriptNodeResource),
+      registerResource(ctx, InteractableResource),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),

@@ -1,4 +1,3 @@
-import { AudioEmitterOutput } from "../audio/audio.common";
 import {
   RemoteAudioEmitter,
   createRemoteGlobalAudioEmitter,
@@ -11,6 +10,7 @@ import {
   RemoteGlobalAudioEmitter,
 } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
+import { AudioEmitterOutput } from "../resource/schema";
 import resolveURL from "../utils/resolveURL";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFBufferView } from "./gltf.game";

@@ -1,5 +1,5 @@
 import MouseIC from "../../../../../res/ic/mouse-left.svg";
-import { InteractableType } from "../../../../plugins/interaction/interaction.common";
+import { InteractableType } from "../../../../engine/resource/schema";
 import { Icon } from "../../../atoms/icon/Icon";
 import { Dots } from "../../../atoms/loading/Dots";
 import { Text } from "../../../atoms/text/Text";
@@ -36,7 +36,21 @@ export function EntityTooltip({ activeEntity, portalProcess }: EntityTooltipProp
             </div>
           </>
         )}
-        {activeEntity.interactableType === InteractableType.Object && (
+        {activeEntity.interactableType === InteractableType.Interactable && (
+          <>
+            <Text weight="bold" color="world">
+              {activeEntity.name}
+            </Text>
+            <div className="flex flex-column gap-xxs">
+              <Text variant="b3" color="world">
+                <span className="EntityTooltip__boxedKey">E</span> /
+                <Icon src={MouseIC} size="sm" className="EntityTooltip__mouseIcon" color="world" />
+                <span> Interact</span>
+              </Text>
+            </div>
+          </>
+        )}
+        {activeEntity.interactableType === InteractableType.Grabbable && (
           <>
             <Text weight="bold" color="world">
               {activeEntity.name}

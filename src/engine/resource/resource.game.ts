@@ -194,11 +194,17 @@ export function createResource<Props>(
 }
 
 export function createStringResource(ctx: GameState, value: string): ResourceId {
-  return createResource(ctx, Thread.Shared, StringResourceType, value);
+  const resourceModule = getModule(ctx, ResourceModule);
+  const resourceId = createResource(ctx, Thread.Shared, StringResourceType, value);
+  resourceModule.resources.set(resourceId, value);
+  return resourceId;
 }
 
 export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
-  return createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
+  const resourceModule = getModule(ctx, ResourceModule);
+  const resourceId = createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
+  resourceModule.resources.set(resourceId, value);
+  return resourceId;
 }
 
 export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
@@ -242,9 +248,9 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
 
   const resource = resourceModule.resources.get(resourceId);
 
-  if (resource) {
-    const resourceDef = resource.constructor.resourceDef;
+  const resourceDef = resource?.constructor?.resourceDef;
 
+  if (resourceDef) {
     const resourceArr = resourceModule.resourcesByType.get(resourceDef);
 
     if (resourceArr) {

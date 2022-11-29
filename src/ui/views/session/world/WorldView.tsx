@@ -46,7 +46,6 @@ import { IMainThreadContext } from "../../../../engine/MainThread";
 import { useMouseDown } from "../../../hooks/useMouseDown";
 import {
   InteractableAction,
-  InteractableType,
   InteractionMessage,
   InteractionMessageType,
 } from "../../../../plugins/interaction/interaction.common";
@@ -59,6 +58,7 @@ import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { useIsMounted } from "../../../hooks/useIsMounted";
+import { InteractableType } from "../../../../engine/resource/schema";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -180,7 +180,10 @@ export function WorldView({ world }: WorldViewProps) {
 
       if (!interactableType || message.action === InteractableAction.Unfocus) {
         setActiveEntity(undefined);
-      } else if (message.interactableType === InteractableType.Object) {
+      } else if (
+        message.interactableType === InteractableType.Grabbable ||
+        message.interactableType === InteractableType.Interactable
+      ) {
         setActiveEntity({
           interactableType,
           name: message.name || "Object",

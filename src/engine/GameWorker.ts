@@ -121,12 +121,23 @@ async function onInit({
   const gameLoop = () => {
     interval = setInterval(() => {
       const then = performance.now();
-      update(state);
+      try {
+        update(state);
+      } catch (error) {
+        clearInterval(interval);
+        throw error;
+      }
+
       const elapsed = performance.now() - then;
       if (elapsed > 1000 / tickRate) {
         console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
         clearInterval(interval);
-        update(state);
+        try {
+          update(state);
+        } catch (error) {
+          clearInterval(interval);
+          throw error;
+        }
         interval = gameLoop();
       }
     }, 1000 / tickRate);

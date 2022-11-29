@@ -3,7 +3,6 @@ import { mat4, vec2 } from "gl-matrix";
 import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
-import { AudioEmitterOutput } from "../audio/audio.common";
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
@@ -58,6 +57,8 @@ import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./OMI_link";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
+  AccessorType,
+  AudioEmitterOutput,
   BufferResource,
   BufferViewResource,
   CameraResource,
@@ -80,6 +81,10 @@ import {
   SamplerResource,
   TextureEncoding,
   TextureResource,
+  NodeResource as ScriptNodeResource,
+  MeshResource as ScriptMeshResource,
+  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
+  RemoteMeshPrimitive as ScriptRemoteMeshPrimitive,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -376,7 +381,16 @@ async function _inflateGLTFNode(
         results.reflectionProbe ||
         hasTilesRendererExtension(node))
     ) {
-      addRemoteNodeComponent(ctx, nodeEid, { ...(results as any), name: node.name, static: isStatic });
+      addRemoteNodeComponent(ctx, nodeEid, {
+        ...(results as any),
+        name: node.name,
+        static: isStatic,
+        scriptNode: resource.manager.createResource(ScriptNodeResource, {
+          name: node.name,
+          mesh: results.mesh?.scriptMesh,
+          light: results.light,
+        }),
+      });
     }
 
     if (hasHubsComponentsExtension(resource.root)) {
@@ -1008,6 +1022,16 @@ async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise
   return remoteMaterial;
 }
 
+const GLTFAccessorTypeToAccessorType: { [key: string]: AccessorType } = {
+  SCALAR: AccessorType.SCALAR,
+  VEC2: AccessorType.VEC2,
+  VEC3: AccessorType.VEC3,
+  VEC4: AccessorType.VEC4,
+  MAT2: AccessorType.MAT2,
+  MAT3: AccessorType.MAT3,
+  MAT4: AccessorType.MAT4,
+};
+
 export async function loadGLTFAccessor(
   ctx: GameState,
   resource: GLTFResource,
@@ -1052,7 +1076,7 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
   const remoteAccessor = createRemoteAccessor(ctx, {
     name: accessor.name,
     bufferView,
-    type: accessor.type,
+    type: GLTFAccessorTypeToAccessorType[accessor.type],
     componentType: accessor.componentType,
     count: accessor.count,
     byteOffset: accessor.byteOffset,
@@ -1105,7 +1129,22 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
     mesh.primitives.map((primitive) => _createGLTFMeshPrimitive(ctx, resource, primitive))
   );
 
-  const remoteMesh = createRemoteMesh(ctx, { name: mesh.name, primitives });
+  const scriptPrimitives: ScriptRemoteMeshPrimitive[] = [];
+
+  for (const primitive of primitives) {
+    if (primitive.scriptMeshPrimitive) {
+      scriptPrimitives.push(primitive.scriptMeshPrimitive);
+    }
+  }
+
+  const remoteMesh = createRemoteMesh(ctx, {
+    name: mesh.name,
+    primitives,
+    scriptMesh: resource.manager.createResource(ScriptMeshResource, {
+      name: mesh.name,
+      primitives: scriptPrimitives,
+    }),
+  });
 
   resource.meshes.set(index, remoteMesh);
 
@@ -1134,6 +1173,9 @@ async function _createGLTFMeshPrimitive(
     attributes,
     material,
     mode: primitive.mode,
+    scriptMeshPrimitive: resource.manager.createResource(ScriptMeshPrimitiveResource, {
+      material,
+    }),
   };
 }
 
