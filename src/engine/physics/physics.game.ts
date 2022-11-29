@@ -4,9 +4,9 @@ import {
   addComponent,
   removeComponent,
   enterQuery,
-  hasComponent,
   exitQuery,
   Types,
+  pipe,
 } from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
@@ -14,7 +14,6 @@ import { Quaternion, Vector3 } from "three";
 import { GameState, World } from "../GameTypes";
 import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
-import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, disposeResource } from "../resource/resource.game";
@@ -69,11 +68,16 @@ const RigidBodySoA = defineComponent({
   meshResourceId: Types.ui32,
   primitiveResourceId: Types.ui32,
 });
+
+// data flows from rigidbody->transform
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
 
-export const physicsQuery = defineQuery([RigidBody]);
-export const enteredPhysicsQuery = enterQuery(physicsQuery);
-export const exitedPhysicsQuery = exitQuery(physicsQuery);
+export const rigidBodyQuery = defineQuery([RigidBody]);
+export const enteredRigidBodyQuery = enterQuery(rigidBodyQuery);
+export const exitedRigidBodyQuery = exitQuery(rigidBodyQuery);
+
+// data flows from transform->rigidbody
+export const Kinematic = defineComponent();
 
 const _v = new Vector3();
 const _q = new Quaternion();
@@ -104,84 +108,6 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
   quaternion[3] = rigidRot.w;
 };
 
-export const PhysicsSystem = (state: GameState) => {
-  const { world, dt } = state;
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(state, PhysicsModule);
-
-  // apply transform to rigidbody for new physics entities
-  const entered = enteredPhysicsQuery(world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-
-    const body = RigidBody.store.get(eid);
-
-    if (body) {
-      if (!body.isStatic()) {
-        const rotation = Transform.rotation[eid];
-        const quaternion = Transform.quaternion[eid];
-        setQuaternionFromEuler(quaternion, rotation);
-        applyTransformToRigidBody(body, eid);
-      }
-
-      handleToEid.set(body.handle, eid);
-    }
-  }
-
-  // remove rigidbody from physics world
-  const exited = exitedPhysicsQuery(world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    const body = RigidBody.store.get(eid);
-    if (body) {
-      handleToEid.delete(body.handle);
-      physicsWorld.removeRigidBody(body);
-      RigidBody.store.delete(eid);
-
-      if (RigidBody.meshResourceId[eid]) {
-        disposeResource(state, RigidBody.meshResourceId[eid]);
-      }
-
-      if (RigidBody.primitiveResourceId[eid]) {
-        disposeResource(state, RigidBody.primitiveResourceId[eid]);
-      }
-    }
-  }
-
-  // apply rigidbody to transform for regular physics entities
-  const physicsEntities = physicsQuery(world);
-  for (let i = 0; i < physicsEntities.length; i++) {
-    const eid = physicsEntities[i];
-    const body = RigidBody.store.get(eid);
-
-    if (body && !body.isStatic()) {
-      // sync velocity
-      const linvel = body.linvel();
-      const velocity = RigidBody.velocity[eid];
-      velocity[0] = linvel.x;
-      velocity[1] = linvel.y;
-      velocity[2] = linvel.z;
-
-      // skip remote networked physics bodies
-      if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
-        continue;
-      } else {
-        applyRigidBodyToTransform(body, eid);
-      }
-    }
-  }
-
-  physicsWorld.timestep = dt;
-  physicsWorld.step(eventQueue);
-
-  eventQueue.drainContactEvents((handle1, handle2) => {
-    const eid1 = handleToEid.get(handle1);
-    const eid2 = handleToEid.get(handle2);
-    for (const collisionHandler of collisionHandlers) {
-      collisionHandler(eid1, eid2, handle1, handle2);
-    }
-  });
-};
-
 export function addRigidBody(
   ctx: GameState,
   eid: number,
@@ -208,3 +134,121 @@ export function removeRigidBody(world: World, eid: number, rigidBody: RapierRigi
   removeComponent(world, RigidBody, eid);
   RigidBody.store.delete(eid);
 }
+
+export const SyncPhysicsSystem = (ctx: GameState) => {
+  const { world } = ctx;
+  const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);
+
+  // apply transform to rigidbody for new physics entities
+  const entered = enteredRigidBodyQuery(world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+
+    const body = RigidBody.store.get(eid);
+
+    if (body) {
+      if (!body.isStatic()) {
+        const rotation = Transform.rotation[eid];
+        const quaternion = Transform.quaternion[eid];
+        setQuaternionFromEuler(quaternion, rotation);
+        applyTransformToRigidBody(body, eid);
+      }
+
+      handleToEid.set(body.handle, eid);
+    }
+  }
+
+  // remove rigidbody from physics world
+  const exited = exitedRigidBodyQuery(world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    const body = RigidBody.store.get(eid);
+    if (body) {
+      handleToEid.delete(body.handle);
+      physicsWorld.removeRigidBody(body);
+      RigidBody.store.delete(eid);
+
+      if (RigidBody.meshResourceId[eid]) {
+        disposeResource(ctx, RigidBody.meshResourceId[eid]);
+      }
+
+      if (RigidBody.primitiveResourceId[eid]) {
+        disposeResource(ctx, RigidBody.primitiveResourceId[eid]);
+      }
+    }
+  }
+
+  // apply rigidbody to transform for regular physics entities
+  const physicsEntities = rigidBodyQuery(world);
+  for (let i = 0; i < physicsEntities.length; i++) {
+    const eid = physicsEntities[i];
+    const body = RigidBody.store.get(eid);
+
+    if (body && !body.isStatic()) {
+      // sync velocity
+      const linvel = body.linvel();
+      const velocity = RigidBody.velocity[eid];
+      velocity[0] = linvel.x;
+      velocity[1] = linvel.y;
+      velocity[2] = linvel.z;
+
+      // // skip remote networked entities
+      // if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
+      //   continue;
+      // }
+
+      // // skip FirstPersonCameraYawTarget || FirstPersonCameraPitchTarget
+      // if (
+      //   hasComponent(world, FirstPersonCameraYawTarget, eid) ||
+      //   hasComponent(world, FirstPersonCameraPitchTarget, eid)
+      // ) {
+      //   continue;
+      // }
+
+      // if (hasComponent(world, Kinematic, eid)) {
+      //   // applyTransformToRigidBody(body, eid);
+
+      //   const rigidPos = body.translation();
+      //   const position = Transform.position[eid];
+
+      //   position[0] = rigidPos.x;
+      //   position[1] = rigidPos.y;
+      //   position[2] = rigidPos.z;
+      // } else {
+      applyRigidBodyToTransform(body, eid);
+      // }
+
+      // // authoritative case
+      // const shouldCSP = network.authoritative && !isHost(network) && network.clientSidePrediction;
+      // // p2p case
+      // const notNetworked = !hasComponent(world, Networked, eid);
+      // const isOwned = hasComponent(world, Owned, eid);
+      // // const notOurPlayer = !hasComponent(world, OurPlayer, eid);
+
+      // if (shouldCSP || notNetworked || isOwned) {
+      //   console.log("hi");
+      //   applyRigidBodyToTransform(body, eid);
+      // } else {
+      //   // applyTransformToRigidBody(body, eid);
+      // }
+    }
+  }
+};
+
+export function StepPhysicsSystem(ctx: GameState) {
+  const { dt } = ctx;
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(ctx, PhysicsModule);
+
+  physicsWorld.timestep = dt;
+  physicsWorld.step(eventQueue);
+
+  eventQueue.drainContactEvents((handle1, handle2) => {
+    const eid1 = handleToEid.get(handle1);
+    const eid2 = handleToEid.get(handle2);
+    for (const collisionHandler of collisionHandlers) {
+      collisionHandler(eid1, eid2, handle1, handle2);
+    }
+  });
+}
+
+export const PhysicsSystem = pipe(StepPhysicsSystem, SyncPhysicsSystem);

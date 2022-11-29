@@ -6,7 +6,7 @@ import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
-import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
+import { createPrefabEntity, Prefab } from "../prefab/prefab.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -41,7 +41,7 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: nu
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
-    const newEid = getPrefabTemplate(ctx, prefabName).create(ctx);
+    const newEid = createPrefabEntity(ctx, prefabName);
 
     const body = RigidBody.store.get(eid);
     if (!body) throw new Error("rigidbody not found for eid: " + eid);

@@ -82,6 +82,7 @@ import {
 import { ImageResource, SamplerMapping, SamplerResource, TextureResource } from "../../engine/resource/schema";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { InteractableType } from "../interaction/interaction.common";
+import { AvatarOptions } from "../avatars/common";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -107,8 +108,7 @@ const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number
 };
 
 const createAvatarRig =
-  (input: GameInputModule, physics: PhysicsModuleState, network: GameNetworkState) =>
-  (ctx: GameState, remote = false) => {
+  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const eid = addEntity(ctx.world);
@@ -123,11 +123,9 @@ const createAvatarRig =
       addPhysicsControls(ctx, eid);
     }
 
-    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
-      nametag: true,
-    });
+    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, options);
+    addAvatarRigidBody(ctx, physics, eid, options);
 
-    addAvatarRigidBody(ctx, physics, eid);
     addInteractableComponent(ctx, physics, eid, InteractableType.Player);
 
     return eid;
@@ -141,7 +139,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   async init(ctx) {
     const input = getModule(ctx, InputModule);
     const physics = getModule(ctx, PhysicsModule);
-    const network = getModule(ctx, NetworkModule);
 
     const disposables = [
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
@@ -154,7 +151,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
     registerPrefab(ctx, {
       name: "avatar",
-      create: createAvatarRig(input, physics, network),
+      create: createAvatarRig(input, physics),
     });
 
     // create out of bounds floor check
@@ -488,7 +485,7 @@ function loadRemotePlayerRig(
   network: GameNetworkState,
   peerId: string
 ) {
-  const eid = createPrefabEntity(ctx, "avatar", true);
+  const eid = createPrefabEntity(ctx, "avatar");
 
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, eid);

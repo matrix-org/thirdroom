@@ -21,7 +21,7 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 export interface PrefabTemplate {
   name: string;
-  create: (ctx: GameState, remote?: boolean) => number;
+  create: (ctx: GameState, options: any) => number;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;
   deserialize?: (ctx: GameState) => number;
@@ -37,8 +37,8 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = (ctx: GameState, remote = false) => {
-    const eid = create(ctx, remote);
+  template.create = (ctx: GameState, options = {}) => {
+    const eid = create(ctx, options);
     addPrefabComponent(state.world, eid, template.name);
     return eid;
   };
@@ -65,7 +65,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return template;
 }
 
-export const createPrefabEntity = (state: GameState, prefab: string, remote = false) => {
+export const createPrefabEntity = (state: GameState, prefab: string, options = {}) => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
 
@@ -73,7 +73,7 @@ export const createPrefabEntity = (state: GameState, prefab: string, remote = fa
     throw new Error(`Could not find prefab "${prefab}"`);
   }
 
-  return create(state, remote);
+  return create(state, options);
 };
 
 export const addPrefabComponent = (world: World, eid: number, prefab: string) => {

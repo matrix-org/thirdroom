@@ -18,6 +18,7 @@ import {
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { tickRate } from "../config.common";
+import { isHost } from "./network.common";
 
 const FRAME_MS = 1000 / tickRate;
 
@@ -41,15 +42,18 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
     const body = RigidBody.store.get(eid);
+    applyNetworkedToEntity(eid, body);
     if (body) {
-      applyNetworkedToRigidBody(eid, body);
-
       // add to historian
       const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
       const peerId = network.indexToPeerId.get(pidx);
-      if (!peerId) continue;
+      if (!peerId) {
+        throw new Error("peer not found for entity " + eid);
+      }
       const historian = network.peerIdToHistorian.get(peerId);
-      if (!historian) continue;
+      if (!historian) {
+        throw new Error("historian not found for peer " + peerId);
+      }
       addEntityToHistorian(historian, eid);
     }
   }
@@ -62,6 +66,11 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const eid = entities[i];
 
     const body = RigidBody.store.get(eid);
+
+    if (!network.interpolate) {
+      applyNetworkedToEntity(eid, body);
+      continue;
+    }
 
     if (!body) {
       console.warn("could not find rigidbody for:", eid);
@@ -76,8 +85,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
 
     const historian = network.peerIdToHistorian.get(peerId);
     if (historian === undefined) {
-      applyNetworkedToRigidBody(eid, body);
-      // console.warn("could not find historian for:", peerId);
+      console.warn("could not find historian for:", peerId);
       continue;
     }
 
@@ -88,11 +96,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const netPosition = Networked.position[eid];
     const netVelocity = Networked.velocity[eid];
     const netQuaternion = Networked.quaternion[eid];
-
-    if (!network.interpolate) {
-      applyNetworkedToRigidBody(eid, body);
-      continue;
-    }
 
     const history = getEntityHistory(historian, eid);
 
@@ -127,6 +130,16 @@ export function NetworkInterpolationSystem(ctx: GameState) {
         vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
         body.setLinvel(_vec.fromArray(velocity), true);
       }
+    }
+
+    // if CSP is enabled, skip applying rotation data from the host for our locally controlled entity
+    if (
+      network.authoritative &&
+      !isHost(network) &&
+      network.clientSidePrediction &&
+      eid === network.peerIdToEntityId.get(network.peerId)
+    ) {
+      continue;
     }
 
     const qFrom = history.quaternion.at(from);
@@ -206,7 +219,7 @@ function postprocessHistorians(ctx: GameState, network: GameNetworkState) {
   }
 }
 
-function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
+function applyNetworkedToEntity(eid: number, body?: RapierRigidBody) {
   const netPosition = Networked.position[eid];
   const netQuaternion = Networked.quaternion[eid];
   const netVelocity = Networked.velocity[eid];
@@ -214,7 +227,9 @@ function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
   Transform.position[eid].set(netPosition);
   Transform.quaternion[eid].set(netQuaternion);
 
-  body.setTranslation(_vec.fromArray(netPosition), true);
-  if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);
-  body.setRotation(_quat.fromArray(netQuaternion), true);
+  if (body) {
+    body.setTranslation(_vec.fromArray(netPosition), true);
+    if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);
+    body.setRotation(_quat.fromArray(netQuaternion), true);
+  }
 }

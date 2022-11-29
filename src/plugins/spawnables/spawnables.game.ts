@@ -84,7 +84,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "small-crate",
-      create: (ctx, remote) => {
+      create: (ctx, { kinematic }) => {
+        console.log("kinematic", kinematic);
         const size = 1;
         const halfSize = size / 2;
 
@@ -108,7 +109,10 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
+
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
@@ -127,7 +131,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "medium-crate",
-      create: (ctx, remote) => {
+      create: (ctx, { kinematic }) => {
         const size = 1.75;
         const halfSize = size / 2;
 
@@ -151,10 +155,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 
-        // const rigidBodyDesc = remote
-        //   ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-        //   : RAPIER.RigidBodyDesc.newDynamic();
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -174,7 +177,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "large-crate",
-      create: (ctx, remote) => {
+      create: (ctx, { kinematic }) => {
         const size = 2.5;
         const halfSize = size / 2;
 
@@ -198,10 +201,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         module.hitAudioEmitters.set(eid, audioEmitter);
 
-        // const rigidBodyDesc = remote
-        //   ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-        //   : RAPIER.RigidBodyDesc.newDynamic();
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -258,10 +260,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "mirror-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 1, mirrorMaterial, remote);
+      create: (ctx, { kinematic }) => {
+        const eid = createBall(ctx, 1, mirrorMaterial);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -298,10 +302,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "black-mirror-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 1, blackMirrorMaterial, remote);
+      create: (ctx, { kinematic }) => {
+        const eid = createBall(ctx, 1, blackMirrorMaterial);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -338,10 +344,12 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "emissive-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 2, emissiveMaterial, remote);
+      create: (ctx, { kinematic }) => {
+        const eid = createBall(ctx, 2, emissiveMaterial);
 
-        const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
+        const rigidBodyDesc = kinematic
+          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
+          : RAPIER.RigidBodyDesc.newDynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
@@ -521,7 +529,7 @@ export const updateSpawnables = (
   }
 };
 
-export const createBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
+export const createBall = (state: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = state;
   const eid = addEntity(world);
   addTransformComponent(world, eid);

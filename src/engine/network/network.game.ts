@@ -100,9 +100,8 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
-      interpolate: false,
-      // TODO: this causes desync atm
-      clientSidePrediction: false,
+      interpolate: true,
+      clientSidePrediction: true,
       authoritative,
     };
   },

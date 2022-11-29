@@ -10,6 +10,7 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
+import { ourPlayerQuery } from "../engine/component/Player";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
@@ -17,8 +18,10 @@ import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
+import { isHost } from "../engine/network/network.common";
 import { Networked, NetworkModule } from "../engine/network/network.game";
 import { NetworkAction } from "../engine/network/NetworkAction";
+import { sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
 
 type FirstPersonCameraModuleState = {};
@@ -45,6 +48,7 @@ export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: n
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.UpdateCamera)(data);
   writeUint32(messageView, Networked.networkId[eid]);
+  writeFloat32(messageView, Transform.rotation[eid][0]);
   writeFloat32(messageView, Transform.rotation[camera][0]);
   return sliceCursorView(messageView);
 }
@@ -55,9 +59,10 @@ function deserializeUpdateCamera(data: NetPipeData) {
   // TODO: put network ref in the net pipe data
   const network = getModule(ctx, NetworkModule);
 
-  const avatarNid = readUint32(view);
-  const avatar = network.networkIdToEntityId.get(avatarNid)!;
-  const camera = getCamera(ctx, avatar);
+  const nid = readUint32(view);
+  const player = network.networkIdToEntityId.get(nid)!;
+  const camera = getCamera(ctx, player);
+  Transform.rotation[player][0] = readFloat32(view);
   Transform.rotation[camera][0] = readFloat32(view);
   setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
   return data;
@@ -81,8 +86,8 @@ export const FirstPersonCameraActionMap: ActionMap = {
           y: "Mouse/movementY",
         },
       ],
-      // TODO: remove this, client will send absolute camera values
-      networked: true,
+      // TODO: remove this, client should send absolute camera values
+      // networked: true,
     },
   ],
 };
@@ -146,10 +151,11 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
 }
 
 export function FirstPersonCameraSystem(ctx: GameState) {
-  // const network = getModule(ctx, NetworkModule);
-  // if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
-  //   return;
-  // }
+  const network = getModule(ctx, NetworkModule);
+
+  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+    return;
+  }
 
   const input = getModule(ctx, InputModule);
 
@@ -160,21 +166,6 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const parent = Transform.parent[eid];
     const controller = getInputController(input, parent);
     applyPitch(ctx, controller, eid);
-
-    // TODO: decouple this logic from this system
-    // network the avatar's camera
-    // const haveConnectedPeers = network.peers.length > 0;
-    // const hosting = network.authoritative && isHost(network);
-    // const avatar = getAvatar(ctx, parent);
-    // const isOwnedAvatar =
-    //   avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
-    // if (hosting && haveConnectedPeers && isOwnedAvatar) {
-    //   const camera = getCamera(ctx, parent);
-    //   const msg = createUpdateCameraMessage(ctx, parent, camera);
-    //   if (msg.byteLength > 0) {
-    //     broadcastReliable(ctx, network, msg);
-    //   }
-    // }
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);
@@ -182,5 +173,21 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const eid = yawEntities[i];
     const controller = getInputController(input, eid);
     applyYaw(ctx, controller, eid);
+  }
+}
+
+export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  if (ourPlayer) {
+    const network = getModule(ctx, NetworkModule);
+    const haveConnectedPeers = network.peers.length > 0;
+    const notHosting = network.authoritative && !isHost(network);
+    if (notHosting && haveConnectedPeers) {
+      const camera = getCamera(ctx, ourPlayer);
+      const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
+      if (msg.byteLength > 0) {
+        sendReliable(ctx, network, network.hostId, msg);
+      }
+    }
   }
 }

@@ -89,7 +89,6 @@ export interface ActionTypesSchema {
 const writeView = createCursorView(new ArrayBuffer(1000));
 export const ActionTypesToBindings: ActionTypesSchema = {
   [ActionType.Button]: {
-    // TODO: replace create/encode/decode with resource schema
     /**
      * binary format
      * pressed:   0b001

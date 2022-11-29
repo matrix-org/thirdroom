@@ -11,8 +11,6 @@ import {
   readUint8,
   rewindCursorView,
   scrollCursorView,
-  skipFloat32,
-  skipUint8,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
@@ -179,9 +177,11 @@ export const serializeTransformChanged = defineChangedSerializer(
 //   return changeMask > 0;
 // };
 
-export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
+// NOTE: if eid is NOOP the deserializer will write all data to the NOOP entity
+// this effectively nullifies the update, but still moves the view's cursor forward so the rest of the message is read properly
+export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number) => void)[]) => {
   const readChangeMask = fns.length <= 8 ? readUint8 : fns.length <= 16 ? readUint16 : readUint32;
-  return (v: CursorView, eid: number | undefined) => {
+  return (v: CursorView, eid: number) => {
     const changeMask = readChangeMask(v);
     let b = 0;
     for (let i = 0; i < fns.length; i++) {
@@ -192,18 +192,18 @@ export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number |
 };
 
 export const deserializeTransformChanged = defineChangedDeserializer(
-  (v, eid) => (eid ? (Networked.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
-  // (v, eid) => (eid ? (Networked.parent[eid] = readUint32(v)) : skipUint32(v)),
-  (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint8(v)) : skipUint8(v))
+  (v, eid) => (Networked.position[eid][0] = readFloat32(v)),
+  (v, eid) => (Networked.position[eid][1] = readFloat32(v)),
+  (v, eid) => (Networked.position[eid][2] = readFloat32(v)),
+  (v, eid) => (Networked.velocity[eid][0] = readFloat32(v)),
+  (v, eid) => (Networked.velocity[eid][1] = readFloat32(v)),
+  (v, eid) => (Networked.velocity[eid][2] = readFloat32(v)),
+  (v, eid) => (Networked.quaternion[eid][0] = readFloat32(v)),
+  (v, eid) => (Networked.quaternion[eid][1] = readFloat32(v)),
+  (v, eid) => (Networked.quaternion[eid][2] = readFloat32(v)),
+  (v, eid) => (Networked.quaternion[eid][3] = readFloat32(v)),
+  // (v, eid) => (Networked.parent[eid] = readUint32(v)),
+  (v, eid) => (Transform.skipLerp[eid] = readUint8(v))
 );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
@@ -225,7 +225,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 
 /* Create */
 export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(ctx, prefab, true);
+  const eid = createPrefabEntity(ctx, prefab);
 
   // assign networkId
   addComponent(ctx.world, Networked, eid, true);
@@ -312,13 +312,12 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid);
+    const eid = network.networkIdToEntityId.get(nid) || NOOP;
 
-    if (eid === undefined) {
+    if (eid === NOOP) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
     }
 
-    // if eid is undefined, this skips reading and moves the view cursor forward by the appropriate amount
     deserializeTransformSnapshot(v, eid);
 
     if (eid && Transform.skipLerp[eid]) {
@@ -357,12 +356,12 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid);
-    if (!eid) {
+    const eid = network.networkIdToEntityId.get(nid) || NOOP;
+
+    if (eid === NOOP) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
-      // continue;
-      // createRemoteNetworkedEntity(state, nid);
     }
+
     deserializeTransformChanged(v, eid);
   }
   return input;
@@ -487,8 +486,9 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     embodyAvatar(ctx, physics, input, peid);
   }
 
+  // if not our own avatar
   if (peerId !== network.peerId) {
-    // if not our own avatar, add voip
+    // add voip
     addRemoteNodeComponent(ctx, peid, {
       name: peerId,
       audioEmitter: createRemotePositionalAudioEmitter(ctx, {

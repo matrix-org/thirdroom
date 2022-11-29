@@ -1,7 +1,7 @@
 import { defineConfig } from "./module/module.common";
 import { GameAudioModule, GameAudioSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
-import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
+import { PhysicsModule, StepPhysicsSystem, SyncPhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
@@ -65,17 +65,22 @@ export default defineConfig<GameState>({
 
     InboundNetworkSystem,
 
-    NetworkInterpolationSystem,
-
     FirstPersonCameraSystem,
-    // NetworkedFirstPersonCameraSystem,
     PhysicsCharacterControllerSystem,
     FlyControllerSystem,
-    PhysicsSystem,
-    AnimationSystem,
     InteractionSystem,
     SpawnableSystem,
+    AnimationSystem,
     ThirdroomSystem,
+
+    // step physics forward
+    StepPhysicsSystem,
+
+    // copy rigidbody data to transform component
+    SyncPhysicsSystem,
+
+    // interpolate towards authoritative state
+    NetworkInterpolationSystem,
 
     // Copy Transform to RemoteNode
     ScriptingSystem,
@@ -87,6 +92,7 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
+    // NetworkedFirstPersonCameraSystem,
     OutboundNetworkSystem,
 
     GameAudioSystem,
