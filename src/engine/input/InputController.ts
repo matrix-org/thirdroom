@@ -1,7 +1,7 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
 import { World } from "../GameTypes";
-import { ActionState, ActionMap, ActionDefinition } from "./ActionMappingSystem";
+import { ActionState, ActionMap, ActionDefinition, initializeActionMap } from "./ActionMappingSystem";
 import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
@@ -25,15 +25,23 @@ export interface InputControllerProps {
   idToPath?: Map<number, string>;
 }
 
-export const createInputController = (props?: InputControllerProps): InputController => ({
-  inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
-  actionMaps: (props && props.actionMaps) || [],
-  actionStates: (props && props.actionStates) || new Map(),
-  pathToId: (props && props.pathToId) || new Map(),
-  pathToDef: (props && props.pathToId) || new Map(),
-  idToPath: (props && props.idToPath) || new Map(),
-  raw: {},
-});
+export const createInputController = (props?: InputControllerProps): InputController => {
+  const controller = {
+    inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
+    actionMaps: (props && props.actionMaps) || [],
+    actionStates: (props && props.actionStates) || new Map(),
+    pathToId: (props && props.pathToId) || new Map(),
+    pathToDef: (props && props.pathToId) || new Map(),
+    idToPath: (props && props.idToPath) || new Map(),
+    raw: {},
+  };
+  for (const actionMap of controller.actionMaps) {
+    for (const actionDef of actionMap.actionDefs) {
+      initializeActionMap(controller, actionDef);
+    }
+  }
+  return controller;
+};
 
 export const InputControllerComponent = new Map<number, InputController>();
 export const inputControllerQuery = defineQuery([InputControllerComponent]);

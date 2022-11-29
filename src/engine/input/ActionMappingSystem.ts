@@ -229,15 +229,6 @@ export function ActionMappingSystem(state: GameState) {
 function updateActionMaps(input: GameInputModule, network: GameNetworkState, controller: InputController) {
   for (const actionMap of controller.actionMaps) {
     for (const actionDef of actionMap.actionDefs) {
-      // initialize action state if not already
-      if (!controller.actionStates.has(actionDef.path)) {
-        controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
-        // set ID maps for serialization
-        controller.pathToId.set(actionDef.path, controller.actionStates.size);
-        controller.pathToDef.set(actionDef.path, actionDef);
-        controller.idToPath.set(controller.actionStates.size, actionDef.path);
-      }
-
       for (const binding of actionDef.bindings) {
         const action = ActionTypesToBindings[actionDef.type];
         const actionState = action.bindings[binding.type](controller, actionDef.path, binding);
@@ -249,6 +240,14 @@ function updateActionMaps(input: GameInputModule, network: GameNetworkState, con
       }
     }
   }
+}
+
+export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {
+  controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
+  // set ID maps for serialization
+  controller.pathToId.set(actionDef.path, controller.actionStates.size);
+  controller.pathToDef.set(actionDef.path, actionDef);
+  controller.idToPath.set(controller.actionStates.size, actionDef.path);
 }
 
 export function enableActionMap(controller: InputController, actionMap: ActionMap) {

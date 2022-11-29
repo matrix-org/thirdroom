@@ -85,7 +85,6 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     registerPrefab(ctx, {
       name: "small-crate",
       create: (ctx, { kinematic }) => {
-        console.log("kinematic", kinematic);
         const size = 1;
         const halfSize = size / 2;
 
