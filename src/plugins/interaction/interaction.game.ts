@@ -369,6 +369,7 @@ function updateGrabThrow(
   const throwBtn2 = controller.actions.get("Throw2") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || grabBtn2.pressed;
+  const grabReleased = grabBtn.released || grabBtn2.released;
   const throwPressed = throwBtn.pressed || throwBtn2.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
@@ -483,7 +484,7 @@ function updateGrabThrow(
     }
   }
 
-  if (grabBtn.released) {
+  if (grabReleased) {
     const interactableEntities = interactableQuery(ctx.world);
 
     for (let i = 0; i < interactableEntities.length; i++) {
@@ -504,7 +505,7 @@ function updateGrabThrow(
     }
   }
 
-  if (!grabBtn.pressed && !grabBtn.released) {
+  if (!grabPressed && !grabReleased) {
     const interactableEntities = interactableQuery(ctx.world);
 
     for (let i = 0; i < interactableEntities.length; i++) {
