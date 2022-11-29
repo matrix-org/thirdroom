@@ -84,6 +84,10 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
       }
     }
 
+    const rendererModule = getModule(ctx, RendererModule);
+
+    rendererModule.renderPipeline.bloomPass.strength = sceneView.bloomStrength[0];
+
     updateSceneReflectionProbe(ctx, sceneResource, sceneView);
   }
 }
