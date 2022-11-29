@@ -11,7 +11,7 @@ import {
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
 import { ourPlayerQuery } from "../engine/component/Player";
-import { setEulerFromQuaternion, setQuaternionFromEuler, Transform } from "../engine/component/transform";
+import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
@@ -46,11 +46,18 @@ const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
   const data: NetPipeData = [ctx, messageView, ""];
+
   writeMetadata(NetworkAction.UpdateCamera)(data);
-  setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
+
   writeUint32(messageView, Networked.networkId[eid]);
-  writeFloat32(messageView, Transform.rotation[eid][1]);
+
+  writeFloat32(messageView, Transform.quaternion[eid][0]);
+  writeFloat32(messageView, Transform.quaternion[eid][1]);
+  writeFloat32(messageView, Transform.quaternion[eid][2]);
+  writeFloat32(messageView, Transform.quaternion[eid][3]);
+
   writeFloat32(messageView, Transform.rotation[camera][0]);
+
   return sliceCursorView(messageView);
 }
 
@@ -63,10 +70,16 @@ function deserializeUpdateCamera(data: NetPipeData) {
   const nid = readUint32(view);
   const player = network.networkIdToEntityId.get(nid)!;
   const camera = getCamera(ctx, player);
-  Transform.rotation[player][1] = readFloat32(view);
+
+  Transform.quaternion[player][0] = readFloat32(view);
+  Transform.quaternion[player][1] = readFloat32(view);
+  Transform.quaternion[player][2] = readFloat32(view);
+  Transform.quaternion[player][3] = readFloat32(view);
+
   Transform.rotation[camera][0] = readFloat32(view);
+
   setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
-  setQuaternionFromEuler(Transform.quaternion[player], Transform.rotation[player]);
+
   return data;
 }
 
