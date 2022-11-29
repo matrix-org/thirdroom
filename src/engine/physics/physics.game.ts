@@ -192,45 +192,7 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
       velocity[1] = linvel.y;
       velocity[2] = linvel.z;
 
-      // // skip remote networked entities
-      // if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
-      //   continue;
-      // }
-
-      // // skip FirstPersonCameraYawTarget || FirstPersonCameraPitchTarget
-      // if (
-      //   hasComponent(world, FirstPersonCameraYawTarget, eid) ||
-      //   hasComponent(world, FirstPersonCameraPitchTarget, eid)
-      // ) {
-      //   continue;
-      // }
-
-      // if (hasComponent(world, Kinematic, eid)) {
-      //   // applyTransformToRigidBody(body, eid);
-
-      //   const rigidPos = body.translation();
-      //   const position = Transform.position[eid];
-
-      //   position[0] = rigidPos.x;
-      //   position[1] = rigidPos.y;
-      //   position[2] = rigidPos.z;
-      // } else {
       applyRigidBodyToTransform(body, eid);
-      // }
-
-      // // authoritative case
-      // const shouldCSP = network.authoritative && !isHost(network) && network.clientSidePrediction;
-      // // p2p case
-      // const notNetworked = !hasComponent(world, Networked, eid);
-      // const isOwned = hasComponent(world, Owned, eid);
-      // // const notOurPlayer = !hasComponent(world, OurPlayer, eid);
-
-      // if (shouldCSP || notNetworked || isOwned) {
-      //   console.log("hi");
-      //   applyRigidBodyToTransform(body, eid);
-      // } else {
-      //   // applyTransformToRigidBody(body, eid);
-      // }
     }
   }
 };
