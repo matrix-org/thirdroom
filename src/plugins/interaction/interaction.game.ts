@@ -262,9 +262,9 @@ export function InteractionSystem(ctx: GameState) {
     const interactable = remoteNode?.scriptNode?.interactable;
     const hasInteractable = hasComponent(ctx.world, Interactable, eid);
 
-    if (interactable && !hasInteractable) {
+    if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
       addInteractableComponent(ctx, physics, eid, interactable.type);
-    } else if (!interactable && hasInteractable) {
+    } else if (!interactable && hasInteractable && Interactable.type[eid] === InteractableType.Interactable) {
       removeInteractableComponent(ctx, physics, eid);
     }
   }
