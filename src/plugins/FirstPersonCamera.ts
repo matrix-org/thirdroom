@@ -11,7 +11,7 @@ import {
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
 import { ourPlayerQuery } from "../engine/component/Player";
-import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
+import { setEulerFromQuaternion, setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
@@ -47,8 +47,9 @@ const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.UpdateCamera)(data);
+  setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
   writeUint32(messageView, Networked.networkId[eid]);
-  writeFloat32(messageView, Transform.rotation[eid][0]);
+  writeFloat32(messageView, Transform.rotation[eid][1]);
   writeFloat32(messageView, Transform.rotation[camera][0]);
   return sliceCursorView(messageView);
 }
@@ -62,9 +63,10 @@ function deserializeUpdateCamera(data: NetPipeData) {
   const nid = readUint32(view);
   const player = network.networkIdToEntityId.get(nid)!;
   const camera = getCamera(ctx, player);
-  Transform.rotation[player][0] = readFloat32(view);
+  Transform.rotation[player][1] = readFloat32(view);
   Transform.rotation[camera][0] = readFloat32(view);
   setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
+  setQuaternionFromEuler(Transform.quaternion[player], Transform.rotation[player]);
   return data;
 }
 
@@ -86,8 +88,6 @@ export const FirstPersonCameraActionMap: ActionMap = {
           y: "Mouse/movementY",
         },
       ],
-      // TODO: remove this, client should send absolute camera values
-      // networked: true,
     },
   ],
 };
@@ -178,16 +178,21 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
 export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
-  if (ourPlayer) {
-    const network = getModule(ctx, NetworkModule);
-    const haveConnectedPeers = network.peers.length > 0;
-    const notHosting = network.authoritative && !isHost(network);
-    if (notHosting && haveConnectedPeers) {
-      const camera = getCamera(ctx, ourPlayer);
-      const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
-      if (msg.byteLength > 0) {
-        sendReliable(ctx, network, network.hostId, msg);
-      }
-    }
+
+  if (!ourPlayer) {
+    return;
+  }
+
+  const network = getModule(ctx, NetworkModule);
+  const haveConnectedPeers = network.peers.length > 0;
+  const notHosting = network.authoritative && !isHost(network);
+  if (!notHosting || !haveConnectedPeers) {
+    return;
+  }
+
+  const camera = getCamera(ctx, ourPlayer);
+  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
+  if (msg.byteLength > 0) {
+    sendReliable(ctx, network, network.hostId, msg);
   }
 }

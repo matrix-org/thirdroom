@@ -7,7 +7,7 @@ import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   FirstPersonCameraModule,
   FirstPersonCameraSystem,
-  // NetworkedFirstPersonCameraSystem,
+  NetworkedFirstPersonCameraSystem,
 } from "../plugins/FirstPersonCamera";
 import {
   PhysicsCharacterControllerModule,
@@ -92,7 +92,7 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
-    // NetworkedFirstPersonCameraSystem,
+    NetworkedFirstPersonCameraSystem,
     OutboundNetworkSystem,
 
     GameAudioSystem,
