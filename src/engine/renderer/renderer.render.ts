@@ -288,7 +288,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevCameraResource = activeCameraResourceId;
   }
 
-  updateLocalSceneResources(ctx, rendererModule.scenes);
+  updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
