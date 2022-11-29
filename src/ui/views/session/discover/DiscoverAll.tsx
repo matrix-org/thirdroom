@@ -23,6 +23,7 @@ export function DiscoverAll({
   permissions: {
     canFeatureRooms: boolean;
     canFeatureWorlds: boolean;
+    canFeatureScenes: boolean;
   };
 }) {
   const { session, platform } = useHydrogen(true);
@@ -85,7 +86,9 @@ export function DiscoverAll({
                         key={stateKey}
                         session={session}
                         roomId={room.id}
-                        eventId={stateEvent.content.event_id}
+                        stateKey={stateKey}
+                        stateEvent={stateEvent}
+                        canEdit={permissions.canFeatureScenes}
                       />
                     ))}
                   </DiscoverGroupGrid>

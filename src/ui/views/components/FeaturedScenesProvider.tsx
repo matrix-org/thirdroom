@@ -5,7 +5,7 @@ import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedScenes(repoRoom: Room) {
   const featuredScenesMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedScenes);
-  return [...featuredScenesMap].filter(([eventId, stateEvent]) => typeof stateEvent.event_id === "string");
+  return [...featuredScenesMap].filter(([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0);
 }
 
 export function FeaturedScenesProvider({

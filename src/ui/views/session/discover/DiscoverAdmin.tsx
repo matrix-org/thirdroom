@@ -242,27 +242,25 @@ function FeatureScene({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
 
   const handleSave = async (data: SceneData) => {
+    const content = {
+      scene_url: data.sceneUrl,
+      scene_preview_url: data.scenePreviewUrl,
+      scene_name: data.sceneName,
+      scene_description: data.sceneDescription,
+      scene_author_name: data.sceneAuthorName,
+      scene_license: data.sceneLicense,
+      scene_version: data.sceneVersion,
+      scene_author_url: data.sceneAuthorUrl,
+      scene_source_url: data.sceneSourceUrl,
+    };
+
     try {
-      const result = await session.hsApi
-        .send(room.id, RepositoryEvents.Scene, makeTxnId(), {
-          scene_url: data.sceneUrl,
-          scene_preview_url: data.scenePreviewUrl,
-          scene_name: data.sceneName,
-          scene_description: data.sceneDescription,
-          scene_author_name: data.sceneAuthorName,
-          scene_license: data.sceneLicense,
-          scene_version: data.sceneVersion,
-          scene_author_url: data.sceneAuthorUrl,
-          scene_source_url: data.sceneSourceUrl,
-        })
-        .response();
+      const result = await session.hsApi.send(room.id, RepositoryEvents.Scene, makeTxnId(), content).response();
 
       const eventId = result.event_id;
       if (!eventId) return;
 
-      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, eventId, {
-        event_id: eventId,
-      });
+      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, eventId, content);
     } catch (e) {
       console.error(e);
     }

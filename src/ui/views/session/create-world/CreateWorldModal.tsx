@@ -11,12 +11,7 @@ import { getHttpUrl } from "../../../utils/avatar";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { CreateWorldForm, CreateWorldFormProps } from "./CreateWorldForm";
 
-export function CreateWorldModal({
-  session,
-  sceneEvent,
-  onCreate,
-  onClose,
-}: { session: Session } & CreateWorldFormProps) {
+export function CreateWorldModal({ session, scene, onCreate, onClose }: { session: Session } & CreateWorldFormProps) {
   const [scenePreviewUrl, setScenePreviewUrl] = useState<string>();
 
   return (
@@ -27,7 +22,7 @@ export function CreateWorldModal({
             top={<Header left={<HeaderTitle>Create World</HeaderTitle>} />}
             children={
               <CreateWorldForm
-                sceneEvent={sceneEvent}
+                scene={scene}
                 onSceneChange={(sceneUrl, previewUrl) => setScenePreviewUrl(previewUrl)}
                 onCreate={onCreate}
                 onClose={onClose}

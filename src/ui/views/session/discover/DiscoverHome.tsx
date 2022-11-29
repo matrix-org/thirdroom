@@ -21,6 +21,7 @@ interface DiscoverHomeProps {
   permissions: {
     canFeatureRooms: boolean;
     canFeatureWorlds: boolean;
+    canFeatureScenes: boolean;
   };
 }
 export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomeProps) {
@@ -110,7 +111,9 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                           key={stateKey}
                           session={session}
                           roomId={room.id}
-                          eventId={stateEvent.content.event_id}
+                          stateKey={stateKey}
+                          stateEvent={stateEvent}
+                          canEdit={permissions.canFeatureScenes}
                         />
                       ))}
                     </DiscoverGroupGrid>

@@ -108,6 +108,7 @@ export function DiscoverView({ room }: { room: Room }) {
             permissions={{
               canFeatureRooms,
               canFeatureWorlds,
+              canFeatureScenes,
             }}
           />
         ) : (
@@ -119,6 +120,7 @@ export function DiscoverView({ room }: { room: Room }) {
                 permissions={{
                   canFeatureRooms,
                   canFeatureWorlds,
+                  canFeatureScenes,
                 }}
               />
             )}

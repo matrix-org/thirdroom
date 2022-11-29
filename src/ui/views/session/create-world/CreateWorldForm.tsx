@@ -1,5 +1,5 @@
 import { useCallback, useState, FormEvent, ChangeEvent, ReactNode, useEffect } from "react";
-import { RoomVisibility, IBlobHandle, RoomType, Session, TimelineEvent } from "@thirdroom/hydrogen-view-sdk";
+import { RoomVisibility, IBlobHandle, RoomType, Session, StateEvent } from "@thirdroom/hydrogen-view-sdk";
 
 import { Text } from "../../../atoms/text/Text";
 import { Button } from "../../../atoms/button/Button";
@@ -138,20 +138,23 @@ export async function createWorld(
 }
 
 export interface CreateWorldFormProps {
-  sceneEvent?: TimelineEvent;
+  scene?: {
+    roomId: string;
+    event: StateEvent;
+  };
   onSceneChange?: (sceneUrl?: string, scenePreviewUrl?: string) => void;
   onCreate: (roomId: string) => void;
   onClose: () => void;
 }
-export function CreateWorldForm({ sceneEvent, onSceneChange, onCreate, onClose }: CreateWorldFormProps) {
+export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: CreateWorldFormProps) {
   const { session, platform } = useHydrogen(true);
   const userHSDomain = getMxIdDomain(session.userId);
   const isMounted = useIsMounted();
 
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
 
-  const eventSceneUrl = sceneEvent?.content.scene_url;
-  const eventPreviewUrl = sceneEvent?.content.scene_preview_url;
+  const eventSceneUrl = scene?.event?.content.scene_url;
+  const eventPreviewUrl = scene?.event?.content.scene_preview_url;
   const controlledScene =
     typeof eventSceneUrl === "string" && typeof eventPreviewUrl === "string"
       ? {
@@ -190,12 +193,12 @@ export function CreateWorldForm({ sceneEvent, onSceneChange, onCreate, onClose }
       scene_preview_url: selectedScene.previewUrl,
       max_member_object_cap: parseInt(maxObjectCapInput.value) || undefined,
     };
-    if (controlledScene && sceneEvent) {
+    if (controlledScene && scene) {
       content = {
         ...content,
-        ...(sceneEvent?.content ?? {}),
-        scene_event_id: sceneEvent.event_id,
-        scene_room_id: sceneEvent.room_id,
+        ...(scene.event?.content ?? {}),
+        scene_state_key: scene.event.state_key ?? undefined,
+        scene_room_id: scene.roomId,
       };
     }
     handleCreateWorld({
