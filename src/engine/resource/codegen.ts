@@ -405,7 +405,7 @@ function generateJSPropBinding(
   } else {
     chunks.push(generateJSPropGetter(classNameSnake, classNamePascal, propNameCamel, propDef));
 
-    if (propDef.mutable) {
+    if (propDef.mutableScript) {
       chunks.push(generateJSPropSetter(classNameSnake, classNamePascal, propNameCamel, propDef));
     }
   }
@@ -443,7 +443,7 @@ function generateJSPropFunctionListEntries(
       `JS_CFUNC_DEF("delete${propNamePascal}", 1, js_${classNameSnake}_delete_${depluralizedPropNameSnake})`,
     ];
   } else {
-    if (propDef.mutable) {
+    if (propDef.mutableScript) {
       return [
         `JS_CGETSET_DEF("${propName}", js_${classNameSnake}_get_${propNameSnake}, js_${classNameSnake}_set_${propNameSnake})`,
       ];
@@ -453,170 +453,171 @@ function generateJSPropFunctionListEntries(
   }
 }
 
-function generateSceneFunctions(): string {
-  return /* c */ `static JSValue js_scene_nodes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+// function generateSceneFunctions(): string {
+//   return /* c */ `static JSValue js_scene_nodes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  if (!scene) {
-    return JS_EXCEPTION;
-  } else {
-    return JS_NewNodeIterator(ctx, scene->first_node);
-  }
-}
+//   if (!scene) {
+//     return JS_EXCEPTION;
+//   } else {
+//     return JS_NewNodeIterator(ctx, scene->first_node);
+//   }
+// }
 
-static JSValue js_scene_add_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+// static JSValue js_scene_add_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  if (!scene) {
-    return JS_EXCEPTION;
-  }
+//   if (!scene) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-  if (!node) {
-    return JS_EXCEPTION;
-  }
+//   if (!node) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *before;
+//   Node *before;
 
-  if (argc > 1) {
-    before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   if (argc > 1) {
+//     before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-    if (!before) {
-      return JS_EXCEPTION;
-    }
-  }
+//     if (!before) {
+//       return JS_EXCEPTION;
+//     }
+//   }
 
-  if (before) {
-    if (scene_add_node_before(scene, before, node)) {
-      return JS_EXCEPTION;
-    }
+//   if (before) {
+//     if (scene_add_node_before(scene, before, node)) {
+//       return JS_EXCEPTION;
+//     }
 
-    return JS_UNDEFINED;
-  }
+//     return JS_UNDEFINED;
+//   }
 
-  if (scene_append_node(scene, node)) {
-    return JS_EXCEPTION;
-  }
+//   if (scene_append_node(scene, node)) {
+//     return JS_EXCEPTION;
+//   }
 
-  return JS_UNDEFINED;
-}
+//   return JS_UNDEFINED;
+// }
 
-static JSValue js_scene_remove_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+// static JSValue js_scene_remove_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
-  if (!scene) {
-    return JS_EXCEPTION;
-  }
+//   if (!scene) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   Node *node = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-  if (!node) {
-    return JS_EXCEPTION;
-  }
+//   if (!node) {
+//     return JS_EXCEPTION;
+//   }
 
-  if (scene_remove_node(scene, node)) {
-    return JS_EXCEPTION;
-  }
+//   if (scene_remove_node(scene, node)) {
+//     return JS_EXCEPTION;
+//   }
 
-  return JS_UNDEFINED;
-}`;
-}
+//   return JS_UNDEFINED;
+// }`;
+// }
 
-function generateNodeFunctions(): string {
-  return /* c */ `static JSValue js_node_get_parent(JSContext *ctx, JSValueConst this_val) {
-  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+// function generateNodeFunctions(): string {
+//   return /* c */ `static JSValue js_node_get_parent(JSContext *ctx, JSValueConst this_val) {
+//   Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
-  if (!node) {
-    return JS_EXCEPTION;
-  }
+//   if (!node) {
+//     return JS_EXCEPTION;
+//   }
 
-  if (node->parent) {
-    return create_node_from_ptr(ctx, node->parent);
-  } else if (node->parent_scene) {
-    return create_scene_from_ptr(ctx, node->parent_scene);
-  }
+//   if (node->parent) {
+//     return create_node_from_ptr(ctx, node->parent);
+//   } else if (node->parent_scene) {
+//     return create_scene_from_ptr(ctx, node->parent_scene);
+//   }
 
-  return JS_UNDEFINED;
-}
+//   return JS_UNDEFINED;
+// }
 
-static JSValue js_node_children(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+// static JSValue js_node_children(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
-  if (!node) {
-    return JS_EXCEPTION;
-  } else {
-    return JS_NewNodeIterator(ctx, node->first_child);
-  }
-}
+//   if (!node) {
+//     return JS_EXCEPTION;
+//   } else {
+//     return JS_NewNodeIterator(ctx, node->first_child);
+//   }
+// }
 
-static JSValue js_node_add_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+// static JSValue js_node_add_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
-  if (!parent) {
-    return JS_EXCEPTION;
-  }
+//   if (!parent) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-  if (!child) {
-    return JS_EXCEPTION;
-  }
+//   if (!child) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *before;
+//   Node *before;
 
-  if (argc > 1) {
-    before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   if (argc > 1) {
+//     before = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-    if (!before) {
-      return JS_EXCEPTION;
-    }
-  }
+//     if (!before) {
+//       return JS_EXCEPTION;
+//     }
+//   }
 
-  if (before) {
-    if (node_add_child_before(parent, before, child)) {
-      return JS_EXCEPTION;
-    }
+//   if (before) {
+//     if (node_add_child_before(parent, before, child)) {
+//       return JS_EXCEPTION;
+//     }
 
-    return JS_UNDEFINED;
-  }
+//     return JS_UNDEFINED;
+//   }
 
-  if (node_append_child(parent, child)) {
-    return JS_EXCEPTION;
-  }
+//   if (node_append_child(parent, child)) {
+//     return JS_EXCEPTION;
+//   }
 
-  return JS_UNDEFINED;
-}
+//   return JS_UNDEFINED;
+// }
 
-static JSValue js_node_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+// static JSValue js_node_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   Node *parent = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
-  if (!parent) {
-    return JS_EXCEPTION;
-  }
+//   if (!parent) {
+//     return JS_EXCEPTION;
+//   }
 
-  Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
+//   Node *child = JS_GetOpaque2(ctx, argv[0], js_node_class_id);
 
-  if (!child) {
-    return JS_EXCEPTION;
-  }
+//   if (!child) {
+//     return JS_EXCEPTION;
+//   }
 
-  if (node_remove_child(parent, child)) {
-    return JS_EXCEPTION;
-  }
+//   if (node_remove_child(parent, child)) {
+//     return JS_EXCEPTION;
+//   }
 
-  return JS_UNDEFINED;
-}`;
-}
+//   return JS_UNDEFINED;
+// }`;
+// }
 
 function generateResourceSpecificFunctions(resourceDef: ResourceDefinition): string {
   const chunks: string[] = [];
 
-  if (resourceDef.name === "scene") {
-    chunks.push(generateSceneFunctions());
-  } else if (resourceDef.name === "node") {
-    chunks.push(generateNodeFunctions());
-  }
+  // TODO:
+  // if (resourceDef.name === "scene") {
+  //   chunks.push(generateSceneFunctions());
+  // } else if (resourceDef.name === "node") {
+  //   chunks.push(generateNodeFunctions());
+  // }
 
   return chunks.join("\n");
 }
@@ -624,20 +625,21 @@ function generateResourceSpecificFunctions(resourceDef: ResourceDefinition): str
 function generateResourceSpecificFunctionListEntries(resourceDef: ResourceDefinition): string[] {
   const entries: string[] = [];
 
-  if (resourceDef.name === "scene") {
-    entries.push(
-      `JS_CFUNC_DEF("nodes", 0, js_scene_nodes)`,
-      `JS_CFUNC_DEF("addNode", 2, js_scene_add_node)`,
-      `JS_CFUNC_DEF("removeNode", 1, js_scene_remove_node)`
-    );
-  } else if (resourceDef.name === "node") {
-    entries.push(
-      `JS_CGETSET_DEF("parent", js_node_get_parent, NULL)`,
-      `JS_CFUNC_DEF("children", 0, js_node_children)`,
-      `JS_CFUNC_DEF("addChild", 2, js_node_add_child)`,
-      `JS_CFUNC_DEF("removeChild", 1, js_node_remove_child)`
-    );
-  }
+  // TODO: Re-enable
+  // if (resourceDef.name === "scene") {
+  //   entries.push(
+  //     `JS_CFUNC_DEF("nodes", 0, js_scene_nodes)`,
+  //     `JS_CFUNC_DEF("addNode", 2, js_scene_add_node)`,
+  //     `JS_CFUNC_DEF("removeNode", 1, js_scene_remove_node)`
+  //   );
+  // } else if (resourceDef.name === "node") {
+  //   entries.push(
+  //     `JS_CGETSET_DEF("parent", js_node_get_parent, NULL)`,
+  //     `JS_CFUNC_DEF("children", 0, js_node_children)`,
+  //     `JS_CFUNC_DEF("addChild", 2, js_node_add_child)`,
+  //     `JS_CFUNC_DEF("removeChild", 1, js_node_remove_child)`
+  //   );
+  // }
 
   return entries;
 }
@@ -704,29 +706,7 @@ static JSValue js_${classNameSnake}_constructor(JSContext *ctx, JSValueConst new
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(${classNameSnake});
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_${classNameSnake}_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(${classNameSnake});
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  ${generateArrayPropDefinitions(resourceDef)}
-
-  JS_SetOpaque(val, ${classNameSnake});
-  set_js_val_from_ptr(ctx, ${classNameSnake}, val);
-
-  return val;
+  return create_${classNameSnake}_from_ptr(ctx, ${classNameSnake});
 }
 
 ${Object.entries(resourceDef.schema)

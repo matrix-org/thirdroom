@@ -29,30 +29,7 @@ static JSValue js_light_map_constructor(JSContext *ctx, JSValueConst new_target,
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(light_map);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_light_map_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(light_map);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "offset", light_map->offset, 2);
-JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "scale", light_map->scale, 2);
-
-  JS_SetOpaque(val, light_map);
-  set_js_val_from_ptr(ctx, light_map, val);
-
-  return val;
+  return create_light_map_from_ptr(ctx, light_map);
 }
 
 

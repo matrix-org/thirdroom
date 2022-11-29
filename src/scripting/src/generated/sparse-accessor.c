@@ -29,29 +29,7 @@ static JSValue js_sparse_accessor_constructor(JSContext *ctx, JSValueConst new_t
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(sparse_accessor);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_sparse_accessor_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(sparse_accessor);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, sparse_accessor);
-  set_js_val_from_ptr(ctx, sparse_accessor, val);
-
-  return val;
+  return create_sparse_accessor_from_ptr(ctx, sparse_accessor);
 }
 
 

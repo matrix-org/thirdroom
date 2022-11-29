@@ -19,7 +19,7 @@ JSValue get_js_val_from_ptr(JSContext *ctx, void *ptr) {
 
 int set_js_val_from_ptr(JSContext *ctx, void *ptr, JSValue val) {
   ScriptContext *script = JS_GetContextOpaque(ctx);
-  return JS_SetPropertyUint32(ctx, script->ptr_to_val, (uint32_t)ptr, val);
+  return JS_SetPropertyUint32(ctx, script->ptr_to_val, (uint32_t)ptr, JS_DupValue(ctx, val));
 }
 
 int delete_js_val_from_ptr(JSContext *ctx, void *ptr) {

@@ -29,29 +29,7 @@ static JSValue js_instanced_mesh_constructor(JSContext *ctx, JSValueConst new_ta
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(instanced_mesh);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_instanced_mesh_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(instanced_mesh);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, instanced_mesh);
-  set_js_val_from_ptr(ctx, instanced_mesh, val);
-
-  return val;
+  return create_instanced_mesh_from_ptr(ctx, instanced_mesh);
 }
 
 

@@ -29,31 +29,7 @@ static JSValue js_material_constructor(JSContext *ctx, JSValueConst new_target, 
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(material);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_material_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(material);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "baseColorFactor", material->base_color_factor, 4);
-JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "emissiveFactor", material->emissive_factor, 3);
-JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "attenuationColor", material->attenuation_color, 3);
-
-  JS_SetOpaque(val, material);
-  set_js_val_from_ptr(ctx, material, val);
-
-  return val;
+  return create_material_from_ptr(ctx, material);
 }
 
 

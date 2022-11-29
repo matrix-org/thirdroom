@@ -23,6 +23,7 @@
 #include "light-map.h"
 #include "tiles-renderer.h"
 #include "skin.h"
+#include "interactable.h"
 #include "node.h"
 #include "scene.h"
 
@@ -50,6 +51,7 @@ void js_define_websg_api(JSContext *ctx, JSValue *global) {
   js_define_light_map_api(ctx, &jsSceneGraphNamespace);
   js_define_tiles_renderer_api(ctx, &jsSceneGraphNamespace);
   js_define_skin_api(ctx, &jsSceneGraphNamespace);
+  js_define_interactable_api(ctx, &jsSceneGraphNamespace);
   js_define_node_api(ctx, &jsSceneGraphNamespace);
   js_define_scene_api(ctx, &jsSceneGraphNamespace);
   JS_SetPropertyStr(ctx, *global, "WebSG", jsSceneGraphNamespace);

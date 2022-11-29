@@ -79,11 +79,16 @@ import {
   Script,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
-import { ImageResource, SamplerMapping, SamplerResource, TextureResource } from "../../engine/resource/schema";
+import {
+  ImageResource,
+  InteractableType,
+  SamplerMapping,
+  SamplerResource,
+  TextureResource,
+} from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
-import { InteractableType } from "../interaction/interaction.common";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;

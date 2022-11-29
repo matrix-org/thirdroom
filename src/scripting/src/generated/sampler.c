@@ -28,29 +28,7 @@ static JSValue js_sampler_constructor(JSContext *ctx, JSValueConst new_target, i
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(sampler);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_sampler_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(sampler);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, sampler);
-  set_js_val_from_ptr(ctx, sampler, val);
-
-  return val;
+  return create_sampler_from_ptr(ctx, sampler);
 }
 
 

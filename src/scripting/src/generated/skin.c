@@ -30,29 +30,7 @@ static JSValue js_skin_constructor(JSContext *ctx, JSValueConst new_target, int 
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(skin);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_skin_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(skin);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, skin);
-  set_js_val_from_ptr(ctx, skin, val);
-
-  return val;
+  return create_skin_from_ptr(ctx, skin);
 }
 
 

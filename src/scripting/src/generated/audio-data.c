@@ -29,29 +29,7 @@ static JSValue js_audio_data_constructor(JSContext *ctx, JSValueConst new_target
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(audio_data);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_audio_data_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(audio_data);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, audio_data);
-  set_js_val_from_ptr(ctx, audio_data, val);
-
-  return val;
+  return create_audio_data_from_ptr(ctx, audio_data);
 }
 
 

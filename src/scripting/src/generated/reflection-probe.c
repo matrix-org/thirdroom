@@ -29,29 +29,7 @@ static JSValue js_reflection_probe_constructor(JSContext *ctx, JSValueConst new_
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(reflection_probe);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_reflection_probe_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(reflection_probe);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "size", reflection_probe->size, 3);
-
-  JS_SetOpaque(val, reflection_probe);
-  set_js_val_from_ptr(ctx, reflection_probe, val);
-
-  return val;
+  return create_reflection_probe_from_ptr(ctx, reflection_probe);
 }
 
 

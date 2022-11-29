@@ -328,27 +328,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   }
 
   createImports(): WebAssembly.Imports {
-    const printCharBuffers: (number[] | null)[] = [null, [], []];
-
-    const printChar = (stream: number, curr: number) => {
-      const buffer = printCharBuffers[stream];
-
-      if (!buffer) {
-        throw new Error("buffer doesn't exist");
-      }
-
-      if (curr === 0 || curr === 10) {
-        if (stream === 1) {
-          console.log(this.textDecoder.decode(new Uint8Array(buffer)));
-        } else {
-          console.error(this.textDecoder.decode(new Uint8Array(buffer)));
-        }
-        buffer.length = 0;
-      } else {
-        buffer.push(curr);
-      }
-    };
-
     return {
       env: {
         memory: this.memory,
@@ -433,18 +412,25 @@ export class ScriptResourceManager implements IRemoteResourceManager {
           return 70;
         },
         fd_write: (fd: number, iov: number, iovcnt: number, pnum: number) => {
-          // hack to support printf in SYSCALLS_REQUIRE_FILESYSTEM=0
+          const out: string[] = [];
           let num = 0;
           for (let i = 0; i < iovcnt; i++) {
-            const ptr = this.U32Heap[iov >> 2];
-            const len = this.U32Heap[(iov + 4) >> 2];
-            iov += 8;
-            for (let j = 0; j < len; j++) {
-              printChar(fd, this.U8Heap[ptr + j]);
-            }
+            const iovPtr = iov + i * 8;
+            const ptr = this.U32Heap[iovPtr >> 2];
+            const len = this.U32Heap[(iovPtr + 4) >> 2];
+            const str = this.textDecoder.decode(this.U8Heap.slice(ptr, ptr + len));
+            out.push(str);
+
             num += len;
           }
           this.U32Heap[pnum >> 2] = num;
+
+          if (fd === 1) {
+            console.log(...out);
+          } else {
+            console.error(...out);
+          }
+
           return 0;
         },
         fd_close: () => {

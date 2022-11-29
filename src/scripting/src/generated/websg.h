@@ -15,8 +15,6 @@ typedef struct _Skin Skin;
 
 typedef struct _Node Node;
 
-typedef struct _Scene Scene;
-
 typedef enum ResourceType {
   ResourceType_Unknown = 0,
   ResourceType_Nametag = 1,
@@ -41,8 +39,9 @@ typedef enum ResourceType {
   ResourceType_LightMap = 20,
   ResourceType_TilesRenderer = 21,
   ResourceType_Skin = 22,
-  ResourceType_Node = 23,
-  ResourceType_Scene = 24,
+  ResourceType_Interactable = 23,
+  ResourceType_Node = 24,
+  ResourceType_Scene = 25,
 } ResourceType;
 
 typedef struct Nametag {
@@ -340,11 +339,7 @@ typedef enum InstancedMeshAttributeIndex {
 } InstancedMeshAttributeIndex;
 
 typedef struct MeshPrimitive {
-  const char *name;
-  Accessor *attributes[16];
-  Accessor *indices;
   Material *material;
-  MeshPrimitiveMode mode;
 } MeshPrimitive;
 
 typedef struct InstancedMesh {
@@ -375,36 +370,29 @@ typedef struct _Skin {
   Accessor *inverse_bind_matrices;
 } Skin;
 
-typedef struct _Node {
-  unsigned int eid;
+typedef enum InteractableType {
+  InteractableType_Interactable = 1,
+  InteractableType_Grabbable = 2,
+  InteractableType_Player = 3,
+  InteractableType_Portal = 4,
+} InteractableType;
+
+typedef struct Interactable {
   const char *name;
-  Scene *parent_scene;
-  Node *parent;
-  Node *first_child;
-  Node *prev_sibling;
-  Node *next_sibling;
-  float_t position[3];
-  float_t quaternion[4];
-  float_t scale[3];
-  float_t local_matrix[16];
-  float_t world_matrix[16];
-  int visible;
-  int enabled;
-  int is_static;
-  unsigned int layers;
+  InteractableType type;
+  int pressed;
+  int held;
+  int released;
+} Interactable;
+
+typedef struct _Node {
+  const char *name;
   Mesh *mesh;
-  InstancedMesh *instanced_mesh;
-  LightMap *light_map;
-  Skin *skin;
   Light *light;
-  ReflectionProbe *reflection_probe;
-  Camera *camera;
-  AudioEmitter *audio_emitter;
-  TilesRenderer *tiles_renderer;
-  Nametag *nametag;
+  Interactable *interactable;
 } Node;
 
-typedef struct _Scene {
+typedef struct Scene {
   const char *name;
   Texture *background_texture;
   ReflectionProbe *reflection_probe;

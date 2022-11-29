@@ -4,8 +4,8 @@ import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/Objec
 import { ResourceId } from "../resource/resource.common";
 import { MeshPrimitiveMode } from "../resource/schema";
 
-export const MeshResourceType = "mesh";
-export const MeshPrimitiveResourceType = "mesh-primitive";
+export const MeshResourceType = "old-mesh";
+export const MeshPrimitiveResourceType = "old-mesh-primitive";
 export const InstancedMeshResourceType = "instanced-mesh";
 export const LightMapResourceType = "light-map";
 export const SkinnedMeshResourceType = "skinned-mesh";

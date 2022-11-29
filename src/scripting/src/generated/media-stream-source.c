@@ -28,29 +28,7 @@ static JSValue js_media_stream_source_constructor(JSContext *ctx, JSValueConst n
     return JS_EXCEPTION;
   }
 
-  JSValue proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-
-  if (JS_IsException(proto)) {
-    websg_dispose_resource(media_stream_source);
-    JS_FreeValue(ctx, proto);
-    return JS_EXCEPTION;
-  }
-
-  JSValue val = JS_NewObjectProtoClass(ctx, proto, js_media_stream_source_class_id);
-  JS_FreeValue(ctx, proto);
-
-  if (JS_IsException(val)) {
-    websg_dispose_resource(media_stream_source);
-    JS_FreeValue(ctx, val);
-    return JS_EXCEPTION;
-  }
-
-  
-
-  JS_SetOpaque(val, media_stream_source);
-  set_js_val_from_ptr(ctx, media_stream_source, val);
-
-  return val;
+  return create_media_stream_source_from_ptr(ctx, media_stream_source);
 }
 
 
