@@ -66,7 +66,7 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
 
   rendererSceneBufferView.backgroundTexture[0] = props?.backgroundTexture ? props.backgroundTexture.resourceId : 0;
   rendererSceneBufferView.reflectionProbe[0] = props?.reflectionProbe ? props.reflectionProbe.resourceId : 0;
-  rendererSceneBufferView.bloomStrength[0] = props?.bloomStrength !== undefined ? props.bloomStrength : 0.2;
+  rendererSceneBufferView.bloomStrength[0] = props?.bloomStrength !== undefined ? props.bloomStrength : 0.4;
 
   audioSceneBufferView.audioEmitters.set(props?.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : []);
 
