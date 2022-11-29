@@ -49,7 +49,11 @@ export async function onLoadLocalSceneResource(
   return localSceneResource;
 }
 
-export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
+export function updateLocalSceneResources(
+  ctx: RenderThreadState,
+  scenes: LocalSceneResource[],
+  activeSceneResourceId: number
+) {
   for (let i = scenes.length - 1; i >= 0; i--) {
     const sceneResource = scenes[i];
 
@@ -60,7 +64,7 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
   for (let i = 0; i < scenes.length; i++) {
     const sceneResource = scenes[i];
-    const { scene, rendererSceneTripleBuffer, backgroundTexture } = sceneResource;
+    const { scene, rendererSceneTripleBuffer, backgroundTexture, resourceId } = sceneResource;
 
     const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
 
@@ -86,7 +90,9 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
     const rendererModule = getModule(ctx, RendererModule);
 
-    rendererModule.renderPipeline.bloomPass.strength = sceneView.bloomStrength[0];
+    if (resourceId === activeSceneResourceId) {
+      rendererModule.renderPipeline.bloomPass.strength = sceneView.bloomStrength[0];
+    }
 
     updateSceneReflectionProbe(ctx, sceneResource, sceneView);
   }

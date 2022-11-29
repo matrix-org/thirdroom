@@ -239,8 +239,6 @@ export async function inflateGLTFScene(
 
   const bloomStrength = getPostprocessingBloomStrength(scene);
 
-  console.log(bloomStrength);
-
   addRemoteSceneComponent(ctx, sceneEid, {
     audioEmitters,
     reflectionProbe,
