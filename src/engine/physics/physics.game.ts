@@ -1,13 +1,4 @@
-import {
-  defineComponent,
-  defineQuery,
-  addComponent,
-  removeComponent,
-  enterQuery,
-  exitQuery,
-  Types,
-  pipe,
-} from "bitecs";
+import { defineComponent, defineQuery, addComponent, removeComponent, enterQuery, exitQuery, Types } from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
@@ -212,5 +203,3 @@ export function StepPhysicsSystem(ctx: GameState) {
     }
   });
 }
-
-export const PhysicsSystem = pipe(StepPhysicsSystem, SyncPhysicsSystem);

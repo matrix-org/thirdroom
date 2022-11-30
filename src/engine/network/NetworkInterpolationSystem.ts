@@ -209,7 +209,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
 
     const ratio = (targetElapsed - fromTime) / (toTime - fromTime);
 
-    historian.fractionOfTimePassed = clamp(-1, 1, ratio || 0.1);
+    historian.fractionOfTimePassed = clamp(0, 1, ratio);
   }
 }
 
