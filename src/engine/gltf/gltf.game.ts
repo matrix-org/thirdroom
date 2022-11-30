@@ -383,7 +383,8 @@ async function _inflateGLTFNode(
         results.light ||
         results.audioEmitter ||
         results.reflectionProbe ||
-        hasTilesRendererExtension(node))
+        hasTilesRendererExtension(node) ||
+        nodeHasCollider(node))
     ) {
       addRemoteNodeComponent(ctx, nodeEid, {
         ...(results as any),
