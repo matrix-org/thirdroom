@@ -44,6 +44,9 @@ export interface RemoteScene {
   set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined);
   get audioEmitters(): RemoteGlobalAudioEmitter[];
   set audioEmitters(emitters: RemoteGlobalAudioEmitter[]);
+  // TODO: move to postprocessing resource
+  get bloomStrength(): number;
+  set bloomStrength(value: number);
 }
 
 export interface SceneProps {
@@ -51,6 +54,7 @@ export interface SceneProps {
   audioEmitters?: RemoteGlobalAudioEmitter[];
   backgroundTexture?: RemoteTexture;
   reflectionProbe?: RemoteReflectionProbe;
+  bloomStrength?: number;
 }
 
 export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: SceneProps): RemoteScene {
@@ -62,6 +66,7 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
 
   rendererSceneBufferView.backgroundTexture[0] = props?.backgroundTexture ? props.backgroundTexture.resourceId : 0;
   rendererSceneBufferView.reflectionProbe[0] = props?.reflectionProbe ? props.reflectionProbe.resourceId : 0;
+  rendererSceneBufferView.bloomStrength[0] = props?.bloomStrength !== undefined ? props.bloomStrength : 0.4;
 
   audioSceneBufferView.audioEmitters.set(props?.audioEmitters ? props.audioEmitters.map((e) => e.resourceId) : []);
 
@@ -178,6 +183,12 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
 
       _audioEmitters = emitters;
       audioSceneBufferView.audioEmitters.set(emitters.map((e) => e.resourceId));
+    },
+    get bloomStrength(): number {
+      return rendererSceneBufferView.bloomStrength[0];
+    },
+    set bloomStrength(value: number) {
+      rendererSceneBufferView.bloomStrength[0] = value;
     },
   };
 

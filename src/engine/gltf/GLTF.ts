@@ -570,6 +570,7 @@ export interface GLTFScene {
   extensions?: {
     [key: string]: any;
     MX_reflection_probes?: GLTFReflectionProbeRef;
+    MX_postprocessing?: GLTFPostprocessingExtension;
   };
   extras?: any;
   [k: string]: any;
@@ -795,4 +796,12 @@ export interface GLTFReflectionProbe {
 
 export interface GLTFRootReflectionProbesExtension {
   reflectionProbes: GLTFReflectionProbe[];
+}
+
+export interface GLTFBloomEffect {
+  strength: number;
+}
+
+export interface GLTFPostprocessingExtension {
+  bloom?: GLTFBloomEffect;
 }
