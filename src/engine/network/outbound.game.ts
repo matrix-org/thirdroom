@@ -175,8 +175,21 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
   return ctx;
 };
 
+let then = performance.now();
+let delta = 0;
 export function OutboundNetworkSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
+
+  // throttle by network tickRate
+  if (network.authoritative && isHost(network)) {
+    const target = 1000 / network.tickRate;
+    delta += performance.now() - then;
+    then = performance.now();
+    if (delta <= target) {
+      return;
+    }
+    delta = delta % target;
+  }
 
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
   if (!hasPeerIdIndex) return ctx;

@@ -38,7 +38,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-// import { Action, ActionState } from "../input/ActionMappingSystem";
+import { tickRate } from "../config.common";
 
 /*********
  * Types *
@@ -63,6 +63,7 @@ export interface GameNetworkState {
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: NetPipeData) => void };
   cursorView: CursorView;
+  tickRate: number;
   // feature flags
   interpolate: boolean;
   clientSidePrediction: boolean;
@@ -100,6 +101,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
+      tickRate: tickRate,
       interpolate: true,
       clientSidePrediction: true,
       authoritative,
