@@ -1,4 +1,4 @@
-import { NOOP } from "../config.common";
+import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { createCommandsMessage } from "./commands.game";
@@ -181,7 +181,7 @@ export function OutboundNetworkSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
 
   // throttle by network tickRate
-  if (network.authoritative && isHost(network)) {
+  if (network.authoritative && isHost(network) && network.tickRate !== tickRate) {
     const target = 1000 / network.tickRate;
     delta += performance.now() - then;
     then = performance.now();
