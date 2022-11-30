@@ -225,7 +225,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 
 /* Create */
 export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(ctx, prefab);
+  const eid = createPrefabEntity(ctx, prefab, { nametag: prefab === "avatar" });
 
   // assign networkId
   addComponent(ctx.world, Networked, eid, true);

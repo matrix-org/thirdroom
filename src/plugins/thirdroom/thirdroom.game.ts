@@ -493,7 +493,7 @@ function loadRemotePlayerRig(
   network: GameNetworkState,
   peerId: string
 ) {
-  const eid = createPrefabEntity(ctx, "avatar");
+  const eid = createPrefabEntity(ctx, "avatar", { nametag: true });
 
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, eid);
