@@ -88,6 +88,7 @@ import {
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
+import { getPostprocessingBloomStrength } from "./MX_postprocessing";
 
 export interface GLTFResource {
   url: string;
@@ -236,10 +237,13 @@ export async function inflateGLTFScene(
     addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions });
   }
 
+  const bloomStrength = getPostprocessingBloomStrength(scene);
+
   addRemoteSceneComponent(ctx, sceneEid, {
     audioEmitters,
     reflectionProbe,
     backgroundTexture,
+    bloomStrength,
   });
 
   if (hasHubsComponentsExtension(resource.root)) {
@@ -379,7 +383,8 @@ async function _inflateGLTFNode(
         results.light ||
         results.audioEmitter ||
         results.reflectionProbe ||
-        hasTilesRendererExtension(node))
+        hasTilesRendererExtension(node) ||
+        nodeHasCollider(node))
     ) {
       addRemoteNodeComponent(ctx, nodeEid, {
         ...(results as any),
