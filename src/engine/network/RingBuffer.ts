@@ -28,8 +28,8 @@ export interface NetworkRingBuffer<T extends TypedArrayConstructor> extends Ring
   view: CursorView;
 }
 
-// 1KB allowed per packet * 1000 slots in the ring buffer = 1MB total preallocated
-const MAX_PACKET_SIZE = 1000;
+// 10KB allowed per packet * 1000 slots in the ring buffer = 10MB total preallocated
+const MAX_PACKET_SIZE = 10000;
 
 export function createNetworkRingBuffer<T extends TypedArrayConstructor>(
   type: T,

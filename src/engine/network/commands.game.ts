@@ -18,7 +18,8 @@ import { NetworkAction } from "./NetworkAction";
 import { NetPipeData, writeMetadata } from "./serialization.game";
 
 const MAX_MESSAGES = 1000;
-const MESSAGE_SIZE = 2 * Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
+const MESSAGE_SIZE =
+  2 * Uint8Array.BYTES_PER_ELEMENT + Uint16Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT * 10;
 
 const writeView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
 
