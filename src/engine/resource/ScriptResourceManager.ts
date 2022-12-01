@@ -332,6 +332,14 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       env: {
         memory: this.memory,
       },
+      thirdroom: {
+        enable_matrix_material: (enabled: number) => {
+          this.ctx.sendMessage(Thread.Render, {
+            type: "enable-matrix-material",
+            enabled: !!enabled,
+          });
+        },
+      },
       websg: {
         get_resource_by_name: (resourceType: number, namePtr: number) => {
           const resources = this.resources;

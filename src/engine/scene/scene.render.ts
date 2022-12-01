@@ -1,4 +1,4 @@
-import { Scene } from "three";
+import { Color, Scene } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
@@ -49,6 +49,8 @@ export async function onLoadLocalSceneResource(
   return localSceneResource;
 }
 
+const blackBackground = new Color(0x000000);
+
 export function updateLocalSceneResources(
   ctx: RenderThreadState,
   scenes: LocalSceneResource[],
@@ -95,5 +97,13 @@ export function updateLocalSceneResources(
     }
 
     updateSceneReflectionProbe(ctx, sceneResource, sceneView);
+
+    if (rendererModule.enableMatrixMaterial) {
+      scene.overrideMaterial = rendererModule.matrixMaterial;
+      scene.background = blackBackground;
+    } else {
+      scene.overrideMaterial = null;
+      scene.background = sceneResource.backgroundTexture?.texture || null;
+    }
   }
 }
