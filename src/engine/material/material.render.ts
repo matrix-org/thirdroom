@@ -30,6 +30,7 @@ import {
 } from "../resource/schema";
 import { RendererTextureResource } from "../texture/texture.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
+import { MatrixMaterial } from "./MatrixMaterial";
 
 export type PrimitiveUnlitMaterial = MeshBasicMaterial | LineBasicMaterial | PointsMaterial;
 export type PrimitiveStandardMaterial =
@@ -37,7 +38,7 @@ export type PrimitiveStandardMaterial =
   | MeshPhysicalMaterial
   | LineBasicMaterial
   | PointsMaterial;
-export type PrimitiveMaterial = PrimitiveStandardMaterial | PrimitiveUnlitMaterial;
+export type PrimitiveMaterial = PrimitiveStandardMaterial | PrimitiveUnlitMaterial | MatrixMaterial;
 
 interface MaterialCacheEntry {
   mode: MeshPrimitiveMode;
@@ -361,7 +362,11 @@ export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
 
     for (let j = 0; j < materialCache.length; j++) {
       const { useDerivativeTangents, material } = materialCache[j];
-      material.color.fromArray(localMaterial.baseColorFactor);
+
+      if (!("isMatrixMaterial" in material)) {
+        material.color.fromArray(localMaterial.baseColorFactor);
+      }
+
       material.opacity = localMaterial.baseColorFactor[3];
       material.side = localMaterial.doubleSided ? DoubleSide : FrontSide;
       material.transparent = localMaterial.alphaMode === MaterialAlphaMode.BLEND;

@@ -31,6 +31,7 @@ import {
   PrimitiveMaterial,
   RendererMaterialResource,
 } from "../material/material.render";
+import { MatrixMaterial } from "../material/MatrixMaterial";
 import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
@@ -434,6 +435,12 @@ function createMeshPrimitiveObject(
 
     mesh.onBeforeRender = (renderer, scene, camera, geometry, material) => {
       const meshMaterial = material as MeshStandardMaterial;
+
+      const matrixMaterial = meshMaterial as unknown as MatrixMaterial;
+
+      if (matrixMaterial.isMatrixMaterial) {
+        matrixMaterial.update(ctx.elapsed / 1000, mesh);
+      }
 
       if (!meshMaterial.isMeshStandardMaterial) {
         return;
