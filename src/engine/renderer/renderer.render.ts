@@ -74,6 +74,7 @@ import {
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
+import { MatrixMaterial } from "../material/MatrixMaterial";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -102,6 +103,8 @@ export interface RendererModuleState {
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
   sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
+  matrixMaterial: MatrixMaterial;
+  enableMatrixMaterial: boolean;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -158,6 +161,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     pmremGenerator.compileEquirectangularShader();
 
+    const imageBitmapLoader = new ImageBitmapLoader();
+
+    const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
+
     return {
       needsResize: true,
       renderer,
@@ -169,7 +176,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       directionalLights: [],
       pointLights: [],
       spotLights: [],
-      imageBitmapLoader: new ImageBitmapLoader(),
+      imageBitmapLoader,
       imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
         imageOrientation: "flipY",
       }),
@@ -182,6 +189,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       pmremGenerator,
       tilesRenderers: [],
       sceneRenderedRequests: [],
+      matrixMaterial,
+      enableMatrixMaterial: false,
     };
   },
   init(ctx) {
@@ -210,6 +219,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
+      registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },
 });
@@ -266,6 +276,10 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
   const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
 
+  if (activeSceneResourceId !== rendererModule.prevSceneResource) {
+    rendererModule.enableMatrixMaterial = false;
+  }
+
   if (
     activeCameraNode &&
     activeCameraNode.cameraObject &&
@@ -286,6 +300,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
     rendererModule.prevCameraResource = activeCameraResourceId;
+    rendererModule.prevSceneResource = activeSceneResourceId;
   }
 
   updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
@@ -311,4 +326,9 @@ export function RendererSystem(ctx: RenderThreadState) {
       rendererModule.sceneRenderedRequests.splice(i, 1);
     }
   }
+}
+
+function onEnableMatrixMaterial(ctx: RenderThreadState, message: any) {
+  const renderer = getModule(ctx, RendererModule);
+  renderer.enableMatrixMaterial = message.enabled;
 }
