@@ -186,7 +186,7 @@ export function OutboundNetworkSystem(ctx: GameState) {
     delta += performance.now() - then;
     then = performance.now();
     if (delta <= target) {
-      return;
+      return ctx;
     }
     delta = delta % target;
   }

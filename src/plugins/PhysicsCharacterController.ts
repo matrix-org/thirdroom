@@ -15,7 +15,6 @@ import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
-import { GameNetworkState } from "../engine/network/network.game";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
@@ -144,7 +143,6 @@ export function addPhysicsControls(ctx: GameState, eid: number) {
 function updatePhysicsControls(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  network: GameNetworkState,
   controller: InputController,
   rig: number
 ) {
@@ -250,6 +248,6 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const controller = getInputController(input, eid);
-    updatePhysicsControls(ctx, physics, network, controller, eid);
+    updatePhysicsControls(ctx, physics, controller, eid);
   }
 };
