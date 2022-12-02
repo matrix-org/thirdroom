@@ -269,6 +269,24 @@ export function InteractionSystem(ctx: GameState) {
     }
   }
 
+  const interactableEntities = interactableQuery(ctx.world);
+
+  for (let i = 0; i < interactableEntities.length; i++) {
+    const eid = interactableEntities[i];
+
+    if (Interactable.type[eid] !== InteractableType.Interactable) {
+      continue;
+    }
+
+    const remoteNode = RemoteNodeComponent.get(eid);
+    const interactable = remoteNode?.scriptNode?.interactable;
+
+    if (interactable) {
+      interactable.pressed = false;
+      interactable.released = false;
+    }
+  }
+
   const rigs = inputControllerQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
@@ -501,26 +519,6 @@ function updateGrabThrow(
         interactable.pressed = false;
         interactable.released = true;
         interactable.held = false;
-      }
-    }
-  }
-
-  if (!grabPressed && !grabReleased) {
-    const interactableEntities = interactableQuery(ctx.world);
-
-    for (let i = 0; i < interactableEntities.length; i++) {
-      const eid = interactableEntities[i];
-
-      if (Interactable.type[eid] !== InteractableType.Interactable) {
-        continue;
-      }
-
-      const remoteNode = RemoteNodeComponent.get(eid);
-      const interactable = remoteNode?.scriptNode?.interactable;
-
-      if (interactable) {
-        interactable.pressed = false;
-        interactable.released = false;
       }
     }
   }
