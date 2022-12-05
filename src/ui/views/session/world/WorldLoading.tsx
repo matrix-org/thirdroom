@@ -185,7 +185,10 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
 
       const handleLoad = (event: StateEvent | undefined) => {
         loadWorld(world.id, event)
-          .then(() => setWorld(world.id))
+          .then(() => {
+            setWorld("");
+            setWorld(world.id);
+          })
           .catch((err: Error) => {
             setError(err);
           });
