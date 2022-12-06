@@ -200,6 +200,7 @@ const InteractionActionMap: ActionMap = {
 
 export const Interactable = defineComponent({
   type: Types.ui8,
+  interactionDistance: Types.f32,
 });
 
 const FocusComponent = defineComponent({
@@ -275,6 +276,24 @@ export function InteractionSystem(ctx: GameState) {
     }
   }
 
+  const interactableEntities = interactableQuery(ctx.world);
+
+  for (let i = 0; i < interactableEntities.length; i++) {
+    const eid = interactableEntities[i];
+
+    if (Interactable.type[eid] !== InteractableType.Interactable) {
+      continue;
+    }
+
+    const remoteNode = RemoteNodeComponent.get(eid);
+    const interactable = remoteNode?.scriptNode?.interactable;
+
+    if (interactable) {
+      interactable.pressed = false;
+      interactable.released = false;
+    }
+  }
+
   const rigs = inputControllerQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
@@ -314,7 +333,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
     shapeCastRotation,
     t,
     colliderShape,
-    1.0,
+    10.0,
     focusShapeCastCollisionGroups
   );
 
@@ -324,7 +343,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
     eid = physics.handleToEid.get(hit.colliderHandle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
-    } else {
+    } else if (hit.toi <= Interactable.interactionDistance[eid]) {
       addComponent(ctx.world, FocusComponent, rig);
       FocusComponent.focusedEntity[rig] = eid;
     }
@@ -438,7 +457,7 @@ function updateGrabThrow(
       shapeCastRotation,
       t,
       colliderShape,
-      1.0,
+      10.0,
       grabShapeCastCollisionGroups
     );
 
@@ -447,7 +466,7 @@ function updateGrabThrow(
 
       if (!eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
-      } else {
+      } else if (shapecastHit.toi <= Interactable.interactionDistance[eid]) {
         if (Interactable.type[eid] === InteractableType.Grabbable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
 
@@ -507,26 +526,6 @@ function updateGrabThrow(
         interactable.pressed = false;
         interactable.released = true;
         interactable.held = false;
-      }
-    }
-  }
-
-  if (!grabPressed && !grabReleased) {
-    const interactableEntities = interactableQuery(ctx.world);
-
-    for (let i = 0; i < interactableEntities.length; i++) {
-      const eid = interactableEntities[i];
-
-      if (Interactable.type[eid] !== InteractableType.Interactable) {
-        continue;
-      }
-
-      const remoteNode = RemoteNodeComponent.get(eid);
-      const interactable = remoteNode?.scriptNode?.interactable;
-
-      if (interactable) {
-        interactable.pressed = false;
-        interactable.released = false;
       }
     }
   }
@@ -621,6 +620,7 @@ export function addInteractableComponent(
 ) {
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
+  Interactable.interactionDistance[eid] = interactableType === InteractableType.Interactable ? 10 : 1;
 
   const { physicsWorld } = physics;
 
