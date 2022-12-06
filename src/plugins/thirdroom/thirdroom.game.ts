@@ -301,7 +301,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
 
-    await loadEnvironment(ctx, message.url, undefined, message.fileMap);
+    await loadEnvironment(ctx, message.url, message.scriptUrl, message.fileMap);
 
     loadPlayerRig(ctx, physics, input, network);
 
