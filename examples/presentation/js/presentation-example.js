@@ -8,7 +8,7 @@ let currentSlide = 0;
 
 const slides = [];
 
-for (let i = 0; i < 6; i++) {
+for (let i = 0; i < 7; i++) {
   slides.push(WebSG.getTextureByName(`Slide${i + 1}`));
 }
 
