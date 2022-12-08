@@ -1,4 +1,4 @@
-.FeaturedScene {
+.ScenePreviewCard {
   background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
   overflow: hidden;
@@ -8,7 +8,7 @@
   }
 }
 
-.FeaturedScene__Content {
+.ScenePreviewCard__Content {
   padding: var(--sp-xs);
   padding-top: 0;
 }

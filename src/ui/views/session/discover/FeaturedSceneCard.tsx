@@ -11,7 +11,7 @@ import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
 import { useStore } from "../../../hooks/useStore";
 import { getHttpUrl } from "../../../utils/avatar";
-import { FeaturedScene, FeaturedSceneContent } from "../../components/featured-scene/FeaturedScene";
+import { ScenePreviewCard, ScenePreviewCardContent } from "../../components/scene-preview-card/ScenePreviewCard";
 import { CreateWorldModal } from "../create-world/CreateWorldModal";
 import { RepositoryEvents } from "./DiscoverView";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
@@ -39,14 +39,14 @@ export function FeaturedSceneCard({ session, roomId, stateKey, stateEvent, canEd
   };
 
   return (
-    <FeaturedScene
+    <ScenePreviewCard
       thumbnail={
         <Thumbnail size="lg" wide>
           <ThumbnailImg src={getHttpUrl(session, content.scene_preview_url) ?? ""} alt={content.scene_name} />
         </Thumbnail>
       }
     >
-      <FeaturedSceneContent>
+      <ScenePreviewCardContent>
         <div className="grow">
           <Text className="truncate" variant="b3">
             {content.scene_author_name}
@@ -80,7 +80,7 @@ export function FeaturedSceneCard({ session, roomId, stateKey, stateEvent, canEd
             Create World
           </Button>
         </div>
-      </FeaturedSceneContent>
-    </FeaturedScene>
+      </ScenePreviewCardContent>
+    </ScenePreviewCard>
   );
 }
