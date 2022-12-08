@@ -28,8 +28,7 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { AccessorResourceType } from "../accessor/accessor.common";
-import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
+import { RendererAccessorResource } from "../accessor/accessor.render";
 import {
   InstancedMeshResourceType,
   MeshPrimitiveResourceType,
@@ -211,7 +210,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, ScriptMeshPrimitiveResource),
       registerResource(ctx, ScriptNodeResource),
       registerResource(ctx, InteractableResource),
-      registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
+      registerResource(ctx, RendererAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
       registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),

@@ -23,7 +23,7 @@ import {
   InstancedBufferGeometry,
 } from "three";
 
-import { LocalAccessor } from "../accessor/accessor.render";
+import { RendererAccessorResource } from "../accessor/accessor.render";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { GLTFMesh } from "../gltf/GLTF";
 import {
@@ -56,13 +56,13 @@ import {
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
 
-export type LocalMeshPrimitiveAttributes = { [key: string]: LocalAccessor };
+export type LocalMeshPrimitiveAttributes = { [key: string]: RendererAccessorResource };
 
 export interface LocalMeshPrimitive {
   resourceId: ResourceId;
-  attributes: { [key: string]: LocalAccessor };
+  attributes: { [key: string]: RendererAccessorResource };
   mode: MeshPrimitiveMode;
-  indices?: LocalAccessor;
+  indices?: RendererAccessorResource;
   material?: RendererMaterialResource;
   targets?: number[] | Float32Array;
   geometryObj: BufferGeometry;
@@ -111,7 +111,7 @@ export async function onLoadLocalMeshPrimitiveResource(
 
   const meshPrimitiveView = getReadObjectBufferView(meshPrimitiveTripleBuffer);
 
-  const attributePromises: { [key: string]: Promise<LocalAccessor> } = {};
+  const attributePromises: { [key: string]: Promise<RendererAccessorResource> } = {};
 
   for (const attributeName in initialProps.attributes) {
     attributePromises[attributeName] = waitForLocalResource(
@@ -123,7 +123,7 @@ export async function onLoadLocalMeshPrimitiveResource(
 
   const { indices, attributes, material } = await promiseObject({
     indices: initialProps.indices
-      ? waitForLocalResource<LocalAccessor>(ctx, initialProps.indices, "mesh-primitive.indices accessor")
+      ? waitForLocalResource<RendererAccessorResource>(ctx, initialProps.indices, "mesh-primitive.indices accessor")
       : undefined,
     attributes: promiseObject(attributePromises),
     material: meshPrimitiveView.material[0]
@@ -180,13 +180,13 @@ export async function onLoadLocalMeshPrimitiveResource(
 
 export interface LocalInstancedMesh {
   resourceId: ResourceId;
-  attributes: { [key: string]: LocalAccessor };
+  attributes: { [key: string]: RendererAccessorResource };
 }
 
 export interface LocalSkinnedMesh {
   resourceId: ResourceId;
   joints: LocalNode[];
-  inverseBindMatrices?: LocalAccessor;
+  inverseBindMatrices?: RendererAccessorResource;
   skeleton?: Skeleton;
 }
 
@@ -195,7 +195,7 @@ export async function onLoadLocalInstancedMeshResource(
   resourceId: ResourceId,
   props: SharedInstancedMeshResource
 ): Promise<LocalInstancedMesh> {
-  const attributePromises: { [key: string]: Promise<LocalAccessor> } = {};
+  const attributePromises: { [key: string]: Promise<RendererAccessorResource> } = {};
 
   for (const attributeName in props.attributes) {
     attributePromises[attributeName] = waitForLocalResource(
@@ -247,7 +247,7 @@ export async function onLoadLocalSkinnedMeshResource(
   props: SharedSkinnedMeshResource
 ): Promise<LocalSkinnedMesh> {
   const inverseBindMatrices = props.inverseBindMatrices
-    ? await waitForLocalResource<LocalAccessor>(ctx, props.inverseBindMatrices)
+    ? await waitForLocalResource<RendererAccessorResource>(ctx, props.inverseBindMatrices)
     : undefined;
 
   const jointPromises = props.joints.map((rid: ResourceId) => waitForLocalResource<LocalNode>(ctx, rid));

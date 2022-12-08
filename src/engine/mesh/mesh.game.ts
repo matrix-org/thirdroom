@@ -4,7 +4,6 @@ import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
@@ -32,6 +31,8 @@ import {
   RemoteMesh as ScriptRemoteMesh,
   RemoteMeshPrimitive as ScriptRemoteMeshPrimitive,
   InteractableType,
+  RemoteAccessor,
+  AccessorResource,
 } from "../resource/schema";
 import {
   SharedMeshResource,
@@ -58,8 +59,8 @@ export interface RemoteMeshPrimitive {
   resourceId: number;
   meshPrimitiveBufferView: MeshPrimitiveBufferView;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
-  attributes: { [key: string]: RemoteAccessor<any> };
-  indices?: RemoteAccessor<any>;
+  attributes: { [key: string]: RemoteAccessor };
+  indices?: RemoteAccessor;
   mode?: number;
   get material(): RemoteMaterial | undefined;
   set material(value: RemoteMaterial | undefined);
@@ -82,8 +83,8 @@ export interface RemoteMeshProps {
 }
 
 export interface MeshPrimitiveProps {
-  attributes: { [key: string]: RemoteAccessor<any> };
-  indices?: RemoteAccessor<any>;
+  attributes: { [key: string]: RemoteAccessor };
+  indices?: RemoteAccessor;
   material?: RemoteMaterial;
   mode?: number;
   scriptMeshPrimitive?: ScriptRemoteMeshPrimitive;
@@ -92,25 +93,25 @@ export interface MeshPrimitiveProps {
 export interface RemoteInstancedMesh {
   name: string;
   resourceId: number;
-  attributes: { [key: string]: RemoteAccessor<any> };
+  attributes: { [key: string]: RemoteAccessor };
 }
 
 export interface RemoteInstancedMeshProps {
   name?: string;
-  attributes: { [key: string]: RemoteAccessor<any> };
+  attributes: { [key: string]: RemoteAccessor };
 }
 
 export interface RemoteSkinnedMesh {
   name: string;
   resourceId: number;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any>;
+  inverseBindMatrices?: RemoteAccessor;
 }
 
 export interface RemoteSkinnedMeshProps {
   name?: string;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any>;
+  inverseBindMatrices?: RemoteAccessor;
 }
 
 export interface RemoteLightMap {
@@ -200,10 +201,7 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
 
   const initialProps: PrimitiveResourceProps = {
     attributes: Object.fromEntries(
-      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [
-        name,
-        accessor.resourceId,
-      ])
+      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor]) => [name, accessor.resourceId])
     ),
     indices: props.indices ? props.indices.resourceId : undefined,
     mode: props.mode === undefined ? MeshPrimitiveMode.TRIANGLES : props.mode,
@@ -320,7 +318,7 @@ export function createRemoteInstancedMesh(ctx: GameState, props: RemoteInstanced
 
   const sharedResource: SharedInstancedMeshResource = {
     attributes: Object.fromEntries(
-      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [name, accessor.resourceId])
+      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor]) => [name, accessor.resourceId])
     ),
   };
 
@@ -443,21 +441,21 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const remoteMesh = createRemoteMesh(ctx, {
     primitives: [
       {
-        indices: createRemoteAccessor(ctx, {
+        indices: ctx.resourceManager.createResource(AccessorResource, {
           type: AccessorType.SCALAR,
           componentType: AccessorComponentType.Uint16,
           bufferView,
           count: indices.length,
         }),
         attributes: {
-          [MeshPrimitiveAttribute.POSITION]: createRemoteAccessor(ctx, {
+          [MeshPrimitiveAttribute.POSITION]: ctx.resourceManager.createResource(AccessorResource, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
             byteOffset: position.byteOffset,
             count: position.length / 3,
           }),
-          [MeshPrimitiveAttribute.NORMAL]: createRemoteAccessor(ctx, {
+          [MeshPrimitiveAttribute.NORMAL]: ctx.resourceManager.createResource(AccessorResource, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -465,7 +463,7 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
             count: normal.length / 3,
             normalized: true,
           }),
-          [MeshPrimitiveAttribute.TEXCOORD_0]: createRemoteAccessor(ctx, {
+          [MeshPrimitiveAttribute.TEXCOORD_0]: ctx.resourceManager.createResource(AccessorResource, {
             type: AccessorType.VEC2,
             componentType: AccessorComponentType.Float32,
             bufferView,

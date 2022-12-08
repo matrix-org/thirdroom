@@ -283,6 +283,8 @@ export const SparseAccessorResource = defineResource("sparse-accessor", Resource
   valuesBufferView: PropType.ref(BufferViewResource, { mutable: false, required: true, script: true }),
   valuesByteOffset: PropType.u32({ mutable: false, script: true }),
 });
+export type RemoteSparseAccessor = RemoteResource<typeof SparseAccessorResource>;
+export type LocalSparseAccessor = LocalResource<typeof SparseAccessorResource>;
 
 export enum AccessorType {
   SCALAR,
@@ -306,6 +308,8 @@ export const AccessorResource = defineResource("accessor", ResourceType.Accessor
   min: PropType.mat4({ default: new Float32Array(16), script: true }),
   sparse: PropType.ref(SparseAccessorResource, { mutable: false, script: true }),
 });
+export type RemoteAccessor = RemoteResource<typeof AccessorResource>;
+export type LocalAccessor = LocalResource<typeof AccessorResource>;
 
 export enum MeshPrimitiveMode {
   POINTS,

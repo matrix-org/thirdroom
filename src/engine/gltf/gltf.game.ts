@@ -2,7 +2,6 @@ import { addComponent, addEntity } from "bitecs";
 import { mat4, vec2 } from "gl-matrix";
 import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
-import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
@@ -57,6 +56,7 @@ import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./OMI_link";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
+  AccessorResource,
   AccessorType,
   AudioEmitterOutput,
   BufferResource,
@@ -69,6 +69,7 @@ import {
   MaterialAlphaMode,
   MaterialResource,
   MaterialType,
+  RemoteAccessor,
   RemoteBuffer,
   RemoteBufferView,
   RemoteCamera,
@@ -77,6 +78,8 @@ import {
   RemoteMaterial,
   RemoteSampler,
   RemoteTexture,
+  RemoteSparseAccessor,
+  SparseAccessorResource,
   SamplerMapping,
   SamplerResource,
   TextureEncoding,
@@ -97,7 +100,7 @@ export interface GLTFResource {
   root: GLTFRoot;
   binaryChunk?: SharedArrayBuffer;
   cameras: Map<number, RemoteCamera>;
-  accessors: Map<number, RemoteAccessor<any>>;
+  accessors: Map<number, RemoteAccessor>;
   bufferViews: Map<number, RemoteBufferView>;
   buffers: Map<number, RemoteBuffer>;
   meshes: Map<number, RemoteMesh>;
@@ -113,7 +116,7 @@ export interface GLTFResource {
   audioSources: Map<number, RemoteAudioSource>;
   audioEmitters: Map<number, RemoteAudioEmitter>;
   cameraPromises: Map<number, Promise<RemoteCamera>>;
-  accessorPromises: Map<number, Promise<RemoteAccessor<any>>>;
+  accessorPromises: Map<number, Promise<RemoteAccessor>>;
   bufferViewPromises: Map<number, Promise<RemoteBufferView>>;
   bufferPromises: Map<number, Promise<RemoteBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
@@ -1037,11 +1040,7 @@ const GLTFAccessorTypeToAccessorType: { [key: string]: AccessorType } = {
   MAT4: AccessorType.MAT4,
 };
 
-export async function loadGLTFAccessor(
-  ctx: GameState,
-  resource: GLTFResource,
-  index: number
-): Promise<RemoteAccessor<any>> {
+export async function loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAccessor> {
   let accessorPromise = resource.accessorPromises.get(index);
 
   if (accessorPromise) {
@@ -1055,7 +1054,7 @@ export async function loadGLTFAccessor(
   return accessorPromise;
 }
 
-async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAccessor<any>> {
+async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: number): Promise<RemoteAccessor> {
   if (!resource.root.accessors || !resource.root.accessors[index]) {
     throw new Error(`Accessor ${index} not found`);
   }
@@ -1074,11 +1073,24 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
         : undefined,
   });
 
-  if (accessor.sparse && (!sparseIndicesBufferView || !sparseValuesBufferView)) {
-    throw new Error("Sparse accessor missing bufferViews");
+  let sparse: RemoteSparseAccessor | undefined = undefined;
+
+  if (accessor.sparse) {
+    if (!sparseIndicesBufferView || !sparseValuesBufferView) {
+      throw new Error("Sparse accessor missing bufferViews");
+    }
+
+    sparse = resource.manager.createResource(SparseAccessorResource, {
+      count: accessor.sparse.count,
+      indicesByteOffset: accessor.sparse.indices.byteOffset,
+      indicesComponentType: accessor.sparse.indices.componentType,
+      indicesBufferView: sparseIndicesBufferView,
+      valuesByteOffset: accessor.sparse.values.byteOffset,
+      valuesBufferView: sparseValuesBufferView,
+    });
   }
 
-  const remoteAccessor = createRemoteAccessor(ctx, {
+  const remoteAccessor = resource.manager.createResource(AccessorResource, {
     name: accessor.name,
     bufferView,
     type: GLTFAccessorTypeToAccessorType[accessor.type],
@@ -1088,20 +1100,7 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
     normalized: accessor.normalized,
     min: accessor.min,
     max: accessor.max,
-    sparse: accessor.sparse
-      ? {
-          count: accessor.sparse.count,
-          indices: {
-            byteOffset: accessor.sparse.indices.byteOffset,
-            componentType: accessor.sparse.indices.componentType,
-            bufferView: sparseIndicesBufferView!,
-          },
-          values: {
-            byteOffset: accessor.sparse.values.byteOffset,
-            bufferView: sparseValuesBufferView!,
-          },
-        }
-      : undefined,
+    sparse,
   });
 
   resource.accessors.set(index, remoteAccessor);
@@ -1161,7 +1160,7 @@ async function _createGLTFMeshPrimitive(
   resource: GLTFResource,
   primitive: GLTFMeshPrimitive
 ): Promise<MeshPrimitiveProps> {
-  const attributesPromises: { [key: string]: Promise<RemoteAccessor<any>> } = {};
+  const attributesPromises: { [key: string]: Promise<RemoteAccessor> } = {};
 
   for (const key in primitive.attributes) {
     attributesPromises[key] = loadGLTFAccessor(ctx, resource, primitive.attributes[key]);
@@ -1190,7 +1189,7 @@ async function _loadGLTFInstancedMesh(
   node: GLTFNode,
   extension: GLTFInstancedMeshExtension
 ): Promise<RemoteInstancedMesh> {
-  const attributesPromises: { [key: string]: Promise<RemoteAccessor<any>> } = {};
+  const attributesPromises: { [key: string]: Promise<RemoteAccessor> } = {};
 
   for (const key in extension.attributes) {
     attributesPromises[key] = loadGLTFAccessor(ctx, resource, extension.attributes[key]);

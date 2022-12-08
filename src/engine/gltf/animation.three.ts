@@ -15,8 +15,9 @@ import {
   Quaternion,
 } from "three";
 
-import { RemoteAccessor } from "../accessor/accessor.game";
+import { getAccessorArrayView } from "../accessor/accessor.common";
 import { GameState } from "../GameTypes";
+import { RemoteAccessor } from "../resource/schema";
 import { GLTFAnimation, GLTFSampler, GLTFAnimationChannelTarget } from "./GLTF";
 import { GLTFResource, loadGLTFAccessor } from "./gltf.game";
 
@@ -139,8 +140,8 @@ export async function loadGLTFAnimationClip(
   indexToObject3D: Map<number, Object3D>
 ) {
   const nodes: Object3D[] = [];
-  const pendingInputAccessors: Promise<RemoteAccessor<any>>[] = [];
-  const pendingOutputAccessors: Promise<RemoteAccessor<any>>[] = [];
+  const pendingInputAccessors: Promise<RemoteAccessor>[] = [];
+  const pendingOutputAccessors: Promise<RemoteAccessor>[] = [];
   const samplers: GLTFSampler[] = [];
   const targets: GLTFAnimationChannelTarget[] = [];
 
@@ -223,9 +224,9 @@ export async function loadGLTFAnimationClip(
       targetNames.push(targetName);
     }
 
-    let outputArray = outputAccessor.attribute.array;
+    let outputArray = getAccessorArrayView(outputAccessor);
 
-    if (outputAccessor.attribute.normalized) {
+    if (outputAccessor.normalized) {
       const scale = getNormalizedComponentScale(outputArray.constructor);
       const scaled = new Float32Array(outputArray.length);
 
@@ -237,10 +238,12 @@ export async function loadGLTFAnimationClip(
     }
 
     for (let j = 0, jl = targetNames.length; j < jl; j++) {
+      const inputArray = getAccessorArrayView(inputAccessor);
+
       const track = new TypedKeyframeTrack(
         targetNames[j] + "." + PATH_PROPERTIES[target.path as PATH_PROPERTIES_KEY],
-        inputAccessor.attribute.array as any[],
-        outputArray as any[],
+        inputArray as unknown as any[],
+        outputArray as unknown as any[],
         interpolation
       );
 

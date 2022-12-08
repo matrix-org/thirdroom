@@ -5,6 +5,7 @@ import { RendererMessageType, rendererModuleName } from "./renderer.common";
 import { registerResource } from "../resource/resource.main";
 import { createDisposables } from "../utils/createDisposables";
 import {
+  AccessorResource,
   BufferResource,
   BufferViewResource,
   CameraResource,
@@ -63,6 +64,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, NodeResource),
       registerResource(ctx, MeshPrimitiveResource),
       registerResource(ctx, InteractableResource),
+      registerResource(ctx, AccessorResource),
     ]);
   },
 });

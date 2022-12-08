@@ -1,8 +1,8 @@
 import RAPIER, { ColliderDesc } from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
-import { Matrix4 } from "three";
 
+import { vec3ArrayTransformMat4, getAccessorArrayView } from "../accessor/accessor.common";
 import { addTransformComponent, addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RemoteMesh } from "../mesh/mesh.game";
@@ -110,26 +110,23 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-    const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
-    const worldMatrix = new Matrix4().fromArray(Transform.worldMatrix[nodeEid]);
-    positionsAttribute.applyMatrix4(worldMatrix);
-
-    const indicesAttribute = primitive.indices?.attribute;
+    const positionsArray = getAccessorArrayView(primitive.attributes.POSITION).slice() as Float32Array;
+    vec3ArrayTransformMat4(positionsArray, positionsArray, Transform.worldMatrix[nodeEid]);
 
     let indicesArr: Uint32Array;
 
-    if (!indicesAttribute) {
-      indicesArr = new Uint32Array(positionsAttribute.count);
+    if (primitive.indices) {
+      const indicesArrView = getAccessorArrayView(primitive.indices);
+      indicesArr = indicesArrView instanceof Uint32Array ? indicesArrView : new Uint32Array(indicesArrView);
+    } else {
+      indicesArr = new Uint32Array(positionsArray.length / 3);
 
       for (let i = 0; i < indicesArr.length; i++) {
         indicesArr[i] = i;
       }
-    } else {
-      indicesArr = new Uint32Array(indicesAttribute.count);
-      indicesArr.set(indicesAttribute.array);
     }
 
-    const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsAttribute.array as Float32Array, indicesArr);
+    const colliderDesc = RAPIER.ColliderDesc.trimesh(positionsArray, indicesArr);
 
     colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
 
