@@ -105,7 +105,7 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                 <DiscoverGroup
                   label={<Label>Featured Scenes</Label>}
                   content={
-                    <DiscoverGroupGrid itemMinWidth={300} gap="md">
+                    <DiscoverGroupGrid itemMinWidth={400} gap="md">
                       {featuredScenes.slice(0, 3).map(([stateKey, stateEvent]) => (
                         <FeaturedSceneCard
                           key={stateKey}

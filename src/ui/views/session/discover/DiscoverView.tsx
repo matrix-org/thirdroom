@@ -79,13 +79,13 @@ export function DiscoverView({ room }: { room: Room }) {
                   >
                     Home
                   </SegmentControlItem>
-                  {/* <SegmentControlItem
+                  <SegmentControlItem
                     value={DiscoverTab.Creator}
                     isSelected={DiscoverTab.Creator === discoverTab}
                     onSelect={setDiscoverTab}
                   >
                     Creator
-                  </SegmentControlItem> */}
+                  </SegmentControlItem>
                   {isAdmin && (
                     <SegmentControlItem
                       value={DiscoverTab.Admin}
