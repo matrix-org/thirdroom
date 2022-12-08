@@ -31,6 +31,20 @@ export interface SceneData {
   sceneVersion: number;
 }
 
+export function sceneDataToContent(data: SceneData) {
+  return {
+    scene_url: data.sceneUrl,
+    scene_preview_url: data.scenePreviewUrl,
+    scene_name: data.sceneName,
+    scene_description: data.sceneDescription,
+    scene_author_name: data.sceneAuthorName,
+    scene_license: data.sceneLicense,
+    scene_version: data.sceneVersion,
+    scene_author_url: data.sceneAuthorUrl,
+    scene_source_url: data.sceneSourceUrl,
+  };
+}
+
 interface SceneSubmissionProps {
   onSave: (data: SceneData) => void;
   renderTrigger: (openModal: () => void) => ReactNode;

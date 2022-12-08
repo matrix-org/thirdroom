@@ -20,7 +20,7 @@ import { SettingTile } from "../../components/setting-tile/SettingTile";
 import ChevronBottomIC from ".././../.././../../res/ic/chevron-bottom.svg";
 import "./DiscoverAdmin.css";
 import { RepositoryEvents } from "./DiscoverView";
-import { SceneData, SceneSubmission } from "./SceneSubmission";
+import { SceneData, sceneDataToContent, SceneSubmission } from "./SceneSubmission";
 
 function FeatureRoom({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
@@ -242,17 +242,7 @@ function FeatureScene({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
 
   const handleSave = async (data: SceneData) => {
-    const content = {
-      scene_url: data.sceneUrl,
-      scene_preview_url: data.scenePreviewUrl,
-      scene_name: data.sceneName,
-      scene_description: data.sceneDescription,
-      scene_author_name: data.sceneAuthorName,
-      scene_license: data.sceneLicense,
-      scene_version: data.sceneVersion,
-      scene_author_url: data.sceneAuthorUrl,
-      scene_source_url: data.sceneSourceUrl,
-    };
+    const content = sceneDataToContent(data);
 
     try {
       const result = await session.hsApi.send(room.id, RepositoryEvents.Scene, makeTxnId(), content).response();
