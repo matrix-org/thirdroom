@@ -71,7 +71,7 @@ export function getAccessorArrayView(
   const arrConstructor = AccessorComponentTypeToTypedArray[accessor.componentType];
   const componentByteLength = arrConstructor.BYTES_PER_ELEMENT;
   const elementByteLength = componentByteLength * elementSize;
-  let componentOffset = 0;
+  let componentCount = elementSize;
 
   let arrayView: AccessorTypedArray;
 
@@ -87,10 +87,10 @@ export function getAccessorArrayView(
         const interleavedArrayView = arrayView;
         const totalComponents = elementCount * elementSize;
         arrayView = new arrConstructor(totalComponents);
-        componentOffset = byteStride / componentByteLength - elementSize;
+        componentCount = byteStride / componentByteLength;
 
         for (let i = 0; i < totalComponents; i++) {
-          const index = Math.floor(i / elementSize) * componentOffset + (i % elementSize);
+          const index = Math.floor(i / elementSize) * componentCount + (i % elementSize);
           arrayView[i] = interleavedArrayView[index];
         }
       }
@@ -131,16 +131,13 @@ export function getAccessorArrayView(
       count * valuesComponentCount
     );
 
-    const indexComponentOffset = indicesComponentCount - 1;
-    const valueComponentOffset = valuesComponentCount - elementSize;
-
     for (let i = 0; i < count * elementSize; i++) {
       const elementIndex = Math.floor(i / elementSize);
       const componentIndex = i % elementSize;
-      const indicesIndex = elementIndex * valueComponentOffset + componentIndex;
-      const valuesIndex = elementIndex * indexComponentOffset + componentIndex;
+      const indicesIndex = elementIndex * valuesComponentCount + componentIndex;
+      const valuesIndex = elementIndex * indicesComponentCount + componentIndex;
       const baseIndex =
-        Math.floor(indicesView[indicesIndex] / elementSize) * componentOffset +
+        Math.floor(indicesView[indicesIndex] / elementSize) * componentCount +
         (indicesView[indicesIndex] % elementSize);
       arrayView[baseIndex] = valuesView[valuesIndex];
     }
