@@ -36,7 +36,7 @@ export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>(
     const incomingRingBuffer = createNetworkRingBuffer(Uint8Array);
     const outgoingRingBuffer = createNetworkRingBuffer(Uint8Array);
 
-    const authoritative = new URLSearchParams(window.location.search).get("authoritative") === "true";
+    const authoritative = localStorage.getItem("authoritativeNetworking") === "true";
 
     sendMessage<InitializeNetworkStateMessage>(Thread.Game, NetworkMessageType.InitializeNetworkState, {
       type: NetworkMessageType.InitializeNetworkState,
