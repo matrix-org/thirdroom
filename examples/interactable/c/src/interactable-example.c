@@ -28,8 +28,10 @@ export void websg_loaded() {
   room1_light = websg_get_resource_by_name(ResourceType_Node, "Room1Light");
   room2_light = websg_get_resource_by_name(ResourceType_Node, "Room2Light");
 
-  bricks_texture = websg_get_resource_by_name(ResourceType_Texture, "Bricks");
-  planks_texture = websg_get_resource_by_name(ResourceType_Texture, "Planks");
+  MeshPrimitive *right_cube_primitive = right_cube->mesh->primitives[0];
+  bricks_texture = right_cube_primitive->material->base_color_texture;
+  MeshPrimitive *left_cube_primitive = left_cube->mesh->primitives[0];
+  planks_texture = left_cube_primitive->material->base_color_texture;
 
   Interactable *material_button_interactable = malloc(sizeof(Interactable));
   Interactable *room1_switch_interactable = malloc(sizeof(Interactable));

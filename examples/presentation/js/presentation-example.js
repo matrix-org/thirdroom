@@ -9,7 +9,7 @@ let currentSlide = 0;
 const slides = [];
 
 for (let i = 0; i < 7; i++) {
-  slides.push(WebSG.getTextureByName(`Slide${i + 1}`));
+  slides.push(WebSG.getMaterialByName(`Slide${i + 1}`).baseColorTexture);
 }
 
 onupdate = (dt) => {
