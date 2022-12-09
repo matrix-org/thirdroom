@@ -53,10 +53,7 @@ const getScenes = async (
 function useScenes(room: Room, sender?: string) {
   const { session } = useHydrogen(true);
   const [scenes, setScenes] = useState<TimelineEvent[]>([]);
-  const endPointsRef = useRef<{ start?: string; end?: string }>({
-    start: undefined,
-    end: undefined,
-  });
+  const endPointsRef = useRef<{ start?: string; end?: string }>({});
   const isMounted = useIsMounted();
   const [loading, setLoading] = useState(false);
 
@@ -87,10 +84,7 @@ function useScenes(room: Room, sender?: string) {
   );
 
   useEffect(() => {
-    endPointsRef.current = {
-      start: undefined,
-      end: "t52-253359_0_0_0_0_0_0_0_0",
-    };
+    endPointsRef.current = {};
     loadScenes(true, true);
   }, [loadScenes]);
 
