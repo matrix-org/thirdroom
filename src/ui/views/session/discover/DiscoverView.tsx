@@ -33,13 +33,14 @@ enum DiscoverTab {
 
 export function DiscoverView({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
-  const { getPowerLevel, canSendStateEvent } = usePowerLevels(room);
+  const { getPowerLevel, canDoAction, canSendStateEvent } = usePowerLevels(room);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
   const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
 
-  const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, getPowerLevel(session.userId));
-  const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorlds, getPowerLevel(session.userId));
-  const canFeatureScenes = canSendStateEvent(RepositoryEvents.FeaturedScenes, getPowerLevel(session.userId));
+  const userPowerLevel = getPowerLevel(session.userId);
+  const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, userPowerLevel);
+  const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorlds, userPowerLevel);
+  const canFeatureScenes = canSendStateEvent(RepositoryEvents.FeaturedScenes, userPowerLevel);
   const isAdmin = canFeatureRooms || canFeatureWorlds;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
@@ -124,7 +125,15 @@ export function DiscoverView({ room }: { room: Room }) {
                 }}
               />
             )}
-            {discoverTab === DiscoverTab.Creator && room && <DiscoverCreator room={room} />}
+            {discoverTab === DiscoverTab.Creator && room && (
+              <DiscoverCreator
+                room={room}
+                permissions={{
+                  canFeatureScenes,
+                  canRedact: canDoAction("redact", userPowerLevel),
+                }}
+              />
+            )}
             {discoverTab === DiscoverTab.Admin && room && (
               <DiscoverAdmin
                 room={room}

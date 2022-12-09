@@ -1,5 +1,5 @@
 import { Session, Room, TimelineEvent, makeTxnId } from "@thirdroom/hydrogen-view-sdk";
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -13,7 +13,7 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getHttpUrl } from "../../../utils/avatar";
 import { DiscoverGroup, DiscoverGroupGrid } from "../../components/discover-group/DiscoverGroup";
 import { ScenePreviewCard, ScenePreviewCardContent } from "../../components/scene-preview-card/ScenePreviewCard";
-import ChevronBottomIC from ".././../.././../../res/ic/chevron-bottom.svg";
+import MoreHorizontalIC from ".././../.././../../res/ic/more-horizontal.svg";
 import AddIC from ".././../.././../../res/ic/add.svg";
 import "./DiscoverCreator.css";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -21,6 +21,11 @@ import { SceneData, sceneDataToContent, SceneSubmission } from "./SceneSubmissio
 import { RepositoryEvents } from "./DiscoverView";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Button } from "../../../atoms/button/Button";
+import { useFeaturedScenes } from "../../components/FeaturedScenesProvider";
+import { ThumbnailBadgeWrapper } from "../../../atoms/thumbnail/ThumbnailBadgeWrapper";
+import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
+import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
+import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 
 const getScenes = async (
   session: Session,
@@ -45,17 +50,7 @@ const getScenes = async (
     .response();
 };
 
-interface ScenesProviderProps {
-  room: Room;
-  sender?: string;
-  children: (options: {
-    scenes: TimelineEvent[];
-    loading: boolean;
-    loadScenes: (reset: boolean, backward: boolean) => void;
-    canLoadBack: boolean;
-  }) => ReactNode;
-}
-function ScenesProvider({ room, sender, children }: ScenesProviderProps) {
+function useScenes(room: Room, sender?: string) {
   const { session } = useHydrogen(true);
   const [scenes, setScenes] = useState<TimelineEvent[]>([]);
   const endPointsRef = useRef<{ start?: string; end?: string }>({
@@ -99,15 +94,47 @@ function ScenesProvider({ room, sender, children }: ScenesProviderProps) {
     loadScenes(true, true);
   }, [loadScenes]);
 
+  const deleteScene = (scene: TimelineEvent) => {
+    setScenes((state) => state.filter((event) => event.event_id !== scene.event_id));
+    session.hsApi.redact(room.id, scene.event_id, makeTxnId(), {});
+  };
+
   const canLoadBack = typeof endPointsRef.current.end === "string";
-  return <>{children({ scenes, loading, loadScenes, canLoadBack })}</>;
+  return { scenes, loading, loadScenes, canLoadBack, deleteScene };
 }
 
 interface DiscoverCreatorProps {
   room: Room;
+  permissions: {
+    canFeatureScenes: boolean;
+    canRedact: boolean;
+  };
 }
-export function DiscoverCreator({ room }: DiscoverCreatorProps) {
+export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
   const { session } = useHydrogen(true);
+
+  const featuredScenes = useFeaturedScenes(room);
+
+  const isFeatured = (eventId: string) => featuredScenes.find(([stateKey]) => stateKey === eventId);
+  const { scenes, loading, loadScenes, canLoadBack, deleteScene } = useScenes(room, session.userId);
+
+  const isValidScene = (scene: TimelineEvent) => {
+    const content = scene.content;
+    if (typeof content !== "object") return false;
+    if (content.scene_url && content.scene_preview_url && content.scene_name && content.scene_author_name) {
+      return true;
+    }
+    return false;
+  };
+
+  const featureScene = (scene: TimelineEvent) => {
+    if (!isValidScene(scene)) return;
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, scene.event_id, scene.content);
+  };
+
+  const unFeatureScene = (scene: TimelineEvent) => {
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, scene.event_id, {});
+  };
 
   const uploadScene = async (data: SceneData) => {
     const content = sceneDataToContent(data);
@@ -117,54 +144,58 @@ export function DiscoverCreator({ room }: DiscoverCreatorProps) {
   return (
     <Scroll>
       <Content className="DiscoverCreator__content">
-        <ScenesProvider room={room} sender={session.userId}>
-          {({ scenes, loading, loadScenes, canLoadBack }) => (
-            <DiscoverGroup
-              label={
-                <div className="flex items-center gap-md">
-                  <Label className="grow">Scenes</Label>
-                  <button
-                    style={{ cursor: "pointer" }}
-                    onClick={async () => {
-                      loadScenes(false, false);
-                    }}
-                  >
-                    <Text variant="b3" weight="bold" type="span">
-                      Refresh
-                    </Text>
-                  </button>
-                </div>
-              }
-              content={
-                <div className="flex flex-column gap-md">
-                  <DiscoverGroupGrid itemMinWidth={400} gap="md">
-                    <SceneSubmission
-                      onSave={async (data) => {
-                        await uploadScene(data);
-                        loadScenes(false, false);
-                      }}
-                      renderTrigger={(openModal) => (
-                        <button
-                          onClick={openModal}
-                          className="DiscoverCreator__button flex flex-column items-center justify-center"
-                        >
-                          <Icon size="xl" src={AddIC} />
-                          <Text type="span" variant="b3" weight="semi-bold">
-                            Upload Scene
-                          </Text>
-                        </button>
-                      )}
-                    />
-                    {scenes.map((scene) => (
+        <DiscoverGroup
+          label={
+            <div className="flex items-center gap-md">
+              <Label className="grow">Scenes</Label>
+              <button
+                style={{ cursor: "pointer" }}
+                onClick={async () => {
+                  loadScenes(false, false);
+                }}
+              >
+                <Text variant="b3" weight="bold" type="span">
+                  Refresh
+                </Text>
+              </button>
+            </div>
+          }
+          content={
+            <div className="flex flex-column gap-md">
+              <DiscoverGroupGrid itemMinWidth={400} gap="md">
+                <SceneSubmission
+                  onSave={async (data) => {
+                    await uploadScene(data);
+                    loadScenes(false, false);
+                  }}
+                  renderTrigger={(openModal) => (
+                    <button
+                      onClick={openModal}
+                      className="DiscoverCreator__button flex flex-column items-center justify-center"
+                    >
+                      <Icon size="xl" src={AddIC} />
+                      <Text type="span" variant="b3" weight="semi-bold">
+                        Upload Scene
+                      </Text>
+                    </button>
+                  )}
+                />
+                {scenes.map(
+                  (scene) =>
+                    isValidScene(scene) && (
                       <ScenePreviewCard
                         key={scene.event_id}
                         thumbnail={
-                          <Thumbnail size="lg" wide>
-                            <ThumbnailImg
-                              src={getHttpUrl(session, scene.content.scene_preview_url) ?? ""}
-                              alt={scene.content.scene_name}
-                            />
-                          </Thumbnail>
+                          <ThumbnailBadgeWrapper
+                            badge={isFeatured(scene.event_id) && <NotificationBadge content="Featured" />}
+                          >
+                            <Thumbnail size="lg" wide>
+                              <ThumbnailImg
+                                src={getHttpUrl(session, scene.content.scene_preview_url) ?? ""}
+                                alt={scene.content.scene_name}
+                              />
+                            </Thumbnail>
+                          </ThumbnailBadgeWrapper>
                         }
                       >
                         <ScenePreviewCardContent>
@@ -175,31 +206,60 @@ export function DiscoverCreator({ room }: DiscoverCreatorProps) {
                             <Text className="truncate">{scene.content.scene_name}</Text>
                           </div>
                           <div className="flex items-center gap-xs">
-                            <IconButton iconSrc={ChevronBottomIC} label="Delete Scene" />
+                            <DropdownMenu
+                              content={
+                                <div style={{ padding: "var(--sp-xxs) 0" }}>
+                                  {permissions.canFeatureScenes && (
+                                    <>
+                                      {isFeatured(scene.event_id) ? (
+                                        <DropdownMenuItem onSelect={() => unFeatureScene(scene)}>
+                                          Un-Feature
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem onSelect={() => featureScene(scene)}>
+                                          Feature
+                                        </DropdownMenuItem>
+                                      )}
+                                    </>
+                                  )}
+                                  {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
+                                  {(permissions.canRedact || session.userId === scene.sender) && (
+                                    <DropdownMenuItem
+                                      onSelect={() => {
+                                        if (window.confirm("Are you sure?")) deleteScene(scene);
+                                      }}
+                                    >
+                                      Delete
+                                    </DropdownMenuItem>
+                                  )}
+                                </div>
+                              }
+                            >
+                              <IconButton iconSrc={MoreHorizontalIC} label="Delete Scene" />
+                            </DropdownMenu>
                           </div>
                         </ScenePreviewCardContent>
                       </ScenePreviewCard>
-                    ))}
-                  </DiscoverGroupGrid>
-                  {loading ? (
-                    <div className="flex justify-center items-center gap-sm">
-                      <Dots />
-                      <Text>Loading</Text>
-                    </div>
-                  ) : (
-                    canLoadBack && (
-                      <div className="flex justify-center items-center">
-                        <Button className="DiscoverCreator__loadMore" onClick={() => loadScenes(false, true)}>
-                          Load More
-                        </Button>
-                      </div>
                     )
-                  )}
+                )}
+              </DiscoverGroupGrid>
+              {loading ? (
+                <div className="flex justify-center items-center gap-sm">
+                  <Dots />
+                  <Text>Loading</Text>
                 </div>
-              }
-            />
-          )}
-        </ScenesProvider>
+              ) : (
+                canLoadBack && (
+                  <div className="flex justify-center items-center">
+                    <Button className="DiscoverCreator__loadMore" onClick={() => loadScenes(false, true)}>
+                      Load More
+                    </Button>
+                  </div>
+                )
+              )}
+            </div>
+          }
+        />
       </Content>
     </Scroll>
   );
