@@ -2,5 +2,5 @@
   "defaultHomeServer": "thirdroom.io",
   "homeserverList": ["thirdroom.io", "matrix.org"],
   "onboardingVersion": 1,
-  "repositoryRoomIdOrAlias": "!uDLDYLVLPhCEQuiWGr:matrix.org"
+  "repositoryRoomIdOrAlias": "#test_tr_repo_room:matrix.org"
 }

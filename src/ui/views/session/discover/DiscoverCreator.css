@@ -13,3 +13,13 @@
 .DiscoverCreator__loadMore {
   min-width: 200px;
 }
+.DiscoverCreator__textBtn {
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

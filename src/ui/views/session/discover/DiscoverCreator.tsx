@@ -44,7 +44,7 @@ const getScenes = async (
       limit: options?.limit ?? 20,
       filter: {
         types: ["tr.repository_room.scene"],
-        sender: options?.sender,
+        senders: options?.sender,
       },
     })
     .response();
@@ -113,10 +113,13 @@ interface DiscoverCreatorProps {
 export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
   const { session } = useHydrogen(true);
 
+  const [showAll, setShowAll] = useState(false);
   const featuredScenes = useFeaturedScenes(room);
-
   const isFeatured = (eventId: string) => featuredScenes.find(([stateKey]) => stateKey === eventId);
-  const { scenes, loading, loadScenes, canLoadBack, deleteScene } = useScenes(room, session.userId);
+  const { scenes, loading, loadScenes, canLoadBack, deleteScene } = useScenes(
+    room,
+    showAll ? undefined : session.userId
+  );
 
   const isValidScene = (scene: TimelineEvent) => {
     const content = scene.content;
@@ -148,16 +151,24 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
           label={
             <div className="flex items-center gap-md">
               <Label className="grow">Scenes</Label>
-              <button
-                style={{ cursor: "pointer" }}
-                onClick={async () => {
-                  loadScenes(false, false);
-                }}
-              >
-                <Text variant="b3" weight="bold" type="span">
-                  Refresh
-                </Text>
-              </button>
+              <div className="flex items-center gap-sm">
+                <button
+                  disabled={loading}
+                  className="DiscoverCreator__textBtn"
+                  onClick={async () => loadScenes(false, false)}
+                >
+                  <Text variant="b3" weight="bold" type="span">
+                    Refresh
+                  </Text>
+                </button>
+                {permissions.canFeatureScenes && (
+                  <button className="DiscoverCreator__textBtn" onClick={() => setShowAll((state) => !state)}>
+                    <Text variant="b3" weight="bold" type="span">
+                      {showAll ? "From: Everyone" : "From: Me"}
+                    </Text>
+                  </button>
+                )}
+              </div>
             </div>
           }
           content={
@@ -206,37 +217,41 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
                             <Text className="truncate">{scene.content.scene_name}</Text>
                           </div>
                           <div className="flex items-center gap-xs">
-                            <DropdownMenu
-                              content={
-                                <div style={{ padding: "var(--sp-xxs) 0" }}>
-                                  {permissions.canFeatureScenes && (
-                                    <>
-                                      {isFeatured(scene.event_id) ? (
-                                        <DropdownMenuItem onSelect={() => unFeatureScene(scene)}>
-                                          Un-Feature
-                                        </DropdownMenuItem>
-                                      ) : (
-                                        <DropdownMenuItem onSelect={() => featureScene(scene)}>
-                                          Feature
-                                        </DropdownMenuItem>
-                                      )}
-                                    </>
-                                  )}
-                                  {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
-                                  {(permissions.canRedact || session.userId === scene.sender) && (
-                                    <DropdownMenuItem
-                                      onSelect={() => {
-                                        if (window.confirm("Are you sure?")) deleteScene(scene);
-                                      }}
-                                    >
-                                      Delete
-                                    </DropdownMenuItem>
-                                  )}
-                                </div>
-                              }
-                            >
-                              <IconButton iconSrc={MoreHorizontalIC} label="Delete Scene" />
-                            </DropdownMenu>
+                            {(permissions.canFeatureScenes ||
+                              permissions.canRedact ||
+                              session.userId === scene.sender) && (
+                              <DropdownMenu
+                                content={
+                                  <div style={{ padding: "var(--sp-xxs) 0" }}>
+                                    {permissions.canFeatureScenes && (
+                                      <>
+                                        {isFeatured(scene.event_id) ? (
+                                          <DropdownMenuItem onSelect={() => unFeatureScene(scene)}>
+                                            Un-Feature
+                                          </DropdownMenuItem>
+                                        ) : (
+                                          <DropdownMenuItem onSelect={() => featureScene(scene)}>
+                                            Feature
+                                          </DropdownMenuItem>
+                                        )}
+                                      </>
+                                    )}
+                                    {/* {session.userId === scene.sender && <DropdownMenuItem>Edit</DropdownMenuItem>} */}
+                                    {(permissions.canRedact || session.userId === scene.sender) && (
+                                      <DropdownMenuItem
+                                        onSelect={() => {
+                                          if (window.confirm("Are you sure?")) deleteScene(scene);
+                                        }}
+                                      >
+                                        Delete
+                                      </DropdownMenuItem>
+                                    )}
+                                  </div>
+                                }
+                              >
+                                <IconButton iconSrc={MoreHorizontalIC} label="Delete Scene" />
+                              </DropdownMenu>
+                            )}
                           </div>
                         </ScenePreviewCardContent>
                       </ScenePreviewCard>
