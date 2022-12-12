@@ -103,7 +103,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       tickRate: 10,
       interpolate: true,
       clientSidePrediction: true,
-      authoritative: true,
+      authoritative,
     };
   },
   init(ctx: GameState) {
