@@ -19,7 +19,7 @@ import { defineModule, getModule } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, disposeResource } from "../resource/resource.game";
 
-interface PhysicsModuleState {
+export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
@@ -75,11 +75,13 @@ export const physicsQuery = defineQuery([RigidBody]);
 export const enteredPhysicsQuery = enterQuery(physicsQuery);
 export const exitedPhysicsQuery = exitQuery(physicsQuery);
 
+const _v = new Vector3();
+const _q = new Quaternion();
 export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) => {
   const position = Transform.position[eid];
   const quaternion = Transform.quaternion[eid];
-  body.setTranslation(new Vector3().fromArray(position), true);
-  body.setRotation(new Quaternion().fromArray(quaternion), true);
+  body.setTranslation(_v.fromArray(position), true);
+  body.setRotation(_q.fromArray(quaternion), true);
 };
 
 const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {

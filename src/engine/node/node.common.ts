@@ -1,6 +1,6 @@
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 
-export const NodeResourceType = "node";
+export const NodeResourceType = "old-node";
 
 export enum Layer {
   Default,

@@ -31,6 +31,10 @@ export function addCollisionGroupMembership(collisionGroups: number, membership:
   return collisionGroups | (membership << 16);
 }
 
+export function removeCollisionGroupMembership(collisionGroups: number, membership: number): number {
+  return collisionGroups & ~(membership << 16);
+}
+
 export function addCollisionGroupFilter(collisionGroups: number, filter: number): number {
   return collisionGroups | filter;
 }

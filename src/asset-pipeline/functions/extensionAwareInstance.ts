@@ -47,12 +47,22 @@ export function extensionAwareInstance(): Transform {
     const root = doc.getRoot();
     const batchExtension = doc.createExtension(MeshGPUInstancing);
 
-    if (root.listAnimations().length) {
-      throw new Error(`${NAME}: Instancing is not currently supported for animated models.`);
-    }
-
     let numBatches = 0;
     let numInstances = 0;
+
+    const excludedNodes = new Set<Node>();
+
+    for (const animation of root.listAnimations()) {
+      for (const channel of animation.listChannels()) {
+        const target = channel.getTargetNode();
+
+        if (target) {
+          target.traverse((node) => {
+            excludedNodes.add(node);
+          });
+        }
+      }
+    }
 
     for (const scene of root.listScenes()) {
       // Gather a one-to-many Mesh/Node mapping, identifying what we can instance.
@@ -60,6 +70,10 @@ export function extensionAwareInstance(): Transform {
       const getInstanceKey = createInstanceKeyMap();
 
       scene.traverse((node) => {
+        if (excludedNodes.has(node)) {
+          return;
+        }
+
         const instanceKey = getInstanceKey(node);
 
         if (instanceKey) {

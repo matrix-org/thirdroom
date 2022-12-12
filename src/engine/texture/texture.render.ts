@@ -1,85 +1,111 @@
-import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, Texture, TextureEncoding } from "three";
+import {
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  RepeatWrapping,
+  Texture,
+  ClampToEdgeWrapping,
+  CubeReflectionMapping,
+  CubeRefractionMapping,
+  CubeUVReflectionMapping,
+  EquirectangularReflectionMapping,
+  EquirectangularRefractionMapping,
+  LinearMipmapNearestFilter,
+  MirroredRepeatWrapping,
+  NearestFilter,
+  NearestMipmapLinearFilter,
+  NearestMipmapNearestFilter,
+  UVMapping,
+  Mapping,
+  TextureFilter,
+  Wrapping,
+} from "three";
 
-import { ImageFormat, LocalImageResource } from "../image/image.render";
+import { ImageFormat, RendererImageResource } from "../image/image.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalSamplerResource } from "../sampler/sampler.render";
-import { SharedTextureResource } from "./texture.common";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap, TextureResource } from "../resource/schema";
 
-export interface LocalTextureResource {
-  resourceId: ResourceId;
-  image: LocalImageResource;
-  texture: Texture;
-}
+const ThreeMinFilters: { [key: number]: TextureFilter } = {
+  [SamplerMinFilter.NEAREST]: NearestFilter,
+  [SamplerMinFilter.LINEAR]: LinearFilter,
+  [SamplerMinFilter.NEAREST_MIPMAP_NEAREST]: NearestMipmapNearestFilter,
+  [SamplerMinFilter.LINEAR_MIPMAP_NEAREST]: LinearMipmapNearestFilter,
+  [SamplerMinFilter.NEAREST_MIPMAP_LINEAR]: NearestMipmapLinearFilter,
+  [SamplerMinFilter.LINEAR_MIPMAP_LINEAR]: LinearMipmapLinearFilter,
+};
 
-export async function onLoadLocalTextureResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { initialProps }: SharedTextureResource
-): Promise<LocalTextureResource> {
-  const rendererModule = getModule(ctx, RendererModule);
+const ThreeMagFilters: { [key: number]: TextureFilter } = {
+  [SamplerMagFilter.NEAREST]: NearestFilter,
+  [SamplerMagFilter.LINEAR]: LinearFilter,
+};
 
-  const [image, sampler] = await Promise.all([
-    waitForLocalResource<LocalImageResource>(ctx, initialProps.image),
-    initialProps.sampler ? waitForLocalResource<LocalSamplerResource>(ctx, initialProps.sampler) : undefined,
-  ]);
+const ThreeWrappings: { [key: number]: Wrapping } = {
+  [SamplerWrap.CLAMP_TO_EDGE]: ClampToEdgeWrapping,
+  [SamplerWrap.MIRRORED_REPEAT]: MirroredRepeatWrapping,
+  [SamplerWrap.REPEAT]: RepeatWrapping,
+};
 
-  // TODO: Add ImageBitmap to Texture types
-  const texture = "texture" in image ? image.texture : new Texture(image.image as any);
+const ThreeMapping: { [key: number]: Mapping } = {
+  [SamplerMapping.UVMapping]: UVMapping,
+  [SamplerMapping.CubeReflectionMapping]: CubeReflectionMapping,
+  [SamplerMapping.CubeRefractionMapping]: CubeRefractionMapping,
+  [SamplerMapping.EquirectangularReflectionMapping]: EquirectangularReflectionMapping,
+  [SamplerMapping.EquirectangularRefractionMapping]: EquirectangularRefractionMapping,
+  [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
+};
 
-  if (sampler) {
-    if (image.format === ImageFormat.RGBA) {
-      texture.magFilter = sampler.magFilter;
-      texture.minFilter = sampler.minFilter;
-      texture.wrapS = sampler.wrapS || RepeatWrapping;
-      texture.wrapT = sampler.wrapT || RepeatWrapping;
-    }
+// Should never actually be used but allows us to async initialize the texture in load()
+const defaultTexture = new Texture();
 
-    texture.mapping = sampler.mapping;
-  } else {
-    texture.magFilter = LinearFilter;
-    texture.minFilter = LinearMipmapLinearFilter;
-    texture.wrapS = RepeatWrapping;
-    texture.wrapT = RepeatWrapping;
-  }
+export class RendererTextureResource extends defineLocalResourceClass<typeof TextureResource, RenderThreadState>(
+  TextureResource
+) {
+  texture: Texture = defaultTexture;
+  declare source: RendererImageResource;
 
-  if (image.format === ImageFormat.RGBA) {
-    texture.flipY = false;
-    // TODO: Can we determine texture encoding when applying to the material?
-    texture.encoding = initialProps.encoding as unknown as TextureEncoding;
-    texture.needsUpdate = true;
-  }
+  async load(ctx: RenderThreadState) {
+    const rendererModule = getModule(ctx, RendererModule);
 
-  // Set the texture anisotropy which improves rendering at extreme angles.
-  // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
-  // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
-  texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
+    // TODO: Add ImageBitmap to Texture types
+    const texture = this.source.texture || new Texture(this.source.image as any);
 
-  const localTexture: LocalTextureResource = {
-    resourceId,
-    image,
-    texture,
-  };
+    const sampler = this.sampler;
 
-  rendererModule.textures.push(localTexture);
-
-  return localTexture;
-}
-
-export function updateLocalTextureResources(ctx: RenderThreadState, textures: LocalTextureResource[]) {
-  for (let i = textures.length - 1; i >= 0; i--) {
-    const textureResource = textures[i];
-
-    if (getResourceDisposed(ctx, textureResource.resourceId)) {
-      if (textureResource.image.format === ImageFormat.RGBA) {
-        textureResource.texture.dispose();
+    if (sampler) {
+      if (this.source.format === ImageFormat.RGBA) {
+        texture.magFilter = ThreeMagFilters[sampler.magFilter];
+        texture.minFilter = ThreeMinFilters[sampler.minFilter];
+        texture.wrapS = ThreeWrappings[sampler.wrapS];
+        texture.wrapT = ThreeWrappings[sampler.wrapT];
       }
 
-      // Don't dispose the RGBE texture object because we might still be using it
+      texture.mapping = ThreeMapping[sampler.mapping];
+    } else {
+      texture.magFilter = LinearFilter;
+      texture.minFilter = LinearMipmapLinearFilter;
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
+    }
 
-      textures.splice(i, 1);
+    if (this.source.format === ImageFormat.RGBA) {
+      texture.flipY = false;
+      // TODO: Can we determine texture encoding when applying to the material?
+      texture.encoding = this.encoding;
+      texture.needsUpdate = true;
+    }
+
+    // Set the texture anisotropy which improves rendering at extreme angles.
+    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+    texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
+
+    this.texture = texture;
+  }
+
+  dispose(ctx: RenderThreadState) {
+    if (this.source && this.source.format === ImageFormat.RGBA && this.source.texture) {
+      this.source.texture.dispose();
     }
   }
 }

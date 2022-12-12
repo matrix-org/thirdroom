@@ -7,7 +7,6 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { RemotePositionalAudioEmitter } from "../audio/audio.game";
-import { RemoteCamera } from "../camera/camera.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh, RemoteLightMap } from "../mesh/mesh.game";
@@ -27,7 +26,7 @@ import {
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
-import { RemoteLight } from "../resource/schema";
+import { RemoteCamera, RemoteLight, RemoteNode as ScriptRemoteNode } from "../resource/schema";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -65,6 +64,8 @@ export interface RemoteNode {
   set layers(value: number);
   get nametag(): RemoteNametag | undefined;
   set nametag(nametag: RemoteNametag | undefined);
+  get scriptNode(): ScriptRemoteNode | undefined;
+  set scriptNode(scriptNode: ScriptRemoteNode | undefined);
 }
 
 const DEFAULT_NODE_NAME = "Node";
@@ -83,6 +84,7 @@ interface NodeProps {
   static?: boolean;
   layers?: number;
   nametag?: RemoteNametag;
+  scriptNode?: ScriptRemoteNode;
 }
 
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
@@ -102,6 +104,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
     if (props?.tilesRenderer) remoteNode.tilesRenderer = props.tilesRenderer;
     if (props?.nametag) remoteNode.nametag = props.nametag;
+    if (props?.scriptNode) remoteNode.scriptNode = props.scriptNode;
 
     return remoteNode;
   }
@@ -138,6 +141,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
   let _tilesRenderer: RemoteTilesRenderer | undefined = props?.tilesRenderer;
   let _nametag: RemoteNametag | undefined = props?.nametag;
+  let _scriptNode: ScriptRemoteNode | undefined = props?.scriptNode;
 
   const name = props?.name || DEFAULT_NODE_NAME;
 
@@ -181,6 +185,10 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
         if (_tilesRenderer) {
           disposeResource(ctx, _tilesRenderer.resourceId);
+        }
+
+        if (_scriptNode) {
+          disposeResource(ctx, _scriptNode.resourceId);
         }
       },
     }
@@ -418,6 +426,20 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     },
     set layers(value: number) {
       rendererNodeBufferView.layers[0] = value;
+    },
+    get scriptNode() {
+      return _scriptNode;
+    },
+    set scriptNode(scriptNode: ScriptRemoteNode | undefined) {
+      if (scriptNode) {
+        addResourceRef(ctx, scriptNode.resourceId);
+      }
+
+      if (_scriptNode) {
+        disposeResource(ctx, _scriptNode.resourceId);
+      }
+
+      _scriptNode = scriptNode;
     },
   };
 

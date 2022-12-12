@@ -17,7 +17,7 @@ import {
 } from "three";
 
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { LocalCameraResource, updateNodeCamera } from "../camera/camera.render";
+import { updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { updateNodeLight } from "../light/light.render";
@@ -29,7 +29,7 @@ import { RendererModule, RendererModuleState, RenderThreadState } from "../rende
 import { ResourceId } from "../resource/resource.common";
 import { getResourceDisposed } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
-import { LocalLight } from "../resource/schema";
+import { LocalCamera, LocalLight } from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
 import { LocalTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { promiseObject } from "../utils/promiseObject";
@@ -46,7 +46,7 @@ export interface LocalNode {
   skinnedMesh?: LocalSkinnedMesh;
   bone?: Bone;
   meshPrimitiveObjects?: PrimitiveObject3D[];
-  camera?: LocalCameraResource;
+  camera?: LocalCamera;
   cameraObject?: PerspectiveCamera | OrthographicCamera;
   light?: LocalLight;
   lightObject?: Light;
@@ -73,7 +73,7 @@ export async function onLoadLocalNode(
     skinnedMesh: nodeView.skinnedMesh[0]
       ? waitForLocalResource<LocalSkinnedMesh>(ctx, nodeView.skinnedMesh[0])
       : undefined,
-    camera: nodeView.camera[0] ? waitForLocalResource<LocalCameraResource>(ctx, nodeView.camera[0]) : undefined,
+    camera: nodeView.camera[0] ? waitForLocalResource<LocalCamera>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLight>(ctx, nodeView.light[0]) : undefined,
     reflectionProbe: nodeView.reflectionProbe[0]
       ? waitForLocalResource<LocalReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])

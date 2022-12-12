@@ -4,7 +4,7 @@
 
 import { BufferGeometry } from "three";
 
-import { MeshPrimitiveMode } from "../mesh/mesh.common";
+import { MeshPrimitiveMode } from "../resource/schema";
 
 /**
  * @param {BufferGeometry} geometry

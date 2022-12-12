@@ -2,9 +2,10 @@ import { vec2 } from "gl-matrix";
 
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
+import { MeshPrimitiveMode } from "../resource/schema";
 
-export const MeshResourceType = "mesh";
-export const MeshPrimitiveResourceType = "mesh-primitive";
+export const MeshResourceType = "old-mesh";
+export const MeshPrimitiveResourceType = "old-mesh-primitive";
 export const InstancedMeshResourceType = "instanced-mesh";
 export const LightMapResourceType = "light-map";
 export const SkinnedMeshResourceType = "skinned-mesh";
@@ -50,16 +51,6 @@ export interface SharedMeshPrimitiveResource {
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
 }
 
-export enum MeshPrimitiveMode {
-  POINTS,
-  LINES,
-  LINE_LOOP,
-  LINE_STRIP,
-  TRIANGLES,
-  TRIANGLE_STRIP,
-  TRIANGLE_FAN,
-}
-
 export enum MeshPrimitiveAttribute {
   POSITION = "POSITION",
   NORMAL = "NORMAL",
@@ -71,29 +62,10 @@ export enum MeshPrimitiveAttribute {
   WEIGHTS_0 = "WEIGHTS_0",
 }
 
-export enum MeshPrimitiveAttributeIndex {
-  POSITION,
-  NORMAL,
-  TANGENT,
-  TEXCOORD_0,
-  TEXCOORD_1,
-  COLOR_0,
-  JOINTS_0,
-  WEIGHTS_0,
-}
-
 export enum InstancedMeshAttribute {
   TRANSLATION = "TRANSLATION",
   ROTATION = "ROTATION",
   SCALE = "SCALE",
   LIGHTMAP_OFFSET = "_LIGHTMAP_OFFSET",
   LIGHTMAP_SCALE = "_LIGHTMAP_SCALE",
-}
-
-export enum InstancedMeshAttributeIndex {
-  TRANSLATION,
-  ROTATION,
-  SCALE,
-  LIGHTMAP_OFFSET,
-  LIGHTMAP_SCALE,
 }

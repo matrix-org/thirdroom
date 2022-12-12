@@ -251,6 +251,12 @@ export const spaceInt8 = (v: CursorView) => {
 
 /* Readers */
 
+export const readArrayBuffer = (v: CursorView, byteLength: number) => {
+  const ab = v.buffer.slice(v.cursor, v.cursor + byteLength);
+  v.cursor += byteLength;
+  return ab;
+};
+
 // dynamically obtains primitive type of passed in TypedArray object
 // todo: memoize prop type
 export const readProp = (v: CursorView, prop: TypedArray) => {
@@ -336,5 +342,10 @@ export const skipFloat32 = (v: CursorView) => {
 
 export const skipUint8 = (v: CursorView) => {
   v.cursor += Uint8Array.BYTES_PER_ELEMENT;
+  return v;
+};
+
+export const skipUint32 = (v: CursorView) => {
+  v.cursor += Uint32Array.BYTES_PER_ELEMENT;
   return v;
 };

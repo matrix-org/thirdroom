@@ -139,8 +139,8 @@ export async function loadGLTFAnimationClip(
   indexToObject3D: Map<number, Object3D>
 ) {
   const nodes: Object3D[] = [];
-  const pendingInputAccessors: Promise<RemoteAccessor<any, any>>[] = [];
-  const pendingOutputAccessors: Promise<RemoteAccessor<any, any>>[] = [];
+  const pendingInputAccessors: Promise<RemoteAccessor<any>>[] = [];
+  const pendingOutputAccessors: Promise<RemoteAccessor<any>>[] = [];
   const samplers: GLTFSampler[] = [];
   const targets: GLTFAnimationChannelTarget[] = [];
 

@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
+import { ResourceDefinition } from "../resource/ResourceDefinition";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
 export enum ScriptExecutionEnvironment {
@@ -21,13 +22,14 @@ export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecution
   U8Heap: Uint8Array;
   source?: string;
   ready: boolean;
-  initialized: boolean;
+  loadedCalled: boolean;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
   websg_allocate(size: number): number;
   websg_deallocate(ptr: number): void;
   websg_initialize(): void;
+  websg_loaded(): void;
   websg_update(dt: number): void;
 }
 
@@ -54,9 +56,7 @@ export function ScriptingSystem(ctx: GameState) {
     const script = ScriptComponent.get(eid);
 
     if (script) {
-      if (script.ready && !script.initialized) {
-        script.instance.exports.websg_initialize();
-
+      if (script.ready && !script.loadedCalled) {
         if (script.environment === ScriptExecutionEnvironment.JS) {
           const jsScript = script as Script<ScriptExecutionEnvironment.JS>;
           const arr = new TextEncoder().encode(script.source);
@@ -67,10 +67,16 @@ export function ScriptingSystem(ctx: GameState) {
           jsScript.instance.exports.thirdroom_evalJS(codePtr);
         }
 
-        script.initialized = true;
+        if ("websg_loaded" in script.instance.exports) {
+          script.instance.exports.websg_loaded();
+        }
+
+        script.loadedCalled = true;
       }
 
-      script.instance.exports.websg_update(ctx.dt);
+      if ("websg_update" in script.instance.exports) {
+        script.instance.exports.websg_update(ctx.dt);
+      }
     }
   }
 
@@ -82,30 +88,36 @@ export function ScriptingSystem(ctx: GameState) {
   }
 }
 
-export async function loadJSScript(ctx: GameState, source: string): Promise<Script<ScriptExecutionEnvironment.JS>> {
+export async function loadJSScript(
+  ctx: GameState,
+  source: string,
+  allowedResources: ResourceDefinition[]
+): Promise<Script<ScriptExecutionEnvironment.JS>> {
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
-  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.JS, buffer, allowedResources);
   script.source = source;
   return script;
 }
 
 export async function loadWASMScript(
   ctx: GameState,
-  buffer: ArrayBuffer
+  buffer: ArrayBuffer,
+  allowedResources: ResourceDefinition[]
 ): Promise<Script<ScriptExecutionEnvironment.WASM>> {
-  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer);
+  const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer, allowedResources);
   return script;
 }
 
 async function loadScript<Env extends ScriptExecutionEnvironment>(
   ctx: GameState,
   environment: Env,
-  buffer: ArrayBuffer
+  buffer: ArrayBuffer,
+  allowedResources: ResourceDefinition[]
 ): Promise<Script<Env>> {
   let instance: ScriptWebAssemblyInstance<Env> | undefined = undefined;
 
-  const resourceManager = new ScriptResourceManager(ctx);
+  const resourceManager = new ScriptResourceManager(ctx, allowedResources);
 
   const result = await WebAssembly.instantiate(buffer, resourceManager.createImports());
 
@@ -123,9 +135,13 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     environment,
     resourceManager,
     ready: false,
-    initialized: false,
+    loadedCalled: false,
     U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
+
+  if ("websg_initialize" in script.instance.exports) {
+    instance.exports.websg_initialize();
+  }
 
   return script;
 }

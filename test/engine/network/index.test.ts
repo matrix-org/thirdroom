@@ -6,24 +6,12 @@ import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
-  deserializeCreates,
-  deserializeDeletes,
-  deserializeTransformChanged,
-  deserializeUpdatesChanged,
-  getPeerIdIndexFromNetworkId,
+  getPeerIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
   Owned,
   Networked,
   ownedNetworkedQuery,
-  serializeCreates,
-  serializeDeletes,
-  serializeTransformChanged,
-  serializeUpdatesChanged,
-  serializeTransformSnapshot,
-  deserializeTransformSnapshot,
-  serializeUpdatesSnapshot,
-  deserializeUpdatesSnapshot,
   NetworkModule,
 } from "../../../src/engine/network/network.game";
 import {
@@ -36,6 +24,21 @@ import {
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
 import { RigidBody } from "../../../src/engine/physics/physics.game";
+import { addPrefabComponent } from "../../../src/engine/prefab/prefab.game";
+import {
+  serializeTransformSnapshot,
+  deserializeTransformSnapshot,
+  serializeTransformChanged,
+  deserializeTransformChanged,
+  serializeUpdatesSnapshot,
+  deserializeUpdatesSnapshot,
+  serializeUpdatesChanged,
+  deserializeUpdatesChanged,
+  serializeCreates,
+  deserializeCreates,
+  serializeDeletes,
+  deserializeDeletes,
+} from "../../../src/engine/network/serialization.game";
 
 const clearComponentData = () => {
   new Uint8Array(Transform.position[0].buffer).fill(0);
@@ -50,7 +53,7 @@ describe("Network Tests", () => {
   describe("networkId", () => {
     it("should #getPeerIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;
-      strictEqual(getPeerIdIndexFromNetworkId(nid), 0x000f);
+      strictEqual(getPeerIndexFromNetworkId(nid), 0x000f);
     });
     it("should #getLocalIdFromNetworkId()", () => {
       const nid = 0xfff0_000f;
@@ -293,7 +296,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Owned, eid);
       });
 
-      serializeUpdatesSnapshot([state, writer]);
+      serializeUpdatesSnapshot([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -342,7 +345,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Owned, eid);
       });
 
-      serializeUpdatesSnapshot([state, writer]);
+      serializeUpdatesSnapshot([state, writer, ""]);
 
       ents.forEach((eid) => {
         const position = Transform.position[eid];
@@ -353,7 +356,7 @@ describe("Network Tests", () => {
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeUpdatesSnapshot([state, reader]);
+      deserializeUpdatesSnapshot([state, reader, ""]);
 
       ents.forEach((eid) => {
         const position = Networked.position[eid];
@@ -386,7 +389,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Owned, eid);
       });
 
-      serializeUpdatesChanged([state, writer]);
+      serializeUpdatesChanged([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -432,11 +435,11 @@ describe("Network Tests", () => {
         addComponent(state.world, Owned, eid);
       });
 
-      serializeUpdatesChanged([state, writer]);
+      serializeUpdatesChanged([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeUpdatesChanged([state, reader]);
+      deserializeUpdatesChanged([state, reader, ""]);
 
       ents.forEach((eid) => {
         const position = Networked.position[eid];
@@ -463,11 +466,12 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
-      serializeCreates([state, writer]);
+      serializeCreates([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -476,7 +480,7 @@ describe("Network Tests", () => {
 
       ents.forEach((eid) => {
         strictEqual(readUint32(reader), eid);
-        strictEqual(readString(reader), "cube");
+        strictEqual(readString(reader), "test-prefab");
       });
     });
     it("should #deserializeCreates()", () => {
@@ -493,16 +497,17 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       const localEntities = ownedNetworkedQuery(state.world);
       strictEqual(localEntities.length, 3);
 
-      serializeCreates([state, writer]);
+      serializeCreates([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeCreates([state, reader]);
+      deserializeCreates([state, reader, ""]);
 
       const remoteEntities = remoteNetworkedQuery(state.world);
       strictEqual(remoteEntities.length, 3);
@@ -531,6 +536,7 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
@@ -540,7 +546,7 @@ describe("Network Tests", () => {
         removeComponent(state.world, Networked, eid, false);
       });
 
-      serializeDeletes([state, writer]);
+      serializeDeletes([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -563,15 +569,16 @@ describe("Network Tests", () => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
+        addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
-      serializeCreates([state, writer]);
+      serializeCreates([state, writer, ""]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeCreates([state, reader]);
+      deserializeCreates([state, reader, ""]);
 
       const remoteEntities = remoteNetworkedQuery(state.world);
       strictEqual(remoteEntities.length, 3);
@@ -587,7 +594,7 @@ describe("Network Tests", () => {
 
       const writer2 = createCursorView();
 
-      serializeDeletes([state, writer2]);
+      serializeDeletes([state, writer2, ""]);
 
       remoteEntities.forEach((eid) => {
         ok(entityExists(state.world, eid));
@@ -595,7 +602,7 @@ describe("Network Tests", () => {
 
       const reader2 = createCursorView(writer2.buffer);
 
-      deserializeDeletes([state, reader2]);
+      deserializeDeletes([state, reader2, ""]);
 
       remoteEntities.forEach((eid) => {
         ok(!entityExists(state.world, eid));

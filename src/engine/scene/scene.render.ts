@@ -1,4 +1,4 @@
-import { Scene } from "three";
+import { Color, Scene } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
@@ -7,14 +7,14 @@ import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
 import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { LocalTextureResource } from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
 
 export interface LocalSceneResource {
   resourceId: ResourceId;
   scene: Scene;
-  backgroundTexture?: LocalTextureResource;
+  backgroundTexture?: RendererTextureResource;
   reflectionProbe?: LocalReflectionProbeResource;
   reflectionProbeNeedsUpdate: boolean;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
@@ -31,7 +31,7 @@ export async function onLoadLocalSceneResource(
 
   await promiseObject({
     backgroundTexture: sceneView.backgroundTexture[0]
-      ? waitForLocalResource<LocalTextureResource>(ctx, sceneView.backgroundTexture[0])
+      ? waitForLocalResource<RendererTextureResource>(ctx, sceneView.backgroundTexture[0])
       : undefined,
   });
 
@@ -49,7 +49,13 @@ export async function onLoadLocalSceneResource(
   return localSceneResource;
 }
 
-export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalSceneResource[]) {
+const blackBackground = new Color(0x000000);
+
+export function updateLocalSceneResources(
+  ctx: RenderThreadState,
+  scenes: LocalSceneResource[],
+  activeSceneResourceId: number
+) {
   for (let i = scenes.length - 1; i >= 0; i--) {
     const sceneResource = scenes[i];
 
@@ -60,7 +66,7 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
   for (let i = 0; i < scenes.length; i++) {
     const sceneResource = scenes[i];
-    const { scene, rendererSceneTripleBuffer, backgroundTexture } = sceneResource;
+    const { scene, rendererSceneTripleBuffer, backgroundTexture, resourceId } = sceneResource;
 
     const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
 
@@ -68,7 +74,7 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
 
     if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
       if (sceneView.backgroundTexture[0]) {
-        const nextBackgroundTexture = getLocalResource<LocalTextureResource>(
+        const nextBackgroundTexture = getLocalResource<RendererTextureResource>(
           ctx,
           sceneView.backgroundTexture[0]
         )?.resource;
@@ -84,6 +90,20 @@ export function updateLocalSceneResources(ctx: RenderThreadState, scenes: LocalS
       }
     }
 
+    const rendererModule = getModule(ctx, RendererModule);
+
+    if (resourceId === activeSceneResourceId) {
+      rendererModule.renderPipeline.bloomPass.strength = sceneView.bloomStrength[0];
+    }
+
     updateSceneReflectionProbe(ctx, sceneResource, sceneView);
+
+    if (rendererModule.enableMatrixMaterial) {
+      scene.overrideMaterial = rendererModule.matrixMaterial;
+      scene.background = blackBackground;
+    } else {
+      scene.overrideMaterial = null;
+      scene.background = sceneResource.backgroundTexture?.texture || null;
+    }
   }
 }

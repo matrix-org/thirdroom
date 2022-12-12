@@ -13,6 +13,7 @@ import {
   moveCursorView,
   readFloat32,
   readUint8,
+  sliceCursorView,
   writeFloat32,
   writeUint8,
 } from "../allocator/CursorView";
@@ -23,6 +24,8 @@ export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBu
   array: Uint8Array;
   view: CursorView;
 }
+
+export const RING_BUFFER_MAX = 100;
 
 const BYTE_LENGTH = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
@@ -64,7 +67,7 @@ export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
   if (isRingBufferEmpty(irb)) {
     return false;
   }
-  const rv = popRingBuffer(irb, irb.array);
+  popRingBuffer(irb, irb.array);
 
   const { view } = irb;
   moveCursorView(view, 0);
@@ -73,5 +76,5 @@ export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
   out.values[0] = readFloat32(view);
   out.values[1] = readFloat32(view);
 
-  return rv === irb.array.length;
+  return sliceCursorView(view);
 }

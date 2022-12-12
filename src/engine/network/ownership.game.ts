@@ -7,15 +7,10 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
-import {
-  Networked,
-  NetPipeData,
-  NetworkModule,
-  NetworkAction,
-  broadcastReliable,
-  Owned,
-  writeMetadata,
-} from "./network.game";
+import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
+import { NetworkAction } from "./NetworkAction";
+import { broadcastReliable } from "./outbound.game";
+import { writeMetadata, NetPipeData } from "./serialization.game";
 
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 
@@ -39,7 +34,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   }
 };
 
-export const takeOwnership = (ctx: GameState, eid: number): number => {
+export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: number): number => {
   if (!hasComponent(ctx.world, Owned, eid)) {
     removeRecursive(ctx.world, eid);
 
@@ -62,7 +57,7 @@ export const takeOwnership = (ctx: GameState, eid: number): number => {
     addChild(ctx.activeScene, newEid);
 
     // send message to remove on other side
-    broadcastReliable(ctx, createRemoveOwnershipMessage(ctx, eid));
+    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));
 
     return newEid;
   }

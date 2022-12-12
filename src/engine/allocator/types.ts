@@ -1,14 +1,6 @@
-export type TypedArray =
-  | Float32Array
-  | Float64Array
-  | Uint8Array
-  | Int8Array
-  | Uint16Array
-  | Int16Array
-  | Uint32Array
-  | Int32Array
-  | BigUint64Array
-  | BigInt64Array;
+export type TypedArray = TypedArray32 | BigUint64Array | BigInt64Array;
+
+export type TypedArray32 = Float32Array | Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array;
 
 export type TypedArrayConstructor =
   | TypedArrayConstructor32

@@ -3,9 +3,7 @@ import { addEntity } from "bitecs";
 import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
-import { InteractableType } from "../../plugins/interaction/interaction.common";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { AccessorType, AccessorComponentType } from "../accessor/accessor.common";
 import { createRemoteAccessor, RemoteAccessor } from "../accessor/accessor.game";
 import {
   commitToObjectTripleBuffer,
@@ -13,24 +11,34 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { createRemoteBufferView } from "../bufferView/bufferView.game";
 import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../material/material.game";
 import { getModule, Thread } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNode } from "../node/node.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteTexture } from "../texture/texture.game";
+import {
+  AccessorComponentType,
+  AccessorType,
+  BufferResource,
+  BufferViewResource,
+  MaterialResource,
+  MaterialType,
+  MeshPrimitiveMode,
+  RemoteMaterial,
+  RemoteTexture,
+  RemoteMesh as ScriptRemoteMesh,
+  RemoteMeshPrimitive as ScriptRemoteMeshPrimitive,
+  InteractableType,
+} from "../resource/schema";
 import {
   SharedMeshResource,
   MeshResourceType,
   MeshResourceProps,
   PrimitiveResourceProps,
   meshPrimitiveSchema,
-  MeshPrimitiveMode,
   SharedMeshPrimitiveResource,
   MeshPrimitiveResourceType,
   MeshPrimitiveTripleBuffer,
@@ -50,53 +58,59 @@ export interface RemoteMeshPrimitive {
   resourceId: number;
   meshPrimitiveBufferView: MeshPrimitiveBufferView;
   meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
-  indices?: RemoteAccessor<any, any>;
+  attributes: { [key: string]: RemoteAccessor<any> };
+  indices?: RemoteAccessor<any>;
   mode?: number;
   get material(): RemoteMaterial | undefined;
   set material(value: RemoteMaterial | undefined);
+  get scriptMeshPrimitive(): ScriptRemoteMeshPrimitive | undefined;
+  set scriptMeshPrimitive(scriptMeshPrimitive: ScriptRemoteMeshPrimitive | undefined);
 }
 
 export interface RemoteMesh {
   name: string;
   resourceId: number;
   primitives: RemoteMeshPrimitive[];
+  get scriptMesh(): ScriptRemoteMesh | undefined;
+  set scriptMesh(value: ScriptRemoteMesh | undefined);
 }
 
 export interface RemoteMeshProps {
   name?: string;
   primitives: MeshPrimitiveProps[];
+  scriptMesh?: ScriptRemoteMesh;
 }
 
 export interface MeshPrimitiveProps {
-  attributes: { [key: string]: RemoteAccessor<any, any> };
-  indices?: RemoteAccessor<any, any>;
+  attributes: { [key: string]: RemoteAccessor<any> };
+  indices?: RemoteAccessor<any>;
   material?: RemoteMaterial;
   mode?: number;
+  scriptMeshPrimitive?: ScriptRemoteMeshPrimitive;
 }
 
 export interface RemoteInstancedMesh {
   name: string;
   resourceId: number;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
+  attributes: { [key: string]: RemoteAccessor<any> };
 }
 
 export interface RemoteInstancedMeshProps {
   name?: string;
-  attributes: { [key: string]: RemoteAccessor<any, any> };
+  attributes: { [key: string]: RemoteAccessor<any> };
 }
 
 export interface RemoteSkinnedMesh {
   name: string;
   resourceId: number;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any, any>;
+  inverseBindMatrices?: RemoteAccessor<any>;
 }
 
 export interface RemoteSkinnedMeshProps {
   name?: string;
   joints: RemoteNode[];
-  inverseBindMatrices?: RemoteAccessor<any, any>;
+  inverseBindMatrices?: RemoteAccessor<any>;
 }
 
 export interface RemoteLightMap {
@@ -133,6 +147,12 @@ export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): Remote
     primitives: remoteMeshPrimitives.map((primitive) => primitive.resourceId),
   };
 
+  let _scriptMesh: ScriptRemoteMesh | undefined = props?.scriptMesh;
+
+  if (_scriptMesh) {
+    addResourceRef(ctx, _scriptMesh.resourceId);
+  }
+
   const resourceId = createResource<SharedMeshResource>(
     ctx,
     Thread.Render,
@@ -144,6 +164,10 @@ export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): Remote
         for (const primitive of remoteMeshPrimitives) {
           disposeResource(ctx, primitive.resourceId);
         }
+
+        if (_scriptMesh) {
+          disposeResource(ctx, _scriptMesh.resourceId);
+        }
       },
     }
   );
@@ -152,6 +176,20 @@ export function createRemoteMesh(ctx: GameState, props: RemoteMeshProps): Remote
     name,
     resourceId,
     primitives: remoteMeshPrimitives,
+    get scriptMesh(): ScriptRemoteMesh | undefined {
+      return _scriptMesh;
+    },
+    set scriptMesh(scriptMesh: ScriptRemoteMesh | undefined) {
+      if (scriptMesh) {
+        addResourceRef(ctx, scriptMesh.resourceId);
+      }
+
+      if (_scriptMesh) {
+        disposeResource(ctx, _scriptMesh.resourceId);
+      }
+
+      _scriptMesh = scriptMesh;
+    },
   };
 }
 
@@ -162,7 +200,7 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
 
   const initialProps: PrimitiveResourceProps = {
     attributes: Object.fromEntries(
-      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
+      Object.entries(props.attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [
         name,
         accessor.resourceId,
       ])
@@ -189,6 +227,12 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
     addResourceRef(ctx, _material.resourceId);
   }
 
+  let _scriptMeshPrimitive: ScriptRemoteMeshPrimitive | undefined = props?.scriptMeshPrimitive;
+
+  if (_scriptMeshPrimitive) {
+    addResourceRef(ctx, _scriptMeshPrimitive.resourceId);
+  }
+
   const resourceId = createResource<SharedMeshPrimitiveResource>(
     ctx,
     Thread.Render,
@@ -210,6 +254,10 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
 
         if (_material) {
           disposeResource(ctx, _material.resourceId);
+        }
+
+        if (_scriptMeshPrimitive) {
+          disposeResource(ctx, _scriptMeshPrimitive.resourceId);
         }
 
         const index = rendererModule.meshPrimitives.findIndex((primitive) => primitive.resourceId === resourceId);
@@ -244,6 +292,20 @@ function createRemoteMeshPrimitive(ctx: GameState, name: string, props: MeshPrim
       _material = material;
       meshPrimitiveBufferView.material[0] = material?.resourceId || 0;
     },
+    get scriptMeshPrimitive(): ScriptRemoteMeshPrimitive | undefined {
+      return _scriptMeshPrimitive;
+    },
+    set scriptMeshPrimitive(scriptMeshPrimitive: ScriptRemoteMeshPrimitive | undefined) {
+      if (scriptMeshPrimitive) {
+        addResourceRef(ctx, scriptMeshPrimitive.resourceId);
+      }
+
+      if (_scriptMeshPrimitive) {
+        disposeResource(ctx, _scriptMeshPrimitive.resourceId);
+      }
+
+      _scriptMeshPrimitive = scriptMeshPrimitive;
+    },
   };
 
   rendererModule.meshPrimitives.push(remoteMeshPrimitive);
@@ -258,10 +320,7 @@ export function createRemoteInstancedMesh(ctx: GameState, props: RemoteInstanced
 
   const sharedResource: SharedInstancedMeshResource = {
     attributes: Object.fromEntries(
-      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any, any>]) => [
-        name,
-        accessor.resourceId,
-      ])
+      Object.entries(attributes).map(([name, accessor]: [string, RemoteAccessor<any>]) => [name, accessor.resourceId])
     ),
   };
 
@@ -363,20 +422,23 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const normArr = geometry.attributes.normal.array as Float32Array;
   const uvArr = geometry.attributes.uv.array as Float32Array;
 
-  const buffer = new SharedArrayBuffer(
-    indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength
-  );
+  const data = new SharedArrayBuffer(indicesArr.byteLength + posArr.byteLength + normArr.byteLength + uvArr.byteLength);
 
-  const indices = new Uint16Array(buffer, 0, indicesArr.length);
+  const indices = new Uint16Array(data, 0, indicesArr.length);
   indices.set(indicesArr);
-  const position = new Float32Array(buffer, indices.byteLength, posArr.length);
+  const position = new Float32Array(data, indices.byteLength, posArr.length);
   position.set(posArr);
-  const normal = new Float32Array(buffer, position.byteOffset + position.byteLength, normArr.length);
+  const normal = new Float32Array(data, position.byteOffset + position.byteLength, normArr.length);
   normal.set(normArr);
-  const uv = new Float32Array(buffer, normal.byteOffset + normal.byteLength, uvArr.length);
+  const uv = new Float32Array(data, normal.byteOffset + normal.byteLength, uvArr.length);
   uv.set(uvArr);
 
-  const bufferView = createRemoteBufferView(ctx, { thread: Thread.Render, buffer });
+  const bufferView = ctx.resourceManager.createResource(BufferViewResource, {
+    buffer: ctx.resourceManager.createResource(BufferResource, {
+      data,
+    }),
+    byteLength: data.byteLength,
+  });
 
   const remoteMesh = createRemoteMesh(ctx, {
     primitives: [
@@ -413,7 +475,8 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
         },
         material:
           material ||
-          createRemoteStandardMaterial(ctx, {
+          ctx.resourceManager.createResource(MaterialResource, {
+            type: MaterialType.Standard,
             baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
             roughnessFactor: 0.8,
             metallicFactor: 0.8,
@@ -436,12 +499,15 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
 };
 
 export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial, remote = false) => {
+  const physics = getModule(ctx, PhysicsModule);
+  const { physicsWorld } = physics;
   const { world } = ctx;
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  createRemoteStandardMaterial(ctx, {
+  ctx.resourceManager.createResource(MaterialResource, {
+    type: MaterialType.Standard,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
     roughnessFactor: 0.8,
     metallicFactor: 0.8,
@@ -462,7 +528,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   addRigidBody(ctx, eid, rigidBody);
 
-  addInteractableComponent(ctx, eid, InteractableType.Object);
+  addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
   return eid;
 };
@@ -472,7 +538,8 @@ export const createSimpleCube = (ctx: GameState, size: number, material?: Remote
   const eid = addEntity(world);
   addTransformComponent(world, eid);
 
-  createRemoteStandardMaterial(ctx, {
+  ctx.resourceManager.createResource(MaterialResource, {
+    type: MaterialType.Standard,
     baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
     roughnessFactor: 0.8,
     metallicFactor: 0.8,

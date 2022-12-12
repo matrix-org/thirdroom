@@ -1,5 +1,6 @@
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { ResourceId } from "../resource/resource.common";
+import { AudioEmitterDistanceModel, AudioEmitterType } from "../resource/schema";
 
 export enum AudioResourceType {
   AudioData = "audio-data",
@@ -51,17 +52,6 @@ export interface SharedAudioSourceResource {
   readAudioSourceTripleBuffer: ReadAudioSourceTripleBuffer;
 }
 
-export enum AudioEmitterType {
-  Positional,
-  Global,
-}
-
-export enum AudioEmitterOutput {
-  Environment,
-  Music,
-  Voice,
-}
-
 export const globalAudioEmitterSchema = defineObjectBufferSchema({
   sources: [Uint32Array, 16], // Note there can be a maximum 16 sources assigned to an emitter at any one time
   gain: [Float32Array, 1],
@@ -69,12 +59,6 @@ export const globalAudioEmitterSchema = defineObjectBufferSchema({
 });
 
 export type GlobalAudioEmitterTripleBuffer = ObjectTripleBuffer<typeof globalAudioEmitterSchema>;
-
-export enum AudioEmitterDistanceModel {
-  Linear,
-  Inverse,
-  Exponential,
-}
 
 export const AudioEmitterDistanceModelMap: { [key: number]: DistanceModelType } = {
   [AudioEmitterDistanceModel.Linear]: "linear",

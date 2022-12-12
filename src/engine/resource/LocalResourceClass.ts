@@ -1,13 +1,23 @@
 import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
+import { BaseThreadContext } from "../module/module.common";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import { ILocalResourceManager, LocalResource, ResourceDefinition } from "./ResourceDefinition";
 
-interface ILocalResourceClass<Def extends ResourceDefinition> {
-  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<Def>;
+export interface ILocalResourceClass<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<
+    Def,
+    ThreadContext
+  >;
   resourceDef: Def;
 }
 
-export function defineLocalResourceClass<Def extends ResourceDefinition>(resourceDef: Def): ILocalResourceClass<Def> {
+export function defineLocalResourceClass<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+>(resourceDef: Def): ILocalResourceClass<Def, ThreadContext> {
   const { name, schema } = resourceDef;
 
   function LocalResourceClass(
@@ -40,6 +50,15 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
     resourceDef: { value: resourceDef },
   });
 
+  Object.defineProperties(LocalResourceClass.prototype, {
+    load: {
+      value() {
+        return Promise.resolve();
+      },
+    },
+    dispose: { value() {} },
+  });
+
   for (const propName in schema) {
     const prop = schema[propName];
 
@@ -51,7 +70,15 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
           return this.manager.getString(resourceId);
         },
       });
-    } else if (prop.type === "ref" || prop.type === "arraybuffer") {
+    } else if (prop.type === "arrayBuffer") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource<Def>) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          const resourceId = this.__props[propName][index][1];
+          return this.manager.getArrayBuffer(resourceId);
+        },
+      });
+    } else if (prop.type === "ref") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
@@ -59,7 +86,7 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
           return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
         },
       });
-    } else if (prop.type === "refArray") {
+    } else if (prop.type === "refArray" || prop.type === "refMap") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
@@ -94,5 +121,5 @@ export function defineLocalResourceClass<Def extends ResourceDefinition>(resourc
     }
   }
 
-  return LocalResourceClass as unknown as ILocalResourceClass<Def>;
+  return LocalResourceClass as unknown as ILocalResourceClass<Def, ThreadContext>;
 }

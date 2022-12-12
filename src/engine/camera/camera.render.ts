@@ -1,56 +1,11 @@
 import { OrthographicCamera, PerspectiveCamera, Scene, MathUtils } from "three";
 
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource } from "../resource/resource.render";
-import {
-  CameraType,
-  OrthographicCameraTripleBuffer,
-  PerspectiveCameraTripleBuffer,
-  SharedOrthographicCameraResource,
-  SharedPerspectiveCameraResource,
-} from "./camera.common";
-
-export interface LocalPerspectiveCameraResource {
-  type: CameraType.Perspective;
-  resourceId: ResourceId;
-  cameraTripleBuffer: PerspectiveCameraTripleBuffer;
-}
-
-export interface LocalOrthographicCameraResource {
-  type: CameraType.Orthographic;
-  resourceId: ResourceId;
-  cameraTripleBuffer: OrthographicCameraTripleBuffer;
-}
-
-export type LocalCameraResource = LocalOrthographicCameraResource | LocalPerspectiveCameraResource;
-
-export async function onLoadPerspectiveCamera(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, cameraTripleBuffer }: SharedPerspectiveCameraResource
-): Promise<LocalPerspectiveCameraResource> {
-  return {
-    resourceId,
-    type,
-    cameraTripleBuffer,
-  };
-}
-
-export async function onLoadOrthographicCamera(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { type, cameraTripleBuffer }: SharedOrthographicCameraResource
-): Promise<LocalOrthographicCameraResource> {
-  return {
-    resourceId,
-    type,
-    cameraTripleBuffer,
-  };
-}
+import { getLocalResource, getResourceDisposed } from "../resource/resource.render";
+import { CameraType, LocalCamera } from "../resource/schema";
 
 export function updateNodeCamera(
   ctx: RenderThreadState,
@@ -63,6 +18,15 @@ export function updateNodeCamera(
 
   // TODO: Handle node.visible
 
+  if (getResourceDisposed(ctx, nextCameraResourceId)) {
+    if (node.cameraObject) {
+      scene.remove(node.cameraObject);
+      node.cameraObject = undefined;
+    }
+
+    node.camera = undefined;
+  }
+
   if (currentCameraResourceId !== nextCameraResourceId) {
     if (node.cameraObject) {
       scene.remove(node.cameraObject);
@@ -70,7 +34,7 @@ export function updateNodeCamera(
     }
 
     if (nextCameraResourceId) {
-      node.camera = getLocalResource<LocalCameraResource>(ctx, nextCameraResourceId)?.resource;
+      node.camera = getLocalResource<LocalCamera>(ctx, nextCameraResourceId)?.resource;
     } else {
       node.camera = undefined;
     }
@@ -80,11 +44,11 @@ export function updateNodeCamera(
     return;
   }
 
-  const cameraType = node.camera.type;
+  const localCamera = node.camera;
 
   let camera: PerspectiveCamera | OrthographicCamera | undefined;
 
-  if (cameraType === CameraType.Perspective) {
+  if (localCamera.type === CameraType.Perspective) {
     let perspectiveCamera = node.cameraObject as PerspectiveCamera | undefined;
 
     if (!perspectiveCamera) {
@@ -92,23 +56,22 @@ export function updateNodeCamera(
       scene.add(perspectiveCamera);
     }
 
-    const cameraView = getReadObjectBufferView(node.camera.cameraTripleBuffer);
-    perspectiveCamera.layers.mask = cameraView.layers[0];
-    perspectiveCamera.fov = cameraView.yfov[0] * MathUtils.RAD2DEG;
-    perspectiveCamera.near = cameraView.znear[0];
-    perspectiveCamera.far = cameraView.zfar[0];
+    perspectiveCamera.layers.mask = localCamera.layers;
+    perspectiveCamera.fov = localCamera.yfov * MathUtils.RAD2DEG;
+    perspectiveCamera.near = localCamera.znear;
+    perspectiveCamera.far = localCamera.zfar;
 
     // Renderer will update aspect based on the viewport if the aspectRatio is set to 0
-    if (cameraView.aspectRatio[0]) {
-      perspectiveCamera.aspect = cameraView.aspectRatio[0];
+    if (localCamera.aspectRatio) {
+      perspectiveCamera.aspect = localCamera.aspectRatio;
     }
 
-    if (cameraView.projectionMatrixNeedsUpdate[0]) {
+    if (localCamera.projectionMatrixNeedsUpdate) {
       perspectiveCamera.updateProjectionMatrix();
     }
 
     camera = perspectiveCamera;
-  } else if (cameraType === CameraType.Orthographic) {
+  } else if (localCamera.type === CameraType.Orthographic) {
     let orthographicCamera = node.cameraObject as OrthographicCamera | undefined;
 
     if (!orthographicCamera) {
@@ -116,17 +79,15 @@ export function updateNodeCamera(
       scene.add(orthographicCamera);
     }
 
-    const cameraView = getReadObjectBufferView(node.camera.cameraTripleBuffer);
+    orthographicCamera.layers.mask = localCamera.layers;
+    orthographicCamera.left = -localCamera.xmag;
+    orthographicCamera.right = localCamera.xmag;
+    orthographicCamera.top = localCamera.ymag;
+    orthographicCamera.bottom = -localCamera.ymag;
+    orthographicCamera.near = localCamera.znear;
+    orthographicCamera.far = localCamera.zfar;
 
-    orthographicCamera.layers.mask = cameraView.layers[0];
-    orthographicCamera.left = -cameraView.xmag[0];
-    orthographicCamera.right = cameraView.xmag[0];
-    orthographicCamera.top = cameraView.ymag[0];
-    orthographicCamera.bottom = -cameraView.ymag[0];
-    orthographicCamera.near = cameraView.znear[0];
-    orthographicCamera.far = cameraView.zfar[0];
-
-    if (cameraView.projectionMatrixNeedsUpdate[0]) {
+    if (localCamera.projectionMatrixNeedsUpdate) {
       orthographicCamera.updateProjectionMatrix();
     }
 
