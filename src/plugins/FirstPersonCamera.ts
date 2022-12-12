@@ -198,8 +198,8 @@ export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
 
   const network = getModule(ctx, NetworkModule);
   const haveConnectedPeers = network.peers.length > 0;
-  const notHosting = network.authoritative && !isHost(network);
-  if (!notHosting || !haveConnectedPeers) {
+  const hosting = network.authoritative && isHost(network);
+  if (hosting || !haveConnectedPeers) {
     return;
   }
 

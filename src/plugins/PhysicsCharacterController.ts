@@ -107,12 +107,12 @@ export const enteredPhysicsControlsQuery = enterQuery(physicsControlsQuery);
 
 const obj = new Object3D();
 
-const walkSpeed = 60;
+const walkSpeed = 70;
 const drag = 30;
 const maxWalkSpeed = 100;
 const maxSprintSpeed = 100;
-const sprintModifier = 3;
-const jumpForce = 10;
+const sprintModifier = 2.5;
+const jumpForce = 7;
 const inAirModifier = 0.5;
 const inAirDrag = 8;
 const crouchModifier = 0.7;
@@ -232,7 +232,7 @@ function updatePhysicsControls(
   }
 
   body.applyImpulse(moveForce, true);
-  body.applyForce(physicsWorld.gravity as Vector3, true);
+  // body.applyForce(physicsWorld.gravity as Vector3, true);
 }
 
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
