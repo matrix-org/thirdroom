@@ -5,6 +5,7 @@ import {
   CursorView,
   moveCursorView,
   readFloat32,
+  readFloat64,
   readString,
   readUint16,
   readUint32,
@@ -16,6 +17,7 @@ import {
   spaceUint32,
   spaceUint8,
   writeFloat32,
+  writeFloat64,
   writePropIfChanged,
   writeString,
   writeUint32,
@@ -67,8 +69,8 @@ export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) =>
 };
 
 export const writeElapsed = (input: NetPipeData) => {
-  const [ctx, v] = input;
-  writeFloat32(v, ctx.elapsed);
+  const [, v] = input;
+  writeFloat64(v, Date.now());
   return input;
 };
 
@@ -77,7 +79,7 @@ export const writeMetadata = (type: NetworkAction) => pipe(writeMessageType(type
 const _out: { type: number; elapsed: number } = { type: 0, elapsed: 0 };
 export const readMetadata = (v: CursorView, out = _out) => {
   out.type = readUint8(v);
-  out.elapsed = readFloat32(v);
+  out.elapsed = readFloat64(v);
   return out;
 };
 
@@ -553,8 +555,9 @@ export const deserializeNewPeerSnapshot = pipe(deserializeCreates, deserializeUp
 // Full Snapshot Update
 export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.FullSnapshot),
-  serializeCreatesSnapshot,
+  serializeCreates,
   serializeUpdatesSnapshot,
+  serializeDeletes,
   ([, v]) => {
     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
