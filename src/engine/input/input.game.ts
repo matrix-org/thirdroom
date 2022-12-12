@@ -64,7 +64,6 @@ export function applyMouseButtons(raw: { [path: string]: number }, o: typeof out
   raw["Mouse/Middle"] = checkBitflag(buttons, MouseButton.Middle) ? 1 : 0;
   raw["Mouse/Four"] = checkBitflag(buttons, MouseButton.Four) ? 1 : 0;
   raw["Mouse/Five"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
-  raw["Mouse/Scroll"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
 }
 
 export function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {

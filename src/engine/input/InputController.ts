@@ -29,10 +29,10 @@ export const createInputController = (props?: InputControllerProps): InputContro
   const controller = {
     inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
     actionMaps: (props && props.actionMaps) || [],
-    actionStates: (props && props.actionStates) || new Map(),
-    pathToId: (props && props.pathToId) || new Map(),
-    pathToDef: (props && props.pathToId) || new Map(),
-    idToPath: (props && props.idToPath) || new Map(),
+    actionStates: new Map(),
+    pathToId: new Map(),
+    pathToDef: new Map(),
+    idToPath: new Map(),
     raw: {},
   };
   for (const actionMap of controller.actionMaps) {

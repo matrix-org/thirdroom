@@ -31,6 +31,7 @@ import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
   Networked,
+  networkedQuery,
   NetworkModule,
   Owned,
   ownedNetworkedQuery,
@@ -209,6 +210,7 @@ const FocusComponent = defineComponent({
 
 export const GrabComponent = defineComponent({
   grabbedEntity: Types.eid,
+  heldOffset: Types.f32,
   joint: [Types.f32, 3],
 });
 
@@ -240,8 +242,6 @@ const _r = new Vector4();
 const zero = new Vector3();
 
 let lastActiveScene = 0;
-
-let heldOffset = 0;
 
 const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
 const interactableQuery = defineQuery([Interactable]);
@@ -303,9 +303,11 @@ export function InteractionSystem(ctx: GameState) {
 
     updateFocus(ctx, physics, eid, camera);
 
-    const authoritativeAndHosting = network.authoritative && isHost(network);
+    const hosting = network.authoritative && isHost(network);
+    const cspEnabled = network.authoritative && network.clientSidePrediction;
+    const p2p = !network.authoritative;
 
-    if (authoritativeAndHosting || !network.authoritative) {
+    if (hosting || cspEnabled || p2p) {
       updateDeletion(ctx, interaction, controller, eid);
       updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
     }
@@ -387,6 +389,7 @@ function updateGrabThrow(
   camera: number
 ) {
   let heldEntity = GrabComponent.grabbedEntity[rig];
+  let heldOffset = GrabComponent.heldOffset[rig];
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
   const grabBtn2 = controller.actionStates.get("Grab2") as ButtonActionState;
@@ -419,7 +422,7 @@ function updateGrabThrow(
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
-    heldOffset = 0;
+    GrabComponent.heldOffset[rig] = 0;
 
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
@@ -433,7 +436,7 @@ function updateGrabThrow(
 
     playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
 
-    heldOffset = 0;
+    GrabComponent.heldOffset[rig] = 0;
 
     // if grab is pressed
   } else if (grabPressed) {
@@ -470,16 +473,16 @@ function updateGrabThrow(
         if (Interactable.type[eid] === InteractableType.Grabbable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
 
-          const ownedEnts = ownedNetworkedQuery(ctx.world);
+          // TODO: use Authored component query
+          const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+
           if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, eid)) {
             // do nothing if we hit the max obj cap
             ctx.sendMessage(Thread.Main, {
               type: ObjectCapReachedMessageType,
             });
           } else {
-            // otherwise attempt to take ownership
             const newEid = takeOwnership(ctx, network, eid);
-
             if (newEid !== NOOP) {
               addComponent(ctx.world, GrabComponent, rig);
               GrabComponent.grabbedEntity[rig] = newEid;
@@ -537,9 +540,9 @@ function updateGrabThrow(
     // move held point upon scrolling
     const [, scrollY] = controller.actionStates.get("Scroll") as vec2;
     if (scrollY !== 0) {
-      heldOffset += scrollY / 1000;
+      heldOffset -= scrollY / 1000;
     }
-    heldOffset = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
+    GrabComponent.heldOffset[rig] = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
 
     const heldPosition = Transform.position[heldEntity];
 
