@@ -1,34 +1,36 @@
 import { createInterpolationBuffer, InterpolationBuffer } from "./InterpolationBuffer";
 
-export const INTERP_BUFFER_MS = 500;
+// should be greater than tickRate in millis
 export const INTERP_AMOUNT_MS = 100;
+export const INTERP_BUFFER_MS = INTERP_AMOUNT_MS * 5;
 
 export interface Historian {
   entities: Map<number, InterpolationBuffer>;
-  interpolationBufferMs: number;
-  // latest elapsed value continuously set by packets recieved from the peer
-  latestElapsed: number;
+  // latest timestamp value continuously set by packets recieved from the peer
+  latestTime: number;
   // incremented each frame with our local delta time
-  localElapsed: number;
+  localTime: number;
   // target elapsed to lerp towards
-  targetElapsed: number;
+  targetTime: number;
   fractionOfTimePassed: number;
   // holds a history of elapsed timestamps
   timestamps: number[];
   // flag for indicating that a new packet has arrived and the historian needs updated
   needsUpdate: boolean;
   index?: number;
+  // latency to the associated data source
+  latency: number;
 }
 
-export const createHistorian = (interpolationBufferMs = INTERP_BUFFER_MS): Historian => ({
+export const createHistorian = (): Historian => ({
   entities: new Map(),
-  interpolationBufferMs,
-  latestElapsed: 0,
-  localElapsed: 0,
-  targetElapsed: 0,
+  latestTime: 0,
+  localTime: 0,
+  targetTime: 0,
   fractionOfTimePassed: 0,
   timestamps: [],
   needsUpdate: false,
+  latency: 0,
 });
 
 export const addEntityToHistorian = (h: Historian, eid: number) => h.entities.set(eid, createInterpolationBuffer());

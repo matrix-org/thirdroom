@@ -38,7 +38,6 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { tickRate } from "../config.common";
 
 /*********
  * Types *
@@ -101,10 +100,10 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
-      tickRate: tickRate,
+      tickRate: 10,
       interpolate: true,
       clientSidePrediction: true,
-      authoritative,
+      authoritative: true,
     };
   },
   init(ctx: GameState) {

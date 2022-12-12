@@ -19,8 +19,8 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
 
   const historian = network.peerIdToHistorian.get(peerId);
   if (historian) {
-    historian.latestElapsed = elapsed;
-    historian.localElapsed = elapsed;
+    historian.latestTime = elapsed;
+    historian.localTime = elapsed;
     historian.needsUpdate = true;
   }
 

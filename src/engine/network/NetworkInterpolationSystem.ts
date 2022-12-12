@@ -17,10 +17,7 @@ import {
 } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
-import { tickRate } from "../config.common";
 import { isHost } from "./network.common";
-
-const FRAME_MS = 1000 / tickRate;
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
@@ -111,6 +108,33 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
+    // if interpolation is disabled
+    if (!network.interpolate) {
+      // and we have new state to apply from the authority
+      if (historian.needsUpdate) {
+        // if CSP is enabled and its our entity, apply update only the position
+        if (network.clientSidePrediction && eid === network.peerIdToEntityId.get(network.peerId)) {
+          position.set(netPosition);
+          body.setTranslation(_vec.fromArray(netPosition), true);
+        } else {
+          // otherwise update the entire transform
+          applyNetworkedToEntity(eid, body);
+        }
+      }
+      continue;
+    }
+
+    // if CSP enabled and its our player
+    // TODO: once Authoring is implemented, check Owned instead of checking peerId's eid
+    if (network.clientSidePrediction && eid === network.peerIdToEntityId.get(network.peerId)) {
+      // then apply the update directly (rubberbanding upon prediction error)
+      if (historian.needsUpdate) {
+        position.set(netPosition);
+        body.setTranslation(_vec.fromArray(netPosition), true);
+      }
+      continue;
+    }
+
     // TODO: optional hermite interpolation
 
     const from = historian.index || 0;
@@ -168,16 +192,17 @@ export function NetworkInterpolationSystem(ctx: GameState) {
 function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     if (historian.needsUpdate) {
+      historian.latency = Date.now() - historian.latestTime;
       // add timestamp to historian
-      historian.timestamps.unshift(historian.latestElapsed);
+      historian.timestamps.unshift(historian.latestTime);
     }
 
-    // step forward local elapsed
-    historian.localElapsed += ctx.dt * 1000;
+    const trimTime = historian.localTime - INTERP_BUFFER_MS;
 
-    const trimElapsed = historian.localElapsed - INTERP_BUFFER_MS;
+    const targetTime = (historian.targetTime = historian.localTime - INTERP_AMOUNT_MS);
 
-    const targetElapsed = (historian.targetElapsed = historian.localElapsed - INTERP_AMOUNT_MS + FRAME_MS);
+    // step forward local time
+    historian.localTime += ctx.dt * 1000;
 
     let index = -1;
     if (historian.timestamps.length > 2) {
@@ -185,14 +210,14 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
         const t = historian.timestamps[i];
         const tt = historian.timestamps[i - 1];
 
-        if (t < trimElapsed) {
+        if (t < trimTime) {
           historian.timestamps.splice(i);
           continue;
         }
 
         index = i;
 
-        if (t < targetElapsed && tt > targetElapsed) {
+        if (t < targetTime && tt > targetTime) {
           break;
         }
       }
@@ -207,7 +232,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
     const fromTime = historian.timestamps.at(index) || 0;
     const toTime = historian.timestamps.at(index - 1) || 0;
 
-    const ratio = (targetElapsed - fromTime) / (toTime - fromTime);
+    const ratio = (targetTime - fromTime) / (toTime - fromTime);
 
     historian.fractionOfTimePassed = clamp(0, 1, ratio);
   }

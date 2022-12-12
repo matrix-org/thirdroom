@@ -232,7 +232,6 @@ function updatePhysicsControls(
   }
 
   body.applyImpulse(moveForce, true);
-  // body.applyForce(physicsWorld.gravity as Vector3, true);
 }
 
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
