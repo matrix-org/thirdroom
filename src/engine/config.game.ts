@@ -70,7 +70,6 @@ export default defineConfig<GameState>({
     FlyControllerSystem,
     InteractionSystem,
     SpawnableSystem,
-    AnimationSystem,
     ThirdroomSystem,
 
     // step physics forward
@@ -85,6 +84,8 @@ export default defineConfig<GameState>({
     // Copy Transform to RemoteNode
     ScriptingSystem,
     // Copy RemoteNode to Transform
+
+    AnimationSystem,
 
     UpdateMatrixWorldSystem,
 
