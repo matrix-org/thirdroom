@@ -17,7 +17,7 @@ import MoreHorizontalIC from ".././../.././../../res/ic/more-horizontal.svg";
 import AddIC from ".././../.././../../res/ic/add.svg";
 import "./DiscoverCreator.css";
 import { Icon } from "../../../atoms/icon/Icon";
-import { SceneData, sceneDataToContent, SceneSubmission } from "./SceneSubmission";
+import { SceneData, sceneDataToScene, SceneSubmission } from "./SceneSubmission";
 import { RepositoryEvents } from "./DiscoverView";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { Button } from "../../../atoms/button/Button";
@@ -88,9 +88,9 @@ function useScenes(room: Room, sender?: string) {
     loadScenes(true, true);
   }, [loadScenes]);
 
-  const deleteScene = (scene: TimelineEvent) => {
-    setScenes((state) => state.filter((event) => event.event_id !== scene.event_id));
-    session.hsApi.redact(room.id, scene.event_id, makeTxnId(), {});
+  const deleteScene = (sceneEvent: TimelineEvent) => {
+    setScenes((state) => state.filter((event) => event.event_id !== sceneEvent.event_id));
+    session.hsApi.redact(room.id, sceneEvent.event_id, makeTxnId(), {});
   };
 
   const canLoadBack = typeof endPointsRef.current.end === "string";
@@ -115,27 +115,29 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
     showAll ? undefined : session.userId
   );
 
-  const isValidScene = (scene: TimelineEvent) => {
-    const content = scene.content;
-    if (typeof content !== "object") return false;
-    if (content.scene_url && content.scene_preview_url && content.scene_name && content.scene_author_name) {
+  const isValidScene = (sceneEvent: TimelineEvent) => {
+    const scene = sceneEvent?.content?.scene;
+    if (typeof scene !== "object") return false;
+    if (scene.url && scene.preview_url && scene.name && scene.author_name) {
       return true;
     }
     return false;
   };
 
-  const featureScene = (scene: TimelineEvent) => {
-    if (!isValidScene(scene)) return;
-    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, scene.event_id, scene.content);
+  const featureScene = (sceneEvent: TimelineEvent) => {
+    if (!isValidScene(sceneEvent)) return;
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {
+      scene: sceneEvent.content.scene,
+    });
   };
 
-  const unFeatureScene = (scene: TimelineEvent) => {
-    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, scene.event_id, {});
+  const unFeatureScene = (sceneEvent: TimelineEvent) => {
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {});
   };
 
   const uploadScene = async (data: SceneData) => {
-    const content = sceneDataToContent(data);
-    await session.hsApi.send(room.id, RepositoryEvents.Scene, makeTxnId(), content).response();
+    const scene = sceneDataToScene(data);
+    await session.hsApi.send(room.id, RepositoryEvents.Scene, makeTxnId(), { scene }).response();
   };
 
   return (
@@ -186,18 +188,18 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
                   )}
                 />
                 {scenes.map(
-                  (scene) =>
-                    isValidScene(scene) && (
+                  (sceneEvent) =>
+                    isValidScene(sceneEvent) && (
                       <ScenePreviewCard
-                        key={scene.event_id}
+                        key={sceneEvent.event_id}
                         thumbnail={
                           <ThumbnailBadgeWrapper
-                            badge={isFeatured(scene.event_id) && <NotificationBadge content="Featured" />}
+                            badge={isFeatured(sceneEvent.event_id) && <NotificationBadge content="Featured" />}
                           >
                             <Thumbnail size="lg" wide>
                               <ThumbnailImg
-                                src={getHttpUrl(session, scene.content.scene_preview_url) ?? ""}
-                                alt={scene.content.scene_name}
+                                src={getHttpUrl(session, sceneEvent.content.scene.preview_url) ?? ""}
+                                alt={sceneEvent.content.scene.name}
                               />
                             </Thumbnail>
                           </ThumbnailBadgeWrapper>
@@ -206,35 +208,35 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
                         <ScenePreviewCardContent>
                           <div className="grow">
                             <Text className="truncate" variant="b3">
-                              {scene.content.scene_author_name}
+                              {sceneEvent.content.scene.author_name}
                             </Text>
-                            <Text className="truncate">{scene.content.scene_name}</Text>
+                            <Text className="truncate">{sceneEvent.content.scene.name}</Text>
                           </div>
                           <div className="flex items-center gap-xs">
                             {(permissions.canFeatureScenes ||
                               permissions.canRedact ||
-                              session.userId === scene.sender) && (
+                              session.userId === sceneEvent.sender) && (
                               <DropdownMenu
                                 content={
                                   <div style={{ padding: "var(--sp-xxs) 0" }}>
                                     {permissions.canFeatureScenes && (
                                       <>
-                                        {isFeatured(scene.event_id) ? (
-                                          <DropdownMenuItem onSelect={() => unFeatureScene(scene)}>
+                                        {isFeatured(sceneEvent.event_id) ? (
+                                          <DropdownMenuItem onSelect={() => unFeatureScene(sceneEvent)}>
                                             Un-Feature
                                           </DropdownMenuItem>
                                         ) : (
-                                          <DropdownMenuItem onSelect={() => featureScene(scene)}>
+                                          <DropdownMenuItem onSelect={() => featureScene(sceneEvent)}>
                                             Feature
                                           </DropdownMenuItem>
                                         )}
                                       </>
                                     )}
                                     {/* {session.userId === scene.sender && <DropdownMenuItem>Edit</DropdownMenuItem>} */}
-                                    {(permissions.canRedact || session.userId === scene.sender) && (
+                                    {(permissions.canRedact || session.userId === sceneEvent.sender) && (
                                       <DropdownMenuItem
                                         onSelect={() => {
-                                          if (window.confirm("Are you sure?")) deleteScene(scene);
+                                          if (window.confirm("Are you sure?")) deleteScene(sceneEvent);
                                         }}
                                       >
                                         Delete

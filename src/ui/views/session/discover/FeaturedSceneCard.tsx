@@ -42,16 +42,16 @@ export function FeaturedSceneCard({ session, roomId, stateKey, stateEvent, canEd
     <ScenePreviewCard
       thumbnail={
         <Thumbnail size="lg" wide>
-          <ThumbnailImg src={getHttpUrl(session, content.scene_preview_url) ?? ""} alt={content.scene_name} />
+          <ThumbnailImg src={getHttpUrl(session, content.scene.preview_url) ?? ""} alt={content.scene.name} />
         </Thumbnail>
       }
     >
       <ScenePreviewCardContent>
         <div className="grow">
           <Text className="truncate" variant="b3">
-            {content.scene_author_name}
+            {content.scene.author_name}
           </Text>
-          <Text className="truncate">{content.scene_name}</Text>
+          <Text className="truncate">{content.scene.name}</Text>
         </div>
         <div className="flex items-center gap-xs">
           {canEdit && (

@@ -31,17 +31,17 @@ export interface SceneData {
   sceneVersion: number;
 }
 
-export function sceneDataToContent(data: SceneData) {
+export function sceneDataToScene(data: SceneData) {
   return {
-    scene_url: data.sceneUrl,
-    scene_preview_url: data.scenePreviewUrl,
-    scene_name: data.sceneName,
-    scene_description: data.sceneDescription,
-    scene_author_name: data.sceneAuthorName,
-    scene_license: data.sceneLicense,
-    scene_version: data.sceneVersion,
-    scene_author_url: data.sceneAuthorUrl,
-    scene_source_url: data.sceneSourceUrl,
+    url: data.sceneUrl,
+    preview_url: data.scenePreviewUrl,
+    name: data.sceneName,
+    description: data.sceneDescription,
+    author_name: data.sceneAuthorName,
+    license: data.sceneLicense,
+    version: data.sceneVersion,
+    author_url: data.sceneAuthorUrl,
+    source_url: data.sceneSourceUrl,
   };
 }
 

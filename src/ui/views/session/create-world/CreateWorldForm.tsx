@@ -153,8 +153,8 @@ export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: Cre
 
   const { fileData: avatarData, pickFile: pickAvatar, dropFile: dropAvatar } = useFilePicker(platform, "image/*");
 
-  const eventSceneUrl = scene?.event?.content.scene_url;
-  const eventPreviewUrl = scene?.event?.content.scene_preview_url;
+  const eventSceneUrl = scene?.event?.content.scene.url;
+  const eventPreviewUrl = scene?.event?.content.scene.preview_url;
   const controlledScene =
     typeof eventSceneUrl === "string" && typeof eventPreviewUrl === "string"
       ? {
@@ -188,17 +188,16 @@ export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: Cre
       maxObjectCapInput: HTMLInputElement;
     };
     const alias = aliasInput.getAttribute("data-ui-state") === "error" ? undefined : aliasInput.value || undefined;
-    let content: CreateWorldContent = {
+    const content: CreateWorldContent = {
       scene_url: selectedScene.url,
       scene_preview_url: selectedScene.previewUrl,
       max_member_object_cap: parseInt(maxObjectCapInput.value) || undefined,
     };
     if (controlledScene && scene) {
-      content = {
-        ...content,
-        ...(scene.event?.content ?? {}),
-        scene_state_key: scene.event.state_key ?? undefined,
-        scene_room_id: scene.roomId,
+      content.scene = scene.event.content.scene;
+      content.scene_from = {
+        state_key: scene.event.state_key ?? undefined,
+        room_id: scene.roomId,
       };
     }
     handleCreateWorld({
