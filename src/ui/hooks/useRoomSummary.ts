@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 
+export function getRoomSummary(roomIdOrAlias: string, signal?: AbortSignal) {
+  return fetch(
+    `https://matrix-client.matrix.org/_matrix/client/unstable/im.nheko.summary/rooms/${encodeURIComponent(
+      roomIdOrAlias
+    )}/summary`,
+    { signal }
+  );
+}
+
 export interface SummaryData {
   roomId: string;
   avatarUrl?: string;
@@ -17,15 +26,11 @@ export function useRoomSummary(roomIdOrAlias: string) {
     let controller: AbortController | undefined;
     const run = async () => {
       controller = new AbortController();
-      const response = await fetch(
-        `https://matrix-client.matrix.org/_matrix/client/unstable/im.nheko.summary/rooms/${encodeURIComponent(
-          roomIdOrAlias
-        )}/summary`,
-        {
-          signal: controller.signal,
-        }
-      );
+      const response = await getRoomSummary(roomIdOrAlias, controller.signal);
       const data = await response.json();
+      if (data.errcode) {
+        return;
+      }
       setSummary({
         roomId: data.room_id,
         avatarUrl: data.avatar_url,

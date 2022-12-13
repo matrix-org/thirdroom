@@ -102,6 +102,10 @@ export async function isValidUserId(hsApi: HomeServerApi, userId: string) {
   }
 }
 
+export function isValidRoomId(roomId: string) {
+  return roomId.match(/^!\S+:\S+$/) !== null;
+}
+
 export async function waitToCreateRoom(
   session: Session,
   roomBeingCreated: RoomBeingCreated

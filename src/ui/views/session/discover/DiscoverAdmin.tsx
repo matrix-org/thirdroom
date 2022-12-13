@@ -1,11 +1,10 @@
 import { Room, makeTxnId } from "@thirdroom/hydrogen-view-sdk";
-import { ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useRef } from "react";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
-import { Icon } from "../../../atoms/icon/Icon";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { Scroll } from "../../../atoms/scroll/Scroll";
@@ -13,7 +12,6 @@ import { Label } from "../../../atoms/text/Label";
 import { Text } from "../../../atoms/text/Text";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useIsMounted } from "../../../hooks/useIsMounted";
 import { RoomTypes, useRoomsOfType } from "../../../hooks/useRoomsOfType";
 import { useStateEvents } from "../../../hooks/useStateEvents";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
@@ -27,6 +25,9 @@ import { RepositoryEvents } from "./DiscoverView";
 import { SceneData, sceneDataToScene, SceneSubmission } from "./SceneSubmission";
 import { FeaturedWorldsProvider } from "../../components/FeaturedWorldsProvider";
 import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
+import { Input } from "../../../atoms/input/Input";
+import { isValidRoomId } from "../../../utils/matrixUtils";
+import { getRoomSummary } from "../../../hooks/useRoomSummary";
 
 interface FeaturedItemProps {
   before?: ReactNode;
@@ -53,26 +54,22 @@ function FeatureRoom({ room }: { room: Room }) {
     if (Object.keys(stateEvent.content).length === 0) return true;
     return false;
   });
-  const [selectedRoom, setSelectedRoom] = useState<Room>();
-  const isMounted = useIsMounted();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     callback: featureRoom,
     loading,
     error,
   } = useAsyncCallback(
-    async (fRoom: Room) => {
-      const mEvent = await fRoom.getStateEvent("m.room.join_rules", "");
-      const isPublic = mEvent?.event?.content?.join_rule === "public" ?? false;
-      if (!isPublic) throw new Error("Room is not public.");
-      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, fRoom.id, {
+    async (roomId: string) => {
+      if (!isValidRoomId(roomId)) throw Error("Invalid roomId");
+      const response = await getRoomSummary(roomId);
+      const summaryData = await response.json();
+      if (!summaryData.room_id) throw Error("Can not feature room. Either room is private or does not exist.");
+      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, roomId, {
         suggested: false,
-        auto_join: false,
         via: [],
       });
-      if (isMounted()) {
-        setSelectedRoom(undefined);
-      }
     },
     [session]
   );
@@ -83,71 +80,75 @@ function FeatureRoom({ room }: { room: Room }) {
     }
   };
 
+  const handleSelect = (room: Room) => {
+    const form = formRef.current;
+    if (form) {
+      form.roomIdInput.value = room.id;
+    }
+  };
+
+  const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
+    evt.preventDefault();
+    const { roomIdInput } = evt.target as typeof evt.target & {
+      roomIdInput: HTMLInputElement;
+    };
+    const roomId = roomIdInput.value.trim();
+    if (roomId) featureRoom(roomId);
+  };
+
   return (
     <div className="flex flex-column gap-sm">
       <SettingTile label={<Label>Feature Public Room</Label>}>
         <div className="flex flex-column gap-xxs">
-          <div className="flex gap-sm">
-            <DropdownMenu
-              content={
-                <Scroll style={{ maxHeight: "200px", padding: "var(--sp-xs) 0" }}>
-                  {unFeaturedRoom.length === 0 ? (
-                    <div style={{ padding: "0 var(--sp-md)" }}>
-                      <Text variant="b2" weight="medium">
-                        No Rooms
-                      </Text>
-                    </div>
-                  ) : (
-                    unFeaturedRoom.map((room) => (
-                      <DropdownMenuItem
-                        className="flex items-center gap-xs"
-                        key={room.id}
-                        onSelect={() => setSelectedRoom(room)}
-                      >
-                        <Avatar
-                          imageSrc={
-                            room.avatarUrl && getAvatarHttpUrl(room.avatarUrl, 60, platform, session.mediaRepository)
-                          }
-                          shape="rounded"
-                          size="xxs"
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-                          name={room.name ?? "Unknown room"}
-                        />
-                        <Text variant="b2" weight="medium">
-                          {room.name}
-                        </Text>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </Scroll>
+          <form ref={formRef} onSubmit={handleSubmit} className="flex gap-sm">
+            <Input
+              required
+              name="roomIdInput"
+              placeholder="Room Id"
+              after={
+                <DropdownMenu
+                  content={
+                    <Scroll style={{ maxHeight: "200px", padding: "var(--sp-xs) 0" }}>
+                      {unFeaturedRoom.length === 0 ? (
+                        <div style={{ padding: "0 var(--sp-md)" }}>
+                          <Text variant="b2" weight="medium">
+                            No Rooms
+                          </Text>
+                        </div>
+                      ) : (
+                        unFeaturedRoom.map((room) => (
+                          <DropdownMenuItem
+                            className="flex items-center gap-xs"
+                            key={room.id}
+                            onSelect={() => handleSelect(room)}
+                          >
+                            <Avatar
+                              imageSrc={
+                                room.avatarUrl &&
+                                getAvatarHttpUrl(room.avatarUrl, 60, platform, session.mediaRepository)
+                              }
+                              shape="rounded"
+                              size="xxs"
+                              bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+                              name={room.name ?? "Unknown room"}
+                            />
+                            <Text variant="b2" weight="medium">
+                              {room.name}
+                            </Text>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </Scroll>
+                  }
+                >
+                  <IconButton iconSrc={ChevronBottomIC} label="View all" />
+                </DropdownMenu>
               }
-            >
-              <Button fill="outline">
-                {selectedRoom ? (
-                  <Avatar
-                    imageSrc={
-                      selectedRoom.avatarUrl &&
-                      getAvatarHttpUrl(selectedRoom.avatarUrl, 60, platform, session.mediaRepository)
-                    }
-                    shape="rounded"
-                    size="xxs"
-                    bgColor={`var(--usercolor${getIdentifierColorNumber(selectedRoom.id)})`}
-                    name={selectedRoom.name ?? "Unknown room"}
-                  />
-                ) : null}
-                {selectedRoom ? selectedRoom.name ?? "Unknown room" : "Select Room"}
-                <Icon color="primary" src={ChevronBottomIC} />
-              </Button>
-            </DropdownMenu>
-            <Button
-              disabled={!selectedRoom || loading}
-              onClick={() => {
-                if (selectedRoom) featureRoom(selectedRoom);
-              }}
-            >
+            />
+            <Button type="submit" disabled={loading}>
               Feature
             </Button>
-          </div>
+          </form>
           {error && (
             <Text color="danger" variant="b3">
               {error.message}
@@ -210,26 +211,22 @@ function FeatureWorld({ room }: { room: Room }) {
     if (Object.keys(stateEvent.content).length === 0) return true;
     return false;
   });
-  const [selectedWorld, setSelectedWorld] = useState<Room>();
-  const isMounted = useIsMounted();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const {
     callback: featureWorld,
     loading,
     error,
   } = useAsyncCallback(
-    async (fWorld: Room) => {
-      const mEvent = await fWorld.getStateEvent("m.room.join_rules", "");
-      const isPublic = mEvent?.event?.content?.join_rule === "public" ?? false;
-      if (!isPublic) throw new Error("World is not public.");
-      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, fWorld.id, {
+    async (roomId: string) => {
+      if (!isValidRoomId(roomId)) throw Error("Invalid roomId");
+      const response = await getRoomSummary(roomId);
+      const summaryData = await response.json();
+      if (!summaryData.room_id) throw Error("Can not feature world. Either world is private or does not exist.");
+      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, roomId, {
         suggested: false,
-        auto_join: false,
         via: [],
       });
-      if (isMounted()) {
-        setSelectedWorld(undefined);
-      }
     },
     [session]
   );
@@ -240,71 +237,75 @@ function FeatureWorld({ room }: { room: Room }) {
     }
   };
 
+  const handleSelect = (room: Room) => {
+    const form = formRef.current;
+    if (form) {
+      form.roomIdInput.value = room.id;
+    }
+  };
+
+  const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
+    evt.preventDefault();
+    const { roomIdInput } = evt.target as typeof evt.target & {
+      roomIdInput: HTMLInputElement;
+    };
+    const roomId = roomIdInput.value.trim();
+    if (roomId) featureWorld(roomId);
+  };
+
   return (
     <div className="flex flex-column gap-sm">
       <SettingTile label={<Label>Feature Public World</Label>}>
         <div className="flex flex-column gap-xxs">
-          <div className="flex gap-sm">
-            <DropdownMenu
-              content={
-                <Scroll style={{ maxHeight: "200px", padding: "var(--sp-xs) 0" }}>
-                  {unFeaturedWorlds.length === 0 ? (
-                    <div style={{ padding: "0 var(--sp-md)" }}>
-                      <Text variant="b2" weight="medium">
-                        No Worlds
-                      </Text>
-                    </div>
-                  ) : (
-                    unFeaturedWorlds.map((room) => (
-                      <DropdownMenuItem
-                        className="flex items-center gap-xs"
-                        key={room.id}
-                        onSelect={() => setSelectedWorld(room)}
-                      >
-                        <Avatar
-                          imageSrc={
-                            room.avatarUrl && getAvatarHttpUrl(room.avatarUrl, 60, platform, session.mediaRepository)
-                          }
-                          shape="rounded"
-                          size="xxs"
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
-                          name={room.name ?? "Unknown world"}
-                        />
-                        <Text variant="b2" weight="medium">
-                          {room.name}
-                        </Text>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </Scroll>
+          <form ref={formRef} onSubmit={handleSubmit} className="flex gap-sm">
+            <Input
+              required
+              name="roomIdInput"
+              placeholder="Room Id"
+              after={
+                <DropdownMenu
+                  content={
+                    <Scroll style={{ maxHeight: "200px", padding: "var(--sp-xs) 0" }}>
+                      {unFeaturedWorlds.length === 0 ? (
+                        <div style={{ padding: "0 var(--sp-md)" }}>
+                          <Text variant="b2" weight="medium">
+                            No Worlds
+                          </Text>
+                        </div>
+                      ) : (
+                        unFeaturedWorlds.map((room) => (
+                          <DropdownMenuItem
+                            className="flex items-center gap-xs"
+                            key={room.id}
+                            onSelect={() => handleSelect(room)}
+                          >
+                            <Avatar
+                              imageSrc={
+                                room.avatarUrl &&
+                                getAvatarHttpUrl(room.avatarUrl, 60, platform, session.mediaRepository)
+                              }
+                              shape="rounded"
+                              size="xxs"
+                              bgColor={`var(--usercolor${getIdentifierColorNumber(room.id)})`}
+                              name={room.name ?? "Unknown world"}
+                            />
+                            <Text variant="b2" weight="medium">
+                              {room.name}
+                            </Text>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </Scroll>
+                  }
+                >
+                  <IconButton iconSrc={ChevronBottomIC} label="View all" />
+                </DropdownMenu>
               }
-            >
-              <Button fill="outline">
-                {selectedWorld ? (
-                  <Avatar
-                    imageSrc={
-                      selectedWorld.avatarUrl &&
-                      getAvatarHttpUrl(selectedWorld.avatarUrl, 60, platform, session.mediaRepository)
-                    }
-                    shape="circle"
-                    size="xxs"
-                    bgColor={`var(--usercolor${getIdentifierColorNumber(selectedWorld.id)})`}
-                    name={selectedWorld.name ?? "Unknown world"}
-                  />
-                ) : null}
-                {selectedWorld ? selectedWorld.name ?? "Unknown world" : "Select World"}
-                <Icon color="primary" src={ChevronBottomIC} />
-              </Button>
-            </DropdownMenu>
-            <Button
-              disabled={!selectedWorld || loading}
-              onClick={() => {
-                if (selectedWorld) featureWorld(selectedWorld);
-              }}
-            >
+            />
+            <Button type="submit" disabled={loading}>
               Feature
             </Button>
-          </div>
+          </form>
           {error && (
             <Text color="danger" variant="b3">
               {error.message}
