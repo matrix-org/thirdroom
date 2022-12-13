@@ -29,13 +29,12 @@ import {
   RendererStateTripleBuffer,
 } from "./renderer.common";
 import { RendererAccessorResource } from "../accessor/accessor.render";
-import { LightMapResourceType } from "../mesh/mesh.common";
 import {
   RendererMeshResource,
   RendererMeshPrimitiveResource,
   RendererSkinResource,
-  onLoadLocalLightMapResource,
   RendererInstancedMeshResource,
+  RendererLightMapResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
@@ -201,7 +200,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, RendererMeshResource),
       registerResource(ctx, RendererMeshPrimitiveResource),
       registerResource(ctx, RendererInstancedMeshResource),
-      registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
+      registerResource(ctx, RendererLightMapResource),
       registerResource(ctx, RendererSkinResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),

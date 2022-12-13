@@ -383,6 +383,8 @@ export const LightMapResource = defineResource("light-map", ResourceType.LightMa
   scale: PropType.vec2({ default: [0, 0], script: true, mutable: false }),
   intensity: PropType.f32({ default: 1, script: true, mutable: false }),
 });
+export type RemoteLightMap = RemoteResource<typeof LightMapResource>;
+export type LocalLightMap = LocalResource<typeof LightMapResource>;
 
 export const TilesRendererResource = defineResource("tiles-renderer", ResourceType.TilesRenderer, {
   uri: PropType.string({ mutable: false, required: true, script: true }),

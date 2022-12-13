@@ -9,7 +9,6 @@ import {
 import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteLightMap } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -30,6 +29,7 @@ import {
   RemoteCamera,
   RemoteInstancedMesh,
   RemoteLight,
+  RemoteLightMap,
   RemoteMesh,
   RemoteNode as ScriptRemoteNode,
   RemoteSkin,

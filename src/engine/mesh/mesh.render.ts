@@ -1,4 +1,3 @@
-import { vec2 } from "gl-matrix";
 import {
   Mesh,
   BufferGeometry,
@@ -37,8 +36,7 @@ import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, getLocalResources, waitForLocalResource } from "../resource/resource.render";
+import { getLocalResource, getLocalResources } from "../resource/resource.render";
 import {
   InstancedMeshAttributeIndex,
   MeshPrimitiveAttributeIndex,
@@ -47,11 +45,11 @@ import {
   MeshResource,
   InstancedMeshResource,
   SkinResource,
+  LightMapResource,
 } from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
-import { SharedLightMapResource } from "./mesh.common";
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
 
@@ -144,30 +142,10 @@ export class RendererSkinResource extends defineLocalResourceClass<typeof SkinRe
   skeleton?: Skeleton;
 }
 
-export interface LocalLightMap {
-  resourceId: ResourceId;
-  texture: RendererTextureResource;
-  offset: vec2;
-  scale: vec2;
-  intensity: number;
-}
-
-export async function onLoadLocalLightMapResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  props: SharedLightMapResource
-): Promise<LocalLightMap> {
-  const lightMapResource = await waitForLocalResource<RendererTextureResource>(ctx, props.texture, "light-map");
-
-  const localLightMap: LocalLightMap = {
-    resourceId,
-    texture: lightMapResource,
-    offset: props.offset,
-    scale: props.scale,
-    intensity: props.intensity,
-  };
-
-  return localLightMap;
+export class RendererLightMapResource extends defineLocalResourceClass<typeof LightMapResource, RenderThreadState>(
+  LightMapResource
+) {
+  declare texture: RendererTextureResource;
 }
 
 const tempPosition = new Vector3();
@@ -361,7 +339,7 @@ function createMeshPrimitiveObject(
         return;
       }
 
-      const lightMap = mesh.userData.lightMap as LocalLightMap | undefined;
+      const lightMap = mesh.userData.lightMap as RendererLightMapResource | undefined;
 
       if (lightMap) {
         meshMaterial.lightMapIntensity = lightMap.intensity * Math.PI;

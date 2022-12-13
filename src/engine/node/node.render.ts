@@ -22,8 +22,8 @@ import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { updateNodeLight } from "../light/light.render";
 import {
-  LocalLightMap,
   RendererInstancedMeshResource,
+  RendererLightMapResource,
   RendererMeshResource,
   RendererSkinResource,
   updateNodeMesh,
@@ -48,7 +48,7 @@ export interface LocalNode {
   rendererNodeTripleBuffer: RendererNodeTripleBuffer;
   mesh?: RendererMeshResource;
   instancedMesh?: RendererInstancedMeshResource;
-  lightMap?: LocalLightMap;
+  lightMap?: RendererLightMapResource;
   skin?: RendererSkinResource;
   bone?: Bone;
   meshPrimitiveObjects?: PrimitiveObject3D[];
@@ -75,7 +75,9 @@ export async function onLoadLocalNode(
     instancedMesh: nodeView.instancedMesh[0]
       ? waitForLocalResource<RendererInstancedMeshResource>(ctx, nodeView.instancedMesh[0])
       : undefined,
-    lightMap: nodeView.lightMap[0] ? waitForLocalResource<LocalLightMap>(ctx, nodeView.lightMap[0]) : undefined,
+    lightMap: nodeView.lightMap[0]
+      ? waitForLocalResource<RendererLightMapResource>(ctx, nodeView.lightMap[0])
+      : undefined,
     skin: nodeView.skin[0] ? waitForLocalResource<RendererSkinResource>(ctx, nodeView.skin[0]) : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCamera>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLight>(ctx, nodeView.light[0]) : undefined,

@@ -1,5 +1,5 @@
 import { addComponent, addEntity } from "bitecs";
-import { mat4, vec2 } from "gl-matrix";
+import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
@@ -13,7 +13,6 @@ import {
   updateMatrixWorld,
 } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { createRemoteLightMap, RemoteLightMap } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
@@ -85,6 +84,8 @@ import {
   InstancedMeshResource,
   RemoteInstancedMesh,
   SkinResource,
+  LightMapResource,
+  RemoteLightMap,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -339,7 +340,7 @@ async function _inflateGLTFNode(
     skin: node.mesh !== undefined && node.skin !== undefined ? loadGLTFSkin(ctx, resource, node) : undefined,
     lightMap:
       node.extensions?.MX_lightmap !== undefined
-        ? _loadGLTFLightMap(ctx, resource, node, node.extensions.MX_lightmap)
+        ? _loadGLTFLightMap(resource, node, node.extensions.MX_lightmap)
         : undefined,
     camera: node.camera !== undefined ? loadGLTFCamera(ctx, resource, node.camera) : undefined,
     light:
@@ -1262,7 +1263,6 @@ async function _loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFN
 }
 
 async function _loadGLTFLightMap(
-  ctx: GameState,
   resource: GLTFResource,
   node: GLTFNode,
   extension: GLTFLightmapExtension
@@ -1271,11 +1271,11 @@ async function _loadGLTFLightMap(
     encoding: TextureEncoding.sRGB,
   });
 
-  return createRemoteLightMap(ctx, {
+  return resource.manager.createResource(LightMapResource, {
     name: `${node.name} Light Map`,
     texture,
-    scale: extension.scale as vec2 | undefined,
-    offset: extension.offset as vec2 | undefined,
+    scale: extension.scale,
+    offset: extension.offset,
     intensity: extension.intensity,
   });
 }

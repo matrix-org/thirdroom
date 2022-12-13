@@ -12,6 +12,7 @@ import {
   ImageResource,
   InstancedMeshResource,
   InteractableResource,
+  LightMapResource,
   LightResource,
   MaterialResource,
   MeshPrimitiveResource,
@@ -71,6 +72,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, MeshPrimitiveResource),
       registerResource(ctx, SkinResource),
       registerResource(ctx, InstancedMeshResource),
+      registerResource(ctx, LightMapResource),
     ]);
   },
 });

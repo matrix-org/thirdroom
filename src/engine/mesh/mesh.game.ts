@@ -1,16 +1,14 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity } from "bitecs";
-import { vec2 } from "gl-matrix";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { getModule, Thread } from "../module/module.common";
+import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
-import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
 import {
   AccessorComponentType,
   AccessorType,
@@ -19,7 +17,6 @@ import {
   MaterialResource,
   MaterialType,
   RemoteMaterial,
-  RemoteTexture,
   RemoteMesh,
   InteractableType,
   AccessorResource,
@@ -27,51 +24,6 @@ import {
   MeshPrimitiveResource,
   MeshPrimitiveAttributeIndex,
 } from "../resource/schema";
-import { SharedLightMapResource, LightMapResourceType } from "./mesh.common";
-
-export interface RemoteLightMap {
-  name: string;
-  resourceId: number;
-  texture: RemoteTexture;
-}
-
-export interface RemoteLightMapProps {
-  name?: string;
-  texture: RemoteTexture;
-  offset?: vec2;
-  scale?: vec2;
-  intensity?: number;
-}
-
-const DEFAULT_LIGHT_MAP_NAME = "Light Map";
-
-export function createRemoteLightMap(ctx: GameState, props: RemoteLightMapProps): RemoteLightMap {
-  const name = props.name || DEFAULT_LIGHT_MAP_NAME;
-
-  const textureResourceId = props.texture.resourceId;
-
-  const sharedResource: SharedLightMapResource = {
-    texture: textureResourceId,
-    offset: props.offset || [0, 0],
-    scale: props.scale || [1, 1],
-    intensity: props.intensity === undefined ? 1 : props.intensity,
-  };
-
-  addResourceRef(ctx, textureResourceId);
-
-  const resourceId = createResource<SharedLightMapResource>(ctx, Thread.Render, LightMapResourceType, sharedResource, {
-    name,
-    dispose() {
-      disposeResource(ctx, textureResourceId);
-    },
-  });
-
-  return {
-    name,
-    resourceId,
-    texture: props.texture,
-  };
-}
 
 export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
   const indicesArr = geometry.index!.array as Uint16Array;
