@@ -19,7 +19,7 @@ import { Text } from "../../../atoms/text/Text";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useUnknownWorldPath } from "../../../hooks/useWorld";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
-import { useSceneUpdate } from "../../../hooks/useSceneUpdate";
+import { useUpdateScene } from "../../../hooks/useUpdateScene";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -103,27 +103,24 @@ function EnterWorldButton({ room }: { room: Room }) {
   const requestStream = useStreamRequest(platform, micPermission);
   const [micException, setMicException] = useState<RequestException>();
   const { enterWorld } = useWorldAction(session);
-  const [sceneUpdate, setSceneUpdate] = useState<Record<string, any>>();
+  const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { canUpdateScene, getUpdate, updateScene } = useSceneUpdate(session, room);
+  const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
   const handleLoadWorld = () => {
     enterWorld(room.id);
   };
 
-  const handleEnterWorld = async (checkUpdate: boolean) => {
-    setSceneUpdate(undefined);
+  const handleEnterWorld = async (checkUpdate = false) => {
+    setNeedsUpdate(false);
     setMicException(undefined);
     setLoading(true);
 
-    if (checkUpdate) {
-      const update = await getUpdate();
-      if (update) {
-        setSceneUpdate(update);
-        setLoading(false);
-        return;
-      }
+    if (checkUpdate && (await checkForUpdate())) {
+      setNeedsUpdate(true);
+      setLoading(false);
+      return;
     }
     if (micPermission === "granted") {
       setLoading(false);
@@ -143,13 +140,10 @@ function EnterWorldButton({ room }: { room: Room }) {
   };
 
   const handleUpdateScene = async () => {
-    if (!sceneUpdate) return;
-
-    const content = sceneUpdate;
     setLoading(true);
-    setSceneUpdate(undefined);
-    await updateScene(content);
-    handleEnterWorld(false);
+    setNeedsUpdate(false);
+    await updateScene();
+    handleEnterWorld();
   };
 
   return (
@@ -175,10 +169,10 @@ function EnterWorldButton({ room }: { room: Room }) {
           requestClose={() => setMicException(undefined)}
         />
       )}
-      {sceneUpdate && (
+      {needsUpdate && (
         <AlertDialog
-          open={!!sceneUpdate}
-          requestClose={() => setSceneUpdate(undefined)}
+          open={!!needsUpdate}
+          requestClose={() => setNeedsUpdate(false)}
           title="Update Scene"
           content={
             <div className="flex flex-column gap-xs">
@@ -188,14 +182,14 @@ function EnterWorldButton({ room }: { room: Room }) {
           buttons={
             <div className="flex flex-column gap-xs">
               <Button onClick={handleUpdateScene}>Update</Button>
-              <Button fill="outline" onClick={() => handleEnterWorld(false)}>
+              <Button fill="outline" onClick={() => handleEnterWorld()}>
                 Enter without Update
               </Button>
             </div>
           }
         />
       )}
-      <Button size="lg" variant="primary" disabled={loading} onClick={() => handleEnterWorld(canUpdateScene)}>
+      <Button size="lg" variant="primary" disabled={loading} onClick={() => handleEnterWorld(true)}>
         {loading ? "Entering..." : "Enter World"}
       </Button>
     </>
