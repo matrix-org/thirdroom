@@ -60,7 +60,7 @@ export function SpacesView() {
           isActive={selectedWindow === OverlayWindow.Discover}
           name="Discover"
           iconSrc={ExploreIC}
-          variant="danger"
+          variant="surface-low"
         />
       </div>
       <div className="shrink-0 flex flex-column items-center gap-xs">
