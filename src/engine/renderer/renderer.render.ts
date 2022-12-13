@@ -43,9 +43,8 @@ import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.comm
 import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
-import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
 import {
-  onLoadLocalReflectionProbeResource,
+  RendererReflectionProbeResource,
   updateNodeReflections,
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
@@ -189,7 +188,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, RendererTextureResource),
       registerResource(ctx, RendererMaterialResource),
       registerResource(ctx, LightResource),
-      registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
+      registerResource(ctx, RendererReflectionProbeResource),
       registerResource(ctx, CameraResource),
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),

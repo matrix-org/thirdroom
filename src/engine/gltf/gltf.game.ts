@@ -34,7 +34,6 @@ import {
   nodeHasCollider,
 } from "./OMI_collider";
 import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_reflection_probes";
-import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { hasBackgroundExtension, loadGLTFBackgroundTexture } from "./MX_background";
 import { getEmissiveStrength } from "./KHR_materials_emissive_strength";
 import { getTransmissionFactor, getTransmissionTextureInfo } from "./KHR_materials_transmission";
@@ -86,6 +85,7 @@ import {
   SkinResource,
   LightMapResource,
   RemoteLightMap,
+  RemoteReflectionProbe,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";

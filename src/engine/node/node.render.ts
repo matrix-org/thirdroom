@@ -29,7 +29,10 @@ import {
   updateNodeMesh,
 } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
-import { LocalReflectionProbeResource, updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
+import {
+  RendererReflectionProbeResource,
+  updateNodeReflectionProbe,
+} from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -57,7 +60,7 @@ export interface LocalNode {
   light?: LocalLight;
   lightObject?: Light;
   tilesRenderer?: LocalTilesRendererResource;
-  reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbe?: RendererReflectionProbeResource;
   reflectionProbeObject?: ReflectionProbe;
 }
 
@@ -82,7 +85,7 @@ export async function onLoadLocalNode(
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCamera>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLight>(ctx, nodeView.light[0]) : undefined,
     reflectionProbe: nodeView.reflectionProbe[0]
-      ? waitForLocalResource<LocalReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])
+      ? waitForLocalResource<RendererReflectionProbeResource>(ctx, nodeView.reflectionProbe[0])
       : undefined,
   });
 

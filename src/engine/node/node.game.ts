@@ -23,7 +23,6 @@ import {
   RendererSharedNodeResource,
 } from "./node.common";
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
-import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
 import {
   RemoteCamera,
@@ -32,6 +31,7 @@ import {
   RemoteLightMap,
   RemoteMesh,
   RemoteNode as ScriptRemoteNode,
+  RemoteReflectionProbe,
   RemoteSkin,
 } from "../resource/schema";
 

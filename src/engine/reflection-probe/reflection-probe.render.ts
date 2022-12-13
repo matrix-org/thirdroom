@@ -5,36 +5,20 @@ import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, waitForLocalResource } from "../resource/resource.render";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { getLocalResource } from "../resource/resource.render";
+import { ReflectionProbeResource } from "../resource/schema";
 import { RendererSceneTripleBuffer } from "../scene/scene.common";
 import { LocalSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
-import { SharedReflectionProbeResource } from "./reflection-probe.common";
 import { ReflectionProbe } from "./ReflectionProbe";
 
-export interface LocalReflectionProbeResource {
-  resourceId: ResourceId;
-  reflectionProbeTexture: RendererTextureResource;
-  textureArrayIndex: number;
-  size?: Vector3;
-}
-
-export async function onLoadLocalReflectionProbeResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { reflectionProbeTexture, size }: SharedReflectionProbeResource
-): Promise<LocalReflectionProbeResource> {
-  return {
-    resourceId,
-    reflectionProbeTexture: await waitForLocalResource<RendererTextureResource>(
-      ctx,
-      reflectionProbeTexture,
-      "Reflection Probe Texture"
-    ),
-    textureArrayIndex: 0,
-    size: size ? new Vector3().fromArray(size as Float32Array) : undefined,
-  };
+export class RendererReflectionProbeResource extends defineLocalResourceClass<
+  typeof ReflectionProbeResource,
+  RenderThreadState
+>(ReflectionProbeResource) {
+  declare reflectionProbeTexture: RendererTextureResource;
+  textureArrayIndex = 0;
 }
 
 export function updateNodeReflectionProbe(
@@ -59,7 +43,7 @@ export function updateNodeReflectionProbe(
     }
 
     if (nodeReadView.reflectionProbe[0]) {
-      node.reflectionProbe = getLocalResource<LocalReflectionProbeResource>(
+      node.reflectionProbe = getLocalResource<RendererReflectionProbeResource>(
         ctx,
         nodeReadView.reflectionProbe[0]
       )?.resource;
@@ -91,10 +75,10 @@ export function updateSceneReflectionProbe(
   const currentReflectionProbeResourceId = sceneResource.reflectionProbe?.resourceId || 0;
 
   if (sceneReadView.reflectionProbe[0] !== currentReflectionProbeResourceId) {
-    let nextReflectionProbe: LocalReflectionProbeResource | undefined;
+    let nextReflectionProbe: RendererReflectionProbeResource | undefined;
 
     if (sceneReadView.reflectionProbe[0]) {
-      nextReflectionProbe = getLocalResource<LocalReflectionProbeResource>(
+      nextReflectionProbe = getLocalResource<RendererReflectionProbeResource>(
         ctx,
         sceneReadView.reflectionProbe[0]
       )?.resource;

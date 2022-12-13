@@ -9,11 +9,10 @@ import {
 import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
-import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteTexture } from "../resource/schema";
+import { RemoteReflectionProbe, RemoteTexture } from "../resource/schema";
 import {
   audioSceneSchema,
   AudioSceneTripleBuffer,

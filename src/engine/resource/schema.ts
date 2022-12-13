@@ -185,6 +185,8 @@ export const ReflectionProbeResource = defineResource("reflection-probe", Resour
   reflectionProbeTexture: PropType.ref(TextureResource, { script: true, mutable: false }),
   size: PropType.vec3({ script: true }),
 });
+export type RemoteReflectionProbe = RemoteResource<typeof ReflectionProbeResource>;
+export type LocalReflectionProbe = LocalResource<typeof ReflectionProbeResource>;
 
 export enum MaterialAlphaMode {
   OPAQUE,

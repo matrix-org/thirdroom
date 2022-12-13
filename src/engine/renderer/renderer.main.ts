@@ -18,6 +18,7 @@ import {
   MeshPrimitiveResource,
   MeshResource,
   NodeResource,
+  ReflectionProbeResource,
   SamplerResource,
   SkinResource,
   TextureResource,
@@ -73,6 +74,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, SkinResource),
       registerResource(ctx, InstancedMeshResource),
       registerResource(ctx, LightMapResource),
+      registerResource(ctx, ReflectionProbeResource),
     ]);
   },
 });

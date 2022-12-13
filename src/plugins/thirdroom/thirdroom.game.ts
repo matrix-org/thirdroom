@@ -42,7 +42,6 @@ import { CharacterControllerType, SceneCharacterControllerComponent } from "../.
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
 import { addAvatar } from "../avatars/avatar.game";
-import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -85,6 +84,7 @@ import {
   SamplerMapping,
   SamplerResource,
   TextureResource,
+  ReflectionProbeResource,
 } from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
@@ -400,7 +400,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     });
 
     if (!newSceneResource.reflectionProbe) {
-      newSceneResource.reflectionProbe = createReflectionProbeResource(ctx, {
+      newSceneResource.reflectionProbe = ctx.resourceManager.createResource(ReflectionProbeResource, {
         reflectionProbeTexture: defaultEnvironmentMapTexture,
       });
     }

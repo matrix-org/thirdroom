@@ -2,7 +2,10 @@ import { Color, Scene } from "three";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
-import { LocalReflectionProbeResource, updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
+import {
+  RendererReflectionProbeResource,
+  updateSceneReflectionProbe,
+} from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { ResourceId } from "../resource/resource.common";
@@ -15,7 +18,7 @@ export interface LocalSceneResource {
   resourceId: ResourceId;
   scene: Scene;
   backgroundTexture?: RendererTextureResource;
-  reflectionProbe?: LocalReflectionProbeResource;
+  reflectionProbe?: RendererReflectionProbeResource;
   reflectionProbeNeedsUpdate: boolean;
   rendererSceneTripleBuffer: RendererSceneTripleBuffer;
 }
