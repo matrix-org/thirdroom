@@ -6,27 +6,20 @@ import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { getLocalResource } from "../resource/resource.render";
-import { TilesRendererResoruceProps } from "./tiles-renderer.common";
+import { TilesRendererResource } from "../resource/schema";
 
-export interface LocalTilesRendererResource {
-  resourceId: ResourceId;
-  tilesRenderer: TilesRenderer;
-  tilesetUrl: string;
+export class RendererTilesRendererResource extends defineLocalResourceClass<
+  typeof TilesRendererResource,
+  RenderThreadState
+>(TilesRendererResource) {
   camera?: Camera;
-}
+  tilesRenderer: TilesRenderer = new TilesRenderer("");
 
-export async function onLoadTilesRenderer(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { tilesetUrl }: TilesRendererResoruceProps
-): Promise<LocalTilesRendererResource> {
-  return {
-    resourceId,
-    tilesRenderer: new TilesRenderer(tilesetUrl),
-    tilesetUrl,
-  };
+  async load() {
+    this.tilesRenderer = new TilesRenderer(this.uri);
+  }
 }
 
 export function updateNodeTilesRenderer(
@@ -46,7 +39,7 @@ export function updateNodeTilesRenderer(
     }
 
     if (nextTilesRendererResourceId) {
-      node.tilesRenderer = getLocalResource<LocalTilesRendererResource>(ctx, nextTilesRendererResourceId)?.resource;
+      node.tilesRenderer = getLocalResource<RendererTilesRendererResource>(ctx, nextTilesRendererResourceId)?.resource;
 
       if (node.tilesRenderer) {
         scene.add(node.tilesRenderer.tilesRenderer.group);

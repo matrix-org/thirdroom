@@ -39,8 +39,6 @@ import {
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
 import { ResourceId } from "../resource/resource.common";
-import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
-import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
 import {
@@ -62,6 +60,7 @@ import {
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
 import { MatrixMaterial } from "../material/MatrixMaterial";
+import { RendererTilesRendererResource } from "../tiles-renderer/tiles-renderer.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -202,7 +201,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, RendererLightMapResource),
       registerResource(ctx, RendererSkinResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
-      registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
+      registerResource(ctx, RendererTilesRendererResource),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },

@@ -391,6 +391,8 @@ export type LocalLightMap = LocalResource<typeof LightMapResource>;
 export const TilesRendererResource = defineResource("tiles-renderer", ResourceType.TilesRenderer, {
   uri: PropType.string({ mutable: false, required: true, script: true }),
 });
+export type RemoteTilesRenderer = RemoteResource<typeof TilesRendererResource>;
+export type LocalTilesRenderer = LocalResource<typeof TilesRendererResource>;
 
 export const SkinResource = defineResource("skin", ResourceType.Skin, {
   name: PropType.string({ default: "Skin", script: true }),

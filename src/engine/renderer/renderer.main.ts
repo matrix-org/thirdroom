@@ -22,6 +22,7 @@ import {
   SamplerResource,
   SkinResource,
   TextureResource,
+  TilesRendererResource,
 } from "../resource/schema";
 
 type MainRendererModuleState = {};
@@ -75,6 +76,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, InstancedMeshResource),
       registerResource(ctx, LightMapResource),
       registerResource(ctx, ReflectionProbeResource),
+      registerResource(ctx, TilesRendererResource),
     ]);
   },
 });

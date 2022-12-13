@@ -40,7 +40,7 @@ import { getResourceDisposed } from "../resource/resource.render";
 import { waitForLocalResource } from "../resource/resource.render";
 import { LocalCamera, LocalLight } from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
-import { LocalTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
+import { RendererTilesRendererResource, updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { promiseObject } from "../utils/promiseObject";
 import { RendererNodeTripleBuffer, RendererSharedNodeResource } from "./node.common";
 
@@ -59,7 +59,7 @@ export interface LocalNode {
   cameraObject?: PerspectiveCamera | OrthographicCamera;
   light?: LocalLight;
   lightObject?: Light;
-  tilesRenderer?: LocalTilesRendererResource;
+  tilesRenderer?: RendererTilesRendererResource;
   reflectionProbe?: RendererReflectionProbeResource;
   reflectionProbeObject?: ReflectionProbe;
 }

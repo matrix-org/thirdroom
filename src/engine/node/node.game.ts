@@ -22,7 +22,6 @@ import {
   RendererNodeTripleBuffer,
   RendererSharedNodeResource,
 } from "./node.common";
-import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteNametag } from "../nametag/nametag.game";
 import {
   RemoteCamera,
@@ -33,6 +32,7 @@ import {
   RemoteNode as ScriptRemoteNode,
   RemoteReflectionProbe,
   RemoteSkin,
+  RemoteTilesRenderer,
 } from "../resource/schema";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
