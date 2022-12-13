@@ -20,5 +20,5 @@ export default defineConfig<IMainThreadContext>({
     RendererModule,
     ThirdroomModule,
   ],
-  systems: [MainThreadAudioSystem, MainThreadNetworkSystem, MainThreadEditorSystem, ResourceDisposalSystem],
+  systems: [ResourceDisposalSystem, MainThreadAudioSystem, MainThreadNetworkSystem, MainThreadEditorSystem],
 });

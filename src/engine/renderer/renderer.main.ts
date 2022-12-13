@@ -10,6 +10,7 @@ import {
   BufferViewResource,
   CameraResource,
   ImageResource,
+  InstancedMeshResource,
   InteractableResource,
   LightResource,
   MaterialResource,
@@ -17,6 +18,7 @@ import {
   MeshResource,
   NodeResource,
   SamplerResource,
+  SkinResource,
   TextureResource,
 } from "../resource/schema";
 
@@ -65,6 +67,10 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, MeshPrimitiveResource),
       registerResource(ctx, InteractableResource),
       registerResource(ctx, AccessorResource),
+      registerResource(ctx, MeshResource),
+      registerResource(ctx, MeshPrimitiveResource),
+      registerResource(ctx, SkinResource),
+      registerResource(ctx, InstancedMeshResource),
     ]);
   },
 });

@@ -21,7 +21,13 @@ import { updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { updateNodeLight } from "../light/light.render";
-import { LocalInstancedMesh, LocalLightMap, LocalMesh, LocalSkinnedMesh, updateNodeMesh } from "../mesh/mesh.render";
+import {
+  LocalLightMap,
+  RendererInstancedMeshResource,
+  RendererMeshResource,
+  RendererSkinResource,
+  updateNodeMesh,
+} from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { LocalReflectionProbeResource, updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
@@ -40,10 +46,10 @@ type PrimitiveObject3D = Mesh | SkinnedMesh | Line | LineSegments | LineLoop | P
 export interface LocalNode {
   resourceId: ResourceId;
   rendererNodeTripleBuffer: RendererNodeTripleBuffer;
-  mesh?: LocalMesh;
-  instancedMesh?: LocalInstancedMesh;
+  mesh?: RendererMeshResource;
+  instancedMesh?: RendererInstancedMeshResource;
   lightMap?: LocalLightMap;
-  skinnedMesh?: LocalSkinnedMesh;
+  skin?: RendererSkinResource;
   bone?: Bone;
   meshPrimitiveObjects?: PrimitiveObject3D[];
   camera?: LocalCamera;
@@ -65,14 +71,12 @@ export async function onLoadLocalNode(
   const nodeView = getReadObjectBufferView(rendererNodeTripleBuffer);
 
   const resources = await promiseObject({
-    mesh: nodeView.mesh[0] ? waitForLocalResource<LocalMesh>(ctx, nodeView.mesh[0]) : undefined,
+    mesh: nodeView.mesh[0] ? waitForLocalResource<RendererMeshResource>(ctx, nodeView.mesh[0]) : undefined,
     instancedMesh: nodeView.instancedMesh[0]
-      ? waitForLocalResource<LocalInstancedMesh>(ctx, nodeView.instancedMesh[0])
+      ? waitForLocalResource<RendererInstancedMeshResource>(ctx, nodeView.instancedMesh[0])
       : undefined,
     lightMap: nodeView.lightMap[0] ? waitForLocalResource<LocalLightMap>(ctx, nodeView.lightMap[0]) : undefined,
-    skinnedMesh: nodeView.skinnedMesh[0]
-      ? waitForLocalResource<LocalSkinnedMesh>(ctx, nodeView.skinnedMesh[0])
-      : undefined,
+    skin: nodeView.skin[0] ? waitForLocalResource<RendererSkinResource>(ctx, nodeView.skin[0]) : undefined,
     camera: nodeView.camera[0] ? waitForLocalResource<LocalCamera>(ctx, nodeView.camera[0]) : undefined,
     light: nodeView.light[0] ? waitForLocalResource<LocalLight>(ctx, nodeView.light[0]) : undefined,
     reflectionProbe: nodeView.reflectionProbe[0]
@@ -86,7 +90,7 @@ export async function onLoadLocalNode(
     mesh: resources.mesh,
     instancedMesh: resources.instancedMesh,
     lightMap: resources.lightMap,
-    skinnedMesh: resources.skinnedMesh,
+    skin: resources.skin,
     camera: resources.camera,
     light: resources.light,
     reflectionProbe: resources.reflectionProbe,
@@ -181,24 +185,12 @@ export function updateLocalNodeResources(
           }
         }
 
-        const primitives = node.mesh.primitives;
-
-        for (let j = 0; j < primitives.length; j++) {
-          const primitive = primitives[j];
-
-          const index = rendererModule.meshPrimitives.indexOf(primitive);
-
-          if (index !== -1) {
-            rendererModule.meshPrimitives.splice(index, 1);
-          }
-        }
-
         node.meshPrimitiveObjects = undefined;
         node.mesh = undefined;
       }
 
-      if (node.skinnedMesh) {
-        node.skinnedMesh = undefined;
+      if (node.skin) {
+        node.skin = undefined;
       }
 
       if (node.light) {

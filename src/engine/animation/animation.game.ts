@@ -1,5 +1,5 @@
 import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery, enterQuery, hasComponent, IWorld, removeComponent } from "bitecs";
+import { addComponent, defineQuery, enterQuery, exitQuery, hasComponent, IWorld } from "bitecs";
 import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
@@ -12,6 +12,8 @@ import { Networked, Owned } from "../network/network.game";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
+import { ResourceId } from "../resource/resource.common";
+import { disposeResource } from "../resource/resource.game";
 
 interface AnimationActionMap {
   Fall2: AnimationAction;
@@ -33,6 +35,7 @@ export interface IAnimationComponent {
   mixer: AnimationMixer;
   clips: AnimationClip[];
   actions: AnimationActionMap;
+  accessorIds: ResourceId[];
 }
 
 export enum AnimationClipType {
@@ -56,9 +59,11 @@ export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
 const enterAnimationQuery = enterQuery(animationQuery);
+const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
 export function AnimationSystem(ctx: GameState) {
+  disposeAnimations(ctx);
   initializeAnimations(ctx);
   processAnimations(ctx);
   syncBones(ctx);
@@ -305,12 +310,24 @@ function getClipActionsUsingVelocity(
   return actions;
 }
 
+function disposeAnimations(ctx: GameState) {
+  const entities = exitAnimationQuery(ctx.world);
+
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
+
+    const { accessorIds } = AnimationComponent.get(eid)!;
+
+    for (let i = 0; i < accessorIds.length; i++) {
+      const resourceId = accessorIds[i];
+      disposeResource(ctx, resourceId);
+    }
+
+    AnimationComponent.delete(eid);
+  }
+}
+
 export function addAnimationComponent(world: IWorld, eid: number, props?: any) {
   addComponent(world, AnimationComponent, eid);
   AnimationComponent.set(eid, props);
-}
-
-export function removeAnimationComponent(world: IWorld, eid: number) {
-  removeComponent(world, AnimationComponent, eid);
-  AnimationComponent.delete(eid);
 }

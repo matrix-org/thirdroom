@@ -1,6 +1,6 @@
 import { addComponent, addEntity } from "bitecs";
 import { mat4, vec2 } from "gl-matrix";
-import { AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
+import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { addNameComponent } from "../component/Name";
@@ -13,17 +13,7 @@ import {
   updateMatrixWorld,
 } from "../component/transform";
 import { GameState } from "../GameTypes";
-import {
-  createRemoteInstancedMesh,
-  createRemoteLightMap,
-  createRemoteMesh,
-  createRemoteSkinnedMesh,
-  MeshPrimitiveProps,
-  RemoteInstancedMesh,
-  RemoteLightMap,
-  RemoteMesh,
-  RemoteSkinnedMesh,
-} from "../mesh/mesh.game";
+import { createRemoteLightMap, RemoteLightMap } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
@@ -85,13 +75,21 @@ import {
   TextureEncoding,
   TextureResource,
   NodeResource as ScriptNodeResource,
-  MeshResource as ScriptMeshResource,
-  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
-  RemoteMeshPrimitive as ScriptRemoteMeshPrimitive,
+  MeshResource,
+  RemoteMeshPrimitive,
+  RemoteMesh,
+  RemoteSkin,
+  MeshPrimitiveAttributeIndex,
+  InstancedMeshAttributeIndex,
+  MeshPrimitiveResource,
+  InstancedMeshResource,
+  RemoteInstancedMesh,
+  SkinResource,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
 import { getPostprocessingBloomStrength } from "./MX_postprocessing";
+import { ResourceId } from "../resource/resource.common";
 
 export interface GLTFResource {
   url: string;
@@ -104,7 +102,7 @@ export interface GLTFResource {
   bufferViews: Map<number, RemoteBufferView>;
   buffers: Map<number, RemoteBuffer>;
   meshes: Map<number, RemoteMesh>;
-  skins: Map<number, RemoteSkinnedMesh>;
+  skins: Map<number, RemoteSkin>;
   joints: Map<number, RemoteNode>;
   lights: Map<number, RemoteLight>;
   reflectionProbes: Map<number, RemoteReflectionProbe>;
@@ -120,7 +118,7 @@ export interface GLTFResource {
   bufferViewPromises: Map<number, Promise<RemoteBufferView>>;
   bufferPromises: Map<number, Promise<RemoteBuffer>>;
   meshPromises: Map<number, Promise<RemoteMesh>>;
-  skinPromises: Map<number, Promise<RemoteSkinnedMesh>>;
+  skinPromises: Map<number, Promise<RemoteSkin>>;
   lightPromises: Map<number, Promise<RemoteLight>>;
   reflectionProbePromises: Map<number, Promise<RemoteReflectionProbe>>;
   imagePromises: Map<number, Promise<RemoteImage>>;
@@ -233,11 +231,20 @@ export async function inflateGLTFScene(
 
   if (resource.root.animations) {
     const mixer = new AnimationMixer(group);
-    const clips = await Promise.all(
+    const results = await Promise.all(
       resource.root.animations.map((a, i) => loadGLTFAnimationClip(ctx, resource, a, i, indexToObject3D))
     );
+
+    const clips: AnimationClip[] = [];
+    const accessorIds: ResourceId[] = [];
+
+    for (const result of results) {
+      clips.push(result.clip);
+      accessorIds.push(...result.accessorIds);
+    }
+
     const actions = clips.map((clip) => mixer.clipAction(clip));
-    addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions });
+    addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions, accessorIds });
   }
 
   const bloomStrength = getPostprocessingBloomStrength(scene);
@@ -329,8 +336,7 @@ async function _inflateGLTFNode(
       node.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined
         ? _loadGLTFInstancedMesh(ctx, resource, node, node.extensions?.EXT_mesh_gpu_instancing)
         : undefined,
-    skinnedMesh:
-      node.mesh !== undefined && node.skin !== undefined ? loadGLTFSkinnedMesh(ctx, resource, node) : undefined,
+    skin: node.mesh !== undefined && node.skin !== undefined ? loadGLTFSkin(ctx, resource, node) : undefined,
     lightMap:
       node.extensions?.MX_lightmap !== undefined
         ? _loadGLTFLightMap(ctx, resource, node, node.extensions.MX_lightmap)
@@ -395,7 +401,7 @@ async function _inflateGLTFNode(
         static: isStatic,
         scriptNode: resource.manager.createResource(ScriptNodeResource, {
           name: node.name,
-          mesh: results.mesh?.scriptMesh,
+          mesh: results.mesh,
           light: results.light,
         }),
       });
@@ -508,11 +514,7 @@ async function _loadGLTFResource(
 ) {
   const res = await fetchWithProgress(ctx, url);
 
-  console.log(`Fetching glTF resource: ${url} Content-Length: ${res.headers.get("Content-Length")}`);
-
   const buffer = await res.arrayBuffer();
-
-  console.log(`glTF resource fetched: ${url} buffer byteLength: ${buffer.byteLength}`);
 
   // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#binary-header
   const header = new DataView(buffer, 0, GLB_HEADER_BYTE_LENGTH);
@@ -1129,25 +1131,13 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
 
   const mesh = resource.root.meshes[index];
 
-  const primitives: MeshPrimitiveProps[] = await Promise.all(
+  const primitives: RemoteMeshPrimitive[] = await Promise.all(
     mesh.primitives.map((primitive) => _createGLTFMeshPrimitive(ctx, resource, primitive))
   );
 
-  const scriptPrimitives: ScriptRemoteMeshPrimitive[] = [];
-
-  for (const primitive of primitives) {
-    if (primitive.scriptMeshPrimitive) {
-      scriptPrimitives.push(primitive.scriptMeshPrimitive);
-    }
-  }
-
-  const remoteMesh = createRemoteMesh(ctx, {
+  const remoteMesh = resource.manager.createResource(MeshResource, {
     name: mesh.name,
     primitives,
-    scriptMesh: resource.manager.createResource(ScriptMeshResource, {
-      name: mesh.name,
-      primitives: scriptPrimitives,
-    }),
   });
 
   resource.meshes.set(index, remoteMesh);
@@ -1155,15 +1145,35 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
   return remoteMesh;
 }
 
+const MeshPrimitiveAttributesToIndices: { [key: string]: MeshPrimitiveAttributeIndex } = {
+  POSITION: MeshPrimitiveAttributeIndex.POSITION,
+  NORMAL: MeshPrimitiveAttributeIndex.NORMAL,
+  TANGENT: MeshPrimitiveAttributeIndex.TANGENT,
+  TEXCOORD_0: MeshPrimitiveAttributeIndex.TEXCOORD_0,
+  TEXCOORD_1: MeshPrimitiveAttributeIndex.TEXCOORD_1,
+  COLOR_0: MeshPrimitiveAttributeIndex.COLOR_0,
+  JOINTS_0: MeshPrimitiveAttributeIndex.JOINTS_0,
+  WEIGHTS_0: MeshPrimitiveAttributeIndex.WEIGHTS_0,
+};
+
+const InstancedMeshAttributeToIndices: { [key: string]: InstancedMeshAttributeIndex } = {
+  TRANSLATION: InstancedMeshAttributeIndex.TRANSLATION,
+  ROTATION: InstancedMeshAttributeIndex.ROTATION,
+  SCALE: InstancedMeshAttributeIndex.SCALE,
+  _LIGHTMAP_OFFSET: InstancedMeshAttributeIndex.LIGHTMAP_OFFSET,
+  _LIGHTMAP_SCALE: InstancedMeshAttributeIndex.LIGHTMAP_SCALE,
+};
+
 async function _createGLTFMeshPrimitive(
   ctx: GameState,
   resource: GLTFResource,
   primitive: GLTFMeshPrimitive
-): Promise<MeshPrimitiveProps> {
+): Promise<RemoteMeshPrimitive> {
   const attributesPromises: { [key: string]: Promise<RemoteAccessor> } = {};
 
   for (const key in primitive.attributes) {
-    attributesPromises[key] = loadGLTFAccessor(ctx, resource, primitive.attributes[key]);
+    const index = MeshPrimitiveAttributesToIndices[key];
+    attributesPromises[index] = loadGLTFAccessor(ctx, resource, primitive.attributes[key]);
   }
 
   const { indices, attributes, material } = await promiseObject({
@@ -1172,15 +1182,12 @@ async function _createGLTFMeshPrimitive(
     material: primitive.material !== undefined ? loadGLTFMaterial(resource, primitive.material) : undefined,
   });
 
-  return {
+  return resource.manager.createResource(MeshPrimitiveResource, {
     indices,
     attributes,
     material,
     mode: primitive.mode,
-    scriptMeshPrimitive: resource.manager.createResource(ScriptMeshPrimitiveResource, {
-      material,
-    }),
-  };
+  });
 }
 
 async function _loadGLTFInstancedMesh(
@@ -1192,15 +1199,16 @@ async function _loadGLTFInstancedMesh(
   const attributesPromises: { [key: string]: Promise<RemoteAccessor> } = {};
 
   for (const key in extension.attributes) {
-    attributesPromises[key] = loadGLTFAccessor(ctx, resource, extension.attributes[key]);
+    const index = InstancedMeshAttributeToIndices[key];
+    attributesPromises[index] = loadGLTFAccessor(ctx, resource, extension.attributes[key]);
   }
 
   const attributes = await promiseObject(attributesPromises);
 
-  return createRemoteInstancedMesh(ctx, { name: `${node.name} Instanced Mesh`, attributes });
+  return resource.manager.createResource(InstancedMeshResource, { name: `${node.name} Instanced Mesh`, attributes });
 }
 
-async function loadGLTFSkinnedMesh(ctx: GameState, resource: GLTFResource, node: GLTFNode): Promise<RemoteSkinnedMesh> {
+async function loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFNode): Promise<RemoteSkin> {
   const index = node.skin;
 
   if (index === undefined || !resource.root.skins || !resource.root.skins[index]) {
@@ -1213,18 +1221,14 @@ async function loadGLTFSkinnedMesh(ctx: GameState, resource: GLTFResource, node:
     return skinPromise;
   }
 
-  skinPromise = _loadGLTFSkinnedMesh(ctx, resource, node);
+  skinPromise = _loadGLTFSkin(ctx, resource, node);
 
   resource.skinPromises.set(index, skinPromise);
 
   return skinPromise;
 }
 
-async function _loadGLTFSkinnedMesh(
-  ctx: GameState,
-  resource: GLTFResource,
-  node: GLTFNode
-): Promise<RemoteSkinnedMesh> {
+async function _loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFNode): Promise<RemoteSkin> {
   const index = node.skin;
 
   if (index === undefined || !resource.root.skins || !resource.root.skins[index]) {
@@ -1246,7 +1250,7 @@ async function _loadGLTFSkinnedMesh(
     else throw new Error("glTF skin joint had no remote node resourceId");
   }
 
-  const remoteSkinnedMesh = createRemoteSkinnedMesh(ctx, {
+  const remoteSkinnedMesh = resource.manager.createResource(SkinResource, {
     name: `${node.name} Skinned Mesh`,
     joints,
     inverseBindMatrices,

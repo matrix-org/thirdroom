@@ -1,6 +1,7 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
 export interface BaseThreadContext {
+  thread: Thread;
   systems: ThreadSystem<any>[];
   modules: Map<Module<any, any>, any>;
   sendMessage<M extends Message<any>>(

@@ -36,183 +36,112 @@ import { getModule } from "../module/module.common";
 import { RendererNodeTripleBuffer } from "../node/node.common";
 import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { MeshPrimitiveMode } from "../resource/schema";
+import { getLocalResource, getLocalResources, waitForLocalResource } from "../resource/resource.render";
+import {
+  InstancedMeshAttributeIndex,
+  MeshPrimitiveAttributeIndex,
+  MeshPrimitiveMode,
+  MeshPrimitiveResource,
+  MeshResource,
+  InstancedMeshResource,
+  SkinResource,
+} from "../resource/schema";
 import { LocalSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
-import { promiseObject } from "../utils/promiseObject";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
-import {
-  InstancedMeshAttribute,
-  MeshPrimitiveAttribute,
-  MeshPrimitiveTripleBuffer,
-  SharedInstancedMeshResource,
-  SharedLightMapResource,
-  SharedMeshPrimitiveResource,
-  SharedMeshResource,
-  SharedSkinnedMeshResource,
-} from "./mesh.common";
+import { SharedLightMapResource } from "./mesh.common";
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
 
-export type LocalMeshPrimitiveAttributes = { [key: string]: RendererAccessorResource };
+const defaultGeometry = new BufferGeometry();
+const defaultMaterial = new MeshStandardMaterial();
 
-export interface LocalMeshPrimitive {
-  resourceId: ResourceId;
-  attributes: { [key: string]: RendererAccessorResource };
-  mode: MeshPrimitiveMode;
-  indices?: RendererAccessorResource;
-  material?: RendererMaterialResource;
-  targets?: number[] | Float32Array;
-  geometryObj: BufferGeometry;
-  materialObjResourceId: ResourceId;
-  materialObj: PrimitiveMaterial;
-  meshPrimitiveTripleBuffer: MeshPrimitiveTripleBuffer;
-}
-
-export interface LocalMesh {
-  resourceId: ResourceId;
-  primitives: LocalMeshPrimitive[];
-}
-
-export async function onLoadLocalMeshResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { initialProps }: SharedMeshResource
-): Promise<LocalMesh> {
-  return {
-    resourceId,
-    primitives: await Promise.all(
-      initialProps.primitives.map((primitiveResourceId) =>
-        waitForLocalResource<LocalMeshPrimitive>(ctx, primitiveResourceId)
-      )
-    ),
-  };
-}
-
-const ThreeAttributes: { [key: string]: string } = {
-  [MeshPrimitiveAttribute.POSITION]: "position",
-  [MeshPrimitiveAttribute.NORMAL]: "normal",
-  [MeshPrimitiveAttribute.TANGENT]: "tangent",
-  [MeshPrimitiveAttribute.TEXCOORD_0]: "uv",
-  [MeshPrimitiveAttribute.TEXCOORD_1]: "uv2",
-  [MeshPrimitiveAttribute.COLOR_0]: "color",
-  [MeshPrimitiveAttribute.JOINTS_0]: "skinIndex",
-  [MeshPrimitiveAttribute.WEIGHTS_0]: "skinWeight",
+const MeshPrimitiveAttributeToThreeAttribute: { [key: number]: string } = {
+  [MeshPrimitiveAttributeIndex.POSITION]: "position",
+  [MeshPrimitiveAttributeIndex.NORMAL]: "normal",
+  [MeshPrimitiveAttributeIndex.TANGENT]: "tangent",
+  [MeshPrimitiveAttributeIndex.TEXCOORD_0]: "uv",
+  [MeshPrimitiveAttributeIndex.TEXCOORD_1]: "uv2",
+  [MeshPrimitiveAttributeIndex.COLOR_0]: "color",
+  [MeshPrimitiveAttributeIndex.JOINTS_0]: "skinIndex",
+  [MeshPrimitiveAttributeIndex.WEIGHTS_0]: "skinWeight",
 };
 
-export async function onLoadLocalMeshPrimitiveResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { initialProps, meshPrimitiveTripleBuffer }: SharedMeshPrimitiveResource
-): Promise<LocalMeshPrimitive> {
-  const rendererModule = getModule(ctx, RendererModule);
+export class RendererMeshPrimitiveResource extends defineLocalResourceClass<
+  typeof MeshPrimitiveResource,
+  RenderThreadState
+>(MeshPrimitiveResource) {
+  geometryObj: BufferGeometry = defaultGeometry;
+  materialObj: PrimitiveMaterial = defaultMaterial;
 
-  const meshPrimitiveView = getReadObjectBufferView(meshPrimitiveTripleBuffer);
+  declare indices: RendererAccessorResource | undefined;
+  declare attributes: readonly RendererAccessorResource[];
+  declare material: RendererMaterialResource | undefined;
 
-  const attributePromises: { [key: string]: Promise<RendererAccessorResource> } = {};
+  async load(ctx: RenderThreadState) {
+    let geometryObj = new BufferGeometry();
 
-  for (const attributeName in initialProps.attributes) {
-    attributePromises[attributeName] = waitForLocalResource(
-      ctx,
-      initialProps.attributes[attributeName],
-      `mesh-primitive.${attributeName} accessor`
-    );
-  }
+    if (this.indices) {
+      if ("isInterleavedBufferAttribute" in this.indices.attribute) {
+        throw new Error("Interleaved attributes are not supported as mesh indices.");
+      }
 
-  const { indices, attributes, material } = await promiseObject({
-    indices: initialProps.indices
-      ? waitForLocalResource<RendererAccessorResource>(ctx, initialProps.indices, "mesh-primitive.indices accessor")
-      : undefined,
-    attributes: promiseObject(attributePromises),
-    material: meshPrimitiveView.material[0]
-      ? waitForLocalResource<RendererMaterialResource>(ctx, meshPrimitiveView.material[0], "mesh-primitive material")
-      : undefined,
-  });
-
-  const mode = initialProps.mode;
-
-  let geometryObj = new BufferGeometry();
-
-  if (indices) {
-    if ("isInterleavedBufferAttribute" in indices.attribute) {
-      throw new Error("Interleaved attributes are not supported as mesh indices.");
+      geometryObj.setIndex(this.indices.attribute);
     }
 
-    geometryObj.setIndex(indices.attribute);
+    for (let i = 0; i < this.attributes.length; i++) {
+      const accessor = this.attributes[i];
+
+      if (accessor) {
+        geometryObj.setAttribute(MeshPrimitiveAttributeToThreeAttribute[i], accessor.attribute);
+      }
+    }
+
+    if (this.mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
+      geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_STRIP);
+    } else if (this.mode === MeshPrimitiveMode.TRIANGLE_FAN) {
+      geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_FAN);
+    }
+
+    this.geometryObj = geometryObj;
+
+    if (!this.material) {
+      this.materialObj = getDefaultMaterialForMeshPrimitive(ctx, this);
+    } else {
+      this.materialObj = this.material.getMaterialForMeshPrimitive(ctx, this);
+    }
   }
 
-  for (const attributeName in attributes) {
-    geometryObj.setAttribute(ThreeAttributes[attributeName], attributes[attributeName].attribute);
+  dispose() {
+    this.geometryObj.dispose();
+
+    if (this.material) {
+      this.material.disposeMeshPrimitiveMaterial(this.materialObj);
+    }
   }
-
-  if (mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
-    geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_STRIP);
-  } else if (mode === MeshPrimitiveMode.TRIANGLE_FAN) {
-    geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_FAN);
-  }
-
-  let materialObj: PrimitiveMaterial;
-
-  if (!material) {
-    materialObj = getDefaultMaterialForMeshPrimitive(ctx, mode, attributes);
-  } else {
-    materialObj = material.getMaterialForMeshPrimitive(ctx, mode, attributes);
-  }
-
-  const localMeshPrimitive: LocalMeshPrimitive = {
-    resourceId,
-    mode,
-    attributes,
-    indices,
-    material,
-    geometryObj,
-    materialObjResourceId: material?.resourceId || 0,
-    materialObj,
-    meshPrimitiveTripleBuffer,
-  };
-
-  rendererModule.meshPrimitives.push(localMeshPrimitive);
-
-  return localMeshPrimitive;
 }
 
-export interface LocalInstancedMesh {
-  resourceId: ResourceId;
-  attributes: { [key: string]: RendererAccessorResource };
+export class RendererMeshResource extends defineLocalResourceClass<typeof MeshResource, RenderThreadState>(
+  MeshResource
+) {
+  declare primitives: readonly RendererMeshPrimitiveResource[];
 }
 
-export interface LocalSkinnedMesh {
-  resourceId: ResourceId;
-  joints: LocalNode[];
-  inverseBindMatrices?: RendererAccessorResource;
+export class RendererInstancedMeshResource extends defineLocalResourceClass<
+  typeof InstancedMeshResource,
+  RenderThreadState
+>(InstancedMeshResource) {
+  declare attributes: readonly RendererAccessorResource[];
+}
+
+export class RendererSkinResource extends defineLocalResourceClass<typeof SkinResource, RenderThreadState>(
+  SkinResource
+) {
+  declare joints: LocalNode[];
+  declare inverseBindMatrices: RendererAccessorResource;
   skeleton?: Skeleton;
-}
-
-export async function onLoadLocalInstancedMeshResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  props: SharedInstancedMeshResource
-): Promise<LocalInstancedMesh> {
-  const attributePromises: { [key: string]: Promise<RendererAccessorResource> } = {};
-
-  for (const attributeName in props.attributes) {
-    attributePromises[attributeName] = waitForLocalResource(
-      ctx,
-      props.attributes[attributeName],
-      `instanced-mesh.${attributeName} accessor`
-    );
-  }
-
-  const attributes = await promiseObject(attributePromises);
-
-  const localInstancedMesh: LocalInstancedMesh = {
-    resourceId,
-    attributes,
-  };
-
-  return localInstancedMesh;
 }
 
 export interface LocalLightMap {
@@ -241,28 +170,6 @@ export async function onLoadLocalLightMapResource(
   return localLightMap;
 }
 
-export async function onLoadLocalSkinnedMeshResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  props: SharedSkinnedMeshResource
-): Promise<LocalSkinnedMesh> {
-  const inverseBindMatrices = props.inverseBindMatrices
-    ? await waitForLocalResource<RendererAccessorResource>(ctx, props.inverseBindMatrices)
-    : undefined;
-
-  const jointPromises = props.joints.map((rid: ResourceId) => waitForLocalResource<LocalNode>(ctx, rid));
-
-  const joints = await Promise.all(jointPromises);
-
-  const localSkinnedMesh: LocalSkinnedMesh = {
-    resourceId,
-    joints,
-    inverseBindMatrices,
-  };
-
-  return localSkinnedMesh;
-}
-
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
@@ -273,13 +180,13 @@ function createMeshPrimitiveObject(
   node: LocalNode,
   nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
   sceneResource: LocalSceneResource,
-  primitive: LocalMeshPrimitive
+  primitive: RendererMeshPrimitiveResource
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
 
   let object: PrimitiveObject3D;
 
-  const { instancedMesh, skinnedMesh, lightMap } = node;
+  const { instancedMesh, skin, lightMap } = node;
   const { mode, geometryObj, materialObj } = primitive;
 
   if (
@@ -289,14 +196,14 @@ function createMeshPrimitiveObject(
   ) {
     let mesh: Mesh | InstancedMesh;
 
-    if (skinnedMesh) {
-      if (!skinnedMesh.skeleton) {
+    if (skin) {
+      if (!skin.skeleton) {
         const bones = [];
         const boneInverses = [];
 
         // TODO: remove this and use boneMatrices instead
-        for (let j = 0, jl = skinnedMesh.joints.length; j < jl; j++) {
-          const jointNode = skinnedMesh.joints[j];
+        for (let j = 0, jl = skin.joints.length; j < jl; j++) {
+          const jointNode = skin.joints[j];
 
           if (jointNode) {
             const boneReadView = getReadObjectBufferView(jointNode.rendererNodeTripleBuffer);
@@ -308,17 +215,17 @@ function createMeshPrimitiveObject(
 
             const inverseMatrix = new Matrix4();
 
-            if (skinnedMesh.inverseBindMatrices !== undefined) {
-              inverseMatrix.fromArray(skinnedMesh.inverseBindMatrices.attribute.array, j * 16);
+            if (skin.inverseBindMatrices !== undefined) {
+              inverseMatrix.fromArray(skin.inverseBindMatrices.attribute.array, j * 16);
             }
 
             boneInverses.push(inverseMatrix);
           } else {
-            throw new Error(`Joint ${skinnedMesh.joints[j]} not found`);
+            throw new Error(`Joint ${skin.joints[j]} not found`);
           }
         }
 
-        skinnedMesh.skeleton = new Skeleton(bones, boneInverses);
+        skin.skeleton = new Skeleton(bones, boneInverses);
       }
 
       const sm = (mesh = new SkinnedMesh(geometryObj, materialObj));
@@ -328,7 +235,7 @@ function createMeshPrimitiveObject(
 
       setTransformFromNode(ctx, nodeReadView, mesh);
 
-      sm.bind(skinnedMesh.skeleton, sm.matrixWorld);
+      sm.bind(skin.skeleton, sm.matrixWorld);
 
       if (!sm.geometry.attributes.skinWeight.normalized) {
         // we normalize floating point skin weight array to fix malformed assets (see #15319)
@@ -340,16 +247,24 @@ function createMeshPrimitiveObject(
         updateMorphTargets(sm, primitive as unknown as GLTFMesh);
       }
     } else if (instancedMesh) {
-      const attributes = Object.entries(instancedMesh.attributes);
-      const count = attributes[0][1].attribute.count;
+      let count = 0;
+
+      for (let i = 0; i < instancedMesh.attributes.length; i++) {
+        const accessor = instancedMesh.attributes[i];
+
+        if (accessor) {
+          count = accessor.count;
+          break;
+        }
+      }
 
       const instancedGeometry = new InstancedBufferGeometry();
       instancedGeometry.instanceCount = count;
 
       instancedGeometry.setIndex(geometryObj.getIndex());
 
-      for (const semanticName in MeshPrimitiveAttribute) {
-        const attributeName = ThreeAttributes[semanticName];
+      for (const semanticName in MeshPrimitiveAttributeToThreeAttribute) {
+        const attributeName = MeshPrimitiveAttributeToThreeAttribute[semanticName];
 
         if (geometryObj.hasAttribute(attributeName)) {
           instancedGeometry.setAttribute(attributeName, geometryObj.getAttribute(attributeName));
@@ -364,24 +279,24 @@ function createMeshPrimitiveObject(
       tempScale.set(1, 1, 1);
 
       for (let instanceIndex = 0; instanceIndex < count; instanceIndex++) {
-        if (instancedMesh.attributes[InstancedMeshAttribute.TRANSLATION]) {
+        if (instancedMesh.attributes[InstancedMeshAttributeIndex.TRANSLATION]) {
           tempPosition.fromBufferAttribute(
-            instancedMesh.attributes[InstancedMeshAttribute.TRANSLATION].attribute,
+            instancedMesh.attributes[InstancedMeshAttributeIndex.TRANSLATION].attribute,
             instanceIndex
           );
         }
 
-        if (instancedMesh.attributes[InstancedMeshAttribute.ROTATION]) {
+        if (instancedMesh.attributes[InstancedMeshAttributeIndex.ROTATION]) {
           // TODO: Add fromBufferAttribute to Quaternion types
           (tempQuaternion as any).fromBufferAttribute(
-            instancedMesh.attributes[InstancedMeshAttribute.ROTATION].attribute,
+            instancedMesh.attributes[InstancedMeshAttributeIndex.ROTATION].attribute,
             instanceIndex
           );
         }
 
-        if (instancedMesh.attributes[InstancedMeshAttribute.SCALE]) {
+        if (instancedMesh.attributes[InstancedMeshAttributeIndex.SCALE]) {
           tempScale.fromBufferAttribute(
-            instancedMesh.attributes[InstancedMeshAttribute.SCALE].attribute,
+            instancedMesh.attributes[InstancedMeshAttributeIndex.SCALE].attribute,
             instanceIndex
           );
         }
@@ -389,8 +304,8 @@ function createMeshPrimitiveObject(
         instancedMeshObject.setMatrixAt(instanceIndex, tempMatrix4.compose(tempPosition, tempQuaternion, tempScale));
       }
 
-      if (instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_OFFSET]) {
-        const lightMapOffset = instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_OFFSET].attribute;
+      if (instancedMesh.attributes[InstancedMeshAttributeIndex.LIGHTMAP_OFFSET]) {
+        const lightMapOffset = instancedMesh.attributes[InstancedMeshAttributeIndex.LIGHTMAP_OFFSET].attribute;
 
         instancedGeometry.setAttribute(
           "lightMapOffset",
@@ -398,8 +313,8 @@ function createMeshPrimitiveObject(
         );
       }
 
-      if (instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_SCALE]) {
-        const lightMapScale = instancedMesh.attributes[InstancedMeshAttribute.LIGHTMAP_SCALE].attribute;
+      if (instancedMesh.attributes[InstancedMeshAttributeIndex.LIGHTMAP_SCALE]) {
+        const lightMapScale = instancedMesh.attributes[InstancedMeshAttributeIndex.LIGHTMAP_SCALE].attribute;
 
         instancedGeometry.setAttribute(
           "lightMapScale",
@@ -514,37 +429,21 @@ function createMeshPrimitiveObject(
 
 /* Updates */
 
-export function updateLocalMeshPrimitiveResources(ctx: RenderThreadState, meshPrimitives: LocalMeshPrimitive[]) {
-  for (let i = meshPrimitives.length - 1; i >= 0; i--) {
-    const meshPrimitiveResource = meshPrimitives[i];
-
-    if (getResourceDisposed(ctx, meshPrimitiveResource.resourceId)) {
-      meshPrimitiveResource.geometryObj.dispose();
-
-      if (meshPrimitiveResource.material) {
-        meshPrimitiveResource.material.disposeMeshPrimitiveMaterial(meshPrimitiveResource.materialObj);
-      }
-
-      meshPrimitives.splice(i, 1);
-    }
-  }
+export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
+  const meshPrimitives = getLocalResources(ctx, RendererMeshPrimitiveResource);
 
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
-    const sharedMeshPrimitive = getReadObjectBufferView(meshPrimitive.meshPrimitiveTripleBuffer);
-    const nextMaterialResourceId = sharedMeshPrimitive.material[0];
-
+    const nextMaterialResourceId = meshPrimitive.material?.resourceId || 0;
     const nextMaterialResource = getLocalResource<RendererMaterialResource>(ctx, nextMaterialResourceId)?.resource;
 
     const newMaterialObj = nextMaterialResource
-      ? nextMaterialResource.getMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes)
-      : getDefaultMaterialForMeshPrimitive(ctx, meshPrimitive.mode, meshPrimitive.attributes);
+      ? nextMaterialResource.getMaterialForMeshPrimitive(ctx, meshPrimitive)
+      : getDefaultMaterialForMeshPrimitive(ctx, meshPrimitive);
 
     if (newMaterialObj !== meshPrimitive.materialObj) {
-      if (meshPrimitive.materialObj) {
-        if (meshPrimitive.material) {
-          meshPrimitive.material.disposeMeshPrimitiveMaterial(meshPrimitive.materialObj);
-        }
+      if (meshPrimitive.material) {
+        meshPrimitive.material.disposeMeshPrimitiveMaterial(meshPrimitive.materialObj);
       }
 
       meshPrimitive.materialObj = newMaterialObj;
@@ -580,7 +479,7 @@ export function updateNodeMesh(
     }
 
     if (nextMeshResourceId) {
-      node.mesh = getLocalResource<LocalMesh>(ctx, nextMeshResourceId)?.resource;
+      node.mesh = getLocalResource<RendererMeshResource>(ctx, nextMeshResourceId)?.resource;
     } else {
       node.mesh = undefined;
     }
@@ -601,17 +500,16 @@ export function updateNodeMesh(
   if (node.meshPrimitiveObjects) {
     for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
       const primitiveObject = node.meshPrimitiveObjects[i];
+      const meshPrimitive = node.mesh.primitives[i];
 
-      const nextMaterial = node.mesh.primitives[i].materialObj;
-
-      if (!node.skinnedMesh && primitiveObject.material !== nextMaterial) {
-        primitiveObject.material = nextMaterial;
+      if (meshPrimitive && !node.skin && primitiveObject.material !== meshPrimitive.materialObj) {
+        primitiveObject.material = meshPrimitive.materialObj;
       }
 
       updateTransformFromNode(ctx, nodeReadView, primitiveObject);
 
-      if (node.skinnedMesh) {
-        for (const joint of node.skinnedMesh.joints) {
+      if (node.skin) {
+        for (const joint of node.skin.joints) {
           if (joint.bone) {
             const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
             updateTransformFromNode(ctx, boneReadView, joint.bone);

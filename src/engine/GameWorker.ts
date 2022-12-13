@@ -59,6 +59,7 @@ async function onInit({
   }
 
   const state: GameState = {
+    thread: Thread.Game,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     gameToRenderTripleBufferFlags,

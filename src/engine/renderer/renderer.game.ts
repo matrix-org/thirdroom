@@ -22,7 +22,6 @@ import {
   RendererStateTripleBuffer,
   SceneRenderedNotificationMessage,
 } from "./renderer.common";
-import { RemoteMeshPrimitive, updateRemoteMeshPrimitives } from "../mesh/mesh.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import { createDeferred, Deferred } from "../utils/Deferred";
@@ -34,7 +33,6 @@ export interface GameRendererModuleState {
   rendererStateBufferView: RendererStateBufferView;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: RemoteScene[];
-  meshPrimitives: RemoteMeshPrimitive[];
   canvasWidth: number;
   canvasHeight: number;
   sceneRenderedNotificationId: number;
@@ -109,7 +107,6 @@ export const RenderableSystem = (state: GameState) => {
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
 
   updateRendererRemoteScenes(renderer.scenes);
-  updateRemoteMeshPrimitives(renderer.meshPrimitives);
 };
 
 export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {

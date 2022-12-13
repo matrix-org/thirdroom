@@ -594,9 +594,21 @@ type RequiredProps<Def extends ResourceDefinition> = {
 }[keyof Def["schema"]];
 
 export type InitialResourceProps<Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: ResourcePropValue<Def, Prop, true>;
+  [Prop in RequiredProps<Def>]: Def["schema"][Prop]["type"] extends "refMap"
+    ? {
+        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+          ? Resource<Def["schema"][Prop]["resourceDef"]>
+          : never;
+      }
+    : ResourcePropValue<Def, Prop, true>;
 } & {
-  [Prop in keyof Def["schema"]]?: ResourcePropValue<Def, Prop, true>;
+  [Prop in keyof Def["schema"]]?: Def["schema"][Prop]["type"] extends "refMap"
+    ? {
+        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+          ? Resource<Def["schema"][Prop]["resourceDef"]>
+          : never;
+      }
+    : ResourcePropValue<Def, Prop, true>;
 };
 
 export interface IRemoteResourceManager {

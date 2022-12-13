@@ -17,6 +17,7 @@ import {
 
 import { getAccessorArrayView } from "../accessor/accessor.common";
 import { GameState } from "../GameTypes";
+import { ResourceId } from "../resource/resource.common";
 import { RemoteAccessor } from "../resource/schema";
 import { GLTFAnimation, GLTFSampler, GLTFAnimationChannelTarget } from "./GLTF";
 import { GLTFResource, loadGLTFAccessor } from "./gltf.game";
@@ -138,7 +139,7 @@ export async function loadGLTFAnimationClip(
   animation: GLTFAnimation,
   index: number,
   indexToObject3D: Map<number, Object3D>
-) {
+): Promise<{ clip: AnimationClip; accessorIds: ResourceId[] }> {
   const nodes: Object3D[] = [];
   const pendingInputAccessors: Promise<RemoteAccessor>[] = [];
   const pendingOutputAccessors: Promise<RemoteAccessor>[] = [];
@@ -264,5 +265,16 @@ export async function loadGLTFAnimationClip(
 
   const name = animation.name ? animation.name : "animation_" + index;
 
-  return new AnimationClip(name, undefined, tracks);
+  const clip = new AnimationClip(name, undefined, tracks);
+  const accessorIds: ResourceId[] = [];
+
+  for (let i = 0; i < inputAccessors.length; i++) {
+    accessorIds.push(inputAccessors[i].resourceId);
+  }
+
+  for (let i = 0; i < outputAccessors.length; i++) {
+    accessorIds.push(outputAccessors[i].resourceId);
+  }
+
+  return { clip, accessorIds };
 }

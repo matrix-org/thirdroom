@@ -86,7 +86,7 @@ export function defineLocalResourceClass<
           return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
         },
       });
-    } else if (prop.type === "refArray" || prop.type === "refMap") {
+    } else if (prop.type === "refArray") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {
           const index = getReadBufferIndex(this.tripleBuffer);
@@ -99,6 +99,24 @@ export function defineLocalResourceClass<
             }
 
             resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+          }
+
+          return resources;
+        },
+      });
+    } else if (prop.type === "refMap") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource<Def>) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          const arr = this.__props[propName][index];
+          const resources = [];
+
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i]) {
+              resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+            } else {
+              resources.push(undefined);
+            }
           }
 
           return resources;

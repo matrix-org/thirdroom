@@ -9,7 +9,7 @@ import {
 import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteMesh, RemoteInstancedMesh, RemoteSkinnedMesh, RemoteLightMap } from "../mesh/mesh.game";
+import { RemoteLightMap } from "../mesh/mesh.game";
 import { Thread } from "../module/module.common";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
@@ -26,7 +26,14 @@ import {
 import { RemoteTilesRenderer } from "../tiles-renderer/tiles-renderer.game";
 import { RemoteReflectionProbe } from "../reflection-probe/reflection-probe.game";
 import { RemoteNametag } from "../nametag/nametag.game";
-import { RemoteCamera, RemoteLight, RemoteNode as ScriptRemoteNode } from "../resource/schema";
+import {
+  RemoteCamera,
+  RemoteInstancedMesh,
+  RemoteLight,
+  RemoteMesh,
+  RemoteNode as ScriptRemoteNode,
+  RemoteSkin,
+} from "../resource/schema";
 
 export type RendererNodeBufferView = ObjectBufferView<typeof rendererNodeSchema, ArrayBuffer>;
 export type AudioNodeBufferView = ObjectBufferView<typeof audioNodeSchema, ArrayBuffer>;
@@ -46,8 +53,8 @@ export interface RemoteNode {
   set lightMap(lightMap: RemoteLightMap | undefined);
   get instancedMesh(): RemoteInstancedMesh | undefined;
   set instancedMesh(instancedMesh: RemoteInstancedMesh | undefined);
-  get skinnedMesh(): RemoteSkinnedMesh | undefined;
-  set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined);
+  get skin(): RemoteSkin | undefined;
+  set skin(skin: RemoteSkin | undefined);
   get light(): RemoteLight | undefined;
   set light(light: RemoteLight | undefined);
   get reflectionProbe(): RemoteReflectionProbe | undefined;
@@ -75,7 +82,7 @@ interface NodeProps {
   mesh?: RemoteMesh;
   instancedMesh?: RemoteInstancedMesh;
   lightMap?: RemoteLightMap;
-  skinnedMesh?: RemoteSkinnedMesh;
+  skin?: RemoteSkin;
   light?: RemoteLight;
   reflectionProbe?: RemoteReflectionProbe;
   camera?: RemoteCamera;
@@ -97,7 +104,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     if (props?.mesh) remoteNode.mesh = props.mesh;
     if (props?.instancedMesh) remoteNode.instancedMesh = props.instancedMesh;
     if (props?.lightMap) remoteNode.lightMap = props.lightMap;
-    if (props?.skinnedMesh) remoteNode.skinnedMesh = props.skinnedMesh;
+    if (props?.skin) remoteNode.skin = props.skin;
     if (props?.light) remoteNode.light = props.light;
     if (props?.reflectionProbe) remoteNode.reflectionProbe = props.reflectionProbe;
     if (props?.camera) remoteNode.camera = props.camera;
@@ -114,7 +121,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
 
   rendererNodeBufferView.mesh[0] = props?.mesh?.resourceId || 0;
   rendererNodeBufferView.instancedMesh[0] = props?.instancedMesh?.resourceId || 0;
-  rendererNodeBufferView.skinnedMesh[0] = props?.skinnedMesh?.resourceId || 0;
+  rendererNodeBufferView.skin[0] = props?.skin?.resourceId || 0;
   rendererNodeBufferView.lightMap[0] = props?.lightMap?.resourceId || 0;
   rendererNodeBufferView.light[0] = props?.light?.resourceId || 0;
   rendererNodeBufferView.reflectionProbe[0] = props?.reflectionProbe?.resourceId || 0;
@@ -134,7 +141,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _mesh: RemoteMesh | undefined = props?.mesh;
   let _instancedMesh: RemoteInstancedMesh | undefined = props?.instancedMesh;
   let _lightMap: RemoteLightMap | undefined = props?.lightMap;
-  let _skinnedMesh: RemoteSkinnedMesh | undefined = props?.skinnedMesh;
+  let _skin: RemoteSkin | undefined = props?.skin;
   let _light: RemoteLight | undefined = props?.light;
   let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
   let _camera: RemoteCamera | undefined = props?.camera;
@@ -163,8 +170,8 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
           disposeResource(ctx, _instancedMesh.resourceId);
         }
 
-        if (_skinnedMesh) {
-          disposeResource(ctx, _skinnedMesh.resourceId);
+        if (_skin) {
+          disposeResource(ctx, _skin.resourceId);
         }
 
         if (_lightMap) {
@@ -227,8 +234,8 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     addResourceRef(ctx, _lightMap.resourceId);
   }
 
-  if (_skinnedMesh) {
-    addResourceRef(ctx, _skinnedMesh.resourceId);
+  if (_skin) {
+    addResourceRef(ctx, _skin.resourceId);
   }
 
   if (_light) {
@@ -309,20 +316,20 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
       _lightMap = lightMap;
       rendererNodeBufferView.lightMap[0] = lightMap?.resourceId || 0;
     },
-    get skinnedMesh() {
-      return _skinnedMesh;
+    get skin() {
+      return _skin;
     },
-    set skinnedMesh(skinnedMesh: RemoteSkinnedMesh | undefined) {
-      if (skinnedMesh) {
-        addResourceRef(ctx, skinnedMesh.resourceId);
+    set skin(skin: RemoteSkin | undefined) {
+      if (skin) {
+        addResourceRef(ctx, skin.resourceId);
       }
 
-      if (_skinnedMesh) {
-        disposeResource(ctx, _skinnedMesh.resourceId);
+      if (_skin) {
+        disposeResource(ctx, _skin.resourceId);
       }
 
-      _skinnedMesh = skinnedMesh;
-      rendererNodeBufferView.skinnedMesh[0] = skinnedMesh?.resourceId || 0;
+      _skin = skin;
+      rendererNodeBufferView.skin[0] = skin?.resourceId || 0;
     },
     get light() {
       return _light;

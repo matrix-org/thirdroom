@@ -29,21 +29,13 @@ import {
   RendererStateTripleBuffer,
 } from "./renderer.common";
 import { RendererAccessorResource } from "../accessor/accessor.render";
+import { LightMapResourceType } from "../mesh/mesh.common";
 import {
-  InstancedMeshResourceType,
-  MeshPrimitiveResourceType,
-  MeshResourceType,
-  SkinnedMeshResourceType,
-  LightMapResourceType,
-} from "../mesh/mesh.common";
-import {
-  LocalMeshPrimitive,
-  onLoadLocalMeshPrimitiveResource,
-  onLoadLocalMeshResource,
-  onLoadLocalInstancedMeshResource,
-  updateLocalMeshPrimitiveResources,
-  onLoadLocalSkinnedMeshResource,
+  RendererMeshResource,
+  RendererMeshPrimitiveResource,
+  RendererSkinResource,
   onLoadLocalLightMapResource,
+  RendererInstancedMeshResource,
 } from "../mesh/mesh.render";
 import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
 import { NodeResourceType } from "../node/node.common";
@@ -67,8 +59,6 @@ import {
   LightResource,
   SamplerResource,
   NodeResource as ScriptNodeResource,
-  MeshResource as ScriptMeshResource,
-  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
   InteractableResource,
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
@@ -94,7 +84,6 @@ export interface RendererModuleState {
   ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
-  meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
   nodes: LocalNode[]; // done
   reflectionProbes: ReflectionProbe[];
   reflectionProbesMap: DataArrayTexture | null;
@@ -206,16 +195,14 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),
       registerResource(ctx, RendererImageResource),
-      registerResource(ctx, ScriptMeshResource),
-      registerResource(ctx, ScriptMeshPrimitiveResource),
       registerResource(ctx, ScriptNodeResource),
       registerResource(ctx, InteractableResource),
       registerResource(ctx, RendererAccessorResource),
-      registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
-      registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
-      registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
+      registerResource(ctx, RendererMeshResource),
+      registerResource(ctx, RendererMeshPrimitiveResource),
+      registerResource(ctx, RendererInstancedMeshResource),
       registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
-      registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
+      registerResource(ctx, RendererSkinResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
@@ -303,7 +290,6 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 
   updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
-  updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
   updateReflectionProbeTextureArray(ctx, activeSceneResource);

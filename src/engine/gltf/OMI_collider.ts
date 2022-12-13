@@ -5,11 +5,11 @@ import { mat4, quat, vec3 } from "gl-matrix";
 import { vec3ArrayTransformMat4, getAccessorArrayView } from "../accessor/accessor.common";
 import { addTransformComponent, addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { RemoteMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/node.game";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
+import { MeshPrimitiveAttributeIndex, RemoteAccessor, RemoteMesh } from "../resource/schema";
 import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 
@@ -110,13 +110,15 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-    const positionsArray = getAccessorArrayView(primitive.attributes.POSITION).slice() as Float32Array;
+    const positionsArray = getAccessorArrayView(
+      primitive.attributes[MeshPrimitiveAttributeIndex.POSITION] as RemoteAccessor
+    ).slice() as Float32Array;
     vec3ArrayTransformMat4(positionsArray, positionsArray, Transform.worldMatrix[nodeEid]);
 
     let indicesArr: Uint32Array;
 
     if (primitive.indices) {
-      const indicesArrView = getAccessorArrayView(primitive.indices);
+      const indicesArrView = getAccessorArrayView(primitive.indices as RemoteAccessor);
       indicesArr = indicesArrView instanceof Uint32Array ? indicesArrView : new Uint32Array(indicesArrView);
     } else {
       indicesArr = new Uint32Array(positionsArray.length / 3);

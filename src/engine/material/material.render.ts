@@ -15,8 +15,7 @@ import {
   Vector3,
 } from "three";
 
-import { MeshPrimitiveAttribute } from "../mesh/mesh.common";
-import { LocalMeshPrimitiveAttributes } from "../mesh/mesh.render";
+import { RendererMeshPrimitiveResource } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
@@ -26,6 +25,7 @@ import {
   MaterialAlphaMode,
   MaterialResource,
   MaterialType,
+  MeshPrimitiveAttributeIndex,
   MeshPrimitiveMode,
 } from "../resource/schema";
 import { RendererTextureResource } from "../texture/texture.render";
@@ -61,17 +61,21 @@ const matchMaterial =
 
 export function getDefaultMaterialForMeshPrimitive(
   ctx: RenderThreadState,
-  mode: MeshPrimitiveMode,
-  attributes: LocalMeshPrimitiveAttributes
+  meshPrimitive: RendererMeshPrimitiveResource
 ) {
-  const vertexColors = MeshPrimitiveAttribute.COLOR_0 in attributes;
-  const flatShading = !(MeshPrimitiveAttribute.NORMAL in attributes);
-  const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
+  const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
+  const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
+  const useDerivativeTangents = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.TANGENT];
 
-  const cacheEntry = defaultMaterialCache.find(matchMaterial(mode, vertexColors, flatShading, useDerivativeTangents));
+  const cacheEntry = defaultMaterialCache.find(
+    matchMaterial(meshPrimitive.mode, vertexColors, flatShading, useDerivativeTangents)
+  );
 
   if (cacheEntry) {
-    cacheEntry.refCount++;
+    if (meshPrimitive.materialObj !== cacheEntry.material) {
+      cacheEntry.refCount++;
+    }
+
     return cacheEntry.material;
   }
 
@@ -91,7 +95,7 @@ export function getDefaultMaterialForMeshPrimitive(
     material,
     flatShading,
     vertexColors,
-    mode,
+    mode: meshPrimitive.mode,
     useDerivativeTangents,
     refCount: 1,
   });
@@ -114,19 +118,19 @@ export class RendererMaterialResource extends defineLocalResourceClass<typeof Ma
 
   materialCache: MaterialCacheEntry[] = [];
 
-  getMaterialForMeshPrimitive(
-    ctx: RenderThreadState,
-    mode: MeshPrimitiveMode,
-    attributes: LocalMeshPrimitiveAttributes
-  ): PrimitiveMaterial {
-    const vertexColors = MeshPrimitiveAttribute.COLOR_0 in attributes;
-    const flatShading = !(MeshPrimitiveAttribute.NORMAL in attributes);
-    const useDerivativeTangents = !(MeshPrimitiveAttribute.TANGENT in attributes);
+  getMaterialForMeshPrimitive(ctx: RenderThreadState, meshPrimitive: RendererMeshPrimitiveResource): PrimitiveMaterial {
+    const mode = meshPrimitive.mode;
+    const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
+    const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
+    const useDerivativeTangents = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.TANGENT];
 
     const cacheEntry = this.materialCache.find(matchMaterial(mode, vertexColors, flatShading, useDerivativeTangents));
 
     if (cacheEntry) {
-      cacheEntry.refCount++;
+      if (meshPrimitive.materialObj !== cacheEntry.material) {
+        cacheEntry.refCount++;
+      }
+
       return cacheEntry.material;
     }
 
@@ -294,6 +298,12 @@ export class RendererMaterialResource extends defineLocalResourceClass<typeof Ma
     if (cacheEntry.refCount <= 0) {
       material.dispose();
       this.materialCache.splice(index, 1);
+    }
+  }
+
+  dispose(ctx: RenderThreadState): void {
+    for (const entry of this.materialCache) {
+      entry.material.dispose();
     }
   }
 }

@@ -337,17 +337,18 @@ export enum InstancedMeshAttributeIndex {
   LIGHTMAP_OFFSET,
   LIGHTMAP_SCALE,
 }
+
 export const MeshPrimitiveResource = defineResource("mesh-primitive", ResourceType.MeshPrimitive, {
   // Max 8 attributes, indexed by MeshPrimitiveAttributeIndex
-  // attributes: PropType.refMap(AccessorResource, {
-  //   size: Object.values(MeshPrimitiveAttributeIndex).length,
-  //   mutable: false,
-  //   required: true,
-  //   script: true,
-  // }),
-  //indices: PropType.ref(AccessorResource, { mutable: false, script: true }),
+  attributes: PropType.refMap(AccessorResource, {
+    size: Object.values(MeshPrimitiveAttributeIndex).filter((v) => typeof v === "number").length,
+    mutable: false,
+    required: true,
+    script: true,
+  }),
+  indices: PropType.ref(AccessorResource, { mutable: false, script: true }),
   material: PropType.ref(MaterialResource, { script: true }),
-  //mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
+  mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
   // TODO: targets
 });
 export type RemoteMeshPrimitive = RemoteResource<typeof MeshPrimitiveResource>;
@@ -357,12 +358,14 @@ export const InstancedMeshResource = defineResource("instanced-mesh", ResourceTy
   name: PropType.string({ default: "InstancedMesh", script: true }),
   // Max 5 attributes, indexed by InstancedMeshAttributeIndex
   attributes: PropType.refMap(AccessorResource, {
-    size: Object.values(InstancedMeshAttributeIndex).length,
+    size: Object.values(InstancedMeshAttributeIndex).filter((v) => typeof v === "number").length,
     mutable: false,
     required: true,
     script: true,
   }),
 });
+export type RemoteInstancedMesh = RemoteResource<typeof InstancedMeshResource>;
+export type LocalInstancedMesh = LocalResource<typeof InstancedMeshResource>;
 
 export const MeshResource = defineResource("mesh", ResourceType.Mesh, {
   name: PropType.string({ default: "Mesh", script: true }),
@@ -391,6 +394,8 @@ export const SkinResource = defineResource("skin", ResourceType.Skin, {
   joints: PropType.refArray("node", { size: 128, script: true, mutable: false }),
   inverseBindMatrices: PropType.ref(AccessorResource, { script: true }),
 });
+export type RemoteSkin = RemoteResource<typeof SkinResource>;
+export type LocalSkin = LocalResource<typeof SkinResource>;
 
 export enum InteractableType {
   Interactable = 1,

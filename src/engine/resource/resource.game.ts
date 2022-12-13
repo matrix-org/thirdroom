@@ -1,3 +1,4 @@
+import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
@@ -5,11 +6,9 @@ import {
   ArrayBufferResourceType,
   LoadResourcesMessage,
   ResourceDisposedError,
-  ResourceDisposedMessage,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
-  ResourceStatus,
   StringResourceType,
 } from "./resource.common";
 import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
@@ -22,7 +21,6 @@ interface RemoteResourceInfo {
   props: any;
   loaded: boolean;
   error?: string;
-  statusView: Uint8Array;
   cacheKey?: string;
   refCount: number;
   dispose?: () => void;
@@ -31,6 +29,8 @@ interface RemoteResourceInfo {
 interface ResourceModuleState {
   resourceIdCounter: number;
   resources: Map<ResourceId, any>;
+  disposedResources: ResourceId[];
+  resourceStatusTripleBuffers: Map<ResourceId, TripleBuffer>;
   resourcesByType: Map<ResourceDefinition, RemoteResource<any>[]>;
   resourceInfos: Map<ResourceId, RemoteResourceInfo>;
   resourceIdMap: Map<string, Map<any, ResourceId>>;
@@ -43,10 +43,12 @@ interface ResourceModuleState {
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
-  create() {
+  create(ctx: GameState) {
     return {
       resourceIdCounter: 1,
       resources: new Map(),
+      disposedResources: [],
+      resourceStatusTripleBuffers: new Map(),
       resourcesByType: new Map(),
       resourceInfos: new Map(),
       resourceIdMap: new Map(),
@@ -123,9 +125,8 @@ export function createResource<Props>(
   const id = resourceModule.resourceIdCounter++;
 
   // First byte loading flag, second byte is dispose flag
-  const statusBuffer = new SharedArrayBuffer(2);
-  const statusView = new Uint8Array(statusBuffer);
-  statusView[0] = ResourceStatus.Loading;
+  const statusBuffer = createTripleBuffer(ctx.gameToRenderTripleBufferFlags, 1);
+  resourceModule.resourceStatusTripleBuffers.set(id, statusBuffer);
 
   const name = options?.name || UNKNOWN_RESOURCE_NAME;
 
@@ -136,7 +137,6 @@ export function createResource<Props>(
     resourceType,
     props,
     loaded: false,
-    statusView,
     cacheKey: options?.cacheKey,
     refCount: 0,
     dispose: options?.dispose,
@@ -163,7 +163,7 @@ export function createResource<Props>(
     id,
     name,
     props,
-    statusView,
+    statusBuffer,
   };
 
   if (thread === Thread.Game) {
@@ -222,6 +222,8 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     return false;
   }
 
+  resourceModule.disposedResources.push(resourceId);
+
   if (resourceInfo.dispose) {
     resourceInfo.dispose();
   }
@@ -240,9 +242,6 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     deferred.reject(new ResourceDisposedError("Resource disposed"));
     resourceModule.deferredResources.delete(resourceId);
   }
-
-  // Set dispose flag
-  resourceInfo.statusView[1] = 1;
 
   resourceModule.resourceInfos.delete(resourceId);
 
@@ -268,20 +267,6 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
 
   resourceModule.resources.delete(resourceId);
 
-  if (resourceInfo.thread === Thread.Main || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Main, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
-  }
-
-  if (resourceInfo.thread === Thread.Render || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Render, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
-  }
-
   return true;
 }
 
@@ -304,12 +289,6 @@ export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): P
   }
 
   return Promise.reject(new Error(`Resource ${resourceId} not found.`));
-}
-
-export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
-  return resourceInfo ? resourceInfo.statusView[0] : ResourceStatus.None;
 }
 
 export function setRemoteResource<Res extends RemoteResource<any>>(
@@ -345,6 +324,20 @@ export function getRemoteResources<Def extends ResourceDefinition>(
 
 export function ResourceLoaderSystem(ctx: GameState) {
   const resourceModule = getModule(ctx, ResourceModule);
+
+  const disposedResources = resourceModule.disposedResources;
+  const resourceStatusTripleBuffers = resourceModule.resourceStatusTripleBuffers;
+
+  for (let i = disposedResources.length - 1; i >= 0; i--) {
+    const resourceId = disposedResources[i];
+    disposedResources.splice(i, 1);
+    const statusBuffer = resourceStatusTripleBuffers.get(resourceId);
+
+    if (statusBuffer) {
+      const index = getWriteBufferIndex(statusBuffer);
+      statusBuffer.byteViews[index][0] = 1;
+    }
+  }
 
   if (resourceModule.mainThreadMessageQueue.length !== 0) {
     ctx.sendMessage<LoadResourcesMessage>(

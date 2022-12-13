@@ -40,6 +40,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
   const context: IMainThreadContext = {
+    thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     systems: mainThreadConfig.systems,

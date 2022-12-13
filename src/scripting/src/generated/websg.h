@@ -339,7 +339,10 @@ typedef enum InstancedMeshAttributeIndex {
 } InstancedMeshAttributeIndex;
 
 typedef struct MeshPrimitive {
+  Accessor *attributes[16];
+  Accessor *indices;
   Material *material;
+  MeshPrimitiveMode mode;
 } MeshPrimitive;
 
 typedef struct InstancedMesh {

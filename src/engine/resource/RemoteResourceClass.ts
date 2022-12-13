@@ -91,6 +91,17 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         }
 
         this.__props[propName] = store;
+      } else if (prop.type === "refMap") {
+        if (initialValue !== undefined) {
+          const refs = initialValue as { [key: number]: RemoteResource<ResourceDefinition> };
+
+          for (const key in refs) {
+            const ref = refs[key];
+            store[key] = ref.ptr || ref.resourceId;
+          }
+        }
+
+        this.__props[propName] = store;
       } else {
         if (initialValue !== undefined) {
           if (prop.size === 1) {

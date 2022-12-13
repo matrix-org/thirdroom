@@ -64,6 +64,7 @@ async function onInit(
   }
 
   const state: RenderThreadState = {
+    thread: Thread.Render,
     canvas,
     gameToRenderTripleBufferFlags,
     elapsed: performance.now(),
