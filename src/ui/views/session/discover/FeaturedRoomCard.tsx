@@ -3,33 +3,21 @@ import { Platform, Session } from "@thirdroom/hydrogen-view-sdk";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
 import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewCard";
-import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Dots } from "../../../atoms/loading/Dots";
-import { IconButton } from "../../../atoms/button/IconButton";
-import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
-import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { SidebarTabs, useStore } from "../../../hooks/useStore";
 import { JoinRoomProvider } from "../../components/JoinRoomProvider";
-import { RepositoryEvents } from "./DiscoverView";
 
 export function FeaturedRoomCard({
   session,
   platform,
-  repoRoomId,
   roomId,
-  canEdit,
 }: {
   session: Session;
   platform: Platform;
-  repoRoomId: string;
   roomId: string;
-  canEdit: boolean;
 }) {
-  const handleRemoveFeatured = () => {
-    session.hsApi.sendState(repoRoomId, RepositoryEvents.FeaturedRooms, roomId, {});
-  };
   const handleViewRoom = () => {
     const state = useStore.getState();
     state.overlayChat.selectChat(roomId);
@@ -57,17 +45,6 @@ export function FeaturedRoomCard({
           memberCount={summaryData.memberCount}
           options={
             <div className="flex items-center gap-xs">
-              {canEdit && (
-                <DropdownMenu
-                  content={
-                    <DropdownMenuItem onSelect={handleRemoveFeatured} variant="danger">
-                      Remove Featured
-                    </DropdownMenuItem>
-                  }
-                >
-                  <IconButton label="Options" iconSrc={MoreHorizontalIC} />
-                </DropdownMenu>
-              )}
               <JoinRoomProvider session={session} roomId={roomId}>
                 {(join, isJoined, loading, error) =>
                   isJoined ? (

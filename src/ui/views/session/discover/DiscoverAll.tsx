@@ -13,19 +13,7 @@ import { FeaturedWorldCard } from "./FeaturedWorldCard";
 import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
 import { FeaturedSceneCard } from "./FeaturedSceneCard";
 
-export function DiscoverAll({
-  eventType,
-  room,
-  permissions,
-}: {
-  eventType: RepositoryEvents;
-  room: Room;
-  permissions: {
-    canFeatureRooms: boolean;
-    canFeatureWorlds: boolean;
-    canFeatureScenes: boolean;
-  };
-}) {
+export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; room: Room }) {
   const { session, platform } = useHydrogen(true);
 
   return (
@@ -38,14 +26,7 @@ export function DiscoverAll({
                 featuredRooms.length === 0 ? null : (
                   <>
                     {featuredRooms.map(([stateKey, stateEvent]) => (
-                      <FeaturedRoomCard
-                        key={stateKey}
-                        session={session}
-                        platform={platform}
-                        repoRoomId={room.id}
-                        roomId={stateKey}
-                        canEdit={permissions.canFeatureRooms}
-                      />
+                      <FeaturedRoomCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
                     ))}
                   </>
                 )
@@ -60,14 +41,7 @@ export function DiscoverAll({
                 featuredWorlds.length === 0 ? null : (
                   <>
                     {featuredWorlds.map(([stateKey, stateEvent]) => (
-                      <FeaturedWorldCard
-                        key={stateKey}
-                        session={session}
-                        platform={platform}
-                        repoRoomId={room.id}
-                        roomId={stateKey}
-                        canEdit={permissions.canFeatureWorlds}
-                      />
+                      <FeaturedWorldCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
                     ))}
                   </>
                 )
@@ -82,14 +56,7 @@ export function DiscoverAll({
                 featuredScenes.length === 0 ? null : (
                   <DiscoverGroupGrid itemMinWidth={300} gap="md">
                     {featuredScenes.map(([stateKey, stateEvent]) => (
-                      <FeaturedSceneCard
-                        key={stateKey}
-                        session={session}
-                        roomId={room.id}
-                        stateKey={stateKey}
-                        stateEvent={stateEvent}
-                        canEdit={permissions.canFeatureScenes}
-                      />
+                      <FeaturedSceneCard key={stateKey} session={session} roomId={room.id} stateEvent={stateEvent} />
                     ))}
                   </DiscoverGroupGrid>
                 )

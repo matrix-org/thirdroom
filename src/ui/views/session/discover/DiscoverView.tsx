@@ -103,28 +103,10 @@ export function DiscoverView({ room }: { room: Room }) {
         }
       >
         {loadEvents ? (
-          <DiscoverAll
-            eventType={loadEvents}
-            room={room}
-            permissions={{
-              canFeatureRooms,
-              canFeatureWorlds,
-              canFeatureScenes,
-            }}
-          />
+          <DiscoverAll eventType={loadEvents} room={room} />
         ) : (
           <>
-            {discoverTab === DiscoverTab.Home && room && (
-              <DiscoverHome
-                room={room}
-                onLoadEvents={setLoadEvents}
-                permissions={{
-                  canFeatureRooms,
-                  canFeatureWorlds,
-                  canFeatureScenes,
-                }}
-              />
-            )}
+            {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} onLoadEvents={setLoadEvents} />}
             {discoverTab === DiscoverTab.Creator && room && (
               <DiscoverCreator
                 room={room}

@@ -18,13 +18,8 @@ import { FeaturedSceneCard } from "./FeaturedSceneCard";
 interface DiscoverHomeProps {
   room: Room;
   onLoadEvents: (eventType: RepositoryEvents) => void;
-  permissions: {
-    canFeatureRooms: boolean;
-    canFeatureWorlds: boolean;
-    canFeatureScenes: boolean;
-  };
 }
-export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomeProps) {
+export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   return (
@@ -39,14 +34,7 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                   content={
                     <DiscoverGroupGrid>
                       {featuredRooms.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedRoomCard
-                          key={stateKey}
-                          session={session}
-                          platform={platform}
-                          repoRoomId={room.id}
-                          roomId={stateKey}
-                          canEdit={permissions.canFeatureRooms}
-                        />
+                        <FeaturedRoomCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
                       ))}
                     </DiscoverGroupGrid>
                   }
@@ -73,14 +61,7 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                   content={
                     <DiscoverGroupGrid>
                       {featuredWorlds.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedWorldCard
-                          key={stateKey}
-                          session={session}
-                          platform={platform}
-                          repoRoomId={room.id}
-                          roomId={stateKey}
-                          canEdit={permissions.canFeatureWorlds}
-                        />
+                        <FeaturedWorldCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
                       ))}
                     </DiscoverGroupGrid>
                   }
@@ -107,14 +88,7 @@ export function DiscoverHome({ room, onLoadEvents, permissions }: DiscoverHomePr
                   content={
                     <DiscoverGroupGrid itemMinWidth={400} gap="md">
                       {featuredScenes.slice(0, 3).map(([stateKey, stateEvent]) => (
-                        <FeaturedSceneCard
-                          key={stateKey}
-                          session={session}
-                          roomId={room.id}
-                          stateKey={stateKey}
-                          stateEvent={stateEvent}
-                          canEdit={permissions.canFeatureScenes}
-                        />
+                        <FeaturedSceneCard key={stateKey} session={session} roomId={room.id} stateEvent={stateEvent} />
                       ))}
                     </DiscoverGroupGrid>
                   }

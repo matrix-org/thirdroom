@@ -2,9 +2,6 @@ import { Session, StateEvent } from "@thirdroom/hydrogen-view-sdk";
 import { useState } from "react";
 
 import { Button } from "../../../atoms/button/Button";
-import { IconButton } from "../../../atoms/button/IconButton";
-import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
-import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { Modal } from "../../../atoms/modal/Modal";
 import { Text } from "../../../atoms/text/Text";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
@@ -13,24 +10,16 @@ import { useStore } from "../../../hooks/useStore";
 import { getHttpUrl } from "../../../utils/avatar";
 import { ScenePreviewCard, ScenePreviewCardContent } from "../../components/scene-preview-card/ScenePreviewCard";
 import { CreateWorldModal } from "../create-world/CreateWorldModal";
-import { RepositoryEvents } from "./DiscoverView";
-import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 
 interface FeaturedSceneCardProps {
   session: Session;
   roomId: string;
-  stateKey: string;
   stateEvent: StateEvent;
-  canEdit: boolean;
 }
 
-export function FeaturedSceneCard({ session, roomId, stateKey, stateEvent, canEdit }: FeaturedSceneCardProps) {
+export function FeaturedSceneCard({ session, roomId, stateEvent }: FeaturedSceneCardProps) {
   const [create, setCreate] = useState(false);
   const content = stateEvent.content;
-
-  const handleRemoveFeatured = () => {
-    session.hsApi.sendState(roomId, RepositoryEvents.FeaturedScenes, stateKey, {});
-  };
 
   const handleCreateWorld = (roomId: string) => {
     useStore.getState().overlayWorld.selectWorld(roomId);
@@ -54,17 +43,6 @@ export function FeaturedSceneCard({ session, roomId, stateKey, stateEvent, canEd
           <Text className="truncate">{content.scene.name}</Text>
         </div>
         <div className="flex items-center gap-xs">
-          {canEdit && (
-            <DropdownMenu
-              content={
-                <DropdownMenuItem onSelect={handleRemoveFeatured} variant="danger">
-                  Remove Featured
-                </DropdownMenuItem>
-              }
-            >
-              <IconButton label="Options" iconSrc={MoreHorizontalIC} />
-            </DropdownMenu>
-          )}
           <Modal open={create} onOpenChange={setCreate}>
             <CreateWorldModal
               session={session}
