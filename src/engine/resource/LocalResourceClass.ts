@@ -98,7 +98,11 @@ export function defineLocalResourceClass<
               break;
             }
 
-            resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+            const resource = this.manager.getResource((this.constructor as any).resourceDef, arr[i]);
+
+            if (resource) {
+              resources.push(resource);
+            }
           }
 
           return resources;
