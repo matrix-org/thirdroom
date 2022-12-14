@@ -424,6 +424,8 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   held: PropType.bool({ mutableScript: false, script: true }),
   released: PropType.bool({ mutableScript: false, script: true }),
 });
+export type RemoteInteractable = RemoteResource<typeof InteractableResource>;
+export type LocalInteractable = LocalResource<typeof InteractableResource>;
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
   //eid: PropType.u32({ script: false }),
