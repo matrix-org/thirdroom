@@ -15,6 +15,8 @@ typedef struct _Skin Skin;
 
 typedef struct _Node Node;
 
+typedef struct _Scene Scene;
+
 typedef enum ResourceType {
   ResourceType_Unknown = 0,
   ResourceType_Nametag = 1,
@@ -125,18 +127,10 @@ typedef struct AudioSource {
   int auto_play;
   float_t seek;
   int play;
+  int playing;
   int loop;
   float_t playback_rate;
-  float_t current_time;
-  int playing;
-  float_t duration;
 } AudioSource;
-
-typedef struct MediaStreamSource {
-  const char *name;
-  const char *stream;
-  float_t gain;
-} MediaStreamSource;
 
 typedef enum AudioEmitterType {
   AudioEmitterType_Positional = 0,
@@ -162,6 +156,7 @@ typedef struct AudioEmitter {
   float_t gain;
   float_t cone_inner_angle;
   float_t cone_outer_angle;
+  float_t cone_outer_gain;
   AudioEmitterDistanceModel distance_model;
   float_t max_distance;
   float_t ref_distance;
@@ -339,7 +334,7 @@ typedef enum InstancedMeshAttributeIndex {
 } InstancedMeshAttributeIndex;
 
 typedef struct MeshPrimitive {
-  Accessor *attributes[16];
+  Accessor *attributes[8];
   Accessor *indices;
   Material *material;
   MeshPrimitiveMode mode;
@@ -347,7 +342,7 @@ typedef struct MeshPrimitive {
 
 typedef struct InstancedMesh {
   const char *name;
-  Accessor *attributes[10];
+  Accessor *attributes[5];
 } InstancedMesh;
 
 typedef struct Mesh {
@@ -390,12 +385,34 @@ typedef struct Interactable {
 
 typedef struct _Node {
   const char *name;
+  Scene *parent_scene;
+  Node *parent;
+  Node *first_child;
+  Node *prev_sibling;
+  Node *next_sibling;
+  float_t position[3];
+  float_t quaternion[4];
+  float_t scale[3];
+  float_t local_matrix[16];
+  float_t world_matrix[16];
+  int visible;
+  int enabled;
+  int is_static;
+  unsigned int layers;
   Mesh *mesh;
+  InstancedMesh *instanced_mesh;
+  LightMap *light_map;
+  Skin *skin;
   Light *light;
+  ReflectionProbe *reflection_probe;
+  Camera *camera;
+  AudioEmitter *audio_emitter;
+  TilesRenderer *tiles_renderer;
+  Nametag *nametag;
   Interactable *interactable;
 } Node;
 
-typedef struct Scene {
+typedef struct _Scene {
   const char *name;
   Texture *background_texture;
   ReflectionProbe *reflection_probe;
