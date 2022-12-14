@@ -57,11 +57,6 @@ import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
 import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
 import {
-  createRemotePositionalAudioEmitter,
-  createRemoteMediaStreamSource,
-  createRemoteMediaStream,
-} from "../../engine/audio/audio.game";
-import {
   addInputController,
   createInputController,
   getInputController,
@@ -85,6 +80,10 @@ import {
   SamplerResource,
   TextureResource,
   ReflectionProbeResource,
+  AudioEmitterType,
+  AudioEmitterResource,
+  AudioDataResource,
+  AudioSourceResource,
 } from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
@@ -505,10 +504,11 @@ function loadRemotePlayerRig(
   // setup positional audio emitter for VoIP
   addRemoteNodeComponent(ctx, eid, {
     name: peerId,
-    audioEmitter: createRemotePositionalAudioEmitter(ctx, {
+    audioEmitter: ctx.resourceManager.createResource(AudioEmitterResource, {
+      type: AudioEmitterType.Positional,
       sources: [
-        createRemoteMediaStreamSource(ctx, {
-          stream: createRemoteMediaStream(ctx, { streamId: peerId }),
+        ctx.resourceManager.createResource(AudioSourceResource, {
+          audio: ctx.resourceManager.createResource(AudioDataResource, { uri: `mediastream:${peerId}` }),
         }),
       ],
     }),

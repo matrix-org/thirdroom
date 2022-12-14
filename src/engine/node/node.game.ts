@@ -6,7 +6,6 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { RemotePositionalAudioEmitter } from "../audio/audio.game";
 import { Hidden, Transform, traverse } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
@@ -24,6 +23,7 @@ import {
 } from "./node.common";
 import { RemoteNametag } from "../nametag/nametag.game";
 import {
+  RemoteAudioEmitter,
   RemoteCamera,
   RemoteInstancedMesh,
   RemoteLight,
@@ -63,8 +63,8 @@ export interface RemoteNode {
   set camera(camera: RemoteCamera | undefined);
   get tilesRenderer(): RemoteTilesRenderer | undefined;
   set tilesRenderer(tilesRenderer: RemoteTilesRenderer | undefined);
-  get audioEmitter(): RemotePositionalAudioEmitter | undefined;
-  set audioEmitter(audioEmitter: RemotePositionalAudioEmitter | undefined);
+  get audioEmitter(): RemoteAudioEmitter | undefined;
+  set audioEmitter(audioEmitter: RemoteAudioEmitter | undefined);
   get static(): boolean;
   set static(value: boolean);
   get layers(): number;
@@ -86,7 +86,7 @@ interface NodeProps {
   light?: RemoteLight;
   reflectionProbe?: RemoteReflectionProbe;
   camera?: RemoteCamera;
-  audioEmitter?: RemotePositionalAudioEmitter;
+  audioEmitter?: RemoteAudioEmitter;
   tilesRenderer?: RemoteTilesRenderer;
   static?: boolean;
   layers?: number;
@@ -145,7 +145,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
   let _light: RemoteLight | undefined = props?.light;
   let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
   let _camera: RemoteCamera | undefined = props?.camera;
-  let _audioEmitter: RemotePositionalAudioEmitter | undefined = props?.audioEmitter;
+  let _audioEmitter: RemoteAudioEmitter | undefined = props?.audioEmitter;
   let _tilesRenderer: RemoteTilesRenderer | undefined = props?.tilesRenderer;
   let _nametag: RemoteNametag | undefined = props?.nametag;
   let _scriptNode: ScriptRemoteNode | undefined = props?.scriptNode;
@@ -394,7 +394,7 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     get audioEmitter() {
       return _audioEmitter;
     },
-    set audioEmitter(audioEmitter: RemotePositionalAudioEmitter | undefined) {
+    set audioEmitter(audioEmitter: RemoteAudioEmitter | undefined) {
       if (audioEmitter) {
         addResourceRef(ctx, audioEmitter.resourceId);
       }

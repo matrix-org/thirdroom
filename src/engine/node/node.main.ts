@@ -1,4 +1,4 @@
-import { AudioModule, LocalPositionalAudioEmitter } from "../audio/audio.main";
+import { AudioModule, MainThreadAudioEmitterResource } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
 import { LocalNametag } from "../nametag/nametag.main";
@@ -9,7 +9,7 @@ import { AudioNodeTripleBuffer, AudioSharedNodeResource } from "./node.common";
 export interface MainNode {
   resourceId: number;
   audioNodeTripleBuffer: AudioNodeTripleBuffer;
-  audioEmitter?: LocalPositionalAudioEmitter;
+  audioEmitter?: MainThreadAudioEmitterResource;
   emitterPannerNode?: PannerNode;
   emitterOutput?: AudioEmitterOutput;
   nametag?: LocalNametag;

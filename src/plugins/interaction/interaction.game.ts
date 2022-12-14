@@ -3,14 +3,7 @@ import { defineComponent, Types, removeComponent, addComponent, hasComponent, de
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
-import {
-  createRemoteAudioData,
-  createRemoteAudioSource,
-  createRemoteGlobalAudioEmitter,
-  playAudio,
-  RemoteAudioSource,
-  RemoteGlobalAudioEmitter,
-} from "../../engine/audio/audio.game";
+import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
 import { removeRecursive, Transform } from "../../engine/component/transform";
@@ -48,7 +41,15 @@ import {
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
-import { InteractableType } from "../../engine/resource/schema";
+import {
+  AudioDataResource,
+  AudioEmitterResource,
+  AudioEmitterType,
+  AudioSourceResource,
+  InteractableType,
+  RemoteAudioEmitter,
+  RemoteAudioSource,
+} from "../../engine/resource/schema";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
@@ -64,7 +65,7 @@ import { InteractableAction, InteractionMessage, InteractionMessageType } from "
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
 
 type InteractionModuleState = {
-  clickEmitter?: RemoteGlobalAudioEmitter;
+  clickEmitter?: RemoteAudioEmitter;
   // HACK: add duplicate obj cap config to interaction module until import issue is resolved
   maxObjCap: number;
 };
@@ -79,13 +80,19 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
 
-    const clickAudio1 = createRemoteAudioData(ctx, { name: "Click1 Audio Data", uri: "/audio/click1.wav" });
+    const clickAudio1 = ctx.resourceManager.createResource(AudioDataResource, {
+      name: "Click1 Audio Data",
+      uri: "/audio/click1.wav",
+    });
     addResourceRef(ctx, clickAudio1.resourceId);
 
-    const clickAudio2 = createRemoteAudioData(ctx, { name: "Click2 Audio Data", uri: "/audio/click2.wav" });
+    const clickAudio2 = ctx.resourceManager.createResource(AudioDataResource, {
+      name: "Click2 Audio Data",
+      uri: "/audio/click2.wav",
+    });
     addResourceRef(ctx, clickAudio2.resourceId);
 
-    const clickAudioSource1 = createRemoteAudioSource(ctx, {
+    const clickAudioSource1 = ctx.resourceManager.createResource(AudioSourceResource, {
       audio: clickAudio1,
       loop: false,
       autoPlay: false,
@@ -93,7 +100,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     });
     addResourceRef(ctx, clickAudioSource1.resourceId);
 
-    const clickAudioSource2 = createRemoteAudioSource(ctx, {
+    const clickAudioSource2 = ctx.resourceManager.createResource(AudioSourceResource, {
       audio: clickAudio2,
       loop: false,
       autoPlay: false,
@@ -101,7 +108,8 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     });
     addResourceRef(ctx, clickAudioSource2.resourceId);
 
-    module.clickEmitter = createRemoteGlobalAudioEmitter(ctx, {
+    module.clickEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+      type: AudioEmitterType.Global,
       sources: [clickAudioSource1, clickAudioSource2],
     });
 

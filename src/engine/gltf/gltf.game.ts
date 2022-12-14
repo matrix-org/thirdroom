@@ -2,7 +2,6 @@ import { addComponent, addEntity } from "bitecs";
 import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
-import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource } from "../audio/audio.game";
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
 import {
@@ -86,6 +85,9 @@ import {
   LightMapResource,
   RemoteLightMap,
   RemoteReflectionProbe,
+  RemoteAudioData,
+  RemoteAudioSource,
+  RemoteAudioEmitter,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";

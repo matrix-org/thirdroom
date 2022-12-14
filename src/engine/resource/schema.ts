@@ -108,6 +108,8 @@ export const AudioDataResource = defineResource("audio-data", ResourceType.Audio
   mimeType: PropType.string({ script: true, mutable: false }),
   uri: PropType.string({ script: true, mutable: false }),
 });
+export type RemoteAudioData = RemoteResource<typeof AudioDataResource>;
+export type LocalAudioData = LocalResource<typeof AudioDataResource>;
 
 export const AudioSourceResource = defineResource("audio-source", ResourceType.AudioSource, {
   name: PropType.string({ default: "AudioSource", script: true }),
@@ -116,18 +118,13 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
   autoPlay: PropType.bool({ default: true, script: true, mutable: false }),
   seek: PropType.f32({ min: 0 }),
   play: PropType.bool({ default: false }),
+  playing: PropType.bool({ default: false }),
   loop: PropType.bool({ default: true, script: true }),
   playbackRate: PropType.f32({ default: 1 }),
-  currentTime: PropType.f32(), // TODO: write from main thread
-  playing: PropType.bool({ default: true }), // TODO: write from main thread and game thread
-  duration: PropType.f32(), // TODO: write from main thread
+  // TODO add in currentTime, playing, and duration flags which are set from the main thread
 });
-
-export const MediaStreamSourceResource = defineResource("media-stream-source", ResourceType.MediaStreamSource, {
-  name: PropType.string({ default: "MediaStreamSource", script: true }),
-  stream: PropType.string({ script: true }),
-  gain: PropType.f32({ default: 1, min: 0, script: true }),
-});
+export type RemoteAudioSource = RemoteResource<typeof AudioSourceResource>;
+export type LocalAudioSource = LocalResource<typeof AudioSourceResource>;
 
 export enum AudioEmitterType {
   Positional,
@@ -150,12 +147,15 @@ export const AudioEmitterResource = defineResource("audio-emitter", ResourceType
   gain: PropType.f32({ default: 1, min: 0, script: true }),
   coneInnerAngle: PropType.f32({ default: Math.PI * 2, min: 0, max: Math.PI * 2, script: true }),
   coneOuterAngle: PropType.f32({ default: Math.PI * 2, min: 0, max: Math.PI * 2, script: true }),
+  coneOuterGain: PropType.f32({ default: 0, min: 0, max: 1 }),
   distanceModel: PropType.enum(AudioEmitterDistanceModel, { default: AudioEmitterDistanceModel.Inverse, script: true }),
   maxDistance: PropType.f32({ default: 10000, minExclusive: 0, script: true }),
   refDistance: PropType.f32({ default: 1, min: 0, script: true }),
   rolloffFactor: PropType.f32({ default: 1, min: 0, script: true }),
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
 });
+export type RemoteAudioEmitter = RemoteResource<typeof AudioEmitterResource>;
+export type LocalAudioEmitter = LocalResource<typeof AudioEmitterResource>;
 
 export const ImageResource = defineResource("image", ResourceType.Image, {
   name: PropType.string({ default: "Image", script: true }),

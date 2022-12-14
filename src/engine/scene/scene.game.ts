@@ -6,13 +6,13 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { GameAudioModule, RemoteGlobalAudioEmitter } from "../audio/audio.game";
+import { GameAudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { ResourceId } from "../resource/resource.common";
 import { addResourceRef, createResource, disposeResource } from "../resource/resource.game";
-import { RemoteReflectionProbe, RemoteTexture } from "../resource/schema";
+import { RemoteAudioEmitter, RemoteReflectionProbe, RemoteTexture } from "../resource/schema";
 import {
   audioSceneSchema,
   AudioSceneTripleBuffer,
@@ -41,8 +41,8 @@ export interface RemoteScene {
   set backgroundTexture(texture: RemoteTexture | undefined);
   get reflectionProbe(): RemoteReflectionProbe | undefined;
   set reflectionProbe(reflectionProbe: RemoteReflectionProbe | undefined);
-  get audioEmitters(): RemoteGlobalAudioEmitter[];
-  set audioEmitters(emitters: RemoteGlobalAudioEmitter[]);
+  get audioEmitters(): RemoteAudioEmitter[];
+  set audioEmitters(emitters: RemoteAudioEmitter[]);
   // TODO: move to postprocessing resource
   get bloomStrength(): number;
   set bloomStrength(value: number);
@@ -50,7 +50,7 @@ export interface RemoteScene {
 
 export interface SceneProps {
   name?: string;
-  audioEmitters?: RemoteGlobalAudioEmitter[];
+  audioEmitters?: RemoteAudioEmitter[];
   backgroundTexture?: RemoteTexture;
   reflectionProbe?: RemoteReflectionProbe;
   bloomStrength?: number;
@@ -75,7 +75,7 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
 
   let _backgroundTexture: RemoteTexture | undefined = props?.backgroundTexture;
   let _reflectionProbe: RemoteReflectionProbe | undefined = props?.reflectionProbe;
-  let _audioEmitters: RemoteGlobalAudioEmitter[] = props?.audioEmitters || [];
+  let _audioEmitters: RemoteAudioEmitter[] = props?.audioEmitters || [];
 
   const name = props?.name || DEFAULT_SCENE_NAME;
 
@@ -168,10 +168,10 @@ export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: Sce
       _reflectionProbe = reflectionProbe;
       rendererSceneBufferView.reflectionProbe[0] = reflectionProbe ? reflectionProbe.resourceId : 0;
     },
-    get audioEmitters(): RemoteGlobalAudioEmitter[] {
+    get audioEmitters(): RemoteAudioEmitter[] {
       return _audioEmitters;
     },
-    set audioEmitters(emitters: RemoteGlobalAudioEmitter[]) {
+    set audioEmitters(emitters: RemoteAudioEmitter[]) {
       for (const audioEmitter of emitters) {
         addResourceRef(ctx, audioEmitter.resourceId);
       }

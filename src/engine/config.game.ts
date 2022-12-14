@@ -1,5 +1,5 @@
 import { defineConfig } from "./module/module.common";
-import { GameAudioModule, GameAudioSystem } from "./audio/audio.game";
+import { GameAudioModule, GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
@@ -96,6 +96,7 @@ export default defineConfig<GameState>({
     NameSystem,
 
     ResetInputSystem,
+    ResetAudioSourcesSystem,
     GameWorkerStatsSystem,
   ],
 });

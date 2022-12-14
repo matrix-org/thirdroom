@@ -23,11 +23,6 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import {
-  createRemotePositionalAudioEmitter,
-  createRemoteMediaStreamSource,
-  createRemoteMediaStream,
-} from "../audio/audio.game";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
 import { addChild, skipRenderLerp, removeRecursive, Transform, Hidden } from "../component/transform";
 import { NOOP } from "../config.common";
@@ -56,6 +51,7 @@ import { removeInteractableComponent } from "../../plugins/interaction/interacti
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
+import { AudioDataResource, AudioEmitterResource, AudioEmitterType, AudioSourceResource } from "../resource/schema";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -491,10 +487,13 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     // if not our own avatar, add voip
     addRemoteNodeComponent(ctx, peid, {
       name: peerId,
-      audioEmitter: createRemotePositionalAudioEmitter(ctx, {
+      audioEmitter: ctx.resourceManager.createResource(AudioEmitterResource, {
+        type: AudioEmitterType.Positional,
         sources: [
-          createRemoteMediaStreamSource(ctx, {
-            stream: createRemoteMediaStream(ctx, { streamId: peerId }),
+          ctx.resourceManager.createResource(AudioSourceResource, {
+            audio: ctx.resourceManager.createResource(AudioDataResource, {
+              uri: `mediastream:${peerId}`,
+            }),
           }),
         ],
       }),
