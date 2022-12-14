@@ -14,7 +14,6 @@ import {
 } from "../allocator/ObjectBufferView";
 import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
-import { RemoteNametag, updateRemoteNametags } from "../nametag/nametag.game";
 import { getRemoteResources } from "../resource/resource.game";
 import { AudioSourceResource, RemoteAudioSource } from "../resource/schema";
 
@@ -22,7 +21,6 @@ interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
   audioStateTripleBuffer: AudioStateTripleBuffer;
   scenes: RemoteScene[];
-  nametags: RemoteNametag[];
 }
 
 export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
@@ -43,7 +41,6 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
       globalAudioEmitters: [],
       positionalAudioEmitters: [],
       scenes: [],
-      nametags: [],
     };
   },
   init() {},
@@ -107,7 +104,6 @@ export function GameAudioSystem(ctx: GameState) {
   }
 
   updateAudioRemoteScenes(audioModule.scenes);
-  updateRemoteNametags(audioModule.nametags);
 }
 
 export function ResetAudioSourcesSystem(ctx: GameState) {

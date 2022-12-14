@@ -45,13 +45,18 @@ import { NetworkAction } from "./NetworkAction";
 import { GameInputModule, InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
 import { setActiveCamera } from "../camera/camera.game";
-import { createRemoteNametag } from "../nametag/nametag.game";
 import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
-import { AudioDataResource, AudioEmitterResource, AudioEmitterType, AudioSourceResource } from "../resource/schema";
+import {
+  AudioDataResource,
+  AudioEmitterResource,
+  AudioEmitterType,
+  AudioSourceResource,
+  NametagResource,
+} from "../resource/schema";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -497,7 +502,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
           }),
         ],
       }),
-      nametag: createRemoteNametag(ctx, {
+      nametag: ctx.resourceManager.createResource(NametagResource, {
         name: peerId,
       }),
     });

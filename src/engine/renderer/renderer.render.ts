@@ -56,6 +56,7 @@ import {
   SamplerResource,
   NodeResource as ScriptNodeResource,
   InteractableResource,
+  NametagResource,
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
@@ -202,6 +203,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, RendererSkinResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResource(ctx, RendererTilesRendererResource),
+      registerResource(ctx, NametagResource),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },

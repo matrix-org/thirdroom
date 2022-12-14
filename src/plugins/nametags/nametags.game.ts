@@ -18,8 +18,8 @@ import { NetworkModule } from "../../engine/network/network.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
-import { createRemoteNametag } from "../../engine/nametag/nametag.game";
 import { ourPlayerQuery } from "../../engine/component/Player";
+import { NametagResource } from "../../engine/resource/schema";
 
 type NametagState = {
   enabled: boolean;
@@ -73,7 +73,7 @@ export function NametagSystem(ctx: GameState) {
         continue;
       }
 
-      const nametagResource = createRemoteNametag(ctx, {
+      const nametagResource = ctx.resourceManager.createResource(NametagResource, {
         name: peerId,
       });
 

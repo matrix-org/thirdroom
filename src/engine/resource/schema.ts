@@ -36,6 +36,8 @@ export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
   distanceFromCamera: PropType.f32(),
   inFrustum: PropType.bool(),
 });
+export type RemoteNametag = RemoteResource<typeof NametagResource>;
+export type LocalNametag = LocalResource<typeof NametagResource>;
 
 export enum SamplerMagFilter {
   NEAREST = 9728,

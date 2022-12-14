@@ -21,7 +21,6 @@ import {
   RendererNodeTripleBuffer,
   RendererSharedNodeResource,
 } from "./node.common";
-import { RemoteNametag } from "../nametag/nametag.game";
 import {
   RemoteAudioEmitter,
   RemoteCamera,
@@ -29,6 +28,7 @@ import {
   RemoteLight,
   RemoteLightMap,
   RemoteMesh,
+  RemoteNametag,
   RemoteNode as ScriptRemoteNode,
   RemoteReflectionProbe,
   RemoteSkin,

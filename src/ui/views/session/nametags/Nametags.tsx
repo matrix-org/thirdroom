@@ -11,10 +11,9 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { AudioModule } from "../../../../engine/audio/audio.main";
-import { getReadObjectBufferView } from "../../../../engine/allocator/ObjectBufferView";
-import { LocalNametag } from "../../../../engine/nametag/nametag.main";
 import { useStore } from "../../../hooks/useStore";
 import { getRoomCall } from "../../../utils/matrixUtils";
+import { MainThreadNametagResource } from "../../../../engine/nametag/nametag.main";
 
 // src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 export const useAnimationFrame = (callback: Function, enabled = true) => {
@@ -48,7 +47,7 @@ type SpeakingRoomMember = Member & { volumeDetector: { isSpeaking: boolean } };
 
 interface NametagProps {
   room: Room;
-  nametag: LocalNametag;
+  nametag: MainThreadNametagResource;
   groupCall: GroupCall;
 }
 
@@ -78,11 +77,10 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
 
   useAnimationFrame(() => {
     if (containerRef.current) {
-      const nametagView = getReadObjectBufferView(nametag.tripleBuffer);
-      const screenX = nametagView.screenX[0];
-      const screenY = nametagView.screenY[0];
-      const distanceFromCamera = nametagView.distanceFromCamera[0];
-      const inFrustum = nametagView.inFrustum[0];
+      const screenX = nametag.screenX;
+      const screenY = nametag.screenY;
+      const distanceFromCamera = nametag.distanceFromCamera;
+      const inFrustum = nametag.inFrustum;
 
       const el = containerRef.current;
 
@@ -120,9 +118,9 @@ export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const engine = useMainThreadContext();
   const { worldId } = useStore((state) => state.world);
 
-  const [nametags, setNametags] = useState<LocalNametag[]>([]);
+  const [nametags, setNametags] = useState<MainThreadNametagResource[]>([]);
 
-  const onNametagsChanged = useCallback((nametags: LocalNametag[]) => {
+  const onNametagsChanged = useCallback((nametags: MainThreadNametagResource[]) => {
     setNametags([...nametags]);
   }, []);
 

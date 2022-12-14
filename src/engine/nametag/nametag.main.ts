@@ -3,36 +3,19 @@ import { AudioModule, MainAudioModule } from "../audio/audio.main";
 import { NOOP } from "../config.common";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
-import { NametagTripleBuffer, SharedNametagResource } from "../nametag/nametag.common";
 import { AudioNodeTripleBuffer } from "../node/node.common";
 import { MainNode } from "../node/node.main";
-import { ResourceId } from "../resource/resource.common";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { getLocalResource } from "../resource/resource.main";
+import { NametagResource } from "../resource/schema";
 
-export interface LocalNametag {
-  resourceId: number;
-  name: string;
-  tripleBuffer: NametagTripleBuffer;
-}
-
-export async function onLoadMainNametag(
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  { name, tripleBuffer }: SharedNametagResource
-): Promise<LocalNametag> {
-  const audioModule = getModule(ctx, AudioModule);
-
-  const nametag: LocalNametag = {
-    resourceId,
-    name,
-    tripleBuffer,
-  };
-
-  audioModule.nametags.push(nametag);
-
-  audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
-
-  return nametag;
+export class MainThreadNametagResource extends defineLocalResourceClass<typeof NametagResource, IMainThreadContext>(
+  NametagResource
+) {
+  async load(ctx: IMainThreadContext) {
+    const audioModule = getModule(ctx, AudioModule);
+    audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
+  }
 }
 
 export function updateNametag(
@@ -48,7 +31,7 @@ export function updateNametag(
     node.nametag = undefined;
 
     if (nextRid !== NOOP) {
-      node.nametag = getLocalResource<LocalNametag>(ctx, nextRid)?.resource;
+      node.nametag = getLocalResource<MainThreadNametagResource>(ctx, nextRid)?.resource;
     }
   }
 }

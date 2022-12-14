@@ -18,8 +18,7 @@ import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocato
 import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
 import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
-import { LocalNametag, onLoadMainNametag, updateNametag } from "../nametag/nametag.main";
-import { NametagResourceType } from "../nametag/nametag.common";
+import { MainThreadNametagResource, updateNametag } from "../nametag/nametag.main";
 import {
   AudioDataResource,
   AudioEmitterDistanceModel,
@@ -50,7 +49,7 @@ export interface MainAudioModule {
   nodes: MainNode[];
   scenes: MainScene[];
   activeScene?: MainScene;
-  nametags: LocalNametag[];
+  nametags: MainThreadNametagResource[];
   eventEmitter: EventEmitter;
 }
 
@@ -129,7 +128,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       registerResource(ctx, AudioDataResource),
       registerResource(ctx, AudioSourceResource),
       registerResource(ctx, AudioEmitterResource),
-      registerResourceLoader(ctx, NametagResourceType, onLoadMainNametag),
+      registerResource(ctx, MainThreadNametagResource),
     ];
 
     return () => {
