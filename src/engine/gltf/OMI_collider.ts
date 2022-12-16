@@ -68,7 +68,7 @@ export function addCollider(
   mat4.getRotation(tempRotation, worldMatrix);
   mat4.getScaling(tempScale, worldMatrix);
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
   rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
   rigidBodyDesc.setRotation(new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3]));
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
@@ -85,7 +85,7 @@ export function addCollider(
   }
 
   colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody);
 
   addRigidBody(ctx, nodeEid, rigidBody);
 }
@@ -107,7 +107,7 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
   // the resource is expensive.
 
   for (const primitive of mesh.primitives) {
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
     const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
     const positionsAttribute = primitive.attributes.POSITION.attribute.clone();
@@ -133,7 +133,7 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
 
     colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
 
-    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+    physicsWorld.createCollider(colliderDesc, rigidBody);
 
     const primitiveEid = addEntity(ctx.world);
     addTransformComponent(ctx.world, primitiveEid);

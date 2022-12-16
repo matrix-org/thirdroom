@@ -336,15 +336,16 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
     t,
     colliderShape,
     10.0,
+    true,
     focusShapeCastCollisionGroups
   );
 
   let eid;
 
   if (hit !== null) {
-    eid = physics.handleToEid.get(hit.colliderHandle);
+    eid = physics.handleToEid.get(hit.collider.handle);
     if (!eid) {
-      console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
+      console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
     } else if (hit.toi <= Interactable.interactionDistance[eid]) {
       addComponent(ctx.world, FocusComponent, rig);
       FocusComponent.focusedEntity[rig] = eid;
@@ -461,14 +462,15 @@ function updateGrabThrow(
       t,
       colliderShape,
       10.0,
+      true,
       grabShapeCastCollisionGroups
     );
 
     if (shapecastHit !== null) {
-      const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
+      const eid = physics.handleToEid.get(shapecastHit.collider.handle);
 
       if (!eid) {
-        console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
+        console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
       } else if (shapecastHit.toi <= Interactable.interactionDistance[eid]) {
         if (Interactable.type[eid] === InteractableType.Grabbable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
@@ -625,8 +627,6 @@ export function addInteractableComponent(
   Interactable.type[eid] = interactableType;
   Interactable.interactionDistance[eid] = interactableType === InteractableType.Interactable ? 10 : 1;
 
-  const { physicsWorld } = physics;
-
   const rigidBody = RigidBody.store.get(eid);
   if (!rigidBody) {
     console.warn(
@@ -636,15 +636,14 @@ export function addInteractableComponent(
   }
 
   for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const colliderHandle = rigidBody.collider(i);
-    const collider = physicsWorld.getCollider(colliderHandle);
+    const collider = rigidBody.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 
     collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
     collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
 
-    collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+    collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
     collider.setCollisionGroups(collisionGroups);
   }
 }
@@ -652,8 +651,6 @@ export function addInteractableComponent(
 export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, eid: number) {
   removeComponent(ctx.world, Interactable, eid);
 
-  const { physicsWorld } = physics;
-
   const rigidBody = RigidBody.store.get(eid);
   if (!rigidBody) {
     console.warn(
@@ -663,8 +660,7 @@ export function removeInteractableComponent(ctx: GameState, physics: PhysicsModu
   }
 
   for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const colliderHandle = rigidBody.collider(i);
-    const collider = physicsWorld.getCollider(colliderHandle);
+    const collider = rigidBody.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 

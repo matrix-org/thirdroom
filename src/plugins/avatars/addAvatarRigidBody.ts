@@ -15,28 +15,25 @@ export function addAvatarRigidBody(
   const {
     height = AVATAR_HEIGHT,
     radius = AVATAR_RADIUS,
-    kinematic = false,
+    kinematic = true,
     collisionGroup = playerCollisionGroups,
   } = options;
 
-  const rigidBodyDesc = kinematic
-    ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-    : RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
 
   if (kinematic) addComponent(ctx.world, Kinematic, eid);
 
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  // keep capsule upright
-  rigidBody.restrictRotations(true, true, true, true);
+  if (!kinematic) rigidBody.lockRotations(true, true);
 
   const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius).setActiveEvents(
-    RAPIER.ActiveEvents.CONTACT_EVENTS
+    RAPIER.ActiveEvents.COLLISION_EVENTS
   );
 
   colliderDesc.setCollisionGroups(collisionGroup);
 
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody);
 
   addRigidBody(ctx, eid, rigidBody);
 }

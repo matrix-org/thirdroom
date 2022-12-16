@@ -517,14 +517,14 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
     mesh: createCubeMesh(ctx, size, material),
   });
 
-  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.newKinematicPositionBased() : RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
-    .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
     .setCollisionGroups(dynamicObjectCollisionGroups);
 
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody);
 
   addRigidBody(ctx, eid, rigidBody);
 

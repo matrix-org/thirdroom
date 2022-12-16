@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
-    "@dimforge/rapier3d-compat": "0.7.6",
+    "@dimforge/rapier3d-compat": "^0.10.0",
     "@fontsource/inter": "^4.5.12",
     "@fontsource/noto-serif": "^4.5.10",
     "@gautemo/vite-plugin-service-worker": "^0.0.3",

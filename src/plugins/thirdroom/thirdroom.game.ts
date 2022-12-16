@@ -40,7 +40,6 @@ import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
 import { addAvatar } from "../avatars/avatar.game";
 import { createReflectionProbeResource } from "../../engine/reflection-probe/reflection-probe.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
@@ -90,6 +89,7 @@ import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions } from "../avatars/common";
+import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -127,10 +127,11 @@ const createAvatarRig =
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
       addFlyControls(ctx, eid);
     } else {
-      addPhysicsControls(ctx, eid);
+      addKinematicControls(ctx, eid);
     }
 
     addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, options);
+
     addAvatarRigidBody(ctx, physics, eid, options);
 
     addInteractableComponent(ctx, physics, eid, InteractableType.Player);
@@ -163,12 +164,12 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
     // create out of bounds floor check
     const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
-    const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.newStatic());
+    const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const size = 10000;
     const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
-      .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
       .setCollisionGroups(boundsCheckCollisionGroups);
-    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+    physicsWorld.createCollider(colliderDesc, rigidBody);
 
     rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
 
@@ -262,6 +263,10 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
+
+  // wait for peer connections & host before spawning in
+  // BUG: this induces a consistently reproducible race condition
+  // await waitUntil(() => network.hostId !== "" && network.peers.length > 0);
 
   loadPlayerRig(ctx, physics, input, network);
 }
@@ -529,7 +534,7 @@ function loadRemotePlayerRig(
 }
 
 function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: number) {
-  removeComponent(ctx.world, PhysicsControls, eid);
+  removeComponent(ctx.world, KinematicControls, eid);
   removeComponent(ctx.world, RigidBody, eid);
 
   addComponent(ctx.world, FlyControls, eid);
@@ -539,7 +544,7 @@ function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: nu
 function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: number) {
   removeComponent(ctx.world, FlyControls, eid);
 
-  addComponent(ctx.world, PhysicsControls, eid);
+  addComponent(ctx.world, KinematicControls, eid);
   addAvatarRigidBody(ctx, physics, eid);
 }
 

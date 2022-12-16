@@ -108,16 +108,16 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         module.hitAudioEmitters.set(eid, audioEmitter);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
 
@@ -154,16 +154,16 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         module.hitAudioEmitters.set(eid, audioEmitter);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
 
@@ -200,16 +200,16 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         module.hitAudioEmitters.set(eid, audioEmitter);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
@@ -262,18 +262,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const eid = createBall(ctx, 1, mirrorMaterial);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.ball(1 / 2)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups)
           .setRestitution(1)
           .setDensity(1);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
@@ -304,18 +304,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const eid = createBall(ctx, 1, blackMirrorMaterial);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         const colliderDesc = RAPIER.ColliderDesc.ball(1 / 2)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups)
           .setRestitution(1)
           .setDensity(1);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
@@ -346,20 +346,20 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const eid = createBall(ctx, 2, emissiveMaterial);
 
         const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-          : RAPIER.RigidBodyDesc.newDynamic();
+          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
+          : RAPIER.RigidBodyDesc.dynamic();
 
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
         rigidBody.setGravityScale(0.9, true);
 
         const colliderDesc = RAPIER.ColliderDesc.ball(1)
-          .setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
           .setCollisionGroups(dynamicObjectCollisionGroups)
           .setRestitution(1)
           .setDensity(0.1);
 
-        physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+        physicsWorld.createCollider(colliderDesc, rigidBody);
 
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);

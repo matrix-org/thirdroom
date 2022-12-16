@@ -87,6 +87,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
     physicsWorld.gravity,
     colliderShape,
     ctx.dt * 6,
+    true,
     interactionGroup
   );
 

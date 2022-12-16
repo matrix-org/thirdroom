@@ -36,7 +36,7 @@ export function addAvatar(
   const eid = createGLTFEntity(ctx, uri, { createTrimesh: false, isStatic: false });
   addComponent(ctx.world, AvatarComponent, eid);
 
-  Transform.position[eid].set([0, -1, 0]);
+  Transform.position[eid].set([0, -1.2, 0]);
   Transform.rotation[eid].set([0, Math.PI, 0]);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
 

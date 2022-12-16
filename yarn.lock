@@ -354,10 +354,10 @@
   dependencies:
     postcss-value-parser "^4.2.0"
 
-"@dimforge/rapier3d-compat@0.7.6":
-  version "0.7.6"
-  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d-compat/-/rapier3d-compat-0.7.6.tgz#c51c655aceb9dcef959c667f19d7f600d13c087b"
-  integrity sha512-A+IZSlkyBXlLKxVi4XTfjvySjZ8Lq7qZ0pE5U+renkQnDOjx+yhRMOhL1awqvLt6SJXId6kx8gaz0O8kxw8LLA==
+"@dimforge/rapier3d-compat@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@dimforge/rapier3d-compat/-/rapier3d-compat-0.10.0.tgz#d8c3c75ea5183cfdc0db616a6ee9b0983a219d4c"
+  integrity sha512-3SPxyAnPQz9P3cIhgF8VncwJwrqyAW2xsNEYgXbxDhvB2IaIG63eTX7rNIJUnec5FDYqgvVo/nqY1XarzT5T2Q==
 
 "@esbuild/linux-loong64@0.15.7":
   version "0.15.7"

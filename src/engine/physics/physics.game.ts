@@ -13,8 +13,8 @@ export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
-  drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
   collisionHandlers: ((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => void)[];
+  characterController: RAPIER.KinematicCharacterController;
 }
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
@@ -27,28 +27,16 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleToEid = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
-    const drainContactEvents = (callback: (eid1: number, eid2: number, handle1: number, handle2: number) => void) => {
-      eventQueue.drainContactEvents((handle1, handle2) => {
-        const eid1 = handleToEid.get(handle1);
-        if (eid1 === undefined) {
-          console.warn(`Contact with unregistered physics handle ${handle1}`);
-          // return;
-        }
-        const eid2 = handleToEid.get(handle2);
-        if (eid2 === undefined) {
-          console.warn(`Contact with unregistered physics handle ${handle2}`);
-          // return;
-        }
-        callback(eid1!, eid2!, handle1, handle2);
-      });
-    };
+    const characterController = physicsWorld.createCharacterController(0.5);
+    characterController.setApplyImpulsesToDynamicBodies(true);
+    characterController.enableAutostep(0.5, 0.5, false);
 
     return {
       physicsWorld,
       eventQueue,
       handleToEid,
-      drainContactEvents,
       collisionHandlers: [],
+      characterController,
     };
   },
   init(ctx) {},
@@ -80,7 +68,7 @@ export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) =>
 };
 
 const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
-  if (body.isStatic()) {
+  if (body.bodyType() === RAPIER.RigidBodyType.Fixed) {
     return;
   }
 
@@ -138,7 +126,7 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
     const body = RigidBody.store.get(eid);
 
     if (body) {
-      if (!body.isStatic()) {
+      if (body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
         const rotation = Transform.rotation[eid];
         const quaternion = Transform.quaternion[eid];
         setQuaternionFromEuler(quaternion, rotation);
@@ -175,7 +163,7 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
     const eid = physicsEntities[i];
     const body = RigidBody.store.get(eid);
 
-    if (body && !body.isStatic()) {
+    if (body && body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
       // sync velocity
       const linvel = body.linvel();
       const velocity = RigidBody.velocity[eid];
@@ -195,9 +183,18 @@ export function StepPhysicsSystem(ctx: GameState) {
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
 
-  eventQueue.drainContactEvents((handle1, handle2) => {
+  eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
     const eid1 = handleToEid.get(handle1);
+    if (eid1 === undefined) {
+      console.warn(`Contact with unregistered physics handle ${handle1}`);
+      // return;
+    }
     const eid2 = handleToEid.get(handle2);
+    if (eid2 === undefined) {
+      console.warn(`Contact with unregistered physics handle ${handle2}`);
+      // return;
+    }
+
     for (const collisionHandler of collisionHandlers) {
       collisionHandler(eid1, eid2, handle1, handle2);
     }

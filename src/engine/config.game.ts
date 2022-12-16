@@ -10,9 +10,9 @@ import {
   NetworkedFirstPersonCameraSystem,
 } from "../plugins/FirstPersonCamera";
 import {
-  PhysicsCharacterControllerModule,
-  PhysicsCharacterControllerSystem,
-} from "../plugins/PhysicsCharacterController";
+  KinematicCharacterControllerModule,
+  KinematicCharacterControllerSystem,
+} from "../plugins/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
   EditorModule,
@@ -53,7 +53,7 @@ export default defineConfig<GameState>({
     RendererModule,
     ThirdRoomModule,
     FirstPersonCameraModule,
-    PhysicsCharacterControllerModule,
+    KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,
     SpawnablesModule,
@@ -66,7 +66,7 @@ export default defineConfig<GameState>({
     InboundNetworkSystem,
 
     FirstPersonCameraSystem,
-    PhysicsCharacterControllerSystem,
+    KinematicCharacterControllerSystem,
     FlyControllerSystem,
     InteractionSystem,
     SpawnableSystem,
