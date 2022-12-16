@@ -1,4 +1,3 @@
-import { AudioEmitterOutput } from "../audio/audio.common";
 import {
   RemoteAudioEmitter,
   createRemoteGlobalAudioEmitter,
@@ -11,7 +10,7 @@ import {
   RemoteGlobalAudioEmitter,
 } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
-import { Thread } from "../module/module.common";
+import { AudioEmitterOutput } from "../resource/schema";
 import resolveURL from "../utils/resolveURL";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFBufferView } from "./gltf.game";
@@ -83,7 +82,7 @@ async function _loadGLTFAudio(ctx: GameState, resource: GLTFResource, index: num
       throw new Error(`audio[${index}] has a bufferView but no mimeType`);
     }
 
-    const remoteBufferView = await loadGLTFBufferView(ctx, resource, audio.bufferView, Thread.Main, false);
+    const remoteBufferView = await loadGLTFBufferView(resource, audio.bufferView);
 
     remoteAudio = createRemoteAudioFromBufferView(ctx, {
       name: audio.name,

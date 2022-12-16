@@ -11,6 +11,7 @@ import {
   RemoteAudioEmitter,
   createRemotePositionalAudioEmitter,
 } from "../../engine/audio/audio.game";
+import { getCamera } from "../../engine/camera/camera.game";
 import { Transform, addChild, addTransformComponent, setEulerFromQuaternion } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
@@ -23,18 +24,19 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { createRemoteStandardMaterial, RemoteMaterial } from "../../engine/material/material.game";
+import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { Networked, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { isHost } from "../../engine/network/network.common";
+import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef } from "../../engine/resource/resource.game";
+import { InteractableType, MaterialResource, MaterialType, RemoteMaterial } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
-import { InteractableType } from "../interaction/interaction.common";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 
@@ -71,6 +73,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   },
   init(ctx) {
     const module = getModule(ctx, SpawnablesModule);
+    const physics = getModule(ctx, PhysicsModule);
 
     const crateAudioData = createRemoteAudioData(ctx, { name: "Crate Audio Data", uri: "/audio/hit.wav" });
     addResourceRef(ctx, crateAudioData.resourceId);
@@ -112,7 +115,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -159,7 +162,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         addRigidBody(ctx, eid, rigidBody);
 
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -205,7 +208,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         return eid;
       },
@@ -220,8 +223,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     const ballAudioData3 = createRemoteAudioData(ctx, { name: "Ball Audio Data 3", uri: "/audio/clink2.wav" });
     addResourceRef(ctx, ballAudioData3.resourceId);
 
-    const emissiveMaterial = createRemoteStandardMaterial(ctx, {
+    const emissiveMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Emissive Material",
+      type: MaterialType.Standard,
       baseColorFactor: [0, 0.3, 1, 1],
       emissiveFactor: [0.7, 0.7, 0.7],
       metallicFactor: 0,
@@ -230,16 +234,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     addResourceRef(ctx, emissiveMaterial.resourceId);
 
-    const mirrorMaterial = createRemoteStandardMaterial(ctx, {
+    const mirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Mirror Material",
+      type: MaterialType.Standard,
       baseColorFactor: [1, 1, 1, 1],
       metallicFactor: 1,
       roughnessFactor: 0,
     });
     addResourceRef(ctx, mirrorMaterial.resourceId);
 
-    const blackMirrorMaterial = createRemoteStandardMaterial(ctx, {
+    const blackMirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
       name: "Black Mirror Material",
+      type: MaterialType.Standard,
       baseColorFactor: [0, 0, 0, 1],
       metallicFactor: 1,
       roughnessFactor: 0,
@@ -264,7 +270,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -304,7 +310,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const audioEmitter = createRemotePositionalAudioEmitter(ctx, {
           sources: [
@@ -346,7 +352,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
         addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, eid, InteractableType.Object);
+        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
         const hitAudioSource = createRemoteAudioSource(ctx, {
           audio: ballAudioData,
@@ -413,7 +419,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     actions[4].id = "black-mirror-ball";
     actions[5].id = "emissive-ball";
 
-    enableActionMap(ctx, {
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, {
       id: "spawnables",
       actions,
     });
@@ -434,41 +442,61 @@ const _impulse = new Vector3();
 const _cameraWorldQuat = quat.create();
 
 export const SpawnableSystem = (ctx: GameState) => {
+  const network = getModule(ctx, NetworkModule);
+  if (network.authoritative && !isHost(network)) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
-  const { actions, maxObjCap } = getModule(ctx, SpawnablesModule);
+  const spawnablesModule = getModule(ctx, SpawnablesModule);
 
-  const spawnables = actions.filter((a) => (input.actions.get(a.path) as ButtonActionState)?.pressed);
+  const rigs = inputControllerQuery(ctx.world);
 
-  if (spawnables.length) {
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const camera = getCamera(ctx, eid);
+    const controller = getInputController(input, eid);
+    updateSpawnables(ctx, spawnablesModule, controller, camera);
+  }
+};
+
+export const updateSpawnables = (
+  ctx: GameState,
+  { actions, maxObjCap }: SpawnablesModuleState,
+  controller: InputController,
+  camera: number
+) => {
+  const pressedActions = actions.filter((a) => (controller.actions.get(a.path) as ButtonActionState)?.pressed);
+
+  if (pressedActions.length) {
     // bounce out of the system if we hit the max object cap
     const ownedEnts = ownedNetworkedQuery(ctx.world);
     if (ownedEnts.length > maxObjCap) {
       ctx.sendMessage(Thread.Main, {
         type: ObjectCapReachedMessageType,
       });
+      // TODO: send this message to the other clients
+      // TODO: add two configs: max objects per client and max objects per room
       return;
     }
   }
 
-  for (const spawnable of spawnables) {
-    const eid = createPrefabEntity(ctx, spawnable.id);
+  for (const action of pressedActions) {
+    const eid = createPrefabEntity(ctx, action.id);
 
     // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, eid);
     // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
 
-    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[camera]);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[ctx.activeCamera]);
+    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
     // place object at direction
-    const placement = vec3.clone(direction);
-
-    // vec3.scale(placement, placement, 4);
-    vec3.add(Transform.position[eid], Transform.position[eid], placement);
+    vec3.add(Transform.position[eid], Transform.position[eid], direction);
 
     vec3.scale(direction, direction, THROW_FORCE);
 

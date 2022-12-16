@@ -1,14 +1,11 @@
-export const InteractionMessageType = "interaction";
+import { InteractableType } from "../../engine/resource/schema";
 
-export enum InteractableType {
-  Object = 1,
-  Player = 2,
-  Portal = 3,
-}
+export const InteractionMessageType = "interaction";
 
 export enum InteractableAction {
   Focus = "focus",
   Unfocus = "unfocus",
+  Interact = "interact",
   Grab = "grab",
   Release = "release",
 }

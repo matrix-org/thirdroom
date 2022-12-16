@@ -22,6 +22,7 @@ import "./UserProfileOverview.css";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
 import { uploadAttachment } from "../../../utils/matrixUtils";
+import { Switch } from "../../../atoms/button/Switch";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -29,6 +30,10 @@ export function UserProfileOverview() {
   const { closeWindow } = useStore((state) => state.overlayWindow);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
+  const [authoritativeNetworking, setAuthNetworking] = useState(
+    localStorage.getItem("authoritativeNetworking") === "true"
+  );
+
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
   let httpAvatarUrl = avatarUrl
@@ -48,6 +53,11 @@ export function UserProfileOverview() {
   const onDisplayNameChange = (evt: ChangeEvent<HTMLInputElement>) => {
     const name = evt.currentTarget.value.trim();
     debounceDisplayNameChange(name);
+  };
+
+  const onAuthoritativeNetworkingChange = (checked: boolean) => {
+    setAuthNetworking(checked);
+    localStorage.setItem("authoritativeNetworking", checked.toString());
   };
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
@@ -86,6 +96,19 @@ export function UserProfileOverview() {
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
                     <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile
+                    className="grow basis-0"
+                    label={<Label>Authoritative Networking (EXPERIMENTAL, REQUIRES REFRESH)</Label>}
+                  >
+                    <Switch
+                      checked={authoritativeNetworking}
+                      onCheckedChange={onAuthoritativeNetworkingChange}
+                      defaultChecked={authoritativeNetworking}
+                    />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

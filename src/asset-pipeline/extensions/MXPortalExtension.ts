@@ -15,6 +15,7 @@ interface PortalExtensionDef {
   uri: string;
 }
 
+// NOTE: MX_portal is deprecated. Use OMI_link instead.
 export class MXPortalExtension extends Extension {
   public static readonly EXTENSION_NAME = EXTENSION_NAME;
   public readonly extensionName = EXTENSION_NAME;

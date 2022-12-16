@@ -12,33 +12,12 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { BufferViewResourceType, onLoadBufferView } from "../bufferView/bufferView.common";
-import { CameraType } from "../camera/camera.common";
-import { onLoadOrthographicCamera, onLoadPerspectiveCamera } from "../camera/camera.render";
-import { ImageResourceType } from "../image/image.common";
-import { LocalImageResource, onLoadLocalImageResource, updateLocalImageResources } from "../image/image.render";
-import { UnlitMaterialResourceType, StandardMaterialResourceType } from "../material/material.common";
-import {
-  LocalStandardMaterialResource,
-  LocalUnlitMaterialResource,
-  onLoadLocalStandardMaterialResource,
-  onLoadLocalUnlitMaterialResource,
-  updateLocalStandardMaterialResources,
-  updateLocalUnlitMaterialResources,
-} from "../material/material.render";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
-import { SamplerResourceType } from "../sampler/sampler.common";
-import { onLoadSampler } from "../sampler/sampler.render";
 import { SceneResourceType } from "../scene/scene.common";
 import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
-import { TextureResourceType } from "../texture/texture.common";
-import {
-  LocalTextureResource,
-  onLoadLocalTextureResource,
-  updateLocalTextureResources,
-} from "../texture/texture.render";
+import { RendererTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
@@ -49,7 +28,6 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { OrthographicCameraResourceType, PerspectiveCameraResourceType } from "../camera/camera.common";
 import { AccessorResourceType } from "../accessor/accessor.common";
 import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
 import {
@@ -82,7 +60,21 @@ import {
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import { LightResource } from "../resource/schema";
+import {
+  BufferResource,
+  BufferViewResource,
+  CameraResource,
+  CameraType,
+  LightResource,
+  SamplerResource,
+  NodeResource as ScriptNodeResource,
+  MeshResource as ScriptMeshResource,
+  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
+  InteractableResource,
+} from "../resource/schema";
+import { RendererImageResource } from "../image/image.render";
+import { RendererMaterialResource } from "../material/material.render";
+import { MatrixMaterial } from "../material/MatrixMaterial";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -103,10 +95,6 @@ export interface RendererModuleState {
   ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
-  unlitMaterials: LocalUnlitMaterialResource[]; // done
-  standardMaterials: LocalStandardMaterialResource[]; // done
-  images: LocalImageResource[]; // done
-  textures: LocalTextureResource[]; // done
   meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
   nodes: LocalNode[]; // done
   reflectionProbes: ReflectionProbe[];
@@ -115,6 +103,8 @@ export interface RendererModuleState {
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
   sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
+  matrixMaterial: MatrixMaterial;
+  enableMatrixMaterial: boolean;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -171,6 +161,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     pmremGenerator.compileEquirectangularShader();
 
+    const imageBitmapLoader = new ImageBitmapLoader();
+
+    const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
+
     return {
       needsResize: true,
       renderer,
@@ -179,14 +173,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
       scenes: [],
-      images: [],
-      textures: [],
-      unlitMaterials: [],
-      standardMaterials: [],
       directionalLights: [],
       pointLights: [],
       spotLights: [],
-      imageBitmapLoader: new ImageBitmapLoader(),
+      imageBitmapLoader,
       imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
         imageOrientation: "flipY",
       }),
@@ -199,23 +189,28 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       pmremGenerator,
       tilesRenderers: [],
       sceneRenderedRequests: [],
+      matrixMaterial,
+      enableMatrixMaterial: false,
     };
   },
   init(ctx) {
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResourceLoader(ctx, SamplerResourceType, onLoadSampler),
+      registerResource(ctx, SamplerResource),
       registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
-      registerResourceLoader(ctx, UnlitMaterialResourceType, onLoadLocalUnlitMaterialResource),
-      registerResourceLoader(ctx, StandardMaterialResourceType, onLoadLocalStandardMaterialResource),
-      registerResourceLoader(ctx, TextureResourceType, onLoadLocalTextureResource),
+      registerResource(ctx, RendererTextureResource),
+      registerResource(ctx, RendererMaterialResource),
       registerResource(ctx, LightResource),
       registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
-      registerResourceLoader(ctx, PerspectiveCameraResourceType, onLoadPerspectiveCamera),
-      registerResourceLoader(ctx, OrthographicCameraResourceType, onLoadOrthographicCamera),
-      registerResourceLoader(ctx, ImageResourceType, onLoadLocalImageResource),
-      registerResourceLoader(ctx, BufferViewResourceType, onLoadBufferView),
+      registerResource(ctx, CameraResource),
+      registerResource(ctx, BufferResource),
+      registerResource(ctx, BufferViewResource),
+      registerResource(ctx, RendererImageResource),
+      registerResource(ctx, ScriptMeshResource),
+      registerResource(ctx, ScriptMeshPrimitiveResource),
+      registerResource(ctx, ScriptNodeResource),
+      registerResource(ctx, InteractableResource),
       registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
       registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
       registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
@@ -224,6 +219,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
+      registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },
 });
@@ -280,6 +276,10 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
   const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
 
+  if (activeSceneResourceId !== rendererModule.prevSceneResource) {
+    rendererModule.enableMatrixMaterial = false;
+  }
+
   if (
     activeCameraNode &&
     activeCameraNode.cameraObject &&
@@ -290,9 +290,7 @@ export function RendererSystem(ctx: RenderThreadState) {
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
       activeCameraNode.camera.type === CameraType.Perspective
     ) {
-      const cameraStateView = getReadObjectBufferView(activeCameraNode.camera.cameraTripleBuffer);
-
-      if (cameraStateView.aspectRatio[0] === 0) {
+      if (activeCameraNode.camera.aspectRatio === 0) {
         activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
       }
     }
@@ -302,13 +300,10 @@ export function RendererSystem(ctx: RenderThreadState) {
     renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
     rendererModule.prevCameraResource = activeCameraResourceId;
+    rendererModule.prevSceneResource = activeSceneResourceId;
   }
 
-  updateLocalImageResources(ctx, rendererModule.images);
-  updateLocalTextureResources(ctx, rendererModule.textures);
-  updateLocalSceneResources(ctx, rendererModule.scenes);
-  updateLocalUnlitMaterialResources(ctx, rendererModule.unlitMaterials);
-  updateLocalStandardMaterialResources(ctx, rendererModule.standardMaterials);
+  updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
   updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
   updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
 
@@ -331,4 +326,9 @@ export function RendererSystem(ctx: RenderThreadState) {
       rendererModule.sceneRenderedRequests.splice(i, 1);
     }
   }
+}
+
+function onEnableMatrixMaterial(ctx: RenderThreadState, message: any) {
+  const renderer = getModule(ctx, RendererModule);
+  renderer.enableMatrixMaterial = message.enabled;
 }

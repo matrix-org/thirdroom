@@ -2,39 +2,48 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
+import { isHost } from "../network/network.common";
+import { NetworkModule } from "../network/network.game";
 import { checkBitflag } from "../utils/checkBitflag";
-import { ActionMap, ActionState } from "./ActionMappingSystem";
 import { InitializeInputStateMessage, InputMessageType } from "./input.common";
+import {
+  InputController,
+  createInputController,
+  InputControllerComponent,
+  exitedInputControllerQuery,
+  removeInputController,
+} from "./InputController";
 import { KeyCodes, Keys } from "./KeyCodes";
-import { dequeueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { dequeueInputRingBuffer } from "./RingBuffer";
 
 /*********
  * Types *
  ********/
 
-export interface GameInputModuleState {
-  inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
-  actions: Map<string, ActionState>;
-  actionMaps: ActionMap[];
-  raw: { [path: string]: number };
+export interface GameInputModule {
+  controllers: Map<number, InputController>;
+  defaultController: InputController;
+  activeController: InputController;
 }
 
 /******************
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<GameState, GameInputModuleState>({
+export const InputModule = defineModule<GameState, GameInputModule>({
   name: "input",
   async create(ctx, { waitForMessage }) {
     const { inputRingBuffer } = await waitForMessage<InitializeInputStateMessage>(
       Thread.Main,
       InputMessageType.InitializeInputState
     );
+
+    const controller = createInputController({ inputRingBuffer });
+
     return {
-      inputRingBuffer,
-      actions: new Map(),
-      actionMaps: [],
-      raw: {},
+      controllers: InputControllerComponent,
+      defaultController: controller,
+      activeController: controller,
     };
   },
   init(ctx) {},
@@ -49,8 +58,8 @@ enum MouseButton {
   Scroll = 1 << 5,
 }
 
-const out = { keyCode: 0, values: [] };
-function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
+const out: { keyCode: number; values: [number, number] } = { keyCode: 0, values: [0, 0] };
+export function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   const buttons = o.values[0];
   raw["Mouse/Left"] = checkBitflag(buttons, MouseButton.Left) ? 1 : 0;
   raw["Mouse/Right"] = checkBitflag(buttons, MouseButton.Right) ? 1 : 0;
@@ -60,19 +69,36 @@ function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/Scroll"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
 }
 
-function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
+export function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/movementX"] = o.values[0];
   raw["Mouse/movementY"] = o.values[1];
 }
 
-function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
+export function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
   raw["Mouse/Scroll"] = o.values[0];
 }
 
 export function ApplyInputSystem(ctx: GameState) {
-  const { inputRingBuffer, raw } = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
+
+  const { inputRingBuffer, raw } = input.activeController;
+
   while (availableRead(inputRingBuffer)) {
-    dequeueInputRingBuffer(inputRingBuffer, out);
+    const command = dequeueInputRingBuffer(inputRingBuffer, out);
+    if (!command) continue;
+
+    const haveConnectedPeers = network.peers.length > 0;
+    if (network.authoritative && !isHost(network) && haveConnectedPeers) {
+      // collect commands to send to host
+      network.commands.push(command);
+
+      // skip applying inputs if we aren't hosting and client-side prediction is off
+      if (!network.clientSidePrediction) {
+        continue;
+      }
+    }
+
     switch (out.keyCode) {
       case KeyCodes.MouseButtons:
         applyMouseButtons(raw, out);
@@ -87,11 +113,24 @@ export function ApplyInputSystem(ctx: GameState) {
         raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
     }
   }
+
+  const exited = exitedInputControllerQuery(ctx.world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    removeInputController(ctx.world, input, eid);
+  }
 }
 
+/**********
+ * System *
+ **********/
+
 export function ResetInputSystem(ctx: GameState) {
-  const { raw } = getModule(ctx, InputModule);
-  raw["Mouse/movementX"] = 0;
-  raw["Mouse/movementY"] = 0;
-  raw["Mouse/Scroll"] = 0;
+  const input = getModule(ctx, InputModule);
+  for (const controller of input.controllers.values()) {
+    const { raw } = controller;
+    raw["Mouse/movementX"] = 0;
+    raw["Mouse/movementY"] = 0;
+    raw["Mouse/Scroll"] = 0;
+  }
 }
