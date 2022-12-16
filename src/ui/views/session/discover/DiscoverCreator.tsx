@@ -135,6 +135,11 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
     session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {});
   };
 
+  const previewScene = (sceneEvent: TimelineEvent) => {
+    if (!isValidScene(sceneEvent)) return;
+    window.open(`/scene-preview?url=${sceneEvent.content.scene.url}`, "__blank");
+  };
+
   const uploadScene = async (data: SceneData) => {
     const scene = sceneDataToScene(data);
     await session.hsApi.send(room.id, RepositoryEvents.Scene, makeTxnId(), { scene }).response();
@@ -219,6 +224,9 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
                               <DropdownMenu
                                 content={
                                   <div style={{ padding: "var(--sp-xxs) 0" }}>
+                                    <DropdownMenuItem onSelect={() => previewScene(sceneEvent)}>
+                                      Preview
+                                    </DropdownMenuItem>
                                     {permissions.canFeatureScenes && (
                                       <>
                                         {isFeatured(sceneEvent.event_id) ? (
