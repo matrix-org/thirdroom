@@ -1,10 +1,12 @@
+import { Session } from "@thirdroom/hydrogen-view-sdk";
 import { useEffect, useState } from "react";
 
-export function getRoomSummary(roomIdOrAlias: string, signal?: AbortSignal) {
+import { useHydrogen } from "./useHydrogen";
+
+export function getRoomSummary(session: Session, roomIdOrAlias: string, signal?: AbortSignal) {
+  const { homeserver } = session.sessionInfo;
   return fetch(
-    `https://matrix-client.matrix.org/_matrix/client/unstable/im.nheko.summary/rooms/${encodeURIComponent(
-      roomIdOrAlias
-    )}/summary`,
+    `${homeserver}/_matrix/client/unstable/im.nheko.summary/rooms/${encodeURIComponent(roomIdOrAlias)}/summary`,
     { signal }
   );
 }
@@ -20,13 +22,14 @@ export interface SummaryData {
 }
 
 export function useRoomSummary(roomIdOrAlias: string) {
+  const { session } = useHydrogen(true);
   const [summary, setSummary] = useState<SummaryData>();
 
   useEffect(() => {
     let controller: AbortController | undefined;
     const run = async () => {
       controller = new AbortController();
-      const response = await getRoomSummary(roomIdOrAlias, controller.signal);
+      const response = await getRoomSummary(session, roomIdOrAlias, controller.signal);
       const data = await response.json();
       if (data.errcode) {
         return;
@@ -45,7 +48,7 @@ export function useRoomSummary(roomIdOrAlias: string) {
     return () => {
       controller?.abort();
     };
-  }, [roomIdOrAlias]);
+  }, [session, roomIdOrAlias]);
 
   return summary;
 }
