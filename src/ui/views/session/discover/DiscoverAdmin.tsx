@@ -63,7 +63,7 @@ function FeatureRoom({ room }: { room: Room }) {
   } = useAsyncCallback(
     async (roomId: string) => {
       if (!isValidRoomId(roomId)) throw Error("Invalid roomId");
-      const response = await getRoomSummary(roomId);
+      const response = await getRoomSummary(session, roomId);
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature room. Either room is private or does not exist.");
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, roomId, {
@@ -220,7 +220,7 @@ function FeatureWorld({ room }: { room: Room }) {
   } = useAsyncCallback(
     async (roomId: string) => {
       if (!isValidRoomId(roomId)) throw Error("Invalid roomId");
-      const response = await getRoomSummary(roomId);
+      const response = await getRoomSummary(session, roomId);
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature world. Either world is private or does not exist.");
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, roomId, {
