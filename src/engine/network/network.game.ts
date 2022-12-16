@@ -20,7 +20,7 @@ import { createHistorian, Historian } from "./Historian";
 import {
   deserializeCreates,
   deserializeDeletes,
-  deserializeFullUpdate,
+  deserializeFullChangedUpdate,
   deserializeInformPlayerNetworkId,
   deserializeNewPeerSnapshot,
   deserializeSnapshot,
@@ -115,7 +115,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
     registerInboundMessageHandler(network, NetworkAction.Delete, deserializeDeletes);
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
-    registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
+    registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullChangedUpdate);
     registerInboundMessageHandler(network, NetworkAction.UpdateNetworkId, deserializeUpdateNetworkId);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);

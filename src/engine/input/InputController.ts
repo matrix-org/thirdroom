@@ -14,6 +14,8 @@ export interface InputController {
   pathToId: Map<string, number>;
   pathToDef: Map<string, ActionDefinition>;
   idToPath: Map<number, string>;
+  // [tick, actionStates during that tick]
+  history: [number, Map<string, ActionState>][];
 }
 
 export interface InputControllerProps {
@@ -34,6 +36,7 @@ export const createInputController = (props?: InputControllerProps): InputContro
     pathToDef: new Map(),
     idToPath: new Map(),
     raw: {},
+    history: [],
   };
   for (const actionMap of controller.actionMaps) {
     for (const actionDef of actionMap.actionDefs) {

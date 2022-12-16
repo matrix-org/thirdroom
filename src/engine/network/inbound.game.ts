@@ -2,27 +2,45 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
+import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
+import { isHost } from "./network.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
 import { NetPipeData, readMetadata } from "./serialization.game";
 
-const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffer) => {
-  const network = getModule(state, NetworkModule);
+const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer) => {
+  const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
+  const controller = input.activeController;
 
   const cursorView = createCursorView(msg);
-  const { type: messageType, elapsed } = readMetadata(cursorView);
 
-  const input: NetPipeData = [state, cursorView, peerId];
-  const { messageHandlers } = getModule(state, NetworkModule);
+  const { type: messageType, elapsed, inputTick } = readMetadata(cursorView);
+
+  // trim off all inputs since the most recent host-processed input tick
+  if (network.authoritative && !isHost(network) && inputTick) {
+    const actionStatesIndex = controller.history.findIndex(([tick]) => tick > inputTick);
+    controller.history.splice(0, actionStatesIndex);
+
+    // now we as the client want to continue deserializing the full update of this packet
+    // and then afterwards we can reapply our inputs (PhysicsCharacterController) that happened after inputTick
+    // this should put our avatar in the same place as it is on the host
+    // console.log("controller.history after", controller.history);
+  }
 
   const historian = network.peerIdToHistorian.get(peerId);
+
   if (historian) {
+    historian.latestTick = inputTick;
     historian.latestTime = elapsed;
     historian.localTime = elapsed;
     historian.needsUpdate = true;
   }
+
+  const data: NetPipeData = [ctx, cursorView, peerId];
+  const { messageHandlers } = getModule(ctx, NetworkModule);
 
   const handler = messageHandlers[messageType];
   if (!handler) {
@@ -33,7 +51,7 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
     return;
   }
 
-  handler(input);
+  handler(data);
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };

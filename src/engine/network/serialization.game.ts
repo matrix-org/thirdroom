@@ -74,12 +74,24 @@ export const writeElapsed = (input: NetPipeData) => {
   return input;
 };
 
-export const writeMetadata = (type: NetworkAction) => pipe(writeMessageType(type), writeElapsed);
+export const writeMetadata = (type: NetworkAction) =>
+  pipe(
+    writeMessageType(type),
+    writeElapsed,
+    // HACK: leave space for the input tick
+    (data) => {
+      const [, v] = data;
+      scrollCursorView(v, Uint32Array.BYTES_PER_ELEMENT);
+      return data;
+    }
+  );
 
-const _out: { type: number; elapsed: number } = { type: 0, elapsed: 0 };
+const _out: { type: number; elapsed: number; inputTick: number } = { type: 0, elapsed: 0, inputTick: 0 };
 export const readMetadata = (v: CursorView, out = _out) => {
   out.type = readUint8(v);
   out.elapsed = readFloat64(v);
+  // HACK?: read input tick processed from this peer to each packet
+  out.inputTick = readUint32(v);
   return out;
 };
 
@@ -595,7 +607,7 @@ export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
 );
 
 // deserialization
-export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
+export const deserializeFullChangedUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
 
 // unused
 

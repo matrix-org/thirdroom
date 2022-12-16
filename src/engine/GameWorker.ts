@@ -64,6 +64,7 @@ async function onInit({
     gameToRenderTripleBufferFlags,
     elapsed: performance.now(),
     dt: 0,
+    tick: 0,
     world,
     activeScene: scene,
     activeCamera: camera,
@@ -151,6 +152,7 @@ function update(ctx: GameState) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
+  ctx.tick++;
 
   swapReadBufferFlags(ctx.mainToGameTripleBufferFlags);
 

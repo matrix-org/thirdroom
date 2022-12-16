@@ -11,6 +11,7 @@ export interface GameState extends BaseThreadContext {
   gameToRenderTripleBufferFlags: Uint8Array;
   elapsed: number;
   dt: number;
+  tick: number;
   world: World;
   activeScene: number;
   activeCamera: number;

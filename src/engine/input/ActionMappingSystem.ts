@@ -13,7 +13,7 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { isHost } from "../network/network.common";
 import { GameNetworkState, NetworkModule } from "../network/network.game";
-import { GameInputModule, InputModule } from "./input.game";
+import { InputModule } from "./input.game";
 import { InputController } from "./InputController";
 
 export enum ActionType {
@@ -217,16 +217,22 @@ export const ActionTypesToBindings: ActionTypesSchema = {
   },
 };
 
-export function ActionMappingSystem(state: GameState) {
-  const network = getModule(state, NetworkModule);
-  const input = getModule(state, InputModule);
+export function ActionMappingSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
   for (const controller of input.controllers.values()) {
-    updateActionMaps(input, network, controller);
+    updateActionMaps(ctx, network, controller);
+  }
+
+  // add a copy of all the actionStates for the active controller to the input history for reconciliation later
+  const hosting = network.authoritative && isHost(network);
+  if (!hosting) {
+    input.activeController.history.push([ctx.tick, new Map(input.activeController.actionStates)]);
   }
 }
 
 // Note not optimized at all
-function updateActionMaps(input: GameInputModule, network: GameNetworkState, controller: InputController) {
+function updateActionMaps(ctx: GameState, network: GameNetworkState, controller: InputController) {
   for (const actionMap of controller.actionMaps) {
     for (const actionDef of actionMap.actionDefs) {
       for (const binding of actionDef.bindings) {
