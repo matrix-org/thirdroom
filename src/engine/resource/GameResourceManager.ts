@@ -18,25 +18,34 @@ export class GameResourceManager implements IRemoteResourceManager {
   private resourceConstructors = new Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
-  constructor(private ctx: GameState) {}
+  constructor(
+    private ctx: GameState,
+    allowedResources: (ResourceDefinition | IRemoteResourceClass<ResourceDefinition>)[]
+  ) {
+    for (const resourceDef of allowedResources) {
+      this.registerResource(resourceDef);
+    }
+  }
+
+  registerResource<Def extends ResourceDefinition>(resourceDefOrClass: Def | IRemoteResourceClass<Def>) {
+    const RemoteResourceClass =
+      "resourceDef" in resourceDefOrClass ? resourceDefOrClass : defineRemoteResourceClass<Def>(resourceDefOrClass);
+    this.resourceConstructors.set(RemoteResourceClass.resourceDef, RemoteResourceClass as any);
+  }
 
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def> {
-    let resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
+    const resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
 
     if (!resourceConstructor) {
-      resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
-      this.resourceConstructors.set(
-        resourceDef,
-        resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
-      );
+      throw new Error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
     }
 
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resource = new resourceConstructor(this, buffer, 0, tripleBuffer, props);
+    const resource = new resourceConstructor(this, this.ctx, buffer, 0, tripleBuffer, props);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
     resource.resourceId = resourceId;
     setRemoteResource(this.ctx, resourceId, resource);
@@ -137,6 +146,15 @@ export class GameResourceManager implements IRemoteResourceManager {
       addResourceRef(this.ctx, store[0]);
     } else {
       store[0] = 0;
+    }
+  }
+
+  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
+    if (value) {
+      addResourceRef(this.ctx, value.resourceId);
+      store[index] = value.resourceId;
+    } else {
+      store[index] = 0;
     }
   }
 

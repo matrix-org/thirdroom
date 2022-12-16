@@ -4,6 +4,7 @@ import { BaseThreadContext, Message, registerModules, Thread } from "./module/mo
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
+import configMain from "./config.main";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -40,6 +41,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
   const context: IMainThreadContext = {
+    resources: configMain.resources,
     thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,

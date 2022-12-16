@@ -9,6 +9,7 @@ export interface ResourceDefinition<S extends Schema = Schema> {
   resourceType: number;
   schema: ProcessedSchema<S>;
   byteLength: number;
+  script: boolean;
 }
 
 interface Schema {
@@ -116,12 +117,12 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: vec2;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"vec2", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"vec2", vec2, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "vec2",
     size: 2,
@@ -137,12 +138,12 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: vec3;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"vec3", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"vec3", vec3, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "vec3",
     size: 3,
@@ -158,12 +159,12 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: vec3;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"rgb", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"rgb", vec3, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "rgb",
     size: 3,
@@ -179,12 +180,12 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: vec4;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"rgba", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"rgba", vec4, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "rgba",
     size: 4,
@@ -200,12 +201,12 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: quat;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"quat", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"quat", quat, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "quat",
     size: 4,
@@ -221,12 +222,12 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
 }
 
 function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
+  default?: mat4;
   mutable?: Mut;
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-}): ResourcePropDef<"mat4", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
+}): ResourcePropDef<"mat4", mat4, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "mat4",
     size: 16,
@@ -468,13 +469,15 @@ export const PropType = {
 export const defineResource = <S extends Schema>(
   name: string,
   resourceType: number,
-  schema: S
+  schema: S,
+  script = true
 ): ResourceDefinition<S> => {
   const resourceDef: ResourceDefinition<S> = {
     name,
     resourceType,
     schema: schema as unknown as ProcessedSchema<S>,
     byteLength: 0,
+    script,
   };
 
   let cursor = 0;
@@ -514,19 +517,19 @@ type ResourcePropValue<
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
   : Def["schema"][Prop]["type"] extends "mat4"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "f32"
   ? number
   : Def["schema"][Prop]["type"] extends "rgba"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "rgb"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec2"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec3"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "quat"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "bitmask"
   ? number
   : Def["schema"][Prop]["type"] extends "enum"
@@ -593,22 +596,64 @@ type RequiredProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
 }[keyof Def["schema"]];
 
+type InitialResourcePropValue<
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"],
+  MutResource extends boolean
+> = Def["schema"][Prop]["type"] extends "string"
+  ? string
+  : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "arrayBuffer"
+  ? SharedArrayBuffer
+  : Def["schema"][Prop]["type"] extends "bool"
+  ? boolean
+  : Def["schema"][Prop]["type"] extends "mat4"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "f32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "rgba"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "rgb"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec2"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec3"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "quat"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "bitmask"
+  ? number
+  : Def["schema"][Prop]["type"] extends "enum"
+  ? // TODO: actually return the enum type instead of number
+    // ex: Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
+    number
+  : Def["schema"][Prop]["type"] extends "ref"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
+      : Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
+    : unknown
+  : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? {
+        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+          ? Resource<Def["schema"][Prop]["resourceDef"]>
+          : never;
+      }
+    : never
+  : Def["schema"][Prop]["type"] extends "selfRef"
+  ? Resource<Def, MutResource>
+  : never;
+
 export type InitialResourceProps<Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: Def["schema"][Prop]["type"] extends "refMap"
-    ? {
-        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-          ? Resource<Def["schema"][Prop]["resourceDef"]>
-          : never;
-      }
-    : ResourcePropValue<Def, Prop, true>;
+  [Prop in RequiredProps<Def>]: InitialResourcePropValue<Def, Prop, true>;
 } & {
-  [Prop in keyof Def["schema"]]?: Def["schema"][Prop]["type"] extends "refMap"
-    ? {
-        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-          ? Resource<Def["schema"][Prop]["resourceDef"]>
-          : never;
-      }
-    : ResourcePropValue<Def, Prop, true>;
+  [Prop in keyof Def["schema"]]?: InitialResourcePropValue<Def, Prop, true>;
 };
 
 export interface IRemoteResourceManager {
@@ -625,6 +670,7 @@ export interface IRemoteResourceManager {
   disposeResource(resourceId: number): void;
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
   setRef(value: unknown | undefined, store: Uint32Array): void;
+  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }

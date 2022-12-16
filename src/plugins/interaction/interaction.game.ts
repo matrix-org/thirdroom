@@ -267,8 +267,8 @@ export function InteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < remoteNodeEntities.length; i++) {
     const eid = remoteNodeEntities[i];
-    const remoteNode = RemoteNodeComponent.get(eid);
-    const interactable = remoteNode?.scriptNode?.interactable;
+    const remoteNode = RemoteNodeComponent.get(eid)!;
+    const interactable = remoteNode.interactable;
     const hasInteractable = hasComponent(ctx.world, Interactable, eid);
 
     if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
@@ -287,8 +287,8 @@ export function InteractionSystem(ctx: GameState) {
       continue;
     }
 
-    const remoteNode = RemoteNodeComponent.get(eid);
-    const interactable = remoteNode?.scriptNode?.interactable;
+    const remoteNode = RemoteNodeComponent.get(eid)!;
+    const interactable = remoteNode.interactable;
 
     if (interactable) {
       interactable.pressed = false;
@@ -496,8 +496,8 @@ function updateGrabThrow(
         } else if (Interactable.type[eid] === InteractableType.Interactable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const remoteNode = RemoteNodeComponent.get(eid);
-          const interactable = remoteNode?.scriptNode?.interactable;
+          const remoteNode = RemoteNodeComponent.get(eid)!;
+          const interactable = remoteNode.interactable;
 
           if (interactable) {
             interactable.pressed = true;
@@ -521,8 +521,8 @@ function updateGrabThrow(
         continue;
       }
 
-      const remoteNode = RemoteNodeComponent.get(eid);
-      const interactable = remoteNode?.scriptNode?.interactable;
+      const remoteNode = RemoteNodeComponent.get(eid)!;
+      const interactable = remoteNode.interactable;
 
       if (interactable) {
         interactable.pressed = false;

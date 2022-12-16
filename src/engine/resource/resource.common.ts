@@ -88,6 +88,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     },
     init(ctx) {
       return createDisposables([
+        ...ctx.resources.map((resource) => registerResource(ctx, resource as any)),
         registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
         registerResourceLoader(ctx, StringResourceType, onLoadStringResource),
         registerResourceLoader(ctx, ArrayBufferResourceType, onLoadArrayBufferResource),

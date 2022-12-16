@@ -4,19 +4,12 @@ import EventEmitter from "events";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
-import {
-  getLocalResource,
-  getResourceDisposed,
-  registerResource,
-  registerResourceLoader,
-  getLocalResources,
-} from "../resource/resource.main";
+import { getLocalResource, getResourceDisposed, getLocalResources } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
-import { AudioNodeTripleBuffer, NodeResourceType } from "../node/node.common";
-import { MainNode, onLoadMainNode } from "../node/node.main";
+import { AudioNodeTripleBuffer } from "../node/node.common";
+import { MainNode } from "../node/node.main";
 import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
-import { SceneResourceType } from "../scene/scene.common";
+import { MainScene } from "../scene/scene.main";
 import { NOOP } from "../config.common";
 import { MainThreadNametagResource, updateNametag } from "../nametag/nametag.main";
 import {
@@ -26,6 +19,7 @@ import {
   AudioEmitterResource,
   AudioEmitterType,
   AudioSourceResource,
+  SceneResource,
 } from "../resource/schema";
 import { toArrayBuffer } from "../utils/arraybuffer";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
@@ -48,7 +42,7 @@ export interface MainAudioModule {
   mediaStreams: Map<string, MediaStream>;
   nodes: MainNode[];
   scenes: MainScene[];
-  activeScene?: MainScene;
+  activeScene?: MainThreadSceneResource;
   nametags: MainThreadNametagResource[];
   eventEmitter: EventEmitter;
 }
@@ -122,21 +116,8 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   init(ctx) {
     const audio = getModule(ctx, AudioModule);
 
-    const disposables = [
-      registerResourceLoader(ctx, NodeResourceType, onLoadMainNode),
-      registerResourceLoader(ctx, SceneResourceType, onLoadMainSceneResource),
-      registerResource(ctx, AudioDataResource),
-      registerResource(ctx, AudioSourceResource),
-      registerResource(ctx, AudioEmitterResource),
-      registerResource(ctx, MainThreadNametagResource),
-    ];
-
     return () => {
       audio.context.close();
-
-      for (const dispose of disposables) {
-        dispose();
-      }
     };
   },
 });
@@ -259,6 +240,13 @@ export class MainThreadAudioEmitterResource extends defineLocalResourceClass<
       this.outputGain.disconnect();
     }
   }
+}
+
+export class MainThreadSceneResource extends defineLocalResourceClass<typeof SceneResource, IMainThreadContext>(
+  SceneResource
+) {
+  declare audioEmitters: MainThreadAudioEmitterResource[];
+  activeEmitters: MainThreadAudioEmitterResource[] = [];
 }
 
 /***********
@@ -608,12 +596,14 @@ function updateGlobalAudioEmitters(
       for (const emitter of audioModule.activeScene.audioEmitters) {
         emitter.outputGain!.disconnect();
       }
+
+      audioModule.activeScene.activeEmitters.length = 0;
     }
 
     // if scene was added
     if (nextSceneResourceId !== NOOP) {
       // Set new scene if it's loaded
-      audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId)?.resource;
+      audioModule.activeScene = getLocalResource<MainThreadSceneResource>(ctx, nextSceneResourceId)?.resource;
     } else {
       // unset active scene
       audioModule.activeScene = undefined;
@@ -625,20 +615,13 @@ function updateGlobalAudioEmitters(
     return;
   }
 
-  // update scene with data from tb view
-  const activeSceneView = getReadObjectBufferView(audioModule.activeScene.audioSceneTripleBuffer);
-
-  for (const emitterRid of Array.from(activeSceneView.audioEmitters)) {
-    if (emitterRid === NOOP) continue;
-
-    const audioEmitter = getLocalResource<MainThreadAudioEmitterResource>(ctx, emitterRid)?.resource;
-
-    if (!audioEmitter || audioEmitter.type !== AudioEmitterType.Global) {
+  for (const audioEmitter of audioModule.activeScene.audioEmitters) {
+    if (audioEmitter.type !== AudioEmitterType.Global) {
       continue;
     }
 
     // if emitter resource exists but has not been added to the scene
-    if (!audioModule.activeScene.audioEmitters.includes(audioEmitter)) {
+    if (!audioModule.activeScene.activeEmitters.includes(audioEmitter)) {
       const output: AudioEmitterOutput = audioEmitter.output;
 
       audioEmitter.inputGain!.connect(audioEmitter.outputGain!);
@@ -652,7 +635,7 @@ function updateGlobalAudioEmitters(
         audioEmitter.outputGain!.connect(audioModule.environmentGain);
       }
       // add emitter to scene
-      audioModule.activeScene.audioEmitters.push(audioEmitter);
+      audioModule.activeScene.activeEmitters.push(audioEmitter);
     }
   }
 }

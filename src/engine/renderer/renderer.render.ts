@@ -13,11 +13,9 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
-import { SceneResourceType } from "../scene/scene.common";
-import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
+import { getLocalResource } from "../resource/resource.render";
+import { LocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
-import { RendererTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
@@ -28,40 +26,14 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { RendererAccessorResource } from "../accessor/accessor.render";
-import {
-  RendererMeshResource,
-  RendererMeshPrimitiveResource,
-  RendererSkinResource,
-  RendererInstancedMeshResource,
-  RendererLightMapResource,
-} from "../mesh/mesh.render";
-import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
-import { NodeResourceType } from "../node/node.common";
+import { LocalNode, updateLocalNodeResources } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
-import {
-  RendererReflectionProbeResource,
-  updateNodeReflections,
-  updateReflectionProbeTextureArray,
-} from "../reflection-probe/reflection-probe.render";
+import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import {
-  BufferResource,
-  BufferViewResource,
-  CameraResource,
-  CameraType,
-  LightResource,
-  SamplerResource,
-  NodeResource as ScriptNodeResource,
-  InteractableResource,
-  NametagResource,
-} from "../resource/schema";
-import { RendererImageResource } from "../image/image.render";
-import { RendererMaterialResource } from "../material/material.render";
+import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
-import { RendererTilesRendererResource } from "../tiles-renderer/tiles-renderer.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -183,27 +155,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResource(ctx, SamplerResource),
-      registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
-      registerResource(ctx, RendererTextureResource),
-      registerResource(ctx, RendererMaterialResource),
-      registerResource(ctx, LightResource),
-      registerResource(ctx, RendererReflectionProbeResource),
-      registerResource(ctx, CameraResource),
-      registerResource(ctx, BufferResource),
-      registerResource(ctx, BufferViewResource),
-      registerResource(ctx, RendererImageResource),
-      registerResource(ctx, ScriptNodeResource),
-      registerResource(ctx, InteractableResource),
-      registerResource(ctx, RendererAccessorResource),
-      registerResource(ctx, RendererMeshResource),
-      registerResource(ctx, RendererMeshPrimitiveResource),
-      registerResource(ctx, RendererInstancedMeshResource),
-      registerResource(ctx, RendererLightMapResource),
-      registerResource(ctx, RendererSkinResource),
-      registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
-      registerResource(ctx, RendererTilesRendererResource),
-      registerResource(ctx, NametagResource),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },

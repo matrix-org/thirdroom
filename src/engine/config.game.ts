@@ -20,9 +20,14 @@ import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
-import { RemoteNodeSystem } from "./node/node.game";
+import {
+  GameNodeResource,
+  RemoteNodeSystem,
+  RemoteNodeToTransformSystem,
+  TransformToRemoteNodeSystem,
+} from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
-import { RemoteSceneSystem } from "./scene/scene.game";
+import { GameSceneResource, RemoteSceneSystem } from "./scene/scene.game";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
@@ -35,8 +40,34 @@ import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
+import {
+  NametagResource,
+  SamplerResource,
+  BufferResource,
+  BufferViewResource,
+  AudioDataResource,
+  AudioSourceResource,
+  AudioEmitterResource,
+  ImageResource,
+  TextureResource,
+  ReflectionProbeResource,
+  MaterialResource,
+  LightResource,
+  CameraResource,
+  SparseAccessorResource,
+  AccessorResource,
+  MeshPrimitiveResource,
+  InstancedMeshResource,
+  MeshResource,
+  LightMapResource,
+  TilesRendererResource,
+  SkinResource,
+  InteractableResource,
+} from "./resource/schema";
+import { IRemoteResourceClass } from "./resource/RemoteResourceClass";
+import { ResourceDefinition } from "./resource/ResourceDefinition";
 
-export default defineConfig<GameState>({
+export default defineConfig<GameState, IRemoteResourceClass<ResourceDefinition<{}>>>({
   modules: [
     PrefabModule,
     ResourceModule,
@@ -73,9 +104,9 @@ export default defineConfig<GameState>({
     SpawnableSystem,
     ThirdroomSystem,
 
-    // Copy Transform to RemoteNode
+    TransformToRemoteNodeSystem,
     ScriptingSystem,
-    // Copy RemoteNode to Transform
+    RemoteNodeToTransformSystem,
 
     UpdateMatrixWorldSystem,
 
@@ -95,8 +126,35 @@ export default defineConfig<GameState>({
     PrefabDisposalSystem,
     NameSystem,
 
+    TransformToRemoteNodeSystem,
     ResetInputSystem,
     ResetAudioSourcesSystem,
     GameWorkerStatsSystem,
+  ],
+  resources: [
+    NametagResource,
+    SamplerResource,
+    BufferResource,
+    BufferViewResource,
+    AudioDataResource,
+    AudioSourceResource,
+    AudioEmitterResource,
+    ImageResource,
+    TextureResource,
+    ReflectionProbeResource,
+    MaterialResource,
+    LightResource,
+    CameraResource,
+    SparseAccessorResource,
+    AccessorResource,
+    MeshPrimitiveResource,
+    InstancedMeshResource,
+    MeshResource,
+    LightMapResource,
+    TilesRendererResource,
+    SkinResource,
+    InteractableResource,
+    GameNodeResource,
+    GameSceneResource,
   ],
 });

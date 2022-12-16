@@ -1,3 +1,5 @@
+import { ResourceDefinition } from "../resource/ResourceDefinition";
+
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
 export interface BaseThreadContext {
@@ -10,6 +12,7 @@ export interface BaseThreadContext {
     transferList?: (Transferable | OffscreenCanvas)[]
   ): void;
   messageHandlers: Map<string, MessageHandler<any, string, Message<any>>[]>;
+  resources: any[];
 }
 
 export function getModule<ThreadContext extends BaseThreadContext, ModuleState extends {}>(
@@ -354,14 +357,15 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
 
 type RegisterComponentFunction<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
-export interface Config<ThreadContext extends BaseThreadContext> {
+export interface Config<ThreadContext extends BaseThreadContext, ResourceClass> {
   modules: Module<ThreadContext, any>[];
   systems: ThreadSystem<ThreadContext>[];
   components?: RegisterComponentFunction<ThreadContext>[];
+  resources: (ResourceDefinition | ResourceClass)[];
 }
 
-export function defineConfig<ThreadContext extends BaseThreadContext>(
-  config: Config<ThreadContext>
-): Config<ThreadContext> {
+export function defineConfig<ThreadContext extends BaseThreadContext, ResourceClass>(
+  config: Config<ThreadContext, ResourceClass>
+): Config<ThreadContext, ResourceClass> {
   return config;
 }

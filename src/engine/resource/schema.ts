@@ -8,7 +8,6 @@ export enum ResourceType {
   BufferView,
   AudioData,
   AudioSource,
-  MediaStreamSource,
   AudioEmitter,
   Image,
   Texture,
@@ -428,7 +427,7 @@ export type RemoteInteractable = RemoteResource<typeof InteractableResource>;
 export type LocalInteractable = LocalResource<typeof InteractableResource>;
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
-  //eid: PropType.u32({ script: false }),
+  id: PropType.u32({ default: 0, script: true, mutable: false }),
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene"),
   parent: PropType.selfRef(),
@@ -443,6 +442,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
   isStatic: PropType.bool({ script: true, default: true }),
+  skipLerp: PropType.bool({ script: true }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),
   instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),
@@ -460,11 +460,13 @@ export type RemoteNode = RemoteResource<typeof NodeResource>;
 export type LocalNode = LocalResource<typeof NodeResource>;
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
+  id: PropType.u32({ default: 0, script: false, mutable: false }),
   name: PropType.string({ default: "Scene", script: true }),
   backgroundTexture: PropType.ref(TextureResource, { script: true }),
   reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
+  bloomStrength: PropType.f32({ default: 0.4 }),
 });
 export type RemoteScene = RemoteResource<typeof SceneResource>;
 export type LocalScene = LocalResource<typeof SceneResource>;

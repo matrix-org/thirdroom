@@ -12,10 +12,10 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { RemoteScene, RemoteSceneComponent, updateAudioRemoteScenes } from "../scene/scene.game";
+import { RemoteSceneComponent } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
 import { getRemoteResources } from "../resource/resource.game";
-import { AudioSourceResource, RemoteAudioSource } from "../resource/schema";
+import { AudioSourceResource, RemoteAudioSource, RemoteScene } from "../resource/schema";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
@@ -87,8 +87,8 @@ export function GameAudioSystem(ctx: GameState) {
   const activeScene = RemoteSceneComponent.get(ctx.activeScene);
   const activeCamera = RemoteNodeComponent.get(ctx.activeCamera);
 
-  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.audioResourceId || 0;
-  audioModule.audioStateBufferView.activeSceneResourceId[0] = activeScene?.audioResourceId || 0;
+  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.resourceId || 0;
+  audioModule.audioStateBufferView.activeSceneResourceId[0] = activeScene?.resourceId || 0;
 
   commitToObjectTripleBuffer(audioModule.audioStateTripleBuffer, audioModule.audioStateBufferView);
 
@@ -102,8 +102,6 @@ export function GameAudioSystem(ctx: GameState) {
       audioSource.playing = true;
     }
   }
-
-  updateAudioRemoteScenes(audioModule.scenes);
 }
 
 export function ResetAudioSourcesSystem(ctx: GameState) {

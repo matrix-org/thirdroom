@@ -7,12 +7,7 @@ import {
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import {
-  addRemoteSceneComponent,
-  RemoteScene,
-  RemoteSceneComponent,
-  updateRendererRemoteScenes,
-} from "../scene/scene.game";
+import { addRemoteSceneComponent, RemoteSceneComponent } from "../scene/scene.game";
 import {
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
@@ -32,7 +27,6 @@ export type RendererStateBufferView = ObjectBufferView<typeof rendererStateSchem
 export interface GameRendererModuleState {
   rendererStateBufferView: RendererStateBufferView;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
-  scenes: RemoteScene[];
   canvasWidth: number;
   canvasHeight: number;
   sceneRenderedNotificationId: number;
@@ -56,10 +50,6 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
     return {
       rendererStateBufferView,
       rendererStateTripleBuffer,
-      scenes: [],
-      unlitMaterials: [],
-      standardMaterials: [],
-      meshPrimitives: [],
       canvasWidth: 0,
       canvasHeight: 0,
       sceneRenderedNotificationId: 0,
@@ -101,12 +91,10 @@ export const RenderableSystem = (state: GameState) => {
   const activeScene = RemoteSceneComponent.get(state.activeScene);
   const activeCamera = RemoteNodeComponent.get(state.activeCamera);
 
-  renderer.rendererStateBufferView.activeSceneResourceId[0] = activeScene?.rendererResourceId || 0;
-  renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.rendererResourceId || 0;
+  renderer.rendererStateBufferView.activeSceneResourceId[0] = activeScene?.resourceId || 0;
+  renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.resourceId || 0;
 
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
-
-  updateRendererRemoteScenes(renderer.scenes);
 };
 
 export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {
@@ -115,7 +103,7 @@ export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {
   const id = rendererModule.sceneRenderedNotificationId++;
   rendererModule.sceneRenderedNotificationHandlers.set(id, deferred);
 
-  const sceneResourceId = RemoteSceneComponent.get(ctx.activeScene)?.rendererResourceId;
+  const sceneResourceId = RemoteSceneComponent.get(ctx.activeScene)?.resourceId;
 
   if (sceneResourceId === undefined) {
     throw new Error("activeScene not set");

@@ -8,6 +8,7 @@ import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { GameResourceManager } from "./resource/GameResourceManager";
+import configGame from "./config.game";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -59,6 +60,7 @@ async function onInit({
   }
 
   const state: GameState = {
+    resources: configGame.resources,
     thread: Thread.Game,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
@@ -75,7 +77,7 @@ async function onInit({
     resourceManager: undefined as any,
   };
 
-  state.resourceManager = new GameResourceManager(state);
+  state.resourceManager = new GameResourceManager(state, configGame.resources);
 
   const onMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {

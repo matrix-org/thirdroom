@@ -3,6 +3,7 @@ import { Message, registerModules, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
 import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
+import configRender from "./config.render";
 
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;
@@ -64,6 +65,7 @@ async function onInit(
   }
 
   const state: RenderThreadState = {
+    resources: configRender.resources,
     thread: Thread.Render,
     canvas,
     gameToRenderTripleBufferFlags,

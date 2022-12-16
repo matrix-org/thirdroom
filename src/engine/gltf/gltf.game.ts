@@ -21,7 +21,6 @@ import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from ".
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
 import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
-import { RemoteNode } from "../node/node.game";
 import { addAnimationComponent, BoneComponent } from "../animation/animation.game";
 import { loadGLTFAnimationClip } from "./animation.three";
 import {
@@ -71,7 +70,6 @@ import {
   SamplerResource,
   TextureEncoding,
   TextureResource,
-  NodeResource as ScriptNodeResource,
   MeshResource,
   RemoteMeshPrimitive,
   RemoteMesh,
@@ -88,6 +86,7 @@ import {
   RemoteAudioData,
   RemoteAudioSource,
   RemoteAudioEmitter,
+  RemoteNode,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -289,7 +288,7 @@ async function _inflateGLTFNode(
 
   // use pre-generated eid if it exists (for bones)
   const joint = resource.joints.get(nodeIndex);
-  const nodeEid = joint ? joint.eid : addEntity(ctx.world);
+  const nodeEid = joint ? joint.id : addEntity(ctx.world);
 
   // create Object3D
   let obj3d: Object3D;
@@ -387,28 +386,11 @@ async function _inflateGLTFNode(
       }
     }
 
-    if (
-      !joint &&
-      (results.mesh ||
-        results.colliderMesh ||
-        results.camera ||
-        results.light ||
-        results.audioEmitter ||
-        results.reflectionProbe ||
-        hasTilesRendererExtension(node) ||
-        nodeHasCollider(node))
-    ) {
-      addRemoteNodeComponent(ctx, nodeEid, {
-        ...(results as any),
-        name: node.name,
-        static: isStatic,
-        scriptNode: resource.manager.createResource(ScriptNodeResource, {
-          name: node.name,
-          mesh: results.mesh,
-          light: results.light,
-        }),
-      });
-    }
+    addRemoteNodeComponent(ctx, nodeEid, {
+      ...(results as any),
+      name: node.name,
+      static: isStatic,
+    });
 
     if (hasHubsComponentsExtension(resource.root)) {
       inflateHubsNode(ctx, resource, nodeIndex, nodeEid);
@@ -966,7 +948,7 @@ async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise
       doubleSided,
       alphaMode: alphaMode ? GLTFAlphaModes[alphaMode] : undefined,
       alphaCutoff,
-      baseColorFactor: pbrMetallicRoughness?.baseColorFactor,
+      baseColorFactor: pbrMetallicRoughness?.baseColorFactor as [number, number, number, number] | undefined,
       baseColorTexture,
     });
   } else {

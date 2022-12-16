@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
+import { IRemoteResourceClass } from "../resource/RemoteResourceClass";
 import { ResourceDefinition } from "../resource/ResourceDefinition";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
@@ -91,7 +92,7 @@ export function ScriptingSystem(ctx: GameState) {
 export async function loadJSScript(
   ctx: GameState,
   source: string,
-  allowedResources: ResourceDefinition[]
+  allowedResources: (ResourceDefinition | IRemoteResourceClass<ResourceDefinition>)[]
 ): Promise<Script<ScriptExecutionEnvironment.JS>> {
   const response = await fetch(scriptingRuntimeWASMUrl);
   const buffer = await response.arrayBuffer();
@@ -103,7 +104,7 @@ export async function loadJSScript(
 export async function loadWASMScript(
   ctx: GameState,
   buffer: ArrayBuffer,
-  allowedResources: ResourceDefinition[]
+  allowedResources: (ResourceDefinition | IRemoteResourceClass<ResourceDefinition>)[]
 ): Promise<Script<ScriptExecutionEnvironment.WASM>> {
   const script = await loadScript(ctx, ScriptExecutionEnvironment.WASM, buffer, allowedResources);
   return script;
@@ -113,7 +114,7 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
   ctx: GameState,
   environment: Env,
   buffer: ArrayBuffer,
-  allowedResources: ResourceDefinition[]
+  allowedResources: (ResourceDefinition | IRemoteResourceClass<ResourceDefinition>)[]
 ): Promise<Script<Env>> {
   let instance: ScriptWebAssemblyInstance<Env> | undefined = undefined;
 

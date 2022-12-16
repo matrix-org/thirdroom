@@ -97,7 +97,7 @@ export function addTrimesh(ctx: GameState, nodeEid: number) {
     return;
   }
 
-  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh);
+  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh as RemoteMesh);
 }
 
 export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
