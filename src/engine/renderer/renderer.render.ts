@@ -57,6 +57,9 @@ import {
   NodeResource as ScriptNodeResource,
   InteractableResource,
   NametagResource,
+  AudioDataResource,
+  AudioSourceResource,
+  AudioEmitterResource,
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
@@ -204,6 +207,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
       registerResource(ctx, RendererTilesRendererResource),
       registerResource(ctx, NametagResource),
+      registerResource(ctx, AudioDataResource),
+      registerResource(ctx, AudioSourceResource),
+      registerResource(ctx, AudioEmitterResource),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },
