@@ -38,6 +38,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { RemoteNodeComponent } from "../node/node.game";
 
 /*********
  * Types *
@@ -175,7 +176,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
         if (peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeRecursive(ctx.world, eid);
+          const node = RemoteNodeComponent.get(eid)!;
+          removeRecursive(ctx.world, node);
         }
       }
     }
@@ -184,7 +186,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     const eid = network.peerIdToEntityId.get(peerId);
     if (eid) {
       network.entityIdToPeerId.delete(eid);
-      removeRecursive(ctx.world, eid);
+      const node = RemoteNodeComponent.get(eid)!;
+      removeRecursive(ctx.world, node);
     }
 
     network.peers.splice(peerArrIndex, 1);

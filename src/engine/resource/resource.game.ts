@@ -1,3 +1,5 @@
+import { addEntity } from "bitecs";
+
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -27,7 +29,6 @@ interface RemoteResourceInfo {
 }
 
 interface ResourceModuleState {
-  resourceIdCounter: number;
   resources: Map<ResourceId, any>;
   disposedResources: ResourceId[];
   resourceStatusTripleBuffers: Map<ResourceId, TripleBuffer>;
@@ -45,7 +46,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
   create(ctx: GameState) {
     return {
-      resourceIdCounter: 1,
       resources: new Map(),
       disposedResources: [],
       resourceStatusTripleBuffers: new Map(),
@@ -90,6 +90,7 @@ function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedM
 }
 
 interface ResourceOptions {
+  eid?: number;
   name?: string;
   transferList?: Transferable[];
   cacheKey?: any;
@@ -122,7 +123,7 @@ export function createResource<Props>(
     resourceModule.resourceIdMap.set(resourceType, resourceCache);
   }
 
-  const id = resourceModule.resourceIdCounter++;
+  const id = options?.eid ? options?.eid : addEntity(ctx.world);
 
   // First byte loading flag, second byte is dispose flag
   const statusBuffer = createTripleBuffer(ctx.gameToRenderTripleBufferFlags, 1);

@@ -44,6 +44,19 @@ static JSValue js_node_constructor(JSContext *ctx, JSValueConst new_target, int 
 }
 
 
+static JSValue js_node_get_id(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, node->id);
+    return val;
+  }
+}
+
+
 static JSValue js_node_get_name(JSContext *ctx, JSValueConst this_val) {
   Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
@@ -139,6 +152,31 @@ static JSValue js_node_set_is_static(JSContext *ctx, JSValueConst this_val, JSVa
     return JS_EXCEPTION;
   } else {
     node->is_static = JS_ToBool(ctx, val);
+    return JS_UNDEFINED;
+  }
+}
+
+
+static JSValue js_node_get_skip_lerp(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewBool(ctx, node->skip_lerp);
+    return val;
+  }
+}
+
+
+static JSValue js_node_set_skip_lerp(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    node->skip_lerp = JS_ToBool(ctx, val);
     return JS_UNDEFINED;
   }
 }
@@ -433,10 +471,12 @@ static JSClassDef js_node_class = {
 };
 
 static const JSCFunctionListEntry js_node_proto_funcs[] = {
+  JS_CGETSET_DEF("id", js_node_get_id, NULL),
   JS_CGETSET_DEF("name", js_node_get_name, js_node_set_name),
   JS_CGETSET_DEF("visible", js_node_get_visible, js_node_set_visible),
   JS_CGETSET_DEF("enabled", js_node_get_enabled, js_node_set_enabled),
   JS_CGETSET_DEF("isStatic", js_node_get_is_static, js_node_set_is_static),
+  JS_CGETSET_DEF("skipLerp", js_node_get_skip_lerp, js_node_set_skip_lerp),
   JS_CGETSET_DEF("layers", js_node_get_layers, js_node_set_layers),
   JS_CGETSET_DEF("mesh", js_node_get_mesh, js_node_set_mesh),
   JS_CGETSET_DEF("instancedMesh", js_node_get_instanced_mesh, js_node_set_instanced_mesh),

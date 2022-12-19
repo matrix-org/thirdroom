@@ -1,5 +1,5 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
-import { vec2, glMatrix as glm, quat } from "gl-matrix";
+import { vec2, glMatrix as glm, quat, vec3 } from "gl-matrix";
 
 import {
   createCursorView,
@@ -10,8 +10,6 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
-import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
-import { NOOP } from "../engine/config.common";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
@@ -23,6 +21,8 @@ import { Networked, NetworkModule, Owned } from "../engine/network/network.game"
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { broadcastReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
+import { RemoteNodeComponent } from "../engine/node/node.game";
+import { RemoteNode } from "../engine/resource/schema";
 import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
@@ -49,9 +49,13 @@ export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: n
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.UpdateCamera)(data);
   writeUint32(messageView, Networked.networkId[eid]);
-  writeFloat32(messageView, Transform.rotation[camera][0]);
+  const cameraNode = RemoteNodeComponent.get(camera)!;
+  const pitch = quat.getAxisAngle(xAxis, cameraNode.quaternion);
+  writeFloat32(messageView, pitch);
   return sliceCursorView(messageView);
 }
+
+const xAxis = vec3.fromValues(1, 0, 0);
 
 function deserializeUpdateCamera(data: NetPipeData) {
   const [ctx, view] = data;
@@ -61,9 +65,10 @@ function deserializeUpdateCamera(data: NetPipeData) {
 
   const avatarNid = readUint32(view);
   const avatar = network.networkIdToEntityId.get(avatarNid)!;
-  const camera = getCamera(ctx, avatar);
-  Transform.rotation[camera][0] = readFloat32(view);
-  setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
+  const avatarNode = RemoteNodeComponent.get(avatar)!;
+  const camera = getCamera(ctx, avatarNode);
+  const pitch = readFloat32(view);
+  quat.setAxisAngle(camera.quaternion, xAxis, pitch);
   return data;
 }
 
@@ -90,6 +95,7 @@ export const FirstPersonCameraActionMap: ActionMap = {
 };
 
 export const FirstPersonCameraPitchTarget = defineComponent({
+  pitch: Types.f32,
   maxAngle: Types.f32,
   minAngle: Types.f32,
   sensitivity: Types.f32,
@@ -100,7 +106,8 @@ export const FirstPersonCameraYawTarget = defineComponent({
 
 const DEFAULT_SENSITIVITY = 100;
 
-export function addCameraPitchTargetComponent(world: World, eid: number) {
+export function addCameraPitchTargetComponent(world: World, camera: RemoteNode) {
+  const eid = camera.resourceId;
   addComponent(world, FirstPersonCameraPitchTarget, eid);
   FirstPersonCameraPitchTarget.maxAngle[eid] = 89;
   FirstPersonCameraPitchTarget.minAngle[eid] = -89;
@@ -112,15 +119,15 @@ export function addCameraYawTargetComponent(world: World, eid: number) {
   FirstPersonCameraYawTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
 }
 
-export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
-export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
+export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, RemoteNodeComponent]);
+export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNodeComponent]);
 
 function applyYaw(ctx: GameState, controller: InputController, eid: number) {
   const [lookX] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-    const quaternion = Transform.quaternion[eid];
+    const quaternion = RemoteNodeComponent.get(eid)!.quaternion;
     quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
   }
 }
@@ -129,21 +136,27 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
   const [, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
-    const rotation = Transform.rotation[eid];
+    const node = RemoteNodeComponent.get(eid)!;
+
     const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
     const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
     const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
     const maxAngleRads = glm.toRadian(maxAngle || 89);
     const minAngleRads = glm.toRadian(minAngle || -89);
-    rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
-    if (rotation[0] > maxAngleRads) {
-      rotation[0] = maxAngleRads;
-    } else if (rotation[0] < minAngleRads) {
-      rotation[0] = minAngleRads;
+    let pitch = FirstPersonCameraPitchTarget.pitch[eid];
+
+    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+
+    if (pitch > maxAngleRads) {
+      pitch = maxAngleRads;
+    } else if (pitch < minAngleRads) {
+      pitch = minAngleRads;
     }
 
-    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+    FirstPersonCameraPitchTarget.pitch[eid] = pitch;
+
+    quat.setAxisAngle(node.quaternion, xAxis, pitch);
   }
 }
 
@@ -158,9 +171,11 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const pitchEntities = cameraPitchTargetQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
+    const node = RemoteNodeComponent.get(eid)!;
     // pitch target on camera, controller is on the parent of the camera
-    const parent = Transform.parent[eid];
-    const controller = getInputController(input, parent);
+    const parent = node.parent as RemoteNode;
+    const parentEid = parent.resourceId;
+    const controller = getInputController(input, parentEid);
     applyPitch(ctx, controller, eid);
 
     // network the avatar's camera
@@ -168,10 +183,10 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const hosting = network.authoritative && isHost(network);
     const avatar = getAvatar(ctx, parent);
     const isOwnedAvatar =
-      avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
+      avatar && hasComponent(ctx.world, Networked, parentEid) && hasComponent(ctx.world, Owned, parentEid);
     if (hosting && haveConnectedPeers && isOwnedAvatar) {
       const camera = getCamera(ctx, parent);
-      const msg = createUpdateCameraMessage(ctx, parent, camera);
+      const msg = createUpdateCameraMessage(ctx, parentEid, camera.resourceId);
       if (msg.byteLength > 0) {
         broadcastReliable(ctx, network, msg);
       }

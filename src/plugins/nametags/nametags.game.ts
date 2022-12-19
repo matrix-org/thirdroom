@@ -2,15 +2,7 @@ import { addComponent, addEntity, defineComponent, defineQuery, enterQuery, hasC
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import {
-  addChild,
-  addTransformComponent,
-  findChild,
-  getForwardVector,
-  getPitch,
-  getRoll,
-  Transform,
-} from "../../engine/component/transform";
+import { addChild, findChild, getForwardVector, getPitch, getRoll } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -19,7 +11,7 @@ import { RendererModule } from "../../engine/renderer/renderer.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import { NametagResource } from "../../engine/resource/schema";
+import { NametagResource, RemoteNode } from "../../engine/resource/schema";
 
 type NametagState = {
   enabled: boolean;
@@ -59,7 +51,8 @@ export function NametagSystem(ctx: GameState) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
 
   if (nametagModule.enabled && ourPlayer) {
-    const ourWorldPosition = Transform.position[ourPlayer];
+    const playerNode = RemoteNodeComponent.get(ourPlayer)!;
+    const ourWorldPosition = playerNode.position;
 
     const entered = enteredNametagQuery(ctx.world);
     for (let i = 0; i < entered.length; i++) {
@@ -87,11 +80,12 @@ export function NametagSystem(ctx: GameState) {
     const nametagEnts = nametagQuery(ctx.world);
     for (let i = 0; i < nametagEnts.length; i++) {
       const nametag = nametagEnts[i];
+      const nametagNode = RemoteNodeComponent.get(nametag)!;
       const player = NametagComponent.entity[nametag];
 
       // projection to camera space
-      const nametagWorldPosition = mat4.getTranslation(_v, Transform.worldMatrix[nametag]);
-      const projected = projectPerspective(ctx, ctx.activeCamera, nametagWorldPosition);
+      const nametagWorldPosition = mat4.getTranslation(_v, nametagNode.worldMatrix);
+      const projected = projectPerspective(ctx, ctx.activeCamera!, nametagWorldPosition);
 
       const peerId = network.entityIdToPeerId.get(player);
       if (peerId === undefined) {
@@ -101,7 +95,7 @@ export function NametagSystem(ctx: GameState) {
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
-      const quaternion = Transform.quaternion[ourPlayer];
+      const quaternion = playerNode.quaternion;
       const pitch = getPitch(quaternion);
       const roll = getRoll(quaternion);
       const forward = getForwardVector(_forward, pitch, roll);
@@ -135,17 +129,17 @@ export function NametagSystem(ctx: GameState) {
   }
 }
 
-export function addNametag(ctx: GameState, height: number, eid: number) {
+export function addNametag(ctx: GameState, height: number, node: RemoteNode) {
   const nametag = addEntity(ctx.world);
-  addTransformComponent(ctx.world, nametag);
+  const nametagNode = addRemoteNodeComponent(ctx, nametag);
   addComponent(ctx.world, NametagComponent, nametag);
-  Transform.position[nametag].set([0, height + height / 1.5, 0]);
-  addChild(eid, nametag);
-  NametagComponent.entity[nametag] = eid;
+  nametagNode.position.set([0, height + height / 1.5, 0]);
+  addChild(node, nametagNode);
+  NametagComponent.entity[nametag] = node.resourceId;
 }
 
-export function getNametag(ctx: GameState, eid: number) {
-  const nametag = findChild(eid, (child) => hasComponent(ctx.world, NametagComponent, child));
-  if (!nametag) throw new Error("avatar not found for entity " + eid);
+export function getNametag(ctx: GameState, node: RemoteNode) {
+  const nametag = findChild(node, (child) => hasComponent(ctx.world, NametagComponent, node.resourceId));
+  if (!nametag) throw new Error("avatar not found for entity " + node.name);
   return nametag;
 }

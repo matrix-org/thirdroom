@@ -4,13 +4,7 @@ import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } fro
 
 import { addNameComponent } from "../component/Name";
 import { SpawnPoint } from "../component/SpawnPoint";
-import {
-  addChild,
-  addTransformComponent,
-  setEulerFromQuaternion,
-  Transform,
-  updateMatrixWorld,
-} from "../component/transform";
+import { addChild, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -87,6 +81,7 @@ import {
   RemoteAudioSource,
   RemoteAudioEmitter,
   RemoteNode,
+  RemoteScene,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -133,10 +128,11 @@ export interface GLTFResource {
   manager: IRemoteResourceManager;
 }
 
-export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
+export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions): RemoteNode {
   const eid = addEntity(ctx.world);
+  const remoteNode = addRemoteNodeComponent(ctx, eid);
   inflateGLTFScene(ctx, eid, uri, options);
-  return eid;
+  return remoteNode;
 }
 
 interface GLTFSceneOptions {
@@ -146,16 +142,15 @@ interface GLTFSceneOptions {
   createTrimesh?: boolean;
   isStatic?: boolean;
   resourceManager?: IRemoteResourceManager;
+  asNode?: boolean;
 }
 
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager }: GLTFSceneOptions = {}
+  { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager, asNode }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
-  addTransformComponent(ctx.world, sceneEid);
-
   const _resourceManager = resourceManager || ctx.resourceManager;
 
   const resource = await loadGLTFResource(ctx, _resourceManager, uri, fileMap);
@@ -188,6 +183,7 @@ export async function inflateGLTFScene(
     }
   }
 
+  const remoteSceneOrNode = asNode ? addRemoteNodeComponent(ctx, sceneEid) : addRemoteSceneComponent(ctx, sceneEid);
   addNameComponent(ctx.world, sceneEid, scene.name || `Scene ${sceneIndex}`);
 
   const group = new Group();
@@ -210,7 +206,7 @@ export async function inflateGLTFScene(
           indexToObject3D,
           nodeInflators,
           nodeIndex,
-          sceneEid,
+          remoteSceneOrNode,
           createTrimesh && !hasInstancedMeshExtension && !hasColliderExtension(resource.root),
           isStatic
         )
@@ -225,7 +221,7 @@ export async function inflateGLTFScene(
     reflectionProbe: hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
 
-  updateMatrixWorld(sceneEid, true);
+  updateMatrixWorld(remoteSceneOrNode, true);
 
   for (const inflator of nodeInflators) {
     inflator();
@@ -249,14 +245,19 @@ export async function inflateGLTFScene(
     addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions, accessorIds });
   }
 
-  const bloomStrength = getPostprocessingBloomStrength(scene);
+  if (!asNode) {
+    const remoteScene = remoteSceneOrNode as RemoteScene;
 
-  addRemoteSceneComponent(ctx, sceneEid, {
-    audioEmitters,
-    reflectionProbe,
-    backgroundTexture,
-    bloomStrength,
-  });
+    remoteScene.audioEmitters = audioEmitters || [];
+    remoteScene.reflectionProbe = reflectionProbe;
+    remoteScene.backgroundTexture = backgroundTexture;
+
+    const bloomStrength = getPostprocessingBloomStrength(scene);
+
+    if (bloomStrength !== undefined) {
+      remoteScene.bloomStrength = bloomStrength;
+    }
+  }
 
   if (hasHubsComponentsExtension(resource.root)) {
     inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
@@ -276,7 +277,7 @@ async function _inflateGLTFNode(
   indexToObject3D: Map<number, Object3D>,
   nodeInflators: Function[],
   nodeIndex: number,
-  parentEid: number,
+  parent: RemoteNode | RemoteScene,
   createTrimesh = true,
   isStatic = false
 ) {
@@ -288,7 +289,7 @@ async function _inflateGLTFNode(
 
   // use pre-generated eid if it exists (for bones)
   const joint = resource.joints.get(nodeIndex);
-  const nodeEid = joint ? joint.id : addEntity(ctx.world);
+  const nodeEid = joint ? joint.resourceId : addEntity(ctx.world);
 
   // create Object3D
   let obj3d: Object3D;
@@ -302,35 +303,33 @@ async function _inflateGLTFNode(
     obj3d = new Object3D();
   }
 
-  if (obj3d) {
-    eidToObject3D.set(nodeEid, obj3d);
-    indexToObject3D.set(nodeIndex, obj3d);
-    if (node.translation) obj3d.position.fromArray(node.translation);
-    if (node.rotation) obj3d.quaternion.fromArray(node.rotation);
-    if (node.scale) obj3d.scale.fromArray(node.scale);
-  }
+  eidToObject3D.set(nodeEid, obj3d);
+  indexToObject3D.set(nodeIndex, obj3d);
+  if (node.translation) obj3d.position.fromArray(node.translation);
+  if (node.rotation) obj3d.quaternion.fromArray(node.rotation);
+  if (node.scale) obj3d.scale.fromArray(node.scale);
 
   node.name = node.name || `Node ${nodeIndex}`;
 
-  addTransformComponent(ctx.world, nodeEid);
+  const remoteNode = addRemoteNodeComponent(ctx, nodeEid, {
+    name: node.name,
+    static: isStatic,
+  });
+
   addNameComponent(ctx.world, nodeEid, node.name);
 
   if (node.matrix) {
-    Transform.localMatrix[nodeEid].set(node.matrix);
-    mat4.getTranslation(Transform.position[nodeEid], Transform.localMatrix[nodeEid]);
-    mat4.getRotation(Transform.quaternion[nodeEid], Transform.localMatrix[nodeEid]);
-    mat4.getScaling(Transform.scale[nodeEid], Transform.localMatrix[nodeEid]);
+    remoteNode.localMatrix.set(node.matrix);
+    mat4.getTranslation(remoteNode.position, remoteNode.localMatrix);
+    mat4.getRotation(remoteNode.quaternion, remoteNode.localMatrix);
+    mat4.getScaling(remoteNode.scale, remoteNode.localMatrix);
   } else {
-    if (node.translation) Transform.position[nodeEid].set(node.translation);
-    if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
-    if (node.scale) Transform.scale[nodeEid].set(node.scale);
+    if (node.translation) remoteNode.position.set(node.translation);
+    if (node.rotation) remoteNode.quaternion.set(node.rotation);
+    if (node.scale) remoteNode.scale.set(node.scale);
   }
 
-  setEulerFromQuaternion(Transform.rotation[nodeEid], Transform.quaternion[nodeEid]);
-
-  if (parentEid !== undefined) {
-    addChild(parentEid, nodeEid);
-  }
+  addChild(parent, remoteNode);
 
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,
@@ -365,7 +364,7 @@ async function _inflateGLTFNode(
           indexToObject3D,
           nodeInflators,
           childIndex,
-          nodeEid,
+          remoteNode,
           createTrimesh,
           isStatic
         )
@@ -376,27 +375,21 @@ async function _inflateGLTFNode(
   const results = await promises;
 
   nodeInflators.push(() => {
-    if (parentEid !== undefined) {
-      const childObj3d = obj3d;
-      const parentObj3d = eidToObject3D.get(parentEid);
-      if (!childObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
-      if (!parentObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
-      if (parentObj3d && childObj3d) {
-        parentObj3d.add(childObj3d);
-      }
+    const childObj3d = obj3d;
+    const parentObj3d = eidToObject3D.get(parent.resourceId);
+    if (!childObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
+    if (!parentObj3d) throw new Error("Object3D not found for nodeEid " + nodeEid);
+    if (parentObj3d && childObj3d) {
+      parentObj3d.add(childObj3d);
     }
 
-    addRemoteNodeComponent(ctx, nodeEid, {
-      ...(results as any),
-      name: node.name,
-      static: isStatic,
-    });
+    Object.assign(remoteNode, results);
 
     if (hasHubsComponentsExtension(resource.root)) {
-      inflateHubsNode(ctx, resource, nodeIndex, nodeEid);
+      inflateHubsNode(ctx, resource, nodeIndex, remoteNode);
     } else {
-      if (node.camera !== undefined) {
-        ctx.activeCamera = nodeEid;
+      if (remoteNode.camera) {
+        ctx.activeCamera = remoteNode;
       }
 
       if (node.extras && node.extras["directional-light"]) {
@@ -414,7 +407,7 @@ async function _inflateGLTFNode(
       }
 
       if (results.mesh && createTrimesh) {
-        addTrimesh(ctx, nodeEid);
+        addTrimesh(ctx, remoteNode);
       }
 
       if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node) || node.name === "__SpawnPoint") {
@@ -427,7 +420,7 @@ async function _inflateGLTFNode(
     }
 
     if (nodeHasCollider(node)) {
-      addCollider(ctx, resource, node, nodeEid, results.colliderMesh);
+      addCollider(ctx, resource, node, remoteNode, results.colliderMesh);
     }
 
     inflatePortalComponent(ctx, node, nodeEid);

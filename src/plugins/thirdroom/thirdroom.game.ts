@@ -3,13 +3,7 @@ import { vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import {
-  addChild,
-  addTransformComponent,
-  removeRecursive,
-  setEulerFromQuaternion,
-  Transform,
-} from "../../engine/component/transform";
+import { addChild, removeRecursive } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -34,8 +28,7 @@ import {
 } from "./thirdroom.common";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
-import { NOOP } from "../../engine/config.common";
-import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
@@ -84,6 +77,7 @@ import {
   AudioEmitterResource,
   AudioDataResource,
   AudioSourceResource,
+  RemoteNode,
 } from "../../engine/resource/schema";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 
@@ -92,11 +86,11 @@ interface ThirdRoomModuleState {
   collisionsGLTF?: GLTFResource;
 }
 
-const addAvatarCamera = (ctx: GameState, eid: number) => {
+const addAvatarCamera = (ctx: GameState, avatar: RemoteNode) => {
   const camera = createCamera(ctx);
-  Transform.position[camera][1] = 1.2;
-  addChild(eid, camera);
-  addCameraYawTargetComponent(ctx.world, eid);
+  camera.position[1] = 1.2;
+  addChild(avatar, camera);
+  addCameraYawTargetComponent(ctx.world, avatar.resourceId);
   addCameraPitchTargetComponent(ctx.world, camera);
   return camera;
 };
@@ -116,22 +110,22 @@ const createAvatarRig =
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const eid = addEntity(ctx.world);
-    addTransformComponent(ctx.world, eid);
-    addAvatarCamera(ctx, eid);
+    const avatar = addRemoteNodeComponent(ctx, eid);
+    addAvatarCamera(ctx, avatar);
     addAvatarController(ctx, input, eid);
 
-    const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene)?.type;
+    const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene!.resourceId)?.type;
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
       addFlyControls(ctx, eid);
     } else {
       addPhysicsControls(ctx, eid);
     }
 
-    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
+    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", avatar, {
       nametag: true,
     });
 
-    addAvatarRigidBody(ctx, physics, eid);
+    addAvatarRigidBody(ctx, physics, avatar);
     addInteractableComponent(ctx, physics, eid, InteractableType.Player);
 
     return eid;
@@ -187,7 +181,8 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
           hasComponent(ctx.world, Owned, entity) &&
           !hasComponent(ctx.world, Player, entity)
         ) {
-          removeRecursive(ctx.world, entity);
+          const node = RemoteNodeComponent.get(entity)!;
+          removeRecursive(ctx.world, node);
         } else if (hasComponent(ctx.world, Player, entity)) {
           spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
         }
@@ -272,7 +267,7 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
     type: ThirdRoomMessageType.ExitedWorld,
   });
 
-  removeRecursive(ctx.world, ctx.activeScene);
+  removeRecursive(ctx.world, ctx.activeScene!);
 
   if (thirdroom.sceneGLTF) {
     disposeGLTFResource(thirdroom.sceneGLTF);
@@ -284,8 +279,8 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
     thirdroom.collisionsGLTF = undefined;
   }
 
-  ctx.activeCamera = NOOP;
-  ctx.activeScene = NOOP;
+  ctx.activeCamera = undefined;
+  ctx.activeScene = undefined;
 }
 
 function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
@@ -338,8 +333,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
       thirdroom.collisionsGLTF = undefined;
     }
 
-    ctx.activeScene = NOOP;
-    ctx.activeCamera = NOOP;
+    ctx.activeScene = undefined;
+    ctx.activeCamera = undefined;
   }
 
   const newScene = addEntity(ctx.world);
@@ -406,7 +401,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     }
   }
 
-  ctx.activeScene = newScene;
+  ctx.activeScene = newSceneResource;
 
   // Temp hack for city scene
   if (
@@ -418,7 +413,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb", {
       isStatic: true,
     });
-    addChild(newScene, collisionGeo);
+    const collisionNode = RemoteNodeComponent.get(collisionGeo)!;
+    addChild(newSceneResource, collisionNode);
   }
 
   if (script) {
@@ -431,27 +427,26 @@ export const spawnPointQuery = defineQuery([SpawnPoint]);
 function loadPreviewCamera(ctx: GameState) {
   const spawnPoints = spawnPointQuery(ctx.world);
 
-  let defaultCamera = NOOP;
+  let defaultCamera: RemoteNode | undefined;
 
   if (!ctx.activeCamera) {
-    defaultCamera = addEntity(ctx.world);
+    const cameraEid = addEntity(ctx.world);
 
-    addTransformComponent(ctx.world, defaultCamera);
-
-    addChild(ctx.activeScene, defaultCamera);
-
-    addRemoteNodeComponent(ctx, defaultCamera, {
+    defaultCamera = addRemoteNodeComponent(ctx, cameraEid, {
       camera: createRemotePerspectiveCamera(ctx),
     });
+
+    addChild(ctx.activeScene!, defaultCamera);
 
     ctx.activeCamera = defaultCamera;
   }
 
   if (ctx.activeCamera === defaultCamera && spawnPoints.length > 0) {
-    vec3.copy(Transform.position[defaultCamera], Transform.position[spawnPoints[0]]);
-    Transform.position[defaultCamera][1] += 1.6;
-    vec3.copy(Transform.quaternion[defaultCamera], Transform.quaternion[spawnPoints[0]]);
-    setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
+    const spawnPointEid = spawnPoints[0];
+    const spawnPoint = RemoteNodeComponent.get(spawnPointEid)!;
+    vec3.copy(defaultCamera.position, spawnPoint.position);
+    defaultCamera.position[1] += 1.6;
+    vec3.copy(defaultCamera.quaternion, spawnPoint.quaternion);
   }
 }
 
@@ -461,6 +456,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   }
 
   const eid = createPrefabEntity(ctx, "avatar");
+  const node = RemoteNodeComponent.get(eid)!;
   embodyAvatar(ctx, physics, input, eid);
 
   associatePeerWithEntity(network, network.peerId, eid);
@@ -474,7 +470,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx.activeScene, eid);
+  addChild(ctx.activeScene!, node);
 
   const spawnPoints = spawnPointQuery(ctx.world);
   if (spawnPoints.length > 0) {
@@ -492,6 +488,7 @@ function loadRemotePlayerRig(
   peerId: string
 ) {
   const eid = createPrefabEntity(ctx, "avatar", true);
+  const node = RemoteNodeComponent.get(eid)!;
 
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, eid);
@@ -499,16 +496,14 @@ function loadRemotePlayerRig(
   associatePeerWithEntity(network, peerId, eid);
 
   // setup positional audio emitter for VoIP
-  addRemoteNodeComponent(ctx, eid, {
-    name: peerId,
-    audioEmitter: ctx.resourceManager.createResource(AudioEmitterResource, {
-      type: AudioEmitterType.Positional,
-      sources: [
-        ctx.resourceManager.createResource(AudioSourceResource, {
-          audio: ctx.resourceManager.createResource(AudioDataResource, { uri: `mediastream:${peerId}` }),
-        }),
-      ],
-    }),
+  node.name = peerId;
+  node.audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      ctx.resourceManager.createResource(AudioSourceResource, {
+        audio: ctx.resourceManager.createResource(AudioDataResource, { uri: `mediastream:${peerId}` }),
+      }),
+    ],
   });
 
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
@@ -519,7 +514,7 @@ function loadRemotePlayerRig(
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx.activeScene, eid);
+  addChild(ctx.activeScene!, node);
 
   const spawnPoints = spawnPointQuery(ctx.world);
   if (spawnPoints.length > 0) {
@@ -539,7 +534,8 @@ function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, eid: numbe
   removeComponent(ctx.world, FlyControls, eid);
 
   addComponent(ctx.world, PhysicsControls, eid);
-  addAvatarRigidBody(ctx, physics, eid);
+  const node = RemoteNodeComponent.get(eid)!;
+  addAvatarRigidBody(ctx, physics, node);
 }
 
 export function ThirdroomSystem(ctx: GameState) {

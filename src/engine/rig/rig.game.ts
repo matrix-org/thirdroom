@@ -6,17 +6,18 @@ import { addEntity } from "bitecs";
 
 import { addCameraYawTargetComponent, addCameraPitchTargetComponent } from "../../plugins/FirstPersonCamera";
 import { createCamera } from "../camera/camera.game";
-import { addTransformComponent, addChild, Transform } from "../component/transform";
+import { addChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { GameInputModule } from "../input/input.game";
+import { addRemoteNodeComponent } from "../node/node.game";
 
 export const createRig = (ctx: GameState, input: GameInputModule) => {
   const rig = addEntity(ctx.world);
-  addTransformComponent(ctx.world, rig);
+  const rigNode = addRemoteNodeComponent(ctx, rig);
 
   const camera = createCamera(ctx);
-  Transform.position[camera][1] = 1.2;
-  addChild(rig, camera);
+  camera.position[1] = 1.2;
+  addChild(rigNode, camera);
 
   addCameraYawTargetComponent(ctx.world, rig);
   addCameraPitchTargetComponent(ctx.world, camera);

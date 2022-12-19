@@ -114,7 +114,8 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
-    props: InitialResourceProps<Def>
+    props: InitialResourceProps<Def>,
+    eid?: number
   ): RemoteResource<Def> {
     const resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
 
@@ -126,7 +127,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
     const resource = new resourceConstructor(this, this.ctx, buffer, ptr, tripleBuffer, props);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
+    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer, { eid });
     resource.resourceId = resourceId;
     setRemoteResource(this.ctx, resourceId, resource);
     this.ptrToResourceId.set(ptr, resourceId);

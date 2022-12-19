@@ -427,7 +427,6 @@ export type RemoteInteractable = RemoteResource<typeof InteractableResource>;
 export type LocalInteractable = LocalResource<typeof InteractableResource>;
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
-  id: PropType.u32({ default: 0, script: true, mutable: false }),
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene"),
   parent: PropType.selfRef(),
@@ -439,10 +438,11 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   scale: PropType.vec3({ script: true, default: [1, 1, 1] }),
   localMatrix: PropType.mat4({ script: true }),
   worldMatrix: PropType.mat4({ script: true }),
+  worldMatrixNeedsUpdate: PropType.bool({ script: true, default: true }),
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
   isStatic: PropType.bool({ script: true, default: true }),
-  skipLerp: PropType.bool({ script: true }),
+  skipLerp: PropType.u32({ script: true }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),
   instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),
@@ -465,7 +465,7 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
   backgroundTexture: PropType.ref(TextureResource, { script: true }),
   reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
-  firstNode: PropType.ref(NodeResource, { script: false }),
+  firstNode: PropType.ref(NodeResource, { script: false, mutable: true, required: false }),
   bloomStrength: PropType.f32({ default: 0.4 }),
 });
 export type RemoteScene = RemoteResource<typeof SceneResource>;

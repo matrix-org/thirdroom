@@ -25,25 +25,24 @@ typedef enum ResourceType {
   ResourceType_BufferView = 4,
   ResourceType_AudioData = 5,
   ResourceType_AudioSource = 6,
-  ResourceType_MediaStreamSource = 7,
-  ResourceType_AudioEmitter = 8,
-  ResourceType_Image = 9,
-  ResourceType_Texture = 10,
-  ResourceType_ReflectionProbe = 11,
-  ResourceType_Material = 12,
-  ResourceType_Light = 13,
-  ResourceType_Camera = 14,
-  ResourceType_SparseAccessor = 15,
-  ResourceType_Accessor = 16,
-  ResourceType_MeshPrimitive = 17,
-  ResourceType_InstancedMesh = 18,
-  ResourceType_Mesh = 19,
-  ResourceType_LightMap = 20,
-  ResourceType_TilesRenderer = 21,
-  ResourceType_Skin = 22,
-  ResourceType_Interactable = 23,
-  ResourceType_Node = 24,
-  ResourceType_Scene = 25,
+  ResourceType_AudioEmitter = 7,
+  ResourceType_Image = 8,
+  ResourceType_Texture = 9,
+  ResourceType_ReflectionProbe = 10,
+  ResourceType_Material = 11,
+  ResourceType_Light = 12,
+  ResourceType_Camera = 13,
+  ResourceType_SparseAccessor = 14,
+  ResourceType_Accessor = 15,
+  ResourceType_MeshPrimitive = 16,
+  ResourceType_InstancedMesh = 17,
+  ResourceType_Mesh = 18,
+  ResourceType_LightMap = 19,
+  ResourceType_TilesRenderer = 20,
+  ResourceType_Skin = 21,
+  ResourceType_Interactable = 22,
+  ResourceType_Node = 23,
+  ResourceType_Scene = 24,
 } ResourceType;
 
 typedef struct Nametag {
@@ -384,8 +383,9 @@ typedef struct Interactable {
 } Interactable;
 
 typedef struct _Node {
+  unsigned int id;
   const char *name;
-  Scene *parent_scene;
+  Scene *scene;
   Node *parent;
   Node *first_child;
   Node *prev_sibling;
@@ -398,6 +398,7 @@ typedef struct _Node {
   int visible;
   int enabled;
   int is_static;
+  int skip_lerp;
   unsigned int layers;
   Mesh *mesh;
   InstancedMesh *instanced_mesh;
@@ -413,11 +414,13 @@ typedef struct _Node {
 } Node;
 
 typedef struct _Scene {
+  unsigned int id;
   const char *name;
   Texture *background_texture;
   ReflectionProbe *reflection_probe;
   AudioEmitter *audio_emitters[16];
   Node *first_node;
+  float_t bloom_strength;
 } Scene;
 
 import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);

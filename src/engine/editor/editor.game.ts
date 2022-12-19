@@ -9,7 +9,7 @@ import {
 } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { hierarchyObjectBuffer, traverseRecursive } from "../component/transform";
+import { traverseRecursive } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddSelectedEntityMessage,
@@ -194,10 +194,9 @@ export function EditorStateSystem(ctx: GameState) {
   }
 
   // Update editor state and hierarchy triple buffers
-  editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene;
+  editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene?.resourceId || 0;
 
   commitToObjectTripleBuffer(editor.editorStateTripleBuffer, editor.editorStateBufferView);
-  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, hierarchyObjectBuffer);
 
   // Send updated names to main thread
   const entered = nameEnterQuery(ctx.world);
@@ -246,25 +245,19 @@ export function EditorStateSystem(ctx: GameState) {
     // Recursively update this layer so that the selected effect can be applied to all descendants
     for (let i = 0; i < selectedRemoved.length; i++) {
       const eid = selectedRemoved[i];
+      const node = RemoteNodeComponent.get(eid)!;
 
-      traverseRecursive(eid, (child) => {
-        const remoteNode = RemoteNodeComponent.get(child);
-
-        if (remoteNode) {
-          remoteNode.layers = removeLayer(remoteNode.layers, Layer.EditorSelection);
-        }
+      traverseRecursive(node, (child) => {
+        child.layers = removeLayer(child.layers, Layer.EditorSelection);
       });
     }
 
     for (let i = 0; i < selectedAdded.length; i++) {
       const eid = selectedAdded[i];
+      const node = RemoteNodeComponent.get(eid)!;
 
-      traverseRecursive(eid, (child) => {
-        const remoteNode = RemoteNodeComponent.get(child);
-
-        if (remoteNode) {
-          remoteNode.layers = addLayer(remoteNode.layers, Layer.EditorSelection);
-        }
+      traverseRecursive(node, (child) => {
+        child.layers = addLayer(child.layers, Layer.EditorSelection);
       });
     }
   }

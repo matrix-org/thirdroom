@@ -1,10 +1,10 @@
 import { addComponent } from "bitecs";
+import { quat } from "gl-matrix";
 
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { Hidden, setQuaternionFromEuler, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { RemoteNode } from "../resource/schema";
 import { GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 import { addTrimesh } from "./OMI_collider";
@@ -15,7 +15,7 @@ export function hasHubsComponentsExtension(root: GLTFRoot) {
 
 export function inflateHubsScene(ctx: GameState, resource: GLTFResource, sceneIndex: number, sceneEid: number) {}
 
-export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeIndex: number, nodeEid: number) {
+export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeIndex: number, remoteNode: RemoteNode) {
   const node = resource.root.nodes![nodeIndex];
   const components = node.extensions?.MOZ_hubs_components;
 
@@ -24,24 +24,21 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
   }
 
   if (components["spawn-point"] || components["waypoint"]?.canBeSpawnPoint) {
-    Transform.position[nodeEid][1] += 1.6;
-    Transform.rotation[nodeEid][1] += Math.PI;
-    setQuaternionFromEuler(Transform.quaternion[nodeEid], Transform.rotation[nodeEid]);
-    addComponent(ctx.world, SpawnPoint, nodeEid);
+    remoteNode.position[1] += 1.6;
+    quat.rotateY(remoteNode.quaternion, remoteNode.quaternion, Math.PI);
+    addComponent(ctx.world, SpawnPoint, remoteNode.resourceId);
   }
 
   if (components["trimesh"] || components["nav-mesh"]) {
-    addTrimesh(ctx, nodeEid);
+    addTrimesh(ctx, remoteNode);
   }
 
   if (components.visible?.visible === false) {
-    addComponent(ctx.world, Hidden, nodeEid);
+    remoteNode.visible = false;
   }
 
   if (components["scene-preview-camera"]) {
-    addRemoteNodeComponent(ctx, nodeEid, {
-      camera: createRemotePerspectiveCamera(ctx),
-    });
-    ctx.activeCamera = nodeEid;
+    remoteNode.camera = createRemotePerspectiveCamera(ctx);
+    ctx.activeCamera = remoteNode;
   }
 }

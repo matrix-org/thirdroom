@@ -3,7 +3,6 @@ import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import { Vector3, Quaternion } from "three";
 import { quat, vec3 } from "gl-matrix";
 
-import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
@@ -18,6 +17,7 @@ import {
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { tickRate } from "../config.common";
+import { RemoteNodeComponent } from "../node/node.game";
 
 const FRAME_MS = 1000 / tickRate;
 
@@ -81,8 +81,9 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
-    const position = Transform.position[eid];
-    const quaternion = Transform.quaternion[eid];
+    const node = RemoteNodeComponent.get(eid)!;
+    const position = node.position;
+    const quaternion = node.quaternion;
     const velocity = RigidBody.velocity[eid];
 
     const netPosition = Networked.position[eid];
@@ -211,8 +212,10 @@ function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
   const netQuaternion = Networked.quaternion[eid];
   const netVelocity = Networked.velocity[eid];
 
-  Transform.position[eid].set(netPosition);
-  Transform.quaternion[eid].set(netQuaternion);
+  const node = RemoteNodeComponent.get(eid)!;
+
+  node.position.set(netPosition);
+  node.quaternion.set(netQuaternion);
 
   body.setTranslation(_vec.fromArray(netPosition), true);
   if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);

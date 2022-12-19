@@ -3,13 +3,13 @@ import { addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { vec3ArrayTransformMat4, getAccessorArrayView } from "../accessor/accessor.common";
-import { addTransformComponent, addChild, Transform } from "../component/transform";
+import { addChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { MeshPrimitiveAttributeIndex, RemoteAccessor, RemoteMesh } from "../resource/schema";
+import { MeshPrimitiveAttributeIndex, RemoteAccessor, RemoteMesh, RemoteNode } from "../resource/schema";
 import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 
@@ -45,7 +45,7 @@ export function addCollider(
   ctx: GameState,
   resource: GLTFResource,
   node: GLTFNode,
-  nodeEid: number,
+  remoteNode: RemoteNode,
   colliderMesh?: RemoteMesh
 ) {
   const index = node.extensions!.OMI_collider.collider;
@@ -59,11 +59,11 @@ export function addCollider(
   }
 
   if (collider.type === "mesh" && colliderMesh) {
-    addTrimeshFromMesh(ctx, nodeEid, colliderMesh);
+    addTrimeshFromMesh(ctx, remoteNode, colliderMesh);
     return;
   }
 
-  const worldMatrix = Transform.worldMatrix[nodeEid];
+  const worldMatrix = remoteNode.worldMatrix;
   mat4.getTranslation(tempPosition, worldMatrix);
   mat4.getRotation(tempRotation, worldMatrix);
   mat4.getScaling(tempScale, worldMatrix);
@@ -87,20 +87,18 @@ export function addCollider(
   colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(ctx, nodeEid, rigidBody);
+  addRigidBody(ctx, remoteNode, rigidBody);
 }
 
-export function addTrimesh(ctx: GameState, nodeEid: number) {
-  const remoteNode = RemoteNodeComponent.get(nodeEid);
-
-  if (!remoteNode || !remoteNode.mesh) {
+export function addTrimesh(ctx: GameState, remoteNode: RemoteNode) {
+  if (!remoteNode.mesh) {
     return;
   }
 
-  addTrimeshFromMesh(ctx, nodeEid, remoteNode.mesh as RemoteMesh);
+  addTrimeshFromMesh(ctx, remoteNode, remoteNode.mesh as RemoteMesh);
 }
 
-export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: RemoteMesh) {
+export function addTrimeshFromMesh(ctx: GameState, remoteNode: RemoteNode, mesh: RemoteMesh) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
 
   // TODO: We don't really need the whole RemoteMesh just for a trimesh and tracking
@@ -113,7 +111,7 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     const positionsArray = getAccessorArrayView(
       primitive.attributes[MeshPrimitiveAttributeIndex.POSITION] as RemoteAccessor
     ).slice() as Float32Array;
-    vec3ArrayTransformMat4(positionsArray, positionsArray, Transform.worldMatrix[nodeEid]);
+    vec3ArrayTransformMat4(positionsArray, positionsArray, remoteNode.worldMatrix);
 
     let indicesArr: Uint32Array;
 
@@ -135,8 +133,8 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
     const primitiveEid = addEntity(ctx.world);
-    addTransformComponent(ctx.world, primitiveEid);
-    addChild(nodeEid, primitiveEid);
-    addRigidBody(ctx, primitiveEid, rigidBody, mesh.resourceId, primitive.resourceId);
+    const primitiveNode = addRemoteNodeComponent(ctx, primitiveEid);
+    addChild(remoteNode, primitiveNode);
+    addRigidBody(ctx, primitiveNode, rigidBody, mesh.resourceId, primitive.resourceId);
   }
 }

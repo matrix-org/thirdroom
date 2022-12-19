@@ -1,10 +1,11 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
-import { addChild, removeRecursive, Transform } from "../component/transform";
+import { addChild, removeRecursive } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
+import { RemoteNodeComponent } from "../node/node.game";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
@@ -28,33 +29,35 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const [ctx, cv] = input;
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
-  const eid = network.networkIdToEntityId.get(nid);
-  if (eid) {
-    removeRecursive(ctx.world, eid);
+  const eid = network.networkIdToEntityId.get(nid)!;
+  const node = RemoteNodeComponent.get(eid);
+  if (node) {
+    removeRecursive(ctx.world, node);
   }
 };
 
 export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: number): number => {
   if (!hasComponent(ctx.world, Owned, eid)) {
-    removeRecursive(ctx.world, eid);
+    const node = RemoteNodeComponent.get(eid)!;
+    removeRecursive(ctx.world, node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
     const newEid = getPrefabTemplate(ctx, prefabName).create(ctx);
+    const newNode = RemoteNodeComponent.get(eid)!;
 
     const body = RigidBody.store.get(eid);
     if (!body) throw new Error("rigidbody not found for eid: " + eid);
 
-    Transform.position[newEid].set(Transform.position[eid]);
-    Transform.scale[newEid].set(Transform.scale[eid]);
-    Transform.rotation[newEid].set(Transform.rotation[eid]);
-    Transform.quaternion[newEid].set(Transform.quaternion[eid]);
+    newNode.position.set(node.position);
+    newNode.scale.set(node.scale);
+    newNode.quaternion.set(node.quaternion);
 
     addComponent(ctx.world, Owned, newEid);
     addComponent(ctx.world, Networked, newEid);
 
-    addChild(ctx.activeScene, newEid);
+    addChild(ctx.activeScene!, newNode);
 
     // send message to remove on other side
     broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));

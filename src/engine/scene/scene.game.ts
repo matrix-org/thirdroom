@@ -1,11 +1,7 @@
-import { addComponent, addEntity, defineQuery, exitQuery, removeComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery, removeComponent } from "bitecs";
 
-import { TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { GameNodeResource } from "../node/node.game";
-import { defineRemoteResourceClass } from "../resource/RemoteResourceClass";
 import { disposeResource } from "../resource/resource.game";
-import { InitialResourceProps, IRemoteResourceManager } from "../resource/ResourceDefinition";
 import {
   RemoteAudioEmitter,
   RemoteReflectionProbe,
@@ -20,22 +16,6 @@ export interface SceneProps {
   backgroundTexture?: RemoteTexture;
   reflectionProbe?: RemoteReflectionProbe;
   bloomStrength?: number;
-}
-
-export class GameSceneResource extends defineRemoteResourceClass<typeof SceneResource>(SceneResource) {
-  declare firstNode: GameNodeResource;
-
-  constructor(
-    manager: IRemoteResourceManager,
-    ctx: GameState,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<typeof SceneResource>
-  ) {
-    super(manager, ctx, buffer, ptr, tripleBuffer, props);
-    this.__props["id"][0] = props?.id || addEntity(ctx.world);
-  }
 }
 
 export function addRemoteSceneComponent(ctx: GameState, eid: number, props?: SceneProps): RemoteScene {

@@ -1,13 +1,13 @@
 import { addComponent, addEntity, defineComponent, defineQuery, hasComponent } from "bitecs";
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
-import { addTransformComponent, findChild, Transform } from "../component/transform";
+import { findChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { getRemoteResources } from "../resource/resource.game";
-import { CameraResource, CameraType, RemoteCamera } from "../resource/schema";
+import { CameraResource, CameraType, RemoteCamera, RemoteNode } from "../resource/schema";
 
 export const CameraComponent = defineComponent();
 export const cameraComponentQuery = defineQuery([CameraComponent]);
@@ -30,28 +30,25 @@ export function createRemotePerspectiveCamera(ctx: GameState) {
   });
 }
 
-export function createCamera(ctx: GameState, setActive = false): number {
+export function createCamera(ctx: GameState, setActive = false): RemoteNode {
   const eid = addEntity(ctx.world);
-  addTransformComponent(ctx.world, eid);
   addComponent(ctx.world, CameraComponent, eid);
-
-  addRemoteNodeComponent(ctx, eid, {
+  const node = addRemoteNodeComponent(ctx, eid, {
     camera: createRemotePerspectiveCamera(ctx),
   });
 
   if (setActive) {
-    ctx.activeCamera = eid;
+    ctx.activeCamera = node;
   }
 
-  return eid;
+  return node;
 }
 
 const _pm = mat4.create();
 const _icm = mat4.create();
-export function projectPerspective(ctx: GameState, cameraEid: number, v3: vec3) {
-  const cameraNode = RemoteNodeComponent.get(cameraEid);
-  const cameraMatrix = Transform.worldMatrix[cameraEid];
-  if (cameraNode?.camera) {
+export function projectPerspective(ctx: GameState, cameraNode: RemoteNode, v3: vec3) {
+  const cameraMatrix = cameraNode.worldMatrix;
+  if (cameraNode.camera) {
     const projectionMatrix = calculateProjectionMatrix(ctx, cameraNode.camera as RemoteCamera);
     const cameraMatrixWorldInverse = mat4.invert(_icm, cameraMatrix);
     const v = vec3.clone(v3);
@@ -120,11 +117,11 @@ function makePerspective(
  * Obtains the last added camera on the provided entity if one exists, throws if not
  *
  * @param ctx GameState
- * @param eid number
+ * @param node RemoteNode
  */
-export function getCamera(ctx: GameState, eid: number) {
-  const camera = findChild(eid, (child) => hasComponent(ctx.world, CameraComponent, child));
-  if (!camera) throw new Error("camera not found on entity " + eid);
+export function getCamera(ctx: GameState, node: RemoteNode) {
+  const camera = findChild(node, (child) => hasComponent(ctx.world, CameraComponent, child.resourceId));
+  if (!camera) throw new Error("camera not found on entity " + node.name);
   return camera;
 }
 
@@ -134,6 +131,6 @@ export function getCamera(ctx: GameState, eid: number) {
  * @param ctx GameState
  * @param eid number
  */
-export function setActiveCamera(ctx: GameState, eid: number) {
-  ctx.activeCamera = getCamera(ctx, eid);
+export function setActiveCamera(ctx: GameState, node: RemoteNode) {
+  ctx.activeCamera = getCamera(ctx, node);
 }

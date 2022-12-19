@@ -4,11 +4,12 @@ import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "../component/transform";
+import { getForwardVector, getPitch, getRightVector, getRoll } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/network.game";
+import { RemoteNodeComponent } from "../node/node.game";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
@@ -135,13 +136,14 @@ function processAnimations(ctx: GameState) {
     const animation = AnimationComponent.get(eid);
 
     // avatars exist within a parent container which has all other components for this entity
-    const parent = Transform.parent[eid];
+    const node = RemoteNodeComponent.get(eid)!;
+    const parent = node.parent;
     if (!parent) {
       console.warn("cannot find parent container for avatar:", eid);
       continue;
     }
 
-    const rigidBody = RigidBody.store.get(parent);
+    const rigidBody = RigidBody.store.get(parent.resourceId);
 
     if (animation && rigidBody) {
       // collectively fade all animations out each frame
@@ -149,7 +151,7 @@ function processAnimations(ctx: GameState) {
       reduceClipActionWeights(allActions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
-      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, animation);
+      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent.resourceId, rigidBody, animation);
       // synchronize selected clip action times
       synchronizeClipActions(actionsToPlay);
       // fade in selected animations
@@ -168,8 +170,9 @@ function syncBones(ctx: GameState) {
     const eid = bones[i];
     const bone = BoneComponent.get(eid);
     if (bone) {
-      const p = Transform.position[eid];
-      const q = Transform.quaternion[eid];
+      const node = RemoteNodeComponent.get(eid)!;
+      const p = node.position;
+      const q = node.quaternion;
       bone.position.toArray(p);
       bone.quaternion.toArray(q);
     }
@@ -218,7 +221,8 @@ function getClipActionsUsingVelocity(
   rigidBody: RAPIER.RigidBody,
   animation: IAnimationComponent
 ): AnimationAction[] {
-  const quaternion = Transform.quaternion[eid];
+  const node = RemoteNodeComponent.get(eid)!;
+  const quaternion = node.quaternion;
 
   // if remote object, take velocity from Networked component
   // otherwise, take velocity from entity's RigidBody

@@ -551,7 +551,9 @@ type ResourcePropValue<
     ? Resource<Def["schema"][Prop]["resourceDef"]>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Resource<Def, MutResource>
+  ? Def["schema"][Prop] extends { required: true; mutable: false }
+    ? Resource<Def, MutResource>
+    : Resource<Def, MutResource> | undefined
   : never;
 
 type ResourcePropValueMut<
@@ -647,7 +649,9 @@ type InitialResourcePropValue<
       }
     : never
   : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Resource<Def, MutResource>
+  ? Def["schema"][Prop] extends { required: true; mutable: false }
+    ? Resource<Def, MutResource>
+    : Resource<Def, MutResource> | undefined
   : never;
 
 export type InitialResourceProps<Def extends ResourceDefinition> = {
@@ -664,7 +668,8 @@ export interface IRemoteResourceManager {
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
-    props: InitialResourceProps<Def>
+    props: InitialResourceProps<Def>,
+    eid?: number
   ): RemoteResource<Def>;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
   disposeResource(resourceId: number): void;

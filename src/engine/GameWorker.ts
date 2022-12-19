@@ -1,6 +1,6 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { addChild, addTransformComponent, SkipRenderLerpSystem } from "./component/transform";
+import { SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
@@ -44,13 +44,6 @@ async function onInit({
   // noop entity
   addEntity(world);
 
-  const scene = addEntity(world);
-  addTransformComponent(world, scene);
-
-  const camera = addEntity(world);
-  addTransformComponent(world, camera);
-  addChild(scene, camera);
-
   function gameWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
     if (thread === Thread.Main) {
       workerScope.postMessage({ dest: thread, message }, transferList);
@@ -68,14 +61,16 @@ async function onInit({
     elapsed: performance.now(),
     dt: 0,
     world,
-    activeScene: scene,
-    activeCamera: camera,
+    activeScene: undefined,
+    activeCamera: undefined,
     systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),
     sendMessage: gameWorkerSendMessage,
     resourceManager: undefined as any,
   };
+
+  console.log(configGame.resources);
 
   state.resourceManager = new GameResourceManager(state, configGame.resources);
 

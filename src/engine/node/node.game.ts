@@ -1,9 +1,9 @@
 import { addComponent, addEntity, defineQuery, exitQuery, hasComponent } from "bitecs";
 
-import { Transform } from "../component/transform";
+import { SkipRenderLerp } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { disposeResource } from "../resource/resource.game";
-import { RemoteSceneComponent } from "../scene/scene.game";
+import { addRemoteSceneComponent } from "../scene/scene.game";
 import {
   NodeResource,
   RemoteAudioEmitter,
@@ -15,13 +15,9 @@ import {
   RemoteNametag,
   RemoteNode,
   RemoteReflectionProbe,
-  RemoteScene,
   RemoteSkin,
   RemoteTilesRenderer,
 } from "../resource/schema";
-import { defineRemoteResourceClass } from "../resource/RemoteResourceClass";
-import { InitialResourceProps, IRemoteResourceManager } from "../resource/ResourceDefinition";
-import { TripleBuffer } from "../allocator/TripleBuffer";
 
 interface NodeProps {
   name?: string;
@@ -41,18 +37,10 @@ interface NodeProps {
 
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
 
-export class GameNodeResource extends defineRemoteResourceClass<typeof NodeResource>(NodeResource) {
-  constructor(
-    manager: IRemoteResourceManager,
-    ctx: GameState,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<typeof NodeResource>
-  ) {
-    super(manager, ctx, buffer, ptr, tripleBuffer, props);
-    this.__props["id"][0] = props?.id || addEntity(ctx.world);
-  }
+export function createNodeEntity(ctx: GameState): number {
+  const eid = addEntity(ctx.world);
+  addRemoteSceneComponent(ctx, eid);
+  return eid;
 }
 
 export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: NodeProps): RemoteNode {
@@ -73,8 +61,13 @@ export function addRemoteNodeComponent(ctx: GameState, eid: number, props?: Node
     return remoteNode;
   }
 
-  const remoteNode = ctx.resourceManager.createResource(NodeResource, { ...props, id: eid });
+  const remoteNode = ctx.resourceManager.createResource(NodeResource, props || {}, eid);
   addComponent(ctx.world, RemoteNodeComponent, eid);
+
+  // always skip lerp for first few frames of existence
+  addComponent(ctx.world, SkipRenderLerp, eid);
+  remoteNode.skipLerp = 10;
+
   RemoteNodeComponent.set(eid, remoteNode);
   return remoteNode;
 }
@@ -93,51 +86,6 @@ export function RemoteNodeSystem(ctx: GameState) {
     if (remoteNode) {
       disposeResource(ctx, remoteNode.resourceId);
       RemoteNodeComponent.delete(eid);
-    }
-  }
-}
-
-export function TransformToRemoteNodeSystem(ctx: GameState) {
-  const entities = remoteNodeQuery(ctx.world);
-
-  for (let i = 0; i < entities.length; i++) {
-    const eid = entities[i];
-    const remoteNode = RemoteNodeComponent.get(eid);
-
-    if (remoteNode) {
-      remoteNode.__props["parentScene"][0] = RemoteSceneComponent.get(Transform.parent[eid])?.resourceId || 0;
-      remoteNode.__props["parent"][0] = RemoteNodeComponent.get(Transform.parent[eid])?.resourceId || 0;
-      remoteNode.__props["firstChild"][0] = RemoteNodeComponent.get(Transform.firstChild[eid])?.resourceId || 0;
-      remoteNode.__props["prevSibling"][0] = RemoteNodeComponent.get(Transform.prevSibling[eid])?.resourceId || 0;
-      remoteNode.__props["nextSibling"][0] = RemoteNodeComponent.get(Transform.nextSibling[eid])?.resourceId || 0;
-      remoteNode.position.set(Transform.position[eid]);
-      remoteNode.quaternion.set(Transform.quaternion[eid]);
-      remoteNode.scale.set(Transform.scale[eid]);
-      remoteNode.localMatrix.set(Transform.localMatrix[eid]);
-      remoteNode.worldMatrix.set(Transform.worldMatrix[eid]);
-      remoteNode.isStatic = !!Transform.static[eid];
-    }
-  }
-}
-
-export function RemoteNodeToTransformSystem(ctx: GameState) {
-  const entities = remoteNodeQuery(ctx.world);
-
-  for (let i = 0; i < entities.length; i++) {
-    const eid = entities[i];
-    const remoteNode = RemoteNodeComponent.get(eid);
-
-    if (remoteNode) {
-      Transform.parent[eid] = (remoteNode.parentScene as RemoteScene | undefined)?.id || remoteNode.parent?.id;
-      Transform.firstChild[eid] = remoteNode.firstChild?.id;
-      Transform.prevSibling[eid] = remoteNode.prevSibling?.id;
-      Transform.nextSibling[eid] = remoteNode.nextSibling?.id;
-      Transform.position[eid].set(remoteNode.position);
-      Transform.quaternion[eid].set(remoteNode.quaternion);
-      Transform.scale[eid].set(remoteNode.scale);
-      Transform.localMatrix[eid].set(remoteNode.localMatrix);
-      Transform.worldMatrix[eid].set(remoteNode.worldMatrix);
-      Transform.static[eid] = remoteNode.isStatic ? 1 : 0;
     }
   }
 }

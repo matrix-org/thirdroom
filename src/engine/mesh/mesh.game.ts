@@ -3,7 +3,6 @@ import { addEntity } from "bitecs";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { addTransformComponent } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent } from "../node/node.game";
@@ -113,7 +112,6 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
   const { world } = ctx;
 
   const eid = addEntity(world);
-  addTransformComponent(world, eid);
 
   ctx.resourceManager.createResource(MaterialResource, {
     type: MaterialType.Standard,
@@ -122,7 +120,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
     metallicFactor: 0.8,
   });
 
-  addRemoteNodeComponent(ctx, eid, {
+  const node = addRemoteNodeComponent(ctx, eid, {
     mesh: createCubeMesh(ctx, size, material),
   });
 
@@ -135,7 +133,7 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(ctx, eid, rigidBody);
+  addRigidBody(ctx, node, rigidBody);
 
   addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
@@ -145,7 +143,6 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = ctx;
   const eid = addEntity(world);
-  addTransformComponent(world, eid);
 
   ctx.resourceManager.createResource(MaterialResource, {
     type: MaterialType.Standard,
