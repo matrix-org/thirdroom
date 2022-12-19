@@ -18,85 +18,90 @@ import { eventByOrderKey } from "../../../utils/matrixUtils";
 
 interface DiscoverHomeProps {
   room: Room;
+  supportRoomSummary: boolean;
   onLoadEvents: (eventType: RepositoryEvents) => void;
 }
-export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
+export function DiscoverHome({ room, supportRoomSummary, onLoadEvents }: DiscoverHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   return (
     <Scroll>
       <Content className="DiscoverHome__content">
         <div className="flex flex-column gap-md">
-          <FeaturedRoomsProvider room={room}>
-            {(featuredRooms) =>
-              featuredRooms.length === 0 ? null : (
-                <DiscoverGroup
-                  label={<Label>Featured Public Rooms</Label>}
-                  content={
-                    <DiscoverGroupGrid>
-                      {featuredRooms
-                        .sort(eventByOrderKey)
-                        .slice(0, 4)
-                        .map((stateEvent) => (
-                          <FeaturedRoomCard
-                            key={stateEvent.state_key}
-                            session={session}
-                            platform={platform}
-                            roomId={stateEvent.state_key}
-                          />
-                        ))}
-                    </DiscoverGroupGrid>
-                  }
-                  footer={
-                    featuredRooms.length > 4 && (
-                      <div className="flex justify-end">
-                        <DiscoverMoreButton
-                          onClick={() => onLoadEvents(RepositoryEvents.FeaturedRooms)}
-                          text="Browse All Public Rooms"
-                          iconSrc={ArrowForwardIC}
-                        />
-                      </div>
-                    )
-                  }
-                />
-              )
-            }
-          </FeaturedRoomsProvider>
-          <FeaturedWorldsProvider room={room}>
-            {(featuredWorlds) =>
-              featuredWorlds.length === 0 ? null : (
-                <DiscoverGroup
-                  label={<Label>Featured Public Worlds</Label>}
-                  content={
-                    <DiscoverGroupGrid>
-                      {featuredWorlds
-                        .sort(eventByOrderKey)
-                        .slice(0, 4)
-                        .map((stateEvent) => (
-                          <FeaturedWorldCard
-                            key={stateEvent.state_key}
-                            session={session}
-                            platform={platform}
-                            roomId={stateEvent.state_key}
-                          />
-                        ))}
-                    </DiscoverGroupGrid>
-                  }
-                  footer={
-                    featuredWorlds.length > 4 && (
-                      <div className="flex justify-end">
-                        <DiscoverMoreButton
-                          onClick={() => onLoadEvents(RepositoryEvents.FeaturedWorlds)}
-                          text="Browse All Public Worlds"
-                          iconSrc={ArrowForwardIC}
-                        />
-                      </div>
-                    )
-                  }
-                />
-              )
-            }
-          </FeaturedWorldsProvider>
+          {supportRoomSummary && (
+            <>
+              <FeaturedRoomsProvider room={room}>
+                {(featuredRooms) =>
+                  featuredRooms.length === 0 ? null : (
+                    <DiscoverGroup
+                      label={<Label>Featured Public Rooms</Label>}
+                      content={
+                        <DiscoverGroupGrid>
+                          {featuredRooms
+                            .sort(eventByOrderKey)
+                            .slice(0, 4)
+                            .map((stateEvent) => (
+                              <FeaturedRoomCard
+                                key={stateEvent.state_key}
+                                session={session}
+                                platform={platform}
+                                roomId={stateEvent.state_key}
+                              />
+                            ))}
+                        </DiscoverGroupGrid>
+                      }
+                      footer={
+                        featuredRooms.length > 4 && (
+                          <div className="flex justify-end">
+                            <DiscoverMoreButton
+                              onClick={() => onLoadEvents(RepositoryEvents.FeaturedRooms)}
+                              text="Browse All Public Rooms"
+                              iconSrc={ArrowForwardIC}
+                            />
+                          </div>
+                        )
+                      }
+                    />
+                  )
+                }
+              </FeaturedRoomsProvider>
+              <FeaturedWorldsProvider room={room}>
+                {(featuredWorlds) =>
+                  featuredWorlds.length === 0 ? null : (
+                    <DiscoverGroup
+                      label={<Label>Featured Public Worlds</Label>}
+                      content={
+                        <DiscoverGroupGrid>
+                          {featuredWorlds
+                            .sort(eventByOrderKey)
+                            .slice(0, 4)
+                            .map((stateEvent) => (
+                              <FeaturedWorldCard
+                                key={stateEvent.state_key}
+                                session={session}
+                                platform={platform}
+                                roomId={stateEvent.state_key}
+                              />
+                            ))}
+                        </DiscoverGroupGrid>
+                      }
+                      footer={
+                        featuredWorlds.length > 4 && (
+                          <div className="flex justify-end">
+                            <DiscoverMoreButton
+                              onClick={() => onLoadEvents(RepositoryEvents.FeaturedWorlds)}
+                              text="Browse All Public Worlds"
+                              iconSrc={ArrowForwardIC}
+                            />
+                          </div>
+                        )
+                      }
+                    />
+                  )
+                }
+              </FeaturedWorldsProvider>
+            </>
+          )}
           <FeaturedScenesProvider room={room}>
             {(featuredScenes) =>
               featuredScenes.length === 0 ? null : (

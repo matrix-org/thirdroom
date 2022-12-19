@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import { Content } from "../../../atoms/content/Content";
@@ -16,6 +16,7 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { DiscoverAdmin } from "./DiscoverAdmin";
 import { DiscoverAll } from "./DiscoverAll";
 import { DiscoverCreator } from "./DiscoverCreator";
+import { getRoomSummary } from "../../../hooks/useRoomSummary";
 import "./DiscoverView.css";
 
 export enum RepositoryEvents {
@@ -33,9 +34,11 @@ enum DiscoverTab {
 
 export function DiscoverView({ room }: { room: Room }) {
   const { session } = useHydrogen(true);
+
   const { getPowerLevel, canDoAction, canSendStateEvent } = usePowerLevels(room);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
   const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
+  const [supportRoomSummary, setSupportRoomSummary] = useState(true);
 
   const userPowerLevel = getPowerLevel(session.userId);
   const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, userPowerLevel);
@@ -45,6 +48,25 @@ export function DiscoverView({ room }: { room: Room }) {
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
   }
+
+  useEffect(() => {
+    // Do a room summary api support check
+    let controller: AbortController | undefined;
+    let mounted = true;
+    const run = async () => {
+      controller = new AbortController();
+      const response = await getRoomSummary(session, room.id, controller.signal);
+      const data = await response.json();
+      if (data.errcode === "M_UNRECOGNIZED" && mounted) {
+        setSupportRoomSummary(false);
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+      controller?.abort();
+    };
+  }, [room.id, session]);
 
   return (
     <Window className="DiscoverView">
@@ -106,7 +128,9 @@ export function DiscoverView({ room }: { room: Room }) {
           <DiscoverAll eventType={loadEvents} room={room} />
         ) : (
           <>
-            {discoverTab === DiscoverTab.Home && room && <DiscoverHome room={room} onLoadEvents={setLoadEvents} />}
+            {discoverTab === DiscoverTab.Home && room && (
+              <DiscoverHome supportRoomSummary={supportRoomSummary} room={room} onLoadEvents={setLoadEvents} />
+            )}
             {discoverTab === DiscoverTab.Creator && room && (
               <DiscoverCreator
                 room={room}
@@ -120,8 +144,8 @@ export function DiscoverView({ room }: { room: Room }) {
               <DiscoverAdmin
                 room={room}
                 permissions={{
-                  canFeatureRooms,
-                  canFeatureWorlds,
+                  canFeatureRooms: canFeatureRooms && supportRoomSummary,
+                  canFeatureWorlds: canFeatureWorlds && supportRoomSummary,
                   canFeatureScenes,
                 }}
               />
