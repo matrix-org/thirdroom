@@ -13,21 +13,23 @@ import { Text } from "../../../atoms/text/Text";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { RoomTypes, useRoomsOfType } from "../../../hooks/useRoomsOfType";
-import { useStateEvents } from "../../../hooks/useStateEvents";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
-import { FeaturedRoomsProvider } from "../../components/FeaturedRoomsProvider";
+import { useFeaturedRooms } from "../../components/FeaturedRoomsProvider";
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import ChevronBottomIC from ".././../.././../../res/ic/chevron-bottom.svg";
+import ChevronTopIC from ".././../.././../../res/ic/chevron-top.svg";
 import BinIC from ".././../.././../../res/ic/bin.svg";
 import "./DiscoverAdmin.css";
 import { RepositoryEvents } from "./DiscoverView";
 import { SceneData, sceneDataToScene, SceneSubmission } from "./SceneSubmission";
-import { FeaturedWorldsProvider } from "../../components/FeaturedWorldsProvider";
-import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
+import { useFeaturedWorlds } from "../../components/FeaturedWorldsProvider";
+import { useFeaturedScenes } from "../../components/FeaturedScenesProvider";
 import { Input } from "../../../atoms/input/Input";
-import { isValidRoomId } from "../../../utils/matrixUtils";
+import { eventByOrderKey, isValidRoomId } from "../../../utils/matrixUtils";
 import { getRoomSummary } from "../../../hooks/useRoomSummary";
+import { useOrderString } from "../../../hooks/useOrderString";
+import { useOrderMove } from "../../../hooks/useOrderMove";
 
 interface FeaturedItemProps {
   before?: ReactNode;
@@ -46,15 +48,15 @@ function FeaturedItem({ before, children, after }: FeaturedItemProps) {
 
 function FeatureRoom({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
-  const featuredRooms = useStateEvents(room, RepositoryEvents.FeaturedRooms);
+  const featuredRooms = useFeaturedRooms(room);
   const [allRooms] = useRoomsOfType(session, RoomTypes.Room);
-  const unFeaturedRoom = allRooms.filter((room) => {
-    const stateEvent = featuredRooms.get(room.id);
-    if (!stateEvent) return true;
-    if (Object.keys(stateEvent.content).length === 0) return true;
-    return false;
-  });
+  const unFeaturedRoom = allRooms.filter(
+    (room) => !featuredRooms.find((stateEvent) => stateEvent.state_key === room.id)
+  );
   const formRef = useRef<HTMLFormElement>(null);
+  const orderedRooms = featuredRooms.sort(eventByOrderKey);
+  const order = useOrderString();
+  const handleMoveUp = useOrderMove(session, room.id, orderedRooms, order);
 
   const {
     callback: featureRoom,
@@ -66,12 +68,16 @@ function FeatureRoom({ room }: { room: Room }) {
       const response = await getRoomSummary(session, roomId);
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature room. Either room is private or does not exist.");
+      const firstEvent = orderedRooms[0];
+      const firstOrder = firstEvent.content.order;
+      const prevOrder = order.getPrevStr(firstOrder);
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, roomId, {
         suggested: false,
         via: [],
+        order: prevOrder ?? undefined,
       });
     },
-    [session]
+    [session, order]
   );
 
   const removeFeatured = (roomId: string) => {
@@ -93,6 +99,7 @@ function FeatureRoom({ room }: { room: Room }) {
       roomIdInput: HTMLInputElement;
     };
     const roomId = roomIdInput.value.trim();
+    roomIdInput.value = "";
     if (roomId) featureRoom(roomId);
   };
 
@@ -156,62 +163,82 @@ function FeatureRoom({ room }: { room: Room }) {
           )}
         </div>
       </SettingTile>
-      <FeaturedRoomsProvider room={room}>
-        {(featuredRooms) =>
-          featuredRooms.length === 0 ? null : (
-            <div>
-              {featuredRooms.map(([stateKey, stateEvent]) => (
-                <RoomSummaryProvider roomIdOrAlias={stateKey} fallback={() => <FeaturedItem />}>
-                  {(summaryData) => (
-                    <FeaturedItem
-                      before={
-                        <Avatar
-                          imageSrc={
-                            summaryData.avatarUrl &&
-                            getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
-                          }
-                          shape="rounded"
-                          size="lg"
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
-                          name={summaryData.name}
-                        />
+      {orderedRooms.length === 0 ? null : (
+        <div>
+          {orderedRooms.map((stateEvent, index) => (
+            <RoomSummaryProvider
+              key={stateEvent.state_key}
+              roomIdOrAlias={stateEvent.state_key}
+              fallback={() => <FeaturedItem />}
+            >
+              {(summaryData) => (
+                <FeaturedItem
+                  before={
+                    <Avatar
+                      imageSrc={
+                        summaryData.avatarUrl &&
+                        getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
                       }
-                      after={
-                        <IconButton
-                          size="sm"
-                          label="Remove Featured"
-                          iconSrc={BinIC}
-                          onClick={() => removeFeatured(stateKey)}
-                        />
-                      }
-                    >
-                      <Text className="truncate">{summaryData.name}</Text>
-                      <Text variant="b3" className="truncate">
-                        {summaryData.topic}
-                      </Text>
-                    </FeaturedItem>
-                  )}
-                </RoomSummaryProvider>
-              ))}
-            </div>
-          )
-        }
-      </FeaturedRoomsProvider>
+                      shape="rounded"
+                      size="lg"
+                      bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
+                      name={summaryData.name}
+                    />
+                  }
+                  after={
+                    <div className="flex gap-xs">
+                      <IconButton
+                        size="sm"
+                        label="Remove Featured"
+                        iconSrc={BinIC}
+                        onClick={() => removeFeatured(stateEvent.state_key)}
+                      />
+                      <div className="flex flex-column">
+                        {index > 0 && (
+                          <IconButton
+                            size="sm"
+                            label="Move Up"
+                            iconSrc={ChevronTopIC}
+                            onClick={() => handleMoveUp(index)}
+                          />
+                        )}
+                        {index < orderedRooms.length - 1 && (
+                          <IconButton
+                            size="sm"
+                            label="Move Down"
+                            iconSrc={ChevronBottomIC}
+                            onClick={() => handleMoveUp(index + 1)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  }
+                >
+                  <Text className="truncate">{summaryData.name}</Text>
+                  <Text variant="b3" className="truncate">
+                    {summaryData.topic}
+                  </Text>
+                </FeaturedItem>
+              )}
+            </RoomSummaryProvider>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function FeatureWorld({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
-  const featuredWorlds = useStateEvents(room, RepositoryEvents.FeaturedWorlds);
+  const featuredWorlds = useFeaturedWorlds(room);
   const [allWorlds] = useRoomsOfType(session, RoomTypes.World);
-  const unFeaturedWorlds = allWorlds.filter((room) => {
-    const stateEvent = featuredWorlds.get(room.id);
-    if (!stateEvent) return true;
-    if (Object.keys(stateEvent.content).length === 0) return true;
-    return false;
-  });
+  const unFeaturedWorlds = allWorlds.filter(
+    (room) => !featuredWorlds.find((stateEvent) => stateEvent.state_key === room.id)
+  );
   const formRef = useRef<HTMLFormElement>(null);
+  const orderedWorlds = featuredWorlds.sort(eventByOrderKey);
+  const order = useOrderString();
+  const handleMoveUp = useOrderMove(session, room.id, orderedWorlds, order);
 
   const {
     callback: featureWorld,
@@ -223,9 +250,13 @@ function FeatureWorld({ room }: { room: Room }) {
       const response = await getRoomSummary(session, roomId);
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature world. Either world is private or does not exist.");
+      const firstEvent = orderedWorlds[0];
+      const firstOrder = firstEvent.content.order;
+      const prevOrder = order.getPrevStr(firstOrder);
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, roomId, {
         suggested: false,
         via: [],
+        order: prevOrder ?? undefined,
       });
     },
     [session]
@@ -250,6 +281,7 @@ function FeatureWorld({ room }: { room: Room }) {
       roomIdInput: HTMLInputElement;
     };
     const roomId = roomIdInput.value.trim();
+    roomIdInput.value = "";
     if (roomId) featureWorld(roomId);
   };
 
@@ -313,53 +345,79 @@ function FeatureWorld({ room }: { room: Room }) {
           )}
         </div>
       </SettingTile>
-      <FeaturedWorldsProvider room={room}>
-        {(featuredWorlds) =>
-          featuredWorlds.length === 0 ? null : (
-            <div>
-              {featuredWorlds.map(([stateKey, stateEvent]) => (
-                <RoomSummaryProvider roomIdOrAlias={stateKey} fallback={() => <FeaturedItem />}>
-                  {(summaryData) => (
-                    <FeaturedItem
-                      before={
-                        <Avatar
-                          imageSrc={
-                            summaryData.avatarUrl &&
-                            getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
-                          }
-                          shape="circle"
-                          size="lg"
-                          bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
-                          name={summaryData.name}
-                        />
+      {orderedWorlds.length === 0 ? null : (
+        <div>
+          {orderedWorlds.map((stateEvent, index) => (
+            <RoomSummaryProvider
+              key={stateEvent.state_key}
+              roomIdOrAlias={stateEvent.state_key}
+              fallback={() => <FeaturedItem />}
+            >
+              {(summaryData) => (
+                <FeaturedItem
+                  before={
+                    <Avatar
+                      imageSrc={
+                        summaryData.avatarUrl &&
+                        getAvatarHttpUrl(summaryData.avatarUrl, 60, platform, session.mediaRepository)
                       }
-                      after={
-                        <IconButton
-                          size="sm"
-                          label="Remove Featured"
-                          iconSrc={BinIC}
-                          onClick={() => removeFeatured(stateKey)}
-                        />
-                      }
-                    >
-                      <Text className="truncate">{summaryData.name}</Text>
-                      <Text variant="b3" className="truncate">
-                        {summaryData.topic}
-                      </Text>
-                    </FeaturedItem>
-                  )}
-                </RoomSummaryProvider>
-              ))}
-            </div>
-          )
-        }
-      </FeaturedWorldsProvider>
+                      shape="circle"
+                      size="lg"
+                      bgColor={`var(--usercolor${getIdentifierColorNumber(summaryData.roomId)})`}
+                      name={summaryData.name}
+                    />
+                  }
+                  after={
+                    <div className="flex gap-xs">
+                      <IconButton
+                        size="sm"
+                        label="Remove Featured"
+                        iconSrc={BinIC}
+                        onClick={() => removeFeatured(stateEvent.state_key)}
+                      />
+
+                      <div className="flex flex-column">
+                        {index > 0 && (
+                          <IconButton
+                            size="sm"
+                            label="Move Up"
+                            iconSrc={ChevronTopIC}
+                            onClick={() => handleMoveUp(index)}
+                          />
+                        )}
+                        {index < orderedWorlds.length - 1 && (
+                          <IconButton
+                            size="sm"
+                            label="Move Down"
+                            iconSrc={ChevronBottomIC}
+                            onClick={() => handleMoveUp(index + 1)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  }
+                >
+                  <Text className="truncate">{summaryData.name}</Text>
+                  <Text variant="b3" className="truncate">
+                    {summaryData.topic}
+                  </Text>
+                </FeaturedItem>
+              )}
+            </RoomSummaryProvider>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function FeatureScene({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
+
+  const featuredScenes = useFeaturedScenes(room);
+  const orderedScenes = featuredScenes.sort(eventByOrderKey);
+  const order = useOrderString();
+  const handleMoveUp = useOrderMove(session, room.id, orderedScenes, order);
 
   const handleSave = async (data: SceneData) => {
     const scene = sceneDataToScene(data);
@@ -374,8 +432,12 @@ function FeatureScene({ room }: { room: Room }) {
       const eventId = result.event_id;
       if (!eventId) return;
 
+      const firstEvent = orderedScenes[0];
+      const firstOrder = firstEvent.content.order;
+      const prevOrder = order.getPrevStr(firstOrder);
       session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, eventId, {
         scene,
+        order: prevOrder ?? undefined,
       });
     } catch (e) {
       console.error(e);
@@ -398,43 +460,62 @@ function FeatureScene({ room }: { room: Room }) {
           </SettingTile>
         )}
       />
-      <FeaturedScenesProvider room={room}>
-        {(featuredScenes) =>
-          featuredScenes.length === 0 ? null : (
-            <div>
-              {featuredScenes.map(([stateKey, stateEvent]) => (
-                <FeaturedItem
-                  before={
-                    <Avatar
-                      imageSrc={
-                        stateEvent.content.scene.preview_url &&
-                        getAvatarHttpUrl(stateEvent.content.scene.preview_url, 60, platform, session.mediaRepository)
-                      }
-                      shape="circle"
-                      size="lg"
-                      bgColor={`var(--usercolor${getIdentifierColorNumber(stateKey)})`}
-                      name={stateEvent.content.scene.name}
-                    />
+
+      {orderedScenes.length === 0 ? null : (
+        <div>
+          {orderedScenes.sort(eventByOrderKey).map((stateEvent, index) => (
+            <FeaturedItem
+              key={stateEvent.state_key}
+              before={
+                <Avatar
+                  imageSrc={
+                    stateEvent.content.scene.preview_url &&
+                    getAvatarHttpUrl(stateEvent.content.scene.preview_url, 60, platform, session.mediaRepository)
                   }
-                  after={
-                    <IconButton
-                      size="sm"
-                      label="Remove Featured"
-                      iconSrc={BinIC}
-                      onClick={() => removeFeatured(stateKey)}
-                    />
-                  }
-                >
-                  <Text className="truncate">{stateEvent.content.scene.name}</Text>
-                  <Text variant="b3" className="truncate">
-                    {stateEvent.content.scene.descripton}
-                  </Text>
-                </FeaturedItem>
-              ))}
-            </div>
-          )
-        }
-      </FeaturedScenesProvider>
+                  shape="circle"
+                  size="lg"
+                  bgColor={`var(--usercolor${getIdentifierColorNumber(stateEvent.state_key)})`}
+                  name={stateEvent.content.scene.name}
+                />
+              }
+              after={
+                <div className="flex gap-xs">
+                  <IconButton
+                    size="sm"
+                    label="Remove Featured"
+                    iconSrc={BinIC}
+                    onClick={() => removeFeatured(stateEvent.state_key)}
+                  />
+
+                  <div className="flex flex-column">
+                    {index > 0 && (
+                      <IconButton
+                        size="sm"
+                        label="Move Up"
+                        iconSrc={ChevronTopIC}
+                        onClick={() => handleMoveUp(index)}
+                      />
+                    )}
+                    {index < orderedScenes.length - 1 && (
+                      <IconButton
+                        size="sm"
+                        label="Move Down"
+                        iconSrc={ChevronBottomIC}
+                        onClick={() => handleMoveUp(index + 1)}
+                      />
+                    )}
+                  </div>
+                </div>
+              }
+            >
+              <Text className="truncate">{stateEvent.content.scene.name}</Text>
+              <Text variant="b3" className="truncate">
+                {stateEvent.content.scene.descripton}
+              </Text>
+            </FeaturedItem>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

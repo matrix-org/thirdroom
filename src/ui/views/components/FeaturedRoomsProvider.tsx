@@ -5,7 +5,9 @@ import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedRooms(repoRoom: Room) {
   const featuredRoomsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedRooms);
-  return [...featuredRoomsMap].filter(([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0);
+  return [...featuredRoomsMap]
+    .map(([eventId, stateEvent]) => stateEvent)
+    .filter((stateEvent) => Object.keys(stateEvent.content).length > 0);
 }
 
 export function FeaturedRoomsProvider({
@@ -13,7 +15,7 @@ export function FeaturedRoomsProvider({
   children,
 }: {
   room: Room;
-  children: (featuredRooms: [string, StateEvent][]) => JSX.Element | null;
+  children: (featuredRooms: StateEvent[]) => JSX.Element | null;
 }) {
   const featuredRooms = useFeaturedRooms(room);
   return children(featuredRooms);

@@ -12,6 +12,7 @@ import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
 import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
 import { FeaturedSceneCard } from "./FeaturedSceneCard";
+import { eventByOrderKey } from "../../../utils/matrixUtils";
 
 export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; room: Room }) {
   const { session, platform } = useHydrogen(true);
@@ -25,8 +26,13 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
               {(featuredRooms) =>
                 featuredRooms.length === 0 ? null : (
                   <>
-                    {featuredRooms.map(([stateKey, stateEvent]) => (
-                      <FeaturedRoomCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
+                    {featuredRooms.sort(eventByOrderKey).map((stateEvent) => (
+                      <FeaturedRoomCard
+                        key={stateEvent.state_key}
+                        session={session}
+                        platform={platform}
+                        roomId={stateEvent.state_key}
+                      />
                     ))}
                   </>
                 )
@@ -40,8 +46,13 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
               {(featuredWorlds) =>
                 featuredWorlds.length === 0 ? null : (
                   <>
-                    {featuredWorlds.map(([stateKey, stateEvent]) => (
-                      <FeaturedWorldCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
+                    {featuredWorlds.sort(eventByOrderKey).map((stateEvent) => (
+                      <FeaturedWorldCard
+                        key={stateEvent.state_key}
+                        session={session}
+                        platform={platform}
+                        roomId={stateEvent.state_key}
+                      />
                     ))}
                   </>
                 )
@@ -55,8 +66,13 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
               {(featuredScenes) =>
                 featuredScenes.length === 0 ? null : (
                   <DiscoverGroupGrid itemMinWidth={300} gap="md">
-                    {featuredScenes.map(([stateKey, stateEvent]) => (
-                      <FeaturedSceneCard key={stateKey} session={session} roomId={room.id} stateEvent={stateEvent} />
+                    {featuredScenes.sort(eventByOrderKey).map((stateEvent) => (
+                      <FeaturedSceneCard
+                        key={stateEvent.state_key}
+                        session={session}
+                        roomId={room.id}
+                        stateEvent={stateEvent}
+                      />
                     ))}
                   </DiscoverGroupGrid>
                 )

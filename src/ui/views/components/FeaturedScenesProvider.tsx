@@ -5,7 +5,9 @@ import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedScenes(repoRoom: Room) {
   const featuredScenesMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedScenes);
-  return [...featuredScenesMap].filter(([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0);
+  return [...featuredScenesMap]
+    .map(([eventId, stateEvent]) => stateEvent)
+    .filter((stateEvent) => Object.keys(stateEvent.content).length > 0);
 }
 
 export function FeaturedScenesProvider({
@@ -13,7 +15,7 @@ export function FeaturedScenesProvider({
   children,
 }: {
   room: Room;
-  children: (featuredScenes: [string, StateEvent][]) => JSX.Element | null;
+  children: (featuredScenes: StateEvent[]) => JSX.Element | null;
 }) {
   const featuredScenes = useFeaturedScenes(room);
   return children(featuredScenes);

@@ -26,6 +26,8 @@ import { ThumbnailBadgeWrapper } from "../../../atoms/thumbnail/ThumbnailBadgeWr
 import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
+import { eventByOrderKey } from "../../../utils/matrixUtils";
+import { useOrderString } from "../../../hooks/useOrderString";
 
 const getScenes = async (
   session: Session,
@@ -108,8 +110,9 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
   const { session } = useHydrogen(true);
 
   const [showAll, setShowAll] = useState(false);
+  const order = useOrderString();
   const featuredScenes = useFeaturedScenes(room);
-  const isFeatured = (eventId: string) => featuredScenes.find(([stateKey]) => stateKey === eventId);
+  const isFeatured = (eventId: string) => featuredScenes.find((stateEvent) => stateEvent.state_key === eventId);
   const { scenes, loading, loadScenes, canLoadBack, deleteScene } = useScenes(
     room,
     showAll ? undefined : session.userId
@@ -126,8 +129,14 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
 
   const featureScene = (sceneEvent: TimelineEvent) => {
     if (!isValidScene(sceneEvent)) return;
+
+    featuredScenes.sort(eventByOrderKey);
+    const firstEvent = featuredScenes[0];
+    const firstOrder = firstEvent.content.order;
+    const prevOrder = order.getPrevStr(firstOrder);
     session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {
       scene: sceneEvent.content.scene,
+      order: prevOrder ?? undefined,
     });
   };
 

@@ -14,6 +14,7 @@ import { FeaturedRoomCard } from "./FeaturedRoomCard";
 import { FeaturedWorldCard } from "./FeaturedWorldCard";
 import { FeaturedScenesProvider } from "../../components/FeaturedScenesProvider";
 import { FeaturedSceneCard } from "./FeaturedSceneCard";
+import { eventByOrderKey } from "../../../utils/matrixUtils";
 
 interface DiscoverHomeProps {
   room: Room;
@@ -33,9 +34,17 @@ export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
                   label={<Label>Featured Public Rooms</Label>}
                   content={
                     <DiscoverGroupGrid>
-                      {featuredRooms.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedRoomCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
-                      ))}
+                      {featuredRooms
+                        .sort(eventByOrderKey)
+                        .slice(0, 4)
+                        .map((stateEvent) => (
+                          <FeaturedRoomCard
+                            key={stateEvent.state_key}
+                            session={session}
+                            platform={platform}
+                            roomId={stateEvent.state_key}
+                          />
+                        ))}
                     </DiscoverGroupGrid>
                   }
                   footer={
@@ -60,9 +69,17 @@ export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
                   label={<Label>Featured Public Worlds</Label>}
                   content={
                     <DiscoverGroupGrid>
-                      {featuredWorlds.slice(0, 4).map(([stateKey, stateEvent]) => (
-                        <FeaturedWorldCard key={stateKey} session={session} platform={platform} roomId={stateKey} />
-                      ))}
+                      {featuredWorlds
+                        .sort(eventByOrderKey)
+                        .slice(0, 4)
+                        .map((stateEvent) => (
+                          <FeaturedWorldCard
+                            key={stateEvent.state_key}
+                            session={session}
+                            platform={platform}
+                            roomId={stateEvent.state_key}
+                          />
+                        ))}
                     </DiscoverGroupGrid>
                   }
                   footer={
@@ -87,9 +104,17 @@ export function DiscoverHome({ room, onLoadEvents }: DiscoverHomeProps) {
                   label={<Label>Featured Scenes</Label>}
                   content={
                     <DiscoverGroupGrid itemMinWidth={400} gap="md">
-                      {featuredScenes.slice(0, 3).map(([stateKey, stateEvent]) => (
-                        <FeaturedSceneCard key={stateKey} session={session} roomId={room.id} stateEvent={stateEvent} />
-                      ))}
+                      {featuredScenes
+                        .sort(eventByOrderKey)
+                        .slice(0, 3)
+                        .map((stateEvent) => (
+                          <FeaturedSceneCard
+                            key={stateEvent.state_key}
+                            session={session}
+                            roomId={room.id}
+                            stateEvent={stateEvent}
+                          />
+                        ))}
                     </DiscoverGroupGrid>
                   }
                   footer={

@@ -5,7 +5,9 @@ import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedWorlds(repoRoom: Room) {
   const featuredWorldsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedWorlds);
-  return [...featuredWorldsMap].filter(([eventId, stateEvent]) => Object.keys(stateEvent.content).length > 0);
+  return [...featuredWorldsMap]
+    .map(([eventId, stateEvent]) => stateEvent)
+    .filter((stateEvent) => Object.keys(stateEvent.content).length > 0);
 }
 
 export function FeaturedWorldsProvider({
@@ -13,7 +15,7 @@ export function FeaturedWorldsProvider({
   children,
 }: {
   room: Room;
-  children: (featuredWorlds: [string, StateEvent][]) => JSX.Element | null;
+  children: (featuredWorlds: StateEvent[]) => JSX.Element | null;
 }) {
   const featuredWorlds = useFeaturedWorlds(room);
   return children(featuredWorlds);
