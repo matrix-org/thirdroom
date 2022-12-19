@@ -9,6 +9,7 @@ import {
   Session,
   GroupCall,
   BaseObservableMap,
+  StateEvent,
 } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
@@ -219,4 +220,19 @@ export function getRoomCall(calls: Map<string, GroupCall> | BaseObservableMap<st
   if (!roomId) return undefined;
   const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === roomId ? call : []));
   return roomCalls.length ? roomCalls[0] : undefined;
+}
+
+export function eventByOrderKey(ev1: StateEvent, ev2: StateEvent) {
+  const o1 = ev1.content.order;
+  const o2 = ev2.content.order;
+  if (o1 === undefined && o2 === undefined) {
+    const ts1 = ev1.origin_server_ts;
+    const ts2 = ev2.origin_server_ts;
+
+    if (ts1 === ts2) return 0;
+    return ts1 > ts2 ? -1 : 1;
+  }
+  if (o1 === undefined) return 1;
+  if (o2 === undefined) return -1;
+  return o1 < o2 ? -1 : 1;
 }
