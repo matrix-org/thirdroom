@@ -1495,14 +1495,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     format?: string;
   }
   export type RequestFunction = (url: string, options: IRequestOptions) => RequestResult;
-  export interface IBlobHandle {
-    nativeBlob: any;
-    url: string;
-    size: number;
-    mimeType: string;
-    readAsBuffer(): BufferSource;
-    dispose(): any;
-  }
+
   export type File = {
     readonly name: string;
     readonly blob: IBlobHandle;
