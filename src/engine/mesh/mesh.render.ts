@@ -23,7 +23,6 @@ import {
 } from "three";
 
 import { RendererAccessorResource } from "../accessor/accessor.render";
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { GLTFMesh } from "../gltf/GLTF";
 import {
   getDefaultMaterialForMeshPrimitive,
@@ -32,8 +31,7 @@ import {
 } from "../material/material.render";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { getModule } from "../module/module.common";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
+import { RendererNodeResource, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { getLocalResource, getLocalResources } from "../resource/resource.render";
@@ -137,7 +135,7 @@ export class RendererInstancedMeshResource extends defineLocalResourceClass<
 export class RendererSkinResource extends defineLocalResourceClass<typeof SkinResource, RenderThreadState>(
   SkinResource
 ) {
-  declare joints: LocalNode[];
+  declare joints: RendererNodeResource[];
   declare inverseBindMatrices: RendererAccessorResource;
   skeleton?: Skeleton;
 }
@@ -155,8 +153,7 @@ const tempMatrix4 = new Matrix4();
 
 function createMeshPrimitiveObject(
   ctx: RenderThreadState,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>,
+  node: RendererNodeResource,
   sceneResource: LocalSceneResource,
   primitive: RendererMeshPrimitiveResource
 ): PrimitiveObject3D {
@@ -184,12 +181,10 @@ function createMeshPrimitiveObject(
           const jointNode = skin.joints[j];
 
           if (jointNode) {
-            const boneReadView = getReadObjectBufferView(jointNode.rendererNodeTripleBuffer);
-
             const bone = (jointNode.bone = new Bone());
             bones.push(bone);
             sceneResource.scene.add(bone);
-            setTransformFromNode(ctx, boneReadView, bone);
+            setTransformFromNode(ctx, jointNode, bone);
 
             const inverseMatrix = new Matrix4();
 
@@ -211,7 +206,7 @@ function createMeshPrimitiveObject(
       // TODO: figure out why frustum culling of skinned meshes is affected by the pitch of the camera
       sm.frustumCulled = false;
 
-      setTransformFromNode(ctx, nodeReadView, mesh);
+      setTransformFromNode(ctx, node, mesh);
 
       sm.bind(skin.skeleton, sm.matrixWorld);
 
@@ -437,31 +432,20 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
   }
 }
 
-export function updateNodeMesh(
-  ctx: RenderThreadState,
-  sceneResource: LocalSceneResource,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
-  const currentMeshResourceId = node.mesh?.resourceId || 0;
-  const nextMeshResourceId = nodeReadView.mesh[0];
+export function updateNodeMesh(ctx: RenderThreadState, sceneResource: LocalSceneResource, node: RendererNodeResource) {
+  const currentMeshResourceId = node.currentMeshResourceId;
+  const nextMeshResourceId = node.mesh?.resourceId || 0;
 
-  if (currentMeshResourceId !== nextMeshResourceId) {
-    if (node.meshPrimitiveObjects) {
-      for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
-        const primitiveObject = node.meshPrimitiveObjects[i];
-        sceneResource.scene.remove(primitiveObject);
-      }
-
-      node.meshPrimitiveObjects = undefined;
+  if (currentMeshResourceId !== nextMeshResourceId && node.meshPrimitiveObjects) {
+    for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
+      const primitiveObject = node.meshPrimitiveObjects[i];
+      sceneResource.scene.remove(primitiveObject);
     }
 
-    if (nextMeshResourceId) {
-      node.mesh = getLocalResource<RendererMeshResource>(ctx, nextMeshResourceId)?.resource;
-    } else {
-      node.mesh = undefined;
-    }
+    node.meshPrimitiveObjects = undefined;
   }
+
+  node.currentMeshResourceId = nextMeshResourceId;
 
   // Only apply mesh updates if it's loaded and is set to the same resource as is in the triple buffer
   if (!node.mesh) {
@@ -470,7 +454,7 @@ export function updateNodeMesh(
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, nodeReadView, sceneResource, primitive)
+      createMeshPrimitiveObject(ctx, node, sceneResource, primitive)
     );
     sceneResource.scene.add(...node.meshPrimitiveObjects);
   }
@@ -484,13 +468,12 @@ export function updateNodeMesh(
         primitiveObject.material = meshPrimitive.materialObj;
       }
 
-      updateTransformFromNode(ctx, nodeReadView, primitiveObject);
+      updateTransformFromNode(ctx, node, primitiveObject);
 
       if (node.skin) {
         for (const joint of node.skin.joints) {
           if (joint.bone) {
-            const boneReadView = getReadObjectBufferView(joint.rendererNodeTripleBuffer);
-            updateTransformFromNode(ctx, boneReadView, joint.bone);
+            updateTransformFromNode(ctx, joint, joint.bone);
           }
         }
       }

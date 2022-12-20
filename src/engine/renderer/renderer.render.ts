@@ -36,8 +36,7 @@ import {
   RendererInstancedMeshResource,
   RendererLightMapResource,
 } from "../mesh/mesh.render";
-import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
-import { NodeResourceType } from "../node/node.common";
+import { RendererNodeResource, updateLocalNodeResources } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
@@ -46,7 +45,6 @@ import {
   updateNodeReflections,
   updateReflectionProbeTextureArray,
 } from "../reflection-probe/reflection-probe.render";
-import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import {
   BufferResource,
   BufferViewResource,
@@ -54,17 +52,16 @@ import {
   CameraType,
   LightResource,
   SamplerResource,
-  NodeResource as ScriptNodeResource,
   InteractableResource,
   NametagResource,
   AudioDataResource,
   AudioSourceResource,
   AudioEmitterResource,
+  TilesRendererResource,
 } from "../resource/schema";
 import { RendererImageResource } from "../image/image.render";
 import { RendererMaterialResource } from "../material/material.render";
 import { MatrixMaterial } from "../material/MatrixMaterial";
-import { RendererTilesRendererResource } from "../tiles-renderer/tiles-renderer.render";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -85,8 +82,6 @@ export interface RendererModuleState {
   ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
   scenes: LocalSceneResource[]; // done
-  nodes: LocalNode[]; // done
-  reflectionProbes: ReflectionProbe[];
   reflectionProbesMap: DataArrayTexture | null;
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
@@ -162,21 +157,14 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       rendererStateTripleBuffer,
       scenes: [],
-      directionalLights: [],
-      pointLights: [],
-      spotLights: [],
       imageBitmapLoader,
       imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
         imageOrientation: "flipY",
       }),
       rgbeLoader: new RGBELoader(),
       ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
-      meshPrimitives: [],
-      nodes: [],
-      reflectionProbes: [],
       reflectionProbesMap: null,
       pmremGenerator,
-      tilesRenderers: [],
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
@@ -196,7 +184,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, BufferResource),
       registerResource(ctx, BufferViewResource),
       registerResource(ctx, RendererImageResource),
-      registerResource(ctx, ScriptNodeResource),
       registerResource(ctx, InteractableResource),
       registerResource(ctx, RendererAccessorResource),
       registerResource(ctx, RendererMeshResource),
@@ -204,8 +191,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerResource(ctx, RendererInstancedMeshResource),
       registerResource(ctx, RendererLightMapResource),
       registerResource(ctx, RendererSkinResource),
-      registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
-      registerResource(ctx, RendererTilesRendererResource),
+      registerResource(ctx, RendererNodeResource),
+      registerResource(ctx, TilesRendererResource),
       registerResource(ctx, NametagResource),
       registerResource(ctx, AudioDataResource),
       registerResource(ctx, AudioSourceResource),
@@ -265,7 +252,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
 
   const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
-  const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
+  const activeCameraNode = getLocalResource<RendererNodeResource>(ctx, activeCameraResourceId)?.resource;
 
   if (activeSceneResourceId !== rendererModule.prevSceneResource) {
     rendererModule.enableMatrixMaterial = false;
@@ -295,10 +282,10 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 
   updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
-  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
+  updateLocalNodeResources(ctx, rendererModule, activeSceneResource, activeCameraNode);
 
   updateReflectionProbeTextureArray(ctx, activeSceneResource);
-  updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
+  updateNodeReflections(ctx, activeSceneResource);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);

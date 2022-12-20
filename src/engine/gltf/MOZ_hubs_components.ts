@@ -39,9 +39,14 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
   }
 
   if (components["scene-preview-camera"]) {
-    addRemoteNodeComponent(ctx, nodeEid, {
-      camera: createRemotePerspectiveCamera(ctx),
-    });
+    addRemoteNodeComponent(
+      ctx,
+      nodeEid,
+      {
+        camera: createRemotePerspectiveCamera(ctx, resource.manager),
+      },
+      resource.manager
+    );
     ctx.activeCamera = nodeEid;
   }
 }

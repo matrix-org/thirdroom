@@ -102,7 +102,7 @@ export const RenderableSystem = (state: GameState) => {
   const activeCamera = RemoteNodeComponent.get(state.activeCamera);
 
   renderer.rendererStateBufferView.activeSceneResourceId[0] = activeScene?.rendererResourceId || 0;
-  renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.rendererResourceId || 0;
+  renderer.rendererStateBufferView.activeCameraResourceId[0] = activeCamera?.resourceId || 0;
 
   commitToObjectTripleBuffer(renderer.rendererStateTripleBuffer, renderer.rendererStateBufferView);
 

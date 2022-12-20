@@ -83,7 +83,7 @@ export function GameAudioSystem(ctx: GameState) {
   const activeScene = RemoteSceneComponent.get(ctx.activeScene);
   const activeCamera = RemoteNodeComponent.get(ctx.activeCamera);
 
-  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.audioResourceId || 0;
+  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.resourceId || 0;
   audioModule.audioStateBufferView.activeSceneResourceId[0] = activeScene?.audioResourceId || 0;
 
   commitToObjectTripleBuffer(audioModule.audioStateTripleBuffer, audioModule.audioStateBufferView);

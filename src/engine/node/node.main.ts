@@ -1,33 +1,23 @@
-import { AudioModule, MainThreadAudioEmitterResource } from "../audio/audio.main";
-import { IMainThreadContext } from "../MainThread";
-import { getModule } from "../module/module.common";
+import { MainThreadAudioEmitterResource } from "../audio/audio.main";
 import { MainThreadNametagResource } from "../nametag/nametag.main";
-import { ResourceId } from "../resource/resource.common";
-import { AudioEmitterOutput } from "../resource/schema";
-import { AudioNodeTripleBuffer, AudioSharedNodeResource } from "./node.common";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { AudioEmitterOutput, NodeResource } from "../resource/schema";
 
-export interface MainNode {
-  resourceId: number;
-  audioNodeTripleBuffer: AudioNodeTripleBuffer;
-  audioEmitter?: MainThreadAudioEmitterResource;
+export class MainNode extends defineLocalResourceClass(NodeResource) {
+  declare audioEmitter: MainThreadAudioEmitterResource | undefined;
+  currentAudioEmitterResourceId = 0;
+  emitterInputNode?: GainNode;
   emitterPannerNode?: PannerNode;
   emitterOutput?: AudioEmitterOutput;
-  nametag?: MainThreadNametagResource;
-}
+  declare nametag: MainThreadNametagResource | undefined;
 
-export async function onLoadMainNode(
-  ctx: IMainThreadContext,
-  resourceId: ResourceId,
-  { audioNodeTripleBuffer }: AudioSharedNodeResource
-): Promise<MainNode> {
-  const audioModule = getModule(ctx, AudioModule);
+  dispose() {
+    if (this.emitterPannerNode) {
+      if (this.emitterInputNode) {
+        this.emitterInputNode.disconnect(this.emitterPannerNode);
+      }
 
-  const mainNode: MainNode = {
-    resourceId,
-    audioNodeTripleBuffer,
-  };
-
-  audioModule.nodes.push(mainNode);
-
-  return mainNode;
+      this.emitterPannerNode.disconnect();
+    }
+  }
 }

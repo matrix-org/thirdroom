@@ -1,12 +1,11 @@
 import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event } from "three";
 
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode } from "../node/node.render";
+import { RendererNodeResource } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { getLocalResource } from "../resource/resource.render";
+import { getLocalResource, getLocalResources } from "../resource/resource.render";
 import { ReflectionProbeResource } from "../resource/schema";
 import { RendererSceneTripleBuffer } from "../scene/scene.common";
 import { LocalSceneResource } from "../scene/scene.render";
@@ -21,36 +20,34 @@ export class RendererReflectionProbeResource extends defineLocalResourceClass<
   textureArrayIndex = 0;
 }
 
-export function updateNodeReflectionProbe(
-  ctx: RenderThreadState,
-  scene: Scene,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
-  const rendererModule = getModule(ctx, RendererModule);
-  const currentReflectionProbeResourceId = node.reflectionProbe?.resourceId || 0;
+const tempReflectionProbes: ReflectionProbe[] = [];
 
-  if (nodeReadView.reflectionProbe[0] !== currentReflectionProbeResourceId) {
+function getReflectionProbes(ctx: RenderThreadState): ReflectionProbe[] {
+  const nodes = getLocalResources(ctx, RendererNodeResource);
+
+  tempReflectionProbes.length = 0;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
     if (node.reflectionProbeObject) {
-      const index = rendererModule.reflectionProbes.indexOf(node.reflectionProbeObject);
-
-      if (index !== -1) {
-        rendererModule.reflectionProbes.splice(index, 1);
-      }
-
-      scene.remove(node.reflectionProbeObject);
-      node.reflectionProbeObject = undefined;
-    }
-
-    if (nodeReadView.reflectionProbe[0]) {
-      node.reflectionProbe = getLocalResource<RendererReflectionProbeResource>(
-        ctx,
-        nodeReadView.reflectionProbe[0]
-      )?.resource;
-    } else {
-      node.reflectionProbe = undefined;
+      tempReflectionProbes.push(node.reflectionProbeObject);
     }
   }
+
+  return tempReflectionProbes;
+}
+
+export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, node: RendererNodeResource) {
+  const currentReflectionProbeResourceId = node.currentReflectionProbeResourceId;
+  const nextReflectionProbeResourceId = node.reflectionProbe?.resourceId || 0;
+
+  if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId && node.reflectionProbeObject) {
+    scene.remove(node.reflectionProbeObject);
+    node.reflectionProbeObject = undefined;
+  }
+
+  node.currentReflectionProbeResourceId = nextReflectionProbeResourceId;
 
   if (!node.reflectionProbe) {
     return;
@@ -58,13 +55,11 @@ export function updateNodeReflectionProbe(
 
   if (!node.reflectionProbeObject) {
     const reflectionProbeObject = new ReflectionProbe(node.reflectionProbe);
-    reflectionProbeObject.name = getLocalResource(ctx, node.resourceId)?.name || "Reflection Probe";
     node.reflectionProbeObject = reflectionProbeObject;
     scene.add(reflectionProbeObject);
-    rendererModule.reflectionProbes.push(reflectionProbeObject);
   }
 
-  node.reflectionProbeObject.update(ctx, nodeReadView);
+  node.reflectionProbeObject.update(ctx, node);
 }
 
 export function updateSceneReflectionProbe(
@@ -103,11 +98,13 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
 
   const rendererModule = getModule(ctx, RendererModule);
 
+  const reflectionProbes = getReflectionProbes(ctx);
+
   let needsUpdate = scene.reflectionProbeNeedsUpdate;
 
   if (!needsUpdate) {
-    for (let i = 0; i < rendererModule.reflectionProbes.length; i++) {
-      if (rendererModule.reflectionProbes[i].needsUpdate) {
+    for (let i = 0; i < reflectionProbes.length; i++) {
+      if (reflectionProbes[i].needsUpdate) {
         needsUpdate = true;
         break;
       }
@@ -126,7 +123,7 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
     }
 
     // Add each node reflection probe to the texture array array
-    for (const reflectionProbe of rendererModule.reflectionProbes) {
+    for (const reflectionProbe of reflectionProbes) {
       reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
       reflectionProbe.needsUpdate = false;
       reflectionProbeTextures.push(reflectionProbe.resource.reflectionProbeTexture.texture);
@@ -169,16 +166,13 @@ const boundingBoxSize = new Vector3();
 const instanceWorldMatrix = new Matrix4();
 const instanceReflectionProbeParams = new Vector3();
 
-export function updateNodeReflections(
-  ctx: RenderThreadState,
-  scene: LocalSceneResource | undefined,
-  nodes: LocalNode[]
-) {
-  const rendererModule = getModule(ctx, RendererModule);
-
+export function updateNodeReflections(ctx: RenderThreadState, scene: LocalSceneResource | undefined) {
   if (!scene) {
     return;
   }
+
+  const nodes = getLocalResources(ctx, RendererNodeResource);
+  const reflectionProbes = getReflectionProbes(ctx);
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -194,9 +188,7 @@ export function updateNodeReflections(
         continue;
       }
 
-      const nodeView = getReadObjectBufferView(node.rendererNodeTripleBuffer);
-
-      if (nodeView.static[0]) {
+      if (node.isStatic) {
         primitive.userData.reflectionsNeedUpdate = false;
       }
 
@@ -221,7 +213,7 @@ export function updateNodeReflections(
           // Apply the instance's transform to the bounding box
           boundingBox.applyMatrix4(instanceWorldMatrix);
 
-          setReflectionProbeParams(boundingBox, scene, rendererModule.reflectionProbes, instanceReflectionProbeParams);
+          setReflectionProbeParams(boundingBox, scene, reflectionProbes, instanceReflectionProbeParams);
 
           // Set the instance's reflectionProbeParams
           instanceReflectionProbeParamsAttribute.setXYZ(
@@ -237,7 +229,7 @@ export function updateNodeReflections(
       } else {
         boundingBox.setFromObject(primitive);
         const reflectionProbeParams = primitive.userData.reflectionProbeParams as Vector3;
-        setReflectionProbeParams(boundingBox, scene, rendererModule.reflectionProbes, reflectionProbeParams);
+        setReflectionProbeParams(boundingBox, scene, reflectionProbes, reflectionProbeParams);
       }
     }
   }

@@ -6,19 +6,17 @@ import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
 import {
   getLocalResource,
-  getResourceDisposed,
   registerResource,
   registerResourceLoader,
   getLocalResources,
 } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
-import { AudioNodeTripleBuffer, NodeResourceType } from "../node/node.common";
-import { MainNode, onLoadMainNode } from "../node/node.main";
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
+import { MainNode } from "../node/node.main";
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
 import { SceneResourceType } from "../scene/scene.common";
 import { NOOP } from "../config.common";
-import { MainThreadNametagResource, updateNametag } from "../nametag/nametag.main";
+import { MainThreadNametagResource } from "../nametag/nametag.main";
 import {
   AudioDataResource,
   AudioEmitterDistanceModel,
@@ -46,10 +44,8 @@ export interface MainAudioModule {
   voiceGain: GainNode;
   musicGain: GainNode;
   mediaStreams: Map<string, MediaStream>;
-  nodes: MainNode[];
   scenes: MainScene[];
   activeScene?: MainScene;
-  nametags: MainThreadNametagResource[];
   eventEmitter: EventEmitter;
 }
 
@@ -113,9 +109,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       voiceGain,
       musicGain,
       mediaStreams: new Map(),
-      nodes: [],
       scenes: [],
-      nametags: [],
       eventEmitter: new EventEmitter(),
     };
   },
@@ -123,7 +117,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     const audio = getModule(ctx, AudioModule);
 
     const disposables = [
-      registerResourceLoader(ctx, NodeResourceType, onLoadMainNode),
+      registerResource(ctx, MainNode),
       registerResourceLoader(ctx, SceneResourceType, onLoadMainSceneResource),
       registerResource(ctx, MainThreadAudioDataResource),
       registerResource(ctx, MainThreadAudioSourceResource),
@@ -282,34 +276,15 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
 }
 
 function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule, activeAudioListener: number) {
-  const { nodes } = audioModule;
-
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const node = nodes[i];
-
-    if (getResourceDisposed(ctx, node.resourceId)) {
-      if (node.audioEmitter) {
-        node.emitterPannerNode?.disconnect();
-      }
-
-      if (node.nametag) {
-        audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag), 1);
-        audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
-      }
-
-      nodes.splice(i, 1);
-    }
-  }
+  const nodes = getLocalResources(ctx, MainNode);
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    const nodeView = getReadObjectBufferView(node.audioNodeTripleBuffer);
 
-    updateNodeAudioEmitter(ctx, audioModule, node, nodeView);
-    updateNametag(ctx, audioModule, node, nodeView);
+    updateNodeAudioEmitter(ctx, audioModule, node);
 
     if (node.resourceId === activeAudioListener) {
-      setAudioListenerTransform(audioModule.context.listener, nodeView.worldMatrix);
+      setAudioListenerTransform(audioModule.context.listener, node.worldMatrix);
     }
   }
 }
@@ -516,54 +491,40 @@ const AudioEmitterDistanceModelMap: { [key: number]: DistanceModelType } = {
 
 const RAD2DEG = 180 / Math.PI;
 
-export function updateNodeAudioEmitter(
-  ctx: IMainThreadContext,
-  audioModule: MainAudioModule,
-  node: MainNode,
-  nodeView: ReadObjectTripleBufferView<AudioNodeTripleBuffer>
-) {
-  const currentAudioEmitterResourceId = node.audioEmitter?.resourceId || 0;
-  const nextAudioEmitterResourceId = nodeView.audioEmitter[0];
+export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: MainAudioModule, node: MainNode) {
+  const currentAudioEmitterResourceId = node.currentAudioEmitterResourceId;
+  const nextAudioEmitterResourceId = node.audioEmitter?.resourceId || 0;
 
   // If emitter changed
-  if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId) {
-    if (node.audioEmitter && node.emitterPannerNode) {
-      node.audioEmitter.inputGain!.disconnect(node.emitterPannerNode);
-    }
-
-    node.audioEmitter = undefined;
-
-    // if emitter was removed
-    if (nextAudioEmitterResourceId === NOOP && node.emitterPannerNode) {
-      node.emitterPannerNode.disconnect();
-      node.emitterPannerNode = undefined;
-
-      // if emitter was created
-    } else if (nextAudioEmitterResourceId !== NOOP && !node.emitterPannerNode) {
-      const audioEmitter = getLocalResource<MainThreadAudioEmitterResource>(ctx, nextAudioEmitterResourceId)?.resource;
-
-      if (audioEmitter) {
-        node.audioEmitter = audioEmitter;
-        node.emitterPannerNode = audioModule.context.createPanner();
-        node.emitterPannerNode.panningModel = "HRTF";
-        // connect node's panner to emitter's gain
-        node.audioEmitter.inputGain!.connect(node.emitterPannerNode);
-        node.emitterPannerNode.connect(node.audioEmitter.outputGain!);
-      }
-    }
+  if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId && node.emitterInputNode && node.emitterPannerNode) {
+    node.emitterInputNode.disconnect(node.emitterPannerNode);
+    node.emitterPannerNode.disconnect();
+    node.emitterInputNode = undefined;
+    node.emitterPannerNode = undefined;
   }
 
-  if (!node.audioEmitter || !node.emitterPannerNode) {
+  node.currentAudioEmitterResourceId = nextAudioEmitterResourceId;
+
+  if (!node.audioEmitter) {
     return;
+  }
+
+  if (!node.emitterPannerNode) {
+    node.emitterPannerNode = audioModule.context.createPanner();
+    node.emitterPannerNode.panningModel = "HRTF";
+    // connect node's panner to emitter's gain
+    node.audioEmitter.inputGain!.connect(node.emitterPannerNode);
+    node.emitterPannerNode.connect(node.audioEmitter.outputGain!);
+    node.emitterInputNode = node.audioEmitter.inputGain;
   }
 
   const pannerNode = node.emitterPannerNode;
   const audioEmitter = node.audioEmitter;
 
-  const worldMatrix = nodeView.worldMatrix;
+  const worldMatrix = node.worldMatrix;
   const currentTime = audioModule.context.currentTime;
 
-  mat4.getTranslation(tempPosition, nodeView.worldMatrix);
+  mat4.getTranslation(tempPosition, node.worldMatrix);
 
   if (isNaN(tempPosition[0])) return;
 

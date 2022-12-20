@@ -17,13 +17,14 @@ import {
   MaterialResource,
   MeshPrimitiveResource,
   MeshResource,
-  NodeResource,
   ReflectionProbeResource,
   SamplerResource,
   SkinResource,
   TextureResource,
   TilesRendererResource,
 } from "../resource/schema";
+import { MainNode } from "../node/node.main";
+import { MainThreadNametagResource } from "../nametag/nametag.main";
 
 type MainRendererModuleState = {};
 
@@ -66,7 +67,8 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
       registerResource(ctx, MaterialResource),
       registerResource(ctx, TextureResource),
       registerResource(ctx, MeshResource),
-      registerResource(ctx, NodeResource),
+      registerResource(ctx, MainNode),
+      registerResource(ctx, MainThreadNametagResource),
       registerResource(ctx, MeshPrimitiveResource),
       registerResource(ctx, InteractableResource),
       registerResource(ctx, AccessorResource),

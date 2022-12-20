@@ -428,7 +428,7 @@ export type RemoteInteractable = RemoteResource<typeof InteractableResource>;
 export type LocalInteractable = LocalResource<typeof InteractableResource>;
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
-  //eid: PropType.u32({ script: false }),
+  eid: PropType.u32({ script: true, mutable: false, required: true }),
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene"),
   parent: PropType.selfRef(),
@@ -442,6 +442,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   worldMatrix: PropType.mat4({ script: true }),
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
+  skipLerp: PropType.u32({ script: true, default: 0 }),
   isStatic: PropType.bool({ script: true, default: true }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),

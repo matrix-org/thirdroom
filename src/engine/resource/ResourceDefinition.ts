@@ -514,19 +514,19 @@ type ResourcePropValue<
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
   : Def["schema"][Prop]["type"] extends "mat4"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "f32"
   ? number
   : Def["schema"][Prop]["type"] extends "rgba"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "rgb"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec2"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec3"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "quat"
-  ? ArrayLike<number>
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "bitmask"
   ? number
   : Def["schema"][Prop]["type"] extends "enum"
@@ -548,7 +548,11 @@ type ResourcePropValue<
     ? Resource<Def["schema"][Prop]["resourceDef"]>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Resource<Def, MutResource>
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? Resource<Def, MutResource>
+      : Resource<Def, MutResource> | undefined
+    : unknown
   : never;
 
 type ResourcePropValueMut<
@@ -593,22 +597,66 @@ type RequiredProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
 }[keyof Def["schema"]];
 
+type InitialResourcePropValue<
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"],
+  MutResource extends boolean
+> = Def["schema"][Prop]["type"] extends "string"
+  ? string
+  : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "arrayBuffer"
+  ? SharedArrayBuffer
+  : Def["schema"][Prop]["type"] extends "bool"
+  ? boolean
+  : Def["schema"][Prop]["type"] extends "mat4"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "f32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "rgba"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "rgb"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec2"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec3"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "quat"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "bitmask"
+  ? number
+  : Def["schema"][Prop]["type"] extends "enum"
+  ? // TODO: actually return the enum type instead of number
+    // ex: Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
+    number
+  : Def["schema"][Prop]["type"] extends "ref"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
+      : Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
+    : unknown
+  : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
+  ? {
+      [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+        ? Resource<Def["schema"][Prop]["resourceDef"]>
+        : never;
+    }
+  : Def["schema"][Prop]["type"] extends "selfRef"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? Resource<Def, MutResource>
+      : Resource<Def, MutResource> | undefined
+    : unknown
+  : never;
+
 export type InitialResourceProps<Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: Def["schema"][Prop]["type"] extends "refMap"
-    ? {
-        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-          ? Resource<Def["schema"][Prop]["resourceDef"]>
-          : never;
-      }
-    : ResourcePropValue<Def, Prop, true>;
+  [Prop in RequiredProps<Def>]: InitialResourcePropValue<Def, Prop, true>;
 } & {
-  [Prop in keyof Def["schema"]]?: Def["schema"][Prop]["type"] extends "refMap"
-    ? {
-        [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-          ? Resource<Def["schema"][Prop]["resourceDef"]>
-          : never;
-      }
-    : ResourcePropValue<Def, Prop, true>;
+  [Prop in keyof Def["schema"]]?: InitialResourcePropValue<Def, Prop, true>;
 };
 
 export interface IRemoteResourceManager {

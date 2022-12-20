@@ -21,7 +21,6 @@ import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from ".
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
 import { addTilesRenderer, hasTilesRendererExtension } from "./MX_tiles_renderer";
-import { RemoteNode } from "../node/node.game";
 import { addAnimationComponent, BoneComponent } from "../animation/animation.game";
 import { loadGLTFAnimationClip } from "./animation.three";
 import {
@@ -71,7 +70,6 @@ import {
   SamplerResource,
   TextureEncoding,
   TextureResource,
-  NodeResource as ScriptNodeResource,
   MeshResource,
   RemoteMeshPrimitive,
   RemoteMesh,
@@ -88,6 +86,7 @@ import {
   RemoteAudioData,
   RemoteAudioSource,
   RemoteAudioEmitter,
+  RemoteNode,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -182,7 +181,7 @@ export async function inflateGLTFScene(
         let remoteNode = resource.joints.get(jointIndex);
         if (!remoteNode) {
           const eid = addEntity(ctx.world);
-          remoteNode = addRemoteNodeComponent(ctx, eid);
+          remoteNode = addRemoteNodeComponent(ctx, eid, {}, resource.manager);
           resource.joints.set(jointIndex, remoteNode);
         }
       }
@@ -398,16 +397,16 @@ async function _inflateGLTFNode(
         hasTilesRendererExtension(node) ||
         nodeHasCollider(node))
     ) {
-      addRemoteNodeComponent(ctx, nodeEid, {
-        ...(results as any),
-        name: node.name,
-        static: isStatic,
-        scriptNode: resource.manager.createResource(ScriptNodeResource, {
+      addRemoteNodeComponent(
+        ctx,
+        nodeEid,
+        {
+          ...(results as any),
           name: node.name,
-          mesh: results.mesh,
-          light: results.light,
-        }),
-      });
+          isStatic,
+        },
+        resource.manager
+      );
     }
 
     if (hasHubsComponentsExtension(resource.root)) {
@@ -420,7 +419,7 @@ async function _inflateGLTFNode(
       if (node.extras && node.extras["directional-light"]) {
         const remoteNode =
           RemoteNodeComponent.get(nodeEid) ||
-          addRemoteNodeComponent(ctx, nodeEid, { name: node.name, static: isStatic });
+          addRemoteNodeComponent(ctx, nodeEid, { name: node.name, isStatic }, resource.manager);
 
         if (!remoteNode.light) {
           remoteNode.light = resource.manager.createResource(LightResource, {

@@ -1,8 +1,6 @@
 import { Box3, Object3D, Vector3 } from "three";
 
-import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { updateTransformFromNode } from "../node/node.render";
+import { RendererNodeResource, updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { RendererReflectionProbeResource } from "./reflection-probe.render";
 
@@ -18,9 +16,9 @@ export class ReflectionProbe extends Object3D {
     this.needsUpdate = true;
   }
 
-  update(ctx: RenderThreadState, nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>) {
+  update(ctx: RenderThreadState, node: RendererNodeResource) {
     if (this.needsUpdate && this.resource.size) {
-      updateTransformFromNode(ctx, nodeReadView, this);
+      updateTransformFromNode(ctx, node, this);
       this.size.fromArray(this.resource.size);
       this.box.setFromCenterAndSize(this.position, this.size);
     }
