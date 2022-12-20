@@ -42,7 +42,7 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
 interface FileUploadErrorCardProps {
   className?: string;
   name: string;
-  message: string;
+  message?: string;
   onUploadDrop: () => void;
 }
 export function FileUploadErrorCard({ className, name, message, onUploadDrop }: FileUploadErrorCardProps) {
@@ -56,7 +56,7 @@ export function FileUploadErrorCard({ className, name, message, onUploadDrop }: 
         </div>
         <IconButton onClick={onUploadDrop} iconSrc={CrossIC} size="sm" label="cancel" />
       </div>
-      <Text variant="b3">{message}</Text>
+      {message && <Text variant="b3">{message}</Text>}
     </div>
   );
 }

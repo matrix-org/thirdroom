@@ -1,14 +1,13 @@
 import {
   Room,
   ObservableMap,
-  AttachmentUpload,
-  Platform,
-  IBlobHandle,
   HomeServerApi,
   RoomBeingCreated,
   Session,
   GroupCall,
   BaseObservableMap,
+  IHomeServerRequest,
+  IBlobHandle,
 } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
@@ -118,21 +117,23 @@ export async function waitToCreateRoom(
 
 export async function uploadAttachment(
   hsApi: HomeServerApi,
-  platform: Platform,
   blob: IBlobHandle,
-  onAttachmentCreate?: (attachment: AttachmentUpload) => void,
+  onRequest?: (request: IHomeServerRequest) => void,
   onProgress?: (sentBytes: number, totalBytes: number) => void
 ) {
-  const attachment = new AttachmentUpload({ filename: blob.nativeBlob.name, blob, platform });
-  onAttachmentCreate?.(attachment);
-
-  await attachment.upload(hsApi, () => {
-    onProgress?.(attachment.sentBytes, attachment.size);
+  const uploadRequest = await hsApi.uploadAttachment(blob, blob.nativeBlob.name, {
+    uploadProgress: (sentBytes) => {
+      console.log(sentBytes, blob.size);
+      onProgress?.(sentBytes, blob.size);
+    },
   });
+  onRequest?.(uploadRequest);
 
-  const content = {} as { url?: string };
-  attachment.applyToContent("url", content);
-  return content.url;
+  const { content_uri: url, errcode, error } = await uploadRequest.response();
+  if (errcode) {
+    throw new Error(error ?? "Error Uploading file.");
+  }
+  return url;
 }
 
 export interface ParsedMatrixURI {

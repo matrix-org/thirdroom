@@ -26,7 +26,6 @@ export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFil
   const [progress, setProgress] = useState(0);
   const { mxc, error, upload, cancel } = useAttachmentUpload(
     session.hsApi,
-    platform,
     useDebounce(setProgress, { wait: 200, immediate: true })
   );
   useEffect(() => {
@@ -52,7 +51,7 @@ export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFil
   return fileData.blob ? (
     <FileUploadCard
       name={fileData.blob.nativeBlob.name}
-      sentBytes={progress}
+      sentBytes={mxc ? fileData.blob.size : progress}
       totalBytes={fileData.blob.size}
       onUploadDrop={dropFile}
     />
