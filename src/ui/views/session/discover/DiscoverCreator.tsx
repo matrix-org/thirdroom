@@ -45,7 +45,7 @@ const getScenes = async (
       from: options?.from,
       limit: options?.limit ?? 20,
       filter: {
-        types: ["tr.repository_room.scene"],
+        types: [RepositoryEvents.Scene],
         senders: options?.sender,
       },
     })
