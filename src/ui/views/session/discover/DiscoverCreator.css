@@ -4,11 +4,22 @@
   margin: 0 auto;
 }
 
-.DiscoverCreator__button {
+.DiscoverCreator__sceneButton,
+.DiscoverCreator__unityButton {
+  padding: 0 var(--sp-md);
   background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
   cursor: pointer;
   min-height: 300px;
+}
+.DiscoverCreator__unityButton {
+  background-color: transparent;
+  border: 1px solid var(--bg-primary);
+
+  &:hover,
+  &:focus {
+    background-color: var(--bg-primary-soft-hover);
+  }
 }
 .DiscoverCreator__loadMore {
   min-width: 200px;

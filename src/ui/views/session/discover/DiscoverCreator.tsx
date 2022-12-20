@@ -184,6 +184,18 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
           content={
             <div className="flex flex-column gap-md">
               <DiscoverGroupGrid itemMinWidth={400} gap="md">
+                <a
+                  target="_blank"
+                  href="https://github.com/matrix-org/thirdroom-unity-exporter/blob/main/Documentation~/index.md"
+                  className="DiscoverCreator__unityButton flex flex-column items-center justify-center"
+                >
+                  <Text color="primary" type="span" variant="b1" weight="semi-bold">
+                    Third Room Unity Exporter
+                  </Text>
+                  <Text color="primary" type="span" variant="b3">
+                    Read docs to create and export your own custom scenes
+                  </Text>
+                </a>
                 <SceneSubmission
                   onSave={async (data) => {
                     await uploadScene(data);
@@ -192,7 +204,7 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
                   renderTrigger={(openModal) => (
                     <button
                       onClick={openModal}
-                      className="DiscoverCreator__button flex flex-column items-center justify-center"
+                      className="DiscoverCreator__sceneButton flex flex-column items-center justify-center"
                     >
                       <Icon size="xl" src={AddIC} />
                       <Text type="span" variant="b3" weight="semi-bold">
