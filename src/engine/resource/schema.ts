@@ -461,9 +461,11 @@ export type RemoteNode = RemoteResource<typeof NodeResource>;
 export type LocalNode = LocalResource<typeof NodeResource>;
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
+  eid: PropType.u32({ script: true, mutable: false, required: true }),
   name: PropType.string({ default: "Scene", script: true }),
   backgroundTexture: PropType.ref(TextureResource, { script: true }),
   reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
+  bloomStrength: PropType.f32({ script: true, default: 0.4 }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
 });

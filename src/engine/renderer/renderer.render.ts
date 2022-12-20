@@ -13,9 +13,8 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
-import { SceneResourceType } from "../scene/scene.common";
-import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
+import { getLocalResource, registerResource } from "../resource/resource.render";
+import { RendererSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
 import { RendererTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
@@ -81,7 +80,6 @@ export interface RendererModuleState {
   rgbeLoader: RGBELoader;
   ktx2Loader: KTX2Loader;
   rendererStateTripleBuffer: RendererStateTripleBuffer;
-  scenes: LocalSceneResource[]; // done
   reflectionProbesMap: DataArrayTexture | null;
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
@@ -175,7 +173,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerResource(ctx, SamplerResource),
-      registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
+      registerResource(ctx, RendererSceneResource),
       registerResource(ctx, RendererTextureResource),
       registerResource(ctx, RendererMaterialResource),
       registerResource(ctx, LightResource),
@@ -251,7 +249,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
   const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
 
-  const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
+  const activeSceneResource = getLocalResource<RendererSceneResource>(ctx, activeSceneResourceId)?.resource;
   const activeCameraNode = getLocalResource<RendererNodeResource>(ctx, activeCameraResourceId)?.resource;
 
   if (activeSceneResourceId !== rendererModule.prevSceneResource) {
@@ -281,14 +279,14 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevSceneResource = activeSceneResourceId;
   }
 
-  updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
+  updateLocalSceneResources(ctx, activeSceneResourceId);
   updateLocalNodeResources(ctx, rendererModule, activeSceneResource, activeCameraNode);
 
   updateReflectionProbeTextureArray(ctx, activeSceneResource);
   updateNodeReflections(ctx, activeSceneResource);
 
   if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
+    renderPipeline.render(activeSceneResource.sceneObject, activeCameraNode.cameraObject, ctx.dt);
   }
 
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {

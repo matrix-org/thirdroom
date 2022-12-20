@@ -38,7 +38,7 @@ import { RendererModuleState, RenderThreadState } from "../renderer/renderer.ren
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { getLocalResources } from "../resource/resource.render";
 import { LocalCamera, LocalLight, LocalTilesRenderer, NodeResource } from "../resource/schema";
-import { LocalSceneResource } from "../scene/scene.render";
+import { RendererSceneResource } from "../scene/scene.render";
 import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 
 type PrimitiveObject3D = Mesh | SkinnedMesh | Line | LineSegments | LineLoop | Points | InstancedMesh;
@@ -64,10 +64,6 @@ export class RendererNodeResource extends defineLocalResourceClass<typeof NodeRe
   declare reflectionProbe: RendererReflectionProbeResource | undefined;
   currentReflectionProbeResourceId = 0;
   reflectionProbeObject?: ReflectionProbe;
-
-  async load() {
-    console.log(this.mesh, this.__props.mesh);
-  }
 
   dispose() {
     if (this.meshPrimitiveObjects) {
@@ -157,7 +153,7 @@ export function setTransformFromNode(
 export function updateLocalNodeResources(
   ctx: RenderThreadState,
   rendererModule: RendererModuleState,
-  activeSceneResource: LocalSceneResource | undefined,
+  activeSceneResource: RendererSceneResource | undefined,
   activeCameraNode: RendererNodeResource | undefined
 ) {
   const nodes = getLocalResources(ctx, RendererNodeResource);
@@ -168,10 +164,11 @@ export function updateLocalNodeResources(
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    updateNodeCamera(ctx, activeSceneResource.scene, node);
-    updateNodeLight(ctx, activeSceneResource.scene, node);
-    updateNodeReflectionProbe(ctx, activeSceneResource.scene, node);
+    const scene = activeSceneResource.sceneObject;
+    updateNodeCamera(ctx, scene, node);
+    updateNodeLight(ctx, scene, node);
+    updateNodeReflectionProbe(ctx, scene, node);
     updateNodeMesh(ctx, activeSceneResource, node);
-    updateNodeTilesRenderer(ctx, activeSceneResource.scene, activeCameraNode, node);
+    updateNodeTilesRenderer(ctx, scene, activeCameraNode, node);
   }
 }

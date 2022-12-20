@@ -247,6 +247,15 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     }
   }
 
+  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
+    if (value) {
+      addResourceRef(this.ctx, value.resourceId);
+      store[index] = value.ptr;
+    } else {
+      store[index] = 0;
+    }
+  }
+
   addRef(resourceId: number) {
     addResourceRef(this.ctx, resourceId);
   }

@@ -45,7 +45,7 @@ import {
   SkinResource,
   LightMapResource,
 } from "../resource/schema";
-import { LocalSceneResource } from "../scene/scene.render";
+import { RendererSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 
@@ -154,7 +154,7 @@ const tempMatrix4 = new Matrix4();
 function createMeshPrimitiveObject(
   ctx: RenderThreadState,
   node: RendererNodeResource,
-  sceneResource: LocalSceneResource,
+  scene: RendererSceneResource,
   primitive: RendererMeshPrimitiveResource
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
@@ -183,7 +183,7 @@ function createMeshPrimitiveObject(
           if (jointNode) {
             const bone = (jointNode.bone = new Bone());
             bones.push(bone);
-            sceneResource.scene.add(bone);
+            scene.sceneObject.add(bone);
             setTransformFromNode(ctx, jointNode, bone);
 
             const inverseMatrix = new Matrix4();
@@ -432,14 +432,14 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
   }
 }
 
-export function updateNodeMesh(ctx: RenderThreadState, sceneResource: LocalSceneResource, node: RendererNodeResource) {
+export function updateNodeMesh(ctx: RenderThreadState, scene: RendererSceneResource, node: RendererNodeResource) {
   const currentMeshResourceId = node.currentMeshResourceId;
   const nextMeshResourceId = node.mesh?.resourceId || 0;
 
   if (currentMeshResourceId !== nextMeshResourceId && node.meshPrimitiveObjects) {
     for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
       const primitiveObject = node.meshPrimitiveObjects[i];
-      sceneResource.scene.remove(primitiveObject);
+      scene.sceneObject.remove(primitiveObject);
     }
 
     node.meshPrimitiveObjects = undefined;
@@ -454,9 +454,9 @@ export function updateNodeMesh(ctx: RenderThreadState, sceneResource: LocalScene
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, sceneResource, primitive)
+      createMeshPrimitiveObject(ctx, node, scene, primitive)
     );
-    sceneResource.scene.add(...node.meshPrimitiveObjects);
+    scene.sceneObject.add(...node.meshPrimitiveObjects);
   }
 
   if (node.meshPrimitiveObjects) {

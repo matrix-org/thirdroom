@@ -35,10 +35,6 @@ export function addRemoteNodeComponent(
 
   remoteNode = resourceManager.createResource(NodeResource, { ...props, eid });
 
-  if (props.mesh) {
-    console.log(remoteNode.mesh, remoteNode.__props.mesh);
-  }
-
   addComponent(ctx.world, RemoteNodeComponent, eid);
   RemoteNodeComponent.set(eid, remoteNode);
 

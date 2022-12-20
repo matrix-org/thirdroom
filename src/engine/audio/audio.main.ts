@@ -4,17 +4,11 @@ import EventEmitter from "events";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
-import {
-  getLocalResource,
-  registerResource,
-  registerResourceLoader,
-  getLocalResources,
-} from "../resource/resource.main";
+import { getLocalResource, registerResource, getLocalResources } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
 import { MainNode } from "../node/node.main";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { MainScene, onLoadMainSceneResource } from "../scene/scene.main";
-import { SceneResourceType } from "../scene/scene.common";
+import { MainScene } from "../scene/scene.main";
 import { NOOP } from "../config.common";
 import { MainThreadNametagResource } from "../nametag/nametag.main";
 import {
@@ -118,7 +112,6 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 
     const disposables = [
       registerResource(ctx, MainNode),
-      registerResourceLoader(ctx, SceneResourceType, onLoadMainSceneResource),
       registerResource(ctx, MainThreadAudioDataResource),
       registerResource(ctx, MainThreadAudioSourceResource),
       registerResource(ctx, MainThreadAudioEmitterResource),
@@ -244,6 +237,10 @@ export class MainThreadAudioEmitterResource extends defineLocalResourceClass<
         : audioModule.environmentGain;
     this.outputGain.connect(destination);
     this.destination = destination;
+
+    if (this.type === AudioEmitterType.Global) {
+      this.inputGain.connect(this.outputGain);
+    }
   }
 
   dispose() {
@@ -269,9 +266,9 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const activeAudioListener = audioStateView.activeAudioListenerResourceId[0];
   const activeSceneResourceId = audioStateView.activeSceneResourceId[0];
 
+  updateActiveScene(ctx, audioModule, activeSceneResourceId);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
-  updateGlobalAudioEmitters(ctx, audioModule, activeSceneResourceId);
   updateNodeAudioEmitters(ctx, audioModule, activeAudioListener);
 }
 
@@ -556,22 +553,11 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
   pannerNode.rolloffFactor = audioEmitter.rolloffFactor;
 }
 
-function updateGlobalAudioEmitters(
-  ctx: IMainThreadContext,
-  audioModule: MainAudioModule,
-  nextSceneResourceId: ResourceId
-) {
+function updateActiveScene(ctx: IMainThreadContext, audioModule: MainAudioModule, nextSceneResourceId: ResourceId) {
   const currentSceneResourceId = audioModule.activeScene?.resourceId || 0;
 
   // if scene has changed
   if (nextSceneResourceId !== currentSceneResourceId) {
-    // disconnect emitters
-    if (audioModule.activeScene) {
-      for (const emitter of audioModule.activeScene.audioEmitters) {
-        emitter.outputGain!.disconnect();
-      }
-    }
-
     // if scene was added
     if (nextSceneResourceId !== NOOP) {
       // Set new scene if it's loaded
@@ -579,32 +565,6 @@ function updateGlobalAudioEmitters(
     } else {
       // unset active scene
       audioModule.activeScene = undefined;
-    }
-  }
-
-  // return if scene hasn't loaded or isn't active
-  if (!audioModule.activeScene) {
-    return;
-  }
-
-  // update scene with data from tb view
-  const activeSceneView = getReadObjectBufferView(audioModule.activeScene.audioSceneTripleBuffer);
-
-  for (const emitterRid of Array.from(activeSceneView.audioEmitters)) {
-    if (emitterRid === NOOP) continue;
-
-    const audioEmitter = getLocalResource<MainThreadAudioEmitterResource>(ctx, emitterRid)?.resource;
-
-    if (!audioEmitter || audioEmitter.type !== AudioEmitterType.Global) {
-      continue;
-    }
-
-    // if emitter resource exists but has not been added to the scene
-    if (!audioModule.activeScene.audioEmitters.includes(audioEmitter)) {
-      audioEmitter.inputGain!.connect(audioEmitter.outputGain!);
-
-      // add emitter to scene
-      audioModule.activeScene.audioEmitters.push(audioEmitter);
     }
   }
 }

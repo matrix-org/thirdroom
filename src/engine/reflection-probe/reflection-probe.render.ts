@@ -1,14 +1,12 @@
 import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event } from "three";
 
-import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
 import { RendererNodeResource } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { getLocalResource, getLocalResources } from "../resource/resource.render";
+import { getLocalResources } from "../resource/resource.render";
 import { ReflectionProbeResource } from "../resource/schema";
-import { RendererSceneTripleBuffer } from "../scene/scene.common";
-import { LocalSceneResource } from "../scene/scene.render";
+import { RendererSceneResource } from "../scene/scene.render";
 import { RendererTextureResource } from "../texture/texture.render";
 import { ReflectionProbe } from "./ReflectionProbe";
 
@@ -62,36 +60,20 @@ export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, 
   node.reflectionProbeObject.update(ctx, node);
 }
 
-export function updateSceneReflectionProbe(
-  ctx: RenderThreadState,
-  sceneResource: LocalSceneResource,
-  sceneReadView: ReadObjectTripleBufferView<RendererSceneTripleBuffer>
-) {
-  const currentReflectionProbeResourceId = sceneResource.reflectionProbe?.resourceId || 0;
+export function updateSceneReflectionProbe(ctx: RenderThreadState, scene: RendererSceneResource) {
+  const currentReflectionProbeResourceId = scene.currentReflectionProbeResourceId;
+  const nextReflectionProbeResourceId = scene.reflectionProbe?.resourceId || 0;
 
-  if (sceneReadView.reflectionProbe[0] !== currentReflectionProbeResourceId) {
-    let nextReflectionProbe: RendererReflectionProbeResource | undefined;
-
-    if (sceneReadView.reflectionProbe[0]) {
-      nextReflectionProbe = getLocalResource<RendererReflectionProbeResource>(
-        ctx,
-        sceneReadView.reflectionProbe[0]
-      )?.resource;
-    } else {
-      nextReflectionProbe = undefined;
-    }
-
-    if (nextReflectionProbe !== sceneResource.reflectionProbe) {
-      sceneResource.reflectionProbeNeedsUpdate = true;
-    }
-
-    sceneResource.reflectionProbe = nextReflectionProbe;
+  if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId) {
+    scene.reflectionProbeNeedsUpdate = true;
   }
+
+  scene.currentReflectionProbeResourceId = nextReflectionProbeResourceId;
 }
 
 const reflectionProbeMapRenderTargets = new WeakMap<Texture, WebGLArrayRenderTarget>();
 
-export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene: LocalSceneResource | undefined) {
+export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene: RendererSceneResource | undefined) {
   if (!scene) {
     return;
   }
@@ -166,7 +148,7 @@ const boundingBoxSize = new Vector3();
 const instanceWorldMatrix = new Matrix4();
 const instanceReflectionProbeParams = new Vector3();
 
-export function updateNodeReflections(ctx: RenderThreadState, scene: LocalSceneResource | undefined) {
+export function updateNodeReflections(ctx: RenderThreadState, scene: RendererSceneResource | undefined) {
   if (!scene) {
     return;
   }
@@ -240,7 +222,7 @@ const intersectionSize = new Vector3();
 
 function setReflectionProbeParams(
   primitiveBoundingBox: Box3,
-  scene: LocalSceneResource,
+  scene: RendererSceneResource,
   reflectionProbes: ReflectionProbe[],
   reflectionProbeParams: Vector3
 ) {

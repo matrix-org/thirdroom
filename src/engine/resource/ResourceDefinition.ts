@@ -673,6 +673,7 @@ export interface IRemoteResourceManager {
   disposeResource(resourceId: number): void;
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
   setRef(value: unknown | undefined, store: Uint32Array): void;
+  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }

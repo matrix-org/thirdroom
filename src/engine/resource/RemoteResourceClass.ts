@@ -179,8 +179,18 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         },
       });
     } else if (prop.type === "refArray") {
-      // TODO
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<Def>, value: RemoteResource<ResourceDefinition<{}>>[]) {
+              for (let i = 0; i < value.length; i++) {
+                this.manager.setRefArrayItem(i, value[i] as any, this.__props[propName] as Uint32Array);
+              }
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        ...setter,
         get(this: RemoteResource<Def>) {
           const arr = this.__props[propName];
           const resources = [];
