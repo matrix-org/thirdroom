@@ -71,7 +71,7 @@ function FeatureRoom({ room }: { room: Room }) {
       const firstEvent = orderedRooms[0];
       const firstOrder = firstEvent.content.order;
       const prevOrder = order.getPrevStr(firstOrder);
-      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, roomId, {
+      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRoom, roomId, {
         suggested: false,
         via: [],
         order: prevOrder ?? undefined,
@@ -82,7 +82,7 @@ function FeatureRoom({ room }: { room: Room }) {
 
   const removeFeatured = (roomId: string) => {
     if (window.confirm("Are you sure?")) {
-      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRooms, roomId, {});
+      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRoom, roomId, {});
     }
   };
 
@@ -253,7 +253,7 @@ function FeatureWorld({ room }: { room: Room }) {
       const firstEvent = orderedWorlds[0];
       const firstOrder = firstEvent.content.order;
       const prevOrder = order.getPrevStr(firstOrder);
-      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, roomId, {
+      await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorld, roomId, {
         suggested: false,
         via: [],
         order: prevOrder ?? undefined,
@@ -264,7 +264,7 @@ function FeatureWorld({ room }: { room: Room }) {
 
   const removeFeatured = (roomId: string) => {
     if (window.confirm("Are you sure?")) {
-      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorlds, roomId, {});
+      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorld, roomId, {});
     }
   };
 
@@ -435,7 +435,7 @@ function FeatureScene({ room }: { room: Room }) {
       const firstEvent = orderedScenes[0];
       const firstOrder = firstEvent.content.order;
       const prevOrder = order.getPrevStr(firstOrder);
-      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, eventId, {
+      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScene, eventId, {
         scene,
         order: prevOrder ?? undefined,
       });
@@ -446,7 +446,7 @@ function FeatureScene({ room }: { room: Room }) {
 
   const removeFeatured = (roomId: string) => {
     if (window.confirm("Are you sure?")) {
-      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, roomId, {});
+      session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScene, roomId, {});
     }
   };
 

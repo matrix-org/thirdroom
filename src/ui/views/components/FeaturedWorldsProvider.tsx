@@ -4,7 +4,7 @@ import { useStateEvents } from "../../hooks/useStateEvents";
 import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedWorlds(repoRoom: Room) {
-  const featuredWorldsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedWorlds);
+  const featuredWorldsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedWorld);
   return [...featuredWorldsMap]
     .map(([eventId, stateEvent]) => stateEvent)
     .filter((stateEvent) => Object.keys(stateEvent.content).length > 0);

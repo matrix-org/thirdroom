@@ -20,10 +20,10 @@ import { getRoomSummary } from "../../../hooks/useRoomSummary";
 import "./DiscoverView.css";
 
 export enum RepositoryEvents {
-  FeaturedWorlds = "tr.repository_room.featured_worlds",
-  FeaturedRooms = "tr.repository_room.featured_rooms",
-  FeaturedScenes = "tr.repository_room.featured_scenes",
-  Scene = "tr.repository_room.scene",
+  FeaturedWorld = "msc3948.repository_room.featured_world",
+  FeaturedRoom = "msc3948.repository_room.featured_room",
+  FeaturedScene = "msc3948.repository_room.featured_scene",
+  Scene = "msc3948.repository_room.scene",
 }
 
 enum DiscoverTab {
@@ -37,13 +37,13 @@ export function DiscoverView({ room }: { room: Room }) {
 
   const { getPowerLevel, canDoAction, canSendStateEvent } = usePowerLevels(room);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>(DiscoverTab.Home);
-  const [loadEvents, setLoadEvents] = useState<RepositoryEvents>();
+  const [loadEvent, setLoadEvent] = useState<RepositoryEvents>();
   const [supportRoomSummary, setSupportRoomSummary] = useState(true);
 
   const userPowerLevel = getPowerLevel(session.userId);
-  const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRooms, userPowerLevel);
-  const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorlds, userPowerLevel);
-  const canFeatureScenes = canSendStateEvent(RepositoryEvents.FeaturedScenes, userPowerLevel);
+  const canFeatureRooms = canSendStateEvent(RepositoryEvents.FeaturedRoom, userPowerLevel);
+  const canFeatureWorlds = canSendStateEvent(RepositoryEvents.FeaturedWorld, userPowerLevel);
+  const canFeatureScenes = canSendStateEvent(RepositoryEvents.FeaturedScene, userPowerLevel);
   const isAdmin = canFeatureRooms || canFeatureWorlds;
   if (!isAdmin && discoverTab === DiscoverTab.Admin) {
     setDiscoverTab(DiscoverTab.Home);
@@ -75,25 +75,25 @@ export function DiscoverView({ room }: { room: Room }) {
           <Header
             left={
               <div className="flex items-center gap-xxs">
-                <button style={{ cursor: "pointer" }} onClick={() => setLoadEvents(undefined)}>
+                <button style={{ cursor: "pointer" }} onClick={() => setLoadEvent(undefined)}>
                   <HeaderTitle icon={<Icon color="surface" className="shrink-0" src={ExploreIC} />}>
                     Discover
                   </HeaderTitle>
                 </button>
-                {loadEvents ? (
+                {loadEvent ? (
                   <>
                     <Icon src={ChevronRightIC} />
                     <HeaderTitle>{`All Public ${(() => {
-                      if (loadEvents === RepositoryEvents.FeaturedRooms) return "Rooms";
-                      if (loadEvents === RepositoryEvents.FeaturedWorlds) return "Worlds";
-                      if (loadEvents === RepositoryEvents.FeaturedScenes) return "Scenes";
+                      if (loadEvent === RepositoryEvents.FeaturedRoom) return "Rooms";
+                      if (loadEvent === RepositoryEvents.FeaturedWorld) return "Worlds";
+                      if (loadEvent === RepositoryEvents.FeaturedScene) return "Scenes";
                     })()}`}</HeaderTitle>
                   </>
                 ) : null}
               </div>
             }
             center={
-              loadEvents ? null : (
+              loadEvent ? null : (
                 <SegmentControl>
                   <SegmentControlItem
                     value={DiscoverTab.Home}
@@ -124,12 +124,12 @@ export function DiscoverView({ room }: { room: Room }) {
           />
         }
       >
-        {loadEvents ? (
-          <DiscoverAll eventType={loadEvents} room={room} />
+        {loadEvent ? (
+          <DiscoverAll eventType={loadEvent} room={room} />
         ) : (
           <>
             {discoverTab === DiscoverTab.Home && room && (
-              <DiscoverHome supportRoomSummary={supportRoomSummary} room={room} onLoadEvents={setLoadEvents} />
+              <DiscoverHome supportRoomSummary={supportRoomSummary} room={room} onLoadEvent={setLoadEvent} />
             )}
             {discoverTab === DiscoverTab.Creator && room && (
               <DiscoverCreator

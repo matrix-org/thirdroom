@@ -20,7 +20,7 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
   return (
     <Scroll>
       <Content className="DiscoverAll__content">
-        {eventType == RepositoryEvents.FeaturedRooms && (
+        {eventType == RepositoryEvents.FeaturedRoom && (
           <DiscoverGroupGrid>
             <FeaturedRoomsProvider room={room}>
               {(featuredRooms) =>
@@ -40,7 +40,7 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
             </FeaturedRoomsProvider>
           </DiscoverGroupGrid>
         )}
-        {eventType == RepositoryEvents.FeaturedWorlds && (
+        {eventType == RepositoryEvents.FeaturedWorld && (
           <DiscoverGroupGrid>
             <FeaturedWorldsProvider room={room}>
               {(featuredWorlds) =>
@@ -60,7 +60,7 @@ export function DiscoverAll({ eventType, room }: { eventType: RepositoryEvents; 
             </FeaturedWorldsProvider>
           </DiscoverGroupGrid>
         )}
-        {eventType === RepositoryEvents.FeaturedScenes && (
+        {eventType === RepositoryEvents.FeaturedScene && (
           <DiscoverGroupGrid>
             <FeaturedScenesProvider room={room}>
               {(featuredScenes) =>

@@ -4,7 +4,7 @@ import { useStateEvents } from "../../hooks/useStateEvents";
 import { RepositoryEvents } from "../session/discover/DiscoverView";
 
 export function useFeaturedRooms(repoRoom: Room) {
-  const featuredRoomsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedRooms);
+  const featuredRoomsMap = useStateEvents(repoRoom, RepositoryEvents.FeaturedRoom);
   return [...featuredRoomsMap]
     .map(([eventId, stateEvent]) => stateEvent)
     .filter((stateEvent) => Object.keys(stateEvent.content).length > 0);

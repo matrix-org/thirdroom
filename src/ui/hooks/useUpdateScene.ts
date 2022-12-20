@@ -20,7 +20,7 @@ export function useUpdateScene(session: Session, room: Room) {
 
       if (sceneStateKey && sceneRoomId) {
         const sceneContent = await session.hsApi
-          .state(sceneRoomId, RepositoryEvents.FeaturedScenes, sceneStateKey)
+          .state(sceneRoomId, RepositoryEvents.FeaturedScene, sceneStateKey)
           .response();
 
         const updateVersion = sceneContent?.scene.version;
@@ -43,7 +43,7 @@ export function useUpdateScene(session: Session, room: Room) {
 
     if (sceneStateKey && sceneRoomId) {
       const sceneContent = await session.hsApi
-        .state(sceneRoomId, RepositoryEvents.FeaturedScenes, sceneStateKey)
+        .state(sceneRoomId, RepositoryEvents.FeaturedScene, sceneStateKey)
         .response();
 
       await session.hsApi.sendState(room.id, "org.matrix.msc3815.world", "", {

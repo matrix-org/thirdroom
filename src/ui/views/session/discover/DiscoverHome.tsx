@@ -19,9 +19,9 @@ import { eventByOrderKey } from "../../../utils/matrixUtils";
 interface DiscoverHomeProps {
   room: Room;
   supportRoomSummary: boolean;
-  onLoadEvents: (eventType: RepositoryEvents) => void;
+  onLoadEvent: (eventType: RepositoryEvents) => void;
 }
-export function DiscoverHome({ room, supportRoomSummary, onLoadEvents }: DiscoverHomeProps) {
+export function DiscoverHome({ room, supportRoomSummary, onLoadEvent }: DiscoverHomeProps) {
   const { session, platform } = useHydrogen(true);
 
   return (
@@ -54,7 +54,7 @@ export function DiscoverHome({ room, supportRoomSummary, onLoadEvents }: Discove
                         featuredRooms.length > 4 && (
                           <div className="flex justify-end">
                             <DiscoverMoreButton
-                              onClick={() => onLoadEvents(RepositoryEvents.FeaturedRooms)}
+                              onClick={() => onLoadEvent(RepositoryEvents.FeaturedRoom)}
                               text="Browse All Public Rooms"
                               iconSrc={ArrowForwardIC}
                             />
@@ -89,7 +89,7 @@ export function DiscoverHome({ room, supportRoomSummary, onLoadEvents }: Discove
                         featuredWorlds.length > 4 && (
                           <div className="flex justify-end">
                             <DiscoverMoreButton
-                              onClick={() => onLoadEvents(RepositoryEvents.FeaturedWorlds)}
+                              onClick={() => onLoadEvent(RepositoryEvents.FeaturedWorld)}
                               text="Browse All Public Worlds"
                               iconSrc={ArrowForwardIC}
                             />
@@ -126,7 +126,7 @@ export function DiscoverHome({ room, supportRoomSummary, onLoadEvents }: Discove
                     featuredScenes.length > 3 && (
                       <div className="flex justify-end">
                         <DiscoverMoreButton
-                          onClick={() => onLoadEvents(RepositoryEvents.FeaturedScenes)}
+                          onClick={() => onLoadEvent(RepositoryEvents.FeaturedScene)}
                           text="Browse All Scenes"
                           iconSrc={ArrowForwardIC}
                         />

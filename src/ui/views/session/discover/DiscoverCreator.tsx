@@ -134,14 +134,14 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
     const firstEvent = featuredScenes[0];
     const firstOrder = firstEvent.content.order;
     const prevOrder = order.getPrevStr(firstOrder);
-    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScene, sceneEvent.event_id, {
       scene: sceneEvent.content.scene,
       order: prevOrder ?? undefined,
     });
   };
 
   const unFeatureScene = (sceneEvent: TimelineEvent) => {
-    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScenes, sceneEvent.event_id, {});
+    session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScene, sceneEvent.event_id, {});
   };
 
   const previewScene = (sceneEvent: TimelineEvent) => {
