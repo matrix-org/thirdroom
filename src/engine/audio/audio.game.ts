@@ -36,10 +36,6 @@ export const GameAudioModule = defineModule<GameState, GameAudioModuleState>({
     return {
       audioStateBufferView,
       audioStateTripleBuffer,
-      audioSources: [],
-      mediaStreamSources: [],
-      globalAudioEmitters: [],
-      positionalAudioEmitters: [],
       scenes: [],
     };
   },

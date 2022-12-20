@@ -125,9 +125,9 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     const disposables = [
       registerResourceLoader(ctx, NodeResourceType, onLoadMainNode),
       registerResourceLoader(ctx, SceneResourceType, onLoadMainSceneResource),
-      registerResource(ctx, AudioDataResource),
-      registerResource(ctx, AudioSourceResource),
-      registerResource(ctx, AudioEmitterResource),
+      registerResource(ctx, MainThreadAudioDataResource),
+      registerResource(ctx, MainThreadAudioSourceResource),
+      registerResource(ctx, MainThreadAudioEmitterResource),
       registerResource(ctx, MainThreadNametagResource),
     ];
 
@@ -232,6 +232,7 @@ export class MainThreadAudioEmitterResource extends defineLocalResourceClass<
   activeSources: MainThreadAudioSourceResource[] = [];
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
+  destination: AudioNode | undefined;
 
   async load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
@@ -248,6 +249,7 @@ export class MainThreadAudioEmitterResource extends defineLocalResourceClass<
         ? audioModule.musicGain
         : audioModule.environmentGain;
     this.outputGain.connect(destination);
+    this.destination = destination;
   }
 
   dispose() {
@@ -289,6 +291,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
       if (node.audioEmitter) {
         node.emitterPannerNode?.disconnect();
       }
+
       if (node.nametag) {
         audioModule.nametags.splice(audioModule.nametags.indexOf(node.nametag), 1);
         audioModule.eventEmitter.emit("nametags-changed", audioModule.nametags);
@@ -335,6 +338,8 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 
     const audioData = localAudioSource.audio.data;
 
+    localAudioSource.activeAudioDataResourceId = nextAudioDataResourceId;
+
     if (audioData instanceof MediaStream) {
       // Create a new MediaElementSourceNode
       if (!localAudioSource.sourceNode) {
@@ -358,11 +363,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
         audioCount++;
 
         // playing and looping
-      } else if (localAudioSource.play && localAudioSource.loop) {
-        if (localAudioSource.sourceNode) {
-          (localAudioSource.sourceNode as AudioBufferSourceNode).stop();
-        }
-
+      } else if (localAudioSource.play && localAudioSource.loop && !localAudioSource.sourceNode) {
         const sampleSource = audioModule.context.createBufferSource();
         sampleSource.connect(localAudioSource.gainNode!);
         sampleSource.buffer = audioData;
@@ -376,6 +377,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
       // Stop
       if (!localAudioSource.playing && localAudioSource.sourceNode) {
         (localAudioSource.sourceNode as AudioBufferSourceNode).stop();
+        localAudioSource.sourceNode = undefined;
       }
 
       // Stop looping
@@ -448,6 +450,20 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     }
 
     audioEmitter.outputGain!.gain.value = audioEmitter.gain;
+
+    const nextDestination =
+      audioEmitter.output === AudioEmitterOutput.Voice
+        ? audioModule.voiceGain
+        : audioEmitter.output === AudioEmitterOutput.Music
+        ? audioModule.musicGain
+        : audioModule.environmentGain;
+
+    // Output changed
+    if (audioEmitter.destination !== nextDestination) {
+      audioEmitter.outputGain!.disconnect();
+      audioEmitter.outputGain!.connect(nextDestination);
+      audioEmitter.destination = nextDestination;
+    }
   }
 }
 
@@ -498,6 +514,8 @@ const AudioEmitterDistanceModelMap: { [key: number]: DistanceModelType } = {
   [AudioEmitterDistanceModel.Exponential]: "exponential",
 };
 
+const RAD2DEG = 180 / Math.PI;
+
 export function updateNodeAudioEmitter(
   ctx: IMainThreadContext,
   audioModule: MainAudioModule,
@@ -522,11 +540,13 @@ export function updateNodeAudioEmitter(
 
       // if emitter was created
     } else if (nextAudioEmitterResourceId !== NOOP && !node.emitterPannerNode) {
-      node.audioEmitter = getLocalResource<MainThreadAudioEmitterResource>(ctx, nextAudioEmitterResourceId)?.resource;
-      node.emitterPannerNode = audioModule.context.createPanner();
-      node.emitterPannerNode.panningModel = "HRTF";
-      // connect node's panner to emitter's gain
-      if (node.audioEmitter) {
+      const audioEmitter = getLocalResource<MainThreadAudioEmitterResource>(ctx, nextAudioEmitterResourceId)?.resource;
+
+      if (audioEmitter) {
+        node.audioEmitter = audioEmitter;
+        node.emitterPannerNode = audioModule.context.createPanner();
+        node.emitterPannerNode.panningModel = "HRTF";
+        // connect node's panner to emitter's gain
         node.audioEmitter.inputGain!.connect(node.emitterPannerNode);
         node.emitterPannerNode.connect(node.audioEmitter.outputGain!);
       }
@@ -539,25 +559,6 @@ export function updateNodeAudioEmitter(
 
   const pannerNode = node.emitterPannerNode;
   const audioEmitter = node.audioEmitter;
-
-  // update emitter
-
-  const output: AudioEmitterOutput = audioEmitter.output;
-
-  // Output changed
-  if (output !== node.emitterOutput) {
-    audioEmitter.outputGain!.disconnect();
-
-    if (output === AudioEmitterOutput.Voice) {
-      audioEmitter.outputGain!.connect(audioModule.voiceGain);
-    } else if (output === AudioEmitterOutput.Music) {
-      audioEmitter.outputGain!.connect(audioModule.musicGain);
-    } else {
-      audioEmitter.outputGain!.connect(audioModule.environmentGain);
-    }
-
-    node.emitterOutput = output;
-  }
 
   const worldMatrix = nodeView.worldMatrix;
   const currentTime = audioModule.context.currentTime;
@@ -585,8 +586,8 @@ export function updateNodeAudioEmitter(
   }
 
   // set panner node properties from local positional emitter's shared data
-  pannerNode.coneInnerAngle = audioEmitter.coneInnerAngle;
-  pannerNode.coneOuterAngle = audioEmitter.coneOuterAngle;
+  pannerNode.coneInnerAngle = audioEmitter.coneInnerAngle * RAD2DEG;
+  pannerNode.coneOuterAngle = audioEmitter.coneOuterAngle * RAD2DEG;
   pannerNode.coneOuterGain = audioEmitter.coneOuterGain;
   pannerNode.distanceModel = AudioEmitterDistanceModelMap[audioEmitter.distanceModel];
   pannerNode.maxDistance = audioEmitter.maxDistance;
@@ -639,18 +640,8 @@ function updateGlobalAudioEmitters(
 
     // if emitter resource exists but has not been added to the scene
     if (!audioModule.activeScene.audioEmitters.includes(audioEmitter)) {
-      const output: AudioEmitterOutput = audioEmitter.output;
-
       audioEmitter.inputGain!.connect(audioEmitter.outputGain!);
 
-      // connect emitter to appropriate output
-      if (output === AudioEmitterOutput.Voice) {
-        audioEmitter.outputGain!.connect(audioModule.voiceGain);
-      } else if (output === AudioEmitterOutput.Music) {
-        audioEmitter.outputGain!.connect(audioModule.musicGain);
-      } else {
-        audioEmitter.outputGain!.connect(audioModule.environmentGain);
-      }
       // add emitter to scene
       audioModule.activeScene.audioEmitters.push(audioEmitter);
     }
