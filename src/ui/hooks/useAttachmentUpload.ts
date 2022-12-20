@@ -9,6 +9,7 @@ export function useAttachmentUpload(
   onProgress?: (sentBytes: number, totalBytes: number) => void
 ) {
   const [mxc, setMxc] = useState<string>();
+  const [error, setError] = useState<Error>();
   const attachmentRef = useRef<AttachmentUpload>();
 
   const upload = useCallback(
@@ -17,19 +18,23 @@ export function useAttachmentUpload(
         console.warn("Already uploading attachment.", blob);
         return;
       }
-      const mxc = await uploadAttachment(
-        hsApi,
-        platform,
-        blob,
-        (attachment) => {
-          attachmentRef.current = attachment;
-        },
-        onProgress
-      );
+      try {
+        const mxc = await uploadAttachment(
+          hsApi,
+          platform,
+          blob,
+          (attachment) => {
+            attachmentRef.current = attachment;
+          },
+          onProgress
+        );
 
-      if (!attachmentRef.current) return;
-      setMxc(mxc);
-      attachmentRef.current === null;
+        if (!attachmentRef.current) return;
+        setMxc(mxc);
+        attachmentRef.current === null;
+      } catch (err: any) {
+        setError(err);
+      }
     },
     [hsApi, platform, onProgress]
   );
@@ -37,6 +42,7 @@ export function useAttachmentUpload(
   const cancel = useCallback(() => {
     attachmentRef.current?.abort();
     attachmentRef.current = undefined;
+    setError(undefined);
     setMxc(undefined);
   }, []);
 
@@ -46,5 +52,5 @@ export function useAttachmentUpload(
     };
   }, []);
 
-  return { mxc, upload, cancel };
+  return { mxc, error, upload, cancel };
 }
