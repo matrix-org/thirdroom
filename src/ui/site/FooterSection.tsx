@@ -10,6 +10,7 @@ import { Text } from "../atoms/text/Text";
 import MatrixLogoSVG from "../../../res/svg/matrix-logo.svg";
 import GithubLogoSVG from "../../../res/svg/github-logo.svg";
 import TwitterLogoSVG from "../../../res/svg/twitter-logo.svg";
+import MastodonLogoSVG from "../../../res/svg/mastodon-logo.svg";
 import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
 import { isMobileDevice } from "../utils/common";
 
@@ -47,6 +48,17 @@ export function FooterSection() {
               <Icon size="sm" src={GithubLogoSVG} />
               <Text variant="b2" type="span">
                 Github
+              </Text>
+            </a>
+            <a
+              rel="me"
+              href="https://mastodon.matrix.org/@thirdroom"
+              target="_blank"
+              className="flex items-center gap-xs"
+            >
+              <Icon size="sm" src={MastodonLogoSVG} />
+              <Text variant="b2" type="span">
+                Mastodon
               </Text>
             </a>
             <a href="https://twitter.com/thirdroomio" target="_blank" className="flex items-center gap-xs">
