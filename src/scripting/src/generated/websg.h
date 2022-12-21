@@ -51,7 +51,7 @@ typedef struct Nametag {
   float_t screen_x;
   float_t screen_y;
   float_t distance_from_camera;
-  int in_frustum;
+  unsigned int in_frustum;
 } Nametag;
 
 typedef enum SamplerMagFilter {
@@ -124,11 +124,11 @@ typedef struct AudioSource {
   const char *name;
   AudioData *audio;
   float_t gain;
-  int auto_play;
+  unsigned int auto_play;
   float_t seek;
-  int play;
-  int playing;
-  int loop;
+  unsigned int play;
+  unsigned int playing;
+  unsigned int loop;
   float_t playback_rate;
 } AudioSource;
 
@@ -169,7 +169,7 @@ typedef struct Image {
   const char *uri;
   const char *mime_type;
   BufferView *buffer_view;
-  int flip_y;
+  unsigned int flip_y;
 } Image;
 
 typedef enum TextureEncoding {
@@ -204,7 +204,7 @@ typedef enum MaterialType {
 typedef struct Material {
   const char *name;
   MaterialType type;
-  int double_sided;
+  unsigned int double_sided;
   float_t alpha_cutoff;
   MaterialAlphaMode alpha_mode;
   float_t base_color_factor[4];
@@ -240,7 +240,7 @@ typedef struct Light {
   float_t color[3];
   float_t intensity;
   float_t range;
-  int cast_shadow;
+  unsigned int cast_shadow;
   float_t inner_cone_angle;
   float_t outer_cone_angle;
 } Light;
@@ -260,7 +260,7 @@ typedef struct Camera {
   float_t ymag;
   float_t yfov;
   float_t aspect_ratio;
-  int projection_matrix_needs_update;
+  unsigned int projection_matrix_needs_update;
 } Camera;
 
 typedef enum AccessorComponentType {
@@ -296,7 +296,7 @@ typedef struct Accessor {
   BufferView *buffer_view;
   unsigned int byte_offset;
   AccessorComponentType component_type;
-  int normalized;
+  unsigned int normalized;
   unsigned int count;
   AccessorType type;
   float_t max[16];
@@ -378,12 +378,13 @@ typedef enum InteractableType {
 typedef struct Interactable {
   const char *name;
   InteractableType type;
-  int pressed;
-  int held;
-  int released;
+  unsigned int pressed;
+  unsigned int held;
+  unsigned int released;
 } Interactable;
 
 typedef struct _Node {
+  unsigned int eid;
   const char *name;
   Scene *parent_scene;
   Node *parent;
@@ -395,9 +396,11 @@ typedef struct _Node {
   float_t scale[3];
   float_t local_matrix[16];
   float_t world_matrix[16];
-  int visible;
-  int enabled;
-  int is_static;
+  unsigned int world_matrix_needs_update;
+  unsigned int visible;
+  unsigned int enabled;
+  unsigned int skip_lerp;
+  unsigned int is_static;
   unsigned int layers;
   Mesh *mesh;
   InstancedMesh *instanced_mesh;
@@ -413,9 +416,11 @@ typedef struct _Node {
 } Node;
 
 typedef struct _Scene {
+  unsigned int eid;
   const char *name;
   Texture *background_texture;
   ReflectionProbe *reflection_probe;
+  float_t bloom_strength;
   AudioEmitter *audio_emitters[16];
   Node *first_node;
 } Scene;

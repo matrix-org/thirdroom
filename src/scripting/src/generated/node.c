@@ -44,6 +44,19 @@ static JSValue js_node_constructor(JSContext *ctx, JSValueConst new_target, int 
 }
 
 
+static JSValue js_node_get_eid(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, node->eid);
+    return val;
+  }
+}
+
+
 static JSValue js_node_get_name(JSContext *ctx, JSValueConst this_val) {
   Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
@@ -64,6 +77,31 @@ static JSValue js_node_set_name(JSContext *ctx, JSValueConst this_val, JSValue v
     return JS_EXCEPTION;
   } else {
     node->name = JS_ToCString(ctx, val);
+    return JS_UNDEFINED;
+  }
+}
+
+
+static JSValue js_node_get_world_matrix_needs_update(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewBool(ctx, node->world_matrix_needs_update);
+    return val;
+  }
+}
+
+
+static JSValue js_node_set_world_matrix_needs_update(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    node->world_matrix_needs_update = JS_ToBool(ctx, val);
     return JS_UNDEFINED;
   }
 }
@@ -114,6 +152,31 @@ static JSValue js_node_set_enabled(JSContext *ctx, JSValueConst this_val, JSValu
     return JS_EXCEPTION;
   } else {
     node->enabled = JS_ToBool(ctx, val);
+    return JS_UNDEFINED;
+  }
+}
+
+
+static JSValue js_node_get_skip_lerp(JSContext *ctx, JSValueConst this_val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, node->skip_lerp);
+    return val;
+  }
+}
+
+
+static JSValue js_node_set_skip_lerp(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
+
+  if (!node) {
+    return JS_EXCEPTION;
+  } else {
+    if (JS_ToUint32(ctx, &node->skip_lerp, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
@@ -433,9 +496,12 @@ static JSClassDef js_node_class = {
 };
 
 static const JSCFunctionListEntry js_node_proto_funcs[] = {
+  JS_CGETSET_DEF("eid", js_node_get_eid, NULL),
   JS_CGETSET_DEF("name", js_node_get_name, js_node_set_name),
+  JS_CGETSET_DEF("worldMatrixNeedsUpdate", js_node_get_world_matrix_needs_update, js_node_set_world_matrix_needs_update),
   JS_CGETSET_DEF("visible", js_node_get_visible, js_node_set_visible),
   JS_CGETSET_DEF("enabled", js_node_get_enabled, js_node_set_enabled),
+  JS_CGETSET_DEF("skipLerp", js_node_get_skip_lerp, js_node_set_skip_lerp),
   JS_CGETSET_DEF("isStatic", js_node_get_is_static, js_node_set_is_static),
   JS_CGETSET_DEF("layers", js_node_get_layers, js_node_set_layers),
   JS_CGETSET_DEF("mesh", js_node_get_mesh, js_node_set_mesh),

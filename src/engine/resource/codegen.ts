@@ -78,7 +78,7 @@ function generateProp(
 
     return `${kebabToPascalCase(refDef.name)} *${propNameSnake}[${propDef.size}]`;
   } else if (propDef.type === "bool") {
-    return `int ${propNameSnake}`;
+    return `unsigned int ${propNameSnake}`;
   } else if (propDef.type === "bitmask") {
     return `unsigned int ${propNameSnake}`;
   } else if (propDef.type === "string") {
