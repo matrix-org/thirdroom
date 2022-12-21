@@ -12,7 +12,7 @@ import {
   rewindCursorView,
   scrollCursorView,
   skipFloat32,
-  skipUint8,
+  skipUint32,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
@@ -204,7 +204,7 @@ export const deserializeTransformChanged = defineChangedDeserializer(
   (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
   (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
   // (v, eid) => (eid ? (Networked.parent[eid] = readUint32(v)) : skipUint32(v)),
-  (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint8(v)) : skipUint8(v))
+  (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint32(v)) : skipUint32(v))
 );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
