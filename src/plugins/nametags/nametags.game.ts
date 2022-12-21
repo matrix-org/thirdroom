@@ -2,15 +2,7 @@ import { addComponent, addEntity, defineComponent, defineQuery, enterQuery, hasC
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import {
-  addChild,
-  addTransformComponent,
-  findChild,
-  getForwardVector,
-  getPitch,
-  getRoll,
-  Transform,
-} from "../../engine/component/transform";
+import { addChild, findChild, getForwardVector, getPitch, getRoll, Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -137,7 +129,6 @@ export function NametagSystem(ctx: GameState) {
 
 export function addNametag(ctx: GameState, height: number, eid: number) {
   const nametag = addEntity(ctx.world);
-  addTransformComponent(ctx.world, nametag);
   addComponent(ctx.world, NametagComponent, nametag);
   Transform.position[nametag].set([0, height + height / 1.5, 0]);
   addChild(eid, nametag);

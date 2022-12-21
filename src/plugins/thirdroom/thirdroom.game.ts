@@ -3,7 +3,7 @@ import { vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, addTransformComponent, removeNode, Transform } from "../../engine/component/transform";
+import { addChild, removeNode, Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -112,7 +112,9 @@ const createAvatarRig =
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const eid = addEntity(ctx.world);
-    addTransformComponent(ctx.world, eid);
+    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
+      nametag: true,
+    });
     addAvatarCamera(ctx, eid);
     addAvatarController(ctx, input, eid);
 
@@ -122,10 +124,6 @@ const createAvatarRig =
     } else {
       addPhysicsControls(ctx, eid);
     }
-
-    addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
-      nametag: true,
-    });
 
     addAvatarRigidBody(ctx, physics, eid);
     addInteractableComponent(ctx, physics, eid, InteractableType.Player);
@@ -432,8 +430,6 @@ function loadPreviewCamera(ctx: GameState) {
 
   if (!ctx.activeCamera) {
     defaultCamera = addEntity(ctx.world);
-
-    addTransformComponent(ctx.world, defaultCamera);
 
     addRemoteNodeComponent(ctx, defaultCamera, {
       camera: createRemotePerspectiveCamera(ctx),

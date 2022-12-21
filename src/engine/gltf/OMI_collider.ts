@@ -3,7 +3,7 @@ import { addEntity } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { vec3ArrayTransformMat4, getAccessorArrayView } from "../accessor/accessor.common";
-import { addTransformComponent, addChild, Transform } from "../component/transform";
+import { addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
@@ -135,7 +135,6 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
     physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
     const primitiveEid = addEntity(ctx.world);
-    addTransformComponent(ctx.world, primitiveEid);
     addRemoteNodeComponent(ctx, primitiveEid);
     addChild(nodeEid, primitiveEid);
     addRigidBody(ctx, primitiveEid, rigidBody, mesh.resourceId, primitive.resourceId);

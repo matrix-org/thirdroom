@@ -1,13 +1,4 @@
-import {
-  addComponent,
-  addEntity,
-  defineQuery,
-  entityExists,
-  getEntityComponents,
-  IComponent,
-  removeComponent,
-  removeEntity,
-} from "bitecs";
+import { defineQuery, entityExists, getEntityComponents, IComponent, removeComponent, removeEntity } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { maxEntities, NOOP } from "../config.common";
@@ -76,30 +67,6 @@ export const Transform: Transform = {
   prevSibling: gameObjectBuffer.prevSibling,
   nextSibling: gameObjectBuffer.nextSibling,
 };
-
-export function addTransformComponent(world: World, eid: number) {
-  addComponent(world, Transform, eid);
-  vec3.set(Transform.position[eid], 0, 0, 0);
-  vec3.set(Transform.scale[eid], 1, 1, 1);
-  quat.identity(Transform.quaternion[eid]);
-  mat4.identity(Transform.localMatrix[eid]);
-  Transform.isStatic[eid] = 0;
-  mat4.identity(Transform.worldMatrix[eid]);
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
-  Transform.parent[eid] = 0;
-  Transform.firstChild[eid] = 0;
-  Transform.nextSibling[eid] = 0;
-  Transform.prevSibling[eid] = 0;
-
-  // always skip lerp for first few frames of existence
-  Transform.skipLerp[eid] = 10;
-}
-
-export function createTransformEntity(world: World) {
-  const eid = addEntity(world);
-  addTransformComponent(world, eid);
-  return eid;
-}
 
 export function getLastChild(eid: number): number {
   let cursor = Transform.firstChild[eid];

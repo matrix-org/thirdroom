@@ -1,7 +1,7 @@
 import { addComponent, addEntity } from "bitecs";
 import { quat } from "gl-matrix";
 
-import { addTransformComponent, Transform, addChild } from "../../engine/component/transform";
+import { Transform, addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
 import { getModule } from "../../engine/module/module.common";
@@ -15,7 +15,6 @@ export function createAvatar(ctx: GameState, uri: string, options: AvatarOptions
   const physics = getModule(ctx, PhysicsModule);
 
   const container = addEntity(ctx.world);
-  addTransformComponent(ctx.world, container);
   addRemoteNodeComponent(ctx, container);
 
   addAvatar(ctx, physics, uri, container, options);

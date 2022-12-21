@@ -5,7 +5,7 @@ import { Vector3 } from "three";
 
 import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
-import { Transform, addChild, addTransformComponent } from "../../engine/component/transform";
+import { Transform, addChild } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
@@ -542,7 +542,6 @@ export const updateSpawnables = (
 export const createBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
   const { world } = state;
   const eid = addEntity(world);
-  addTransformComponent(world, eid);
 
   const mesh = createSphereMesh(state, size, material);
 

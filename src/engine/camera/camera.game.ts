@@ -1,7 +1,7 @@
 import { addComponent, addEntity, defineComponent, defineQuery, hasComponent } from "bitecs";
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
-import { addTransformComponent, findChild, Transform } from "../component/transform";
+import { findChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
@@ -36,7 +36,6 @@ export function createRemotePerspectiveCamera(
 
 export function createCamera(ctx: GameState, setActive = false): number {
   const eid = addEntity(ctx.world);
-  addTransformComponent(ctx.world, eid);
   addComponent(ctx.world, CameraComponent, eid);
 
   addRemoteNodeComponent(ctx, eid, {

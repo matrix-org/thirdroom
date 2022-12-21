@@ -3,7 +3,7 @@ import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
-import { addChild, addTransformComponent, Transform, updateMatrixWorld } from "../component/transform";
+import { addChild, Transform, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -150,8 +150,6 @@ export async function inflateGLTFScene(
   uri: string,
   { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager, asNode }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
-  addTransformComponent(ctx.world, sceneEid);
-
   const _resourceManager = resourceManager || ctx.resourceManager;
 
   const resource = await loadGLTFResource(ctx, _resourceManager, uri, fileMap);
@@ -314,7 +312,15 @@ async function _inflateGLTFNode(
 
   node.name = node.name || `Node ${nodeIndex}`;
 
-  addTransformComponent(ctx.world, nodeEid);
+  const remoteNode = addRemoteNodeComponent(
+    ctx,
+    nodeEid,
+    {
+      name: node.name,
+      isStatic,
+    },
+    resource.manager
+  );
 
   if (node.matrix) {
     Transform.localMatrix[nodeEid].set(node.matrix);
@@ -326,16 +332,6 @@ async function _inflateGLTFNode(
     if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
     if (node.scale) Transform.scale[nodeEid].set(node.scale);
   }
-
-  const remoteNode = addRemoteNodeComponent(
-    ctx,
-    nodeEid,
-    {
-      name: node.name,
-      isStatic,
-    },
-    resource.manager
-  );
 
   addChild(parent.eid, nodeEid);
 
