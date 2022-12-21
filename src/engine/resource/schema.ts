@@ -440,6 +440,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   scale: PropType.vec3({ script: true, default: [1, 1, 1] }),
   localMatrix: PropType.mat4({ script: true }),
   worldMatrix: PropType.mat4({ script: true }),
+  worldMatrixNeedsUpdate: PropType.bool({ script: true, default: true }),
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
   skipLerp: PropType.u32({ script: true, default: 0 }),
