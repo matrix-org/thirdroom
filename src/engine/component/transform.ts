@@ -33,9 +33,9 @@ export interface Transform extends IComponent {
 
   localMatrix: Float32Array[];
   worldMatrix: Float32Array[];
-  static: Uint8Array;
-  skipLerp: Uint8Array;
-  worldMatrixNeedsUpdate: Uint8Array;
+  isStatic: Uint32Array;
+  skipLerp: Uint32Array;
+  worldMatrixNeedsUpdate: Uint32Array;
 
   parent: Uint32Array;
   firstChild: Uint32Array;
@@ -50,9 +50,9 @@ export const gameObjectBuffer = createObjectBufferView(
     quaternion: [Float32Array, maxEntities, 4],
     localMatrix: [Float32Array, maxEntities, 16],
     worldMatrix: [Float32Array, maxEntities, 16],
-    worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
-    static: [Uint8Array, maxEntities],
-    skipLerp: [Uint8Array, maxEntities],
+    worldMatrixNeedsUpdate: [Uint32Array, maxEntities],
+    isStatic: [Uint32Array, maxEntities],
+    skipLerp: [Uint32Array, maxEntities],
     parent: [Uint32Array, maxEntities],
     firstChild: [Uint32Array, maxEntities],
     prevSibling: [Uint32Array, maxEntities],
@@ -66,7 +66,7 @@ export const Transform: Transform = {
   scale: gameObjectBuffer.scale,
   quaternion: gameObjectBuffer.quaternion,
   localMatrix: gameObjectBuffer.localMatrix,
-  static: gameObjectBuffer.static,
+  isStatic: gameObjectBuffer.isStatic,
   skipLerp: gameObjectBuffer.skipLerp,
 
   worldMatrix: gameObjectBuffer.worldMatrix,
@@ -84,7 +84,7 @@ export function addTransformComponent(world: World, eid: number) {
   vec3.set(Transform.scale[eid], 1, 1, 1);
   quat.identity(Transform.quaternion[eid]);
   mat4.identity(Transform.localMatrix[eid]);
-  Transform.static[eid] = 0;
+  Transform.isStatic[eid] = 0;
   mat4.identity(Transform.worldMatrix[eid]);
   Transform.worldMatrixNeedsUpdate[eid] = 1;
   Transform.parent[eid] = 0;
@@ -304,7 +304,7 @@ export const updateWorldMatrix = (eid: number, updateParents: boolean, updateChi
     updateWorldMatrix(parent, true, false);
   }
 
-  if (!Transform.static[eid]) updateMatrix(eid);
+  if (!Transform.isStatic[eid]) updateMatrix(eid);
 
   if (parent === NOOP) {
     Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
@@ -323,7 +323,7 @@ export const updateWorldMatrix = (eid: number, updateParents: boolean, updateChi
 };
 
 export const updateMatrixWorld = (eid: number, force = false) => {
-  if (!Transform.static[eid]) updateMatrix(eid);
+  if (!Transform.isStatic[eid]) updateMatrix(eid);
 
   if (Transform.worldMatrixNeedsUpdate[eid] || force) {
     const parent = Transform.parent[eid];
