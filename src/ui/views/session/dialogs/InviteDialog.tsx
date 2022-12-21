@@ -65,6 +65,7 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
         userIdInput: HTMLInputElement;
       };
       form.userIdInput.value = "";
+      form.userIdInput.focus();
     }
     addInvite(profile);
   };
