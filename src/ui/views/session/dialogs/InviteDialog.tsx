@@ -116,9 +116,9 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
       evt.preventDefault();
       handleAddInvite({ userId: value });
     }
-    if (evt.key === "Enter" && value.match(MXID_REG)) {
-      evt.preventDefault();
-      handleAddInvite({ userId: value });
+    if (evt.key === "Enter") {
+      if (value.length > 0) evt.preventDefault();
+      if (value.match(MXID_REG)) handleAddInvite({ userId: value });
     }
     if (evt.key === "Backspace" && inviteList.length > 0 && value === "") {
       setInviteList(
