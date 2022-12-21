@@ -31,7 +31,7 @@ export function ProfileSuggestion({
         <Scroll type="hover" orientation="horizontal">
           <div style={{ paddingBottom: "var(--sp-sm)" }} className="flex flex-wrap items-center gap-xs">
             {(() => {
-              return suggestion.map((profile) => {
+              return suggestion.map((profile, index) => {
                 return (
                   <Tooltip delayDuration={0} key={profile.userId} side="top" content={profile.userId}>
                     <Chip onClick={(e) => onSelect(profile)}>
@@ -47,7 +47,11 @@ export function ProfileSuggestion({
                         shape="circle"
                       />
                       <Text className="truncate" variant="b3" weight="medium">
-                        {profile.displayName ?? profile.userId.slice(1)}
+                        {suggestion
+                          .slice(0, index)
+                          .find((p) => profile.displayName?.toLowerCase() === p.displayName?.toLowerCase())
+                          ? profile.userId.slice(1)
+                          : profile.displayName ?? profile.userId.slice(1)}
                       </Text>
                     </Chip>
                   </Tooltip>
