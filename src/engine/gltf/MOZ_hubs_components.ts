@@ -1,8 +1,9 @@
 import { addComponent } from "bitecs";
+import { quat } from "gl-matrix";
 
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { setQuaternionFromEuler, Transform } from "../component/transform";
+import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { GLTFRoot } from "./GLTF";
@@ -27,8 +28,7 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
 
   if (components["spawn-point"] || components["waypoint"]?.canBeSpawnPoint) {
     Transform.position[nodeEid][1] += 1.6;
-    Transform.rotation[nodeEid][1] += Math.PI;
-    setQuaternionFromEuler(Transform.quaternion[nodeEid], Transform.rotation[nodeEid]);
+    quat.rotateY(Transform.quaternion[nodeEid], Transform.quaternion[nodeEid], Math.PI);
     addComponent(ctx.world, SpawnPoint, nodeEid);
   }
 

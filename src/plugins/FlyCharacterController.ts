@@ -2,7 +2,7 @@ import { addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { getCamera } from "../engine/camera/camera.game";
-import { setEulerFromQuaternion, Transform, updateMatrixWorld } from "../engine/component/transform";
+import { Transform, updateMatrixWorld } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -99,8 +99,6 @@ function applyFlyControls(ctx: GameState, controller: InputController, eid: numb
   vec3.normalize(velocityVec, velocityVec);
   vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);
   vec3.add(Transform.position[eid], Transform.position[eid], velocityVec);
-
-  setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
 }
 
 export function FlyControllerSystem(ctx: GameState) {

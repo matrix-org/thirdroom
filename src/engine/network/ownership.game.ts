@@ -48,7 +48,6 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: nu
 
     Transform.position[newEid].set(Transform.position[eid]);
     Transform.scale[newEid].set(Transform.scale[eid]);
-    Transform.rotation[newEid].set(Transform.rotation[eid]);
     Transform.quaternion[newEid].set(Transform.quaternion[eid]);
 
     addComponent(ctx.world, Owned, newEid);

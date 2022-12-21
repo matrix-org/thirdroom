@@ -1,6 +1,6 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { Transform } from "../component/transform";
+import { Axes, isolateQuaternionAxis, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { teleportEntity } from "./teleportEntity";
 
@@ -16,9 +16,8 @@ export function spawnEntity(
   const spawnWorldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
   const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
   const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
-
   spawnPosition[1] += 1.6;
-  quat.fromEuler(spawnQuaternion, 0, Transform.rotation[eid][1], 0);
+  isolateQuaternionAxis(spawnQuaternion, Axes.Y);
 
   teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
 }

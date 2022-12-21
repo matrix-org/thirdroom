@@ -1,6 +1,7 @@
 import { addComponent, addEntity } from "bitecs";
+import { quat } from "gl-matrix";
 
-import { addTransformComponent, Transform, setQuaternionFromEuler, addChild } from "../../engine/component/transform";
+import { addTransformComponent, Transform, addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
 import { getModule } from "../../engine/module/module.common";
@@ -37,10 +38,8 @@ export function addAvatar(
   addComponent(ctx.world, AvatarComponent, eid);
 
   Transform.position[eid].set([0, -1, 0]);
-  Transform.rotation[eid].set([0, Math.PI, 0]);
+  quat.fromEuler(Transform.quaternion[eid], 0, Math.PI, 0);
   Transform.scale[eid].set([1.3, 1.3, 1.3]);
-
-  setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
   addRemoteNodeComponent(ctx, container);
   addChild(container, eid);

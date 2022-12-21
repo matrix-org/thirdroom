@@ -3,13 +3,7 @@ import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
-import {
-  addChild,
-  addTransformComponent,
-  setEulerFromQuaternion,
-  Transform,
-  updateMatrixWorld,
-} from "../component/transform";
+import { addChild, addTransformComponent, Transform, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -332,8 +326,6 @@ async function _inflateGLTFNode(
     if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
     if (node.scale) Transform.scale[nodeEid].set(node.scale);
   }
-
-  setEulerFromQuaternion(Transform.rotation[nodeEid], Transform.quaternion[nodeEid]);
 
   const remoteNode = addRemoteNodeComponent(
     ctx,

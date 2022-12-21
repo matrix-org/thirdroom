@@ -1,7 +1,7 @@
 import { vec3, quat } from "gl-matrix";
 import { Vector3, Quaternion } from "three";
 
-import { setEulerFromQuaternion, skipRenderLerp, Transform } from "../component/transform";
+import { skipRenderLerp, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 
@@ -16,7 +16,6 @@ export function teleportEntity(ctx: GameState, eid: number, position: vec3, quat
   Transform.position[eid].set(position);
   if (quaternion) {
     Transform.quaternion[eid].set(quaternion);
-    setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
   }
   const body = RigidBody.store.get(eid);
   if (body) {

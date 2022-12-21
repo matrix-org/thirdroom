@@ -20,9 +20,14 @@ import { RemoteNode, RemoteScene, ResourceType } from "../resource/schema";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RemoteSceneComponent } from "../scene/scene.game";
 
+export const Axes = {
+  X: vec3.fromValues(1, 0, 0),
+  Y: vec3.fromValues(0, 1, 0),
+  Z: vec3.fromValues(0, 0, 1),
+};
+
 export interface Transform extends IComponent {
   position: Float32Array[];
-  rotation: Float32Array[];
   quaternion: Float32Array[];
   scale: Float32Array[];
 
@@ -36,14 +41,12 @@ export interface Transform extends IComponent {
   firstChild: Uint32Array;
   prevSibling: Uint32Array;
   nextSibling: Uint32Array;
-  hierarchyUpdated: Uint8Array;
 }
 
 export const gameObjectBuffer = createObjectBufferView(
   {
     position: [Float32Array, maxEntities, 3],
     scale: [Float32Array, maxEntities, 3],
-    rotation: [Float32Array, maxEntities, 3],
     quaternion: [Float32Array, maxEntities, 4],
     localMatrix: [Float32Array, maxEntities, 16],
     worldMatrix: [Float32Array, maxEntities, 16],
@@ -54,7 +57,6 @@ export const gameObjectBuffer = createObjectBufferView(
     firstChild: [Uint32Array, maxEntities],
     prevSibling: [Uint32Array, maxEntities],
     nextSibling: [Uint32Array, maxEntities],
-    hierarchyUpdated: [Uint8Array, maxEntities],
   },
   ArrayBuffer
 );
@@ -62,7 +64,6 @@ export const gameObjectBuffer = createObjectBufferView(
 export const Transform: Transform = {
   position: gameObjectBuffer.position,
   scale: gameObjectBuffer.scale,
-  rotation: gameObjectBuffer.rotation,
   quaternion: gameObjectBuffer.quaternion,
   localMatrix: gameObjectBuffer.localMatrix,
   static: gameObjectBuffer.static,
@@ -75,14 +76,12 @@ export const Transform: Transform = {
   firstChild: gameObjectBuffer.firstChild,
   prevSibling: gameObjectBuffer.prevSibling,
   nextSibling: gameObjectBuffer.nextSibling,
-  hierarchyUpdated: gameObjectBuffer.hierarchyUpdated,
 };
 
 export function addTransformComponent(world: World, eid: number) {
   addComponent(world, Transform, eid);
   vec3.set(Transform.position[eid], 0, 0, 0);
   vec3.set(Transform.scale[eid], 1, 1, 1);
-  vec3.set(Transform.rotation[eid], 0, 0, 0);
   quat.identity(Transform.quaternion[eid]);
   mat4.identity(Transform.localMatrix[eid]);
   Transform.static[eid] = 0;
@@ -92,7 +91,6 @@ export function addTransformComponent(world: World, eid: number) {
   Transform.firstChild[eid] = 0;
   Transform.nextSibling[eid] = 0;
   Transform.prevSibling[eid] = 0;
-  Transform.hierarchyUpdated[eid] = 1;
 
   // always skip lerp for first few frames of existence
   addComponent(world, SkipRenderLerp, eid);
@@ -518,12 +516,19 @@ export function setEulerFromTransformMatrix(rotation: vec3, matrix: mat4) {
 
 const tempMat4 = mat4.create();
 const tempVec3 = vec3.create();
+const tempEuler = vec3.create();
 const tempQuat = quat.create();
 const defaultUp = vec3.set(vec3.create(), 0, 1, 0);
 
 export function setEulerFromQuaternion(rotation: Float32Array | vec3, quaternion: Float32Array | quat) {
   mat4.fromQuat(tempMat4, quaternion);
   setEulerFromTransformMatrix(rotation, tempMat4);
+}
+
+export function isolateQuaternionAxis(quaternion: quat, axis: vec3) {
+  setEulerFromQuaternion(tempEuler, quaternion);
+  vec3.mul(tempVec3, tempEuler, axis);
+  quat.fromEuler(quaternion, tempVec3[0], tempVec3[1], tempVec3[2]);
 }
 
 export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
@@ -541,9 +546,6 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
     mat4.getRotation(tempQuat, Transform.worldMatrix[parent]);
     quat.invert(tempQuat, tempQuat);
     quat.mul(Transform.quaternion[eid], tempQuat, Transform.quaternion[eid]);
-    setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
-  } else {
-    setEulerFromTransformMatrix(Transform.rotation[eid], tempMat4);
   }
 }
 

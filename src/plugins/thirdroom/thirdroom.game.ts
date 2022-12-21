@@ -3,13 +3,7 @@ import { vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import {
-  addChild,
-  addTransformComponent,
-  removeNode,
-  setEulerFromQuaternion,
-  Transform,
-} from "../../engine/component/transform";
+import { addChild, addTransformComponent, removeNode, Transform } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -454,7 +448,6 @@ function loadPreviewCamera(ctx: GameState) {
     vec3.copy(Transform.position[defaultCamera], Transform.position[spawnPoints[0]]);
     Transform.position[defaultCamera][1] += 1.6;
     vec3.copy(Transform.quaternion[defaultCamera], Transform.quaternion[spawnPoints[0]]);
-    setEulerFromQuaternion(Transform.rotation[defaultCamera], Transform.quaternion[defaultCamera]);
   }
 }
 

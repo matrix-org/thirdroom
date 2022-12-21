@@ -10,7 +10,7 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
-import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
+import { Axes, Transform } from "../engine/component/transform";
 import { NOOP } from "../engine/config.common";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
@@ -49,7 +49,7 @@ export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: n
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.UpdateCamera)(data);
   writeUint32(messageView, Networked.networkId[eid]);
-  writeFloat32(messageView, Transform.rotation[camera][0]);
+  writeFloat32(messageView, FirstPersonCameraPitchTarget.pitch[eid]);
   return sliceCursorView(messageView);
 }
 
@@ -62,8 +62,7 @@ function deserializeUpdateCamera(data: NetPipeData) {
   const avatarNid = readUint32(view);
   const avatar = network.networkIdToEntityId.get(avatarNid)!;
   const camera = getCamera(ctx, avatar);
-  Transform.rotation[camera][0] = readFloat32(view);
-  setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
+  FirstPersonCameraPitchTarget.pitch[camera] = readFloat32(view);
   return data;
 }
 
@@ -90,6 +89,7 @@ export const FirstPersonCameraActionMap: ActionMap = {
 };
 
 export const FirstPersonCameraPitchTarget = defineComponent({
+  pitch: Types.f32,
   maxAngle: Types.f32,
   minAngle: Types.f32,
   sensitivity: Types.f32,
@@ -129,21 +129,23 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
   const [, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
-    const rotation = Transform.rotation[eid];
+    let pitch = FirstPersonCameraPitchTarget.pitch[eid];
     const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
     const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
     const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
     const maxAngleRads = glm.toRadian(maxAngle || 89);
     const minAngleRads = glm.toRadian(minAngle || -89);
-    rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
-    if (rotation[0] > maxAngleRads) {
-      rotation[0] = maxAngleRads;
-    } else if (rotation[0] < minAngleRads) {
-      rotation[0] = minAngleRads;
+    if (pitch > maxAngleRads) {
+      pitch = maxAngleRads;
+    } else if (pitch < minAngleRads) {
+      pitch = minAngleRads;
     }
 
-    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+    FirstPersonCameraPitchTarget.pitch[eid] = pitch;
+
+    quat.setAxisAngle(Transform.quaternion[eid], Axes.X, pitch);
   }
 }
 
