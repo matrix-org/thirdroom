@@ -1,7 +1,7 @@
 import { vec3, quat } from "gl-matrix";
 import { Vector3, Quaternion } from "three";
 
-import { skipRenderLerp, Transform } from "../component/transform";
+import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 
@@ -11,7 +11,7 @@ const tmpQuat = new Quaternion();
 
 export function teleportEntity(ctx: GameState, eid: number, position: vec3, quaternion?: quat) {
   // mark to skip lerp to ensure lerp is fully avoided (if render tick is running up to 5x faster than game tick)
-  skipRenderLerp(ctx, eid);
+  Transform.skipLerp[eid] = 10;
 
   Transform.position[eid].set(position);
   if (quaternion) {

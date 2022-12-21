@@ -1,7 +1,6 @@
 import {
   addComponent,
   addEntity,
-  defineComponent,
   defineQuery,
   entityExists,
   getEntityComponents,
@@ -93,7 +92,6 @@ export function addTransformComponent(world: World, eid: number) {
   Transform.prevSibling[eid] = 0;
 
   // always skip lerp for first few frames of existence
-  addComponent(world, SkipRenderLerp, eid);
   Transform.skipLerp[eid] = 10;
 }
 
@@ -663,8 +661,7 @@ export function getRightVector(out: vec3, roll: number) {
   return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
 }
 
-export const SkipRenderLerp = defineComponent();
-const skipRenderLerpQuery = defineQuery([SkipRenderLerp]);
+const skipRenderLerpQuery = defineQuery([Transform]);
 
 export function SkipRenderLerpSystem(ctx: GameState) {
   const ents = skipRenderLerpQuery(ctx.world);
@@ -675,20 +672,6 @@ export function SkipRenderLerpSystem(ctx: GameState) {
 
     if (Transform.skipLerp[eid] <= 0) {
       Transform.skipLerp[eid] = 0;
-      removeComponent(ctx.world, SkipRenderLerp, eid);
     }
   }
-}
-
-/**
- * Prevents the renderer from lerping an entity's position for N frames.
- * Useful in cases where an entity is teleported. Entity won't zip to the new location and instead will disappear and reappear instantaneously.
- *
- * @param ctx
- * @param eid
- * @param numberOfFramesToSkip
- */
-export function skipRenderLerp(ctx: GameState, eid: number, numberOfFramesToSkip = 10) {
-  addComponent(ctx.world, SkipRenderLerp, eid);
-  Transform.skipLerp[eid] = numberOfFramesToSkip;
 }

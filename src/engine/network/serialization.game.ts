@@ -24,7 +24,7 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeNode, Transform } from "../component/transform";
+import { addChild, removeNode, Transform } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -323,7 +323,7 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
     deserializeTransformSnapshot(v, eid);
 
     if (eid && Transform.skipLerp[eid]) {
-      skipRenderLerp(state, eid);
+      Transform.skipLerp[eid] = 10;
     }
   }
   return input;
