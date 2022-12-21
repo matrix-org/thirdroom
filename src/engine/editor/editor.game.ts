@@ -9,7 +9,7 @@ import {
 } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { traverseRecursive } from "../component/transform";
+import { traverse } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddSelectedEntityMessage,
@@ -203,7 +203,7 @@ export function EditorStateSystem(ctx: GameState) {
     for (let i = 0; i < selectedRemoved.length; i++) {
       const eid = selectedRemoved[i];
 
-      traverseRecursive(eid, (child) => {
+      traverse(eid, (child) => {
         const remoteNode = RemoteNodeComponent.get(child);
 
         if (remoteNode) {
@@ -215,7 +215,7 @@ export function EditorStateSystem(ctx: GameState) {
     for (let i = 0; i < selectedAdded.length; i++) {
       const eid = selectedAdded[i];
 
-      traverseRecursive(eid, (child) => {
+      traverse(eid, (child) => {
         const remoteNode = RemoteNodeComponent.get(child);
 
         if (remoteNode) {

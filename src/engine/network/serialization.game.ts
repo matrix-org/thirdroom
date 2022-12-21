@@ -24,7 +24,7 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeRecursive, Transform } from "../component/transform";
+import { addChild, skipRenderLerp, removeNode, Transform } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -395,7 +395,7 @@ export function deserializeDeletes(input: NetPipeData) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.info("deserialized deletion for nid", nid, "eid", eid);
-      removeRecursive(state.world, eid);
+      removeNode(state.world, eid);
       network.networkIdToEntityId.delete(nid);
     }
   }

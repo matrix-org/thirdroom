@@ -6,7 +6,7 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import {
   addChild,
   addTransformComponent,
-  removeRecursive,
+  removeNode,
   setEulerFromQuaternion,
   Transform,
 } from "../../engine/component/transform";
@@ -189,7 +189,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
           hasComponent(ctx.world, Owned, entity) &&
           !hasComponent(ctx.world, Player, entity)
         ) {
-          removeRecursive(ctx.world, entity);
+          removeNode(ctx.world, entity);
         } else if (hasComponent(ctx.world, Player, entity)) {
           spawnEntity(ctx, spawnPointQuery(ctx.world), entity);
         }
@@ -274,7 +274,7 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
     type: ThirdRoomMessageType.ExitedWorld,
   });
 
-  removeRecursive(ctx.world, ctx.activeScene);
+  removeNode(ctx.world, ctx.activeScene);
 
   if (thirdroom.sceneGLTF) {
     disposeGLTFResource(thirdroom.sceneGLTF);
@@ -328,7 +328,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (ctx.activeScene) {
-    removeRecursive(ctx.world, ctx.activeScene);
+    removeNode(ctx.world, ctx.activeScene);
 
     if (thirdroom.sceneGLTF) {
       disposeGLTFResource(thirdroom.sceneGLTF);
@@ -460,7 +460,7 @@ function loadPreviewCamera(ctx: GameState) {
 
 function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
   if (ctx.activeCamera) {
-    removeRecursive(ctx.world, ctx.activeCamera);
+    removeNode(ctx.world, ctx.activeCamera);
   }
 
   const eid = createPrefabEntity(ctx, "avatar");

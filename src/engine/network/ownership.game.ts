@@ -1,7 +1,7 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
-import { addChild, removeRecursive, Transform } from "../component/transform";
+import { addChild, removeNode, Transform } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -30,13 +30,13 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
   if (eid) {
-    removeRecursive(ctx.world, eid);
+    removeNode(ctx.world, eid);
   }
 };
 
 export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: number): number => {
   if (!hasComponent(ctx.world, Owned, eid)) {
-    removeRecursive(ctx.world, eid);
+    removeNode(ctx.world, eid);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);

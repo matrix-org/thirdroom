@@ -3,7 +3,7 @@ import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
-import { removeRecursive } from "../component/transform";
+import { removeNode } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { ourPlayerQuery, Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -175,7 +175,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
         if (peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeRecursive(ctx.world, eid);
+          removeNode(ctx.world, eid);
         }
       }
     }
@@ -184,7 +184,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     const eid = network.peerIdToEntityId.get(peerId);
     if (eid) {
       network.entityIdToPeerId.delete(eid);
-      removeRecursive(ctx.world, eid);
+      removeNode(ctx.world, eid);
     }
 
     network.peers.splice(peerArrIndex, 1);

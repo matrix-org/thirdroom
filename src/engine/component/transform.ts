@@ -156,7 +156,7 @@ export function getChildAt(eid: number, index: number): number {
 
 export const findChild = (parent: number, predicate: (eid: number) => boolean) => {
   let eid;
-  traverseRecursive(parent, (e) => {
+  traverse(parent, (e) => {
     if (predicate(e)) {
       eid = e;
       return false;
@@ -547,45 +547,7 @@ export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
   }
 }
 
-// TODO: traverse still seems to be broken in some edge cases and needs more test cases.
-// Use traverseRecursive to debug edge cases and build out proper iterative solution
-export function traverse(rootEid: number, callback: (eid: number) => unknown | false) {
-  // start at root
-  let eid = rootEid;
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const processChildren = callback(eid);
-
-    const firstChild = Transform.firstChild[eid];
-
-    // go downwards into children
-    if (firstChild && processChildren !== false) {
-      eid = firstChild;
-    } else {
-      // Don't traverse the root's siblings
-      if (eid === rootEid) {
-        return;
-      }
-
-      // go upwards if no more siblings
-      while (!Transform.nextSibling[eid]) {
-        // back at root
-        if (eid === rootEid) {
-          return;
-        }
-
-        // go upwards
-        eid = Transform.parent[eid];
-      }
-
-      // go sideways
-      eid = Transform.nextSibling[eid];
-    }
-  }
-}
-
-export function traverseRecursive(eid: number, callback: (eid: number) => unknown | false) {
+export function traverse(eid: number, callback: (eid: number) => unknown | false) {
   if (eid) {
     const processChildren = callback(eid);
 
@@ -595,27 +557,16 @@ export function traverseRecursive(eid: number, callback: (eid: number) => unknow
   let curChild = Transform.firstChild[eid];
 
   while (curChild) {
-    traverseRecursive(curChild, callback);
+    traverse(curChild, callback);
     curChild = Transform.nextSibling[curChild];
   }
 }
 
-export function traverseReverse(rootEid: number, callback: (eid: number) => unknown) {
-  const stack: number[] = [];
-  traverse(rootEid, (eid) => {
-    stack.push(eid);
-  });
-
-  while (stack.length) {
-    callback(stack.pop()!);
-  }
-}
-
-export function traverseReverseRecursive(eid: number, callback: (eid: number) => unknown) {
+export function traverseReverse(eid: number, callback: (eid: number) => unknown) {
   let curChild = getLastChild(eid);
 
   while (curChild) {
-    traverseReverseRecursive(curChild, callback);
+    traverseReverse(curChild, callback);
     curChild = Transform.prevSibling[curChild];
   }
 
@@ -624,12 +575,12 @@ export function traverseReverseRecursive(eid: number, callback: (eid: number) =>
   }
 }
 
-export function removeRecursive(world: World, rootEid: number) {
+export function removeNode(world: World, rootEid: number) {
   if (!entityExists(world, rootEid)) {
     return;
   }
 
-  traverseReverseRecursive(rootEid, (eid) => {
+  traverseReverse(rootEid, (eid) => {
     // TODO: removeEntity should reset components
     const components = getEntityComponents(world, eid);
 
