@@ -130,6 +130,7 @@ export function NametagSystem(ctx: GameState) {
 export function addNametag(ctx: GameState, height: number, eid: number) {
   const nametag = addEntity(ctx.world);
   addComponent(ctx.world, NametagComponent, nametag);
+  addRemoteNodeComponent(ctx, nametag);
   Transform.position[nametag].set([0, height + height / 1.5, 0]);
   addChild(eid, nametag);
   NametagComponent.entity[nametag] = eid;

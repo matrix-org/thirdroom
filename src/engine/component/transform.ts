@@ -490,10 +490,12 @@ export function setEulerFromQuaternion(rotation: Float32Array | vec3, quaternion
   setEulerFromTransformMatrix(rotation, tempMat4);
 }
 
+const RAD2DEG = 180 / Math.PI;
+
 export function isolateQuaternionAxis(quaternion: quat, axis: vec3) {
   setEulerFromQuaternion(tempEuler, quaternion);
   vec3.mul(tempVec3, tempEuler, axis);
-  quat.fromEuler(quaternion, tempVec3[0], tempVec3[1], tempVec3[2]);
+  quat.fromEuler(quaternion, tempVec3[0] * RAD2DEG, tempVec3[1] * RAD2DEG, tempVec3[2] * RAD2DEG);
 }
 
 export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {

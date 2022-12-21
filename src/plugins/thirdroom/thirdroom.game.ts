@@ -112,6 +112,7 @@ const createAvatarRig =
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const eid = addEntity(ctx.world);
+    addRemoteNodeComponent(ctx, eid);
     addAvatar(ctx, physics, "/gltf/full-animation-rig.glb", eid, {
       nametag: true,
     });

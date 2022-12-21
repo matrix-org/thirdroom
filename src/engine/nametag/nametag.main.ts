@@ -10,8 +10,7 @@ export class MainThreadNametagResource extends defineLocalResourceClass<typeof N
 ) {
   async load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
-
     const nametags = getLocalResources(ctx, MainThreadNametagResource);
-    audioModule.eventEmitter.emit("nametags-changed", nametags);
+    audioModule.eventEmitter.emit("nametags-changed", [...nametags, this]);
   }
 }
