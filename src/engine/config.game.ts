@@ -27,7 +27,6 @@ import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/Fl
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
-import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
@@ -93,7 +92,6 @@ export default defineConfig<GameState>({
     GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
-    NameSystem,
 
     ResetInputSystem,
     ResetAudioSourcesSystem,

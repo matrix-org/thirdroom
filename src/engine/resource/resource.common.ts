@@ -193,6 +193,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     const resourceModule = getModule(ctx, ResourceModule);
 
     const dependencyByteOffsets: number[] = [];
+    const dependencyNames: string[] = [];
 
     const manager: ILocalResourceManager = {
       getResource: <Def extends ResourceDefinition>(resourceDef: Def, resourceId: ResourceId) =>
@@ -210,12 +211,18 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
+      if (!prop.loadDependency) {
+        continue;
+      }
+
       if (prop.type === "string" || prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap") {
         for (let i = 0; i < prop.size; i++) {
           dependencyByteOffsets.push(prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT);
+          dependencyNames.push(propName);
         }
       } else if (prop.type === "arrayBuffer") {
         dependencyByteOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+        dependencyNames.push(propName);
       }
     }
 
@@ -227,9 +234,10 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       for (let i = 0; i < dependencyByteOffsets.length; i++) {
         const index = dependencyByteOffsets[i] / Uint32Array.BYTES_PER_ELEMENT;
         const resourceId = view[index];
+        const name = dependencyNames[i];
 
         if (resourceId) {
-          promises.push(waitForLocalResource(ctx, resourceId));
+          promises.push(waitForLocalResource(ctx, resourceId, name));
         }
       }
 

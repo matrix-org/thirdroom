@@ -19,6 +19,7 @@ export function addRemoteNodeComponent(
 
   // if entity already has the component should we apply props and return object?
   if (remoteNode) {
+    if (props?.name) remoteNode.name = props.name;
     if (props?.mesh) remoteNode.mesh = props.mesh;
     if (props?.instancedMesh) remoteNode.instancedMesh = props.instancedMesh;
     if (props?.lightMap) remoteNode.lightMap = props.lightMap;
@@ -29,6 +30,7 @@ export function addRemoteNodeComponent(
     if (props?.audioEmitter) remoteNode.audioEmitter = props.audioEmitter;
     if (props?.tilesRenderer) remoteNode.tilesRenderer = props.tilesRenderer;
     if (props?.nametag) remoteNode.nametag = props.nametag;
+    if (props?.isStatic) remoteNode.isStatic = props.isStatic;
 
     return remoteNode;
   }

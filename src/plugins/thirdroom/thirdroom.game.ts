@@ -441,11 +441,11 @@ function loadPreviewCamera(ctx: GameState) {
 
     addTransformComponent(ctx.world, defaultCamera);
 
-    addChild(ctx.activeScene, defaultCamera);
-
     addRemoteNodeComponent(ctx, defaultCamera, {
       camera: createRemotePerspectiveCamera(ctx),
     });
+
+    addChild(ctx.activeScene, defaultCamera);
 
     ctx.activeCamera = defaultCamera;
   }

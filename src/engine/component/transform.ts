@@ -14,9 +14,11 @@ import { vec3, quat, mat4 } from "gl-matrix";
 import { maxEntities, NOOP } from "../config.common";
 import { GameState, World } from "../GameTypes";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
-import { hierarchyObjectBufferSchema } from "./transform.common";
 import { Networked } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
+import { RemoteNode, RemoteScene, ResourceType } from "../resource/schema";
+import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteSceneComponent } from "../scene/scene.game";
 
 export const Hidden = defineComponent();
 
@@ -50,11 +52,14 @@ export const gameObjectBuffer = createObjectBufferView(
     worldMatrixNeedsUpdate: [Uint8Array, maxEntities],
     static: [Uint8Array, maxEntities],
     skipLerp: [Uint8Array, maxEntities],
+    parent: [Uint32Array, maxEntities],
+    firstChild: [Uint32Array, maxEntities],
+    prevSibling: [Uint32Array, maxEntities],
+    nextSibling: [Uint32Array, maxEntities],
+    hierarchyUpdated: [Uint8Array, maxEntities],
   },
   ArrayBuffer
 );
-
-export const hierarchyObjectBuffer = createObjectBufferView(hierarchyObjectBufferSchema, ArrayBuffer);
 
 export const Transform: Transform = {
   position: gameObjectBuffer.position,
@@ -68,11 +73,11 @@ export const Transform: Transform = {
   worldMatrix: gameObjectBuffer.worldMatrix,
   worldMatrixNeedsUpdate: gameObjectBuffer.worldMatrixNeedsUpdate,
 
-  parent: hierarchyObjectBuffer.parent,
-  firstChild: hierarchyObjectBuffer.firstChild,
-  prevSibling: hierarchyObjectBuffer.prevSibling,
-  nextSibling: hierarchyObjectBuffer.nextSibling,
-  hierarchyUpdated: hierarchyObjectBuffer.hierarchyUpdated,
+  parent: gameObjectBuffer.parent,
+  firstChild: gameObjectBuffer.firstChild,
+  prevSibling: gameObjectBuffer.prevSibling,
+  nextSibling: gameObjectBuffer.nextSibling,
+  hierarchyUpdated: gameObjectBuffer.hierarchyUpdated,
 };
 
 export function addTransformComponent(world: World, eid: number) {
@@ -112,6 +117,27 @@ export function getLastChild(eid: number): number {
   }
 
   return last;
+}
+
+export function getLastChildNode(parent: RemoteNode | RemoteScene): RemoteNode | undefined {
+  let cursor: RemoteNode | undefined;
+
+  if (parent.resourceType === ResourceType.Node) {
+    const node = parent as RemoteNode;
+    cursor = node.firstChild as RemoteNode | undefined;
+  } else {
+    const scene = parent as RemoteScene;
+    cursor = scene.firstNode as RemoteNode | undefined;
+  }
+
+  let last = cursor;
+
+  while (cursor) {
+    last = cursor;
+    cursor = cursor.nextSibling as RemoteNode | undefined;
+  }
+
+  return last as RemoteNode | undefined;
 }
 
 export function getChildAt(eid: number, index: number): number {
@@ -160,9 +186,47 @@ export function addChild(parent: number, child: number) {
     Transform.prevSibling[child] = NOOP;
     Transform.nextSibling[child] = NOOP;
   }
+
+  const parentNode = RemoteNodeComponent.get(parent) || RemoteSceneComponent.get(parent);
+  const childNode = RemoteNodeComponent.get(child);
+
+  if (parentNode && childNode) {
+    addChildNode(parentNode, childNode);
+  }
 }
 
-export function removeChild(parent: number, child: number) {
+function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  const previousParent = (child.parent || child.parentScene) as RemoteNode | RemoteScene | undefined;
+
+  if (previousParent) {
+    removeChildNode(previousParent, child);
+  }
+
+  if (parent.resourceType === ResourceType.Node) {
+    child.parent = parent as RemoteNode;
+  } else {
+    child.parentScene = parent as RemoteScene;
+  }
+
+  const lastChild = getLastChildNode(parent);
+
+  if (lastChild) {
+    lastChild.nextSibling = child;
+    child.prevSibling = lastChild;
+    child.nextSibling = undefined;
+  } else {
+    if (parent.resourceType === ResourceType.Node) {
+      (parent as RemoteNode).firstChild = child;
+    } else {
+      (parent as RemoteScene).firstNode = child;
+    }
+
+    child.prevSibling = undefined;
+    child.nextSibling = undefined;
+  }
+}
+
+function removeChild(parent: number, child: number) {
   const prevSibling = Transform.prevSibling[child];
   const nextSibling = Transform.nextSibling[child];
 
@@ -189,6 +253,52 @@ export function removeChild(parent: number, child: number) {
   Transform.parent[child] = NOOP;
   Transform.nextSibling[child] = NOOP;
   Transform.prevSibling[child] = NOOP;
+}
+
+function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  const prevSibling = child.prevSibling;
+  const nextSibling = child.nextSibling;
+
+  if (parent.resourceType === ResourceType.Node) {
+    const parentNode = parent as RemoteNode;
+
+    if (parentNode.firstChild === child) {
+      parentNode.firstChild = undefined;
+    }
+  } else {
+    const parentScene = parent as RemoteScene;
+
+    if (parentScene.firstNode === child) {
+      parentScene.firstNode = undefined;
+    }
+  }
+
+  // [prev, child, next]
+  if (prevSibling && nextSibling) {
+    prevSibling.nextSibling = nextSibling;
+    nextSibling.prevSibling = prevSibling;
+  }
+  // [prev, child]
+  if (prevSibling && nextSibling) {
+    prevSibling.nextSibling = undefined;
+  }
+  // [child, next]
+  if (nextSibling && prevSibling) {
+    nextSibling.prevSibling = undefined;
+
+    if (parent.resourceType === ResourceType.Node) {
+      const parentNode = parent as RemoteNode;
+      parentNode.firstChild = nextSibling;
+    } else {
+      const parentScene = parent as RemoteScene;
+      parentScene.firstNode = nextSibling;
+    }
+  }
+
+  child.parentScene = undefined;
+  child.parent = undefined;
+  child.nextSibling = undefined;
+  child.prevSibling = undefined;
 }
 
 export const updateWorldMatrix = (eid: number, updateParents: boolean, updateChildren: boolean) => {

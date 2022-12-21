@@ -9,7 +9,7 @@ import {
 } from "bitecs";
 
 import { GameState } from "../GameTypes";
-import { hierarchyObjectBuffer, traverseRecursive } from "../component/transform";
+import { traverseRecursive } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddSelectedEntityMessage,
@@ -18,9 +18,7 @@ import {
   editorStateSchema,
   EditorStateTripleBuffer,
   FocusEntityMessage,
-  HierarchyTripleBuffer,
   InitializeEditorStateMessage,
-  NamesChangedMessage,
   RenameEntityMessage,
   ReparentEntitiesMessage,
   SelectionChangedMessage,
@@ -28,14 +26,12 @@ import {
   ToggleSelectedEntityMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
-import { Name, nameQuery, setName } from "../component/Name";
 import {
   commitToObjectTripleBuffer,
   createObjectBufferView,
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { hierarchyObjectBufferSchema } from "../component/transform.common";
 import { NOOP } from "../config.common";
 import { RemoteNodeComponent } from "../node/node.game";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
@@ -49,7 +45,6 @@ export interface EditorModuleState {
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
-  hierarchyTripleBuffer: HierarchyTripleBuffer;
   editorLoaded: boolean;
 }
 
@@ -62,14 +57,9 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
   create(ctx, { sendMessage }) {
     const editorStateBufferView = createObjectBufferView(editorStateSchema, ArrayBuffer);
     const editorStateTripleBuffer = createObjectTripleBuffer(editorStateSchema, ctx.gameToMainTripleBufferFlags);
-    const hierarchyTripleBuffer = createObjectTripleBuffer(
-      hierarchyObjectBufferSchema,
-      ctx.gameToMainTripleBufferFlags
-    );
 
     sendMessage<InitializeEditorStateMessage>(Thread.Main, EditorMessageType.InitializeEditorState, {
       editorStateTripleBuffer,
-      hierarchyTripleBuffer,
     });
 
     return {
@@ -77,7 +67,6 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
-      hierarchyTripleBuffer,
       editorLoaded: false,
     };
   },
@@ -104,10 +93,6 @@ const selectedQuery = defineQuery([Selected]);
 const selectedEnterQuery = enterQuery(selectedQuery);
 const selectedExitQuery = exitQuery(selectedQuery);
 
-const nameEnterQuery = enterQuery(nameQuery);
-const nameExitQuery = exitQuery(nameQuery);
-export const editorNameChangedQueue: [number, string][] = [];
-
 /********************
  * Message Handlers *
  ********************/
@@ -119,7 +104,6 @@ export function onLoadEditor(ctx: GameState) {
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
-    names: Name,
     activeEntity: editor.activeEntity,
     selectedEntities: Array.from(selectedQuery(ctx.world)),
   });
@@ -177,7 +161,11 @@ export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEn
 export function onFocusEntity(ctx: GameState, message: FocusEntityMessage) {}
 
 export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
-  setName(message.eid, message.name);
+  const node = RemoteNodeComponent.get(message.eid);
+
+  if (node) {
+    node.name = message.name;
+  }
 }
 
 export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
@@ -194,39 +182,7 @@ export function EditorStateSystem(ctx: GameState) {
   }
 
   // Update editor state and hierarchy triple buffers
-  editor.editorStateBufferView.activeSceneEid[0] = ctx.activeScene;
-
   commitToObjectTripleBuffer(editor.editorStateTripleBuffer, editor.editorStateBufferView);
-  commitToObjectTripleBuffer(editor.hierarchyTripleBuffer, hierarchyObjectBuffer);
-
-  // Send updated names to main thread
-  const entered = nameEnterQuery(ctx.world);
-  const exited = nameExitQuery(ctx.world);
-
-  if (entered.length !== 0 || exited.length !== 0 || editorNameChangedQueue.length !== 0) {
-    const created: [number, string][] = [];
-
-    for (let i = 0; i < entered.length; i++) {
-      const eid = entered[i];
-      created.push([eid, Name.get(eid) || `Entity ${eid}`]);
-    }
-
-    const deleted: number[] = [];
-
-    for (let i = 0; i < exited.length; i++) {
-      const eid = exited[i];
-      deleted.push(eid);
-    }
-
-    ctx.sendMessage<NamesChangedMessage>(Thread.Main, {
-      type: EditorMessageType.NamesChanged,
-      created,
-      updated: editorNameChangedQueue,
-      deleted,
-    });
-
-    editorNameChangedQueue.length = 0;
-  }
 
   // Send updated selection state to main thread
   const selected = selectedQuery(ctx.world);

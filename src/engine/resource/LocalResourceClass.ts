@@ -18,7 +18,7 @@ export function defineLocalResourceClass<
   Def extends ResourceDefinition,
   ThreadContext extends BaseThreadContext = BaseThreadContext
 >(resourceDef: Def): ILocalResourceClass<Def, ThreadContext> {
-  const { name, schema } = resourceDef;
+  const { name, schema, resourceType } = resourceDef;
 
   function LocalResourceClass(
     this: LocalResource<Def>,
@@ -27,6 +27,7 @@ export function defineLocalResourceClass<
     tripleBuffer: TripleBuffer
   ) {
     this.resourceId = resourceId;
+    this.resourceType = resourceType;
     this.tripleBuffer = tripleBuffer;
     this.manager = manager;
     this.__props = {};

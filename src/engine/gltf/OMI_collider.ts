@@ -6,7 +6,7 @@ import { vec3ArrayTransformMat4, getAccessorArrayView } from "../accessor/access
 import { addTransformComponent, addChild, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { MeshPrimitiveAttributeIndex, RemoteAccessor, RemoteMesh } from "../resource/schema";
@@ -136,6 +136,7 @@ export function addTrimeshFromMesh(ctx: GameState, nodeEid: number, mesh: Remote
 
     const primitiveEid = addEntity(ctx.world);
     addTransformComponent(ctx.world, primitiveEid);
+    addRemoteNodeComponent(ctx, primitiveEid);
     addChild(nodeEid, primitiveEid);
     addRigidBody(ctx, primitiveEid, rigidBody, mesh.resourceId, primitive.resourceId);
   }

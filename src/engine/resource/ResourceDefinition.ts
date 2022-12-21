@@ -41,6 +41,7 @@ export interface ResourcePropDef<
   max?: number;
   minExclusive?: number;
   maxExclusive?: number;
+  loadDependency: boolean;
 }
 
 function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
@@ -61,6 +62,7 @@ function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: false,
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -86,6 +88,7 @@ function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: 0,
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -111,6 +114,7 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: 0,
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -132,6 +136,7 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec2.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -153,6 +158,7 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec3.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -174,6 +180,7 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec3.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -195,6 +202,7 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec4.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -216,6 +224,7 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: quat.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -237,6 +246,7 @@ function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: mat4.create(),
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -258,6 +268,7 @@ function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?
     script: false,
     default: 0,
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -289,6 +300,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
     script: false,
     default: undefined,
     resourceDef: undefined,
+    loadDependency: false,
     ...options,
   };
 }
@@ -299,6 +311,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
+  loadDependency?: boolean;
 }): ResourcePropDef<"string", string, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "string",
@@ -310,6 +323,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
     script: false,
     default: "",
     resourceDef: undefined,
+    loadDependency: true,
     ...options,
   };
 }
@@ -327,6 +341,7 @@ function createArrayBufferPropDef(options?: {
     script: false,
     default: undefined,
     resourceDef: undefined,
+    loadDependency: true,
     ...options,
   };
 }
@@ -338,6 +353,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
+    loadDependency?: boolean;
   }
 ): ResourcePropDef<"ref", number, Mut extends true ? true : false, Req extends false ? false : true, undefined, Def> {
   return {
@@ -350,6 +366,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     required: false as any,
     script: false,
     default: 0,
+    loadDependency: true,
     ...options,
   };
 }
@@ -362,6 +379,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
+    loadDependency?: boolean;
   }
 ): ResourcePropDef<
   "refArray",
@@ -382,6 +400,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     required: false as any,
     script: false,
     default: new Uint32Array(size),
+    loadDependency: true,
     ...rest,
   };
 }
@@ -394,6 +413,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
+    loadDependency?: boolean;
   }
 ): ResourcePropDef<
   "refMap",
@@ -414,6 +434,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     required: false as any,
     script: false,
     default: new Uint32Array(size),
+    loadDependency: true,
     ...rest,
   };
 }
@@ -423,6 +444,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
+  loadDependency?: boolean;
 }): ResourcePropDef<
   "selfRef",
   number,
@@ -441,6 +463,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
     script: false,
     default: 0,
     resourceDef: undefined as unknown as Def, // To be assigned in defineResource
+    loadDependency: true,
     ...options,
   };
 }
@@ -487,6 +510,7 @@ export const defineResource = <S extends Schema>(
         mutable: prop.mutable,
         required: prop.required,
         script: prop.script,
+        loadDependency: prop.loadDependency,
       }) as unknown as any;
       (schema[propName] as any).byteOffset = cursor;
     } else {
@@ -587,6 +611,7 @@ export type LocalResource<
   Def extends ResourceDefinition,
   ThreadContext extends BaseThreadContext = BaseThreadContext
 > = Resource<Def, false> & {
+  resourceType: number;
   manager: ILocalResourceManager;
   __props: { [key: string]: TypedArray32[] };
   load(ctx: ThreadContext): Promise<void>;

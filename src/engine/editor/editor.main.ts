@@ -8,10 +8,8 @@ import {
   EditorNode,
   EditorStateTripleBuffer,
   FocusEntityMessage,
-  HierarchyTripleBuffer,
   InitializeEditorStateMessage,
   LoadEditorMessage,
-  NamesChangedMessage,
   RenameEntityMessage,
   ReparentEntitiesMessage,
   ReparentEntityPosition,
@@ -22,19 +20,20 @@ import {
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
-import { getReadObjectBufferView, ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
+import { AudioModule } from "../audio/audio.main";
+import { MainScene } from "../scene/scene.main";
+import { MainNode } from "../node/node.main";
+import { ResourceType } from "../resource/schema";
 
 /*********
  * Types *
  *********/
 
 export interface EditorModuleState {
-  names: Map<number, string>;
   activeEntity: number;
   selectedEntities: number[];
   editorStateTripleBuffer: EditorStateTripleBuffer;
-  hierarchyTripleBuffer: HierarchyTripleBuffer;
   eventEmitter: EventEmitter;
   editorLoaded: boolean;
 }
@@ -73,17 +72,15 @@ export interface SelectionChangedEvent {
 export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>({
   name: "editor",
   async create(ctx, { waitForMessage }) {
-    const { editorStateTripleBuffer, hierarchyTripleBuffer } = await waitForMessage<InitializeEditorStateMessage>(
+    const { editorStateTripleBuffer } = await waitForMessage<InitializeEditorStateMessage>(
       Thread.Game,
       EditorMessageType.InitializeEditorState
     );
 
     return {
-      names: new Map(),
       activeEntity: NOOP,
       selectedEntities: [],
       editorStateTripleBuffer,
-      hierarchyTripleBuffer,
       eventEmitter: new EventEmitter(),
       editorLoaded: false,
     };
@@ -91,7 +88,6 @@ export const EditorModule = defineModule<IMainThreadContext, EditorModuleState>(
   init(ctx) {
     return createDisposables([
       registerMessageHandler(ctx, EditorMessageType.EditorLoaded, onEditorLoaded),
-      registerMessageHandler(ctx, EditorMessageType.NamesChanged, onNamesChanged),
       registerMessageHandler(ctx, EditorMessageType.SelectionChanged, onSelectionChanged),
     ]);
   },
@@ -108,20 +104,14 @@ export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
     return;
   }
 
-  updateHierarchy(editor);
+  updateHierarchy(mainThread, editor);
 }
 
-function updateHierarchy(editor: EditorModuleState) {
-  const editorStateView = getReadObjectBufferView(editor.editorStateTripleBuffer);
-
-  const activeScene = editorStateView.activeSceneEid[0];
-
-  const hierarchyView = getReadObjectBufferView(editor.hierarchyTripleBuffer);
-
-  const scene = buildEditorNode(editor.names, hierarchyView, activeScene);
+function updateHierarchy(ctx: IMainThreadContext, editor: EditorModuleState) {
+  const audio = getModule(ctx, AudioModule);
 
   const event: HierarchyChangedEvent = {
-    scene,
+    scene: audio.activeScene && buildEditorNode(audio.activeScene),
     activeEntity: editor.activeEntity,
     selectedEntities: editor.selectedEntities,
   };
@@ -136,7 +126,6 @@ function updateHierarchy(editor: EditorModuleState) {
 function onEditorLoaded(ctx: IMainThreadContext, message: EditorLoadedMessage) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = true;
-  editor.names = message.names;
   editor.selectedEntities = message.selectedEntities;
   editor.activeEntity = message.activeEntity;
 
@@ -145,27 +134,6 @@ function onEditorLoaded(ctx: IMainThreadContext, message: EditorLoadedMessage) {
     activeEntity: message.activeEntity,
   };
   editor.eventEmitter.emit(EditorEventType.EditorLoaded, event);
-}
-
-function onNamesChanged(ctx: IMainThreadContext, { created, updated, deleted }: NamesChangedMessage) {
-  const editor = getModule(ctx, EditorModule);
-
-  for (let i = 0; i < created.length; i++) {
-    const [eid, name] = created[i];
-    editor.names.set(eid, name);
-  }
-
-  for (let i = 0; i < updated.length; i++) {
-    const [eid, name] = updated[i];
-    editor.names.set(eid, name);
-  }
-
-  for (let i = 0; i < deleted.length; i++) {
-    const eid = deleted[i];
-    editor.names.delete(eid);
-  }
-
-  updateHierarchy(editor);
 }
 
 function onSelectionChanged(ctx: IMainThreadContext, message: SelectionChangedMessage) {
@@ -193,7 +161,6 @@ export function loadEditor(ctx: IMainThreadContext) {
 export function disposeEditor(ctx: IMainThreadContext) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = false;
-  editor.names = new Map();
   ctx.sendMessage<DisposeEditorMessage>(Thread.Game, {
     type: EditorMessageType.DisposeEditor,
   });
@@ -253,32 +220,41 @@ export function reparentEntities(
  * Utils *
  *********/
 
-function buildEditorNode(
-  names: Map<number, string>,
-  hierarchyView: ReadObjectTripleBufferView<HierarchyTripleBuffer>,
-  eid: number,
-  parent?: EditorNode
-): EditorNode | undefined {
+function buildEditorNode(sceneOrNode: MainScene | MainNode, parent?: EditorNode): EditorNode | undefined {
   let node: EditorNode | undefined;
+  let curChild: MainNode | undefined;
 
-  if (eid) {
+  if (sceneOrNode.resourceType === ResourceType.Scene) {
+    const mainScene = sceneOrNode as MainScene;
+
     node = {
-      id: eid,
-      eid,
-      name: names.get(eid) || `Entity ${eid}`,
+      id: mainScene.eid,
+      eid: mainScene.eid,
+      name: mainScene.name,
+      children: [],
+    };
+
+    curChild = mainScene.firstNode as MainNode;
+  } else {
+    const mainNode = sceneOrNode as MainNode;
+
+    node = {
+      id: mainNode.eid,
+      eid: mainNode.eid,
+      name: mainNode.name,
       children: [],
     };
 
     if (parent) {
       parent.children.push(node);
     }
+
+    curChild = mainNode.firstChild as MainNode;
   }
 
-  let curChild = hierarchyView.firstChild[eid];
-
   while (curChild) {
-    buildEditorNode(names, hierarchyView, curChild, node);
-    curChild = hierarchyView.nextSibling[curChild];
+    buildEditorNode(curChild, node);
+    curChild = curChild.nextSibling as MainNode | undefined;
   }
 
   return node;
