@@ -2,9 +2,9 @@ import { addComponent } from "bitecs";
 
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { Hidden, setQuaternionFromEuler, Transform } from "../component/transform";
+import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 import { addTrimesh } from "./OMI_collider";
@@ -23,6 +23,8 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
     return;
   }
 
+  const remoteNode = RemoteNodeComponent.get(nodeEid) || addRemoteNodeComponent(ctx, nodeEid, {}, resource.manager);
+
   if (components["spawn-point"] || components["waypoint"]?.canBeSpawnPoint) {
     Transform.position[nodeEid][1] += 1.6;
     Transform.rotation[nodeEid][1] += Math.PI;
@@ -35,18 +37,11 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
   }
 
   if (components.visible?.visible === false) {
-    addComponent(ctx.world, Hidden, nodeEid);
+    remoteNode.visible = false;
   }
 
   if (components["scene-preview-camera"]) {
-    addRemoteNodeComponent(
-      ctx,
-      nodeEid,
-      {
-        camera: createRemotePerspectiveCamera(ctx, resource.manager),
-      },
-      resource.manager
-    );
+    remoteNode.camera = createRemotePerspectiveCamera(ctx, resource.manager);
     ctx.activeCamera = nodeEid;
   }
 }

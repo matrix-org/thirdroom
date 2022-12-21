@@ -228,6 +228,21 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
           return resources;
         },
       });
+    } else if (prop.type === "bool") {
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<Def>, value: boolean) {
+              this.__props[propName][0] = value ? 1 : 0;
+            },
+          }
+        : undefined;
+
+      Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        ...setter,
+        get(this: RemoteResource<Def>) {
+          return !!this.__props[propName][0];
+        },
+      });
     } else if (prop.size === 1) {
       const setter = prop.mutable
         ? {

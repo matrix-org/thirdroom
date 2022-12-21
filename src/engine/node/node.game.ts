@@ -1,9 +1,8 @@
-import { addComponent, defineQuery, exitQuery, hasComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery } from "bitecs";
 
-import { Hidden, Transform, traverse } from "../component/transform";
+import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { disposeResource } from "../resource/resource.game";
-import { RemoteSceneComponent } from "../scene/scene.game";
 import { NodeResource, RemoteNode } from "../resource/schema";
 import { InitialResourceProps, IRemoteResourceManager } from "../resource/ResourceDefinition";
 
@@ -51,62 +50,9 @@ export function RemoteNodeSystem(ctx: GameState) {
 
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const remoteNode = RemoteNodeComponent.get(eid);
-
-    if (!remoteNode) {
-      continue;
-    }
-
+    const remoteNode = RemoteNodeComponent.get(eid)!;
     remoteNode.skipLerp = Transform.skipLerp[eid];
-
-    remoteNode.visible = false;
-
-    if (remoteNode.audioEmitter) {
-      remoteNode.enabled = false;
-    }
-  }
-
-  const scene = ctx.activeScene;
-
-  const sceneResource = RemoteSceneComponent.get(scene);
-
-  if (sceneResource) {
-    traverse(scene, (eid) => {
-      if (hasComponent(ctx.world, Hidden, eid)) {
-        return false;
-      }
-
-      if (hasComponent(ctx.world, RemoteNodeComponent, eid)) {
-        const remoteNode = RemoteNodeComponent.get(eid);
-
-        if (remoteNode) {
-          remoteNode.visible = true;
-        }
-      }
-    });
-
-    traverse(scene, (eid) => {
-      if (hasComponent(ctx.world, RemoteNodeComponent, eid)) {
-        const remoteNode = RemoteNodeComponent.get(eid);
-
-        if (remoteNode && remoteNode.audioEmitter) {
-          remoteNode.enabled = true;
-        }
-      }
-    });
-
-    for (let i = 0; i < entities.length; i++) {
-      const eid = entities[i];
-      const remoteNode = RemoteNodeComponent.get(eid);
-
-      if (!remoteNode) {
-        continue;
-      }
-
-      if (hasComponent(ctx.world, Transform, eid)) {
-        remoteNode.worldMatrix.set(Transform.worldMatrix[eid]);
-      }
-    }
+    remoteNode.worldMatrix.set(Transform.worldMatrix[eid]);
   }
 
   const disposedEntities = remoteNodeExitQuery(ctx.world);

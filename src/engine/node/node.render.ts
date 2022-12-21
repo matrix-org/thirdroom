@@ -64,6 +64,7 @@ export class RendererNodeResource extends defineLocalResourceClass<typeof NodeRe
   declare reflectionProbe: RendererReflectionProbeResource | undefined;
   currentReflectionProbeResourceId = 0;
   reflectionProbeObject?: ReflectionProbe;
+  object3DVisible = true;
 
   dispose() {
     if (this.meshPrimitiveObjects) {
@@ -127,7 +128,7 @@ export function updateTransformFromNode(ctx: RenderThreadState, node: RendererNo
   object3D.quaternion.slerp(tempQuaternion, lerpAlpha);
   object3D.scale.lerp(tempScale, lerpAlpha);
 
-  object3D.visible = !!node.visible;
+  object3D.visible = node.object3DVisible;
   object3D.layers.mask = node.layers;
 }
 
@@ -147,7 +148,7 @@ export function setTransformFromNode(
   object3D.quaternion.copy(tempQuaternion);
   object3D.scale.copy(tempScale);
 
-  object3D.visible = !!node.visible;
+  object3D.visible = node.object3DVisible;
 }
 
 export function updateLocalNodeResources(

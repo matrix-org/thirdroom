@@ -127,6 +127,13 @@ export function defineLocalResourceClass<
           return resources;
         },
       });
+    } else if (prop.type === "bool") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource<Def>) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          return !!this.__props[propName][index][0];
+        },
+      });
     } else if (prop.size === 1) {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource<Def>) {

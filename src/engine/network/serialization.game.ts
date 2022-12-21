@@ -24,11 +24,11 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeRecursive, Transform, Hidden } from "../component/transform";
+import { addChild, skipRenderLerp, removeRecursive, Transform } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
@@ -476,18 +476,6 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   addComponent(ctx.world, Player, peid);
 
-  // if our own avatar
-  if (network.authoritative && !isHost(network) && peerId === network.peerId) {
-    // unset our old avatar
-    const old = ourPlayerQuery(ctx.world)[0];
-    removeComponent(ctx.world, OurPlayer, old);
-    removeComponent(ctx.world, RigidBody, old);
-    removeComponent(ctx.world, Networked, old);
-
-    // embody new avatar
-    embodyAvatar(ctx, physics, input, peid);
-  }
-
   if (peerId !== network.peerId) {
     // if not our own avatar, add voip
     addRemoteNodeComponent(ctx, peid, {
@@ -506,6 +494,18 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
         name: peerId,
       }),
     });
+  }
+
+  // if our own avatar
+  if (network.authoritative && !isHost(network) && peerId === network.peerId) {
+    // unset our old avatar
+    const old = ourPlayerQuery(ctx.world)[0];
+    removeComponent(ctx.world, OurPlayer, old);
+    removeComponent(ctx.world, RigidBody, old);
+    removeComponent(ctx.world, Networked, old);
+
+    // embody new avatar
+    embodyAvatar(ctx, physics, input, peid);
   }
 
   return data;
@@ -528,7 +528,7 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
   // hide our avatar
   try {
     const avatar = getAvatar(ctx, eid);
-    addComponent(ctx.world, Hidden, avatar);
+    RemoteNodeComponent.get(avatar)!.visible = false;
   } catch {}
 
   // mark entity as our player entity

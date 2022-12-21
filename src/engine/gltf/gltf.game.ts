@@ -135,7 +135,8 @@ export interface GLTFResource {
 
 export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
   const eid = addEntity(ctx.world);
-  inflateGLTFScene(ctx, eid, uri, options);
+  addRemoteNodeComponent(ctx, eid);
+  inflateGLTFScene(ctx, eid, uri, { ...options, asNode: true });
   return eid;
 }
 
@@ -146,13 +147,14 @@ interface GLTFSceneOptions {
   createTrimesh?: boolean;
   isStatic?: boolean;
   resourceManager?: IRemoteResourceManager;
+  asNode?: boolean;
 }
 
 export async function inflateGLTFScene(
   ctx: GameState,
   sceneEid: number,
   uri: string,
-  { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager }: GLTFSceneOptions = {}
+  { fileMap, sceneIndex, createTrimesh = true, isStatic, resourceManager, asNode }: GLTFSceneOptions = {}
 ): Promise<GLTFResource> {
   addTransformComponent(ctx.world, sceneEid);
 
@@ -194,7 +196,7 @@ export async function inflateGLTFScene(
   const eidToObject3D = new Map<number, Object3D>();
   eidToObject3D.set(sceneEid, group);
 
-  const remoteScene = addRemoteSceneComponent(ctx, sceneEid);
+  const remoteSceneOrNode = asNode ? addRemoteNodeComponent(ctx, sceneEid) : addRemoteSceneComponent(ctx, sceneEid);
 
   const nodeInflators: Function[] = [];
 
@@ -210,7 +212,7 @@ export async function inflateGLTFScene(
           indexToObject3D,
           nodeInflators,
           nodeIndex,
-          remoteScene,
+          remoteSceneOrNode,
           createTrimesh && !hasInstancedMeshExtension && !hasColliderExtension(resource.root),
           isStatic
         )
@@ -220,9 +222,11 @@ export async function inflateGLTFScene(
 
   const { audioEmitters, backgroundTexture, reflectionProbe } = await promiseObject({
     nodePromise,
-    audioEmitters: loadSceneAudioEmitters(ctx, resource, scene),
-    backgroundTexture: hasBackgroundExtension(scene) ? loadGLTFBackgroundTexture(resource, scene) : undefined,
-    reflectionProbe: hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
+    audioEmitters: !asNode ? loadSceneAudioEmitters(ctx, resource, scene) : undefined,
+    backgroundTexture:
+      !asNode && hasBackgroundExtension(scene) ? loadGLTFBackgroundTexture(resource, scene) : undefined,
+    reflectionProbe:
+      !asNode && hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
 
   updateMatrixWorld(sceneEid, true);
@@ -249,22 +253,25 @@ export async function inflateGLTFScene(
     addAnimationComponent(ctx.world, sceneEid, { mixer, clips, actions, accessorIds });
   }
 
-  remoteScene.audioEmitters = audioEmitters || [];
-  remoteScene.backgroundTexture = backgroundTexture;
-  remoteScene.reflectionProbe = reflectionProbe;
+  if (!asNode) {
+    const scene = remoteSceneOrNode as RemoteScene;
+    scene.audioEmitters = audioEmitters || [];
+    scene.backgroundTexture = backgroundTexture;
+    scene.reflectionProbe = reflectionProbe;
 
-  const bloomStrength = getPostprocessingBloomStrength(scene);
+    const bloomStrength = getPostprocessingBloomStrength(scene);
 
-  if (bloomStrength) {
-    remoteScene.bloomStrength = bloomStrength;
-  }
+    if (bloomStrength) {
+      scene.bloomStrength = bloomStrength;
+    }
 
-  if (hasHubsComponentsExtension(resource.root)) {
-    inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
-  }
+    if (hasHubsComponentsExtension(resource.root)) {
+      inflateHubsScene(ctx, resource, sceneIndex, sceneEid);
+    }
 
-  if (hasCharacterControllerExtension(scene)) {
-    inflateSceneCharacterController(ctx, resource, sceneIndex, sceneEid);
+    if (hasCharacterControllerExtension(scene)) {
+      inflateSceneCharacterController(ctx, resource, sceneIndex, sceneEid);
+    }
   }
 
   return resource;

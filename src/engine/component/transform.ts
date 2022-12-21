@@ -20,8 +20,6 @@ import { RemoteNode, RemoteScene, ResourceType } from "../resource/schema";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RemoteSceneComponent } from "../scene/scene.game";
 
-export const Hidden = defineComponent();
-
 export interface Transform extends IComponent {
   position: Float32Array[];
   rotation: Float32Array[];
@@ -226,7 +224,7 @@ function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   }
 }
 
-function removeChild(parent: number, child: number) {
+export function removeChild(parent: number, child: number) {
   const prevSibling = Transform.prevSibling[child];
   const nextSibling = Transform.nextSibling[child];
 

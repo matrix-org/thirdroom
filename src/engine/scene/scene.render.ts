@@ -1,6 +1,7 @@
 import { Color, Scene } from "three";
 
 import { getModule } from "../module/module.common";
+import { RendererNodeResource } from "../node/node.render";
 import {
   RendererReflectionProbeResource,
   updateSceneReflectionProbe,
@@ -44,8 +45,9 @@ export function updateLocalSceneResources(ctx: RenderThreadState, activeSceneRes
 
     const rendererModule = getModule(ctx, RendererModule);
 
-    if (nextBackgroundTextureResourceId === activeSceneResourceId) {
+    if (scene.resourceId === activeSceneResourceId) {
       rendererModule.renderPipeline.bloomPass.strength = scene.bloomStrength;
+      updateSceneVisibility(ctx, scene);
     }
 
     updateSceneReflectionProbe(ctx, scene);
@@ -57,5 +59,25 @@ export function updateLocalSceneResources(ctx: RenderThreadState, activeSceneRes
       scene.sceneObject.overrideMaterial = null;
       scene.sceneObject.background = scene.backgroundTexture?.texture || null;
     }
+  }
+}
+
+function updateSceneVisibility(ctx: RenderThreadState, scene: RendererSceneResource) {
+  let curChild = scene.firstNode as RendererNodeResource | undefined;
+
+  while (curChild) {
+    updateNodeVisibility(curChild, true);
+    curChild = curChild.nextSibling as RendererNodeResource | undefined;
+  }
+}
+
+export function updateNodeVisibility(node: RendererNodeResource, parentVisibility: boolean) {
+  node.object3DVisible = node.visible && parentVisibility;
+
+  let curChild = node.firstChild as RendererNodeResource | undefined;
+
+  while (curChild) {
+    updateNodeVisibility(curChild, node.object3DVisible);
+    curChild = curChild.nextSibling as RendererNodeResource | undefined;
   }
 }

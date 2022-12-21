@@ -42,6 +42,7 @@ export function addAvatar(
 
   setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
 
+  addRemoteNodeComponent(ctx, container);
   addChild(container, eid);
 
   return eid;
