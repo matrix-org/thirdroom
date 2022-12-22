@@ -1,7 +1,9 @@
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
+import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import {
   ArrayBufferResourceType,
   LoadResourcesMessage,
@@ -11,7 +13,33 @@ import {
   ResourceMessageType,
   StringResourceType,
 } from "./resource.common";
-import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import { IRemoteResourceClass, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  NametagResource,
+  SamplerResource,
+  BufferResource,
+  BufferViewResource,
+  AudioDataResource,
+  AudioSourceResource,
+  AudioEmitterResource,
+  ImageResource,
+  TextureResource,
+  ReflectionProbeResource,
+  MaterialResource,
+  LightResource,
+  CameraResource,
+  SparseAccessorResource,
+  AccessorResource,
+  MeshPrimitiveResource,
+  InstancedMeshResource,
+  MeshResource,
+  LightMapResource,
+  TilesRendererResource,
+  SkinResource,
+  InteractableResource,
+  NodeResource,
+  SceneResource,
+} from "./schema";
 
 interface RemoteResourceInfo {
   id: ResourceId;
@@ -24,6 +52,13 @@ interface RemoteResourceInfo {
   cacheKey?: string;
   refCount: number;
   dispose?: () => void;
+}
+
+interface ResourceTransformData {
+  writeView: Uint8Array;
+  refView: Uint32Array;
+  refOffsets: number[];
+  refIsString: boolean[];
 }
 
 interface ResourceModuleState {
@@ -39,6 +74,9 @@ interface ResourceModuleState {
   renderThreadMessageQueue: any[];
   mainThreadTransferList: Transferable[];
   renderThreadTransferList: Transferable[];
+  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>;
+  resourceTransformData: Map<number, ResourceTransformData>;
+  resourceDefByType: Map<number, ResourceDefinition>;
 }
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
@@ -46,6 +84,9 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   create(ctx: GameState) {
     return {
       resourceIdCounter: 1,
+      resourceConstructors: new Map(),
+      resourceTransformData: new Map(),
+      resourceDefByType: new Map(),
       resources: new Map(),
       disposedResources: [],
       resourceStatusTripleBuffers: new Map(),
@@ -60,9 +101,87 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     };
   },
   init(ctx) {
-    return registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded);
+    return createDisposables([
+      registerResource(ctx, NametagResource),
+      registerResource(ctx, SamplerResource),
+      registerResource(ctx, BufferResource),
+      registerResource(ctx, BufferViewResource),
+      registerResource(ctx, AudioDataResource),
+      registerResource(ctx, AudioSourceResource),
+      registerResource(ctx, AudioEmitterResource),
+      registerResource(ctx, ImageResource),
+      registerResource(ctx, TextureResource),
+      registerResource(ctx, ReflectionProbeResource),
+      registerResource(ctx, MaterialResource),
+      registerResource(ctx, LightResource),
+      registerResource(ctx, CameraResource),
+      registerResource(ctx, SparseAccessorResource),
+      registerResource(ctx, AccessorResource),
+      registerResource(ctx, MeshPrimitiveResource),
+      registerResource(ctx, InstancedMeshResource),
+      registerResource(ctx, MeshResource),
+      registerResource(ctx, LightMapResource),
+      registerResource(ctx, TilesRendererResource),
+      registerResource(ctx, SkinResource),
+      registerResource(ctx, InteractableResource),
+      registerResource(ctx, NodeResource),
+      registerResource(ctx, SceneResource),
+      registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
+    ]);
   },
 });
+
+function registerResource<Def extends ResourceDefinition>(
+  ctx: GameState,
+  resourceDefOrClass: Def | IRemoteResourceClass<Def>
+) {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  const RemoteResourceClass =
+    "resourceDef" in resourceDefOrClass ? resourceDefOrClass : defineRemoteResourceClass(resourceDefOrClass);
+
+  const resourceDef = RemoteResourceClass.resourceDef;
+
+  resourceModule.resourceConstructors.set(
+    resourceDef,
+    RemoteResourceClass as unknown as IRemoteResourceClass<ResourceDefinition>
+  );
+
+  resourceModule.resourceDefByType.set(resourceDef.resourceType, resourceDef);
+
+  const buffer = new ArrayBuffer(resourceDef.byteLength);
+  const writeView = new Uint8Array(buffer);
+  const refView = new Uint32Array(buffer);
+  const refOffsets: number[] = [];
+  const refIsString: boolean[] = [];
+
+  const schema = resourceDef.schema;
+
+  for (const propName in schema) {
+    const prop = schema[propName];
+
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
+      for (let i = 0; i < prop.size; i++) {
+        refOffsets.push(prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT);
+        refIsString.push(prop.type === "string");
+      }
+    } else if (prop.type === "arrayBuffer") {
+      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+      refIsString.push(false);
+    }
+  }
+
+  resourceModule.resourceTransformData.set(resourceDef.resourceType, {
+    writeView,
+    refView,
+    refOffsets,
+    refIsString,
+  });
+
+  return () => {
+    resourceModule.resourceConstructors.delete(RemoteResourceClass.resourceDef);
+  };
+}
 
 function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
   const resourceModule = getModule(ctx, ResourceModule);

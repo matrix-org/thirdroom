@@ -1,8 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { Thread } from "../module/module.common";
+import { getModule, Thread } from "../module/module.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
-import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
@@ -11,6 +10,7 @@ import {
   createStringResource,
   disposeResource,
   getRemoteResource,
+  ResourceModule,
   setRemoteResource,
 } from "./resource.game";
 import {
@@ -21,13 +21,6 @@ import {
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { decodeString } from "./strings";
-
-interface ResourceTransformData {
-  writeView: Uint8Array;
-  refView: Uint32Array;
-  refOffsets: number[];
-  refIsString: boolean[];
-}
 
 interface ScriptResourceStore {
   refView: Uint32Array;
@@ -55,9 +48,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   // In the same way we check to see if the string ptr has changed before we decode it
   // we should
   private ctx: GameState;
-  private resourceDefByType: Map<number, ResourceDefinition> = new Map();
-  private resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>> = new Map();
-  private resourceTransformData: Map<number, ResourceTransformData> = new Map();
   private ptrToResourceId: Map<number, number> = new Map();
   private resourceStorage: Map<number, ScriptResourceStore> = new Map();
   public resources: RemoteResource<ResourceDefinition>[] = [];
@@ -68,59 +58,21 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.buffer = this.memory.buffer;
     this.U8Heap = new Uint8Array(this.buffer);
     this.U32Heap = new Uint32Array(this.buffer);
-
-    for (const resourceDef of allowedResources) {
-      this.registerResource(resourceDef);
-    }
   }
 
   setInstance(instance: ScriptWebAssemblyInstance): void {
     this.instance = instance;
   }
 
-  registerResource<Def extends ResourceDefinition>(resourceDef: Def) {
-    this.resourceDefByType.set(resourceDef.resourceType, resourceDef);
-    const resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
-    this.resourceConstructors.set(
-      resourceDef,
-      resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
-    );
-
-    const buffer = new ArrayBuffer(resourceDef.byteLength);
-    const writeView = new Uint8Array(buffer);
-    const refView = new Uint32Array(buffer);
-    const refOffsets: number[] = [];
-    const refIsString: boolean[] = [];
-
-    const schema = resourceDef.schema;
-
-    for (const propName in schema) {
-      const prop = schema[propName];
-
-      if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
-        for (let i = 0; i < prop.size; i++) {
-          refOffsets.push(prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT);
-          refIsString.push(prop.type === "string");
-        }
-      } else if (prop.type === "arrayBuffer") {
-        refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
-        refIsString.push(false);
-      }
-    }
-
-    this.resourceTransformData.set(resourceDef.resourceType, {
-      writeView,
-      refView,
-      refOffsets,
-      refIsString,
-    });
-  }
-
   createResource<Def extends ResourceDefinition>(
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def> {
-    const resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
+    const resourceModule = getModule(this.ctx, ResourceModule);
+
+    const resourceConstructor = resourceModule.resourceConstructors.get(resourceDef) as
+      | IRemoteResourceClass<Def>
+      | undefined;
 
     if (!resourceConstructor) {
       throw new Error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
@@ -158,7 +110,9 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
     const resource = this.resources[index];
 
-    const { refOffsets } = this.resourceTransformData.get(resource.resourceType)!;
+    const resourceModule = getModule(this.ctx, ResourceModule);
+
+    const { refOffsets } = resourceModule.resourceTransformData.get(resource.resourceType)!;
     const resourceStore = this.resourceStorage.get(resource.resourceId)!;
 
     for (let i = 0; i < refOffsets.length; i++) {
@@ -277,11 +231,14 @@ export class ScriptResourceManager implements IRemoteResourceManager {
    * resource ids. In addition we need strings and arraybuffers to exist on the other threads.
    */
   commitResources() {
+    const resourceModule = getModule(this.ctx, ResourceModule);
     const resources = this.resources;
 
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
-      const { writeView, refView, refOffsets, refIsString } = this.resourceTransformData.get(resource.resourceType)!;
+      const { writeView, refView, refOffsets, refIsString } = resourceModule.resourceTransformData.get(
+        resource.resourceType
+      )!;
       const resourceStore = this.resourceStorage.get(resource.resourceId)!;
 
       writeView.set(resource.byteView);
@@ -372,14 +329,16 @@ export class ScriptResourceManager implements IRemoteResourceManager {
           return 0;
         },
         create_resource: (type: number, ptr: number) => {
-          const resourceDef = this.resourceDefByType.get(type);
+          const resourceModule = getModule(this.ctx, ResourceModule);
+
+          const resourceDef = resourceModule.resourceDefByType.get(type);
 
           if (!resourceDef) {
             console.error(`Tried to create resource with type: ${type} but it has not been registered.`);
             return -1;
           }
 
-          const resourceConstructor = this.resourceConstructors.get(resourceDef) as
+          const resourceConstructor = resourceModule.resourceConstructors.get(resourceDef) as
             | IRemoteResourceClass<ResourceDefinition>
             | undefined;
 

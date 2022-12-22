@@ -1,7 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { Thread } from "../module/module.common";
-import { defineRemoteResourceClass } from "./RemoteResourceClass";
+import { getModule, Thread } from "../module/module.common";
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
@@ -10,6 +9,7 @@ import {
   createStringResource,
   disposeResource,
   getRemoteResource,
+  ResourceModule,
   setRemoteResource,
 } from "./resource.game";
 import {
@@ -21,7 +21,6 @@ import {
 } from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager {
-  private resourceConstructors = new Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>();
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
   constructor(private ctx: GameState) {}
@@ -30,14 +29,14 @@ export class GameResourceManager implements IRemoteResourceManager {
     resourceDef: Def,
     props: InitialResourceProps<Def>
   ): RemoteResource<Def> {
-    let resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
+    const resourceModule = getModule(this.ctx, ResourceModule);
+
+    const resourceConstructor = resourceModule.resourceConstructors.get(resourceDef) as
+      | IRemoteResourceClass<Def>
+      | undefined;
 
     if (!resourceConstructor) {
-      resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
-      this.resourceConstructors.set(
-        resourceDef,
-        resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
-      );
+      throw new Error(`Unregistered resource "${resourceDef.name}"`);
     }
 
     const buffer = new ArrayBuffer(resourceDef.byteLength);
