@@ -3,9 +3,9 @@ import { NOOP } from "../config.common";
 import { defineModule, Thread, registerMessageHandler, getModule, BaseThreadContext } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
-import { ILocalResourceManager, ResourceDefinition } from "./ResourceDefinition";
+import { ILocalResourceManager, ResourceDefinition, ILocalResourceClass } from "./ResourceDefinition";
 import { LocalResource } from "./ResourceDefinition";
-import { defineLocalResourceClass, ILocalResourceClass } from "./LocalResourceClass";
+import { defineLocalResourceClass } from "./LocalResourceClass";
 
 export type ResourceId = number;
 
@@ -74,7 +74,9 @@ interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
 
 export class ResourceDisposedError extends Error {}
 
-export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>() => {
+export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>(
+  resourceDefinitions: (ResourceDefinition<{}> | ILocalResourceClass<ResourceDefinition<{}>>)[]
+) => {
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
     create() {
@@ -88,6 +90,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     },
     init(ctx) {
       return createDisposables([
+        ...resourceDefinitions.map((def) => registerResource(ctx, def)),
         registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
         registerResourceLoader(ctx, StringResourceType, onLoadStringResource),
         registerResourceLoader(ctx, ArrayBufferResourceType, onLoadArrayBufferResource),

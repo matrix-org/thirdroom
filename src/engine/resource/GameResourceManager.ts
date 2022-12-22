@@ -1,7 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
-import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
+import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
@@ -12,7 +12,13 @@ import {
   getRemoteResource,
   setRemoteResource,
 } from "./resource.game";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialResourceProps,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+  IRemoteResourceClass,
+} from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager {
   private resourceConstructors = new Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>();

@@ -13,10 +13,9 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResource } from "../resource/resource.render";
+import { getLocalResource } from "../resource/resource.render";
 import { RendererSceneResource, updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
-import { RendererTextureResource } from "../texture/texture.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
@@ -27,39 +26,12 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { RendererAccessorResource } from "../accessor/accessor.render";
-import {
-  RendererMeshResource,
-  RendererMeshPrimitiveResource,
-  RendererSkinResource,
-  RendererInstancedMeshResource,
-  RendererLightMapResource,
-} from "../mesh/mesh.render";
 import { RendererNodeResource, updateLocalNodeResources } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
-import {
-  RendererReflectionProbeResource,
-  updateNodeReflections,
-  updateReflectionProbeTextureArray,
-} from "../reflection-probe/reflection-probe.render";
-import {
-  BufferResource,
-  BufferViewResource,
-  CameraResource,
-  CameraType,
-  LightResource,
-  SamplerResource,
-  InteractableResource,
-  NametagResource,
-  AudioDataResource,
-  AudioSourceResource,
-  AudioEmitterResource,
-  TilesRendererResource,
-} from "../resource/schema";
-import { RendererImageResource } from "../image/image.render";
-import { RendererMaterialResource } from "../material/material.render";
+import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
+import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 
 export interface RenderThreadState extends BaseThreadContext {
@@ -172,29 +144,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return createDisposables([
       registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResource(ctx, SamplerResource),
-      registerResource(ctx, RendererSceneResource),
-      registerResource(ctx, RendererTextureResource),
-      registerResource(ctx, RendererMaterialResource),
-      registerResource(ctx, LightResource),
-      registerResource(ctx, RendererReflectionProbeResource),
-      registerResource(ctx, CameraResource),
-      registerResource(ctx, BufferResource),
-      registerResource(ctx, BufferViewResource),
-      registerResource(ctx, RendererImageResource),
-      registerResource(ctx, InteractableResource),
-      registerResource(ctx, RendererAccessorResource),
-      registerResource(ctx, RendererMeshResource),
-      registerResource(ctx, RendererMeshPrimitiveResource),
-      registerResource(ctx, RendererInstancedMeshResource),
-      registerResource(ctx, RendererLightMapResource),
-      registerResource(ctx, RendererSkinResource),
-      registerResource(ctx, RendererNodeResource),
-      registerResource(ctx, TilesRendererResource),
-      registerResource(ctx, NametagResource),
-      registerResource(ctx, AudioDataResource),
-      registerResource(ctx, AudioSourceResource),
-      registerResource(ctx, AudioEmitterResource),
       registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
     ]);
   },

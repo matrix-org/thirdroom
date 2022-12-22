@@ -4,25 +4,15 @@ import EventEmitter from "events";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
-import { getLocalResource, registerResource, getLocalResources } from "../resource/resource.main";
+import { getLocalResource, getLocalResources } from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
 import { MainNode } from "../node/node.main";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { MainScene } from "../scene/scene.main";
 import { NOOP } from "../config.common";
-import { MainThreadNametagResource } from "../nametag/nametag.main";
-import {
-  AudioDataResource,
-  AudioEmitterDistanceModel,
-  AudioEmitterOutput,
-  AudioEmitterResource,
-  AudioEmitterType,
-  AudioSourceResource,
-} from "../resource/schema";
-import { toArrayBuffer } from "../utils/arraybuffer";
-import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-
-const MAX_AUDIO_BYTES = 640_000;
+import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schema";
+import { MainThreadAudioSourceResource } from "./audio-source.main";
+import { MainThreadAudioEmitterResource } from "./audio-emitter.main";
 
 /*********
  * Types *
@@ -110,20 +100,8 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   init(ctx) {
     const audio = getModule(ctx, AudioModule);
 
-    const disposables = [
-      registerResource(ctx, MainNode),
-      registerResource(ctx, MainThreadAudioDataResource),
-      registerResource(ctx, MainThreadAudioSourceResource),
-      registerResource(ctx, MainThreadAudioEmitterResource),
-      registerResource(ctx, MainThreadNametagResource),
-    ];
-
     return () => {
       audio.context.close();
-
-      for (const dispose of disposables) {
-        dispose();
-      }
     };
   },
 });
@@ -131,128 +109,6 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 /********************
  * Resource Handlers *
  *******************/
-
-export class MainThreadAudioDataResource extends defineLocalResourceClass<typeof AudioDataResource, IMainThreadContext>(
-  AudioDataResource
-) {
-  data: AudioBuffer | HTMLAudioElement | MediaStream | undefined;
-
-  async load(ctx: IMainThreadContext) {
-    const audio = getModule(ctx, AudioModule);
-
-    let buffer: ArrayBuffer;
-    let mimeType: string;
-
-    if (this.bufferView) {
-      buffer = toArrayBuffer(this.bufferView.buffer.data, this.bufferView.byteOffset, this.bufferView.byteLength);
-      mimeType = this.mimeType;
-    } else {
-      const url = new URL(this.uri, window.location.href);
-
-      if (url.protocol === "mediastream:") {
-        this.data = audio.mediaStreams.get(url.pathname);
-        return;
-      }
-
-      const response = await fetch(url.href);
-
-      const contentType = response.headers.get("Content-Type");
-
-      if (contentType) {
-        mimeType = contentType;
-      } else {
-        mimeType = getAudioMimeType(this.uri);
-      }
-
-      buffer = await response.arrayBuffer();
-    }
-
-    if (buffer.byteLength > MAX_AUDIO_BYTES) {
-      const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
-
-      const audioEl = new Audio();
-
-      await new Promise((resolve, reject) => {
-        audioEl.oncanplaythrough = resolve;
-        audioEl.onerror = reject;
-        audioEl.src = objectUrl;
-      });
-
-      this.data = audioEl;
-    } else {
-      this.data = await audio.context.decodeAudioData(buffer);
-    }
-  }
-}
-
-export class MainThreadAudioSourceResource extends defineLocalResourceClass<
-  typeof AudioSourceResource,
-  IMainThreadContext
->(AudioSourceResource) {
-  declare audio: MainThreadAudioDataResource | undefined;
-  activeAudioDataResourceId: ResourceId = 0;
-  sourceNode: MediaElementAudioSourceNode | AudioBufferSourceNode | MediaStreamAudioSourceNode | undefined;
-  gainNode: GainNode | undefined;
-
-  async load(ctx: IMainThreadContext) {
-    const audioModule = getModule(ctx, AudioModule);
-    const audioContext = audioModule.context;
-    this.gainNode = audioContext.createGain();
-  }
-
-  dispose() {
-    if (this.gainNode) {
-      this.gainNode.disconnect();
-    }
-
-    if (this.sourceNode) {
-      this.sourceNode.disconnect();
-    }
-  }
-}
-
-export class MainThreadAudioEmitterResource extends defineLocalResourceClass<
-  typeof AudioEmitterResource,
-  IMainThreadContext
->(AudioEmitterResource) {
-  declare sources: MainThreadAudioSourceResource[];
-  activeSources: MainThreadAudioSourceResource[] = [];
-  inputGain: GainNode | undefined;
-  outputGain: GainNode | undefined;
-  destination: AudioNode | undefined;
-
-  async load(ctx: IMainThreadContext) {
-    const audioModule = getModule(ctx, AudioModule);
-    const audioContext = audioModule.context;
-
-    this.inputGain = audioContext.createGain();
-    // input gain connected by node update
-
-    this.outputGain = audioContext.createGain();
-    const destination =
-      this.output === AudioEmitterOutput.Voice
-        ? audioModule.voiceGain
-        : this.output === AudioEmitterOutput.Music
-        ? audioModule.musicGain
-        : audioModule.environmentGain;
-    this.outputGain.connect(destination);
-    this.destination = destination;
-
-    if (this.type === AudioEmitterType.Global) {
-      this.inputGain.connect(this.outputGain);
-    }
-  }
-
-  dispose() {
-    if (this.inputGain) {
-      this.inputGain.disconnect();
-    }
-
-    if (this.outputGain) {
-      this.outputGain.disconnect();
-    }
-  }
-}
 
 /***********
  * Systems *
@@ -586,20 +442,3 @@ export const setPeerMediaStream = (audioState: MainAudioModule, peerId: string, 
   console.log("adding mediastream for peer", peerId);
   audioState.mediaStreams.set(peerId, mediaStream);
 };
-
-const audioExtensionToMimeType: { [key: string]: string } = {
-  mp3: "audio/mpeg",
-  aac: "audio/mpeg",
-  opus: "audio/ogg",
-  ogg: "audio/ogg",
-  wav: "audio/wav",
-  flac: "audio/flac",
-  mp4: "audio/mp4",
-  webm: "audio/webm",
-};
-
-// TODO: Read fetch response headers
-function getAudioMimeType(uri: string) {
-  const extension = uri.split(".").pop() || "";
-  return audioExtensionToMimeType[extension] || "audio/mpeg";
-}

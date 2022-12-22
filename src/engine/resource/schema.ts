@@ -8,7 +8,6 @@ export enum ResourceType {
   BufferView,
   AudioData,
   AudioSource,
-  MediaStreamSource,
   AudioEmitter,
   Image,
   Texture,

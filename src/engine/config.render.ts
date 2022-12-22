@@ -1,5 +1,5 @@
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.render";
-import { UpdateRendererMaterialSystem } from "./material/material.render";
+import { UpdateRendererMaterialSystem } from "./material/UpdateRendererMaterialSystem";
 import { UpdateRendererMeshPrimitivesSystem } from "./mesh/mesh.render";
 import { defineConfig } from "./module/module.common";
 import { RendererModule, RendererSystem } from "./renderer/renderer.render";

@@ -2,7 +2,7 @@ import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer
 import { GameState } from "../GameTypes";
 import { Thread } from "../module/module.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
-import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
+import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
@@ -13,7 +13,13 @@ import {
   getRemoteResource,
   setRemoteResource,
 } from "./resource.game";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+} from "./ResourceDefinition";
 import { decodeString } from "./strings";
 
 interface ResourceTransformData {

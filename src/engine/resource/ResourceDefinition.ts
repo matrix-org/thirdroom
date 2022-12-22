@@ -618,6 +618,32 @@ export type LocalResource<
   dispose(ctx: ThreadContext): void;
 };
 
+export interface IRemoteResourceClass<Def extends ResourceDefinition> {
+  new (
+    manager: IRemoteResourceManager,
+    buffer: ArrayBuffer,
+    ptr: number,
+    tripleBuffer: TripleBuffer,
+    props?: InitialResourceProps<Def>
+  ): RemoteResource<Def>;
+  resourceDef: Def;
+}
+
+export interface ILocalResourceClass<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<
+    Def,
+    ThreadContext
+  >;
+  resourceDef: Def;
+}
+
+export type IResourceClass<ThreadContext extends BaseThreadContext> =
+  | IRemoteResourceClass<ResourceDefinition<{}>>
+  | ILocalResourceClass<ResourceDefinition<{}>, ThreadContext>;
+
 type RequiredProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
 }[keyof Def["schema"]];

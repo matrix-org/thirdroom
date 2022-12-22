@@ -1,17 +1,12 @@
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
-
-export interface IRemoteResourceClass<Def extends ResourceDefinition> {
-  new (
-    manager: IRemoteResourceManager,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<Def>
-  ): RemoteResource<Def>;
-  resourceDef: Def;
-}
+import {
+  InitialResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+} from "./ResourceDefinition";
 
 export function defineRemoteResourceClass<Def extends ResourceDefinition>(resourceDef: Def): IRemoteResourceClass<Def> {
   const { name, schema, resourceType } = resourceDef;

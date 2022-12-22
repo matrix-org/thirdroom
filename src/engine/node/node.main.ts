@@ -1,4 +1,4 @@
-import { MainThreadAudioEmitterResource } from "../audio/audio.main";
+import { MainThreadAudioEmitterResource } from "../audio/audio-emitter.main";
 import { MainThreadNametagResource } from "../nametag/nametag.main";
 import { defineLocalResourceClass } from "../resource/LocalResourceClass";
 import { AudioEmitterOutput, NodeResource } from "../resource/schema";
