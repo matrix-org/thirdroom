@@ -214,7 +214,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
-      if (!prop.loadDependency) {
+      if (!prop.backRef) {
         continue;
       }
 

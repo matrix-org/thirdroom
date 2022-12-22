@@ -68,7 +68,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         this.__props[propName] = store;
       } else if (prop.type === "ref") {
         if (initialValue) {
-          this.manager.setRef(initialValue, store as Uint32Array);
+          this.manager.setRef(initialValue, store as Uint32Array, prop.backRef);
         }
 
         this.__props[propName] = store;
@@ -161,7 +161,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       const setter = prop.mutable
         ? {
             set(this: RemoteResource<Def>, value?: any) {
-              this.manager.setRef(value, this.__props[propName] as Uint32Array);
+              this.manager.setRef(value, this.__props[propName] as Uint32Array, prop.backRef);
             },
           }
         : undefined;

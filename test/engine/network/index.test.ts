@@ -2,7 +2,6 @@
 import { ok, strictEqual } from "assert";
 import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
 
-import { Transform } from "../../../src/engine/component/transform";
 import { GameState } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
@@ -21,7 +20,7 @@ import {
   readUint16,
   readUint32,
 } from "../../../src/engine/allocator/CursorView";
-import { mockGameState } from "../mocks";
+import { mockGameState, MockResourceManager } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
 import { RigidBody } from "../../../src/engine/physics/physics.game";
 import { addPrefabComponent } from "../../../src/engine/prefab/prefab.game";
@@ -39,11 +38,10 @@ import {
   serializeDeletes,
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
+import { RemoteNode } from "../../../src/engine/resource/resource.game";
 
 const clearComponentData = () => {
-  new Uint8Array(Transform.position[0].buffer).fill(0);
   new Uint8Array(RigidBody.velocity[0].buffer).fill(0);
-  new Uint8Array(Transform.quaternion[0].buffer).fill(0);
   new Uint8Array(Networked.position[0].buffer).fill(0);
   new Uint8Array(Networked.velocity[0].buffer).fill(0);
   new Uint8Array(Networked.quaternion[0].buffer).fill(0);
@@ -76,15 +74,13 @@ describe("Network Tests", () => {
   describe("tranform serialization", () => {
     beforeEach(clearComponentData);
     it("should #serializeTransformSnapshot()", () => {
+      const manager = new MockResourceManager();
       const writer = createCursorView();
       const eid = 0;
 
-      const position = Transform.position[eid];
+      const node = new RemoteNode(manager, { eid, position: [1, 2, 3], quaternion: [4, 5, 6, 1] });
       const velocity = RigidBody.velocity[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([1, 2, 3]);
       velocity.set([4, 5, 6]);
-      quaternion.set([4, 5, 6]);
 
       serializeTransformSnapshot(writer, eid);
 

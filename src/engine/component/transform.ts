@@ -1,15 +1,12 @@
-import { defineQuery, entityExists, getEntityComponents, IComponent, removeComponent, removeEntity } from "bitecs";
+import { defineQuery, entityExists, getEntityComponents, removeComponent, removeEntity } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { maxEntities, NOOP } from "../config.common";
 import { GameState, World } from "../GameTypes";
-import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { Networked } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
 import { ResourceType } from "../resource/schema";
-import { RemoteNodeComponent } from "../node/node.game";
-import { RemoteSceneComponent } from "../scene/scene.game";
 import { RemoteNode, RemoteScene } from "../resource/resource.game";
+import { RemoteNodeComponent } from "../node/node.game";
 
 export const Axes = {
   X: vec3.fromValues(1, 0, 0),
@@ -17,78 +14,8 @@ export const Axes = {
   Z: vec3.fromValues(0, 0, 1),
 };
 
-export interface Transform extends IComponent {
-  position: Float32Array[];
-  quaternion: Float32Array[];
-  scale: Float32Array[];
-
-  localMatrix: Float32Array[];
-  worldMatrix: Float32Array[];
-  isStatic: Uint32Array;
-  skipLerp: Uint32Array;
-  worldMatrixNeedsUpdate: Uint32Array;
-
-  parent: Uint32Array;
-  firstChild: Uint32Array;
-  prevSibling: Uint32Array;
-  nextSibling: Uint32Array;
-}
-
-export const gameObjectBuffer = createObjectBufferView(
-  {
-    position: [Float32Array, maxEntities, 3],
-    scale: [Float32Array, maxEntities, 3],
-    quaternion: [Float32Array, maxEntities, 4],
-    localMatrix: [Float32Array, maxEntities, 16],
-    worldMatrix: [Float32Array, maxEntities, 16],
-    worldMatrixNeedsUpdate: [Uint32Array, maxEntities],
-    isStatic: [Uint32Array, maxEntities],
-    skipLerp: [Uint32Array, maxEntities],
-    parent: [Uint32Array, maxEntities],
-    firstChild: [Uint32Array, maxEntities],
-    prevSibling: [Uint32Array, maxEntities],
-    nextSibling: [Uint32Array, maxEntities],
-  },
-  ArrayBuffer
-);
-
-export const Transform: Transform = {
-  position: gameObjectBuffer.position,
-  scale: gameObjectBuffer.scale,
-  quaternion: gameObjectBuffer.quaternion,
-  localMatrix: gameObjectBuffer.localMatrix,
-  isStatic: gameObjectBuffer.isStatic,
-  skipLerp: gameObjectBuffer.skipLerp,
-
-  worldMatrix: gameObjectBuffer.worldMatrix,
-  worldMatrixNeedsUpdate: gameObjectBuffer.worldMatrixNeedsUpdate,
-
-  parent: gameObjectBuffer.parent,
-  firstChild: gameObjectBuffer.firstChild,
-  prevSibling: gameObjectBuffer.prevSibling,
-  nextSibling: gameObjectBuffer.nextSibling,
-};
-
-export function getLastChild(eid: number): number {
-  let cursor = Transform.firstChild[eid];
-  let last = cursor;
-
-  while (cursor) {
-    last = cursor;
-    cursor = Transform.nextSibling[cursor];
-  }
-
-  return last;
-}
-
-export function getLastChildNode(parent: RemoteNode | RemoteScene): RemoteNode | undefined {
-  let cursor: RemoteNode | undefined;
-
-  if (parent.resourceType === ResourceType.Node) {
-    cursor = parent.firstChild;
-  } else {
-    cursor = parent.firstNode;
-  }
+export function getLastChild(parent: RemoteNode | RemoteScene): RemoteNode | undefined {
+  let cursor = parent.resourceType === ResourceType.Node ? parent.firstChild : parent.firstNode;
 
   let last = cursor;
 
@@ -100,15 +27,15 @@ export function getLastChildNode(parent: RemoteNode | RemoteScene): RemoteNode |
   return last;
 }
 
-export function getChildAt(eid: number, index: number): number {
-  let cursor = Transform.firstChild[eid];
+export function getChildAt(parent: RemoteNode | RemoteScene, index: number): RemoteNode | undefined {
+  let cursor = parent.resourceType === ResourceType.Node ? parent.firstChild : parent.firstNode;
 
   if (cursor) {
     for (let i = 1; i <= index; i++) {
-      cursor = Transform.nextSibling[cursor];
+      cursor = cursor.nextSibling;
 
       if (!cursor) {
-        return 0;
+        return undefined;
       }
     }
   }
@@ -116,50 +43,22 @@ export function getChildAt(eid: number, index: number): number {
   return cursor;
 }
 
-export const findChild = (parent: number, predicate: (eid: number) => boolean) => {
-  let eid;
-  traverse(parent, (e) => {
-    if (predicate(e)) {
-      eid = e;
+export const findChild = (parent: RemoteNode | RemoteScene, predicate: (node: RemoteNode) => boolean) => {
+  let result;
+  traverse(parent, (child) => {
+    if (predicate(child)) {
+      result = child;
       return false;
     }
   });
-  return eid;
+  return result;
 };
 
-export function addChild(parent: number, child: number) {
-  const previousParent = Transform.parent[child];
-  if (previousParent !== NOOP) {
-    removeChild(previousParent, child);
-  }
-
-  Transform.parent[child] = parent;
-
-  const lastChild = getLastChild(parent);
-
-  if (lastChild) {
-    Transform.nextSibling[lastChild] = child;
-    Transform.prevSibling[child] = lastChild;
-    Transform.nextSibling[child] = NOOP;
-  } else {
-    Transform.firstChild[parent] = child;
-    Transform.prevSibling[child] = NOOP;
-    Transform.nextSibling[child] = NOOP;
-  }
-
-  const parentNode = RemoteNodeComponent.get(parent) || RemoteSceneComponent.get(parent);
-  const childNode = RemoteNodeComponent.get(child);
-
-  if (parentNode && childNode) {
-    addChildNode(parentNode, childNode);
-  }
-}
-
-function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   const previousParent = child.parent || child.parentScene;
 
   if (previousParent) {
-    removeChildNode(previousParent, child);
+    removeChild(previousParent, child);
   }
 
   if (parent.resourceType === ResourceType.Node) {
@@ -168,7 +67,7 @@ function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     child.parentScene = parent;
   }
 
-  const lastChild = getLastChildNode(parent);
+  const lastChild = getLastChild(parent);
 
   if (lastChild) {
     lastChild.nextSibling = child;
@@ -186,36 +85,7 @@ function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   }
 }
 
-export function removeChild(parent: number, child: number) {
-  const prevSibling = Transform.prevSibling[child];
-  const nextSibling = Transform.nextSibling[child];
-
-  const firstChild = Transform.firstChild[parent];
-  if (firstChild === child) {
-    Transform.firstChild[parent] = NOOP;
-  }
-
-  // [prev, child, next]
-  if (prevSibling !== NOOP && nextSibling !== NOOP) {
-    Transform.nextSibling[prevSibling] = nextSibling;
-    Transform.prevSibling[nextSibling] = prevSibling;
-  }
-  // [prev, child]
-  if (prevSibling !== NOOP && nextSibling === NOOP) {
-    Transform.nextSibling[prevSibling] = NOOP;
-  }
-  // [child, next]
-  if (nextSibling !== NOOP && prevSibling === NOOP) {
-    Transform.prevSibling[nextSibling] = NOOP;
-    Transform.firstChild[parent] = nextSibling;
-  }
-
-  Transform.parent[child] = NOOP;
-  Transform.nextSibling[child] = NOOP;
-  Transform.prevSibling[child] = NOOP;
-}
-
-function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   const prevSibling = child.prevSibling;
   const nextSibling = child.nextSibling;
 
@@ -235,11 +105,11 @@ function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     nextSibling.prevSibling = prevSibling;
   }
   // [prev, child]
-  if (prevSibling && nextSibling) {
+  if (prevSibling && !nextSibling) {
     prevSibling.nextSibling = undefined;
   }
   // [child, next]
-  if (nextSibling && prevSibling) {
+  if (nextSibling && !prevSibling) {
     nextSibling.prevSibling = undefined;
 
     if (parent.resourceType === ResourceType.Node) {
@@ -255,58 +125,59 @@ function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   child.prevSibling = undefined;
 }
 
-export const updateWorldMatrix = (eid: number, updateParents: boolean, updateChildren: boolean) => {
-  const parent = Transform.parent[eid];
+export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents: boolean, updateChildren: boolean) => {
+  if (node.resourceType === ResourceType.Node) {
+    const parent = node.parent;
 
-  if (updateParents === true && parent !== NOOP) {
-    updateWorldMatrix(parent, true, false);
-  }
+    if (updateParents === true && parent) {
+      updateWorldMatrix(parent, true, false);
+    }
 
-  if (!Transform.isStatic[eid]) updateMatrix(eid);
+    if (!node.isStatic) updateMatrix(node);
 
-  if (parent === NOOP) {
-    Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
-  } else {
-    mat4.multiply(Transform.worldMatrix[eid], Transform.worldMatrix[parent], Transform.localMatrix[eid]);
+    if (parent) {
+      node.worldMatrix.set(node.localMatrix);
+    } else {
+      mat4.multiply(node.worldMatrix, node.worldMatrix, node.localMatrix);
+    }
   }
 
   // update children
   if (updateChildren) {
-    let nextChild = Transform.firstChild[eid];
+    let nextChild = node.resourceType === ResourceType.Node ? node.firstChild : node.firstNode;
     while (nextChild) {
       updateWorldMatrix(nextChild, false, true);
-      nextChild = Transform.nextSibling[nextChild];
+      nextChild = nextChild.nextSibling;
     }
   }
 };
 
-export const updateMatrixWorld = (eid: number, force = false) => {
-  if (!Transform.isStatic[eid]) updateMatrix(eid);
+export const updateMatrixWorld = (node: RemoteNode | RemoteScene, force = false) => {
+  if (node.resourceType === ResourceType.Node) {
+    if (!node.isStatic) updateMatrix(node);
 
-  if (Transform.worldMatrixNeedsUpdate[eid] || force) {
-    const parent = Transform.parent[eid];
-    if (parent === NOOP) {
-      Transform.worldMatrix[eid].set(Transform.localMatrix[eid]);
-    } else {
-      mat4.multiply(Transform.worldMatrix[eid], Transform.worldMatrix[parent], Transform.localMatrix[eid]);
+    if (node.worldMatrixNeedsUpdate || force) {
+      const parent = node.parent;
+      if (parent) {
+        mat4.multiply(node.worldMatrix, parent.worldMatrix, node.localMatrix);
+      } else {
+        node.worldMatrix.set(node.localMatrix);
+      }
+      // Transform.worldMatrixNeedsUpdate[eid] = 0;
+      force = true;
     }
-    // Transform.worldMatrixNeedsUpdate[eid] = 0;
-    force = true;
   }
 
-  let nextChild = Transform.firstChild[eid];
+  let nextChild = node.resourceType === ResourceType.Node ? node.firstChild : node.firstNode;
   while (nextChild) {
     updateMatrixWorld(nextChild, force);
-    nextChild = Transform.nextSibling[nextChild];
+    nextChild = nextChild.nextSibling;
   }
 };
 
-export const updateMatrix = (eid: number) => {
-  const position = Transform.position[eid];
-  const quaternion = Transform.quaternion[eid];
-  const scale = Transform.scale[eid];
-  mat4.fromRotationTranslationScale(Transform.localMatrix[eid], quaternion, position, scale);
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
+export const updateMatrix = (node: RemoteNode) => {
+  mat4.fromRotationTranslationScale(node.localMatrix, node.quaternion, node.position, node.scale);
+  node.worldMatrixNeedsUpdate = true;
 };
 
 const { sin, cos } = Math;
@@ -491,58 +362,63 @@ export function isolateQuaternionAxis(quaternion: quat, axis: vec3) {
   quat.fromEuler(quaternion, tempVec3[0] * RAD2DEG, tempVec3[1] * RAD2DEG, tempVec3[2] * RAD2DEG);
 }
 
-export function lookAt(eid: number, targetVec: vec3, upVec: vec3 = defaultUp) {
-  updateWorldMatrix(eid, true, false);
+export function lookAt(node: RemoteNode, targetVec: vec3, upVec: vec3 = defaultUp) {
+  updateWorldMatrix(node, true, false);
 
-  mat4.getTranslation(tempVec3, Transform.worldMatrix[eid]);
+  mat4.getTranslation(tempVec3, node.worldMatrix);
 
   mat4.lookAt(tempMat4, tempVec3, targetVec, upVec);
 
-  const parent = Transform.parent[eid];
+  const parent = node.parent;
 
-  mat4.getRotation(Transform.quaternion[eid], tempMat4);
+  mat4.getRotation(node.quaternion, tempMat4);
 
-  if (parent !== NOOP) {
-    mat4.getRotation(tempQuat, Transform.worldMatrix[parent]);
+  if (parent) {
+    mat4.getRotation(tempQuat, parent.worldMatrix);
     quat.invert(tempQuat, tempQuat);
-    quat.mul(Transform.quaternion[eid], tempQuat, Transform.quaternion[eid]);
+    quat.mul(node.quaternion, tempQuat, node.quaternion);
   }
 }
 
-export function traverse(eid: number, callback: (eid: number) => unknown | false) {
-  if (eid) {
-    const processChildren = callback(eid);
+export function traverse(node: RemoteNode | RemoteScene, callback: (child: RemoteNode) => unknown | false) {
+  let curChild;
+
+  if (node.resourceType === ResourceType.Node) {
+    const processChildren = callback(node);
 
     if (processChildren === false) return;
-  }
 
-  let curChild = Transform.firstChild[eid];
+    curChild = node.firstChild;
+  } else {
+    curChild = node.firstNode;
+  }
 
   while (curChild) {
     traverse(curChild, callback);
-    curChild = Transform.nextSibling[curChild];
+    curChild = curChild.nextSibling;
   }
 }
 
-export function traverseReverse(eid: number, callback: (eid: number) => unknown) {
-  let curChild = getLastChild(eid);
+export function traverseReverse(node: RemoteNode | RemoteScene, callback: (node: RemoteNode) => unknown) {
+  let curChild = getLastChild(node);
 
   while (curChild) {
     traverseReverse(curChild, callback);
-    curChild = Transform.prevSibling[curChild];
+    curChild = curChild.prevSibling;
   }
 
-  if (eid) {
-    callback(eid);
+  if (node && node.resourceType == ResourceType.Node) {
+    callback(node);
   }
 }
 
-export function removeNode(world: World, rootEid: number) {
-  if (!entityExists(world, rootEid)) {
+export function removeNode(world: World, node: RemoteNode) {
+  if (!entityExists(world, node.eid)) {
     return;
   }
 
-  traverseReverse(rootEid, (eid) => {
+  traverseReverse(node, (child) => {
+    const eid = child.eid;
     // TODO: removeEntity should reset components
     const components = getEntityComponents(world, eid);
 
@@ -557,24 +433,24 @@ export function removeNode(world: World, rootEid: number) {
     removeEntity(world, eid);
   });
 
-  if (Transform.parent[rootEid]) {
-    removeChild(Transform.parent[rootEid], rootEid);
+  if (node.parent) {
+    removeChild(node.parent, node);
   } else {
-    Transform.firstChild[rootEid] = NOOP;
-    Transform.prevSibling[rootEid] = NOOP;
-    Transform.nextSibling[rootEid] = NOOP;
+    node.firstChild = undefined;
+    node.prevSibling = undefined;
+    node.nextSibling = undefined;
   }
 }
 
-export function* getChildren(parentEid: number): Generator<number, number> {
-  let eid = Transform.firstChild[parentEid];
+export function* getChildren(node: RemoteNode | RemoteScene): Generator<RemoteNode, undefined> {
+  let cursor = node.resourceType === ResourceType.Node ? node.firstChild : node.firstNode;
 
-  while (eid) {
-    yield eid;
-    eid = Transform.nextSibling[eid];
+  while (cursor) {
+    yield cursor;
+    cursor = cursor.nextSibling;
   }
 
-  return 0;
+  return undefined;
 }
 
 export function getDirection(out: vec3, matrix: mat4): vec3 {
@@ -623,17 +499,19 @@ export function getRightVector(out: vec3, roll: number) {
   return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
 }
 
-const skipRenderLerpQuery = defineQuery([Transform]);
+const skipRenderLerpQuery = defineQuery([RemoteNodeComponent]);
 
 export function SkipRenderLerpSystem(ctx: GameState) {
   const ents = skipRenderLerpQuery(ctx.world);
+
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
+    const node = RemoteNodeComponent.get(eid)!;
 
-    Transform.skipLerp[eid] = Transform.skipLerp[eid] - 1;
+    node.skipLerp -= 1;
 
-    if (Transform.skipLerp[eid] <= 0) {
-      Transform.skipLerp[eid] = 0;
+    if (node.skipLerp <= 0) {
+      node.skipLerp = 0;
     }
   }
 }

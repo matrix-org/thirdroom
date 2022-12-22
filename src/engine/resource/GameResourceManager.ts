@@ -118,14 +118,17 @@ export class GameResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, store[0]);
   }
 
-  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
-    if (store[0]) {
+  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array, backRef: boolean): void {
+    if (store[0] && !backRef) {
       disposeResource(this.ctx, store[0]);
     }
 
     if (value) {
       store[0] = value.resourceId;
-      addResourceRef(this.ctx, store[0]);
+
+      if (!backRef) {
+        addResourceRef(this.ctx, store[0]);
+      }
     } else {
       store[0] = 0;
     }

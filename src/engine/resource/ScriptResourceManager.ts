@@ -184,7 +184,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId!);
   }
 
-  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
+  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array, backRef: boolean): void {
     // if (store[0]) {
     //   const prevResourceId = this.ptrToResourceId.get(store[0]);
 

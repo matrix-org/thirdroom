@@ -407,10 +407,10 @@ export type LocalInteractable = LocalResource<typeof InteractableResource>;
 export const NodeResource = defineResource("node", ResourceType.Node, {
   eid: PropType.u32({ script: true, mutable: false, required: true }),
   name: PropType.string({ default: "Node", script: true }),
-  parentScene: PropType.ref("scene", { loadDependency: false }),
-  parent: PropType.selfRef({ loadDependency: false }),
+  parentScene: PropType.ref("scene", { backRef: true }),
+  parent: PropType.selfRef({ backRef: true }),
   firstChild: PropType.selfRef(),
-  prevSibling: PropType.selfRef({ loadDependency: false }),
+  prevSibling: PropType.selfRef({ backRef: true }),
   nextSibling: PropType.selfRef(),
   position: PropType.vec3({ script: true }),
   quaternion: PropType.quat({ script: true }),

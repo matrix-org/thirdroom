@@ -41,7 +41,7 @@ export interface ResourcePropDef<
   max?: number;
   minExclusive?: number;
   maxExclusive?: number;
-  loadDependency: boolean;
+  backRef: boolean;
 }
 
 function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
@@ -62,7 +62,7 @@ function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: false,
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -88,7 +88,7 @@ function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: 0,
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -114,7 +114,7 @@ function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: 0,
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -136,7 +136,7 @@ function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec2.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -158,7 +158,7 @@ function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec3.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -180,7 +180,7 @@ function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec3.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -202,7 +202,7 @@ function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: vec4.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -224,7 +224,7 @@ function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: quat.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -246,7 +246,7 @@ function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
     script: false,
     default: mat4.create(),
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -268,7 +268,7 @@ function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?
     script: false,
     default: 0,
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -300,7 +300,7 @@ function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
     script: false,
     default: undefined,
     resourceDef: undefined,
-    loadDependency: false,
+    backRef: false,
     ...options,
   };
 }
@@ -311,7 +311,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-  loadDependency?: boolean;
+  backRef?: boolean;
 }): ResourcePropDef<"string", string, Mut extends true ? true : false, Req extends false ? false : true> {
   return {
     type: "string",
@@ -323,7 +323,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
     script: false,
     default: "",
     resourceDef: undefined,
-    loadDependency: true,
+    backRef: true,
     ...options,
   };
 }
@@ -341,7 +341,7 @@ function createArrayBufferPropDef(options?: {
     script: false,
     default: undefined,
     resourceDef: undefined,
-    loadDependency: true,
+    backRef: true,
     ...options,
   };
 }
@@ -353,7 +353,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
-    loadDependency?: boolean;
+    backRef?: boolean;
   }
 ): ResourcePropDef<"ref", number, Mut extends true ? true : false, Req extends false ? false : true, undefined, Def> {
   return {
@@ -366,7 +366,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     required: false as any,
     script: false,
     default: 0,
-    loadDependency: true,
+    backRef: true,
     ...options,
   };
 }
@@ -379,7 +379,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
-    loadDependency?: boolean;
+    backRef?: boolean;
   }
 ): ResourcePropDef<
   "refArray",
@@ -400,7 +400,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     required: false as any,
     script: false,
     default: new Uint32Array(size),
-    loadDependency: true,
+    backRef: true,
     ...rest,
   };
 }
@@ -413,7 +413,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     mutableScript?: boolean;
     required?: Req;
     script?: boolean;
-    loadDependency?: boolean;
+    backRef?: boolean;
   }
 ): ResourcePropDef<
   "refMap",
@@ -434,7 +434,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     required: false as any,
     script: false,
     default: new Uint32Array(size),
-    loadDependency: true,
+    backRef: true,
     ...rest,
   };
 }
@@ -444,7 +444,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
   mutableScript?: boolean;
   required?: Req;
   script?: boolean;
-  loadDependency?: boolean;
+  backRef?: boolean;
 }): ResourcePropDef<
   "selfRef",
   number,
@@ -463,7 +463,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
     script: false,
     default: 0,
     resourceDef: undefined as unknown as Def, // To be assigned in defineResource
-    loadDependency: true,
+    backRef: true,
     ...options,
   };
 }
@@ -510,7 +510,7 @@ export const defineResource = <S extends Schema>(
         mutable: prop.mutable,
         required: prop.required,
         script: prop.script,
-        loadDependency: prop.loadDependency,
+        backRef: prop.backRef,
       }) as unknown as any;
       (schema[propName] as any).byteOffset = cursor;
     } else {
@@ -722,7 +722,7 @@ export interface IRemoteResourceManager {
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
   disposeResource(resourceId: number): void;
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
-  setRef(value: unknown | undefined, store: Uint32Array): void;
+  setRef(value: unknown | undefined, store: Uint32Array, backRef: boolean): void;
   setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
