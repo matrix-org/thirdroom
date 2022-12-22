@@ -3,16 +3,43 @@ import { mat4, quat, vec3 } from "gl-matrix";
 
 import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { disposeResource } from "../resource/resource.game";
-import { NodeResource, RemoteNode } from "../resource/schema";
-import { InitialResourceProps, IRemoteResourceManager } from "../resource/ResourceDefinition";
+import {
+  disposeResource,
+  RemoteAudioEmitter,
+  RemoteCamera,
+  RemoteInstancedMesh,
+  RemoteLight,
+  RemoteLightMap,
+  RemoteMesh,
+  RemoteNametag,
+  RemoteNode,
+  RemoteReflectionProbe,
+  RemoteSkin,
+  RemoteTilesRenderer,
+} from "../resource/resource.game";
+import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 
 export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
+
+interface NodeProps {
+  name?: string;
+  mesh?: RemoteMesh;
+  instancedMesh?: RemoteInstancedMesh;
+  lightMap?: RemoteLightMap;
+  skin?: RemoteSkin;
+  light?: RemoteLight;
+  reflectionProbe?: RemoteReflectionProbe;
+  camera?: RemoteCamera;
+  audioEmitter?: RemoteAudioEmitter;
+  tilesRenderer?: RemoteTilesRenderer;
+  nametag?: RemoteNametag;
+  isStatic?: boolean;
+}
 
 export function addRemoteNodeComponent(
   ctx: GameState,
   eid: number,
-  props: Omit<InitialResourceProps<typeof NodeResource>, "eid"> = {},
+  props: NodeProps = {},
   resourceManager: IRemoteResourceManager = ctx.resourceManager
 ): RemoteNode {
   let remoteNode = RemoteNodeComponent.get(eid);
@@ -35,7 +62,7 @@ export function addRemoteNodeComponent(
     return remoteNode;
   }
 
-  remoteNode = resourceManager.createResource(NodeResource, { ...props, eid });
+  remoteNode = new RemoteNode(resourceManager, { ...props, eid });
 
   addComponent(ctx.world, RemoteNodeComponent, eid);
   RemoteNodeComponent.set(eid, remoteNode);

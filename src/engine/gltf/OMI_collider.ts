@@ -9,7 +9,8 @@ import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { MeshPrimitiveAttributeIndex, RemoteAccessor, RemoteMesh } from "../resource/schema";
+import { RemoteAccessor, RemoteMesh } from "../resource/resource.game";
+import { MeshPrimitiveAttributeIndex } from "../resource/schema";
 import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 

@@ -26,19 +26,14 @@ import { addRemoteNodeComponent } from "../../engine/node/node.game";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
-import { addResourceRef } from "../../engine/resource/resource.game";
 import {
-  AudioDataResource,
-  AudioEmitterResource,
-  AudioEmitterType,
-  AudioSourceResource,
-  InteractableType,
-  MaterialResource,
-  MaterialType,
+  addResourceRef,
+  RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteMaterial,
-} from "../../engine/resource/schema";
+} from "../../engine/resource/resource.game";
+import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
@@ -79,7 +74,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     const module = getModule(ctx, SpawnablesModule);
     const physics = getModule(ctx, PhysicsModule);
 
-    const crateAudioData = ctx.resourceManager.createResource(AudioDataResource, {
+    const crateAudioData = new RemoteAudioData(ctx.resourceManager, {
       name: "Crate Audio Data",
       uri: "/audio/hit.wav",
     });
@@ -95,13 +90,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         Transform.scale[eid].set([size, size, size]);
 
-        const hitAudioSource = ctx.resourceManager.createResource(AudioSourceResource, {
+        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
           loop: false,
           autoPlay: false,
         });
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [hitAudioSource],
         });
@@ -139,13 +134,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         Transform.scale[eid].set([size, size, size]);
 
-        const hitAudioSource = ctx.resourceManager.createResource(AudioSourceResource, {
+        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
           loop: false,
           autoPlay: false,
         });
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [hitAudioSource],
         });
@@ -187,13 +182,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         Transform.scale[eid].set([size, size, size]);
 
-        const hitAudioSource = ctx.resourceManager.createResource(AudioSourceResource, {
+        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
           loop: false,
           autoPlay: false,
         });
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [hitAudioSource],
         });
@@ -224,25 +219,25 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       },
     });
 
-    const ballAudioData = ctx.resourceManager.createResource(AudioDataResource, {
+    const ballAudioData = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data",
       uri: "/audio/bounce.wav",
     });
     addResourceRef(ctx, ballAudioData.resourceId);
 
-    const ballAudioData2 = ctx.resourceManager.createResource(AudioDataResource, {
+    const ballAudioData2 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 2",
       uri: "/audio/clink.wav",
     });
     addResourceRef(ctx, ballAudioData2.resourceId);
 
-    const ballAudioData3 = ctx.resourceManager.createResource(AudioDataResource, {
+    const ballAudioData3 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 3",
       uri: "/audio/clink2.wav",
     });
     addResourceRef(ctx, ballAudioData3.resourceId);
 
-    const emissiveMaterial = ctx.resourceManager.createResource(MaterialResource, {
+    const emissiveMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Emissive Material",
       type: MaterialType.Standard,
       baseColorFactor: [0, 0.3, 1, 1],
@@ -253,7 +248,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     addResourceRef(ctx, emissiveMaterial.resourceId);
 
-    const mirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
+    const mirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Mirror Material",
       type: MaterialType.Standard,
       baseColorFactor: [1, 1, 1, 1],
@@ -262,7 +257,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     });
     addResourceRef(ctx, mirrorMaterial.resourceId);
 
-    const blackMirrorMaterial = ctx.resourceManager.createResource(MaterialResource, {
+    const blackMirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Black Mirror Material",
       type: MaterialType.Standard,
       baseColorFactor: [0, 0, 0, 1],
@@ -291,10 +286,10 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [
-            ctx.resourceManager.createResource(AudioSourceResource, {
+            new RemoteAudioSource(ctx.resourceManager, {
               audio: ballAudioData,
               loop: false,
               autoPlay: false,
@@ -332,10 +327,10 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [
-            ctx.resourceManager.createResource(AudioSourceResource, {
+            new RemoteAudioSource(ctx.resourceManager, {
               audio: ballAudioData,
               loop: false,
               autoPlay: false,
@@ -375,13 +370,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         addRigidBody(ctx, eid, rigidBody);
         addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
 
-        const hitAudioSource = ctx.resourceManager.createResource(AudioSourceResource, {
+        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: ballAudioData,
           loop: false,
           autoPlay: false,
         });
 
-        const audioEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
           sources: [hitAudioSource],
         });

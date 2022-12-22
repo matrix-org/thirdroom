@@ -14,10 +14,10 @@ import {
   setRemoteResource,
 } from "./resource.game";
 import {
-  InitialResourceProps,
   IRemoteResourceClass,
   IRemoteResourceManager,
   RemoteResource,
+  ResourceData,
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { decodeString } from "./strings";
@@ -64,34 +64,28 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.instance = instance;
   }
 
-  createResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    props: InitialResourceProps<Def>
-  ): RemoteResource<Def> {
-    const resourceModule = getModule(this.ctx, ResourceModule);
+  addResourceInstance(resource: RemoteResource<ResourceDefinition>) {
+    setRemoteResource(this.ctx, resource.resourceId, resource);
+    this.ptrToResourceId.set(resource.ptr, resource.resourceId);
+    this.resources.push(resource);
+    this.resourceStorage.set(resource.resourceId, {
+      refView: new Uint32Array(resource.buffer, resource.ptr, resource.byteView.length),
+      prevRefs: [],
+    });
+  }
 
-    const resourceConstructor = resourceModule.resourceConstructors.get(resourceDef) as
-      | IRemoteResourceClass<Def>
-      | undefined;
-
-    if (!resourceConstructor) {
-      throw new Error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
-    }
-
+  createResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = this.memory.buffer;
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer, props);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-    resource.resourceId = resourceId;
-    setRemoteResource(this.ctx, resourceId, resource);
-    this.ptrToResourceId.set(ptr, resourceId);
-    this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
-    this.resourceStorage.set(resourceId, {
-      refView: new Uint32Array(buffer, ptr, resourceDef.byteLength),
-      prevRefs: [],
-    });
-    return resource;
+
+    return {
+      resourceId,
+      ptr,
+      buffer,
+      tripleBuffer,
+    };
   }
 
   getResource<Def extends ResourceDefinition>(
@@ -347,18 +341,8 @@ export class ScriptResourceManager implements IRemoteResourceManager {
             return -1;
           }
 
-          const buffer = this.memory.buffer;
-          const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-          const resource = new resourceConstructor(this, buffer, ptr, tripleBuffer);
-          const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-          resource.resourceId = resourceId;
-          setRemoteResource(this.ctx, resourceId, resource);
-          this.ptrToResourceId.set(ptr, resourceId);
-          this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
-          this.resourceStorage.set(resourceId, {
-            refView: new Uint32Array(buffer, ptr, resourceDef.byteLength),
-            prevRefs: [],
-          });
+          new resourceConstructor(this);
+
           return 0;
         },
         dispose_resource: (ptr: number) => {

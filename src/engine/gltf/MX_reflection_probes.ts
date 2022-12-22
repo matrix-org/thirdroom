@@ -1,5 +1,6 @@
 import { GameState } from "../GameTypes";
-import { ReflectionProbeResource, RemoteReflectionProbe, SamplerMapping } from "../resource/schema";
+import { RemoteReflectionProbe } from "../resource/resource.game";
+import { SamplerMapping } from "../resource/schema";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFTexture } from "./gltf.game";
 
@@ -44,7 +45,7 @@ async function _loadGLTFReflectionProbe(
 
   const reflectionProbeDef = extension.reflectionProbes[index];
 
-  const reflectionProbe = resource.manager.createResource(ReflectionProbeResource, {
+  const reflectionProbe = new RemoteReflectionProbe(resource.manager, {
     reflectionProbeTexture: await loadGLTFTexture(resource, reflectionProbeDef.reflectionProbeTexture.index, {
       mapping: SamplerMapping.EquirectangularReflectionMapping,
       flipY: false,

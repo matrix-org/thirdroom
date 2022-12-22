@@ -14,8 +14,8 @@ import {
 } from "../allocator/ObjectBufferView";
 import { RemoteSceneComponent } from "../scene/scene.game";
 import { RemoteNodeComponent } from "../node/node.game";
-import { getRemoteResources } from "../resource/resource.game";
-import { AudioSourceResource, RemoteAudioSource } from "../resource/schema";
+import { getRemoteResources, RemoteAudioSource } from "../resource/resource.game";
+import { AudioSourceResource } from "../resource/schema";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;

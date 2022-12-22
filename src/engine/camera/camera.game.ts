@@ -6,9 +6,9 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
-import { getRemoteResources } from "../resource/resource.game";
+import { getRemoteResources, RemoteCamera } from "../resource/resource.game";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
-import { CameraResource, CameraType, RemoteCamera } from "../resource/schema";
+import { CameraResource, CameraType } from "../resource/schema";
 
 export const CameraComponent = defineComponent();
 export const cameraComponentQuery = defineQuery([CameraComponent]);
@@ -26,7 +26,7 @@ export function createRemotePerspectiveCamera(
   ctx: GameState,
   resourceManager: IRemoteResourceManager = ctx.resourceManager
 ) {
-  return resourceManager.createResource(CameraResource, {
+  return new RemoteCamera(resourceManager, {
     type: CameraType.Perspective,
     yfov: glMatrix.toRadian(75),
     znear: 0.1,

@@ -18,7 +18,7 @@ import {
 import { getAccessorArrayView } from "../accessor/accessor.common";
 import { GameState } from "../GameTypes";
 import { ResourceId } from "../resource/resource.common";
-import { RemoteAccessor } from "../resource/schema";
+import { RemoteAccessor } from "../resource/resource.game";
 import { GLTFAnimation, GLTFSampler, GLTFAnimationChannelTarget } from "./GLTF";
 import { GLTFResource, loadGLTFAccessor } from "./gltf.game";
 

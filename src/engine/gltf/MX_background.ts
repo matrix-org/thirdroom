@@ -1,4 +1,5 @@
-import { RemoteTexture, SamplerMapping } from "../resource/schema";
+import { RemoteTexture } from "../resource/resource.game";
+import { SamplerMapping } from "../resource/schema";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFTexture } from "./gltf.game";
 

@@ -67,21 +67,19 @@ import {
   Script,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
-import {
-  ImageResource,
-  InteractableType,
-  SamplerMapping,
-  SamplerResource,
-  TextureResource,
-  ReflectionProbeResource,
-  AudioEmitterType,
-  AudioEmitterResource,
-  AudioDataResource,
-  AudioSourceResource,
-} from "../../engine/resource/schema";
+import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
 import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
+import {
+  RemoteAudioData,
+  RemoteAudioEmitter,
+  RemoteAudioSource,
+  RemoteImage,
+  RemoteReflectionProbe,
+  RemoteSampler,
+  RemoteTexture,
+} from "../../engine/resource/resource.game";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
@@ -379,20 +377,20 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
-    const defaultEnvironmentMapTexture = ctx.resourceManager.createResource(TextureResource, {
+    const defaultEnvironmentMapTexture = new RemoteTexture(ctx.resourceManager, {
       name: "Environment Map Texture",
-      source: ctx.resourceManager.createResource(ImageResource, {
+      source: new RemoteImage(ctx.resourceManager, {
         name: "Environment Map Image",
         uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
       }),
-      sampler: resourceManager.createResource(SamplerResource, {
+      sampler: new RemoteSampler(resourceManager, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
       }),
     });
 
     if (!newSceneResource.reflectionProbe) {
-      newSceneResource.reflectionProbe = ctx.resourceManager.createResource(ReflectionProbeResource, {
+      newSceneResource.reflectionProbe = new RemoteReflectionProbe(ctx.resourceManager, {
         reflectionProbeTexture: defaultEnvironmentMapTexture,
       });
     }
@@ -494,11 +492,11 @@ function loadRemotePlayerRig(
   // setup positional audio emitter for VoIP
   addRemoteNodeComponent(ctx, eid, {
     name: peerId,
-    audioEmitter: ctx.resourceManager.createResource(AudioEmitterResource, {
+    audioEmitter: new RemoteAudioEmitter(ctx.resourceManager, {
       type: AudioEmitterType.Positional,
       sources: [
-        ctx.resourceManager.createResource(AudioSourceResource, {
-          audio: ctx.resourceManager.createResource(AudioDataResource, { uri: `mediastream:${peerId}` }),
+        new RemoteAudioSource(ctx.resourceManager, {
+          audio: new RemoteAudioData(ctx.resourceManager, { uri: `mediastream:${peerId}` }),
         }),
       ],
     }),

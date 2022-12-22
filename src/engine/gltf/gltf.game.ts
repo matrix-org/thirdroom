@@ -35,57 +35,44 @@ import { hasBasisuExtension, loadBasisuImage } from "./KHR_texture_basisu";
 import { inflatePortalComponent } from "./OMI_link";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
-  AccessorResource,
   AccessorType,
   AudioEmitterOutput,
-  BufferResource,
-  BufferViewResource,
-  CameraResource,
   CameraType,
-  ImageResource,
-  LightResource,
   LightType,
   MaterialAlphaMode,
-  MaterialResource,
   MaterialType,
-  RemoteAccessor,
-  RemoteBuffer,
-  RemoteBufferView,
-  RemoteCamera,
-  RemoteImage,
-  RemoteLight,
-  RemoteMaterial,
-  RemoteSampler,
-  RemoteTexture,
-  RemoteSparseAccessor,
-  SparseAccessorResource,
   SamplerMapping,
-  SamplerResource,
   TextureEncoding,
-  TextureResource,
-  MeshResource,
-  RemoteMeshPrimitive,
-  RemoteMesh,
-  RemoteSkin,
   MeshPrimitiveAttributeIndex,
   InstancedMeshAttributeIndex,
-  MeshPrimitiveResource,
-  InstancedMeshResource,
-  RemoteInstancedMesh,
-  SkinResource,
-  LightMapResource,
-  RemoteLightMap,
-  RemoteReflectionProbe,
-  RemoteAudioData,
-  RemoteAudioSource,
-  RemoteAudioEmitter,
-  RemoteNode,
-  RemoteScene,
 } from "../resource/schema";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
 import { getPostprocessingBloomStrength } from "./MX_postprocessing";
 import { ResourceId } from "../resource/resource.common";
+import {
+  RemoteAccessor,
+  RemoteAudioData,
+  RemoteAudioEmitter,
+  RemoteAudioSource,
+  RemoteBuffer,
+  RemoteBufferView,
+  RemoteCamera,
+  RemoteImage,
+  RemoteInstancedMesh,
+  RemoteLight,
+  RemoteLightMap,
+  RemoteMaterial,
+  RemoteMesh,
+  RemoteMeshPrimitive,
+  RemoteNode,
+  RemoteReflectionProbe,
+  RemoteSampler,
+  RemoteScene,
+  RemoteSkin,
+  RemoteSparseAccessor,
+  RemoteTexture,
+} from "../resource/resource.game";
 
 export interface GLTFResource {
   url: string;
@@ -397,7 +384,7 @@ async function _inflateGLTFNode(
       }
 
       if (node.extras && node.extras["directional-light"] && !remoteNode.light) {
-        remoteNode.light = resource.manager.createResource(LightResource, {
+        remoteNode.light = new RemoteLight(resource.manager, {
           type: LightType.Directional,
           castShadow: true,
           intensity: 0.8,
@@ -666,7 +653,7 @@ async function _loadGLTFBuffer(resource: GLTFResource, index: number) {
     throw new Error(`Invalid buffer at index ${index}`);
   }
 
-  const remoteBuffer = resource.manager.createResource(BufferResource, {
+  const remoteBuffer = new RemoteBuffer(resource.manager, {
     name,
     uri,
     data,
@@ -699,7 +686,7 @@ async function _loadGLTFBufferView(resource: GLTFResource, index: number): Promi
   const { name, buffer: bufferIndex, byteOffset, byteStride, byteLength, target } = resource.root.bufferViews[index];
   const buffer = await loadGLTFBuffer(resource, bufferIndex);
 
-  const remoteBufferView = resource.manager.createResource(BufferViewResource, {
+  const remoteBufferView = new RemoteBufferView(resource.manager, {
     name,
     buffer,
     byteOffset,
@@ -747,7 +734,7 @@ async function _loadGLTFImage(resource: GLTFResource, index: number, options?: I
   if (uri) {
     const filePath = resource.fileMap.get(uri) || uri;
     const resolvedUri = resolveURL(filePath, resource.baseUrl);
-    remoteImage = resource.manager.createResource(ImageResource, {
+    remoteImage = new RemoteImage(resource.manager, {
       name,
       uri: resolvedUri,
       flipY: options?.flipY,
@@ -759,7 +746,7 @@ async function _loadGLTFImage(resource: GLTFResource, index: number, options?: I
 
     const bufferView = await loadGLTFBufferView(resource, bufferViewIndex);
 
-    remoteImage = resource.manager.createResource(ImageResource, {
+    remoteImage = new RemoteImage(resource.manager, {
       name,
       bufferView,
       mimeType,
@@ -807,7 +794,7 @@ export async function _loadGLTFSampler(
 
   const { name, magFilter, minFilter, wrapS, wrapT } = resource.root.samplers[index];
 
-  const remoteSampler = resource.manager.createResource(SamplerResource, {
+  const remoteSampler = new RemoteSampler(resource.manager, {
     name,
     magFilter,
     minFilter,
@@ -869,7 +856,7 @@ async function _loadGLTFTexture(
     sampler: texture.sampler ? loadGLTFSampler(resource, texture.sampler, { mapping: options?.mapping }) : undefined,
   });
 
-  const remoteTexture = resource.manager.createResource(TextureResource, {
+  const remoteTexture = new RemoteTexture(resource.manager, {
     name: texture.name,
     source: image,
     encoding: options?.encoding,
@@ -933,7 +920,7 @@ async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise
           : undefined,
     });
 
-    remoteMaterial = resource.manager.createResource(MaterialResource, {
+    remoteMaterial = new RemoteMaterial(resource.manager, {
       type: MaterialType.Unlit,
       name,
       doubleSided,
@@ -977,7 +964,7 @@ async function _loadGLTFMaterial(resource: GLTFResource, index: number): Promise
         : undefined,
       thicknessTexture: thicknessTextureInfo ? loadGLTFTexture(resource, thicknessTextureInfo.index) : undefined,
     });
-    remoteMaterial = resource.manager.createResource(MaterialResource, {
+    remoteMaterial = new RemoteMaterial(resource.manager, {
       type: MaterialType.Standard,
       name,
       doubleSided,
@@ -1058,7 +1045,7 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
       throw new Error("Sparse accessor missing bufferViews");
     }
 
-    sparse = resource.manager.createResource(SparseAccessorResource, {
+    sparse = new RemoteSparseAccessor(resource.manager, {
       count: accessor.sparse.count,
       indicesByteOffset: accessor.sparse.indices.byteOffset,
       indicesComponentType: accessor.sparse.indices.componentType,
@@ -1068,7 +1055,7 @@ async function _loadGLTFAccessor(ctx: GameState, resource: GLTFResource, index: 
     });
   }
 
-  const remoteAccessor = resource.manager.createResource(AccessorResource, {
+  const remoteAccessor = new RemoteAccessor(resource.manager, {
     name: accessor.name,
     bufferView,
     type: GLTFAccessorTypeToAccessorType[accessor.type],
@@ -1111,7 +1098,7 @@ async function _loadGLTFMesh(ctx: GameState, resource: GLTFResource, index: numb
     mesh.primitives.map((primitive) => _createGLTFMeshPrimitive(ctx, resource, primitive))
   );
 
-  const remoteMesh = resource.manager.createResource(MeshResource, {
+  const remoteMesh = new RemoteMesh(resource.manager, {
     name: mesh.name,
     primitives,
   });
@@ -1158,7 +1145,7 @@ async function _createGLTFMeshPrimitive(
     material: primitive.material !== undefined ? loadGLTFMaterial(resource, primitive.material) : undefined,
   });
 
-  return resource.manager.createResource(MeshPrimitiveResource, {
+  return new RemoteMeshPrimitive(resource.manager, {
     indices,
     attributes,
     material,
@@ -1181,7 +1168,7 @@ async function _loadGLTFInstancedMesh(
 
   const attributes = await promiseObject(attributesPromises);
 
-  return resource.manager.createResource(InstancedMeshResource, { name: `${node.name} Instanced Mesh`, attributes });
+  return new RemoteInstancedMesh(resource.manager, { name: `${node.name} Instanced Mesh`, attributes });
 }
 
 async function loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFNode): Promise<RemoteSkin> {
@@ -1226,7 +1213,7 @@ async function _loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFN
     else throw new Error("glTF skin joint had no remote node resourceId");
   }
 
-  const remoteSkinnedMesh = resource.manager.createResource(SkinResource, {
+  const remoteSkinnedMesh = new RemoteSkin(resource.manager, {
     name: `${node.name} Skinned Mesh`,
     joints,
     inverseBindMatrices,
@@ -1246,7 +1233,7 @@ async function _loadGLTFLightMap(
     encoding: TextureEncoding.sRGB,
   });
 
-  return resource.manager.createResource(LightMapResource, {
+  return new RemoteLightMap(resource.manager, {
     name: `${node.name} Light Map`,
     texture,
     scale: extension.scale,
@@ -1279,7 +1266,7 @@ async function _loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: nu
   let remoteCamera: RemoteCamera;
 
   if (camera.perspective) {
-    remoteCamera = resource.manager.createResource(CameraResource, {
+    remoteCamera = new RemoteCamera(resource.manager, {
       name: camera.name,
       type: CameraType.Perspective,
       aspectRatio: camera.perspective.aspectRatio,
@@ -1288,7 +1275,7 @@ async function _loadGLTFCamera(ctx: GameState, resource: GLTFResource, index: nu
       znear: camera.perspective.znear,
     });
   } else if (camera.orthographic) {
-    remoteCamera = resource.manager.createResource(CameraResource, {
+    remoteCamera = new RemoteCamera(resource.manager, {
       name: camera.name,
       type: CameraType.Orthographic,
       xmag: camera.orthographic.xmag,
@@ -1338,7 +1325,7 @@ async function _loadGLTFLight(resource: GLTFResource, index: number): Promise<Re
 
   const { name, type, color, intensity, range, spot } = lightExtension.lights[index];
 
-  const lightResource = resource.manager.createResource(LightResource, {
+  const lightResource = new RemoteLight(resource.manager, {
     name,
     type: GLTFLightTypeToLightType[type],
     color,

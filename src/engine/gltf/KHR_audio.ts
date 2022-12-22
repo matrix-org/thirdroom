@@ -1,14 +1,6 @@
 import { GameState } from "../GameTypes";
-import {
-  AudioDataResource,
-  AudioEmitterOutput,
-  AudioEmitterResource,
-  AudioEmitterType,
-  AudioSourceResource,
-  RemoteAudioData,
-  RemoteAudioEmitter,
-  RemoteAudioSource,
-} from "../resource/schema";
+import { RemoteAudioEmitter, RemoteAudioData, RemoteAudioSource } from "../resource/resource.game";
+import { AudioEmitterOutput, AudioEmitterType } from "../resource/schema";
 import resolveURL from "../utils/resolveURL";
 import { GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFBufferView } from "./gltf.game";
@@ -78,7 +70,7 @@ async function _loadGLTFAudioData(ctx: GameState, resource: GLTFResource, index:
 
   if (audio.uri) {
     const uri = resource.fileMap.get(audio.uri) || audio.uri;
-    remoteAudio = resource.manager.createResource(AudioDataResource, {
+    remoteAudio = new RemoteAudioData(resource.manager, {
       name: audio.name,
       uri: resolveURL(uri, resource.baseUrl),
     });
@@ -89,7 +81,7 @@ async function _loadGLTFAudioData(ctx: GameState, resource: GLTFResource, index:
 
     const remoteBufferView = await loadGLTFBufferView(resource, audio.bufferView);
 
-    remoteAudio = resource.manager.createResource(AudioDataResource, {
+    remoteAudio = new RemoteAudioData(resource.manager, {
       name: audio.name,
       bufferView: remoteBufferView,
       mimeType: audio.mimeType,
@@ -134,7 +126,7 @@ async function _loadGLTFAudioSource(ctx: GameState, resource: GLTFResource, inde
 
   const audioSource = audioExtension.sources[index];
 
-  const remoteAudioSource = resource.manager.createResource(AudioSourceResource, {
+  const remoteAudioSource = new RemoteAudioSource(resource.manager, {
     name: audioSource.name,
     gain: audioSource.gain,
     loop: audioSource.loop,
@@ -195,7 +187,7 @@ async function _loadGLTFAudioEmitter<Emitter extends RemoteAudioEmitter>(
     : [];
 
   if (audioEmitter.type === "global") {
-    remoteAudioEmitter = resource.manager.createResource(AudioEmitterResource, {
+    remoteAudioEmitter = new RemoteAudioEmitter(resource.manager, {
       type: AudioEmitterType.Global,
       name: audioEmitter.name,
       gain: audioEmitter.gain,
@@ -203,7 +195,7 @@ async function _loadGLTFAudioEmitter<Emitter extends RemoteAudioEmitter>(
       output,
     });
   } else if (audioEmitter.type === "positional") {
-    remoteAudioEmitter = resource.manager.createResource(AudioEmitterResource, {
+    remoteAudioEmitter = new RemoteAudioEmitter(resource.manager, {
       type: AudioEmitterType.Positional,
       name: audioEmitter.name,
       coneInnerAngle: audioEmitter.coneInnerAngle,

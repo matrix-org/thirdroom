@@ -50,13 +50,8 @@ import { removeInteractableComponent } from "../../plugins/interaction/interacti
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
-import {
-  AudioDataResource,
-  AudioEmitterResource,
-  AudioEmitterType,
-  AudioSourceResource,
-  NametagResource,
-} from "../resource/schema";
+import { AudioEmitterType } from "../resource/schema";
+import { RemoteAudioData, RemoteAudioEmitter, RemoteAudioSource, RemoteNametag } from "../resource/resource.game";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -480,17 +475,17 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     // if not our own avatar, add voip
     addRemoteNodeComponent(ctx, peid, {
       name: peerId,
-      audioEmitter: ctx.resourceManager.createResource(AudioEmitterResource, {
+      audioEmitter: new RemoteAudioEmitter(ctx.resourceManager, {
         type: AudioEmitterType.Positional,
         sources: [
-          ctx.resourceManager.createResource(AudioSourceResource, {
-            audio: ctx.resourceManager.createResource(AudioDataResource, {
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, {
               uri: `mediastream:${peerId}`,
             }),
           }),
         ],
       }),
-      nametag: ctx.resourceManager.createResource(NametagResource, {
+      nametag: new RemoteNametag(ctx.resourceManager, {
         name: peerId,
       }),
     });

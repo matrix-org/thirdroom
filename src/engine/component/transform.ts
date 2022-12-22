@@ -6,9 +6,10 @@ import { GameState, World } from "../GameTypes";
 import { createObjectBufferView } from "../allocator/ObjectBufferView";
 import { Networked } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
-import { RemoteNode, RemoteScene, ResourceType } from "../resource/schema";
+import { ResourceType } from "../resource/schema";
 import { RemoteNodeComponent } from "../node/node.game";
 import { RemoteSceneComponent } from "../scene/scene.game";
+import { RemoteNode, RemoteScene } from "../resource/resource.game";
 
 export const Axes = {
   X: vec3.fromValues(1, 0, 0),
@@ -84,21 +85,19 @@ export function getLastChildNode(parent: RemoteNode | RemoteScene): RemoteNode |
   let cursor: RemoteNode | undefined;
 
   if (parent.resourceType === ResourceType.Node) {
-    const node = parent as RemoteNode;
-    cursor = node.firstChild as RemoteNode | undefined;
+    cursor = parent.firstChild;
   } else {
-    const scene = parent as RemoteScene;
-    cursor = scene.firstNode as RemoteNode | undefined;
+    cursor = parent.firstNode;
   }
 
   let last = cursor;
 
   while (cursor) {
     last = cursor;
-    cursor = cursor.nextSibling as RemoteNode | undefined;
+    cursor = cursor.nextSibling;
   }
 
-  return last as RemoteNode | undefined;
+  return last;
 }
 
 export function getChildAt(eid: number, index: number): number {
@@ -157,16 +156,16 @@ export function addChild(parent: number, child: number) {
 }
 
 function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
-  const previousParent = (child.parent || child.parentScene) as RemoteNode | RemoteScene | undefined;
+  const previousParent = child.parent || child.parentScene;
 
   if (previousParent) {
     removeChildNode(previousParent, child);
   }
 
   if (parent.resourceType === ResourceType.Node) {
-    child.parent = parent as RemoteNode;
+    child.parent = parent;
   } else {
-    child.parentScene = parent as RemoteScene;
+    child.parentScene = parent;
   }
 
   const lastChild = getLastChildNode(parent);
@@ -177,9 +176,9 @@ function addChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     child.nextSibling = undefined;
   } else {
     if (parent.resourceType === ResourceType.Node) {
-      (parent as RemoteNode).firstChild = child;
+      parent.firstChild = child;
     } else {
-      (parent as RemoteScene).firstNode = child;
+      parent.firstNode = child;
     }
 
     child.prevSibling = undefined;
@@ -221,16 +220,12 @@ function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   const nextSibling = child.nextSibling;
 
   if (parent.resourceType === ResourceType.Node) {
-    const parentNode = parent as RemoteNode;
-
-    if (parentNode.firstChild === child) {
-      parentNode.firstChild = undefined;
+    if (parent.firstChild === child) {
+      parent.firstChild = undefined;
     }
   } else {
-    const parentScene = parent as RemoteScene;
-
-    if (parentScene.firstNode === child) {
-      parentScene.firstNode = undefined;
+    if (parent.firstNode === child) {
+      parent.firstNode = undefined;
     }
   }
 
@@ -248,11 +243,9 @@ function removeChildNode(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     nextSibling.prevSibling = undefined;
 
     if (parent.resourceType === ResourceType.Node) {
-      const parentNode = parent as RemoteNode;
-      parentNode.firstChild = nextSibling;
+      parent.firstChild = nextSibling;
     } else {
-      const parentScene = parent as RemoteScene;
-      parentScene.firstNode = nextSibling;
+      parent.firstNode = nextSibling;
     }
   }
 

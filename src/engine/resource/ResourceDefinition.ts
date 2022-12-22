@@ -619,13 +619,7 @@ export type LocalResource<
 };
 
 export interface IRemoteResourceClass<Def extends ResourceDefinition> {
-  new (
-    manager: IRemoteResourceManager,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<Def>
-  ): RemoteResource<Def>;
+  new (manager: IRemoteResourceManager, props?: InitialResourceProps<Def>): RemoteResource<Def>;
   resourceDef: Def;
 }
 
@@ -710,16 +704,21 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]?: InitialResourcePropValue<Def, Prop, true>;
 };
 
+export interface ResourceData {
+  resourceId: number;
+  ptr: number;
+  buffer: ArrayBuffer;
+  tripleBuffer: TripleBuffer;
+}
+
 export interface IRemoteResourceManager {
   resources: RemoteResource<ResourceDefinition>[];
   getString(store: Uint32Array): string;
   setString(value: string | undefined, store: Uint32Array): void;
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
-  createResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    props: InitialResourceProps<Def>
-  ): RemoteResource<Def>;
+  createResource(resourceDef: ResourceDefinition): ResourceData;
+  addResourceInstance(resource: RemoteResource<ResourceDefinition>): void;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
   disposeResource(resourceId: number): void;
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;

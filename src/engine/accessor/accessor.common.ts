@@ -1,12 +1,13 @@
 import { mat4 } from "gl-matrix";
 
+import { RemoteResource } from "../resource/ResourceDefinition";
 import {
   AccessorComponentType,
+  AccessorResource,
   AccessorType,
   LocalAccessor,
   LocalSparseAccessor,
-  RemoteAccessor,
-  RemoteSparseAccessor,
+  SparseAccessorResource,
 } from "../resource/schema";
 
 export const AccessorResourceType = "accessor";
@@ -63,7 +64,7 @@ export const AccessorTypeToElementSize: {
 };
 
 export function getAccessorArrayView(
-  accessor: RemoteAccessor | LocalAccessor,
+  accessor: RemoteResource<typeof AccessorResource> | LocalAccessor,
   deinterleave = true
 ): AccessorTypedArray {
   const elementCount = accessor.count;
@@ -101,7 +102,7 @@ export function getAccessorArrayView(
     arrayView = new arrConstructor(elementCount * elementSize);
   }
 
-  const sparse = accessor.sparse as RemoteSparseAccessor | LocalSparseAccessor | undefined;
+  const sparse = accessor.sparse as RemoteResource<typeof SparseAccessorResource> | LocalSparseAccessor | undefined;
 
   if (sparse) {
     arrayView = arrayView.slice();

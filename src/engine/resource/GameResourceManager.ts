@@ -1,6 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { getModule, Thread } from "../module/module.common";
+import { Thread } from "../module/module.common";
 import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
@@ -9,45 +9,31 @@ import {
   createStringResource,
   disposeResource,
   getRemoteResource,
-  ResourceModule,
   setRemoteResource,
 } from "./resource.game";
-import {
-  InitialResourceProps,
-  IRemoteResourceManager,
-  RemoteResource,
-  ResourceDefinition,
-  IRemoteResourceClass,
-} from "./ResourceDefinition";
+import { IRemoteResourceManager, RemoteResource, ResourceDefinition, ResourceData } from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager {
   public resources: RemoteResource<ResourceDefinition>[] = [];
 
   constructor(private ctx: GameState) {}
 
-  createResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    props: InitialResourceProps<Def>
-  ): RemoteResource<Def> {
-    const resourceModule = getModule(this.ctx, ResourceModule);
-
-    const resourceConstructor = resourceModule.resourceConstructors.get(resourceDef) as
-      | IRemoteResourceClass<Def>
-      | undefined;
-
-    if (!resourceConstructor) {
-      throw new Error(`Unregistered resource "${resourceDef.name}"`);
-    }
-
+  createResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resource = new resourceConstructor(this, buffer, 0, tripleBuffer, props);
     const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-    resource.resourceId = resourceId;
-    setRemoteResource(this.ctx, resourceId, resource);
-    this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
 
-    return resource;
+    return {
+      resourceId,
+      ptr: 0,
+      buffer,
+      tripleBuffer,
+    };
+  }
+
+  addResourceInstance(resource: RemoteResource<ResourceDefinition>) {
+    setRemoteResource(this.ctx, resource.resourceId, resource);
+    this.resources.push(resource);
   }
 
   getResource<Def extends ResourceDefinition>(

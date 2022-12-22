@@ -1,4 +1,4 @@
-import { defineResource, LocalResource, PropType, RemoteResource } from "./ResourceDefinition";
+import { defineResource, LocalResource, PropType } from "./ResourceDefinition";
 
 export enum ResourceType {
   Unknown,
@@ -35,7 +35,6 @@ export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
   distanceFromCamera: PropType.f32(),
   inFrustum: PropType.bool(),
 });
-export type RemoteNametag = RemoteResource<typeof NametagResource>;
 export type LocalNametag = LocalResource<typeof NametagResource>;
 
 export enum SamplerMagFilter {
@@ -76,7 +75,6 @@ export const SamplerResource = defineResource("sampler", ResourceType.Sampler, {
   wrapT: PropType.enum(SamplerWrap, { default: SamplerWrap.REPEAT, script: true, mutable: false }),
   mapping: PropType.enum(SamplerMapping, { default: SamplerMapping.UVMapping, script: true, mutable: false }),
 });
-export type RemoteSampler = RemoteResource<typeof SamplerResource>;
 export type LocalSampler = LocalResource<typeof SamplerResource>;
 
 export const BufferResource = defineResource("buffer", ResourceType.Buffer, {
@@ -84,7 +82,6 @@ export const BufferResource = defineResource("buffer", ResourceType.Buffer, {
   uri: PropType.string({ script: true, mutable: false }),
   data: PropType.arrayBuffer({ script: true }),
 });
-export type RemoteBuffer = RemoteResource<typeof BufferResource>;
 export type LocalBuffer = LocalResource<typeof BufferResource>;
 
 export enum BufferViewTarget {
@@ -100,7 +97,6 @@ export const BufferViewResource = defineResource("buffer-view", ResourceType.Buf
   byteStride: PropType.u32({ min: 4, max: 252, mutable: false, script: true }),
   target: PropType.enum(BufferViewTarget, { default: BufferViewTarget.None, mutable: false, script: true }),
 });
-export type RemoteBufferView = RemoteResource<typeof BufferViewResource>;
 export type LocalBufferView = LocalResource<typeof BufferViewResource>;
 
 export const AudioDataResource = defineResource("audio-data", ResourceType.AudioData, {
@@ -109,7 +105,6 @@ export const AudioDataResource = defineResource("audio-data", ResourceType.Audio
   mimeType: PropType.string({ script: true, mutable: false }),
   uri: PropType.string({ script: true, mutable: false }),
 });
-export type RemoteAudioData = RemoteResource<typeof AudioDataResource>;
 export type LocalAudioData = LocalResource<typeof AudioDataResource>;
 
 export const AudioSourceResource = defineResource("audio-source", ResourceType.AudioSource, {
@@ -124,7 +119,6 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
   playbackRate: PropType.f32({ default: 1 }),
   // TODO add in currentTime, playing, and duration flags which are set from the main thread
 });
-export type RemoteAudioSource = RemoteResource<typeof AudioSourceResource>;
 export type LocalAudioSource = LocalResource<typeof AudioSourceResource>;
 
 export enum AudioEmitterType {
@@ -155,7 +149,6 @@ export const AudioEmitterResource = defineResource("audio-emitter", ResourceType
   rolloffFactor: PropType.f32({ default: 1, min: 0, script: true }),
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
 });
-export type RemoteAudioEmitter = RemoteResource<typeof AudioEmitterResource>;
 export type LocalAudioEmitter = LocalResource<typeof AudioEmitterResource>;
 
 export const ImageResource = defineResource("image", ResourceType.Image, {
@@ -165,7 +158,6 @@ export const ImageResource = defineResource("image", ResourceType.Image, {
   bufferView: PropType.ref(BufferViewResource, { script: true, mutable: false }),
   flipY: PropType.bool({ script: true, mutable: false }),
 });
-export type RemoteImage = RemoteResource<typeof ImageResource>;
 export type LocalImage = LocalResource<typeof ImageResource>;
 
 export enum TextureEncoding {
@@ -178,7 +170,6 @@ export const TextureResource = defineResource("texture", ResourceType.Texture, {
   source: PropType.ref(ImageResource, { script: true, mutable: false, required: true }),
   encoding: PropType.enum(TextureEncoding, { default: TextureEncoding.Linear, script: true, mutable: false }),
 });
-export type RemoteTexture = RemoteResource<typeof TextureResource>;
 export type LocalTexture = LocalResource<typeof TextureResource>;
 
 export const ReflectionProbeResource = defineResource("reflection-probe", ResourceType.ReflectionProbe, {
@@ -186,7 +177,6 @@ export const ReflectionProbeResource = defineResource("reflection-probe", Resour
   reflectionProbeTexture: PropType.ref(TextureResource, { script: true, mutable: false }),
   size: PropType.vec3({ script: true }),
 });
-export type RemoteReflectionProbe = RemoteResource<typeof ReflectionProbeResource>;
 export type LocalReflectionProbe = LocalResource<typeof ReflectionProbeResource>;
 
 export enum MaterialAlphaMode {
@@ -225,7 +215,6 @@ export const MaterialResource = defineResource("material", ResourceType.Material
   attenuationDistance: PropType.f32({ default: 0, script: true }),
   attenuationColor: PropType.rgb({ default: [1, 1, 1], script: true }),
 });
-export type RemoteMaterial = RemoteResource<typeof MaterialResource>;
 export type LocalMaterial = LocalResource<typeof MaterialResource>;
 
 export enum LightType {
@@ -243,7 +232,6 @@ export const LightResource = defineResource("light", ResourceType.Light, {
   innerConeAngle: PropType.f32({ default: 1, script: true }),
   outerConeAngle: PropType.f32({ default: 1, script: true }),
 });
-export type RemoteLight = RemoteResource<typeof LightResource>;
 export type LocalLight = LocalResource<typeof LightResource>;
 
 export enum CameraType {
@@ -267,7 +255,6 @@ export const CameraResource = defineResource("camera", ResourceType.Camera, {
   aspectRatio: PropType.f32({ min: 0, default: 0, script: true }),
   projectionMatrixNeedsUpdate: PropType.bool({ default: true, script: true }),
 });
-export type RemoteCamera = RemoteResource<typeof CameraResource>;
 export type LocalCamera = LocalResource<typeof CameraResource>;
 
 export enum AccessorComponentType {
@@ -286,7 +273,6 @@ export const SparseAccessorResource = defineResource("sparse-accessor", Resource
   valuesBufferView: PropType.ref(BufferViewResource, { mutable: false, required: true, script: true }),
   valuesByteOffset: PropType.u32({ mutable: false, script: true }),
 });
-export type RemoteSparseAccessor = RemoteResource<typeof SparseAccessorResource>;
 export type LocalSparseAccessor = LocalResource<typeof SparseAccessorResource>;
 
 export enum AccessorType {
@@ -311,7 +297,6 @@ export const AccessorResource = defineResource("accessor", ResourceType.Accessor
   min: PropType.mat4({ default: new Float32Array(16), script: true }),
   sparse: PropType.ref(SparseAccessorResource, { mutable: false, script: true }),
 });
-export type RemoteAccessor = RemoteResource<typeof AccessorResource>;
 export type LocalAccessor = LocalResource<typeof AccessorResource>;
 
 export enum MeshPrimitiveMode {
@@ -354,7 +339,6 @@ export const MeshPrimitiveResource = defineResource("mesh-primitive", ResourceTy
   mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
   // TODO: targets
 });
-export type RemoteMeshPrimitive = RemoteResource<typeof MeshPrimitiveResource>;
 export type LocalMeshPrimitive = LocalResource<typeof MeshPrimitiveResource>;
 
 export const InstancedMeshResource = defineResource("instanced-mesh", ResourceType.InstancedMesh, {
@@ -367,7 +351,6 @@ export const InstancedMeshResource = defineResource("instanced-mesh", ResourceTy
     script: true,
   }),
 });
-export type RemoteInstancedMesh = RemoteResource<typeof InstancedMeshResource>;
 export type LocalInstancedMesh = LocalResource<typeof InstancedMeshResource>;
 
 export const MeshResource = defineResource("mesh", ResourceType.Mesh, {
@@ -376,7 +359,6 @@ export const MeshResource = defineResource("mesh", ResourceType.Mesh, {
   primitives: PropType.refArray(MeshPrimitiveResource, { size: 16, script: true }),
   // TODO: weights
 });
-export type RemoteMesh = RemoteResource<typeof MeshResource>;
 export type LocalMesh = LocalResource<typeof MeshResource>;
 
 export const LightMapResource = defineResource("light-map", ResourceType.LightMap, {
@@ -386,13 +368,11 @@ export const LightMapResource = defineResource("light-map", ResourceType.LightMa
   scale: PropType.vec2({ default: [0, 0], script: true, mutable: false }),
   intensity: PropType.f32({ default: 1, script: true, mutable: false }),
 });
-export type RemoteLightMap = RemoteResource<typeof LightMapResource>;
 export type LocalLightMap = LocalResource<typeof LightMapResource>;
 
 export const TilesRendererResource = defineResource("tiles-renderer", ResourceType.TilesRenderer, {
   uri: PropType.string({ mutable: false, required: true, script: true }),
 });
-export type RemoteTilesRenderer = RemoteResource<typeof TilesRendererResource>;
 export type LocalTilesRenderer = LocalResource<typeof TilesRendererResource>;
 
 export const SkinResource = defineResource("skin", ResourceType.Skin, {
@@ -401,7 +381,6 @@ export const SkinResource = defineResource("skin", ResourceType.Skin, {
   joints: PropType.refArray("node", { size: 128, script: true, mutable: false }),
   inverseBindMatrices: PropType.ref(AccessorResource, { script: true }),
 });
-export type RemoteSkin = RemoteResource<typeof SkinResource>;
 export type LocalSkin = LocalResource<typeof SkinResource>;
 
 export enum InteractableType {
@@ -423,7 +402,6 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   held: PropType.bool({ mutableScript: false, script: true }),
   released: PropType.bool({ mutableScript: false, script: true }),
 });
-export type RemoteInteractable = RemoteResource<typeof InteractableResource>;
 export type LocalInteractable = LocalResource<typeof InteractableResource>;
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
@@ -457,7 +435,6 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
 });
-export type RemoteNode = RemoteResource<typeof NodeResource>;
 export type LocalNode = LocalResource<typeof NodeResource>;
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
@@ -469,5 +446,4 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
 });
-export type RemoteScene = RemoteResource<typeof SceneResource>;
 export type LocalScene = LocalResource<typeof SceneResource>;

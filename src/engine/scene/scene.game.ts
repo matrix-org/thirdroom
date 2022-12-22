@@ -3,17 +3,30 @@ import { mat4, quat, vec3 } from "gl-matrix";
 
 import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { disposeResource } from "../resource/resource.game";
-import { InitialResourceProps, IRemoteResourceManager } from "../resource/ResourceDefinition";
-import { RemoteScene, SceneResource } from "../resource/schema";
+import {
+  disposeResource,
+  RemoteAudioEmitter,
+  RemoteNode,
+  RemoteReflectionProbe,
+  RemoteScene,
+  RemoteTexture,
+} from "../resource/resource.game";
+import { IRemoteResourceManager } from "../resource/ResourceDefinition";
+
+interface SceneProps {
+  backgroundTexture?: RemoteTexture;
+  reflectionProbe?: RemoteReflectionProbe;
+  audioEmitters?: RemoteAudioEmitter[];
+  firstNode?: RemoteNode;
+}
 
 export function addRemoteSceneComponent(
   ctx: GameState,
   eid: number,
-  props: Omit<InitialResourceProps<typeof SceneResource>, "eid"> = {},
+  props: SceneProps = {},
   resourceManager: IRemoteResourceManager = ctx.resourceManager
 ): RemoteScene {
-  const remoteScene = resourceManager.createResource(SceneResource, { ...props, eid });
+  const remoteScene = new RemoteScene(resourceManager, { ...props, eid });
 
   addComponent(ctx.world, RemoteSceneComponent, eid);
 

@@ -40,16 +40,13 @@ import {
 } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
-import { addResourceRef } from "../../engine/resource/resource.game";
 import {
-  AudioDataResource,
-  AudioEmitterResource,
-  AudioEmitterType,
-  AudioSourceResource,
-  InteractableType,
+  addResourceRef,
+  RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
-} from "../../engine/resource/schema";
+} from "../../engine/resource/resource.game";
+import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
 import { RemoteSceneComponent } from "../../engine/scene/scene.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
@@ -80,19 +77,19 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
 
-    const clickAudio1 = ctx.resourceManager.createResource(AudioDataResource, {
+    const clickAudio1 = new RemoteAudioData(ctx.resourceManager, {
       name: "Click1 Audio Data",
       uri: "/audio/click1.wav",
     });
     addResourceRef(ctx, clickAudio1.resourceId);
 
-    const clickAudio2 = ctx.resourceManager.createResource(AudioDataResource, {
+    const clickAudio2 = new RemoteAudioData(ctx.resourceManager, {
       name: "Click2 Audio Data",
       uri: "/audio/click2.wav",
     });
     addResourceRef(ctx, clickAudio2.resourceId);
 
-    const clickAudioSource1 = ctx.resourceManager.createResource(AudioSourceResource, {
+    const clickAudioSource1 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio1,
       loop: false,
       autoPlay: false,
@@ -100,7 +97,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     });
     addResourceRef(ctx, clickAudioSource1.resourceId);
 
-    const clickAudioSource2 = ctx.resourceManager.createResource(AudioSourceResource, {
+    const clickAudioSource2 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio2,
       loop: false,
       autoPlay: false,
@@ -108,7 +105,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     });
     addResourceRef(ctx, clickAudioSource2.resourceId);
 
-    module.clickEmitter = ctx.resourceManager.createResource(AudioEmitterResource, {
+    module.clickEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
       type: AudioEmitterType.Global,
       sources: [clickAudioSource1, clickAudioSource2],
     });

@@ -1,4 +1,3 @@
-import { TripleBuffer } from "../allocator/TripleBuffer";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import {
   InitialResourceProps,
@@ -14,25 +13,23 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
   function RemoteResourceClass(
     this: RemoteResource<Def>,
     manager: IRemoteResourceManager,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
     props?: InitialResourceProps<Def>
   ) {
-    this.resourceId = 0;
+    this.manager = manager;
+    const resource = this.manager.createResource(resourceDef);
+    this.resourceId = resource.resourceId;
     this.resourceType = resourceType;
     this.initialized = false;
-    this.manager = manager;
-    this.ptr = ptr;
-    this.byteView = new Uint8Array(buffer, ptr, resourceDef.byteLength);
-    this.tripleBuffer = tripleBuffer;
+    this.ptr = resource.ptr;
+    this.byteView = new Uint8Array(resource.buffer, resource.ptr, resourceDef.byteLength);
+    this.tripleBuffer = resource.tripleBuffer;
     this.__props = {};
 
     const schema = (RemoteResourceClass as unknown as IRemoteResourceClass<Def>).resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
-      const store = new prop.arrayType(buffer, this.ptr + prop.byteOffset, prop.size);
+      const store = new prop.arrayType(resource.buffer, this.ptr + prop.byteOffset, prop.size);
 
       // TODO handle setting defaults and prop validation when creating from ptr
       let initialValue: any;
@@ -109,6 +106,8 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         this.__props[propName] = store;
       }
     }
+
+    this.manager.addResourceInstance(this as unknown as RemoteResource<ResourceDefinition>);
   }
 
   Object.defineProperties(RemoteResourceClass, {

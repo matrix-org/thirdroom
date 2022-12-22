@@ -9,18 +9,18 @@ import { addRemoteNodeComponent } from "../node/node.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import {
-  AccessorComponentType,
-  AccessorType,
-  BufferResource,
-  BufferViewResource,
-  MaterialResource,
-  MaterialType,
+  RemoteAccessor,
+  RemoteBuffer,
+  RemoteBufferView,
   RemoteMaterial,
   RemoteMesh,
+  RemoteMeshPrimitive,
+} from "../resource/resource.game";
+import {
+  AccessorComponentType,
+  AccessorType,
+  MaterialType,
   InteractableType,
-  AccessorResource,
-  MeshResource,
-  MeshPrimitiveResource,
   MeshPrimitiveAttributeIndex,
 } from "../resource/schema";
 
@@ -41,31 +41,31 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
   const uv = new Float32Array(data, normal.byteOffset + normal.byteLength, uvArr.length);
   uv.set(uvArr);
 
-  const bufferView = ctx.resourceManager.createResource(BufferViewResource, {
-    buffer: ctx.resourceManager.createResource(BufferResource, {
+  const bufferView = new RemoteBufferView(ctx.resourceManager, {
+    buffer: new RemoteBuffer(ctx.resourceManager, {
       data,
     }),
     byteLength: data.byteLength,
   });
 
-  const remoteMesh = ctx.resourceManager.createResource(MeshResource, {
+  const remoteMesh = new RemoteMesh(ctx.resourceManager, {
     primitives: [
-      ctx.resourceManager.createResource(MeshPrimitiveResource, {
-        indices: ctx.resourceManager.createResource(AccessorResource, {
+      new RemoteMeshPrimitive(ctx.resourceManager, {
+        indices: new RemoteAccessor(ctx.resourceManager, {
           type: AccessorType.SCALAR,
           componentType: AccessorComponentType.Uint16,
           bufferView,
           count: indices.length,
         }),
         attributes: {
-          [MeshPrimitiveAttributeIndex.POSITION]: ctx.resourceManager.createResource(AccessorResource, {
+          [MeshPrimitiveAttributeIndex.POSITION]: new RemoteAccessor(ctx.resourceManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
             byteOffset: position.byteOffset,
             count: position.length / 3,
           }),
-          [MeshPrimitiveAttributeIndex.NORMAL]: ctx.resourceManager.createResource(AccessorResource, {
+          [MeshPrimitiveAttributeIndex.NORMAL]: new RemoteAccessor(ctx.resourceManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -73,7 +73,7 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
             count: normal.length / 3,
             normalized: true,
           }),
-          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: ctx.resourceManager.createResource(AccessorResource, {
+          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: new RemoteAccessor(ctx.resourceManager, {
             type: AccessorType.VEC2,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -83,7 +83,7 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
         },
         material:
           material ||
-          ctx.resourceManager.createResource(MaterialResource, {
+          new RemoteMaterial(ctx.resourceManager, {
             type: MaterialType.Standard,
             baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
             roughnessFactor: 0.8,
@@ -113,13 +113,6 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   const eid = addEntity(world);
 
-  ctx.resourceManager.createResource(MaterialResource, {
-    type: MaterialType.Standard,
-    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-    roughnessFactor: 0.8,
-    metallicFactor: 0.8,
-  });
-
   addRemoteNodeComponent(ctx, eid, {
     mesh: createCubeMesh(ctx, size, material),
   });
@@ -143,13 +136,6 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
   const { world } = ctx;
   const eid = addEntity(world);
-
-  ctx.resourceManager.createResource(MaterialResource, {
-    type: MaterialType.Standard,
-    baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-    roughnessFactor: 0.8,
-    metallicFactor: 0.8,
-  });
 
   addRemoteNodeComponent(ctx, eid, {
     mesh: createCubeMesh(ctx, size, material),
