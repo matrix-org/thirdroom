@@ -18,22 +18,28 @@ export class GameResourceManager implements IRemoteResourceManager {
 
   constructor(private ctx: GameState) {}
 
-  createResource(resourceDef: ResourceDefinition): ResourceData {
+  allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
 
     return {
-      resourceId,
       ptr: 0,
       buffer,
       tripleBuffer,
     };
   }
 
-  addResourceInstance(resource: RemoteResource<ResourceDefinition>) {
-    setRemoteResource(this.ctx, resource.resourceId, resource);
+  createResource(resource: RemoteResource<ResourceDefinition>): number {
+    const resourceId = createResource(
+      this.ctx,
+      Thread.Shared,
+      resource.constructor.resourceDef.name,
+      resource.tripleBuffer,
+      { name: resource.name }
+    );
+    setRemoteResource(this.ctx, resourceId, resource);
     this.resources.push(resource);
+    return resourceId;
   }
 
   getResource<Def extends ResourceDefinition>(
@@ -119,18 +125,16 @@ export class GameResourceManager implements IRemoteResourceManager {
   }
 
   setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array, backRef: boolean): void {
-    if (store[0] && !backRef) {
+    const nextResourceId = value?.resourceId || 0;
+
+    if (store[0] && nextResourceId !== store[0] && !backRef) {
       disposeResource(this.ctx, store[0]);
     }
 
-    if (value) {
-      store[0] = value.resourceId;
+    store[0] = nextResourceId;
 
-      if (!backRef) {
-        addResourceRef(this.ctx, store[0]);
-      }
-    } else {
-      store[0] = 0;
+    if (nextResourceId && nextResourceId !== store[0] && !backRef) {
+      addResourceRef(this.ctx, nextResourceId);
     }
   }
 

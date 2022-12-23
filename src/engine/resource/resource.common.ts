@@ -163,7 +163,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
       deferred.resolve(resourceInfo.resource);
     } catch (error: any) {
-      console.error(`Error loading ${resourceType} ${id}:`, error);
+      console.error(`Error loading ${resourceType} "${resourceInfo.name}" ${id}:`, error);
       resourceInfo.error = error.message || "Unknown error";
       deferred.reject(error);
     }
@@ -214,7 +214,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     for (const propName in resourceDef.schema) {
       const prop = resourceDef.schema[propName];
 
-      if (!prop.backRef) {
+      if (prop.backRef) {
         continue;
       }
 
@@ -231,6 +231,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     function waitForLocalResourceDependencies(resource: LocalResource<Def>): Promise<void>[] {
       const promises: Promise<void>[] = [];
+      const names: string[] = [];
       const bufferIndex = getReadBufferIndex(resource.tripleBuffer);
       const view = new Uint32Array(resource.tripleBuffer.buffers[bufferIndex]);
 
@@ -240,8 +241,13 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         const name = dependencyNames[i];
 
         if (resourceId) {
+          names.push(name);
           promises.push(waitForLocalResource(ctx, resourceId, name));
         }
+      }
+
+      if (resource.resourceId == 37 || resource.resourceId === 39) {
+        console.log(resource, names, promises);
       }
 
       return promises;

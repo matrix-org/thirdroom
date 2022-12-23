@@ -16,8 +16,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     props?: InitialResourceProps<Def>
   ) {
     this.manager = manager;
-    const resource = this.manager.createResource(resourceDef);
-    this.resourceId = resource.resourceId;
+    const resource = this.manager.allocateResource(resourceDef);
     this.resourceType = resourceType;
     this.initialized = false;
     this.ptr = resource.ptr;
@@ -107,7 +106,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       }
     }
 
-    this.manager.addResourceInstance(this as unknown as RemoteResource<ResourceDefinition>);
+    this.resourceId = this.manager.createResource(this as unknown as RemoteResource<ResourceDefinition>);
   }
 
   Object.defineProperties(RemoteResourceClass, {

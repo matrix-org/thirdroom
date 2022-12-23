@@ -86,11 +86,11 @@ interface ThirdRoomModuleState {
   collisionsGLTF?: GLTFResource;
 }
 
-const addAvatarCamera = (ctx: GameState, avatar: RemoteNode) => {
+const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
   const camera = createCamera(ctx);
   camera.position[1] = 1.2;
-  addChild(avatar, camera);
-  addCameraYawTargetComponent(ctx.world, avatar);
+  addChild(rig, camera);
+  addCameraYawTargetComponent(ctx.world, rig);
   addCameraPitchTargetComponent(ctx.world, camera);
   return camera;
 };
@@ -237,11 +237,17 @@ const actionMap: ActionMap = {
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
+    console.log("loading env");
+
     await loadEnvironment(ctx, message.url, message.scriptUrl);
 
     loadPreviewCamera(ctx);
 
+    console.log("env loaded");
+
     await waitForCurrentSceneToRender(ctx);
+
+    console.log("scene rendered");
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
@@ -397,6 +403,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
+  console.log("scene", newSceneResource);
+
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
@@ -478,6 +486,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
 
   const rig = createPrefabEntity(ctx, "avatar");
   const eid = rig.eid;
+  console.log(rig);
   embodyAvatar(ctx, physics, input, rig);
 
   associatePeerWithEntity(network, network.peerId, eid);

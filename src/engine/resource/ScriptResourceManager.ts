@@ -64,28 +64,34 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.instance = instance;
   }
 
-  addResourceInstance(resource: RemoteResource<ResourceDefinition>) {
-    setRemoteResource(this.ctx, resource.resourceId, resource);
-    this.ptrToResourceId.set(resource.ptr, resource.resourceId);
-    this.resources.push(resource);
-    this.resourceStorage.set(resource.resourceId, {
-      refView: new Uint32Array(resource.buffer, resource.ptr, resource.byteView.length),
-      prevRefs: [],
-    });
-  }
-
-  createResource(resourceDef: ResourceDefinition): ResourceData {
+  allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = this.memory.buffer;
     const ptr = this.allocate(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
 
     return {
-      resourceId,
       ptr,
       buffer,
       tripleBuffer,
     };
+  }
+
+  createResource(resource: RemoteResource<ResourceDefinition>): number {
+    const resourceId = createResource(
+      this.ctx,
+      Thread.Shared,
+      resource.constructor.resourceDef.name,
+      resource.tripleBuffer,
+      { name: resource.name }
+    );
+    setRemoteResource(this.ctx, resourceId, resource);
+    this.ptrToResourceId.set(resource.ptr, resourceId);
+    this.resources.push(resource);
+    this.resourceStorage.set(resourceId, {
+      refView: new Uint32Array(resource.buffer, resource.ptr, resource.byteView.length),
+      prevRefs: [],
+    });
+    return resourceId;
   }
 
   getResource<Def extends ResourceDefinition>(

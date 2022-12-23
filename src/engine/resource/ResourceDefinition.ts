@@ -323,7 +323,7 @@ function createStringPropDef<Mut extends boolean, Req extends boolean>(options?:
     script: false,
     default: "",
     resourceDef: undefined,
-    backRef: true,
+    backRef: false,
     ...options,
   };
 }
@@ -341,7 +341,7 @@ function createArrayBufferPropDef(options?: {
     script: false,
     default: undefined,
     resourceDef: undefined,
-    backRef: true,
+    backRef: false,
     ...options,
   };
 }
@@ -366,7 +366,7 @@ function createRefPropDef<Def extends ResourceDefinition | string, Mut extends b
     required: false as any,
     script: false,
     default: 0,
-    backRef: true,
+    backRef: false,
     ...options,
   };
 }
@@ -400,7 +400,7 @@ function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut exte
     required: false as any,
     script: false,
     default: new Uint32Array(size),
-    backRef: true,
+    backRef: false,
     ...rest,
   };
 }
@@ -434,7 +434,7 @@ function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extend
     required: false as any,
     script: false,
     default: new Uint32Array(size),
-    backRef: true,
+    backRef: false,
     ...rest,
   };
 }
@@ -463,7 +463,7 @@ function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolea
     script: false,
     default: 0,
     resourceDef: undefined as unknown as Def, // To be assigned in defineResource
-    backRef: true,
+    backRef: false,
     ...options,
   };
 }
@@ -705,7 +705,6 @@ export type InitialResourceProps<Def extends ResourceDefinition> = {
 };
 
 export interface ResourceData {
-  resourceId: number;
   ptr: number;
   buffer: ArrayBuffer;
   tripleBuffer: TripleBuffer;
@@ -717,8 +716,8 @@ export interface IRemoteResourceManager {
   setString(value: string | undefined, store: Uint32Array): void;
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
-  createResource(resourceDef: ResourceDefinition): ResourceData;
-  addResourceInstance(resource: RemoteResource<ResourceDefinition>): void;
+  allocateResource(resourceDef: ResourceDefinition): ResourceData;
+  createResource(resource: RemoteResource<ResourceDefinition>): number;
   getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
   disposeResource(resourceId: number): void;
   getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
