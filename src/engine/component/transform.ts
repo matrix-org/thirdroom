@@ -44,7 +44,7 @@ export function getChildAt(parent: RemoteNode | RemoteScene, index: number): Rem
 }
 
 export const findChild = (parent: RemoteNode | RemoteScene, predicate: (node: RemoteNode) => boolean) => {
-  let result;
+  let result: RemoteNode | undefined;
   traverse(parent, (child) => {
     if (predicate(child)) {
       result = child;
@@ -412,7 +412,7 @@ export function traverseReverse(node: RemoteNode | RemoteScene, callback: (node:
   }
 }
 
-export function removeNode(world: World, node: RemoteNode) {
+export function removeNode(world: World, node: RemoteNode | RemoteScene) {
   if (!entityExists(world, node.eid)) {
     return;
   }
@@ -433,12 +433,16 @@ export function removeNode(world: World, node: RemoteNode) {
     removeEntity(world, eid);
   });
 
-  if (node.parent) {
-    removeChild(node.parent, node);
+  if (node.resourceType === ResourceType.Scene) {
+    removeEntity(world, node.eid);
   } else {
-    node.firstChild = undefined;
-    node.prevSibling = undefined;
-    node.nextSibling = undefined;
+    if (node.parent) {
+      removeChild(node.parent, node);
+    } else {
+      node.firstChild = undefined;
+      node.prevSibling = undefined;
+      node.nextSibling = undefined;
+    }
   }
 }
 
@@ -459,7 +463,9 @@ export function getDirection(out: vec3, matrix: mat4): vec3 {
 }
 
 export function UpdateMatrixWorldSystem(ctx: GameState) {
-  updateMatrixWorld(ctx.activeScene);
+  if (ctx.activeScene) {
+    updateMatrixWorld(ctx.activeScene);
+  }
 }
 
 /*

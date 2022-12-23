@@ -15,11 +15,15 @@ import {
   ResourceDefinition,
   ResourceData,
 } from "../../src/engine/resource/ResourceDefinition";
+import { addRemoteNodeComponent } from "../../src/engine/node/node.game";
 
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
     name: "test-prefab",
-    create: () => addEntity(state.world),
+    create: () => {
+      const eid = addEntity(state.world);
+      return addRemoteNodeComponent(state, eid);
+    },
   });
 }
 

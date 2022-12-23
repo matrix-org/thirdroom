@@ -1,23 +1,22 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { Axes, isolateQuaternionAxis, Transform } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { Axes, isolateQuaternionAxis } from "../component/transform";
+import { RemoteNode } from "../resource/resource.game";
 import { teleportEntity } from "./teleportEntity";
 
 const _p = vec3.create();
 const _q = quat.create();
 
 export function spawnEntity(
-  ctx: GameState,
-  spawnPoints: number[],
-  eid: number,
+  spawnPoints: RemoteNode[],
+  node: RemoteNode,
   spawnPointIndex = Math.round(Math.random() * (spawnPoints.length - 1))
 ) {
-  const spawnWorldMatrix = Transform.worldMatrix[spawnPoints[spawnPointIndex]];
+  const spawnWorldMatrix = spawnPoints[spawnPointIndex].worldMatrix;
   const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
   const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
   spawnPosition[1] += 1.6;
   isolateQuaternionAxis(spawnQuaternion, Axes.Y);
 
-  teleportEntity(ctx, eid, spawnPosition, spawnQuaternion);
+  teleportEntity(node, spawnPosition, spawnQuaternion);
 }

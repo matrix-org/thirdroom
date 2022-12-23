@@ -5,7 +5,7 @@ import { Vector3 } from "three";
 
 import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
-import { Transform, addChild } from "../../engine/component/transform";
+import { addChild } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createGLTFEntity } from "../../engine/gltf/gltf.game";
@@ -22,7 +22,7 @@ import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
-import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
@@ -32,6 +32,7 @@ import {
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteMaterial,
+  RemoteNode,
 } from "../../engine/resource/resource.game";
 import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
@@ -86,9 +87,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 1;
         const halfSize = size / 2;
 
-        const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([size, size, size]);
+        node.scale.set([size, size, size]);
 
         const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
@@ -101,11 +102,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           sources: [hitAudioSource],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
         const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
         const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
@@ -116,11 +115,11 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
+        addRigidBody(ctx, node, rigidBody);
 
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
-        return eid;
+        return node;
       },
     });
 
@@ -130,9 +129,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 1.75;
         const halfSize = size / 2;
 
-        const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([size, size, size]);
+        node.scale.set([size, size, size]);
 
         const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
@@ -145,11 +144,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           sources: [hitAudioSource],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
         // const rigidBodyDesc = remote
         //   ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
@@ -164,11 +161,11 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
+        addRigidBody(ctx, node, rigidBody);
 
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
-        return eid;
+        return node;
       },
     });
 
@@ -178,9 +175,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 2.5;
         const halfSize = size / 2;
 
-        const eid = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
 
-        Transform.scale[eid].set([size, size, size]);
+        node.scale.set([size, size, size]);
 
         const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
@@ -193,11 +190,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           sources: [hitAudioSource],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
         // const rigidBodyDesc = remote
         //   ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
@@ -212,10 +207,10 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addRigidBody(ctx, node, rigidBody);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
-        return eid;
+        return node;
       },
     });
 
@@ -268,8 +263,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "mirror-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 1, mirrorMaterial, remote);
+      create: (ctx) => {
+        const node = createBall(ctx, 1, mirrorMaterial);
 
         const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
 
@@ -283,8 +278,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addRigidBody(ctx, node, rigidBody);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
         const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
@@ -297,20 +292,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           ],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-        return eid;
+        return node;
       },
     });
 
     registerPrefab(ctx, {
       name: "black-mirror-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 1, blackMirrorMaterial, remote);
+      create: (ctx) => {
+        const node = createBall(ctx, 1, blackMirrorMaterial);
 
         const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
 
@@ -324,8 +317,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addRigidBody(ctx, node, rigidBody);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
         const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
           type: AudioEmitterType.Positional,
@@ -338,20 +331,18 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           ],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-        return eid;
+        return node;
       },
     });
 
     registerPrefab(ctx, {
       name: "emissive-ball",
-      create: (ctx, remote) => {
-        const eid = createBall(ctx, 2, emissiveMaterial, remote);
+      create: (ctx) => {
+        const node = createBall(ctx, 2, emissiveMaterial);
 
         const rigidBodyDesc = RAPIER.RigidBodyDesc.newDynamic();
 
@@ -367,8 +358,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-        addRigidBody(ctx, eid, rigidBody);
-        addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+        addRigidBody(ctx, node, rigidBody);
+        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
         const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: ballAudioData,
@@ -381,13 +372,11 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           sources: [hitAudioSource],
         });
 
-        addRemoteNodeComponent(ctx, eid, {
-          audioEmitter,
-        });
+        node.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(eid, audioEmitter);
+        module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-        return eid;
+        return node;
       },
     });
 
@@ -471,7 +460,8 @@ export const SpawnableSystem = (ctx: GameState) => {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const camera = getCamera(ctx, eid);
+    const node = RemoteNodeComponent.get(eid)!;
+    const camera = getCamera(ctx, node);
     const controller = getInputController(input, eid);
     updateSpawnables(ctx, spawnablesModule, controller, camera);
   }
@@ -481,7 +471,7 @@ export const updateSpawnables = (
   ctx: GameState,
   { actions, maxObjCap }: SpawnablesModuleState,
   controller: InputController,
-  camera: number
+  camera: RemoteNode
 ) => {
   const pressedActions = actions.filter((a) => (controller.actions.get(a.path) as ButtonActionState)?.pressed);
 
@@ -499,21 +489,22 @@ export const updateSpawnables = (
   }
 
   for (const action of pressedActions) {
-    const eid = createPrefabEntity(ctx, action.id);
+    const prefab = createPrefabEntity(ctx, action.id);
+    const eid = prefab.eid;
 
     // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, eid);
     // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
 
-    mat4.getTranslation(Transform.position[eid], Transform.worldMatrix[camera]);
+    mat4.getTranslation(prefab.position, camera.worldMatrix);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
+    mat4.getRotation(_cameraWorldQuat, camera.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _cameraWorldQuat);
 
     // place object at direction
-    vec3.add(Transform.position[eid], Transform.position[eid], direction);
+    vec3.add(prefab.position, prefab.position, direction);
 
     vec3.scale(direction, direction, THROW_FORCE);
 
@@ -526,21 +517,16 @@ export const updateSpawnables = (
       continue;
     }
 
-    Transform.quaternion[eid].set(_cameraWorldQuat);
+    prefab.quaternion.set(_cameraWorldQuat);
 
     body.applyImpulse(_impulse, true);
 
-    addChild(ctx.activeScene, eid);
+    addChild(ctx.activeScene!, prefab);
   }
 };
 
-export const createBall = (state: GameState, size: number, material?: RemoteMaterial, remote = false) => {
+export const createBall = (state: GameState, size: number, material?: RemoteMaterial): RemoteNode => {
   const { world } = state;
   const eid = addEntity(world);
-
-  const mesh = createSphereMesh(state, size, material);
-
-  addRemoteNodeComponent(state, eid, { mesh });
-
-  return eid;
+  return addRemoteNodeComponent(state, eid, { mesh: createSphereMesh(state, size, material) });
 };

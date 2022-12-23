@@ -202,25 +202,19 @@ export function EditorStateSystem(ctx: GameState) {
     // Recursively update this layer so that the selected effect can be applied to all descendants
     for (let i = 0; i < selectedRemoved.length; i++) {
       const eid = selectedRemoved[i];
+      const selectedNode = RemoteNodeComponent.get(eid)!;
 
-      traverse(eid, (child) => {
-        const remoteNode = RemoteNodeComponent.get(child);
-
-        if (remoteNode) {
-          remoteNode.layers = removeLayer(remoteNode.layers, Layer.EditorSelection);
-        }
+      traverse(selectedNode, (child) => {
+        child.layers = removeLayer(child.layers, Layer.EditorSelection);
       });
     }
 
     for (let i = 0; i < selectedAdded.length; i++) {
       const eid = selectedAdded[i];
+      const selectedNode = RemoteNodeComponent.get(eid)!;
 
-      traverse(eid, (child) => {
-        const remoteNode = RemoteNodeComponent.get(child);
-
-        if (remoteNode) {
-          remoteNode.layers = addLayer(remoteNode.layers, Layer.EditorSelection);
-        }
+      traverse(selectedNode, (child) => {
+        child.layers = addLayer(child.layers, Layer.EditorSelection);
       });
     }
   }

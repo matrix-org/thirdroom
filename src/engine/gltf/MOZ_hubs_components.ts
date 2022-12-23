@@ -3,12 +3,11 @@ import { quat } from "gl-matrix";
 
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
-import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
+import { RemoteNode } from "../resource/resource.game";
 import { GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
-import { addTrimesh } from "./OMI_collider";
+import { addTrimeshFromMesh } from "./OMI_collider";
 
 export function hasHubsComponentsExtension(root: GLTFRoot) {
   return root.extensions?.MOZ_hubs_components !== undefined;
@@ -16,7 +15,7 @@ export function hasHubsComponentsExtension(root: GLTFRoot) {
 
 export function inflateHubsScene(ctx: GameState, resource: GLTFResource, sceneIndex: number, sceneEid: number) {}
 
-export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeIndex: number, nodeEid: number) {
+export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeIndex: number, remoteNode: RemoteNode) {
   const node = resource.root.nodes![nodeIndex];
   const components = node.extensions?.MOZ_hubs_components;
 
@@ -24,16 +23,14 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
     return;
   }
 
-  const remoteNode = RemoteNodeComponent.get(nodeEid) || addRemoteNodeComponent(ctx, nodeEid, {}, resource.manager);
-
   if (components["spawn-point"] || components["waypoint"]?.canBeSpawnPoint) {
-    Transform.position[nodeEid][1] += 1.6;
-    quat.rotateY(Transform.quaternion[nodeEid], Transform.quaternion[nodeEid], Math.PI);
-    addComponent(ctx.world, SpawnPoint, nodeEid);
+    remoteNode.position[1] += 1.6;
+    quat.rotateY(remoteNode.quaternion, remoteNode.quaternion, Math.PI);
+    addComponent(ctx.world, SpawnPoint, remoteNode.eid);
   }
 
-  if (components["trimesh"] || components["nav-mesh"]) {
-    addTrimesh(ctx, nodeEid);
+  if ((components["trimesh"] || components["nav-mesh"]) && remoteNode.mesh) {
+    addTrimeshFromMesh(ctx, remoteNode, remoteNode.mesh);
   }
 
   if (components.visible?.visible === false) {
@@ -42,6 +39,6 @@ export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeInde
 
   if (components["scene-preview-camera"]) {
     remoteNode.camera = createRemotePerspectiveCamera(ctx, resource.manager);
-    ctx.activeCamera = nodeEid;
+    ctx.activeCamera = remoteNode;
   }
 }

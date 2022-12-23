@@ -12,12 +12,17 @@ import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat"
 import { Quaternion, Vector3 } from "three";
 
 import { GameState, World } from "../GameTypes";
-import { Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
-import { ResourceId } from "../resource/resource.common";
-import { addResourceRef, disposeResource } from "../resource/resource.game";
+import {
+  addResourceRef,
+  disposeResource,
+  RemoteMesh,
+  RemoteMeshPrimitive,
+  RemoteNode,
+} from "../resource/resource.game";
+import { RemoteNodeComponent } from "../node/node.game";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
@@ -77,22 +82,20 @@ export const exitedPhysicsQuery = exitQuery(physicsQuery);
 
 const _v = new Vector3();
 const _q = new Quaternion();
-export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) => {
-  const position = Transform.position[eid];
-  const quaternion = Transform.quaternion[eid];
-  body.setTranslation(_v.fromArray(position), true);
-  body.setRotation(_q.fromArray(quaternion), true);
+export const applyTransformToRigidBody = (body: RapierRigidBody, node: RemoteNode) => {
+  body.setTranslation(_v.fromArray(node.position), true);
+  body.setRotation(_q.fromArray(node.quaternion), true);
 };
 
-const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
+const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
   if (body.isStatic()) {
     return;
   }
 
   const rigidPos = body.translation();
   const rigidRot = body.rotation();
-  const position = Transform.position[eid];
-  const quaternion = Transform.quaternion[eid];
+  const position = node.position;
+  const quaternion = node.quaternion;
 
   position[0] = rigidPos.x;
   position[1] = rigidPos.y;
@@ -114,10 +117,11 @@ export const PhysicsSystem = (state: GameState) => {
     const eid = entered[i];
 
     const body = RigidBody.store.get(eid);
+    const node = RemoteNodeComponent.get(eid);
 
-    if (body) {
+    if (body && node) {
       if (!body.isStatic()) {
-        applyTransformToRigidBody(body, eid);
+        applyTransformToRigidBody(body, node);
       }
 
       handleToEid.set(body.handle, eid);
@@ -149,8 +153,9 @@ export const PhysicsSystem = (state: GameState) => {
   for (let i = 0; i < physicsEntities.length; i++) {
     const eid = physicsEntities[i];
     const body = RigidBody.store.get(eid);
+    const node = RemoteNodeComponent.get(eid);
 
-    if (body && !body.isStatic()) {
+    if (node && body && !body.isStatic()) {
       // sync velocity
       const linvel = body.linvel();
       const velocity = RigidBody.velocity[eid];
@@ -162,7 +167,7 @@ export const PhysicsSystem = (state: GameState) => {
       if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
         continue;
       } else {
-        applyRigidBodyToTransform(body, eid);
+        applyRigidBodyToTransform(body, node);
       }
     }
   }
@@ -181,24 +186,23 @@ export const PhysicsSystem = (state: GameState) => {
 
 export function addRigidBody(
   ctx: GameState,
-  eid: number,
+  node: RemoteNode,
   rigidBody: RapierRigidBody,
-  meshResourceId?: ResourceId,
-  primitiveResourceId?: ResourceId
+  meshResource?: RemoteMesh,
+  primitiveResource?: RemoteMeshPrimitive
 ) {
-  addComponent(ctx.world, RigidBody, eid);
-  RigidBody.store.set(eid, rigidBody);
+  addComponent(ctx.world, RigidBody, node.eid);
+  RigidBody.store.set(node.eid, rigidBody);
 
-  if (meshResourceId) {
-    addResourceRef(ctx, meshResourceId);
+  if (meshResource) {
+    addResourceRef(ctx, meshResource.resourceId);
+    RigidBody.meshResourceId[node.eid] = meshResource.resourceId;
   }
 
-  if (primitiveResourceId) {
-    addResourceRef(ctx, primitiveResourceId);
+  if (primitiveResource) {
+    addResourceRef(ctx, primitiveResource.resourceId);
+    RigidBody.primitiveResourceId[node.eid] = primitiveResource.resourceId;
   }
-
-  RigidBody.meshResourceId[eid] = meshResourceId || 0;
-  RigidBody.primitiveResourceId[eid] = primitiveResourceId || 0;
 }
 
 export function removeRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {

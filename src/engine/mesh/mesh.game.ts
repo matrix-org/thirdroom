@@ -15,6 +15,7 @@ import {
   RemoteMaterial,
   RemoteMesh,
   RemoteMeshPrimitive,
+  RemoteNode,
 } from "../resource/resource.game";
 import {
   AccessorComponentType,
@@ -106,14 +107,19 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
   return createMesh(ctx, geometry, material);
 };
 
-export const createPhysicsCube = (ctx: GameState, size: number, material?: RemoteMaterial, remote = false) => {
+export const createPhysicsCube = (
+  ctx: GameState,
+  size: number,
+  material?: RemoteMaterial,
+  remote = false
+): RemoteNode => {
   const physics = getModule(ctx, PhysicsModule);
   const { physicsWorld } = physics;
   const { world } = ctx;
 
   const eid = addEntity(world);
 
-  addRemoteNodeComponent(ctx, eid, {
+  const node = addRemoteNodeComponent(ctx, eid, {
     mesh: createCubeMesh(ctx, size, material),
   });
 
@@ -126,11 +132,11 @@ export const createPhysicsCube = (ctx: GameState, size: number, material?: Remot
 
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);
 
-  addRigidBody(ctx, eid, rigidBody);
+  addRigidBody(ctx, node, rigidBody);
 
-  addInteractableComponent(ctx, physics, eid, InteractableType.Grabbable);
+  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
-  return eid;
+  return node;
 };
 
 export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {

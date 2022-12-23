@@ -1,7 +1,5 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
-import { mat4, quat, vec3 } from "gl-matrix";
 
-import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import {
   disposeResource,
@@ -67,22 +65,6 @@ export function addRemoteNodeComponent(
   addComponent(ctx.world, RemoteNodeComponent, eid);
   RemoteNodeComponent.set(eid, remoteNode);
 
-  addComponent(ctx.world, Transform, eid);
-  vec3.set(Transform.position[eid], 0, 0, 0);
-  vec3.set(Transform.scale[eid], 1, 1, 1);
-  quat.identity(Transform.quaternion[eid]);
-  mat4.identity(Transform.localMatrix[eid]);
-  Transform.isStatic[eid] = 0;
-  mat4.identity(Transform.worldMatrix[eid]);
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
-  Transform.parent[eid] = 0;
-  Transform.firstChild[eid] = 0;
-  Transform.nextSibling[eid] = 0;
-  Transform.prevSibling[eid] = 0;
-
-  // always skip lerp for first few frames of existence
-  Transform.skipLerp[eid] = 10;
-
   return remoteNode;
 }
 
@@ -90,15 +72,6 @@ const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
 const remoteNodeExitQuery = exitQuery(remoteNodeQuery);
 
 export function RemoteNodeSystem(ctx: GameState) {
-  const entities = remoteNodeQuery(ctx.world);
-
-  for (let i = 0; i < entities.length; i++) {
-    const eid = entities[i];
-    const remoteNode = RemoteNodeComponent.get(eid)!;
-    remoteNode.skipLerp = Transform.skipLerp[eid];
-    remoteNode.worldMatrix.set(Transform.worldMatrix[eid]);
-  }
-
   const disposedEntities = remoteNodeExitQuery(ctx.world);
 
   for (let i = 0; i < disposedEntities.length; i++) {

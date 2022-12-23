@@ -3,12 +3,13 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { GameState } from "../../engine/GameTypes";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModuleState, addRigidBody } from "../../engine/physics/physics.game";
+import { RemoteNode } from "../../engine/resource/resource.game";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_RADIUS } from "./common";
 
 export function addAvatarRigidBody(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  container: number,
+  container: RemoteNode,
   options: AvatarOptions = {}
 ) {
   const {

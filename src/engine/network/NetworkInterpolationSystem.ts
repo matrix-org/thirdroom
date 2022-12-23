@@ -3,7 +3,6 @@ import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import { Vector3, Quaternion } from "three";
 import { quat, vec3 } from "gl-matrix";
 
-import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
@@ -18,6 +17,8 @@ import {
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { tickRate } from "../config.common";
+import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNode } from "../resource/resource.game";
 
 const FRAME_MS = 1000 / tickRate;
 
@@ -40,9 +41,10 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entered = enteredRemoteEntityQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
+    const node = RemoteNodeComponent.get(eid);
     const body = RigidBody.store.get(eid);
-    if (body) {
-      applyNetworkedToRigidBody(eid, body);
+    if (node && body) {
+      applyNetworkedToRigidBody(node, body);
 
       // add to historian
       const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
@@ -60,6 +62,12 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entities = remoteEntityQuery(ctx.world);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
+    const node = RemoteNodeComponent.get(eid);
+
+    if (!node) {
+      console.warn("could not find node for:", eid);
+      continue;
+    }
 
     const body = RigidBody.store.get(eid);
 
@@ -76,13 +84,13 @@ export function NetworkInterpolationSystem(ctx: GameState) {
 
     const historian = network.peerIdToHistorian.get(peerId);
     if (historian === undefined) {
-      applyNetworkedToRigidBody(eid, body);
+      applyNetworkedToRigidBody(node, body);
       // console.warn("could not find historian for:", peerId);
       continue;
     }
 
-    const position = Transform.position[eid];
-    const quaternion = Transform.quaternion[eid];
+    const position = node.position;
+    const quaternion = node.quaternion;
     const velocity = RigidBody.velocity[eid];
 
     const netPosition = Networked.position[eid];
@@ -90,7 +98,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const netQuaternion = Networked.quaternion[eid];
 
     if (!network.interpolate) {
-      applyNetworkedToRigidBody(eid, body);
+      applyNetworkedToRigidBody(node, body);
       continue;
     }
 
@@ -206,13 +214,14 @@ function postprocessHistorians(ctx: GameState, network: GameNetworkState) {
   }
 }
 
-function applyNetworkedToRigidBody(eid: number, body: RapierRigidBody) {
+function applyNetworkedToRigidBody(node: RemoteNode, body: RapierRigidBody) {
+  const eid = node.eid;
   const netPosition = Networked.position[eid];
   const netQuaternion = Networked.quaternion[eid];
   const netVelocity = Networked.velocity[eid];
 
-  Transform.position[eid].set(netPosition);
-  Transform.quaternion[eid].set(netQuaternion);
+  node.position.set(netPosition);
+  node.quaternion.set(netQuaternion);
 
   body.setTranslation(_vec.fromArray(netPosition), true);
   if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);

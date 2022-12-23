@@ -4,16 +4,17 @@ import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRightVector, getRoll, Transform } from "../component/transform";
+import { getForwardVector, getPitch, getRightVector, getRoll } from "../component/transform";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/network.game";
+import { RemoteNodeComponent } from "../node/node.game";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 import { ResourceId } from "../resource/resource.common";
-import { disposeResource } from "../resource/resource.game";
+import { disposeResource, RemoteNode } from "../resource/resource.game";
 
 interface AnimationActionMap {
   Fall2: AnimationAction;
@@ -133,15 +134,16 @@ function processAnimations(ctx: GameState) {
     const eid = ents[i];
     // animation component exists on the inner avatar entity
     const animation = AnimationComponent.get(eid);
+    const node = RemoteNodeComponent.get(eid)!;
 
     // avatars exist within a parent container which has all other components for this entity
-    const parent = Transform.parent[eid];
+    const parent = node.parent;
     if (!parent) {
       console.warn("cannot find parent container for avatar:", eid);
       continue;
     }
 
-    const rigidBody = RigidBody.store.get(parent);
+    const rigidBody = RigidBody.store.get(parent.eid);
 
     if (animation && rigidBody) {
       // collectively fade all animations out each frame
@@ -167,9 +169,10 @@ function syncBones(ctx: GameState) {
   for (let i = 0; i < bones.length; i++) {
     const eid = bones[i];
     const bone = BoneComponent.get(eid);
-    if (bone) {
-      const p = Transform.position[eid];
-      const q = Transform.quaternion[eid];
+    const node = RemoteNodeComponent.get(eid);
+    if (bone && node) {
+      const p = node.position;
+      const q = node.quaternion;
       bone.position.toArray(p);
       bone.quaternion.toArray(q);
     }
@@ -214,11 +217,12 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
 function getClipActionsUsingVelocity(
   ctx: GameState,
   physicsWorld: RAPIER.World,
-  eid: number,
+  node: RemoteNode,
   rigidBody: RAPIER.RigidBody,
   animation: IAnimationComponent
 ): AnimationAction[] {
-  const quaternion = Transform.quaternion[eid];
+  const eid = node.eid;
+  const quaternion = node.quaternion;
 
   // if remote object, take velocity from Networked component
   // otherwise, take velocity from entity's RigidBody

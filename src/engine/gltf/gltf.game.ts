@@ -3,7 +3,7 @@ import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
-import { addChild, Transform, updateMatrixWorld } from "../component/transform";
+import { addChild, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -18,7 +18,7 @@ import { addAnimationComponent, BoneComponent } from "../animation/animation.gam
 import { loadGLTFAnimationClip } from "./animation.three";
 import {
   addCollider,
-  addTrimesh,
+  addTrimeshFromMesh,
   getColliderMesh,
   hasColliderExtension,
   hasMeshCollider,
@@ -114,11 +114,11 @@ export interface GLTFResource {
   manager: IRemoteResourceManager;
 }
 
-export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions) {
+export function createGLTFEntity(ctx: GameState, uri: string, options: GLTFSceneOptions): RemoteNode {
   const eid = addEntity(ctx.world);
-  addRemoteNodeComponent(ctx, eid);
+  const node = addRemoteNodeComponent(ctx, eid);
   inflateGLTFScene(ctx, eid, uri, { ...options, asNode: true });
-  return eid;
+  return node;
 }
 
 interface GLTFSceneOptions {
@@ -208,7 +208,7 @@ export async function inflateGLTFScene(
       !asNode && hasReflectionProbeExtension(scene) ? loadGLTFReflectionProbe(ctx, resource, scene) : undefined,
   });
 
-  updateMatrixWorld(sceneEid, true);
+  updateMatrixWorld(remoteSceneOrNode, true);
 
   for (const inflator of nodeInflators) {
     inflator();
@@ -310,17 +310,17 @@ async function _inflateGLTFNode(
   );
 
   if (node.matrix) {
-    Transform.localMatrix[nodeEid].set(node.matrix);
-    mat4.getTranslation(Transform.position[nodeEid], Transform.localMatrix[nodeEid]);
-    mat4.getRotation(Transform.quaternion[nodeEid], Transform.localMatrix[nodeEid]);
-    mat4.getScaling(Transform.scale[nodeEid], Transform.localMatrix[nodeEid]);
+    remoteNode.localMatrix.set(node.matrix);
+    mat4.getTranslation(remoteNode.position, remoteNode.localMatrix);
+    mat4.getRotation(remoteNode.quaternion, remoteNode.localMatrix);
+    mat4.getScaling(remoteNode.scale, remoteNode.localMatrix);
   } else {
-    if (node.translation) Transform.position[nodeEid].set(node.translation);
-    if (node.rotation) Transform.quaternion[nodeEid].set(node.rotation);
-    if (node.scale) Transform.scale[nodeEid].set(node.scale);
+    if (node.translation) remoteNode.position.set(node.translation);
+    if (node.rotation) remoteNode.quaternion.set(node.rotation);
+    if (node.scale) remoteNode.scale.set(node.scale);
   }
 
-  addChild(parent.eid, nodeEid);
+  addChild(parent, remoteNode);
 
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,
@@ -377,10 +377,10 @@ async function _inflateGLTFNode(
     Object.assign(remoteNode, results);
 
     if (hasHubsComponentsExtension(resource.root)) {
-      inflateHubsNode(ctx, resource, nodeIndex, nodeEid);
+      inflateHubsNode(ctx, resource, nodeIndex, remoteNode);
     } else {
       if (node.camera !== undefined) {
-        ctx.activeCamera = nodeEid;
+        ctx.activeCamera = remoteNode;
       }
 
       if (node.extras && node.extras["directional-light"] && !remoteNode.light) {
@@ -392,7 +392,7 @@ async function _inflateGLTFNode(
       }
 
       if (results.mesh && createTrimesh) {
-        addTrimesh(ctx, nodeEid);
+        addTrimeshFromMesh(ctx, remoteNode, results.mesh);
       }
 
       if ((node.extras && node.extras["spawn-point"]) || hasSpawnPointExtension(node) || node.name === "__SpawnPoint") {
@@ -405,10 +405,10 @@ async function _inflateGLTFNode(
     }
 
     if (nodeHasCollider(node)) {
-      addCollider(ctx, resource, node, nodeEid, results.colliderMesh);
+      addCollider(ctx, resource, node, remoteNode, results.colliderMesh);
     }
 
-    inflatePortalComponent(ctx, node, nodeEid);
+    inflatePortalComponent(ctx, node, remoteNode);
   });
 }
 

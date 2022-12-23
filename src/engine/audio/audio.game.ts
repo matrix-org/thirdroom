@@ -12,8 +12,6 @@ import {
   createObjectTripleBuffer,
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
-import { RemoteSceneComponent } from "../scene/scene.game";
-import { RemoteNodeComponent } from "../node/node.game";
 import { getRemoteResources, RemoteAudioSource } from "../resource/resource.game";
 import { AudioSourceResource } from "../resource/schema";
 
@@ -78,11 +76,8 @@ export function playAudio(audioSource: RemoteAudioSource, options?: PlayAudioOpt
 export function GameAudioSystem(ctx: GameState) {
   const audioModule = getModule(ctx, GameAudioModule);
 
-  const activeScene = RemoteSceneComponent.get(ctx.activeScene);
-  const activeCamera = RemoteNodeComponent.get(ctx.activeCamera);
-
-  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = activeCamera?.resourceId || 0;
-  audioModule.audioStateBufferView.activeSceneResourceId[0] = activeScene?.resourceId || 0;
+  audioModule.audioStateBufferView.activeAudioListenerResourceId[0] = ctx.activeCamera?.resourceId || 0;
+  audioModule.audioStateBufferView.activeSceneResourceId[0] = ctx.activeScene?.resourceId || 0;
 
   commitToObjectTripleBuffer(audioModule.audioStateTripleBuffer, audioModule.audioStateBufferView);
 

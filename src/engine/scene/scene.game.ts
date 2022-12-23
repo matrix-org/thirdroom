@@ -1,7 +1,5 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
-import { mat4, quat, vec3 } from "gl-matrix";
 
-import { Transform } from "../component/transform";
 import { GameState } from "../GameTypes";
 import {
   disposeResource,
@@ -27,27 +25,8 @@ export function addRemoteSceneComponent(
   resourceManager: IRemoteResourceManager = ctx.resourceManager
 ): RemoteScene {
   const remoteScene = new RemoteScene(resourceManager, { ...props, eid });
-
   addComponent(ctx.world, RemoteSceneComponent, eid);
-
   RemoteSceneComponent.set(eid, remoteScene);
-
-  addComponent(ctx.world, Transform, eid);
-  vec3.set(Transform.position[eid], 0, 0, 0);
-  vec3.set(Transform.scale[eid], 1, 1, 1);
-  quat.identity(Transform.quaternion[eid]);
-  mat4.identity(Transform.localMatrix[eid]);
-  Transform.isStatic[eid] = 0;
-  mat4.identity(Transform.worldMatrix[eid]);
-  Transform.worldMatrixNeedsUpdate[eid] = 1;
-  Transform.parent[eid] = 0;
-  Transform.firstChild[eid] = 0;
-  Transform.nextSibling[eid] = 0;
-  Transform.prevSibling[eid] = 0;
-
-  // always skip lerp for first few frames of existence
-  Transform.skipLerp[eid] = 10;
-
   return remoteScene;
 }
 

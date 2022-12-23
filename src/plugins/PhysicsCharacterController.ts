@@ -2,7 +2,6 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -14,10 +13,10 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { GameNetworkState } from "../engine/network/network.game";
-import { NetworkModule } from "../engine/network/network.game";
+import { RemoteNodeComponent } from "../engine/node/node.game";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
+import { RemoteNode } from "../engine/resource/resource.game";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -139,16 +138,15 @@ export function addPhysicsControls(ctx: GameState, eid: number) {
 function updatePhysicsControls(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  network: GameNetworkState,
   controller: InputController,
-  rig: number
+  rig: RemoteNode
 ) {
-  const body = RigidBody.store.get(rig);
+  const body = RigidBody.store.get(rig.eid);
   if (!body) {
     return;
   }
 
-  obj.quaternion.fromArray(Transform.quaternion[rig]);
+  obj.quaternion.fromArray(rig.quaternion);
   body.setRotation(obj.quaternion, true);
 
   // Handle Input
@@ -235,12 +233,12 @@ function updatePhysicsControls(
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
+    const node = RemoteNodeComponent.get(eid)!;
     const controller = getInputController(input, eid);
-    updatePhysicsControls(ctx, physics, network, controller, eid);
+    updatePhysicsControls(ctx, physics, controller, node);
   }
 };

@@ -2,7 +2,7 @@ import { addComponent, addEntity, defineComponent, defineQuery, enterQuery, hasC
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { addChild, findChild, getForwardVector, getPitch, getRoll, Transform } from "../../engine/component/transform";
+import { addChild, findChild, getForwardVector, getPitch, getRoll } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -11,7 +11,7 @@ import { RendererModule } from "../../engine/renderer/renderer.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import { RemoteNametag } from "../../engine/resource/resource.game";
+import { RemoteNametag, RemoteNode } from "../../engine/resource/resource.game";
 
 type NametagState = {
   enabled: boolean;
@@ -48,10 +48,11 @@ export function NametagSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
   const renderer = getModule(ctx, RendererModule);
   const nametagModule = getModule(ctx, NametagModule);
-  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const ourPlayerEid = ourPlayerQuery(ctx.world)[0];
+  const ourPlayerNode = RemoteNodeComponent.get(ourPlayerEid);
 
-  if (nametagModule.enabled && ourPlayer) {
-    const ourWorldPosition = Transform.position[ourPlayer];
+  if (nametagModule.enabled && ourPlayerNode) {
+    const ourWorldPosition = ourPlayerNode.position;
 
     const entered = enteredNametagQuery(ctx.world);
     for (let i = 0; i < entered.length; i++) {
@@ -80,9 +81,14 @@ export function NametagSystem(ctx: GameState) {
     for (let i = 0; i < nametagEnts.length; i++) {
       const nametag = nametagEnts[i];
       const player = NametagComponent.entity[nametag];
+      const nametagNode = RemoteNodeComponent.get(nametag);
+
+      if (!ctx.activeCamera || !nametagNode) {
+        continue;
+      }
 
       // projection to camera space
-      const nametagWorldPosition = mat4.getTranslation(_v, Transform.worldMatrix[nametag]);
+      const nametagWorldPosition = mat4.getTranslation(_v, nametagNode.worldMatrix);
       const projected = projectPerspective(ctx, ctx.activeCamera, nametagWorldPosition);
 
       const peerId = network.entityIdToPeerId.get(player);
@@ -93,7 +99,7 @@ export function NametagSystem(ctx: GameState) {
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
-      const quaternion = Transform.quaternion[ourPlayer];
+      const quaternion = ourPlayerNode.quaternion;
       const pitch = getPitch(quaternion);
       const roll = getRoll(quaternion);
       const forward = getForwardVector(_forward, pitch, roll);
@@ -127,17 +133,18 @@ export function NametagSystem(ctx: GameState) {
   }
 }
 
-export function addNametag(ctx: GameState, height: number, eid: number) {
-  const nametag = addEntity(ctx.world);
-  addComponent(ctx.world, NametagComponent, nametag);
-  addRemoteNodeComponent(ctx, nametag);
-  Transform.position[nametag].set([0, height + height / 1.5, 0]);
-  addChild(eid, nametag);
-  NametagComponent.entity[nametag] = eid;
+export function addNametag(ctx: GameState, height: number, node: RemoteNode) {
+  const nametagEid = addEntity(ctx.world);
+  const nametag = addRemoteNodeComponent(ctx, nametagEid);
+  addComponent(ctx.world, NametagComponent, nametagEid);
+  nametag.position.set([0, height + height / 1.5, 0]);
+  addChild(node, nametag);
+  NametagComponent.entity[nametagEid] = node.eid;
+  return nametag;
 }
 
-export function getNametag(ctx: GameState, eid: number) {
-  const nametag = findChild(eid, (child) => hasComponent(ctx.world, NametagComponent, child));
-  if (!nametag) throw new Error("avatar not found for entity " + eid);
+export function getNametag(ctx: GameState, parent: RemoteNode) {
+  const nametag = findChild(parent, (child) => hasComponent(ctx.world, NametagComponent, child.eid));
+  if (!nametag) throw new Error("avatar not found for entity " + parent.eid);
   return nametag;
 }

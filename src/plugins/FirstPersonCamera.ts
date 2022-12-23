@@ -10,8 +10,7 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
-import { Axes, Transform } from "../engine/component/transform";
-import { NOOP } from "../engine/config.common";
+import { Axes } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
@@ -23,6 +22,8 @@ import { Networked, NetworkModule, Owned } from "../engine/network/network.game"
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { broadcastReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
+import { RemoteNodeComponent } from "../engine/node/node.game";
+import { RemoteNode } from "../engine/resource/resource.game";
 import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
@@ -60,9 +61,10 @@ function deserializeUpdateCamera(data: NetPipeData) {
   const network = getModule(ctx, NetworkModule);
 
   const avatarNid = readUint32(view);
-  const avatar = network.networkIdToEntityId.get(avatarNid)!;
-  const camera = getCamera(ctx, avatar);
-  FirstPersonCameraPitchTarget.pitch[camera] = readFloat32(view);
+  const avatarEid = network.networkIdToEntityId.get(avatarNid)!;
+  const avatarNode = RemoteNodeComponent.get(avatarEid)!;
+  const camera = getCamera(ctx, avatarNode);
+  FirstPersonCameraPitchTarget.pitch[camera.eid] = readFloat32(view);
   return data;
 }
 
@@ -100,35 +102,37 @@ export const FirstPersonCameraYawTarget = defineComponent({
 
 const DEFAULT_SENSITIVITY = 100;
 
-export function addCameraPitchTargetComponent(world: World, eid: number) {
+export function addCameraPitchTargetComponent(world: World, node: RemoteNode) {
+  const eid = node.eid;
   addComponent(world, FirstPersonCameraPitchTarget, eid);
   FirstPersonCameraPitchTarget.maxAngle[eid] = 89;
   FirstPersonCameraPitchTarget.minAngle[eid] = -89;
   FirstPersonCameraPitchTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
 }
 
-export function addCameraYawTargetComponent(world: World, eid: number) {
-  addComponent(world, FirstPersonCameraYawTarget, eid);
-  FirstPersonCameraYawTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
+export function addCameraYawTargetComponent(world: World, node: RemoteNode) {
+  addComponent(world, FirstPersonCameraYawTarget, node.eid);
+  FirstPersonCameraYawTarget.sensitivity[node.eid] = DEFAULT_SENSITIVITY;
 }
 
-export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
-export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
+export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, RemoteNodeComponent]);
+export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNodeComponent]);
 
-function applyYaw(ctx: GameState, controller: InputController, eid: number) {
+function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [lookX] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookX) >= 1) {
-    const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-    const quaternion = Transform.quaternion[eid];
+    const sensitivity = FirstPersonCameraYawTarget.sensitivity[node.eid] || 1;
+    const quaternion = node.quaternion;
     quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
   }
 }
 
-function applyPitch(ctx: GameState, controller: InputController, eid: number) {
+function applyPitch(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [, lookY] = controller.actions.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
+    const eid = node.eid;
     let pitch = FirstPersonCameraPitchTarget.pitch[eid];
     const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
     const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
@@ -145,7 +149,7 @@ function applyPitch(ctx: GameState, controller: InputController, eid: number) {
 
     FirstPersonCameraPitchTarget.pitch[eid] = pitch;
 
-    quat.setAxisAngle(Transform.quaternion[eid], Axes.X, pitch);
+    quat.setAxisAngle(node.quaternion, Axes.X, pitch);
   }
 }
 
@@ -160,20 +164,26 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const pitchEntities = cameraPitchTargetQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
+    const node = RemoteNodeComponent.get(eid)!;
     // pitch target on camera, controller is on the parent of the camera
-    const parent = Transform.parent[eid];
-    const controller = getInputController(input, parent);
-    applyPitch(ctx, controller, eid);
+    const parent = node.parent;
+
+    if (!parent) {
+      continue;
+    }
+
+    const controller = getInputController(input, parent.eid);
+    applyPitch(ctx, controller, node);
 
     // network the avatar's camera
     const haveConnectedPeers = network.peers.length > 0;
     const hosting = network.authoritative && isHost(network);
     const avatar = getAvatar(ctx, parent);
     const isOwnedAvatar =
-      avatar !== NOOP && hasComponent(ctx.world, Networked, parent) && hasComponent(ctx.world, Owned, parent);
+      avatar && hasComponent(ctx.world, Networked, parent.eid) && hasComponent(ctx.world, Owned, parent.eid);
     if (hosting && haveConnectedPeers && isOwnedAvatar) {
       const camera = getCamera(ctx, parent);
-      const msg = createUpdateCameraMessage(ctx, parent, camera);
+      const msg = createUpdateCameraMessage(ctx, parent.eid, camera.eid);
       if (msg.byteLength > 0) {
         broadcastReliable(ctx, network, msg);
       }
@@ -183,7 +193,8 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const yawEntities = cameraYawTargetQuery(ctx.world);
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
+    const node = RemoteNodeComponent.get(eid)!;
     const controller = getInputController(input, eid);
-    applyYaw(ctx, controller, eid);
+    applyYaw(ctx, controller, node);
   }
 }
