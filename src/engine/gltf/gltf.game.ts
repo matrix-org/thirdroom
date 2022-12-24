@@ -3,7 +3,7 @@ import { mat4 } from "gl-matrix";
 import { AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
-import { addChild, updateMatrixWorld } from "../component/transform";
+import { addChild, updateMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
@@ -318,6 +318,7 @@ async function _inflateGLTFNode(
     if (node.translation) remoteNode.position.set(node.translation);
     if (node.rotation) remoteNode.quaternion.set(node.rotation);
     if (node.scale) remoteNode.scale.set(node.scale);
+    updateMatrix(remoteNode);
   }
 
   addChild(parent, remoteNode);

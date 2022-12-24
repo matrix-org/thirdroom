@@ -31,7 +31,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       const store = new prop.arrayType(resource.buffer, this.ptr + prop.byteOffset, prop.size);
 
       // TODO handle setting defaults and prop validation when creating from ptr
-      let initialValue: any;
+      let initialValue: unknown;
 
       if (props) {
         initialValue = props[propName] !== undefined ? props[propName] : prop.default;
@@ -159,7 +159,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     } else if (prop.type === "ref") {
       const setter = prop.mutable
         ? {
-            set(this: RemoteResource<Def>, value?: any) {
+            set(this: RemoteResource<Def>, value?: unknown) {
               this.manager.setRef(value, this.__props[propName] as Uint32Array, prop.backRef);
             },
           }
@@ -168,15 +168,16 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
         get(this: RemoteResource<Def>) {
-          return this.manager.getRef((this.constructor as any).resourceDef, this.__props[propName] as Uint32Array);
+          return this.manager.getRef(this.__props[propName] as Uint32Array);
         },
       });
     } else if (prop.type === "refArray") {
       const setter = prop.mutable
         ? {
             set(this: RemoteResource<Def>, value: RemoteResource<ResourceDefinition<{}>>[]) {
+              const store = this.__props[propName] as Uint32Array;
               for (let i = 0; i < value.length; i++) {
-                this.manager.setRefArrayItem(i, value[i] as any, this.__props[propName] as Uint32Array);
+                this.manager.setRefArrayItem(i, value[i], store);
               }
             },
           }
@@ -185,15 +186,15 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
         get(this: RemoteResource<Def>) {
-          const arr = this.__props[propName];
+          const store = this.__props[propName] as Uint32Array;
           const resources = [];
 
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i] === 0) {
+          for (let i = 0; i < store.length; i++) {
+            if (store[i] === 0) {
               break;
             }
 
-            const resource = this.manager.getResource((this.constructor as any).resourceDef, arr[i]);
+            const resource = this.manager.getRefArrayItem(i, store);
 
             if (resource) {
               resources.push(resource);
@@ -207,12 +208,12 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
       // TODO
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         get(this: RemoteResource<Def>) {
-          const arr = this.__props[propName];
+          const store = this.__props[propName] as Uint32Array;
           const resources = [];
 
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i]) {
-              resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+          for (let i = 0; i < store.length; i++) {
+            if (store[i]) {
+              resources.push(this.manager.getRefArrayItem(i, store));
             } else {
               resources.push(undefined);
             }

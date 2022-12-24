@@ -2,7 +2,6 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState } from "../GameTypes";
 import {
-  disposeResource,
   RemoteAudioEmitter,
   RemoteNode,
   RemoteReflectionProbe,
@@ -44,7 +43,7 @@ export function RemoteSceneSystem(ctx: GameState) {
     const remoteScene = RemoteSceneComponent.get(eid);
 
     if (remoteScene) {
-      disposeResource(ctx, remoteScene.resourceId);
+      remoteScene.dispose();
       RemoteSceneComponent.delete(eid);
     }
   }

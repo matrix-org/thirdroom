@@ -237,17 +237,9 @@ const actionMap: ActionMap = {
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
-    console.log("loading env");
-
     await loadEnvironment(ctx, message.url, message.scriptUrl);
-
     loadPreviewCamera(ctx);
-
-    console.log("env loaded");
-
     await waitForCurrentSceneToRender(ctx);
-
-    console.log("scene rendered");
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
@@ -403,8 +395,6 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
-  console.log("scene", newSceneResource);
-
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
@@ -486,8 +476,6 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
 
   const rig = createPrefabEntity(ctx, "avatar");
   const eid = rig.eid;
-  console.log(rig);
-  embodyAvatar(ctx, physics, input, rig);
 
   associatePeerWithEntity(network, network.peerId, eid);
 
@@ -502,11 +490,15 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
 
   addChild(ctx.activeScene!, rig);
 
+  rig.parentScene = ctx.activeScene;
+
   const spawnPoints = getSpawnPoints(ctx);
 
   if (spawnPoints.length > 0) {
     spawnEntity(spawnPoints, rig);
   }
+
+  embodyAvatar(ctx, physics, input, rig);
 
   return eid;
 }

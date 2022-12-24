@@ -72,7 +72,7 @@ interface RemoteResourceInfo {
   dispose?: () => void;
 }
 
-interface ResourceTransformData {
+export interface ResourceTransformData {
   writeView: Uint8Array;
   refView: Uint32Array;
   refOffsets: number[];
@@ -330,9 +330,9 @@ export function createResource<Props>(
   return id;
 }
 
-export function createStringResource(ctx: GameState, value: string): ResourceId {
+export function createStringResource(ctx: GameState, value: string, dispose?: () => void): ResourceId {
   const resourceModule = getModule(ctx, ResourceModule);
-  const resourceId = createResource(ctx, Thread.Shared, StringResourceType, value);
+  const resourceId = createResource(ctx, Thread.Shared, StringResourceType, value, { dispose });
   resourceModule.resources.set(resourceId, value);
   return resourceId;
 }

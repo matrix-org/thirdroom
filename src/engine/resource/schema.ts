@@ -421,7 +421,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
   skipLerp: PropType.u32({ script: true, default: 0 }),
-  isStatic: PropType.bool({ script: true, default: true }),
+  isStatic: PropType.bool({ script: true, default: false }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),
   instancedMesh: PropType.ref(InstancedMeshResource, { script: true }),

@@ -2,7 +2,6 @@ import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
-import { ResourceId } from "./resource.common";
 import {
   addResourceRef,
   createArrayBufferResource,
@@ -11,6 +10,7 @@ import {
   disposeResource,
   getRemoteResource,
   ResourceModule,
+  ResourceTransformData,
   setRemoteResource,
 } from "./resource.game";
 import {
@@ -94,36 +94,35 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     return resourceId;
   }
 
-  getResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    resourceId: ResourceId
-  ): RemoteResource<Def> | undefined {
-    return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
-  }
-
-  disposeResource(resourceId: number): void {
+  disposeResource(resourceId: number): boolean {
     const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
 
     if (index === -1) {
-      return;
+      return false;
     }
 
     const resource = this.resources[index];
 
     const resourceModule = getModule(this.ctx, ResourceModule);
 
-    const { refOffsets } = resourceModule.resourceTransformData.get(resource.resourceType)!;
-    const resourceStore = this.resourceStorage.get(resource.resourceId)!;
+    // TODO: Handle backRef
+    const transform = resourceModule.resourceTransformData.get(resource.resourceType);
 
-    for (let i = 0; i < refOffsets.length; i++) {
-      const refOffset = refOffsets[i];
+    if (!transform) {
+      throw new Error(`Resource type "${resource.resourceType}" not registered.`);
+    }
+
+    const resourceStore = this.resourceStorage.get(resource.resourceId) as ScriptResourceStore;
+
+    for (let i = 0; i < transform.refOffsets.length; i++) {
+      const refOffset = transform.refOffsets[i];
       const refPtr = resourceStore.refView[refOffset];
 
       if (refPtr) {
         const resourceId = this.ptrToResourceId.get(refPtr);
 
         if (resourceId) {
-          disposeResource(this.ctx, resourceId);
+          this.removeRef(resourceId);
         }
       }
     }
@@ -133,29 +132,38 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.ptrToResourceId.delete(resource.ptr);
     this.resources.splice(index, 1);
     this.resourceStorage.delete(resourceId);
+
+    return true;
   }
 
   getString(store: Uint32Array): string {
     const resourceId = this.ptrToResourceId.get(store[0]);
-    return getRemoteResource<string>(this.ctx, resourceId!)!;
+    return resourceId ? getRemoteResource<string>(this.ctx, resourceId) || "" : "";
   }
 
   setString(value: string, store: Uint32Array): void {
-    if (store[0]) {
-      this.deallocate(store[0]);
+    const curResourceId = this.ptrToResourceId.get(store[0]);
+    const curValue = curResourceId ? getRemoteResource<string>(this.ctx, curResourceId) || "" : "";
+
+    if (curValue !== value) {
+      if (store[0]) {
+        this.removeRef(store[0]);
+      }
+
+      if (value) {
+        const arr = this.textEncoder.encode(value);
+        const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+        nullTerminatedArr.set(arr);
+        const ptr = this.allocate(nullTerminatedArr.byteLength);
+        this.U8Heap.set(nullTerminatedArr, ptr);
+        store[0] = ptr;
+        const resourceId = createStringResource(this.ctx, value, () => {
+          this.deallocate(ptr);
+        });
+        this.addRef(resourceId);
+        this.ptrToResourceId.set(ptr, resourceId);
+      }
     }
-
-    const arr = this.textEncoder.encode(value);
-    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-    nullTerminatedArr.set(arr);
-
-    const ptr = this.allocate(nullTerminatedArr.byteLength);
-    this.U8Heap.set(nullTerminatedArr, ptr);
-    store[0] = ptr;
-
-    const resourceId = createStringResource(this.ctx, value);
-    addResourceRef(this.ctx, resourceId);
-    this.ptrToResourceId.set(ptr, resourceId);
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
@@ -163,8 +171,8 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    const resourceId = this.ptrToResourceId.get(store[1]);
-    return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId!)!;
+    const resourceId = this.ptrToResourceId.get(store[1]) as number;
+    return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId) as SharedArrayBuffer;
   }
 
   setArrayBuffer(value: SharedArrayBuffer, store: Uint32Array): void {
@@ -181,39 +189,54 @@ export class ScriptResourceManager implements IRemoteResourceManager {
     this.U8Heap.set(bufView, ptr);
     store[1] = ptr;
     const resourceId = createArrayBufferResource(this.ctx, value);
-    addResourceRef(this.ctx, resourceId);
+    this.addRef(resourceId);
     this.ptrToResourceId.set(ptr, resourceId);
   }
 
-  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined {
+  getRef<T extends ResourceDefinition>(store: Uint32Array): RemoteResource<T> | undefined {
     const resourceId = this.ptrToResourceId.get(store[0]);
-    return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId!);
+    return resourceId ? getRemoteResource<RemoteResource<T>>(this.ctx, resourceId) : undefined;
   }
 
   setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array, backRef: boolean): void {
-    // if (store[0]) {
-    //   const prevResourceId = this.ptrToResourceId.get(store[0]);
+    const curResourceId = store[0];
+    const nextResourceId = value?.resourceId || 0;
 
-    //   if (prevResourceId) {
-    //     disposeResource(this.ctx, prevResourceId);
-    //   }
-    // }
+    if (!backRef) {
+      if (nextResourceId && nextResourceId !== curResourceId) {
+        this.addRef(nextResourceId);
+      }
 
-    if (value) {
-      addResourceRef(this.ctx, value.resourceId);
-      store[0] = value.ptr;
-    } else {
-      store[0] = 0;
+      if (curResourceId && nextResourceId !== curResourceId) {
+        this.removeRef(curResourceId);
+      }
     }
+
+    store[0] = value ? value.ptr : 0;
   }
 
-  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
-    if (value) {
-      addResourceRef(this.ctx, value.resourceId);
-      store[index] = value.ptr;
-    } else {
-      store[index] = 0;
+  setRefArrayItem<T extends ResourceDefinition>(
+    index: number,
+    value: RemoteResource<T> | undefined,
+    store: Uint32Array
+  ): void {
+    const curResourceId = store[index];
+    const nextResourceId = value?.resourceId || 0;
+
+    if (nextResourceId && nextResourceId !== curResourceId) {
+      this.addRef(nextResourceId);
     }
+
+    if (curResourceId && nextResourceId !== curResourceId) {
+      this.removeRef(curResourceId);
+    }
+
+    store[index] = value ? value.ptr : 0;
+  }
+
+  getRefArrayItem<T extends ResourceDefinition>(index: number, store: Uint32Array): RemoteResource<T> | undefined {
+    const resourceId = this.ptrToResourceId.get(store[index]);
+    return resourceId ? getRemoteResource<RemoteResource<T>>(this.ctx, resourceId) : undefined;
   }
 
   addRef(resourceId: number) {
@@ -238,8 +261,8 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       const resource = resources[i];
       const { writeView, refView, refOffsets, refIsString } = resourceModule.resourceTransformData.get(
         resource.resourceType
-      )!;
-      const resourceStore = this.resourceStorage.get(resource.resourceId)!;
+      ) as ResourceTransformData;
+      const resourceStore = this.resourceStorage.get(resource.resourceId) as ScriptResourceStore;
 
       writeView.set(resource.byteView);
 
@@ -263,10 +286,6 @@ export class ScriptResourceManager implements IRemoteResourceManager {
             nextResourceId = createStringResource(this.ctx, decodeString(nextRefPtr, this.U8Heap));
           }
         }
-
-        // if (resource.resourceType === ResourceType.Material && resource.name === "Default") {
-        //   console.log(resource.name, nextResourceId);
-        // }
 
         refView[refOffset] = nextResourceId || 0;
       }
@@ -358,7 +377,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
             return 0;
           }
 
-          if (disposeResource(this.ctx, resourceId)) {
+          if (this.disposeResource(resourceId)) {
             return 1;
           }
 

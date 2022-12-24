@@ -436,8 +436,10 @@ export function removeNode(world: World, node: RemoteNode | RemoteScene) {
   if (node.resourceType === ResourceType.Scene) {
     removeEntity(world, node.eid);
   } else {
-    if (node.parent) {
-      removeChild(node.parent, node);
+    const parent = node.parent || node.parentScene;
+
+    if (parent) {
+      removeChild(parent, node);
     } else {
       node.firstChild = undefined;
       node.prevSibling = undefined;

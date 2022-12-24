@@ -246,10 +246,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         }
       }
 
-      if (resource.resourceId == 37 || resource.resourceId === 39) {
-        console.log(resource, names, promises);
-      }
-
       return promises;
     }
 

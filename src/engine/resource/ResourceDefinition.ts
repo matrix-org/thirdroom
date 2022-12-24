@@ -605,6 +605,7 @@ export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true>
   ptr: number;
   addRef(): void;
   removeRef(): void;
+  dispose(): void;
 } & { constructor: { name: string; resourceDef: Def } };
 
 export type LocalResource<
@@ -718,11 +719,15 @@ export interface IRemoteResourceManager {
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   allocateResource(resourceDef: ResourceDefinition): ResourceData;
   createResource(resource: RemoteResource<ResourceDefinition>): number;
-  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
-  disposeResource(resourceId: number): void;
-  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
+  disposeResource(resourceId: number): boolean;
+  getRef<T extends ResourceDefinition>(store: Uint32Array): RemoteResource<T> | undefined;
   setRef(value: unknown | undefined, store: Uint32Array, backRef: boolean): void;
-  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void;
+  setRefArrayItem<T extends ResourceDefinition>(
+    index: number,
+    value: RemoteResource<T> | undefined,
+    store: Uint32Array
+  ): void;
+  getRefArrayItem<T extends ResourceDefinition>(index: number, store: Uint32Array): RemoteResource<T> | undefined;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }
