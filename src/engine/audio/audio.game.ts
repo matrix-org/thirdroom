@@ -13,7 +13,6 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { getRemoteResources, RemoteAudioSource } from "../resource/resource.game";
-import { AudioSourceResource } from "../resource/schema";
 
 interface GameAudioModuleState {
   audioStateBufferView: ObjectBufferView<typeof audioStateSchema, ArrayBuffer>;
@@ -81,7 +80,7 @@ export function GameAudioSystem(ctx: GameState) {
 
   commitToObjectTripleBuffer(audioModule.audioStateTripleBuffer, audioModule.audioStateBufferView);
 
-  const audioSources = getRemoteResources(ctx, AudioSourceResource);
+  const audioSources = getRemoteResources(ctx, RemoteAudioSource);
 
   for (let i = 0; i < audioSources.length; i++) {
     const audioSource = audioSources[i];
@@ -94,7 +93,7 @@ export function GameAudioSystem(ctx: GameState) {
 }
 
 export function ResetAudioSourcesSystem(ctx: GameState) {
-  const audioSources = getRemoteResources(ctx, AudioSourceResource);
+  const audioSources = getRemoteResources(ctx, RemoteAudioSource);
 
   for (let i = 0; i < audioSources.length; i++) {
     const audioSource = audioSources[i];

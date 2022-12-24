@@ -17,10 +17,10 @@ import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
 import {
   addResourceRef,
-  disposeResource,
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
+  removeResourceRef,
 } from "../resource/resource.game";
 import { RemoteNodeComponent } from "../node/node.game";
 
@@ -139,11 +139,11 @@ export const PhysicsSystem = (state: GameState) => {
       RigidBody.store.delete(eid);
 
       if (RigidBody.meshResourceId[eid]) {
-        disposeResource(state, RigidBody.meshResourceId[eid]);
+        removeResourceRef(state, RigidBody.meshResourceId[eid]);
       }
 
       if (RigidBody.primitiveResourceId[eid]) {
-        disposeResource(state, RigidBody.primitiveResourceId[eid]);
+        removeResourceRef(state, RigidBody.primitiveResourceId[eid]);
       }
     }
   }

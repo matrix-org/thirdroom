@@ -17,15 +17,16 @@ export enum ResourceMessageType {
   ResourceLoaded = "resource-loaded",
 }
 
+export interface CreateResourceMessage {
+  resourceType: string;
+  id: number;
+  props: unknown;
+  statusBuffer: TripleBuffer;
+}
+
 export interface LoadResourcesMessage {
   type: ResourceMessageType.LoadResources;
-  resources: {
-    resourceType: string;
-    id: ResourceId;
-    name: string;
-    props: any;
-    statusBuffer: TripleBuffer;
-  }[];
+  resources: CreateResourceMessage[];
 }
 
 export interface ResourceLoadedMessage<Response = unknown> {

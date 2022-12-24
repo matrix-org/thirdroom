@@ -5,13 +5,12 @@ import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
 import {
   addResourceRef,
   createArrayBufferResource,
-  createResource,
+  createRemoteResource,
   createStringResource,
-  disposeResource,
   getRemoteResource,
+  removeResourceRef,
   ResourceModule,
   ResourceTransformData,
-  setRemoteResource,
 } from "./resource.game";
 import {
   IRemoteResourceClass,
@@ -77,14 +76,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   }
 
   createResource(resource: RemoteResource<ResourceDefinition>): number {
-    const resourceId = createResource(
-      this.ctx,
-      Thread.Shared,
-      resource.constructor.resourceDef.name,
-      resource.tripleBuffer,
-      { name: resource.name }
-    );
-    setRemoteResource(this.ctx, resourceId, resource);
+    const resourceId = createRemoteResource(this.ctx, resource);
     this.ptrToResourceId.set(resource.ptr, resourceId);
     this.resources.push(resource);
     this.resourceStorage.set(resourceId, {
@@ -244,7 +236,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   }
 
   removeRef(resourceId: number) {
-    disposeResource(this.ctx, resourceId);
+    removeResourceRef(this.ctx, resourceId);
   }
 
   /**
@@ -277,7 +269,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
           if (prevResourceId) {
             // TODO: Dispose non-string resources automatically when they are no longer referenced?
-            disposeResource(this.ctx, prevResourceId);
+            removeResourceRef(this.ctx, prevResourceId);
           }
 
           resourceStore.prevRefs[j] = nextRefPtr;

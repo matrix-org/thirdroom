@@ -8,13 +8,13 @@ import { addRemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { getRemoteResources, RemoteCamera, RemoteNode } from "../resource/resource.game";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
-import { CameraResource, CameraType } from "../resource/schema";
+import { CameraType } from "../resource/schema";
 
 export const CameraComponent = defineComponent();
 export const cameraComponentQuery = defineQuery([CameraComponent]);
 
 export function RemoteCameraSystem(ctx: GameState) {
-  const cameras = getRemoteResources(ctx, CameraResource);
+  const cameras = getRemoteResources(ctx, RemoteCamera);
 
   for (let i = 0; i < cameras.length; i++) {
     const camera = cameras[i];

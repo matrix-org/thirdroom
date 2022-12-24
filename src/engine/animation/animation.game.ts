@@ -14,7 +14,7 @@ import { RemoteNodeComponent } from "../node/node.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
 import { ResourceId } from "../resource/resource.common";
-import { disposeResource, RemoteNode } from "../resource/resource.game";
+import { RemoteNode, removeResourceRef } from "../resource/resource.game";
 
 interface AnimationActionMap {
   Fall2: AnimationAction;
@@ -324,7 +324,7 @@ function disposeAnimations(ctx: GameState) {
 
     for (let i = 0; i < accessorIds.length; i++) {
       const resourceId = accessorIds[i];
-      disposeResource(ctx, resourceId);
+      removeResourceRef(ctx, resourceId);
     }
 
     AnimationComponent.delete(eid);

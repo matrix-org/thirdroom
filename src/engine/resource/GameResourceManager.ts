@@ -1,14 +1,12 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { Thread } from "../module/module.common";
 import {
   addResourceRef,
   createArrayBufferResource,
-  createResource,
+  createRemoteResource,
   createStringResource,
-  disposeResource,
   getRemoteResource,
-  setRemoteResource,
+  removeResourceRef,
 } from "./resource.game";
 import { IRemoteResourceManager, RemoteResource, ResourceDefinition, ResourceData } from "./ResourceDefinition";
 
@@ -29,14 +27,7 @@ export class GameResourceManager implements IRemoteResourceManager {
   }
 
   createResource(resource: RemoteResource<ResourceDefinition>): number {
-    const resourceId = createResource(
-      this.ctx,
-      Thread.Shared,
-      resource.constructor.resourceDef.name,
-      resource.tripleBuffer,
-      { name: resource.name }
-    );
-    setRemoteResource(this.ctx, resourceId, resource);
+    const resourceId = createRemoteResource(this.ctx, resource);
     this.resources.push(resource);
     return resourceId;
   }
@@ -174,7 +165,7 @@ export class GameResourceManager implements IRemoteResourceManager {
   }
 
   removeRef(resourceId: number) {
-    disposeResource(this.ctx, resourceId);
+    removeResourceRef(this.ctx, resourceId);
   }
 
   commitResources() {
