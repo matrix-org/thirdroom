@@ -1,7 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld } from "bitecs";
 
-import { PostMessageTarget } from "../../src/engine/WorkerMessage";
 import { PrefabModule, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
@@ -28,20 +27,19 @@ export function registerDefaultPrefabs(state: GameState) {
   });
 }
 
-export const mockPostMessageTarget = () =>
-  ({
-    postMessage: (message: any, transfer?: Array<Transferable | OffscreenCanvas>) => {},
-    addEventListener: (
-      type: string,
-      callback: ((message: any) => void) | null,
-      options?: AddEventListenerOptions | boolean
-    ) => {},
-    removeEventListener: (
-      type: string,
-      callback: ((message: any) => void) | null,
-      options?: EventListenerOptions | boolean
-    ) => {},
-  } as PostMessageTarget);
+export const mockPostMessageTarget = () => ({
+  postMessage: (message: any, transfer?: Array<Transferable | OffscreenCanvas>) => {},
+  addEventListener: (
+    type: string,
+    callback: ((message: any) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ) => {},
+  removeEventListener: (
+    type: string,
+    callback: ((message: any) => void) | null,
+    options?: EventListenerOptions | boolean
+  ) => {},
+});
 
 export const mockPhysicsState = () => ({
   physicsWorld: {
