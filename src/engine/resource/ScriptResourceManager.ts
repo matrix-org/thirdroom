@@ -1,6 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
+import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
 import {
   addResourceRef,
@@ -298,8 +299,8 @@ export class ScriptResourceManager implements IRemoteResourceManager {
       },
       thirdroom: {
         enable_matrix_material: (enabled: number) => {
-          this.ctx.sendMessage(Thread.Render, {
-            type: "enable-matrix-material",
+          this.ctx.sendMessage<EnableMatrixMaterialMessage>(Thread.Render, {
+            type: RendererMessageType.EnableMatrixMaterial,
             enabled: !!enabled,
           });
         },

@@ -103,16 +103,6 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   const disposeModules = await moduleLoaderPromise;
 
-  /* Start Workers */
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartRenderWorker,
-  });
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartGameWorker,
-  });
-
   /* Update loop */
 
   function update() {

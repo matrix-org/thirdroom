@@ -11,6 +11,7 @@ import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import {
+  CanvasResizeMessage,
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
   RendererMessageType,
@@ -20,7 +21,6 @@ import {
   SceneRenderedNotificationMessage,
 } from "./renderer.common";
 import { addRemoteNodeComponent } from "../node/node.game";
-import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import { createDisposables } from "../utils/createDisposables";
 
@@ -67,13 +67,13 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
     });
 
     return createDisposables([
-      registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
+      registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.SceneRenderedNotification, onSceneRenderedNotification),
     ]);
   },
 });
 
-function onResize(state: GameState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+function onResize(state: GameState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
