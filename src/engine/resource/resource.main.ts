@@ -7,44 +7,30 @@ import { createLocalResourceModule, ResourceId } from "./resource.common";
 import {
   AccessorComponentType,
   AccessorResource,
-  AccessorType,
   AudioDataResource,
-  AudioEmitterDistanceModel,
   AudioEmitterOutput,
   AudioEmitterResource,
   AudioEmitterType,
   AudioSourceResource,
   BufferResource,
   BufferViewResource,
-  BufferViewTarget,
   CameraResource,
-  CameraType,
   ImageResource,
   InstancedMeshResource,
   InteractableResource,
-  InteractableType,
   LightMapResource,
   LightResource,
-  LightType,
-  MaterialAlphaMode,
   MaterialResource,
-  MaterialType,
-  MeshPrimitiveMode,
   MeshPrimitiveResource,
   MeshResource,
   NametagResource,
   NodeResource,
   ReflectionProbeResource,
   ResourceType,
-  SamplerMagFilter,
-  SamplerMapping,
-  SamplerMinFilter,
   SamplerResource,
-  SamplerWrap,
   SceneResource,
   SkinResource,
   SparseAccessorResource,
-  TextureEncoding,
   TextureResource,
   TilesRendererResource,
 } from "./schema";
@@ -60,7 +46,7 @@ export {
   ResourceDisposalSystem,
 };
 
-export class MainNametag extends defineLocalResourceClass<typeof NametagResource, IMainThreadContext>(NametagResource) {
+export class MainNametag extends defineLocalResourceClass(NametagResource) {
   declare resourceType: ResourceType.Nametag;
 
   async load(ctx: IMainThreadContext) {
@@ -70,19 +56,12 @@ export class MainNametag extends defineLocalResourceClass<typeof NametagResource
   }
 }
 
-export class MainSampler extends defineLocalResourceClass(SamplerResource) {
-  declare magFilter: SamplerMagFilter;
-  declare minFilter: SamplerMinFilter;
-  declare wrapS: SamplerWrap;
-  declare wrapT: SamplerWrap;
-  declare mapping: SamplerMapping;
-}
+export class MainSampler extends defineLocalResourceClass(SamplerResource) {}
 
 export class MainBuffer extends defineLocalResourceClass(BufferResource) {}
 
 export class MainBufferView extends defineLocalResourceClass(BufferViewResource) {
   declare buffer: MainBuffer;
-  declare target: BufferViewTarget;
 }
 
 const MAX_AUDIO_BYTES = 640_000;
@@ -104,9 +83,7 @@ function getAudioMimeType(uri: string) {
   return audioExtensionToMimeType[extension] || "audio/mpeg";
 }
 
-export class MainAudioData extends defineLocalResourceClass<typeof AudioDataResource, IMainThreadContext>(
-  AudioDataResource
-) {
+export class MainAudioData extends defineLocalResourceClass(AudioDataResource) {
   declare bufferView: MainBufferView | undefined;
   data: AudioBuffer | HTMLAudioElement | MediaStream | undefined;
 
@@ -158,9 +135,7 @@ export class MainAudioData extends defineLocalResourceClass<typeof AudioDataReso
   }
 }
 
-export class MainAudioSource extends defineLocalResourceClass<typeof AudioSourceResource, IMainThreadContext>(
-  AudioSourceResource
-) {
+export class MainAudioSource extends defineLocalResourceClass(AudioSourceResource) {
   declare audio: MainAudioData | undefined;
   activeAudioDataResourceId: ResourceId = 0;
   sourceNode: MediaElementAudioSourceNode | AudioBufferSourceNode | MediaStreamAudioSourceNode | undefined;
@@ -183,13 +158,8 @@ export class MainAudioSource extends defineLocalResourceClass<typeof AudioSource
   }
 }
 
-export class MainAudioEmitter extends defineLocalResourceClass<typeof AudioEmitterResource, IMainThreadContext>(
-  AudioEmitterResource
-) {
-  declare type: AudioEmitterType;
+export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResource) {
   declare sources: MainAudioSource[];
-  declare distanceModel: AudioEmitterDistanceModel;
-  declare output: AudioEmitterOutput;
   activeSources: MainAudioSource[] = [];
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
@@ -235,7 +205,6 @@ export class MainImage extends defineLocalResourceClass(ImageResource) {
 export class MainTexture extends defineLocalResourceClass(TextureResource) {
   declare sampler: MainSampler | undefined;
   declare source: MainImage;
-  declare encoding: TextureEncoding;
 }
 
 export class MainReflectionProbe extends defineLocalResourceClass(ReflectionProbeResource) {
@@ -243,8 +212,6 @@ export class MainReflectionProbe extends defineLocalResourceClass(ReflectionProb
 }
 
 export class MainMaterial extends defineLocalResourceClass(MaterialResource) {
-  declare type: MaterialType;
-  declare alphaMode: MaterialAlphaMode;
   declare baseColorTexture: MainTexture | undefined;
   declare metallicRoughnessTexture: MainTexture | undefined;
   declare normalTexture: MainTexture | undefined;
@@ -254,13 +221,9 @@ export class MainMaterial extends defineLocalResourceClass(MaterialResource) {
   declare thicknessTexture: MainTexture | undefined;
 }
 
-export class MainLight extends defineLocalResourceClass(LightResource) {
-  declare type: LightType;
-}
+export class MainLight extends defineLocalResourceClass(LightResource) {}
 
-export class MainCamera extends defineLocalResourceClass(CameraResource) {
-  declare type: CameraType;
-}
+export class MainCamera extends defineLocalResourceClass(CameraResource) {}
 
 export class MainSparseAccessor extends defineLocalResourceClass(SparseAccessorResource) {
   declare indicesBufferView: MainBufferView;
@@ -271,7 +234,6 @@ export class MainSparseAccessor extends defineLocalResourceClass(SparseAccessorR
 export class MainAccessor extends defineLocalResourceClass(AccessorResource) {
   declare bufferView: MainBufferView | undefined;
   declare componentType: AccessorComponentType;
-  declare type: AccessorType;
   declare sparse: MainSparseAccessor | undefined;
 }
 
@@ -279,7 +241,6 @@ export class MainMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveRes
   declare attributes: MainAccessor[];
   declare indices: MainAccessor | undefined;
   declare material: MainMaterial | undefined;
-  declare mode: MeshPrimitiveMode;
 }
 
 export class MainInstancedMesh extends defineLocalResourceClass(InstancedMeshResource) {
@@ -301,9 +262,7 @@ export class MainSkin extends defineLocalResourceClass(SkinResource) {
   declare inverseBindMatrices: MainAccessor | undefined;
 }
 
-export class MainInteractable extends defineLocalResourceClass(InteractableResource) {
-  declare type: InteractableType;
-}
+export class MainInteractable extends defineLocalResourceClass(InteractableResource) {}
 
 export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare resourceType: ResourceType.Node;
@@ -340,7 +299,6 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
 }
 
 export class MainScene extends defineLocalResourceClass(SceneResource) {
-  declare resourceType: ResourceType.Scene;
   declare backgroundTexture: MainTexture | undefined;
   declare reflectionProbe: MainReflectionProbe | undefined;
   declare audioEmitters: MainAudioEmitter[];

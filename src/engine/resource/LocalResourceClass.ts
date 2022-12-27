@@ -1,10 +1,18 @@
 import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { BaseThreadContext } from "../module/module.common";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
-import { ILocalResourceClass, ILocalResourceManager, LocalResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  DefinedResource,
+  ILocalResourceClass,
+  ILocalResourceManager,
+  LocalResource,
+  Schema,
+} from "./ResourceDefinition";
 
 export function defineLocalResourceClass<
-  Def extends ResourceDefinition,
+  T extends number,
+  S extends Schema,
+  Def extends DefinedResource<T, S>,
   ThreadContext extends BaseThreadContext = BaseThreadContext
 >(resourceDef: Def): ILocalResourceClass<Def, ThreadContext> {
   const { name, schema, resourceType } = resourceDef;

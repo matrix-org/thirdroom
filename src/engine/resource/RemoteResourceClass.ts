@@ -1,13 +1,16 @@
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import {
+  Schema,
+  DefinedResource,
   InitialRemoteResourceProps,
   IRemoteResourceClass,
   IRemoteResourceManager,
   RemoteResource,
-  ResourceDefinition,
 } from "./ResourceDefinition";
 
-export function defineRemoteResourceClass<Def extends ResourceDefinition>(resourceDef: Def): IRemoteResourceClass<Def> {
+export function defineRemoteResourceClass<T extends number, S extends Schema, Def extends DefinedResource<T, S>>(
+  resourceDef: Def
+): IRemoteResourceClass<Def> {
   const { name, schema, resourceType } = resourceDef;
 
   function RemoteResourceClass(

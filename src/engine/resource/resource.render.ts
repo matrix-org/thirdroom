@@ -81,19 +81,10 @@ import {
   AudioSourceResource,
   AudioEmitterResource,
   ResourceType,
-  AccessorComponentType,
   AccessorResource,
-  AccessorType,
-  AudioEmitterDistanceModel,
-  AudioEmitterOutput,
-  AudioEmitterType,
-  BufferViewTarget,
-  CameraType,
   ImageResource,
   InstancedMeshResource,
-  InteractableType,
   LightMapResource,
-  LightType,
   MaterialAlphaMode,
   MaterialResource,
   MaterialType,
@@ -108,28 +99,18 @@ import {
   SamplerWrap,
   SceneResource,
   SkinResource,
-  TextureEncoding,
   TextureResource,
   MeshPrimitiveAttributeIndex,
 } from "./schema";
 
-export class RenderNametag extends defineLocalResourceClass(NametagResource) {
-  declare resourceType: ResourceType.Nametag;
-}
+export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
 
-export class RenderSampler extends defineLocalResourceClass(SamplerResource) {
-  declare magFilter: SamplerMagFilter;
-  declare minFilter: SamplerMinFilter;
-  declare wrapS: SamplerWrap;
-  declare wrapT: SamplerWrap;
-  declare mapping: SamplerMapping;
-}
+export class RenderSampler extends defineLocalResourceClass(SamplerResource) {}
 
 export class RenderBuffer extends defineLocalResourceClass(BufferResource) {}
 
 export class RenderBufferView extends defineLocalResourceClass(BufferViewResource) {
   declare buffer: RenderBuffer;
-  declare target: BufferViewTarget;
 }
 
 export class RenderAudioData extends defineLocalResourceClass(AudioDataResource) {
@@ -141,10 +122,7 @@ export class RenderAudioSource extends defineLocalResourceClass(AudioSourceResou
 }
 
 export class RenderAudioEmitter extends defineLocalResourceClass(AudioEmitterResource) {
-  declare type: AudioEmitterType;
   declare sources: RenderAudioSource[];
-  declare distanceModel: AudioEmitterDistanceModel;
-  declare output: AudioEmitterOutput;
 }
 
 const HDRMimeType = "image/vnd.radiance";
@@ -157,7 +135,7 @@ export enum ImageFormat {
   RGBE = "rgbe",
 }
 
-export class RenderImage extends defineLocalResourceClass<typeof ImageResource, RenderThreadState>(ImageResource) {
+export class RenderImage extends defineLocalResourceClass(ImageResource) {
   declare bufferView: RenderBufferView | undefined;
 
   format?: ImageFormat;
@@ -253,7 +231,6 @@ const defaultTexture = new Texture();
 export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   declare sampler: RenderSampler | undefined;
   declare source: RenderImage;
-  declare encoding: TextureEncoding;
 
   texture: Texture = defaultTexture;
 
@@ -303,18 +280,12 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   }
 }
 
-export class RenderReflectionProbe extends defineLocalResourceClass<typeof ReflectionProbeResource, RenderThreadState>(
-  ReflectionProbeResource
-) {
+export class RenderReflectionProbe extends defineLocalResourceClass(ReflectionProbeResource) {
   declare reflectionProbeTexture: RenderTexture | undefined;
   textureArrayIndex = 0;
 }
 
-export class RenderMaterial extends defineLocalResourceClass<typeof MaterialResource, RenderThreadState>(
-  MaterialResource
-) {
-  declare type: MaterialType;
-  declare alphaMode: MaterialAlphaMode;
+export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
   declare baseColorTexture: RenderTexture | undefined;
   declare metallicRoughnessTexture: RenderTexture | undefined;
   declare normalTexture: RenderTexture | undefined;
@@ -515,28 +486,19 @@ export class RenderMaterial extends defineLocalResourceClass<typeof MaterialReso
   }
 }
 
-export class RenderLight extends defineLocalResourceClass(LightResource) {
-  declare type: LightType;
-}
+export class RenderLight extends defineLocalResourceClass(LightResource) {}
 
-export class RenderCamera extends defineLocalResourceClass(CameraResource) {
-  declare type: CameraType;
-}
+export class RenderCamera extends defineLocalResourceClass(CameraResource) {}
 
 export class RenderSparseAccessor extends defineLocalResourceClass(SparseAccessorResource) {
   declare indicesBufferView: RenderBufferView;
-  declare indicesComponentType: AccessorComponentType;
   declare valuesBufferView: RenderBufferView;
 }
 
 const defaultAttribute = new BufferAttribute(new Float32Array(0), 0);
 
-export class RenderAccessor extends defineLocalResourceClass<typeof AccessorResource, RenderThreadState>(
-  AccessorResource
-) {
+export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
   declare bufferView: RenderBufferView | undefined;
-  declare componentType: AccessorComponentType;
-  declare type: AccessorType;
   declare sparse: RenderSparseAccessor | undefined;
 
   attribute: BufferAttribute | InterleavedBufferAttribute = defaultAttribute;
@@ -571,13 +533,10 @@ export class RenderMesh extends defineLocalResourceClass(MeshResource) {
 const defaultGeometry = new BufferGeometry();
 const defaultMaterial = new MeshStandardMaterial();
 
-export class RenderMeshPrimitive extends defineLocalResourceClass<typeof MeshPrimitiveResource, RenderThreadState>(
-  MeshPrimitiveResource
-) {
+export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveResource) {
   declare attributes: RenderAccessor[];
   declare indices: RenderAccessor | undefined;
   declare material: RenderMaterial | undefined;
-  declare mode: MeshPrimitiveMode;
 
   geometryObj: BufferGeometry = defaultGeometry;
   materialObj: PrimitiveMaterial = defaultMaterial;
@@ -637,12 +596,9 @@ export class RenderSkin extends defineLocalResourceClass(SkinResource) {
   skeleton?: Skeleton;
 }
 
-export class RenderInteractable extends defineLocalResourceClass(InteractableResource) {
-  declare type: InteractableType;
-}
+export class RenderInteractable extends defineLocalResourceClass(InteractableResource) {}
 
-export class RenderNode extends defineLocalResourceClass<typeof NodeResource>(NodeResource) {
-  declare resourceType: ResourceType.Node;
+export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare parentScene: RenderScene | undefined;
   declare parent: RenderNode | undefined;
   declare firstChild: RenderNode | undefined;

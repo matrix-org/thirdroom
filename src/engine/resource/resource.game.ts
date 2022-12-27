@@ -47,23 +47,6 @@ import {
   InteractableResource,
   NodeResource,
   SceneResource,
-  InteractableType,
-  MeshPrimitiveMode,
-  AccessorComponentType,
-  AccessorType,
-  CameraType,
-  LightType,
-  MaterialType,
-  MaterialAlphaMode,
-  AudioEmitterType,
-  AudioEmitterDistanceModel,
-  AudioEmitterOutput,
-  BufferViewTarget,
-  SamplerMagFilter,
-  SamplerMinFilter,
-  SamplerWrap,
-  SamplerMapping,
-  TextureEncoding,
   ResourceType,
 } from "./schema";
 
@@ -371,23 +354,14 @@ export function ResourceLoaderSystem(ctx: GameState) {
   }
 }
 
-export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {
-  declare resourceType: ResourceType.Nametag;
-}
+export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
 
-export class RemoteSampler extends defineRemoteResourceClass(SamplerResource) {
-  declare magFilter: SamplerMagFilter;
-  declare minFilter: SamplerMinFilter;
-  declare wrapS: SamplerWrap;
-  declare wrapT: SamplerWrap;
-  declare mapping: SamplerMapping;
-}
+export class RemoteSampler extends defineRemoteResourceClass(SamplerResource) {}
 
 export class RemoteBuffer extends defineRemoteResourceClass(BufferResource) {}
 
 export class RemoteBufferView extends defineRemoteResourceClass(BufferViewResource) {
   declare buffer: RemoteBuffer;
-  declare target: BufferViewTarget;
 }
 
 export class RemoteAudioData extends defineRemoteResourceClass(AudioDataResource) {
@@ -399,10 +373,7 @@ export class RemoteAudioSource extends defineRemoteResourceClass(AudioSourceReso
 }
 
 export class RemoteAudioEmitter extends defineRemoteResourceClass(AudioEmitterResource) {
-  declare type: AudioEmitterType;
   declare sources: RemoteAudioSource[];
-  declare distanceModel: AudioEmitterDistanceModel;
-  declare output: AudioEmitterOutput;
 }
 
 export class RemoteImage extends defineRemoteResourceClass(ImageResource) {
@@ -412,7 +383,6 @@ export class RemoteImage extends defineRemoteResourceClass(ImageResource) {
 export class RemoteTexture extends defineRemoteResourceClass(TextureResource) {
   declare sampler: RemoteSampler | undefined;
   declare source: RemoteImage;
-  declare encoding: TextureEncoding;
 }
 
 export class RemoteReflectionProbe extends defineRemoteResourceClass(ReflectionProbeResource) {
@@ -420,8 +390,6 @@ export class RemoteReflectionProbe extends defineRemoteResourceClass(ReflectionP
 }
 
 export class RemoteMaterial extends defineRemoteResourceClass(MaterialResource) {
-  declare type: MaterialType;
-  declare alphaMode: MaterialAlphaMode;
   declare baseColorTexture: RemoteTexture | undefined;
   declare metallicRoughnessTexture: RemoteTexture | undefined;
   declare normalTexture: RemoteTexture | undefined;
@@ -431,24 +399,17 @@ export class RemoteMaterial extends defineRemoteResourceClass(MaterialResource) 
   declare thicknessTexture: RemoteTexture | undefined;
 }
 
-export class RemoteLight extends defineRemoteResourceClass(LightResource) {
-  declare type: LightType;
-}
+export class RemoteLight extends defineRemoteResourceClass(LightResource) {}
 
-export class RemoteCamera extends defineRemoteResourceClass(CameraResource) {
-  declare type: CameraType;
-}
+export class RemoteCamera extends defineRemoteResourceClass(CameraResource) {}
 
 export class RemoteSparseAccessor extends defineRemoteResourceClass(SparseAccessorResource) {
   declare indicesBufferView: RemoteBufferView;
-  declare indicesComponentType: AccessorComponentType;
   declare valuesBufferView: RemoteBufferView;
 }
 
 export class RemoteAccessor extends defineRemoteResourceClass(AccessorResource) {
   declare bufferView: RemoteBufferView | undefined;
-  declare componentType: AccessorComponentType;
-  declare type: AccessorType;
   declare sparse: RemoteSparseAccessor | undefined;
 }
 
@@ -456,7 +417,6 @@ export class RemoteMeshPrimitive extends defineRemoteResourceClass(MeshPrimitive
   declare attributes: RemoteAccessor[];
   declare indices: RemoteAccessor | undefined;
   declare material: RemoteMaterial | undefined;
-  declare mode: MeshPrimitiveMode;
 }
 
 export class RemoteInstancedMesh extends defineRemoteResourceClass(InstancedMeshResource) {
@@ -478,12 +438,9 @@ export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
   declare inverseBindMatrices: RemoteAccessor | undefined;
 }
 
-export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {
-  declare type: InteractableType;
-}
+export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
-  declare resourceType: ResourceType.Node;
   declare parentScene: RemoteScene | undefined;
   declare parent: RemoteNode | undefined;
   declare firstChild: RemoteNode | undefined;
@@ -503,7 +460,6 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
 }
 
 export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
-  declare resourceType: ResourceType.Scene;
   declare backgroundTexture: RemoteTexture | undefined;
   declare reflectionProbe: RemoteReflectionProbe | undefined;
   declare audioEmitters: RemoteAudioEmitter[];
