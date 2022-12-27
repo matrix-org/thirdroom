@@ -22,9 +22,8 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import { createDisposables } from "../utils/createDisposables";
 import { NOOP } from "../config.common";
 import { AudioModule } from "../audio/audio.main";
-import { MainScene } from "../scene/scene.main";
-import { MainNode } from "../node/node.main";
 import { ResourceType } from "../resource/schema";
+import { MainNode, MainScene } from "../resource/resource.main";
 
 /*********
  * Types *

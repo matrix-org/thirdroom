@@ -1,10 +1,11 @@
 import { OrthographicCamera, PerspectiveCamera, Scene, MathUtils } from "three";
 
-import { RendererNodeResource, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderNode } from "../resource/resource.render";
 import { CameraType } from "../resource/schema";
 
-export function updateNodeCamera(ctx: RenderThreadState, scene: Scene, node: RendererNodeResource) {
+export function updateNodeCamera(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentCameraResourceId = node.currentCameraResourceId;
   const nextCameraResourceId = node.camera?.resourceId || 0;
 

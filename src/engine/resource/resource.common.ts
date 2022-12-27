@@ -3,7 +3,12 @@ import { NOOP } from "../config.common";
 import { defineModule, Thread, registerMessageHandler, getModule, BaseThreadContext } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
-import { ILocalResourceManager, ResourceDefinition, ILocalResourceClass } from "./ResourceDefinition";
+import {
+  ILocalResourceManager,
+  ResourceDefinition,
+  LocalResourceTypes,
+  ILocalResourceConstructor,
+} from "./ResourceDefinition";
 import { LocalResource } from "./ResourceDefinition";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 
@@ -17,10 +22,12 @@ export enum ResourceMessageType {
   ResourceLoaded = "resource-loaded",
 }
 
+export type ResourceProps = SharedArrayBuffer | string | TripleBuffer;
+
 export interface CreateResourceMessage {
   resourceType: string;
   id: number;
-  props: unknown;
+  props: ResourceProps;
   statusBuffer: TripleBuffer;
 }
 
@@ -37,46 +44,44 @@ export interface ResourceLoadedMessage<Response = unknown> {
   response?: Response;
 }
 
-interface LocalResourceInfo<Resource = unknown> {
+interface LocalResourceInfo {
   id: number;
-  name: string;
   loaded: boolean;
   error?: string;
   resourceType: string;
-  props: any;
-  resource?: Resource;
+  resource?: LocalResourceTypes;
   statusBuffer: TripleBuffer;
 }
 
 export type RegisterResourceLoaderFunction<ThreadContext extends BaseThreadContext> = (
   ctx: ThreadContext,
   resourceType: string,
-  resourceLoader: ResourceLoader<ThreadContext, any, any>
+  resourceLoader: ResourceLoader<ThreadContext>
 ) => () => void;
 
-export type ResourceLoader<ThreadContext extends BaseThreadContext, Props, Resource> = (
+export type ResourceLoader<ThreadContext extends BaseThreadContext> = (
   ctx: ThreadContext,
   id: ResourceId,
-  props: Props
-) => Promise<Resource>;
+  props: ResourceProps
+) => Promise<LocalResourceTypes>;
 
-export type ResourceDefLoader<ThreadContext extends BaseThreadContext, Def extends ResourceDefinition> = (
+export type ResourceDefLoader<ThreadContext extends BaseThreadContext> = (
   ctx: ThreadContext,
-  resource: LocalResource<Def>
-) => Promise<LocalResource<Def>>;
+  resource: LocalResource<ThreadContext>
+) => Promise<LocalResource<ThreadContext>>;
 
 interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
   resourceIds: ResourceId[];
   resourceInfos: Map<ResourceId, LocalResourceInfo>;
-  resourcesByType: Map<string, any>;
+  resourcesByType: Map<string, LocalResourceTypes[]>;
   deferredResources: Map<ResourceId, Deferred<unknown>>;
-  resourceLoaders: Map<string, ResourceLoader<ThreadContext, unknown, unknown>>;
+  resourceLoaders: Map<string, ResourceLoader<ThreadContext>>;
 }
 
 export class ResourceDisposedError extends Error {}
 
 export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>(
-  resourceDefinitions: (ResourceDefinition<{}> | ILocalResourceClass<ResourceDefinition<{}>>)[]
+  resourceDefinitions: ILocalResourceConstructor<ThreadContext>[]
 ) => {
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
@@ -110,16 +115,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
   async function loadResource(
     ctx: ThreadContext,
     resourceModule: ResourceModuleState<ThreadContext>,
-    resourceMessage: any
+    resourceMessage: CreateResourceMessage
   ) {
-    const { id, name, resourceType, props, statusBuffer } = resourceMessage;
+    const { id, resourceType, props, statusBuffer } = resourceMessage;
 
     const resourceInfo: LocalResourceInfo = {
       id,
-      name,
       loaded: false,
       resourceType,
-      props,
       statusBuffer,
     };
 
@@ -163,9 +166,9 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       resourceArr.push(resource);
 
       deferred.resolve(resourceInfo.resource);
-    } catch (error: any) {
-      console.error(`Error loading ${resourceType} "${resourceInfo.name}" ${id}:`, error);
-      resourceInfo.error = error.message || "Unknown error";
+    } catch (error) {
+      console.error(`Error loading ${resourceType} ${id}:`, error);
+      resourceInfo.error = error instanceof Error ? error.message : "Unknown error";
       deferred.reject(error);
     }
 
@@ -180,7 +183,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
   function registerResourceLoader(
     ctx: ThreadContext,
     resourceType: string,
-    resourceLoader: ResourceLoader<ThreadContext, any, any>
+    resourceLoader: ResourceLoader<ThreadContext>
   ) {
     const resourceModule = getModule(ctx, ResourceModule);
     resourceModule.resourceLoaders.set(resourceType, resourceLoader);
@@ -190,21 +193,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     };
   }
 
-  function registerResource<Def extends ResourceDefinition>(
-    ctx: ThreadContext,
-    resourceDefOrClass: Def | ILocalResourceClass<Def>
-  ) {
+  function registerResource(ctx: ThreadContext, resourceDefOrClass: ILocalResourceConstructor<ThreadContext>) {
     const resourceModule = getModule(ctx, ResourceModule);
 
     const dependencyByteOffsets: number[] = [];
     const dependencyNames: string[] = [];
 
     const manager: ILocalResourceManager = {
-      getResource: <Def extends ResourceDefinition>(resourceDef: Def, resourceId: ResourceId) =>
-        getLocalResource<Def>(ctx, resourceId)?.resource as LocalResource<Def> | undefined,
-      getString: (resourceId: number): string => getLocalResource<string>(ctx, resourceId)?.resource || "",
-      getArrayBuffer: (resourceId: number): SharedArrayBuffer | undefined =>
-        getLocalResource<SharedArrayBuffer>(ctx, resourceId)?.resource,
+      getResource: <T extends LocalResourceTypes>(resourceId: ResourceId) => getLocalResource<T>(ctx, resourceId),
     };
 
     const LocalResourceClass =
@@ -230,7 +226,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       }
     }
 
-    function waitForLocalResourceDependencies(resource: LocalResource<Def>): Promise<void>[] {
+    function waitForLocalResourceDependencies(resource: LocalResource): Promise<void>[] {
       const promises: Promise<void>[] = [];
       const names: string[] = [];
       const bufferIndex = getReadBufferIndex(resource.tripleBuffer);
@@ -250,17 +246,18 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       return promises;
     }
 
-    async function loadLocalResource(ctx: ThreadContext, resourceId: number, tripleBuffer: TripleBuffer) {
-      const resource = new LocalResourceClass(manager, resourceId, tripleBuffer);
+    async function loadLocalResource(
+      ctx: ThreadContext,
+      resourceId: number,
+      tripleBuffer: ResourceProps
+    ): Promise<LocalResource<ThreadContext>> {
+      const resource = new LocalResourceClass(manager, resourceId, tripleBuffer as TripleBuffer);
       await Promise.all(waitForLocalResourceDependencies(resource));
       await resource.load(ctx);
-      return resource;
+      return resource as LocalResource<ThreadContext>;
     }
 
-    resourceModule.resourceLoaders.set(
-      resourceDef.name,
-      loadLocalResource as ResourceLoader<ThreadContext, unknown, unknown>
-    );
+    resourceModule.resourceLoaders.set(resourceDef.name, loadLocalResource);
 
     return () => {
       resourceModule.resourceLoaders.delete(resourceDef.name);
@@ -287,27 +284,23 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     return deferred.promise as Promise<Resource>;
   }
 
-  function getLocalResource<Resource>(
+  function getLocalResource<Resource extends LocalResourceTypes>(
     ctx: ThreadContext,
     resourceId: ResourceId
-  ): LocalResourceInfo<Resource> | undefined {
+  ): Resource | undefined {
     const resourceModule = getModule(ctx, ResourceModule);
-    return resourceModule.resourceInfos.get(resourceId) as LocalResourceInfo<Resource>;
+    return resourceModule.resourceInfos.get(resourceId)?.resource as Resource | undefined;
   }
 
-  function getLocalResources<
-    DefOrClass extends ResourceDefinition<{}> | ILocalResourceClass<ResourceDefinition<{}>, ThreadContext>
-  >(
+  function getLocalResources<Def extends ResourceDefinition, T extends LocalResource>(
     ctx: ThreadContext,
-    resourceDefOrClass: DefOrClass
-  ): DefOrClass extends ResourceDefinition
-    ? LocalResource<DefOrClass, ThreadContext>[]
-    : DefOrClass extends ILocalResourceClass<ResourceDefinition<{}>, ThreadContext>
-    ? InstanceType<DefOrClass>[]
-    : never {
+    resourceDefOrClass:
+      | Def
+      | { new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): T; resourceDef: Def }
+  ): T[] {
     const resourceModule = getModule(ctx, ResourceModule);
     const resourceDef = "resourceDef" in resourceDefOrClass ? resourceDefOrClass.resourceDef : resourceDefOrClass;
-    return resourceModule.resourcesByType.get(resourceDef.name) || [];
+    return (resourceModule.resourcesByType.get(resourceDef.name) || []) as T[];
   }
 
   function getResourceDisposed(ctx: ThreadContext, resourceId: ResourceId): boolean {
@@ -326,17 +319,17 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
   async function onLoadStringResource<ThreadContext extends BaseThreadContext>(
     ctx: ThreadContext,
     id: ResourceId,
-    value: string
+    props: ResourceProps
   ): Promise<string> {
-    return value;
+    return props as string;
   }
 
   async function onLoadArrayBufferResource<ThreadContext extends BaseThreadContext>(
     ctx: ThreadContext,
     id: ResourceId,
-    value: SharedArrayBuffer
+    props: ResourceProps
   ): Promise<SharedArrayBuffer> {
-    return value;
+    return props as SharedArrayBuffer;
   }
 
   function ResourceDisposalSystem(ctx: ThreadContext) {
@@ -356,19 +349,21 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
             deferredResources.delete(resourceId);
           }
 
-          if (resourceInfo.resource) {
+          const resource = resourceInfo.resource;
+
+          if (resource) {
             const resourceArr = resourcesByType.get(resourceInfo.resourceType);
 
             if (resourceArr) {
-              const index = resourceArr.indexOf(resourceInfo.resource);
+              const index = resourceArr.indexOf(resource);
 
               if (index !== -1) {
                 resourceArr.splice(index, 1);
               }
             }
 
-            if ((resourceInfo.resource as LocalResource<ResourceDefinition>).dispose) {
-              (resourceInfo.resource as LocalResource<ResourceDefinition>).dispose(ctx);
+            if (typeof resource !== "string" && "dispose" in resource) {
+              resource.dispose(ctx);
             }
           }
 

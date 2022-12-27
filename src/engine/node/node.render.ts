@@ -1,117 +1,21 @@
-import { TilesRenderer } from "3d-tiles-renderer";
-import {
-  InstancedMesh,
-  Light,
-  Line,
-  LineLoop,
-  LineSegments,
-  Matrix4,
-  Mesh,
-  Object3D,
-  OrthographicCamera,
-  PerspectiveCamera,
-  Points,
-  Quaternion,
-  SkinnedMesh,
-  Vector3,
-  Bone,
-  Camera,
-} from "three";
+import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 
 import { updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/transform";
 import { tickRate } from "../config.common";
 import { updateNodeLight } from "../light/light.render";
-import {
-  RendererInstancedMeshResource,
-  RendererLightMapResource,
-  RendererMeshResource,
-  RendererSkinResource,
-  updateNodeMesh,
-} from "../mesh/mesh.render";
-import {
-  RendererReflectionProbeResource,
-  updateNodeReflectionProbe,
-} from "../reflection-probe/reflection-probe.render";
-import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
+import { updateNodeMesh } from "../mesh/mesh.render";
+import { updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
-import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { getLocalResources } from "../resource/resource.render";
-import { LocalCamera, LocalLight, LocalTilesRenderer, NodeResource } from "../resource/schema";
-import { RendererSceneResource } from "../scene/scene.render";
+import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
-
-type PrimitiveObject3D = Mesh | SkinnedMesh | Line | LineSegments | LineLoop | Points | InstancedMesh;
-
-export class RendererNodeResource extends defineLocalResourceClass<typeof NodeResource>(NodeResource) {
-  declare mesh: RendererMeshResource | undefined;
-  currentMeshResourceId = 0;
-  declare instancedMesh: RendererInstancedMeshResource | undefined;
-  declare lightMap: RendererLightMapResource | undefined;
-  declare skin: RendererSkinResource | undefined;
-  bone?: Bone;
-  meshPrimitiveObjects?: PrimitiveObject3D[];
-  declare camera: LocalCamera | undefined;
-  currentCameraResourceId = 0;
-  cameraObject?: PerspectiveCamera | OrthographicCamera;
-  declare light: LocalLight | undefined;
-  currentLightResourceId = 0;
-  lightObject: Light | undefined;
-  declare tilesRenderer: LocalTilesRenderer | undefined;
-  tilesRendererObject?: TilesRenderer;
-  tilesRendererCamera?: Camera;
-  currentTilesRendererResourceId = 0;
-  declare reflectionProbe: RendererReflectionProbeResource | undefined;
-  currentReflectionProbeResourceId = 0;
-  reflectionProbeObject?: ReflectionProbe;
-  object3DVisible = true;
-
-  dispose() {
-    if (this.meshPrimitiveObjects) {
-      for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
-        const primitive = this.meshPrimitiveObjects[i];
-        primitive.parent?.remove(primitive);
-
-        if (primitive instanceof SkinnedMesh) {
-          for (let j = 0; j < primitive.skeleton.bones.length; j++) {
-            const bone = primitive.skeleton.bones[j];
-            bone.parent?.remove(bone);
-          }
-          primitive.skeleton.dispose();
-        }
-
-        if (primitive instanceof InstancedMesh) {
-          primitive.geometry.dispose();
-        }
-      }
-    }
-
-    if (this.cameraObject) {
-      this.cameraObject.parent?.remove(this.cameraObject);
-    }
-
-    if (this.lightObject) {
-      this.lightObject.parent?.remove(this.lightObject);
-    }
-
-    if (this.reflectionProbeObject) {
-      this.reflectionProbeObject.parent?.remove(this.reflectionProbeObject);
-    }
-
-    if (this.tilesRendererObject) {
-      const obj = this.tilesRendererObject.group;
-      obj.parent?.remove(obj);
-      this.tilesRendererObject.dispose();
-    }
-  }
-}
 
 const tempMatrix4 = new Matrix4();
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
-export function updateTransformFromNode(ctx: RenderThreadState, node: RendererNodeResource, object3D: Object3D) {
+export function updateTransformFromNode(ctx: RenderThreadState, node: RenderNode, object3D: Object3D) {
   if (node.skipLerp) {
     setTransformFromNode(ctx, node, object3D);
     return;
@@ -134,7 +38,7 @@ export function updateTransformFromNode(ctx: RenderThreadState, node: RendererNo
 
 export function setTransformFromNode(
   ctx: RenderThreadState,
-  node: RendererNodeResource,
+  node: RenderNode,
   object3D: Object3D,
   inverseMatrix?: Matrix4
 ) {
@@ -154,10 +58,10 @@ export function setTransformFromNode(
 export function updateLocalNodeResources(
   ctx: RenderThreadState,
   rendererModule: RendererModuleState,
-  activeSceneResource: RendererSceneResource | undefined,
-  activeCameraNode: RendererNodeResource | undefined
+  activeSceneResource: RenderScene | undefined,
+  activeCameraNode: RenderNode | undefined
 ) {
-  const nodes = getLocalResources(ctx, RendererNodeResource);
+  const nodes = getLocalResources(ctx, RenderNode);
 
   if (!activeSceneResource) {
     return;

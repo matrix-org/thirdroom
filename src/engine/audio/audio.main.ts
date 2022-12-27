@@ -4,15 +4,18 @@ import EventEmitter from "events";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
-import { getLocalResource, getLocalResources } from "../resource/resource.main";
+import {
+  getLocalResource,
+  getLocalResources,
+  MainAudioEmitter,
+  MainAudioSource,
+  MainNode,
+  MainScene,
+} from "../resource/resource.main";
 import { ResourceId } from "../resource/resource.common";
-import { MainNode } from "../node/node.main";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { MainScene } from "../scene/scene.main";
 import { NOOP } from "../config.common";
 import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schema";
-import { MainThreadAudioSourceResource } from "./audio-source.main";
-import { MainThreadAudioEmitterResource } from "./audio-emitter.main";
 
 /*********
  * Types *
@@ -146,7 +149,7 @@ const MAX_AUDIO_COUNT = 1000;
 let audioCount = 0;
 
 function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
-  const localAudioSources = getLocalResources(ctx, MainThreadAudioSourceResource);
+  const localAudioSources = getLocalResources(ctx, MainAudioSource);
 
   for (let i = 0; i < localAudioSources.length; i++) {
     const localAudioSource = localAudioSources[i];
@@ -245,7 +248,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 }
 
 function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
-  const localAudioEmitters = getLocalResources(ctx, MainThreadAudioEmitterResource);
+  const localAudioEmitters = getLocalResources(ctx, MainAudioEmitter);
 
   for (let i = 0; i < localAudioEmitters.length; i++) {
     const audioEmitter = localAudioEmitters[i];
@@ -417,7 +420,7 @@ function updateActiveScene(ctx: IMainThreadContext, audioModule: MainAudioModule
     // if scene was added
     if (nextSceneResourceId !== NOOP) {
       // Set new scene if it's loaded
-      audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId)?.resource;
+      audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId);
     } else {
       // unset active scene
       audioModule.activeScene = undefined;

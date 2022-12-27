@@ -87,8 +87,8 @@ export const readMetadata = (v: CursorView, out = _out) => {
 
 /* Transform serialization */
 
-export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
-  const node = RemoteNodeComponent.get(eid)!;
+export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
+  const eid = node.eid;
 
   const position = node.position;
   writeFloat32(v, position[0]);
@@ -294,8 +294,8 @@ export function deserializeCreates(input: NetPipeData) {
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
-    const eid = createRemoteNetworkedEntity(state, network, nid, prefabName);
-    console.info("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
+    const node = createRemoteNetworkedEntity(state, network, nid, prefabName);
+    console.info("deserializing creation - nid", nid, "eid", node.eid, "prefab", prefabName);
   }
   return input;
 }
@@ -309,8 +309,9 @@ export function serializeUpdatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
+    const node = RemoteNodeComponent.get(eid)!;
     writeUint32(v, nid);
-    serializeTransformSnapshot(v, eid);
+    serializeTransformSnapshot(v, node);
   }
   return input;
 }

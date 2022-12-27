@@ -1,31 +1,15 @@
-import { Color, Scene } from "three";
+import { Color } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererNodeResource } from "../node/node.render";
-import {
-  RendererReflectionProbeResource,
-  updateSceneReflectionProbe,
-} from "../reflection-probe/reflection-probe.render";
+import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { getLocalResources } from "../resource/resource.render";
-import { SceneResource } from "../resource/schema";
-import { RendererTextureResource } from "../texture/texture.render";
-
-export class RendererSceneResource extends defineLocalResourceClass<typeof SceneResource>(SceneResource) {
-  sceneObject: Scene = new Scene();
-  declare backgroundTexture: RendererTextureResource | undefined;
-  currentBackgroundTextureResourceId = 0;
-  declare reflectionProbe: RendererReflectionProbeResource | undefined;
-  currentReflectionProbeResourceId = 0;
-  reflectionProbeNeedsUpdate = false;
-}
+import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
 
 export function updateLocalSceneResources(ctx: RenderThreadState, activeSceneResourceId: number) {
-  const scenes = getLocalResources(ctx, RendererSceneResource);
+  const scenes = getLocalResources(ctx, RenderScene);
 
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
@@ -62,22 +46,22 @@ export function updateLocalSceneResources(ctx: RenderThreadState, activeSceneRes
   }
 }
 
-function updateSceneVisibility(ctx: RenderThreadState, scene: RendererSceneResource) {
-  let curChild = scene.firstNode as RendererNodeResource | undefined;
+function updateSceneVisibility(ctx: RenderThreadState, scene: RenderScene) {
+  let curChild = scene.firstNode;
 
   while (curChild) {
     updateNodeVisibility(curChild, true);
-    curChild = curChild.nextSibling as RendererNodeResource | undefined;
+    curChild = curChild.nextSibling;
   }
 }
 
-export function updateNodeVisibility(node: RendererNodeResource, parentVisibility: boolean) {
+export function updateNodeVisibility(node: RenderNode, parentVisibility: boolean) {
   node.object3DVisible = node.visible && parentVisibility;
 
-  let curChild = node.firstChild as RendererNodeResource | undefined;
+  let curChild = node.firstChild;
 
   while (curChild) {
     updateNodeVisibility(curChild, node.object3DVisible);
-    curChild = curChild.nextSibling as RendererNodeResource | undefined;
+    curChild = curChild.nextSibling;
   }
 }

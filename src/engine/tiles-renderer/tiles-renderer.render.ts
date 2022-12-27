@@ -2,14 +2,15 @@ import { TilesRenderer } from "3d-tiles-renderer";
 import { Scene } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererNodeResource, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RenderNode } from "../resource/resource.render";
 
 export function updateNodeTilesRenderer(
   ctx: RenderThreadState,
   scene: Scene,
-  cameraNode: RendererNodeResource | undefined,
-  node: RendererNodeResource
+  cameraNode: RenderNode | undefined,
+  node: RenderNode
 ) {
   const currentTilesRendererResourceId = node.currentTilesRendererResourceId;
   const nextTilesRendererResourceId = node.tilesRenderer?.resourceId || 0;

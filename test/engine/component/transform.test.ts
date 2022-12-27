@@ -24,7 +24,9 @@ describe("Transform Unit Tests", function () {
           const manager = new MockResourceManager();
           const parent = new RemoteNode(manager);
           const child = new RemoteNode(manager);
+          console.log("before", parent.__props.firstChild);
           parent.firstChild = child;
+          console.log("after", parent.__props.firstChild);
           expect(getLastChild(parent)).toStrictEqual(child);
         });
         test("should get last child of 2 children", function () {

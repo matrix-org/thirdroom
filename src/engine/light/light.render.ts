@@ -1,10 +1,11 @@
 import { DirectionalLight, Light, PointLight, Scene, SpotLight } from "three";
 
-import { RendererNodeResource, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderNode } from "../resource/resource.render";
 import { LightType } from "../resource/schema";
 
-export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: RendererNodeResource) {
+export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentLightResourceId = node.currentLightResourceId;
   const nextLightResourceId = node.light?.resourceId || 0;
 

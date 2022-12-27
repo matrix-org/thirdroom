@@ -39,8 +39,11 @@ import {
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
 import { RemoteNode } from "../../../src/engine/resource/resource.game";
+import { addRemoteNodeComponent, RemoteNodeComponent } from "../../../src/engine/node/node.game";
+import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
 
 const clearComponentData = () => {
+  RemoteNodeComponent.clear();
   new Uint8Array(RigidBody.velocity[0].buffer).fill(0);
   new Uint8Array(Networked.position[0].buffer).fill(0);
   new Uint8Array(Networked.velocity[0].buffer).fill(0);
@@ -74,15 +77,16 @@ describe("Network Tests", () => {
   describe("tranform serialization", () => {
     beforeEach(clearComponentData);
     it("should #serializeTransformSnapshot()", () => {
-      const manager = new MockResourceManager();
       const writer = createCursorView();
-      const eid = 0;
-
-      const node = new RemoteNode(manager, { eid, position: [1, 2, 3], quaternion: [4, 5, 6, 1] });
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([1, 2, 3]);
+      node.quaternion.set([4, 5, 6, 1]);
       const velocity = RigidBody.velocity[eid];
       velocity.set([4, 5, 6]);
 
-      serializeTransformSnapshot(writer, eid);
+      serializeTransformSnapshot(writer, node);
 
       const reader = createCursorView(writer.buffer);
 
@@ -115,20 +119,22 @@ describe("Network Tests", () => {
     });
     it("should #deserializeTransformSnapshot()", () => {
       const writer = createCursorView();
-      const eid = 0;
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([1, 2, 3]);
+      node.quaternion.set([7, 8, 9, 10]);
 
-      const position = Transform.position[eid];
+      const position = node.position;
       const velocity = RigidBody.velocity[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([1, 2, 3]);
+      const quaternion = node.quaternion;
       velocity.set([4, 5, 6]);
-      quaternion.set([7, 8, 9]);
 
-      serializeTransformSnapshot(writer, eid);
+      serializeTransformSnapshot(writer, node);
 
       position.set([0, 0, 0]);
       velocity.set([0, 0, 0]);
-      quaternion.set([0, 0, 0]);
+      quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -145,22 +151,22 @@ describe("Network Tests", () => {
       strictEqual(Networked.quaternion[eid][0], 7);
       strictEqual(Networked.quaternion[eid][1], 8);
       strictEqual(Networked.quaternion[eid][2], 9);
+      strictEqual(Networked.quaternion[eid][3], 10);
     });
     it("should #serializeTransformChanged() with all values", () => {
       const writer = createCursorView();
-      const eid = 0;
-
-      const position = Transform.position[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([1, 2, 3]);
-      quaternion.set([4, 5, 6]);
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([1, 2, 3]);
+      node.quaternion.set([4, 5, 6, 7]);
 
       serializeTransformChanged(writer, eid);
 
       const reader = createCursorView(writer.buffer);
 
       const changeMask = readUint16(reader);
-      strictEqual(changeMask, 0b111000111);
+      strictEqual(changeMask, 0b1111000111, `Expected ${toBinaryString(changeMask)} to equal 0b111000111`);
 
       const posX = readFloat32(reader);
       strictEqual(posX, 1);
@@ -179,22 +185,24 @@ describe("Network Tests", () => {
 
       const rotZ = readFloat32(reader);
       strictEqual(rotZ, 6);
+
+      const rotW = readFloat32(reader);
+      strictEqual(rotW, 7);
     });
     it("should #serializeTransformChanged() with some values", () => {
       const writer = createCursorView();
-      const eid = 0;
-
-      const position = Transform.position[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([0, 2, 0]);
-      quaternion.set([4, 0, 6]);
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([0, 2, 0]);
+      node.quaternion.set([4, 0, 6, 0]);
 
       serializeTransformChanged(writer, eid);
 
       const reader = createCursorView(writer.buffer);
 
       const changeMask = readUint16(reader);
-      strictEqual(changeMask, 0b101000010);
+      strictEqual(changeMask, 0b101000010, `Expected ${toBinaryString(changeMask)} to equal 0b101000010`);
 
       // const posX = readFloat32(reader);
       // strictEqual(posX, 0);
@@ -213,20 +221,22 @@ describe("Network Tests", () => {
 
       const quatZ = readFloat32(reader);
       strictEqual(quatZ, 6);
+
+      // const quatW = readFloat32(reader);
+      // strictEqual(quatW, 0);
     });
     it("should #deserializeTransformChanged() with all values", () => {
       const writer = createCursorView();
-      const eid = 1;
-
-      const position = Transform.position[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([1, 2, 3]);
-      quaternion.set([4, 5, 6]);
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([1, 2, 3]);
+      node.quaternion.set([4, 5, 6, 7]);
 
       serializeTransformChanged(writer, eid);
 
-      position.set([0, 0, 0]);
-      quaternion.set([0, 0, 0]);
+      node.position.set([0, 0, 0]);
+      node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -239,21 +249,20 @@ describe("Network Tests", () => {
       strictEqual(Networked.quaternion[eid][0], 4);
       strictEqual(Networked.quaternion[eid][1], 5);
       strictEqual(Networked.quaternion[eid][2], 6);
-      strictEqual(Networked.quaternion[eid][3], 0);
+      strictEqual(Networked.quaternion[eid][3], 7);
     });
     it("should #deserializeTransformChanged() with some values", () => {
       const writer = createCursorView();
-      const eid = 1;
-
-      const position = Transform.position[eid];
-      const quaternion = Transform.quaternion[eid];
-      position.set([0, 2, 0]);
-      quaternion.set([4, 0, 6]);
+      const state = mockGameState();
+      const eid = addEntity(state.world);
+      const node = addRemoteNodeComponent(state, eid);
+      node.position.set([0, 2, 0]);
+      node.quaternion.set([4, 0, 6, 0]);
 
       serializeTransformChanged(writer, eid);
 
-      position.set([0, 0, 0]);
-      quaternion.set([0, 0, 0]);
+      node.position.set([0, 0, 0]);
+      node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
@@ -272,25 +281,22 @@ describe("Network Tests", () => {
   describe("updates serialization", () => {
     beforeEach(clearComponentData);
     it("should #serializeUpdatesSnapshot()", () => {
-      const state = { world: createWorld() } as unknown as GameState;
       const writer = createCursorView();
+      const state = mockGameState();
 
-      const ents = Array(3)
+      const nodes = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
-
-      ents.forEach((eid) => {
-        addComponent(state.world, Transform, eid);
-        const position = Transform.position[eid];
-        const velocity = RigidBody.velocity[eid];
-        const quaternion = Transform.quaternion[eid];
-        position.set([1, 2, 3]);
-        velocity.set([1, 2, 3]);
-        quaternion.set([4, 5, 6]);
-        addComponent(state.world, Networked, eid);
-        Networked.networkId[eid] = eid;
-        addComponent(state.world, Owned, eid);
-      });
+        .map(() => {
+          const eid = addEntity(state.world);
+          const node = addRemoteNodeComponent(state, eid);
+          node.position.set([1, 2, 3]);
+          node.quaternion.set([4, 5, 6, 7]);
+          RigidBody.velocity[eid].set([1, 2, 3]);
+          addComponent(state.world, Networked, eid);
+          Networked.networkId[eid] = eid;
+          addComponent(state.world, Owned, eid);
+          return node;
+        });
 
       serializeUpdatesSnapshot([state, writer, ""]);
 
@@ -299,21 +305,21 @@ describe("Network Tests", () => {
       const count = readUint32(reader);
       strictEqual(count, 3);
 
-      ents.forEach((eid) => {
-        const nid = Networked.networkId[eid];
+      nodes.forEach((node) => {
+        const nid = Networked.networkId[node.eid];
         strictEqual(nid, readUint32(reader));
 
-        const position = Transform.position[eid];
+        const position = node.position;
         strictEqual(position[0], readFloat32(reader));
         strictEqual(position[1], readFloat32(reader));
         strictEqual(position[2], readFloat32(reader));
 
-        const velocity = RigidBody.velocity[eid];
+        const velocity = RigidBody.velocity[node.eid];
         strictEqual(velocity[0], readFloat32(reader));
         strictEqual(velocity[1], readFloat32(reader));
         strictEqual(velocity[2], readFloat32(reader));
 
-        const quaternion = Transform.quaternion[eid];
+        const quaternion = node.quaternion;
         strictEqual(quaternion[0], readFloat32(reader));
         strictEqual(quaternion[1], readFloat32(reader));
         strictEqual(quaternion[2], readFloat32(reader));
@@ -325,65 +331,61 @@ describe("Network Tests", () => {
       const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
-      const ents = Array(3)
+      const nodes = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
-
-      ents.forEach((eid) => {
-        addComponent(state.world, Transform, eid);
-        const position = Transform.position[eid];
-        const quaternion = Transform.quaternion[eid];
-        position.set([1, 2, 3]);
-        quaternion.set([4, 5, 6]);
-        addComponent(state.world, Networked, eid);
-        Networked.networkId[eid] = eid;
-        network.networkIdToEntityId.set(eid, eid);
-        addComponent(state.world, Owned, eid);
-      });
+        .map(() => {
+          const eid = addEntity(state.world);
+          const node = addRemoteNodeComponent(state, eid);
+          node.position.set([1, 2, 3]);
+          node.quaternion.set([4, 5, 6, 7]);
+          addComponent(state.world, Networked, eid);
+          Networked.networkId[eid] = eid;
+          network.networkIdToEntityId.set(eid, eid);
+          addComponent(state.world, Owned, eid);
+          return node;
+        });
 
       serializeUpdatesSnapshot([state, writer, ""]);
 
-      ents.forEach((eid) => {
-        const position = Transform.position[eid];
-        const quaternion = Transform.quaternion[eid];
+      nodes.forEach((node) => {
+        const position = node.position;
+        const quaternion = node.quaternion;
         position.set([0, 0, 0]);
-        quaternion.set([0, 0, 0]);
+        quaternion.set([0, 0, 0, 0]);
       });
 
       const reader = createCursorView(writer.buffer);
 
       deserializeUpdatesSnapshot([state, reader, ""]);
 
-      ents.forEach((eid) => {
-        const position = Networked.position[eid];
-        const quaternion = Networked.quaternion[eid];
+      nodes.forEach((node) => {
+        const position = Networked.position[node.eid];
+        const quaternion = Networked.quaternion[node.eid];
         strictEqual(position[0], 1);
         strictEqual(position[1], 2);
         strictEqual(position[2], 3);
         strictEqual(quaternion[0], 4);
         strictEqual(quaternion[1], 5);
         strictEqual(quaternion[2], 6);
-        strictEqual(quaternion[3], 0);
+        strictEqual(quaternion[3], 7);
       });
     });
     it("should #serializeUpdatesChanged()", () => {
-      const state = { world: createWorld() } as unknown as GameState;
+      const state = mockGameState();
       const writer = createCursorView();
 
-      const ents = Array(3)
+      const nodes = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
-
-      ents.forEach((eid) => {
-        addComponent(state.world, Transform, eid);
-        const position = Transform.position[eid];
-        const quaternion = Transform.quaternion[eid];
-        position.set([1, 2, 3]);
-        quaternion.set([4, 5, 6]);
-        addComponent(state.world, Networked, eid);
-        Networked.networkId[eid] = eid;
-        addComponent(state.world, Owned, eid);
-      });
+        .map(() => {
+          const eid = addEntity(state.world);
+          const node = addRemoteNodeComponent(state, eid);
+          node.position.set([1, 2, 3]);
+          node.quaternion.set([4, 5, 6, 7]);
+          addComponent(state.world, Networked, eid);
+          Networked.networkId[eid] = eid;
+          addComponent(state.world, Owned, eid);
+          return node;
+        });
 
       serializeUpdatesChanged([state, writer, ""]);
 
@@ -392,22 +394,23 @@ describe("Network Tests", () => {
       const count = readUint32(reader);
       strictEqual(count, 3);
 
-      ents.forEach((eid) => {
-        const nid = Networked.networkId[eid];
+      nodes.forEach((node) => {
+        const nid = Networked.networkId[node.eid];
         strictEqual(nid, readUint32(reader));
 
         const changeMask = readUint16(reader);
-        strictEqual(changeMask, 0b111000111);
+        strictEqual(changeMask, 0b1111000111, `Expected ${toBinaryString(changeMask)} to equal 0b1111000111`);
 
-        const position = Transform.position[eid];
+        const position = node.position;
         strictEqual(position[0], readFloat32(reader));
         strictEqual(position[1], readFloat32(reader));
         strictEqual(position[2], readFloat32(reader));
 
-        const quaternion = Transform.quaternion[eid];
+        const quaternion = node.quaternion;
         strictEqual(quaternion[0], readFloat32(reader));
         strictEqual(quaternion[1], readFloat32(reader));
         strictEqual(quaternion[2], readFloat32(reader));
+        strictEqual(quaternion[3], readFloat32(reader));
       });
     });
     it("should #deserializeUpdatesChanged()", () => {
@@ -415,21 +418,19 @@ describe("Network Tests", () => {
       const network = getModule(state, NetworkModule);
       const writer = createCursorView();
 
-      const ents = Array(3)
+      const nodes = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
-
-      ents.forEach((eid) => {
-        addComponent(state.world, Transform, eid);
-        const position = Transform.position[eid];
-        const quaternion = Transform.quaternion[eid];
-        position.set([1, 2, 3]);
-        quaternion.set([4, 5, 6]);
-        addComponent(state.world, Networked, eid);
-        Networked.networkId[eid] = eid;
-        network.networkIdToEntityId.set(eid, eid);
-        addComponent(state.world, Owned, eid);
-      });
+        .map(() => {
+          const eid = addEntity(state.world);
+          const node = addRemoteNodeComponent(state, eid);
+          node.position.set([1, 2, 3]);
+          node.quaternion.set([4, 5, 6, 7]);
+          addComponent(state.world, Networked, eid);
+          Networked.networkId[eid] = eid;
+          network.networkIdToEntityId.set(eid, eid);
+          addComponent(state.world, Owned, eid);
+          return node;
+        });
 
       serializeUpdatesChanged([state, writer, ""]);
 
@@ -437,9 +438,9 @@ describe("Network Tests", () => {
 
       deserializeUpdatesChanged([state, reader, ""]);
 
-      ents.forEach((eid) => {
-        const position = Networked.position[eid];
-        const quaternion = Networked.quaternion[eid];
+      nodes.forEach((node) => {
+        const position = Networked.position[node.eid];
+        const quaternion = Networked.quaternion[node.eid];
         strictEqual(position[0], 1);
         strictEqual(position[1], 2);
         strictEqual(position[2], 3);

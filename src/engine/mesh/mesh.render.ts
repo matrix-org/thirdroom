@@ -1,6 +1,5 @@
 import {
   Mesh,
-  BufferGeometry,
   Line,
   LineSegments,
   Points,
@@ -22,39 +21,26 @@ import {
   InstancedBufferGeometry,
 } from "three";
 
-import { RendererAccessorResource } from "../accessor/accessor.render";
 import { GLTFMesh } from "../gltf/GLTF";
-import {
-  getDefaultMaterialForMeshPrimitive,
-  PrimitiveMaterial,
-  RendererMaterialResource,
-} from "../material/material.render";
+import { getDefaultMaterialForMeshPrimitive } from "../material/material.render";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { getModule } from "../module/module.common";
-import { RendererNodeResource, setTransformFromNode, updateTransformFromNode } from "../node/node.render";
+import { setTransformFromNode, updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { defineLocalResourceClass } from "../resource/LocalResourceClass";
-import { getLocalResource, getLocalResources } from "../resource/resource.render";
 import {
-  InstancedMeshAttributeIndex,
-  MeshPrimitiveAttributeIndex,
-  MeshPrimitiveMode,
-  MeshPrimitiveResource,
-  MeshResource,
-  InstancedMeshResource,
-  SkinResource,
-  LightMapResource,
-} from "../resource/schema";
-import { RendererSceneResource } from "../scene/scene.render";
-import { RendererTextureResource } from "../texture/texture.render";
-import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
+  getLocalResource,
+  getLocalResources,
+  RenderLightMap,
+  RenderMaterial,
+  RenderMeshPrimitive,
+  RenderNode,
+  RenderScene,
+} from "../resource/resource.render";
+import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../resource/schema";
 
 export type PrimitiveObject3D = SkinnedMesh | Mesh | Line | LineSegments | LineLoop | Points;
 
-const defaultGeometry = new BufferGeometry();
-const defaultMaterial = new MeshStandardMaterial();
-
-const MeshPrimitiveAttributeToThreeAttribute: { [key: number]: string } = {
+export const MeshPrimitiveAttributeToThreeAttribute: { [key: number]: string } = {
   [MeshPrimitiveAttributeIndex.POSITION]: "position",
   [MeshPrimitiveAttributeIndex.NORMAL]: "normal",
   [MeshPrimitiveAttributeIndex.TANGENT]: "tangent",
@@ -65,87 +51,6 @@ const MeshPrimitiveAttributeToThreeAttribute: { [key: number]: string } = {
   [MeshPrimitiveAttributeIndex.WEIGHTS_0]: "skinWeight",
 };
 
-export class RendererMeshPrimitiveResource extends defineLocalResourceClass<
-  typeof MeshPrimitiveResource,
-  RenderThreadState
->(MeshPrimitiveResource) {
-  geometryObj: BufferGeometry = defaultGeometry;
-  materialObj: PrimitiveMaterial = defaultMaterial;
-
-  declare indices: RendererAccessorResource | undefined;
-  declare attributes: readonly RendererAccessorResource[];
-  declare material: RendererMaterialResource | undefined;
-
-  async load(ctx: RenderThreadState) {
-    let geometryObj = new BufferGeometry();
-
-    if (this.indices) {
-      if ("isInterleavedBufferAttribute" in this.indices.attribute) {
-        throw new Error("Interleaved attributes are not supported as mesh indices.");
-      }
-
-      geometryObj.setIndex(this.indices.attribute);
-    }
-
-    for (let i = 0; i < this.attributes.length; i++) {
-      const accessor = this.attributes[i];
-
-      if (accessor) {
-        geometryObj.setAttribute(MeshPrimitiveAttributeToThreeAttribute[i], accessor.attribute);
-      }
-    }
-
-    if (this.mode === MeshPrimitiveMode.TRIANGLE_STRIP) {
-      geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_STRIP);
-    } else if (this.mode === MeshPrimitiveMode.TRIANGLE_FAN) {
-      geometryObj = toTrianglesDrawMode(geometryObj, MeshPrimitiveMode.TRIANGLE_FAN);
-    }
-
-    this.geometryObj = geometryObj;
-
-    if (!this.material) {
-      this.materialObj = getDefaultMaterialForMeshPrimitive(ctx, this);
-    } else {
-      this.materialObj = this.material.getMaterialForMeshPrimitive(ctx, this);
-    }
-  }
-
-  dispose() {
-    this.geometryObj.dispose();
-
-    if (this.material) {
-      this.material.disposeMeshPrimitiveMaterial(this.materialObj);
-    }
-  }
-}
-
-export class RendererMeshResource extends defineLocalResourceClass<typeof MeshResource, RenderThreadState>(
-  MeshResource
-) {
-  declare primitives: readonly RendererMeshPrimitiveResource[];
-}
-
-export class RendererInstancedMeshResource extends defineLocalResourceClass<
-  typeof InstancedMeshResource,
-  RenderThreadState
->(InstancedMeshResource) {
-  declare attributes: readonly RendererAccessorResource[];
-}
-
-export class RendererSkinResource extends defineLocalResourceClass<typeof SkinResource, RenderThreadState>(
-  SkinResource
-) {
-  declare joints: RendererNodeResource[];
-  declare inverseBindMatrices: RendererAccessorResource;
-  skeleton?: Skeleton;
-}
-
-export class RendererLightMapResource extends defineLocalResourceClass<typeof LightMapResource, RenderThreadState>(
-  LightMapResource
-) {
-  declare texture: RendererTextureResource;
-}
-
 const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
@@ -153,9 +58,9 @@ const tempMatrix4 = new Matrix4();
 
 function createMeshPrimitiveObject(
   ctx: RenderThreadState,
-  node: RendererNodeResource,
-  scene: RendererSceneResource,
-  primitive: RendererMeshPrimitiveResource
+  node: RenderNode,
+  scene: RenderScene,
+  primitive: RenderMeshPrimitive
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
 
@@ -334,7 +239,7 @@ function createMeshPrimitiveObject(
         return;
       }
 
-      const lightMap = mesh.userData.lightMap as RendererLightMapResource | undefined;
+      const lightMap = mesh.userData.lightMap as RenderLightMap | undefined;
 
       if (lightMap) {
         meshMaterial.lightMapIntensity = lightMap.intensity * Math.PI;
@@ -403,12 +308,12 @@ function createMeshPrimitiveObject(
 /* Updates */
 
 export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
-  const meshPrimitives = getLocalResources(ctx, RendererMeshPrimitiveResource);
+  const meshPrimitives = getLocalResources(ctx, RenderMeshPrimitive);
 
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
     const nextMaterialResourceId = meshPrimitive.material?.resourceId || 0;
-    const nextMaterialResource = getLocalResource<RendererMaterialResource>(ctx, nextMaterialResourceId)?.resource;
+    const nextMaterialResource = getLocalResource<RenderMaterial>(ctx, nextMaterialResourceId);
 
     const newMaterialObj = nextMaterialResource
       ? nextMaterialResource.getMaterialForMeshPrimitive(ctx, meshPrimitive)
@@ -432,7 +337,7 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
   }
 }
 
-export function updateNodeMesh(ctx: RenderThreadState, scene: RendererSceneResource, node: RendererNodeResource) {
+export function updateNodeMesh(ctx: RenderThreadState, scene: RenderScene, node: RenderNode) {
   const currentMeshResourceId = node.currentMeshResourceId;
   const nextMeshResourceId = node.mesh?.resourceId || 0;
 

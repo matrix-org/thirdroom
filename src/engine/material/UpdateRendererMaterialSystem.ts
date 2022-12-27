@@ -1,10 +1,9 @@
 import { Texture, DoubleSide, FrontSide, MeshPhysicalMaterial } from "three";
 
 import { RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResources } from "../resource/resource.render";
+import { getLocalResources, RenderMaterial, RenderTexture } from "../resource/resource.render";
 import { MaterialAlphaMode } from "../resource/schema";
-import { RendererTextureResource } from "../texture/texture.render";
-import { PrimitiveMaterial, RendererMaterialResource } from "./material.render";
+import { PrimitiveMaterial } from "./material.render";
 
 type TextureKeys<Mat extends PrimitiveMaterial> = {
   [Key in keyof Mat]: Mat[Key] extends Texture | null ? Key : never;
@@ -13,7 +12,7 @@ type TextureKeys<Mat extends PrimitiveMaterial> = {
 function updateMaterialTexture<Mat extends PrimitiveMaterial>(
   material: Mat,
   key: TextureKeys<Mat>,
-  value: RendererTextureResource | undefined
+  value: RenderTexture | undefined
 ) {
   if (!!material[key] !== !!value) {
     material.needsUpdate = true;
@@ -23,7 +22,7 @@ function updateMaterialTexture<Mat extends PrimitiveMaterial>(
 }
 
 export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
-  const localMaterials = getLocalResources(ctx, RendererMaterialResource);
+  const localMaterials = getLocalResources(ctx, RenderMaterial);
 
   for (let i = 0; i < localMaterials.length; i++) {
     const localMaterial = localMaterials[i];

@@ -7,7 +7,7 @@ import { GameState } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
-import { ResourceModule } from "../../src/engine/resource/resource.game";
+import { RemoteNode, RemoteScene, ResourceModule } from "../../src/engine/resource/resource.game";
 import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import {
   IRemoteResourceManager,
@@ -16,6 +16,7 @@ import {
   ResourceData,
 } from "../../src/engine/resource/ResourceDefinition";
 import { addRemoteNodeComponent } from "../../src/engine/node/node.game";
+import { addChild } from "../../src/engine/component/transform";
 
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
@@ -91,10 +92,6 @@ export const mockPrefabState = () => ({
   prefabTemplateMap: new Map(),
 });
 
-export const mockResourceManager = () => ({
-  createResource: () => ({}),
-});
-
 export const mockGameState = () => {
   const ctx = {
     world: createWorld(),
@@ -106,8 +103,13 @@ export const mockGameState = () => {
     messageHandlers: new Map(),
     scopes: new Map(),
     modules: new Map(),
-    resourceManager: mockResourceManager(),
+    resourceManager: new MockResourceManager(),
   } as unknown as GameState;
+
+  ctx.activeScene = new RemoteScene(ctx.resourceManager);
+  ctx.activeCamera = new RemoteNode(ctx.resourceManager);
+
+  addChild(ctx.activeScene, ctx.activeCamera);
 
   ctx.modules.set(PhysicsModule, mockPhysicsState());
   ctx.modules.set(NetworkModule, mockNetworkState());
@@ -121,9 +123,9 @@ export const mockGameState = () => {
 };
 
 export class MockResourceManager implements IRemoteResourceManager {
-  resources: RemoteResource<ResourceDefinition>[] = [];
+  private resources: RemoteResource[] = [];
   private nextResourceId = 1;
-  private resourcesById: Map<number, RemoteResource<ResourceDefinition> | string | SharedArrayBuffer> = new Map();
+  private resourcesById: Map<number, RemoteResource | string | SharedArrayBuffer> = new Map();
   private resourceRefs: Map<number, number> = new Map();
 
   getString(store: Uint32Array): string {
@@ -163,49 +165,46 @@ export class MockResourceManager implements IRemoteResourceManager {
     store[1] = resourceId;
   }
 
-  createResource(resourceDef: ResourceDefinition): ResourceData {
+  allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new SharedArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(new Uint8Array([0x6]), resourceDef.byteLength);
-    const resourceId = this.nextResourceId++;
 
     return {
-      resourceId,
       ptr: 0,
       buffer,
       tripleBuffer,
     };
   }
 
-  addResourceInstance(resource: RemoteResource<ResourceDefinition>): void {
+  createResource(resource: RemoteResource): number {
+    const resourceId = this.nextResourceId++;
     this.resources.push(resource);
-    this.resourcesById.set(resource.resourceId, resource);
-    this.resourceRefs.set(resource.resourceId, 0);
+    this.resourcesById.set(resourceId, resource);
+    this.resourceRefs.set(resourceId, 0);
+    return resourceId;
   }
 
-  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined {
-    return this.resourcesById.get(resourceId) as RemoteResource<Def> | undefined;
+  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource | undefined {
+    return this.resourcesById.get(resourceId) as RemoteResource | undefined;
   }
 
-  disposeResource(resourceId: number): void {
-    const resource = this.resourcesById.get(resourceId);
+  disposeResource(resourceId: number): boolean {
+    const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
 
-    if (typeof resource === "string" || resource instanceof SharedArrayBuffer) {
-      this.resourcesById.delete(resourceId);
-      this.resourceRefs.delete(resourceId);
-      return;
+    if (index === -1) {
+      return false;
     }
 
-    if (!resource) {
-      return;
-    }
-
-    const index = this.resources.indexOf(resource);
-    this.resources.splice(index, 1);
+    const resource = this.resources[index];
 
     const schema = resource.constructor.resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
+
+      if (prop.backRef) {
+        continue;
+      }
 
       if (prop.type === "ref" || prop.type === "string" || prop.type === "refArray" || prop.type === "refMap") {
         const resourceIds = resource.__props[propName];
@@ -225,13 +224,15 @@ export class MockResourceManager implements IRemoteResourceManager {
         }
       }
     }
+
+    return true;
   }
 
-  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined {
-    return this.resourcesById.get(store[0]) as RemoteResource<Def> | undefined;
+  getRef<T extends RemoteResource>(store: Uint32Array): T | undefined {
+    return this.resourcesById.get(store[0]) as T | undefined;
   }
 
-  setRef(value: RemoteResource<ResourceDefinition>, store: Uint32Array, backRef?: boolean): void {
+  setRef(value: RemoteResource, store: Uint32Array, backRef?: boolean): void {
     if (store[0] && !backRef) {
       this.removeRef(store[0]);
     }
@@ -247,13 +248,18 @@ export class MockResourceManager implements IRemoteResourceManager {
     }
   }
 
-  setRefArrayItem(index: number, value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
+  setRefArrayItem(index: number, value: RemoteResource | undefined, store: Uint32Array): void {
     if (value) {
       this.addRef(value.resourceId);
       store[index] = value.resourceId;
     } else {
       store[index] = 0;
     }
+  }
+
+  getRefArrayItem<T extends RemoteResource>(index: number, store: Uint32Array): T | undefined {
+    const resourceId = store[index];
+    return resourceId ? (this.resourcesById.get(resourceId) as T | undefined) : undefined;
   }
 
   addRef(resourceId: number): void {

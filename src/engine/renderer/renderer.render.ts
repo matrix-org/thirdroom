@@ -13,8 +13,8 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource } from "../resource/resource.render";
-import { RendererSceneResource, updateLocalSceneResources } from "../scene/scene.render";
+import { getLocalResource, RenderNode, RenderScene } from "../resource/resource.render";
+import { updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
 import { createDisposables } from "../utils/createDisposables";
 import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
@@ -26,7 +26,7 @@ import {
   rendererModuleName,
   RendererStateTripleBuffer,
 } from "./renderer.common";
-import { RendererNodeResource, updateLocalNodeResources } from "../node/node.render";
+import { updateLocalNodeResources } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
@@ -198,8 +198,8 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
   const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
 
-  const activeSceneResource = getLocalResource<RendererSceneResource>(ctx, activeSceneResourceId)?.resource;
-  const activeCameraNode = getLocalResource<RendererNodeResource>(ctx, activeCameraResourceId)?.resource;
+  const activeSceneResource = getLocalResource<RenderScene>(ctx, activeSceneResourceId);
+  const activeCameraNode = getLocalResource<RenderNode>(ctx, activeCameraResourceId);
 
   if (activeSceneResourceId !== rendererModule.prevSceneResource) {
     rendererModule.enableMatrixMaterial = false;

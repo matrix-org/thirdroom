@@ -11,7 +11,7 @@ import {
 import { IRemoteResourceManager, RemoteResource, ResourceDefinition, ResourceData } from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager {
-  public resources: RemoteResource<ResourceDefinition>[] = [];
+  public resources: RemoteResource[] = [];
 
   constructor(private ctx: GameState) {}
 
@@ -26,7 +26,7 @@ export class GameResourceManager implements IRemoteResourceManager {
     };
   }
 
-  createResource(resource: RemoteResource<ResourceDefinition>): number {
+  createResource(resource: RemoteResource): number {
     const resourceId = createRemoteResource(this.ctx, resource);
     this.resources.push(resource);
     return resourceId;
@@ -114,12 +114,12 @@ export class GameResourceManager implements IRemoteResourceManager {
     store[1] = resourceId;
   }
 
-  getRef<T extends ResourceDefinition>(store: Uint32Array): RemoteResource<T> | undefined {
+  getRef<T extends RemoteResource>(store: Uint32Array): T | undefined {
     const resourceId = store[0];
-    return resourceId ? getRemoteResource<RemoteResource<T>>(this.ctx, resourceId) : undefined;
+    return resourceId ? getRemoteResource<T>(this.ctx, resourceId) : undefined;
   }
 
-  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array, backRef: boolean): void {
+  setRef(value: RemoteResource | undefined, store: Uint32Array, backRef: boolean): void {
     const curResourceId = store[0];
     const nextResourceId = value?.resourceId || 0;
 
@@ -136,11 +136,7 @@ export class GameResourceManager implements IRemoteResourceManager {
     store[0] = nextResourceId;
   }
 
-  setRefArrayItem<T extends ResourceDefinition>(
-    index: number,
-    value: RemoteResource<T> | undefined,
-    store: Uint32Array
-  ): void {
+  setRefArrayItem(index: number, value: RemoteResource | undefined, store: Uint32Array): void {
     const curResourceId = store[index];
     const nextResourceId = value?.resourceId || 0;
 
@@ -155,9 +151,9 @@ export class GameResourceManager implements IRemoteResourceManager {
     store[index] = nextResourceId;
   }
 
-  getRefArrayItem<T extends ResourceDefinition>(index: number, store: Uint32Array): RemoteResource<T> | undefined {
+  getRefArrayItem<T extends RemoteResource>(index: number, store: Uint32Array): T | undefined {
     const resourceId = store[index];
-    return resourceId ? getRemoteResource<RemoteResource<T>>(this.ctx, resourceId) : undefined;
+    return resourceId ? getRemoteResource<T>(this.ctx, resourceId) : undefined;
   }
 
   addRef(resourceId: number) {

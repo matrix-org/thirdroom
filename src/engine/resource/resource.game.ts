@@ -12,9 +12,16 @@ import {
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
+  ResourceProps,
   StringResourceType,
 } from "./resource.common";
-import { IRemoteResourceClass, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialRemoteResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+} from "./ResourceDefinition";
 import {
   NametagResource,
   SamplerResource,
@@ -70,18 +77,18 @@ export interface ResourceTransformData {
 interface ResourceModuleState {
   resourceIdCounter: number;
   resourceInfos: Map<ResourceId, ResourceInfo>;
-  resourcesByType: Map<ResourceType, RemoteResource<ResourceDefinition>[]>;
+  resourcesByType: Map<ResourceType, RemoteResource[]>;
   disposedResources: ResourceId[];
   messageQueue: CreateResourceMessage[];
-  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>;
+  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
   resourceTransformData: Map<number, ResourceTransformData>;
   resourceDefByType: Map<number, ResourceDefinition>;
 }
 
-type ResourceData = string | ArrayBuffer | RemoteResource<ResourceDefinition>;
+type RemoteResourceTypes = string | ArrayBuffer | RemoteResource;
 
 interface ResourceInfo {
-  resource: ResourceData;
+  resource: RemoteResourceTypes;
   refCount: number;
   statusBuffer: TripleBuffer;
   deferred: Deferred<undefined>;
@@ -201,11 +208,11 @@ function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedM
   }
 }
 
-function createResource<Props>(
+function createResource(
   ctx: GameState,
   resourceType: string,
-  props: Props,
-  resource: ResourceData,
+  props: ResourceProps,
+  resource: RemoteResourceTypes,
   dispose?: () => void
 ): number {
   const resourceModule = getModule(ctx, ResourceModule);
@@ -240,7 +247,7 @@ function createResource<Props>(
   return id;
 }
 
-export function createRemoteResource(ctx: GameState, resource: RemoteResource<ResourceDefinition>): number {
+export function createRemoteResource(ctx: GameState, resource: RemoteResource): number {
   const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
 
   const { resourcesByType } = getModule(ctx, ResourceModule);
@@ -253,7 +260,7 @@ export function createRemoteResource(ctx: GameState, resource: RemoteResource<Re
     resourcesByType.set(resourceType, resourceArr);
   }
 
-  resourceArr.push(resource as unknown as RemoteResource<ResourceDefinition>);
+  resourceArr.push(resource as unknown as RemoteResource);
 
   return resourceId;
 }
@@ -326,12 +333,11 @@ export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): 
   return getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource as Res | undefined;
 }
 
-export function getRemoteResources<Def extends ResourceDefinition>(
+export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource>(
   ctx: GameState,
-  resourceClass: IRemoteResourceClass<Def>
-): RemoteResource<Def>[] {
-  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) ||
-    []) as unknown as RemoteResource<Def>[];
+  resourceClass: { new (manager: IRemoteResourceManager, props?: InitialRemoteResourceProps<Def>): T; resourceDef: Def }
+): T[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {
@@ -447,14 +453,14 @@ export class RemoteAccessor extends defineRemoteResourceClass(AccessorResource) 
 }
 
 export class RemoteMeshPrimitive extends defineRemoteResourceClass(MeshPrimitiveResource) {
-  declare attrubutes: RemoteAccessor[];
+  declare attributes: RemoteAccessor[];
   declare indices: RemoteAccessor | undefined;
   declare material: RemoteMaterial | undefined;
   declare mode: MeshPrimitiveMode;
 }
 
 export class RemoteInstancedMesh extends defineRemoteResourceClass(InstancedMeshResource) {
-  declare attrubutes: RemoteAccessor[];
+  declare attributes: RemoteAccessor[];
 }
 
 export class RemoteMesh extends defineRemoteResourceClass(MeshResource) {

@@ -13,7 +13,7 @@ import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avata
 import { AudioModule } from "../../../../engine/audio/audio.main";
 import { useStore } from "../../../hooks/useStore";
 import { getRoomCall } from "../../../utils/matrixUtils";
-import { MainThreadNametagResource } from "../../../../engine/nametag/nametag.main";
+import { MainNametag } from "../../../../engine/resource/resource.main";
 
 // src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 export const useAnimationFrame = (callback: Function, enabled = true) => {
@@ -47,7 +47,7 @@ type SpeakingRoomMember = Member & { volumeDetector: { isSpeaking: boolean } };
 
 interface NametagProps {
   room: Room;
-  nametag: MainThreadNametagResource;
+  nametag: MainNametag;
   groupCall: GroupCall;
 }
 
@@ -118,9 +118,9 @@ export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const engine = useMainThreadContext();
   const { worldId } = useStore((state) => state.world);
 
-  const [nametags, setNametags] = useState<MainThreadNametagResource[]>([]);
+  const [nametags, setNametags] = useState<MainNametag[]>([]);
 
-  const onNametagsChanged = useCallback((nametags: MainThreadNametagResource[]) => {
+  const onNametagsChanged = useCallback((nametags: MainNametag[]) => {
     setNametags([...nametags]);
   }, []);
 
