@@ -5,7 +5,7 @@ import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { SpawnPoint } from "../component/SpawnPoint";
 import { GameState } from "../GameTypes";
 import { RemoteNode } from "../resource/resource.game";
-import { GLTFRoot } from "./GLTF";
+import { GLTFNode, GLTFRoot } from "./GLTF";
 import { GLTFResource } from "./gltf.game";
 import { addTrimeshFromMesh } from "./OMI_collider";
 
@@ -15,8 +15,7 @@ export function hasHubsComponentsExtension(root: GLTFRoot) {
 
 export function inflateHubsScene(ctx: GameState, resource: GLTFResource, sceneIndex: number, sceneEid: number) {}
 
-export function inflateHubsNode(ctx: GameState, resource: GLTFResource, nodeIndex: number, remoteNode: RemoteNode) {
-  const node = resource.root.nodes![nodeIndex];
+export function inflateHubsNode(ctx: GameState, resource: GLTFResource, node: GLTFNode, remoteNode: RemoteNode) {
   const components = node.extensions?.MOZ_hubs_components;
 
   if (!components) {

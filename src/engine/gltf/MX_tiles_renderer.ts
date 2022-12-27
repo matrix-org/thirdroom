@@ -10,7 +10,11 @@ export function hasTilesRendererExtension(node: GLTFNode) {
 }
 
 export function addTilesRenderer(ctx: GameState, resource: GLTFResource, nodeIndex: number, nodeEid: number) {
-  const node = resource.root.nodes![nodeIndex];
+  if (!resource.root.nodes) {
+    return;
+  }
+
+  const node = resource.root.nodes[nodeIndex];
   const remoteNode = RemoteNodeComponent.get(nodeEid);
 
   if (!node || !remoteNode) {
@@ -18,7 +22,11 @@ export function addTilesRenderer(ctx: GameState, resource: GLTFResource, nodeInd
   }
 
   // TODO: rename field to uri
-  const tilesetUrl = node.extensions!.MX_tiles_renderer.tilesetUrl;
+  const tilesetUrl = node.extensions?.MX_tiles_renderer?.tilesetUrl;
+
+  if (!tilesetUrl) {
+    return;
+  }
 
   remoteNode.tilesRenderer = new RemoteTilesRenderer(resource.manager, {
     uri: resolveURL(tilesetUrl, resource.baseUrl),

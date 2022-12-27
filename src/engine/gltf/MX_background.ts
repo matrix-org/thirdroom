@@ -7,11 +7,12 @@ export function hasBackgroundExtension(property: GLTFNode | GLTFScene) {
   return property.extensions?.MX_background !== undefined;
 }
 
-export async function loadGLTFBackgroundTexture(
-  resource: GLTFResource,
-  property: GLTFNode | GLTFScene
-): Promise<RemoteTexture> {
-  const index = property.extensions!.MX_background!.backgroundTexture.index;
+export async function loadGLTFBackgroundTexture(resource: GLTFResource, property: GLTFScene): Promise<RemoteTexture> {
+  const index = property.extensions?.MX_background?.backgroundTexture.index;
+
+  if (index === undefined) {
+    throw new Error(`Background texture ${index} not found.`);
+  }
 
   return loadGLTFTexture(resource, index, {
     mapping: SamplerMapping.EquirectangularReflectionMapping,

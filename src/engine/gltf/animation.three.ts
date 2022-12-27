@@ -19,7 +19,7 @@ import { getAccessorArrayView } from "../accessor/accessor.common";
 import { GameState } from "../GameTypes";
 import { ResourceId } from "../resource/resource.common";
 import { RemoteAccessor } from "../resource/resource.game";
-import { GLTFAnimation, GLTFSampler, GLTFAnimationChannelTarget } from "./GLTF";
+import { GLTFAnimation, GLTFAnimationChannelTarget, GLTFAnimationSampler } from "./GLTF";
 import { GLTFResource, loadGLTFAccessor } from "./gltf.game";
 
 const PATH_PROPERTIES = {
@@ -102,7 +102,7 @@ class GLTFCubicSplineInterpolant extends Interpolant {
 const _q = new Quaternion();
 
 class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
-  interpolate_(i1: any, t0: any, t: any, t1: any) {
+  interpolate_(i1: number, t0: number, t: number, t1: number) {
     const result = super.interpolate_(i1, t0, t, t1);
 
     _q.fromArray(result).normalize().toArray(result);
@@ -143,15 +143,15 @@ export async function loadGLTFAnimationClip(
   const nodes: Object3D[] = [];
   const pendingInputAccessors: Promise<RemoteAccessor>[] = [];
   const pendingOutputAccessors: Promise<RemoteAccessor>[] = [];
-  const samplers: GLTFSampler[] = [];
+  const samplers: GLTFAnimationSampler[] = [];
   const targets: GLTFAnimationChannelTarget[] = [];
 
   for (let i = 0, il = animation.channels.length; i < il; i++) {
     const channel = animation.channels[i];
     const sampler = animation.samplers[channel.sampler];
     const target = channel.target;
-    const input = animation.parameters !== undefined ? animation.parameters[sampler.input] : sampler.input;
-    const output = animation.parameters !== undefined ? animation.parameters[sampler.output] : sampler.output;
+    const input = sampler.input;
+    const output = sampler.output;
 
     if (target.node !== undefined) {
       const obj3d = indexToObject3D.get(target.node);

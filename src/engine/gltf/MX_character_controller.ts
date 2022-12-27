@@ -25,14 +25,20 @@ export function inflateSceneCharacterController(
   sceneIndex: number,
   sceneEid: number
 ) {
-  const scene = resource.root.scenes![sceneIndex];
+  if (!resource.root.scenes) {
+    return;
+  }
 
-  if (!scene) {
+  const type = resource.root.scenes[sceneIndex]?.extensions?.MX_character_controller?.type as
+    | CharacterControllerType
+    | undefined;
+
+  if (type === undefined) {
     return;
   }
 
   addComponent(ctx.world, SceneCharacterControllerComponent, sceneEid);
   SceneCharacterControllerComponent.set(sceneEid, {
-    type: scene.extensions!.MX_character_controller.type,
+    type,
   });
 }
