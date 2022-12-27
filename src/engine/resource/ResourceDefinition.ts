@@ -1,7 +1,7 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
-import { TypedArray32, TypedArrayConstructor32 } from "../allocator/types";
+import { TypedArray32, TypedArrayConstructor32 } from "../utils/typedarray";
 import { BaseThreadContext } from "../module/module.common";
 
 export interface ResourceDefinition {

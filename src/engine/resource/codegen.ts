@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import { mkdir, rm, writeFile } from "fs/promises";
 import { fileURLToPath } from "url";
 
-import { TypedArrayConstructor32 } from "../allocator/types";
+import { TypedArrayConstructor32 } from "../utils/typedarray";
 import camelToSnakeCase from "../utils/camelToSnakeCase";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import kebabToSnakeCase from "../utils/kebabToSnakeCase";

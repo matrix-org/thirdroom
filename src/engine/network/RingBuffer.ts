@@ -20,7 +20,7 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { TypedArrayConstructor } from "../allocator/types";
+import { TypedArrayConstructor } from "../utils/typedarray";
 
 export interface NetworkRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
   buffer: ArrayBuffer;
