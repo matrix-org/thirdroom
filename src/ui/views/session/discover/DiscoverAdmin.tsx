@@ -69,8 +69,8 @@ function FeatureRoom({ room }: { room: Room }) {
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature room. Either room is private or does not exist.");
       const firstEvent = orderedRooms[0];
-      const firstOrder = firstEvent.content.order;
-      const prevOrder = order.getPrevStr(firstOrder);
+      const firstOrder = firstEvent?.content?.order;
+      const prevOrder = order.getPrevStr(typeof firstOrder === "string" ? firstOrder : order.getMidStr());
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedRoom, roomId, {
         suggested: false,
         via: [],
@@ -251,8 +251,8 @@ function FeatureWorld({ room }: { room: Room }) {
       const summaryData = await response.json();
       if (!summaryData.room_id) throw Error("Can not feature world. Either world is private or does not exist.");
       const firstEvent = orderedWorlds[0];
-      const firstOrder = firstEvent.content.order;
-      const prevOrder = order.getPrevStr(firstOrder);
+      const firstOrder = firstEvent?.content?.order;
+      const prevOrder = order.getPrevStr(typeof firstOrder === "string" ? firstOrder : order.getMidStr());
       await session.hsApi.sendState(room.id, RepositoryEvents.FeaturedWorld, roomId, {
         suggested: false,
         via: [],
