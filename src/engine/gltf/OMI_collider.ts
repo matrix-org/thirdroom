@@ -96,6 +96,11 @@ export function addCollider(
 
   let colliderDesc: ColliderDesc;
 
+  const worldMatrix = remoteNode.worldMatrix;
+  mat4.getTranslation(tempPosition, worldMatrix);
+  mat4.getRotation(tempRotation, worldMatrix);
+  mat4.getScaling(tempScale, worldMatrix);
+
   if (collider.type === "box") {
     if (!collider.extents) {
       console.warn(`Ignoring box collider ${colliderIndex} without extents property`);
@@ -136,11 +141,6 @@ export function addCollider(
     console.warn(`Unsupported collider type ${collider.type}`);
     return;
   }
-
-  const worldMatrix = remoteNode.worldMatrix;
-  mat4.getTranslation(tempPosition, worldMatrix);
-  mat4.getRotation(tempRotation, worldMatrix);
-  mat4.getScaling(tempScale, worldMatrix);
 
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
   rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
