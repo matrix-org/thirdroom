@@ -1,4 +1,4 @@
-export function getImageDimension(file: File): Promise<{
+export function getImageDimension(file: Blob): Promise<{
   w: number;
   h: number;
 }> {
