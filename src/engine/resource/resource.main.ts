@@ -7,6 +7,9 @@ import { createLocalResourceModule, ResourceId } from "./resource.common";
 import {
   AccessorComponentType,
   AccessorResource,
+  AnimationChannelResource,
+  AnimationResource,
+  AnimationSamplerResource,
   AudioDataResource,
   AudioEmitterOutput,
   AudioEmitterResource,
@@ -298,6 +301,21 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
   }
 }
 
+export class MainAnimationSampler extends defineLocalResourceClass(AnimationSamplerResource) {
+  declare input: MainAccessor;
+  declare output: MainAccessor;
+}
+
+export class MainAnimationChannel extends defineLocalResourceClass(AnimationChannelResource) {
+  declare sampler: MainAnimationSampler;
+  declare targetNode: MainNode;
+}
+
+export class MainAnimation extends defineLocalResourceClass(AnimationResource) {
+  declare channels: MainAnimationChannel[];
+  declare samplers: MainAnimationSampler[];
+}
+
 export class MainScene extends defineLocalResourceClass(SceneResource) {
   declare backgroundTexture: MainTexture | undefined;
   declare reflectionProbe: MainReflectionProbe | undefined;
@@ -339,4 +357,7 @@ const {
   MainLightMap,
   MainReflectionProbe,
   MainTilesRenderer,
+  MainAnimationChannel,
+  MainAnimationSampler,
+  MainAnimation,
 ]);

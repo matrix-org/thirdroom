@@ -3,6 +3,7 @@ import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import { TypedArray32, TypedArrayConstructor32 } from "../utils/typedarray";
 import { BaseThreadContext } from "../module/module.common";
+import { GLTFResource } from "../gltf/gltf.game";
 
 export interface ResourceDefinition {
   name: string;
@@ -686,6 +687,9 @@ export interface ResourceData {
 }
 
 export interface IRemoteResourceManager {
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;
+  removeGLTFRef(uri: string): boolean;
   getString(store: Uint32Array): string;
   setString(value: string | undefined, store: Uint32Array): void;
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;

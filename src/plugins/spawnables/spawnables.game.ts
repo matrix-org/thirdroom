@@ -8,7 +8,7 @@ import { getCamera } from "../../engine/camera/camera.game";
 import { addChild } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
-import { createGLTFEntity } from "../../engine/gltf/gltf.game";
+import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import {
   ActionDefinition,
   ActionType,
@@ -87,7 +87,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 1;
         const halfSize = size / 2;
 
-        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
 
         node.scale.set([size, size, size]);
 
@@ -129,7 +129,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 1.75;
         const halfSize = size / 2;
 
-        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
 
         node.scale.set([size, size, size]);
 
@@ -175,7 +175,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const size = 2.5;
         const halfSize = size / 2;
 
-        const node = createGLTFEntity(ctx, "/gltf/sci_fi_crate.glb", { isStatic: false, createTrimesh: false });
+        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
 
         node.scale.set([size, size, size]);
 

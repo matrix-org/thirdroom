@@ -1,3 +1,5 @@
+import { AnimationClip } from "three";
+
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -48,6 +50,9 @@ import {
   NodeResource,
   SceneResource,
   ResourceType,
+  AnimationResource,
+  AnimationChannelResource,
+  AnimationSamplerResource,
 } from "./schema";
 
 export interface ResourceTransformData {
@@ -94,30 +99,33 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
   init(ctx) {
     return createDisposables([
-      registerResource(ctx, NametagResource),
-      registerResource(ctx, SamplerResource),
-      registerResource(ctx, BufferResource),
-      registerResource(ctx, BufferViewResource),
-      registerResource(ctx, AudioDataResource),
-      registerResource(ctx, AudioSourceResource),
-      registerResource(ctx, AudioEmitterResource),
-      registerResource(ctx, ImageResource),
-      registerResource(ctx, TextureResource),
-      registerResource(ctx, ReflectionProbeResource),
-      registerResource(ctx, MaterialResource),
-      registerResource(ctx, LightResource),
-      registerResource(ctx, CameraResource),
-      registerResource(ctx, SparseAccessorResource),
-      registerResource(ctx, AccessorResource),
-      registerResource(ctx, MeshPrimitiveResource),
-      registerResource(ctx, InstancedMeshResource),
-      registerResource(ctx, MeshResource),
-      registerResource(ctx, LightMapResource),
-      registerResource(ctx, TilesRendererResource),
-      registerResource(ctx, SkinResource),
-      registerResource(ctx, InteractableResource),
-      registerResource(ctx, NodeResource),
-      registerResource(ctx, SceneResource),
+      registerResource(ctx, RemoteNode),
+      registerResource(ctx, RemoteAudioData),
+      registerResource(ctx, RemoteAudioSource),
+      registerResource(ctx, RemoteAudioEmitter),
+      registerResource(ctx, RemoteNametag),
+      registerResource(ctx, RemoteLight),
+      registerResource(ctx, RemoteSampler),
+      registerResource(ctx, RemoteCamera),
+      registerResource(ctx, RemoteBuffer),
+      registerResource(ctx, RemoteBufferView),
+      registerResource(ctx, RemoteImage),
+      registerResource(ctx, RemoteMaterial),
+      registerResource(ctx, RemoteTexture),
+      registerResource(ctx, RemoteMesh),
+      registerResource(ctx, RemoteScene),
+      registerResource(ctx, RemoteMeshPrimitive),
+      registerResource(ctx, RemoteInteractable),
+      registerResource(ctx, RemoteAccessor),
+      registerResource(ctx, RemoteSparseAccessor),
+      registerResource(ctx, RemoteSkin),
+      registerResource(ctx, RemoteInstancedMesh),
+      registerResource(ctx, RemoteLightMap),
+      registerResource(ctx, RemoteReflectionProbe),
+      registerResource(ctx, RemoteTilesRenderer),
+      registerResource(ctx, RemoteAnimationChannel),
+      registerResource(ctx, RemoteAnimationSampler),
+      registerResource(ctx, RemoteAnimation),
       registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
     ]);
   },
@@ -125,12 +133,11 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
 
 function registerResource<Def extends ResourceDefinition>(
   ctx: GameState,
-  resourceDefOrClass: Def | IRemoteResourceClass<Def>
+  resourceDefOrClass: IRemoteResourceClass<Def>
 ) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const RemoteResourceClass =
-    "resourceDef" in resourceDefOrClass ? resourceDefOrClass : defineRemoteResourceClass(resourceDefOrClass);
+  const RemoteResourceClass = resourceDefOrClass;
 
   const resourceDef = RemoteResourceClass.resourceDef;
 
@@ -457,6 +464,22 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+}
+
+export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {
+  declare input: RemoteAccessor;
+  declare output: RemoteAccessor;
+}
+
+export class RemoteAnimationChannel extends defineRemoteResourceClass(AnimationChannelResource) {
+  declare sampler: RemoteAnimationSampler;
+  declare targetNode: RemoteNode;
+}
+
+export class RemoteAnimation extends defineRemoteResourceClass(AnimationResource) {
+  declare channels: RemoteAnimationChannel[];
+  declare samplers: RemoteAnimationSampler[];
+  declare clip: AnimationClip | undefined;
 }
 
 export class RemoteScene extends defineRemoteResourceClass(SceneResource) {

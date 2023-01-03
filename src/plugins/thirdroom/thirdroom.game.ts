@@ -26,12 +26,10 @@ import {
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
-import { RemoteSceneComponent } from "../../engine/scene/scene.game";
-import { disposeGLTFResource, GLTFResource, inflateGLTFScene } from "../../engine/gltf/gltf.game";
+import { createSceneFromGLTF, disposeGLTF, GLTFResource, loadGLTF } from "../../engine/gltf/gltf.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
-import { CharacterControllerType, SceneCharacterControllerComponent } from "../../engine/gltf/MX_character_controller";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
 import { addAvatar } from "../avatars/avatar.game";
@@ -80,10 +78,10 @@ import {
   RemoteSampler,
   RemoteTexture,
 } from "../../engine/resource/resource.game";
+import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 
 interface ThirdRoomModuleState {
   sceneGLTF?: GLTFResource;
-  collisionsGLTF?: GLTFResource;
 }
 
 const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
@@ -289,13 +287,8 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   }
 
   if (thirdroom.sceneGLTF) {
-    disposeGLTFResource(thirdroom.sceneGLTF);
+    disposeGLTF(thirdroom.sceneGLTF);
     thirdroom.sceneGLTF = undefined;
-  }
-
-  if (thirdroom.collisionsGLTF) {
-    disposeGLTFResource(thirdroom.collisionsGLTF);
-    thirdroom.collisionsGLTF = undefined;
   }
 
   ctx.activeCamera = undefined;
@@ -343,20 +336,13 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     removeNode(ctx.world, ctx.activeScene);
 
     if (thirdroom.sceneGLTF) {
-      disposeGLTFResource(thirdroom.sceneGLTF);
+      disposeGLTF(thirdroom.sceneGLTF);
       thirdroom.sceneGLTF = undefined;
-    }
-
-    if (thirdroom.collisionsGLTF) {
-      disposeGLTFResource(thirdroom.collisionsGLTF);
-      thirdroom.collisionsGLTF = undefined;
     }
 
     ctx.activeScene = undefined;
     ctx.activeCamera = undefined;
   }
-
-  const newScene = addEntity(ctx.world);
 
   let script: Script<ScriptExecutionEnvironment> | undefined;
 
@@ -379,25 +365,21 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
         script = await loadWASMScript(ctx, scriptBuffer, allowedResources);
       }
     }
-
-    if (script) {
-      addScriptComponent(ctx, newScene, script);
-    }
   }
-
-  const sceneGltf = await inflateGLTFScene(ctx, newScene, url, {
-    fileMap,
-    isStatic: true,
-    resourceManager: script?.resourceManager,
-  });
-
-  thirdroom.sceneGLTF = sceneGltf;
-
-  const newSceneResource = RemoteSceneComponent.get(newScene)!;
 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
-  if (!newSceneResource.reflectionProbe || !newSceneResource.backgroundTexture) {
+  const sceneGltf = await loadGLTF(ctx, url, { fileMap, resourceManager });
+
+  const newScene = createSceneFromGLTF(ctx, sceneGltf);
+
+  if (script) {
+    addScriptComponent(ctx, newScene, script);
+  }
+
+  thirdroom.sceneGLTF = sceneGltf;
+
+  if (!newScene.reflectionProbe || !newScene.backgroundTexture) {
     const defaultEnvironmentMapTexture = new RemoteTexture(ctx.resourceManager, {
       name: "Environment Map Texture",
       source: new RemoteImage(ctx.resourceManager, {
@@ -410,18 +392,18 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
       }),
     });
 
-    if (!newSceneResource.reflectionProbe) {
-      newSceneResource.reflectionProbe = new RemoteReflectionProbe(ctx.resourceManager, {
+    if (!newScene.reflectionProbe) {
+      newScene.reflectionProbe = new RemoteReflectionProbe(ctx.resourceManager, {
         reflectionProbeTexture: defaultEnvironmentMapTexture,
       });
     }
 
-    if (!newSceneResource.backgroundTexture) {
-      newSceneResource.backgroundTexture = defaultEnvironmentMapTexture;
+    if (!newScene.backgroundTexture) {
+      newScene.backgroundTexture = defaultEnvironmentMapTexture;
     }
   }
 
-  ctx.activeScene = newSceneResource;
+  ctx.activeScene = newScene;
 
   if (script) {
     script.ready = true;

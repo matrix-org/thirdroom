@@ -101,6 +101,9 @@ import {
   SkinResource,
   TextureResource,
   MeshPrimitiveAttributeIndex,
+  AnimationSamplerResource,
+  AnimationChannelResource,
+  AnimationResource,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -670,6 +673,21 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   }
 }
 
+export class RenderAnimationSampler extends defineLocalResourceClass(AnimationSamplerResource) {
+  declare input: RenderAccessor;
+  declare output: RenderAccessor;
+}
+
+export class RenderAnimationChannel extends defineLocalResourceClass(AnimationChannelResource) {
+  declare sampler: RenderAnimationSampler;
+  declare targetNode: RenderNode;
+}
+
+export class RenderAnimation extends defineLocalResourceClass(AnimationResource) {
+  declare channels: RenderAnimationChannel[];
+  declare samplers: RenderAnimationSampler[];
+}
+
 export class RenderScene extends defineLocalResourceClass(SceneResource) {
   declare resourceType: ResourceType.Scene;
   declare backgroundTexture: RenderTexture | undefined;
@@ -716,6 +734,9 @@ const {
   RenderLightMap,
   RenderReflectionProbe,
   RenderTilesRenderer,
+  RenderAnimation,
+  RenderAnimationChannel,
+  RenderAnimationSampler,
 ]);
 
 export {

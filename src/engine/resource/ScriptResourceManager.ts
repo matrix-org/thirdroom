@@ -1,5 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
+import { GLTFCacheEntry, GLTFResource } from "../gltf/gltf.game";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
@@ -30,6 +31,7 @@ export class ScriptResourceManager implements IRemoteResourceManager {
   private textDecoder = new TextDecoder();
   private textEncoder = new TextEncoder();
   private instance?: ScriptWebAssemblyInstance;
+  private gltfCache: Map<string, GLTFCacheEntry> = new Map();
 
   // When allocating resource, allocate space in WASM memory and a triplebuffer
   // At end of frame copy each resource to triple buffer using ptr and byteLength
@@ -56,6 +58,47 @@ export class ScriptResourceManager implements IRemoteResourceManager {
 
   setInstance(instance: ScriptWebAssemblyInstance): void {
     this.instance = instance;
+  }
+
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined {
+    const entry = this.gltfCache.get(uri);
+
+    if (!entry) {
+      return undefined;
+    }
+
+    entry.refCount++;
+
+    return entry.promise;
+  }
+
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void {
+    this.gltfCache.set(uri, {
+      promise,
+      refCount: 1,
+    });
+  }
+
+  removeGLTFRef(uri: string): boolean {
+    const entry = this.gltfCache.get(uri);
+
+    if (entry && --entry.refCount <= 0) {
+      entry.promise.then((resource) => {
+        // TODO: Dispose GLTF contents
+
+        URL.revokeObjectURL(resource.url);
+
+        for (const objectUrl of resource.fileMap.values()) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      });
+
+      this.gltfCache.delete(uri);
+
+      return true;
+    }
+
+    return false;
   }
 
   allocateResource(resourceDef: ResourceDefinition): ResourceData {
