@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
-import { FileUploadCard } from "./file-upload-card/FileUploadCard";
+import { FileUploadCard, FileUploadErrorCard } from "./file-upload-card/FileUploadCard";
 import { useAttachmentUpload } from "../../hooks/useAttachmentUpload";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useHydrogen } from "../../hooks/useHydrogen";
@@ -24,9 +24,8 @@ export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFil
 
   const { fileData, pickFile, dropFile } = useFilePicker(platform, mimeType);
   const [progress, setProgress] = useState(0);
-  const { mxc, upload, cancel } = useAttachmentUpload(
+  const { mxc, error, upload, cancel } = useAttachmentUpload(
     session.hsApi,
-    platform,
     useDebounce(setProgress, { wait: 200, immediate: true })
   );
   useEffect(() => {
@@ -45,10 +44,14 @@ export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFil
     });
   }, [mxc, fileData.blob, fileData.url, onUploadInfo]);
 
+  if (error) {
+    return <FileUploadErrorCard name={error.name} message={error.message} onUploadDrop={dropFile} />;
+  }
+
   return fileData.blob ? (
     <FileUploadCard
       name={fileData.blob.nativeBlob.name}
-      sentBytes={progress}
+      sentBytes={mxc ? fileData.blob.size : progress}
       totalBytes={fileData.blob.size}
       onUploadDrop={dropFile}
     />

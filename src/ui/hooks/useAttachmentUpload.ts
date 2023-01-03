@@ -1,50 +1,55 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { AttachmentUpload, HomeServerApi, IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
+import { HomeServerApi, IBlobHandle, IHomeServerRequest } from "@thirdroom/hydrogen-view-sdk";
 
 import { uploadAttachment } from "../utils/matrixUtils";
 
 export function useAttachmentUpload(
   hsApi: HomeServerApi,
-  platform: Platform,
   onProgress?: (sentBytes: number, totalBytes: number) => void
 ) {
   const [mxc, setMxc] = useState<string>();
-  const attachmentRef = useRef<AttachmentUpload>();
+  const [error, setError] = useState<Error>();
+  const requestRef = useRef<IHomeServerRequest>();
 
   const upload = useCallback(
     async (blob: IBlobHandle) => {
-      if (attachmentRef.current) {
+      if (requestRef.current) {
         console.warn("Already uploading attachment.", blob);
         return;
       }
-      const mxc = await uploadAttachment(
-        hsApi,
-        platform,
-        blob,
-        (attachment) => {
-          attachmentRef.current = attachment;
-        },
-        onProgress
-      );
+      try {
+        const mxc = await uploadAttachment(
+          hsApi,
+          blob,
+          (request) => {
+            requestRef.current = request;
+          },
+          onProgress
+        );
 
-      if (!attachmentRef.current) return;
-      setMxc(mxc);
-      attachmentRef.current === null;
+        if (!requestRef.current) return;
+        setMxc(mxc);
+        requestRef.current === null;
+      } catch (err: any) {
+        if (err.name !== "AbortError") setError(err);
+        requestRef.current === null;
+      }
     },
-    [hsApi, platform, onProgress]
+    [hsApi, onProgress]
   );
 
   const cancel = useCallback(() => {
-    attachmentRef.current?.abort();
-    attachmentRef.current = undefined;
+    requestRef.current?.abort();
+    requestRef.current = undefined;
+    setError(undefined);
     setMxc(undefined);
   }, []);
 
   useEffect(() => {
     return () => {
-      attachmentRef.current?.abort();
+      requestRef.current?.abort();
     };
   }, []);
 
-  return { mxc, upload, cancel };
+  return { mxc, error, upload, cancel };
 }
