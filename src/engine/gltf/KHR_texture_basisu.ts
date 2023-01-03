@@ -6,7 +6,7 @@ export function hasBasisuExtension(property: GLTFTexture) {
 }
 
 export function loadBasisuImage(resource: GLTFResource, property: GLTFTexture) {
-  return property.extensions?.KHR_texture_basisu?.source
+  return property.extensions?.KHR_texture_basisu?.source !== undefined
     ? loadGLTFImage(resource, property.extensions.KHR_texture_basisu.source)
     : undefined;
 }
