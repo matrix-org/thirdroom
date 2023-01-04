@@ -7,7 +7,6 @@
 
   & input {
     flex: 1 1 0;
-    height: 100%;
     border: none;
     background-color: transparent;
     color: var(--tc-surface);
@@ -27,33 +26,35 @@
 }
 
 .Input--sm {
-  min-height: 30px;
   gap: var(--sp-xxs);
-  padding: var(--sp-xxs);
+  padding: 0 var(--sp-xxs);
   border-radius: var(--br-xs);
 }
 .Input--md {
-  min-height: 40px;
   gap: var(--sp-xxs);
-  padding: var(--sp-xs);
+  padding: 0 var(--sp-xs);
   border-radius: var(--br-sm);
 }
 .Input--lg {
-  min-height: 60px;
   gap: var(--sp-xs);
-  padding: var(--sp-md);
+  padding: 0 var(--sp-md);
   border-radius: var(--br-lg);
 }
 .Input--sm input {
+  min-height: 30px;
   font-size: var(--fs-b3);
   letter-spacing: var(--ls-b3);
   line-height: var(--lh-b3);
 }
 .Input--md input,
 .Input--lg input {
+  min-height: 40px;
   font-size: var(--fs-b2);
   letter-spacing: var(--ls-b2);
   line-height: var(--lh-b2);
+}
+.Input--lg input {
+  min-height: 60px;
 }
 
 .Input--success {
