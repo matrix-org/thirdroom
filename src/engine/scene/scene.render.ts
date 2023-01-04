@@ -55,7 +55,7 @@ function updateSceneVisibility(ctx: RenderThreadState, scene: RenderScene) {
   }
 }
 
-export function updateNodeVisibility(node: RenderNode, parentVisibility: boolean) {
+function updateNodeVisibility(node: RenderNode, parentVisibility: boolean) {
   node.object3DVisible = node.visible && parentVisibility;
 
   let curChild = node.firstChild;

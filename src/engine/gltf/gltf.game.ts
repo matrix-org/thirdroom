@@ -7,7 +7,7 @@ import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
-import { addRemoteSceneComponent, RemoteSceneComponent } from "../scene/scene.game";
+import { RemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import {
@@ -93,19 +93,6 @@ export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
     loadGLTFScene(resource, resource.root.scene, { existingNode: node });
   });
   return node;
-}
-
-export function createSceneFromGLTF(ctx: GameState, resource: GLTFResource): RemoteScene {
-  const eid = addEntity(ctx.world);
-  const scene = addRemoteSceneComponent(ctx, eid);
-
-  if (resource.root.scene === undefined) {
-    throw new Error(`${resource.url} has no default scene`);
-  }
-
-  loadGLTFScene(resource, resource.root.scene, { existingScene: scene });
-
-  return scene;
 }
 
 export interface GLTFCacheEntry {
@@ -455,6 +442,16 @@ interface GLTFSceneOptions {
   audioOutput?: AudioEmitterOutput;
   existingNode?: RemoteNode;
   existingScene?: RemoteScene;
+}
+
+export async function loadDefaultGLTFScene(resource: GLTFResource, options?: GLTFSceneOptions) {
+  const defaultSceneIndex = resource.root.scene;
+
+  if (defaultSceneIndex === undefined) {
+    throw new Error("glTF file has no default scene");
+  }
+
+  return loadGLTFScene(resource, defaultSceneIndex, options);
 }
 
 export const loadGLTFScene = createSubresourceLoader(

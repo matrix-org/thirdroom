@@ -26,7 +26,7 @@ import {
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
-import { createSceneFromGLTF, disposeGLTF, GLTFResource, loadGLTF } from "../../engine/gltf/gltf.game";
+import { disposeGLTF, GLTFResource, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
@@ -76,6 +76,7 @@ import {
   RemoteNode,
   RemoteReflectionProbe,
   RemoteSampler,
+  RemoteScene,
   RemoteTexture,
 } from "../../engine/resource/resource.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
@@ -370,8 +371,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   const sceneGltf = await loadGLTF(ctx, url, { fileMap, resourceManager });
-
-  const newScene = createSceneFromGLTF(ctx, sceneGltf);
+  const newScene = (await loadDefaultGLTFScene(sceneGltf)) as RemoteScene;
 
   if (script) {
     addScriptComponent(ctx, newScene, script);

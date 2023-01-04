@@ -264,7 +264,7 @@ function createBitmaskPropDef<O extends DefaultPropOptions<number>>(options?: O)
     {
       type: "bitmask",
       arrayType: Uint32Array,
-      size: 16,
+      size: 1,
       mutable: true,
       required: false,
       default: 0,
