@@ -1,5 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
+import { GLTFCacheEntry, GLTFResource } from "../gltf/gltf.game";
 import {
   addResourceRef,
   createArrayBufferResource,
@@ -12,8 +13,50 @@ import { IRemoteResourceManager, RemoteResource, ResourceDefinition, ResourceDat
 
 export class GameResourceManager implements IRemoteResourceManager {
   public resources: RemoteResource[] = [];
+  private gltfCache: Map<string, GLTFCacheEntry> = new Map();
 
   constructor(private ctx: GameState) {}
+
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined {
+    const entry = this.gltfCache.get(uri);
+
+    if (!entry) {
+      return undefined;
+    }
+
+    entry.refCount++;
+
+    return entry.promise;
+  }
+
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void {
+    this.gltfCache.set(uri, {
+      promise,
+      refCount: 1,
+    });
+  }
+
+  removeGLTFRef(uri: string): boolean {
+    const entry = this.gltfCache.get(uri);
+
+    if (entry && --entry.refCount <= 0) {
+      entry.promise.then((resource) => {
+        // TODO: Dispose GLTF contents
+
+        URL.revokeObjectURL(resource.url);
+
+        for (const objectUrl of resource.fileMap.values()) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      });
+
+      this.gltfCache.delete(uri);
+
+      return true;
+    }
+
+    return false;
+  }
 
   allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new ArrayBuffer(resourceDef.byteLength);

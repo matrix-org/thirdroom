@@ -16,6 +16,7 @@ import {
 } from "../../src/engine/resource/ResourceDefinition";
 import { addRemoteNodeComponent } from "../../src/engine/node/node.game";
 import { addChild } from "../../src/engine/component/transform";
+import { GLTFCacheEntry, GLTFResource } from "../../src/engine/gltf/gltf.game";
 
 export function registerDefaultPrefabs(state: GameState) {
   registerPrefab(state, {
@@ -125,6 +126,48 @@ export class MockResourceManager implements IRemoteResourceManager {
   private nextResourceId = 1;
   private resourcesById: Map<number, RemoteResource | string | SharedArrayBuffer> = new Map();
   private resourceRefs: Map<number, number> = new Map();
+  private gltfCache: Map<string, GLTFCacheEntry> = new Map();
+
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined {
+    const entry = this.gltfCache.get(uri);
+
+    if (!entry) {
+      return undefined;
+    }
+
+    entry.refCount++;
+
+    return entry.promise;
+  }
+
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void {
+    this.gltfCache.set(uri, {
+      promise,
+      refCount: 1,
+    });
+  }
+
+  removeGLTFRef(uri: string): boolean {
+    const entry = this.gltfCache.get(uri);
+
+    if (entry && --entry.refCount <= 0) {
+      entry.promise.then((resource) => {
+        // TODO: Dispose GLTF contents
+
+        URL.revokeObjectURL(resource.url);
+
+        for (const objectUrl of resource.fileMap.values()) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      });
+
+      this.gltfCache.delete(uri);
+
+      return true;
+    }
+
+    return false;
+  }
 
   getString(store: Uint32Array): string {
     return (this.resourcesById.get(store[0]) as string) || "";

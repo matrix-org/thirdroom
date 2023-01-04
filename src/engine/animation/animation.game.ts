@@ -1,7 +1,7 @@
 import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { addComponent, defineQuery, enterQuery, exitQuery, hasComponent, IWorld } from "bitecs";
+import { defineQuery, exitQuery, hasComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
-import { AnimationAction, AnimationClip, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
+import { AnimationAction, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
 import { getForwardVector, getPitch, getRightVector, getRoll } from "../component/transform";
@@ -13,30 +13,12 @@ import { RemoteNodeComponent } from "../node/node.game";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
-import { ResourceId } from "../resource/resource.common";
-import { RemoteNode, removeResourceRef } from "../resource/resource.game";
-
-interface AnimationActionMap {
-  Fall2: AnimationAction;
-  Fall1: AnimationAction;
-  TurnLeft: AnimationAction;
-  TurnRight: AnimationAction;
-  Idle: AnimationAction;
-  StrafeLeft: AnimationAction;
-  StrafeRight: AnimationAction;
-  Walk: AnimationAction;
-  WalkBack: AnimationAction;
-  StrafeLeftRun: AnimationAction;
-  StrafeRightRun: AnimationAction;
-  Run: AnimationAction;
-  RunBack: AnimationAction;
-}
+import { RemoteAnimation, RemoteNode, removeResourceRef } from "../resource/resource.game";
 
 export interface IAnimationComponent {
+  animations: RemoteAnimation[];
   mixer: AnimationMixer;
-  clips: AnimationClip[];
-  actions: AnimationActionMap;
-  accessorIds: ResourceId[];
+  actions: Map<string, AnimationAction>;
 }
 
 export enum AnimationClipType {
@@ -59,13 +41,11 @@ export const AnimationComponent = new Map<number, IAnimationComponent>();
 export const BoneComponent = new Map<number, Bone>();
 
 const animationQuery = defineQuery([AnimationComponent]);
-const enterAnimationQuery = enterQuery(animationQuery);
 const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 
 export function AnimationSystem(ctx: GameState) {
   disposeAnimations(ctx);
-  initializeAnimations(ctx);
   processAnimations(ctx);
   syncBones(ctx);
 }
@@ -108,24 +88,6 @@ const fadeInAmount = 8;
 const fadeOutAmount = fadeInAmount / 2;
 
 const lastYrot = new Float32Array(maxEntities);
-
-function initializeAnimations(ctx: GameState) {
-  const entered = enterAnimationQuery(ctx.world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-    const animation = AnimationComponent.get(eid);
-
-    if (animation) {
-      animation.actions = animation.clips.reduce((obj, clip) => {
-        const action = animation.mixer.clipAction(clip).play();
-        action.enabled = false;
-        obj[clip.name as keyof AnimationActionMap] = action;
-        return obj;
-      }, {} as AnimationActionMap);
-    }
-  }
-  return ctx;
-}
 
 function processAnimations(ctx: GameState) {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -258,56 +220,56 @@ function getClipActionsUsingVelocity(
   const actions: AnimationAction[] = [];
 
   if (linvel.y < -20) {
-    actions.push(animation.actions[AnimationClipType.Fall2]);
+    actions.push(animation.actions.get(AnimationClipType.Fall2)!);
   } else if (jumping) {
-    actions.push(animation.actions[AnimationClipType.Fall1]);
+    actions.push(animation.actions.get(AnimationClipType.Fall1)!);
   } else if (totalSpeed < idleThreshold) {
     if (turningLeft) {
-      actions.push(animation.actions[AnimationClipType.TurnLeft]);
+      actions.push(animation.actions.get(AnimationClipType.TurnLeft)!);
     } else if (turningRight) {
-      actions.push(animation.actions[AnimationClipType.TurnRight]);
+      actions.push(animation.actions.get(AnimationClipType.TurnRight)!);
     } else {
-      actions.push(animation.actions[AnimationClipType.Idle]);
+      actions.push(animation.actions.get(AnimationClipType.Idle)!);
     }
   } else if (totalSpeed < walkThreshold) {
     if (strafingLeft) {
-      actions.push(animation.actions[AnimationClipType.StrafeLeft]);
+      actions.push(animation.actions.get(AnimationClipType.StrafeLeft)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      actions.push(animation.actions[AnimationClipType.StrafeRight]);
+      actions.push(animation.actions.get(AnimationClipType.StrafeRight)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      actions.push(animation.actions[AnimationClipType.Walk]);
+      actions.push(animation.actions.get(AnimationClipType.Walk)!);
     } else if (movingBackward) {
       if (strafingLeft) {
-        actions[actions.length - 1] = animation.actions[AnimationClipType.StrafeRight];
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRight)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       } else if (strafingRight) {
-        actions[actions.length - 1] = animation.actions[AnimationClipType.StrafeLeft];
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeft)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       }
-      actions.push(animation.actions[AnimationClipType.WalkBack]);
+      actions.push(animation.actions.get(AnimationClipType.WalkBack)!);
     }
   } else {
     if (strafingLeft) {
-      actions.push(animation.actions[AnimationClipType.StrafeLeftRun]);
+      actions.push(animation.actions.get(AnimationClipType.StrafeLeftRun)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      actions.push(animation.actions[AnimationClipType.StrafeRightRun]);
+      actions.push(animation.actions.get(AnimationClipType.StrafeRightRun)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      actions.push(animation.actions[AnimationClipType.Run]);
+      actions.push(animation.actions.get(AnimationClipType.Run)!);
     } else if (movingBackward) {
       if (strafingLeft) {
-        actions[actions.length - 1] = animation.actions[AnimationClipType.StrafeRightRun];
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRightRun)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       } else if (strafingRight) {
-        actions[actions.length - 1] = animation.actions[AnimationClipType.StrafeLeftRun];
+        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeftRun)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       }
-      actions.push(animation.actions[AnimationClipType.RunBack]);
+      actions.push(animation.actions.get(AnimationClipType.RunBack)!);
     }
   }
 
@@ -320,18 +282,13 @@ function disposeAnimations(ctx: GameState) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
 
-    const { accessorIds } = AnimationComponent.get(eid)!;
+    const { animations } = AnimationComponent.get(eid)!;
 
-    for (let i = 0; i < accessorIds.length; i++) {
-      const resourceId = accessorIds[i];
-      removeResourceRef(ctx, resourceId);
+    for (let i = 0; i < animations.length; i++) {
+      const animation = animations[i];
+      removeResourceRef(ctx, animation.resourceId);
     }
 
     AnimationComponent.delete(eid);
   }
-}
-
-export function addAnimationComponent(world: IWorld, eid: number, props?: any) {
-  addComponent(world, AnimationComponent, eid);
-  AnimationComponent.set(eid, props);
 }

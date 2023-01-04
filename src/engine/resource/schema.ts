@@ -24,8 +24,13 @@ export enum ResourceType {
   TilesRenderer,
   Skin,
   Interactable,
+  Animation,
+  AnimationChannel,
+  AnimationSampler,
   Node,
   Scene,
+  Asset,
+  GLTF,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -412,6 +417,51 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
+});
+
+export enum AnimationSamplerInterpolation {
+  LINEAR,
+  STEP,
+  CUBICSPLINE,
+}
+
+export const AnimationSamplerResource = defineResource("animation-sampler", ResourceType.AnimationSampler, {
+  input: PropType.ref(AccessorResource, { script: true, mutable: false, required: true }),
+  interpolation: PropType.enum(AnimationSamplerInterpolation, {
+    script: true,
+    mutable: false,
+    default: AnimationSamplerInterpolation.LINEAR,
+  }),
+  output: PropType.ref(AccessorResource, { script: true, mutable: false, required: true }),
+});
+
+export enum AnimationChannelTargetPath {
+  Translation,
+  Rotation,
+  Scale,
+  Weights,
+}
+
+export const AnimationChannelResource = defineResource("animation-channel", ResourceType.AnimationChannel, {
+  sampler: PropType.ref(AnimationSamplerResource, { script: true, mutable: false }),
+  targetNode: PropType.ref(NodeResource, { required: true }),
+  targetPath: PropType.enum(AnimationChannelTargetPath, { required: true }),
+});
+
+export const AnimationResource = defineResource("animation", ResourceType.Animation, {
+  name: PropType.string({ default: "Animation", script: true }),
+  channels: PropType.refArray(AnimationChannelResource, {
+    size: 256,
+    script: true,
+    required: true,
+    mutable: false,
+  }),
+  samplers: PropType.refArray(AnimationSamplerResource, {
+    size: 256,
+    script: true,
+    required: true,
+    mutable: false,
+  }),
 });
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
