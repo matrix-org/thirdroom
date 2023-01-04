@@ -337,9 +337,11 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
 
   dispose() {
     if (this.emitterPannerNode) {
-      if (this.emitterInputNode) {
-        this.emitterInputNode.disconnect(this.emitterPannerNode);
-      }
+      // TODO: We need to track the emitterPannerNode connections so we can properly disconnect it
+      // if it's still connected.
+      // if (this.emitterInputNode) {
+      //   this.emitterInputNode.disconnect(this.emitterPannerNode);
+      // }
 
       this.emitterPannerNode.disconnect();
     }
