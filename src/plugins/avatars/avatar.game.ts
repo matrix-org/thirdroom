@@ -17,9 +17,9 @@ export function addAvatar(ctx: GameState, uri: string, rig: RemoteNode, options:
   const avatar = createGLTFEntity(ctx, uri, { createTrimesh: false, isStatic: false });
   addComponent(ctx.world, AvatarComponent, avatar.eid);
 
-  rig.position.set([0, -1, 0]);
-  quat.fromEuler(rig.quaternion, 0, 180, 0);
-  rig.scale.set([1.3, 1.3, 1.3]);
+  avatar.position.set([0, -1, 0]);
+  quat.fromEuler(avatar.quaternion, 0, 180, 0);
+  avatar.scale.set([1.3, 1.3, 1.3]);
 
   addChild(rig, avatar);
 
