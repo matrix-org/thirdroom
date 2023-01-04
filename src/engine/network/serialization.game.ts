@@ -242,7 +242,7 @@ export function createRemoteNetworkedEntity(
   network.networkIdToEntityId.set(nid, node.eid);
 
   // add to scene
-  addChild(ctx.activeScene!, node);
+  addChild(ctx, ctx.activeScene!, node);
 
   return node;
 }
@@ -406,7 +406,7 @@ export function deserializeDeletes(input: NetPipeData) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.info("deserialized deletion for nid", nid, "eid", eid);
-      removeNode(state.world, node);
+      removeNode(state, node);
       network.networkIdToEntityId.delete(nid);
     }
   }

@@ -78,7 +78,6 @@ interface ResourceModuleState {
   resourceIdCounter: number;
   resourceInfos: Map<ResourceId, ResourceInfo>;
   resourcesByType: Map<ResourceType, RemoteResource[]>;
-  disposedResources: ResourceId[];
   messageQueue: CreateResourceMessage[];
   resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
   resourceTransformData: Map<number, ResourceTransformData>;
@@ -103,7 +102,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       resourceConstructors: new Map(),
       resourceTransformData: new Map(),
       resourceDefByType: new Map(),
-      disposedResources: [],
       resourceInfos: new Map(),
       resourcesByType: new Map(),
       messageQueue: [],
@@ -282,7 +280,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     return false;
   }
 
-  const refCount = resourceInfo.refCount--;
+  const refCount = --resourceInfo.refCount;
 
   if (refCount > 0) {
     return false;
@@ -292,7 +290,10 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     resourceInfo.dispose();
   }
 
-  resourceModule.disposedResources.push(resourceId);
+  const statusBuffer = resourceInfo.statusBuffer;
+  const index = getWriteBufferIndex(statusBuffer);
+  statusBuffer.byteViews[index][0] = 1;
+
   resourceModule.resourceInfos.delete(resourceId);
 
   const resource = resourceInfo.resource;
@@ -326,6 +327,7 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
 
   if (resourceInfo) {
     resourceInfo.refCount++;
+    // console.log("addRef", resourceInfo.resource, resourceInfo.refCount);
   }
 }
 
@@ -341,20 +343,7 @@ export function getRemoteResources<Def extends ResourceDefinition, T extends Rem
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  const { messageQueue, resourceInfos, disposedResources } = getModule(ctx, ResourceModule);
-
-  for (let i = disposedResources.length - 1; i >= 0; i--) {
-    const resourceId = disposedResources[i];
-    disposedResources.splice(i, 1);
-
-    const resourceInfo = resourceInfos.get(resourceId);
-
-    if (resourceInfo) {
-      const statusBuffer = resourceInfo.statusBuffer;
-      const index = getWriteBufferIndex(statusBuffer);
-      statusBuffer.byteViews[index][0] = 1;
-    }
-  }
+  const { messageQueue } = getModule(ctx, ResourceModule);
 
   if (messageQueue.length !== 0) {
     ctx.sendMessage<LoadResourcesMessage>(Thread.Main, {

@@ -53,6 +53,7 @@ export function setTransformFromNode(
   object3D.scale.copy(tempScale);
 
   object3D.visible = node.object3DVisible;
+  object3D.layers.mask = node.layers;
 }
 
 export function updateLocalNodeResources(

@@ -521,7 +521,7 @@ export const updateSpawnables = (
 
     body.applyImpulse(_impulse, true);
 
-    addChild(ctx.activeScene!, prefab);
+    addChild(ctx, ctx.activeScene!, prefab);
   }
 };
 

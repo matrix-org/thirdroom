@@ -372,7 +372,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       hasComponent(ctx.world, Owned, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeNode(ctx.world, focused);
+      removeNode(ctx, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }

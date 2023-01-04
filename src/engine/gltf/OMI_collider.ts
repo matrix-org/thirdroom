@@ -127,7 +127,7 @@ export function addTrimeshFromMesh(ctx: GameState, node: RemoteNode, mesh: Remot
 
     const primitiveEid = addEntity(ctx.world);
     const primitiveNode = addRemoteNodeComponent(ctx, primitiveEid);
-    addChild(node, primitiveNode);
+    addChild(ctx, node, primitiveNode);
     addRigidBody(ctx, primitiveNode, rigidBody, mesh, primitive);
   }
 }

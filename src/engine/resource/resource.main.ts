@@ -68,6 +68,13 @@ export class MainNametag extends defineLocalResourceClass<typeof NametagResource
     const nametags = getLocalResources(ctx, MainNametag);
     audioModule.eventEmitter.emit("nametags-changed", [...nametags, this]);
   }
+
+  dispose(ctx: IMainThreadContext): void {
+    super.dispose(ctx);
+    const audioModule = getModule(ctx, AudioModule);
+    const nametags = getLocalResources(ctx, MainNametag);
+    audioModule.eventEmitter.emit("nametags-changed", [...nametags]);
+  }
 }
 
 export class MainSampler extends defineLocalResourceClass(SamplerResource) {

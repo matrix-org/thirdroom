@@ -21,7 +21,7 @@ export function addAvatar(ctx: GameState, uri: string, rig: RemoteNode, options:
   quat.fromEuler(avatar.quaternion, 0, 180, 0);
   avatar.scale.set([1.3, 1.3, 1.3]);
 
-  addChild(rig, avatar);
+  addChild(ctx, rig, avatar);
 
   return avatar;
 }

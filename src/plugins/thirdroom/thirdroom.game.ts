@@ -89,7 +89,7 @@ interface ThirdRoomModuleState {
 const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
   const camera = createCamera(ctx);
   camera.position[1] = 1.2;
-  addChild(rig, camera);
+  addChild(ctx, rig, camera);
   addCameraYawTargetComponent(ctx.world, rig);
   addCameraPitchTargetComponent(ctx.world, camera);
   return camera;
@@ -200,7 +200,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
           hasComponent(ctx.world, Owned, entity) &&
           !hasComponent(ctx.world, Player, entity)
         ) {
-          removeNode(ctx.world, node);
+          removeNode(ctx, node);
         } else if (hasComponent(ctx.world, Player, entity)) {
           const spawnPoints = getSpawnPoints(ctx);
           spawnEntity(spawnPoints, node);
@@ -285,7 +285,7 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   });
 
   if (ctx.activeScene) {
-    removeNode(ctx.world, ctx.activeScene);
+    removeNode(ctx, ctx.activeScene);
   }
 
   if (thirdroom.sceneGLTF) {
@@ -340,7 +340,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (ctx.activeScene) {
-    removeNode(ctx.world, ctx.activeScene);
+    removeNode(ctx, ctx.activeScene);
 
     if (thirdroom.sceneGLTF) {
       disposeGLTFResource(thirdroom.sceneGLTF);
@@ -435,7 +435,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
       asNode: true,
     });
     const collisionNode = RemoteNodeComponent.get(collisionGeo)!;
-    addChild(newSceneResource, collisionNode);
+    addChild(ctx, newSceneResource, collisionNode);
   }
 
   if (script) {
@@ -457,7 +457,7 @@ function loadPreviewCamera(ctx: GameState) {
       camera: createRemotePerspectiveCamera(ctx),
     });
 
-    addChild(ctx.activeScene!, defaultCamera);
+    addChild(ctx, ctx.activeScene!, defaultCamera);
 
     ctx.activeCamera = defaultCamera;
   }
@@ -471,7 +471,7 @@ function loadPreviewCamera(ctx: GameState) {
 
 function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
   if (ctx.activeCamera) {
-    removeNode(ctx.world, ctx.activeCamera);
+    removeNode(ctx, ctx.activeCamera);
   }
 
   const rig = createPrefabEntity(ctx, "avatar");
@@ -488,7 +488,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx.activeScene!, rig);
+  addChild(ctx, ctx.activeScene!, rig);
 
   rig.parentScene = ctx.activeScene;
 
@@ -538,7 +538,7 @@ function loadRemotePlayerRig(
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx.activeScene!, rig);
+  addChild(ctx, ctx.activeScene!, rig);
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {

@@ -138,7 +138,7 @@ export function addNametag(ctx: GameState, height: number, node: RemoteNode) {
   const nametag = addRemoteNodeComponent(ctx, nametagEid);
   addComponent(ctx.world, NametagComponent, nametagEid);
   nametag.position.set([0, height + height / 1.5, 0]);
-  addChild(node, nametag);
+  addChild(ctx, node, nametag);
   NametagComponent.entity[nametagEid] = node.eid;
   return nametag;
 }

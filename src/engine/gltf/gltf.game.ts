@@ -321,7 +321,7 @@ async function _inflateGLTFNode(
     updateMatrix(remoteNode);
   }
 
-  addChild(parent, remoteNode);
+  addChild(ctx, parent, remoteNode);
 
   const promises = promiseObject({
     mesh: node.mesh !== undefined ? loadGLTFMesh(ctx, resource, node.mesh) : undefined,

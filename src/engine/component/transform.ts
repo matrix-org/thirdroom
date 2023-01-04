@@ -1,11 +1,11 @@
 import { defineQuery, entityExists, getEntityComponents, removeComponent, removeEntity } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { GameState, World } from "../GameTypes";
+import { GameState } from "../GameTypes";
 import { Networked } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
 import { ResourceType } from "../resource/schema";
-import { RemoteNode, RemoteScene } from "../resource/resource.game";
+import { addResourceRef, RemoteNode, RemoteScene, removeResourceRef } from "../resource/resource.game";
 import { RemoteNodeComponent } from "../node/node.game";
 
 export const Axes = {
@@ -54,11 +54,13 @@ export const findChild = (parent: RemoteNode | RemoteScene, predicate: (node: Re
   return result;
 };
 
-export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+export function addChild(ctx: GameState, parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  addResourceRef(ctx, child.resourceId);
+
   const previousParent = child.parent || child.parentScene;
 
   if (previousParent) {
-    removeChild(previousParent, child);
+    removeChild(ctx, previousParent, child);
   }
 
   if (parent.resourceType === ResourceType.Node) {
@@ -83,9 +85,13 @@ export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     child.prevSibling = undefined;
     child.nextSibling = undefined;
   }
+
+  removeResourceRef(ctx, child.resourceId);
 }
 
-export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+export function removeChild(ctx: GameState, parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  addResourceRef(ctx, child.resourceId);
+
   const prevSibling = child.prevSibling;
   const nextSibling = child.nextSibling;
 
@@ -123,6 +129,8 @@ export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode)
   child.parent = undefined;
   child.nextSibling = undefined;
   child.prevSibling = undefined;
+
+  removeResourceRef(ctx, child.resourceId);
 }
 
 export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents: boolean, updateChildren: boolean) => {
@@ -412,7 +420,9 @@ export function traverseReverse(node: RemoteNode | RemoteScene, callback: (node:
   }
 }
 
-export function removeNode(world: World, node: RemoteNode | RemoteScene) {
+export function removeNode(ctx: GameState, node: RemoteNode | RemoteScene) {
+  const world = ctx.world;
+
   if (!entityExists(world, node.eid)) {
     return;
   }
@@ -439,7 +449,7 @@ export function removeNode(world: World, node: RemoteNode | RemoteScene) {
     const parent = node.parent || node.parentScene;
 
     if (parent) {
-      removeChild(parent, node);
+      removeChild(ctx, parent, node);
     } else {
       node.firstChild = undefined;
       node.prevSibling = undefined;
