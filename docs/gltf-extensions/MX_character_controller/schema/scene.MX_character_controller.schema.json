@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "MX_character_controller extension",
+  "type": "object",
+  "allOf": [{ "$ref": "glTFProperty.schema.json" }],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Specifies the character controller type.",
+      "anyOf": [
+        {
+          "enum": ["first-person"],
+          "description": "Hint to spawn the player with a first person character controller with gravity and collisions."
+        },
+        {
+          "enum": ["fly"],
+          "description": "Hint to spawn the player with a first person character controller without gravity or collisions."
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "extensions": {},
+    "extras": {}
+  },
+  "required": ["type"]
+}
