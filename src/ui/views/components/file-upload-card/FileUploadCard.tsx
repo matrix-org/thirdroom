@@ -38,3 +38,25 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
     </div>
   );
 }
+
+interface FileUploadErrorCardProps {
+  className?: string;
+  name: string;
+  message?: string;
+  onUploadDrop: () => void;
+}
+export function FileUploadErrorCard({ className, name, message, onUploadDrop }: FileUploadErrorCardProps) {
+  return (
+    <div className={classNames("FileUploadCard flex flex-column gap-xxs", className)}>
+      <div className="flex items-center gap-xs">
+        <div className="grow">
+          <Text color="danger" className="truncate" variant="b2" weight="medium">
+            {name}
+          </Text>
+        </div>
+        <IconButton onClick={onUploadDrop} iconSrc={CrossIC} size="sm" label="cancel" />
+      </div>
+      {message && <Text variant="b3">{message}</Text>}
+    </div>
+  );
+}

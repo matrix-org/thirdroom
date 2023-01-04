@@ -99,7 +99,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
       (async () => {
         let mxc = "";
         if (avatarData.blob) {
-          mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
+          mxc = (await uploadAttachment(session.hsApi, avatarData.blob)) ?? "";
         }
         session.hsApi.sendState(room.id, "m.room.avatar", "", {
           url: mxc,
