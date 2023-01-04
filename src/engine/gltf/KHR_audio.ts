@@ -1,8 +1,8 @@
 import { GameState } from "../GameTypes";
 import { RemoteAudioEmitter, RemoteAudioData, RemoteAudioSource } from "../resource/resource.game";
-import { AudioEmitterOutput, AudioEmitterType } from "../resource/schema";
+import { AudioEmitterDistanceModel, AudioEmitterOutput, AudioEmitterType } from "../resource/schema";
 import resolveURL from "../utils/resolveURL";
-import { GLTFNode, GLTFScene } from "./GLTF";
+import { GLTFAudioEmitterPositional, GLTFNode, GLTFScene } from "./GLTF";
 import { GLTFResource, loadGLTFBufferView } from "./gltf.game";
 
 export function loadSceneAudioEmitters(
@@ -162,6 +162,12 @@ export async function loadGLTFAudioEmitter<Emitter extends RemoteAudioEmitter>(
   return promise;
 }
 
+const GLTFAudioEmitterDistanceModel: { [key: string]: AudioEmitterDistanceModel } = {
+  linear: AudioEmitterDistanceModel.Linear,
+  inverse: AudioEmitterDistanceModel.Inverse,
+  exponential: AudioEmitterDistanceModel.Exponential,
+};
+
 async function _loadGLTFAudioEmitter<Emitter extends RemoteAudioEmitter>(
   ctx: GameState,
   resource: GLTFResource,
@@ -195,16 +201,21 @@ async function _loadGLTFAudioEmitter<Emitter extends RemoteAudioEmitter>(
       output,
     });
   } else if (audioEmitter.type === "positional") {
+    // An older spec of KHR_audio was specified with the positional props on the AudioEmitter object
+    const positionalProps = audioEmitter.positional || (audioEmitter as GLTFAudioEmitterPositional);
+
     remoteAudioEmitter = new RemoteAudioEmitter(resource.manager, {
       type: AudioEmitterType.Positional,
       name: audioEmitter.name,
-      coneInnerAngle: audioEmitter.coneInnerAngle,
-      coneOuterAngle: audioEmitter.coneOuterAngle,
-      coneOuterGain: audioEmitter.coneOuterGain,
-      distanceModel: audioEmitter.distanceModel,
-      maxDistance: audioEmitter.maxDistance,
-      refDistance: audioEmitter.refDistance,
-      rolloffFactor: audioEmitter.rolloffFactor,
+      coneInnerAngle: positionalProps.coneInnerAngle,
+      coneOuterAngle: positionalProps.coneOuterAngle,
+      coneOuterGain: positionalProps.coneOuterGain,
+      distanceModel: positionalProps.distanceModel
+        ? GLTFAudioEmitterDistanceModel[positionalProps.distanceModel]
+        : undefined,
+      maxDistance: positionalProps.maxDistance,
+      refDistance: positionalProps.refDistance,
+      rolloffFactor: positionalProps.rolloffFactor,
       gain: audioEmitter.gain,
       sources,
       output,

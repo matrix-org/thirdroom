@@ -17,8 +17,9 @@ import { getLocalResource, RenderNode, RenderScene } from "../resource/resource.
 import { updateLocalSceneResources } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
 import { createDisposables } from "../utils/createDisposables";
-import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
+  CanvasResizeMessage,
+  EnableMatrixMaterialMessage,
   InitializeCanvasMessage,
   InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
@@ -142,9 +143,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
   },
   init(ctx) {
     return createDisposables([
-      registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
+      registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
+      registerMessageHandler(ctx, RendererMessageType.EnableMatrixMaterial, onEnableMatrixMaterial),
     ]);
   },
 });
@@ -178,7 +179,7 @@ function onUpdate(state: RenderThreadState) {
   }
 }
 
-function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
@@ -252,7 +253,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 }
 
-function onEnableMatrixMaterial(ctx: RenderThreadState, message: any) {
+function onEnableMatrixMaterial(ctx: RenderThreadState, message: EnableMatrixMaterialMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.enableMatrixMaterial = message.enabled;
 }

@@ -12,24 +12,49 @@ import { addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { RemoteAccessor, RemoteMesh, RemoteNode } from "../resource/resource.game";
 import { MeshPrimitiveAttributeIndex } from "../resource/schema";
 import { GLTFNode, GLTFRoot } from "./GLTF";
-import { GLTFResource } from "./gltf.game";
+import { GLTFResource, loadGLTFMesh } from "./gltf.game";
 
 export function hasColliderExtension(root: GLTFRoot): boolean {
   return !!(root.extensionsUsed && root.extensionsUsed.includes("OMI_collider"));
 }
 
 export function hasMeshCollider(root: GLTFRoot, node: GLTFNode): boolean {
-  if (!nodeHasCollider(node)) {
+  const colliderIndex = node.extensions?.OMI_collider?.collider;
+
+  if (!root.extensions?.OMI_collider?.colliders || colliderIndex === undefined) {
     return false;
   }
 
-  const colliderDef = root.extensions?.OMI_collider.colliders[node.extensions?.OMI_collider.collider];
+  const colliderDef = root.extensions.OMI_collider.colliders[colliderIndex];
 
   return colliderDef !== undefined && colliderDef.type === "mesh";
 }
 
-export function getColliderMesh(root: GLTFRoot, node: GLTFNode): number {
-  return root.extensions!.OMI_collider.colliders[node.extensions!.OMI_collider.collider].mesh;
+export async function loadColliderMesh(
+  ctx: GameState,
+  resource: GLTFResource,
+  root: GLTFRoot,
+  node: GLTFNode
+): Promise<RemoteMesh | undefined> {
+  const colliderIndex = node.extensions?.OMI_collider?.collider;
+
+  if (colliderIndex === undefined) {
+    return undefined;
+  }
+
+  const colliders = root.extensions?.OMI_collider?.colliders;
+
+  if (!colliders) {
+    return undefined;
+  }
+
+  const collider = colliders[colliderIndex];
+
+  if (!collider || collider.type !== "mesh" || collider.mesh === undefined) {
+    return undefined;
+  }
+
+  return loadGLTFMesh(ctx, resource, collider.mesh);
 }
 
 export function nodeHasCollider(node: GLTFNode): boolean {
@@ -40,8 +65,6 @@ const tempPosition = vec3.create();
 const tempRotation = quat.create();
 const tempScale = vec3.create();
 
-const supportedColliders = ["mesh", "box", "sphere", "capsule"];
-
 export function addCollider(
   ctx: GameState,
   resource: GLTFResource,
@@ -49,41 +72,80 @@ export function addCollider(
   remoteNode: RemoteNode,
   colliderMesh?: RemoteMesh
 ) {
-  const index = node.extensions!.OMI_collider.collider;
-  const collider = resource.root.extensions!.OMI_collider.colliders[index];
+  const colliderIndex = node.extensions?.OMI_collider?.collider;
+
+  if (colliderIndex === undefined) {
+    console.warn(`No collider on node "${remoteNode.name}"`);
+    return;
+  }
+
+  const colliders = resource.root.extensions?.OMI_collider?.colliders;
+
+  if (!colliders) {
+    return;
+  }
+
+  const collider = colliders[colliderIndex];
+
+  if (!collider) {
+    console.warn(`Collider "${colliderIndex}" not found.`);
+  }
+
   const physics = getModule(ctx, PhysicsModule);
   const { physicsWorld } = physics;
 
-  if (!supportedColliders.includes(collider.type)) {
-    console.warn(`Unsupported collider type ${collider.type}`);
-    return;
-  }
-
-  if (collider.type === "mesh" && colliderMesh) {
-    addTrimeshFromMesh(ctx, remoteNode, colliderMesh);
-    return;
-  }
+  let colliderDesc: ColliderDesc;
 
   const worldMatrix = remoteNode.worldMatrix;
   mat4.getTranslation(tempPosition, worldMatrix);
   mat4.getRotation(tempRotation, worldMatrix);
   mat4.getScaling(tempScale, worldMatrix);
 
+  if (collider.type === "box") {
+    if (!collider.extents) {
+      console.warn(`Ignoring box collider ${colliderIndex} without extents property`);
+      return;
+    }
+
+    vec3.mul(tempScale, tempScale, collider.extents as vec3);
+    colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
+  } else if (collider.type === "sphere") {
+    if (collider.radius === undefined) {
+      console.warn(`Ignoring sphere collider ${colliderIndex} without radius property`);
+      return;
+    }
+
+    colliderDesc = RAPIER.ColliderDesc.ball(collider.radius * tempScale[0]);
+  } else if (collider.type === "capsule") {
+    if (collider.radius === undefined) {
+      console.warn(`Ignoring capsule collider ${colliderIndex} without radius property`);
+      return;
+    }
+
+    if (collider.height === undefined) {
+      console.warn(`Ignoring capsule collider ${colliderIndex} without height property`);
+      return;
+    }
+
+    colliderDesc = RAPIER.ColliderDesc.capsule((collider.height / 2) * tempScale[0], collider.radius * tempScale[0]);
+  } else if (collider.type === "mesh") {
+    if (!colliderMesh) {
+      console.warn(`Ignoring mesh collider ${colliderIndex} without mesh.`);
+      return;
+    }
+
+    addTrimeshFromMesh(ctx, remoteNode, colliderMesh);
+
+    return;
+  } else {
+    console.warn(`Unsupported collider type ${collider.type}`);
+    return;
+  }
+
   const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
   rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
   rigidBodyDesc.setRotation(new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3]));
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  let colliderDesc: ColliderDesc;
-
-  if (collider.type === "box") {
-    vec3.mul(tempScale, tempScale, collider.extents);
-    colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
-  } else if (collider.type === "sphere") {
-    colliderDesc = RAPIER.ColliderDesc.ball(collider.radius * tempScale[0]);
-  } else {
-    colliderDesc = RAPIER.ColliderDesc.capsule((collider.height / 2) * tempScale[0], collider.radius * tempScale[0]);
-  }
 
   colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
   physicsWorld.createCollider(colliderDesc, rigidBody.handle);

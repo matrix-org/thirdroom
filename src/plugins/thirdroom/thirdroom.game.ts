@@ -423,21 +423,6 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   ctx.activeScene = newSceneResource;
 
-  // Temp hack for city scene
-  if (
-    sceneGltf.root.scenes &&
-    sceneGltf.root.scenes.length > 0 &&
-    sceneGltf.root.scenes[0].name === "SampleSceneDay 1"
-  ) {
-    const collisionGeo = addEntity(ctx.world);
-    thirdroom.collisionsGLTF = await inflateGLTFScene(ctx, collisionGeo, "/gltf/city/CityCollisions.glb", {
-      isStatic: true,
-      asNode: true,
-    });
-    const collisionNode = RemoteNodeComponent.get(collisionGeo)!;
-    addChild(ctx, newSceneResource, collisionNode);
-  }
-
   if (script) {
     script.ready = true;
   }

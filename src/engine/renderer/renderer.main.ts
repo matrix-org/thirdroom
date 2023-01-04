@@ -1,6 +1,5 @@
 import { defineModule, Thread } from "../module/module.common";
 import { IMainThreadContext } from "../MainThread";
-import { WorkerMessageType } from "../WorkerMessage";
 import { RendererMessageType, rendererModuleName } from "./renderer.common";
 import { createDisposables } from "../utils/createDisposables";
 
@@ -25,12 +24,12 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
   },
   init(ctx) {
     ctx.sendMessage(Thread.Render, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
     ctx.sendMessage(Thread.Game, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
@@ -41,12 +40,12 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
 const registerResizeEventHandler = (ctx: IMainThreadContext) => {
   function onResize() {
     ctx.sendMessage(Thread.Render, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
     ctx.sendMessage(Thread.Game, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });

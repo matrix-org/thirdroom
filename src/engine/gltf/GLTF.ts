@@ -1,4 +1,9 @@
 export type GLTFId = number;
+
+export type GLTFExtras = { [key: string]: unknown };
+
+export type GLTFExtensions = { [key: string]: unknown };
+
 /**
  * An object pointing to a buffer view containing the indices of deviating accessor values. The number of indices is equal to `accessor.sparse.count`. Indices **MUST** strictly increase.
  */
@@ -15,9 +20,8 @@ export interface GLTFAccessorSparseIndices {
    * The indices data type.
    */
   componentType: number | number | number | number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * An object pointing to a buffer view containing the deviating accessor values. The number of elements is equal to `accessor.sparse.count` times number of components. The elements have the same component type as the base accessor. The elements are tightly packed. Data **MUST** be aligned following the same rules as the base accessor.
@@ -31,9 +35,8 @@ export interface GLTFAccessorSparseValues {
    * The offset relative to the start of the bufferView in bytes.
    */
   byteOffset?: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * Sparse storage of accessor values that deviate from their initialization value.
@@ -51,9 +54,8 @@ export interface GLTFAccessorSparse {
    * An object pointing to a buffer view containing the deviating accessor values.
    */
   values: GLTFAccessorSparseValues;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A typed view into a buffer view that contains raw binary data.
@@ -70,7 +72,7 @@ export interface GLTFAccessor {
   /**
    * The datatype of the accessor's components.
    */
-  componentType: number | number | number | number | number | number | number;
+  componentType: 5120 | 5121 | 5122 | 5123 | 5125 | 5126;
   /**
    * Specifies whether integer data values are normalized before usage.
    */
@@ -82,7 +84,7 @@ export interface GLTFAccessor {
   /**
    * Specifies if the accessor's elements are scalars, vectors, or matrices.
    */
-  type: any | any | any | any | any | any | any | string;
+  type: "SCALAR" | "VEC2" | "VEC3" | "VEC4" | "MAT2" | "MAT3" | "MAT4";
   /**
    * Maximum value of each component in this accessor.
    */
@@ -95,10 +97,9 @@ export interface GLTFAccessor {
    * Sparse storage of elements that deviate from their initialization value.
    */
   sparse?: GLTFAccessorSparse;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * The descriptor of the animated property.
@@ -111,10 +112,9 @@ export interface GLTFAnimationChannelTarget {
   /**
    * The name of the node's TRS property to animate, or the `"weights"` of the Morph Targets it instantiates. For the `"translation"` property, the values that are provided by the sampler are the translation along the X, Y, and Z axes. For the `"rotation"` property, the values are a quaternion in the order (x, y, z, w), where w is the scalar. For the `"scale"` property, the values are the scaling factors along the X, Y, and Z axes.
    */
-  path: any | any | any | any | string;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  path: "translation" | "rotation" | "scale" | "weights";
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * An animation channel combines an animation sampler with a target property being animated.
@@ -128,9 +128,8 @@ export interface GLTFAnimationChannel {
    * The descriptor of the animated property.
    */
   target: GLTFAnimationChannelTarget;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * An animation sampler combines timestamps with a sequence of output values and defines an interpolation algorithm.
@@ -143,14 +142,13 @@ export interface GLTFAnimationSampler {
   /**
    * Interpolation algorithm.
    */
-  interpolation?: any | any | any | string;
+  interpolation?: "LINEAR" | "STEP" | "CUBICSPLINE";
   /**
    * The index of an accessor, containing keyframe output values.
    */
   output: GLTFId;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A keyframe animation.
@@ -164,10 +162,9 @@ export interface GLTFAnimation {
    * An array of animation samplers. An animation sampler combines timestamps with a sequence of output values and defines an interpolation algorithm.
    */
   samplers: GLTFAnimationSampler[];
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * Metadata about the glTF asset.
@@ -189,9 +186,8 @@ export interface GLTFAsset {
    * The minimum glTF version in the form of `<major>.<minor>` that this asset targets. This property **MUST NOT** be greater than the asset version.
    */
   minVersion?: string;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A buffer points to binary geometry, animation, or skins.
@@ -205,10 +201,9 @@ export interface GLTFBuffer {
    * The length of the buffer in bytes.
    */
   byteLength: number;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A view into a buffer generally representing a subset of the buffer.
@@ -234,10 +229,9 @@ export interface GLTFBufferView {
    * The hint representing the intended GPU buffer type to use with this buffer view.
    */
   target?: number | number | number;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * An orthographic camera containing properties to create an orthographic projection matrix.
@@ -259,9 +253,8 @@ export interface GLTFCameraOrthographic {
    * The floating-point distance to the near clipping plane.
    */
   znear: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A perspective camera containing properties to create a perspective projection matrix.
@@ -283,9 +276,8 @@ export interface GLTFCameraPerspective {
    * The floating-point distance to the near clipping plane.
    */
   znear: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A camera's projection.  A node **MAY** reference a camera to apply a transform to place the camera in the scene.
@@ -302,11 +294,10 @@ export interface GLTFCamera {
   /**
    * Specifies if the camera uses a perspective or orthographic projection.
    */
-  type: any | any | string;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  type: "perspective" | "orthographic";
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * Image data used to create a texture. Image **MAY** be referenced by an URI (or IRI) or a buffer view index.
@@ -324,10 +315,9 @@ export interface GLTFImage {
    * The index of the bufferView that contains the image. This field **MUST NOT** be defined when `uri` is defined.
    */
   bufferView?: GLTFId;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * Reference to a texture.
@@ -341,9 +331,8 @@ export interface GLTFTextureInfo {
    * The set index of texture's TEXCOORD attribute used for texture coordinate mapping.
    */
   texCoord?: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A set of parameter values that are used to define the metallic-roughness material model from Physically-Based Rendering (PBR) methodology.
@@ -369,39 +358,41 @@ export interface GLTFMaterialPbrMetallicRoughness {
    * The metallic-roughness texture.
    */
   metallicRoughnessTexture?: GLTFTextureInfo;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 export interface GLTFMaterialNormalTextureInfo {
-  index?: any;
-  texCoord?: any;
+  index?: GLTFId;
+  texCoord?: number;
   /**
    * The scalar parameter applied to each normal vector of the normal texture.
    */
   scale?: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 export interface GLTFMaterialOcclusionTextureInfo {
-  index?: any;
-  texCoord?: any;
+  index?: GLTFId;
+  texCoord?: number;
   /**
    * A scalar multiplier controlling the amount of occlusion applied.
    */
   strength?: number;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * The material appearance of a primitive.
  */
 export interface GLTFMaterial {
-  name?: any;
-  extensions?: any;
-  extras?: any;
+  name?: string;
+  extensions?: GLTFExtensions & {
+    KHR_materials_emissive_strength?: GLTFMaterialEmissiveStrength;
+    KHR_materials_ior?: GLTFMaterialIOR;
+    KHR_materials_transmission?: GLTFMaterialTransmission;
+    KHR_materials_volume?: GLTFMaterialVolume;
+  };
+  extras?: GLTFExtras;
   /**
    * A set of parameter values that are used to define the metallic-roughness material model from Physically Based Rendering (PBR) methodology. When undefined, all the default values of `pbrMetallicRoughness` **MUST** apply.
    */
@@ -434,8 +425,28 @@ export interface GLTFMaterial {
    * Specifies whether the material is double sided.
    */
   doubleSided?: boolean;
-  [k: string]: any;
 }
+
+export interface GLTFMaterialEmissiveStrength {
+  emissiveStrength?: number;
+}
+
+export interface GLTFMaterialIOR {
+  ior?: number;
+}
+
+export interface GLTFMaterialTransmission {
+  transmissionFactor?: number;
+  transmissionTexture?: GLTFTextureInfo;
+}
+
+export interface GLTFMaterialVolume {
+  thicknessFactor?: number;
+  thicknessTexture?: GLTFTextureInfo;
+  attenuationDistance?: number;
+  attenuationColor?: number[];
+}
+
 /**
  * Geometry to be rendered with the given material.
  */
@@ -464,9 +475,8 @@ export interface GLTFMeshPrimitive {
   targets?: {
     [k: string]: GLTFId;
   }[];
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A set of primitives to be rendered.  Its global transform is defined by a node that references it.
@@ -480,10 +490,9 @@ export interface GLTFMesh {
    * Array of weights to be applied to the morph targets. The number of array elements **MUST** match the number of morph targets.
    */
   weights?: number[];
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A node in the node hierarchy.  When the node contains `skin`, all `mesh.primitives` **MUST** contain `JOINTS_0` and `WEIGHTS_0` attributes.  A node **MAY** have either a `matrix` or any combination of `translation`/`rotation`/`scale` (TRS) properties. TRS properties are converted to matrices and postmultiplied in the `T * R * S` order to compose the transformation matrix; first the scale is applied to the vertices, then the rotation, and then the translation. If none are provided, the transform is the identity. When a node is targeted for animation (referenced by an animation.channel.target), `matrix` **MUST NOT** be present.
@@ -525,14 +534,56 @@ export interface GLTFNode {
    * The weights of the instantiated morph target. The number of array elements **MUST** match the number of morph targets of the referenced mesh. When defined, `mesh` **MUST** also be defined.
    */
   weights?: number[];
-  name?: any;
-  extensions?: {
-    [key: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions & {
+    EXT_mesh_gpu_instancing?: GLTFMeshGPUInstancing;
     MX_reflection_probes?: GLTFReflectionProbeRef;
+    MX_lightmap?: GLTFLightmap;
+    KHR_lights_punctual?: GLTFLightRef;
+    KHR_audio?: GLTFNodeAudioRef;
+    MOZ_hubs_components?: GLTFHubsComponents;
+    MX_tiles_renderer?: GLTFTilesRenderer;
+    OMI_collider?: GLTFColliderRef;
+    MX_portal?: GLTFLink;
+    OMI_link?: GLTFLink;
   };
-  extras?: any;
-  [k: string]: any;
+  extras?: GLTFExtras;
 }
+
+export interface GLTFMeshGPUInstancing {
+  attributes: {
+    TRANSLATION: GLTFId;
+    ROTATION: GLTFId;
+    SCALE: GLTFId;
+    [key: string]: GLTFId;
+  };
+}
+
+export interface GLTFNodeAudioRef {
+  emitter: GLTFId;
+}
+
+export type GLTFHubsComponents = {
+  "spawn-point"?: {};
+  waypoint?: {
+    canBeSpawnPoint: boolean;
+  };
+  trimesh?: {};
+  "nav-mesh"?: {};
+  visible?: {
+    visible: boolean;
+  };
+  "scene-preview-camera"?: {};
+};
+
+export interface GLTFTilesRenderer {
+  tilesetUrl: string;
+}
+
+export interface GLTFLink {
+  uri: string;
+}
+
 /**
  * Texture sampler properties for filtering and wrapping modes.
  */
@@ -553,10 +604,9 @@ export interface GLTFSampler {
    * T (V) wrapping mode.
    */
   wrapT?: number | number | number | number;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * The root nodes of a scene.
@@ -566,15 +616,29 @@ export interface GLTFScene {
    * The indices of each root node.
    */
   nodes?: GLTFId[];
-  name?: any;
-  extensions?: {
-    [key: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions & {
     MX_reflection_probes?: GLTFReflectionProbeRef;
     MX_postprocessing?: GLTFPostprocessingExtension;
+    KHR_audio?: GLTFSceneAudioRefs;
+    MX_background?: GLTFBackground;
+    MX_character_controller?: GLTFCharacterController;
   };
-  extras?: any;
-  [k: string]: any;
+  extras?: GLTFExtras;
 }
+
+export interface GLTFSceneAudioRefs {
+  emitters: GLTFId[];
+}
+
+export interface GLTFBackground {
+  backgroundTexture: GLTFTextureInfo;
+}
+
+export interface GLTFCharacterController {
+  type: "first-person" | "fly";
+}
+
 /**
  * Joints and matrices defining a skin.
  */
@@ -591,10 +655,9 @@ export interface GLTFSkin {
    * Indices of skeleton nodes, used as joints in this skin.
    */
   joints: GLTFId[];
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 /**
  * A texture and its sampler.
@@ -608,11 +671,17 @@ export interface GLTFTexture {
    * The index of the image used by this texture. When undefined, an extension or other mechanism **SHOULD** supply an alternate texture source, otherwise behavior is undefined.
    */
   source?: GLTFId;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions & {
+    KHR_texture_basisu?: GLTFTextureBasisU;
+  };
+  extras?: GLTFExtras;
 }
+
+export interface GLTFTextureBasisU {
+  source?: GLTFId;
+}
+
 /**
  * The root object for a glTF asset.
  */
@@ -685,14 +754,13 @@ export interface GLTFRoot {
    * An array of textures.
    */
   textures?: GLTFTexture[];
-  extensions?: {
-    [key: string]: any;
+  extensions?: GLTFExtensions & {
     KHR_audio?: GLTFKHRAudioExtension;
     KHR_lights_punctual?: GLTFKHRLightsExtension;
     MX_reflection_probes?: GLTFRootReflectionProbesExtension;
+    OMI_collider?: GLTFColliders;
   };
-  extras?: any;
-  [k: string]: any;
+  extras?: GLTFExtras;
 }
 
 interface GLTFKHRAudioExtension {
@@ -705,14 +773,17 @@ interface GLTFKHRLightsExtension {
   lights: GLTFLight[];
 }
 
+interface GLTFLightRef {
+  light: GLTFId;
+}
+
 export interface GLTFAudio {
   uri?: string;
   mimeType?: string;
   bufferView?: GLTFId;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 
 export interface GLTFAudioSource {
@@ -720,10 +791,9 @@ export interface GLTFAudioSource {
   autoPlay?: boolean;
   loop?: boolean;
   audio?: GLTFId;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 
 export interface GLTFAudioEmitter {
@@ -731,10 +801,9 @@ export interface GLTFAudioEmitter {
   gain?: number;
   sources?: GLTFId[];
   positional?: GLTFAudioEmitterPositional;
-  name?: any;
-  extensions?: any;
-  extras?: any;
-  [k: string]: any;
+  name?: string;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 
 export interface GLTFAudioEmitterPositional {
@@ -745,8 +814,8 @@ export interface GLTFAudioEmitterPositional {
   maxDistance?: number;
   refDistance?: number;
   rolloffFactor?: number;
-  extensions?: any;
-  extras?: any;
+  extensions?: GLTFExtensions;
+  extras?: GLTFExtras;
 }
 
 export interface GLTFLight {
@@ -778,7 +847,7 @@ export interface GLTFInstancedMeshExtension {
   };
 }
 
-export interface GLTFLightmapExtension {
+export interface GLTFLightmap {
   lightMapTexture: GLTFTextureInfo;
   scale?: number[];
   offset?: number[];
@@ -804,4 +873,20 @@ export interface GLTFBloomEffect {
 
 export interface GLTFPostprocessingExtension {
   bloom?: GLTFBloomEffect;
+}
+
+export interface GLTFColliderRef {
+  collider: GLTFId;
+}
+
+export interface GLTFColliders {
+  colliders: GLTFCollider[];
+}
+
+export interface GLTFCollider {
+  type: "box" | "mesh" | "sphere" | "capsule" | "hull";
+  extents?: number[];
+  radius?: number;
+  height?: number;
+  mesh?: number;
 }

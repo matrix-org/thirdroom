@@ -9,7 +9,7 @@ import { addRemoteNodeComponent } from "../node/node.game";
 import { addRemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
-import { GLTFRoot, GLTFMeshPrimitive, GLTFInstancedMeshExtension, GLTFNode, GLTFLightmapExtension } from "./GLTF";
+import { GLTFRoot, GLTFMeshPrimitive, GLTFInstancedMeshExtension, GLTFNode, GLTFLightmap } from "./GLTF";
 import { hasHubsComponentsExtension, inflateHubsNode, inflateHubsScene } from "./MOZ_hubs_components";
 import { hasCharacterControllerExtension, inflateSceneCharacterController } from "./MX_character_controller";
 import { hasSpawnPointExtension } from "./MX_spawn_point";
@@ -19,9 +19,9 @@ import { loadGLTFAnimationClip } from "./animation.three";
 import {
   addCollider,
   addTrimeshFromMesh,
-  getColliderMesh,
   hasColliderExtension,
   hasMeshCollider,
+  loadColliderMesh,
   nodeHasCollider,
 } from "./OMI_collider";
 import { hasReflectionProbeExtension, loadGLTFReflectionProbe } from "./MX_reflection_probes";
@@ -341,7 +341,7 @@ async function _inflateGLTFNode(
         : undefined,
     audioEmitter: loadNodeAudioEmitter(ctx, resource, node),
     colliderMesh: hasMeshCollider(resource.root, node)
-      ? loadGLTFMesh(ctx, resource, getColliderMesh(resource.root, node))
+      ? loadColliderMesh(ctx, resource, resource.root, node)
       : undefined,
     reflectionProbe: hasReflectionProbeExtension(node) ? loadGLTFReflectionProbe(ctx, resource, node) : undefined,
   });
@@ -378,7 +378,7 @@ async function _inflateGLTFNode(
     Object.assign(remoteNode, results);
 
     if (hasHubsComponentsExtension(resource.root)) {
-      inflateHubsNode(ctx, resource, nodeIndex, remoteNode);
+      inflateHubsNode(ctx, resource, node, remoteNode);
     } else {
       if (node.camera !== undefined) {
         ctx.activeCamera = remoteNode;
@@ -850,16 +850,25 @@ async function _loadGLTFTexture(
     throw new Error(`texture[${index}].source is undefined.`);
   }
 
-  const { image, sampler } = await promiseObject({
-    image: isBasis
+  const { source, sampler } = await promiseObject({
+    source: isBasis
       ? loadBasisuImage(resource, texture)
-      : loadGLTFImage(resource, texture.source!, { flipY: options?.flipY }),
-    sampler: texture.sampler ? loadGLTFSampler(resource, texture.sampler, { mapping: options?.mapping }) : undefined,
+      : texture.source !== undefined
+      ? loadGLTFImage(resource, texture.source, { flipY: options?.flipY })
+      : undefined,
+    sampler:
+      texture.sampler !== undefined
+        ? loadGLTFSampler(resource, texture.sampler, { mapping: options?.mapping })
+        : undefined,
   });
+
+  if (!source) {
+    throw new Error(`No image source found for texture[${index}]`);
+  }
 
   const remoteTexture = new RemoteTexture(resource.manager, {
     name: texture.name,
-    source: image,
+    source,
     encoding: options?.encoding,
     sampler,
   });
@@ -1228,7 +1237,7 @@ async function _loadGLTFSkin(ctx: GameState, resource: GLTFResource, node: GLTFN
 async function _loadGLTFLightMap(
   resource: GLTFResource,
   node: GLTFNode,
-  extension: GLTFLightmapExtension
+  extension: GLTFLightmap
 ): Promise<RemoteLightMap> {
   const texture = await loadGLTFTexture(resource, extension.lightMapTexture.index, {
     encoding: TextureEncoding.sRGB,

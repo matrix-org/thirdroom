@@ -18,7 +18,7 @@ export function getVolumeMaterialProperties(material: GLTFMaterial): VolumeMater
   return {
     thicknessFactor: extension.thicknessFactor,
     attenuationDistance: extension.attenuationDistance,
-    attenuationColor: extension.attenuationColor,
+    attenuationColor: extension.attenuationColor as vec3 | undefined,
   };
 }
 
