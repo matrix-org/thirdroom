@@ -4,10 +4,10 @@ import { Text } from "../../../atoms/text/Text";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Chip } from "../../../atoms/chip/Chip";
 import { Avatar } from "../../../atoms/avatar/Avatar";
-import { getMxIdUsername } from "../../../utils/matrixUtils";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { UserProfile } from "../../../hooks/useSearchProfile";
+import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 
 export function ProfileSuggestion({
   loading,
@@ -29,26 +29,32 @@ export function ProfileSuggestion({
         <Text variant="b3">No suggestion found.</Text>
       ) : (
         <Scroll type="hover" orientation="horizontal">
-          <div style={{ paddingBottom: "var(--sp-sm)" }} className="flex items-center gap-xs">
+          <div style={{ paddingBottom: "var(--sp-sm)" }} className="flex flex-wrap items-center gap-xs">
             {(() => {
-              return suggestion.map((profile) => {
-                const name = profile.displayName ?? getMxIdUsername(profile.userId);
-                const avatarHttpUrl = profile.avatarUrl
-                  ? getAvatarHttpUrl(profile.avatarUrl, 16, platform, session.mediaRepository)
-                  : undefined;
+              return suggestion.map((profile, index) => {
                 return (
-                  <Chip key={profile.userId} onClick={(e) => onSelect(profile)}>
-                    <Avatar
-                      imageSrc={avatarHttpUrl}
-                      name={name}
-                      bgColor={`var(--usercolor${getIdentifierColorNumber(profile.userId)})`}
-                      size="xxs"
-                      shape="circle"
-                    />
-                    <Text className="truncate" variant="b3" weight="medium">
-                      {name}
-                    </Text>
-                  </Chip>
+                  <Tooltip delayDuration={0} key={profile.userId} side="top" content={profile.userId}>
+                    <Chip onClick={(e) => onSelect(profile)}>
+                      <Avatar
+                        imageSrc={
+                          profile.avatarUrl
+                            ? getAvatarHttpUrl(profile.avatarUrl, 16, platform, session.mediaRepository)
+                            : undefined
+                        }
+                        name={profile.displayName ?? profile.userId.slice(1)}
+                        bgColor={`var(--usercolor${getIdentifierColorNumber(profile.userId)})`}
+                        size="xxs"
+                        shape="circle"
+                      />
+                      <Text className="truncate" variant="b3" weight="medium">
+                        {suggestion
+                          .slice(0, index)
+                          .find((p) => profile.displayName?.toLowerCase() === p.displayName?.toLowerCase())
+                          ? profile.userId.slice(1)
+                          : profile.displayName ?? profile.userId.slice(1)}
+                      </Text>
+                    </Chip>
+                  </Tooltip>
                 );
               });
             })()}
