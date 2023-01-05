@@ -41,8 +41,14 @@ typedef enum ResourceType {
   ResourceType_TilesRenderer = 20,
   ResourceType_Skin = 21,
   ResourceType_Interactable = 22,
-  ResourceType_Node = 23,
-  ResourceType_Scene = 24,
+  ResourceType_Animation = 23,
+  ResourceType_AnimationChannel = 24,
+  ResourceType_AnimationSampler = 25,
+  ResourceType_Node = 26,
+  ResourceType_Scene = 27,
+  ResourceType_World = 28,
+  ResourceType_Avatar = 29,
+  ResourceType_Environment = 30,
 } ResourceType;
 
 typedef struct Nametag {
@@ -414,6 +420,37 @@ typedef struct _Node {
   Interactable *interactable;
 } Node;
 
+typedef enum AnimationSamplerInterpolation {
+  AnimationSamplerInterpolation_LINEAR = 0,
+  AnimationSamplerInterpolation_STEP = 1,
+  AnimationSamplerInterpolation_CUBICSPLINE = 2,
+} AnimationSamplerInterpolation;
+
+typedef struct AnimationSampler {
+  Accessor *input;
+  AnimationSamplerInterpolation interpolation;
+  Accessor *output;
+} AnimationSampler;
+
+typedef enum AnimationChannelTargetPath {
+  AnimationChannelTargetPath_Translation = 0,
+  AnimationChannelTargetPath_Rotation = 1,
+  AnimationChannelTargetPath_Scale = 2,
+  AnimationChannelTargetPath_Weights = 3,
+} AnimationChannelTargetPath;
+
+typedef struct AnimationChannel {
+  AnimationSampler *sampler;
+  Node *target_node;
+  AnimationChannelTargetPath target_path;
+} AnimationChannel;
+
+typedef struct Animation {
+  const char *name;
+  AnimationChannel *channels[256];
+  AnimationSampler *samplers[256];
+} Animation;
+
 typedef struct _Scene {
   unsigned int eid;
   const char *name;
@@ -423,6 +460,22 @@ typedef struct _Scene {
   AudioEmitter *audio_emitters[16];
   Node *first_node;
 } Scene;
+
+typedef struct Environment {
+  Scene *active_scene;
+} Environment;
+
+typedef struct Avatar {
+  Node *root;
+} Avatar;
+
+typedef struct World {
+  Environment *environment;
+  Avatar *avatars[64];
+  Scene *persistent_scene;
+  Scene *transient_scene;
+  Node *active_camera_node;
+} World;
 
 import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);
 import_websg(create_resource) int websg_create_resource(ResourceType type, void *resource);

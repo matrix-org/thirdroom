@@ -129,6 +129,9 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteAnimationChannel),
       registerResource(ctx, RemoteAnimationSampler),
       registerResource(ctx, RemoteAnimation),
+      registerResource(ctx, RemoteAvatar),
+      registerResource(ctx, RemoteEnvironment),
+      registerResource(ctx, RemoteWorld),
       registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
     ]);
 
@@ -173,8 +176,10 @@ function registerResource<Def extends ResourceDefinition>(
 
     if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
       for (let i = 0; i < prop.size; i++) {
-        refOffsets.push(prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT);
+        const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
+        refOffsets.push(refOffset);
         refIsString.push(prop.type === "string");
+        console.log(resourceDef, refOffset, propName);
       }
     } else if (prop.type === "arrayBuffer") {
       refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
@@ -301,6 +306,8 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
   resourceModule.resourceInfos.delete(resourceId);
 
   const resource = resourceInfo.resource;
+
+  console.log("dispose", resource);
 
   if (typeof resource !== "string" && "resourceType" in resource) {
     const resourceType = resource.resourceType;
@@ -505,16 +512,26 @@ export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
 
 export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentResource) {
   declare activeScene: RemoteScene | undefined;
-  declare gltfResource: GLTFResource;
+  gltfResource: GLTFResource | undefined;
   dispose(ctx: GameState) {
     super.dispose(ctx);
-    disposeGLTF(this.gltfResource);
+
+    if (this.gltfResource) {
+      disposeGLTF(this.gltfResource);
+    }
   }
 }
 
 export class RemoteAvatar extends defineRemoteResourceClass(AvatarResource) {
   declare root: RemoteNode;
-  declare gltfResource: GLTFResource;
+  gltfResource: GLTFResource | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+
+    if (this.gltfResource) {
+      disposeGLTF(this.gltfResource);
+    }
+  }
 }
 
 export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
