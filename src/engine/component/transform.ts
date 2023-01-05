@@ -485,7 +485,11 @@ export function UpdateMatrixWorldSystem(ctx: GameState) {
     updateMatrixWorld(avatars[i].root);
   }
 
-  updateMatrixWorld(ctx.worldResource!.persistentScene);
+  if (ctx.worldResource.transientScene) {
+    updateMatrixWorld(ctx.worldResource.transientScene);
+  }
+
+  updateMatrixWorld(ctx.worldResource.persistentScene);
 }
 
 /*
