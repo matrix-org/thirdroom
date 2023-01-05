@@ -88,7 +88,10 @@ export interface GLTFCacheEntry {
   promise: Promise<GLTFResource>;
 }
 
-type GLTFSubresourceCache = Map<number, { value?: RemoteResource; promise: Promise<RemoteResource> }>;
+type GLTFSubresourceCache = Map<
+  number,
+  { value?: RemoteResource<GameState>; promise: Promise<RemoteResource<GameState>> }
+>;
 
 export interface GLTFResource {
   url: string;
@@ -97,12 +100,12 @@ export interface GLTFResource {
   root: GLTFRoot;
   binaryChunk?: SharedArrayBuffer;
   caches: Map<string, GLTFSubresourceCache>;
-  manager: IRemoteResourceManager;
+  manager: IRemoteResourceManager<GameState>;
   ctx: GameState;
 }
 
 export interface LoadGLTFOptions {
-  resourceManager?: IRemoteResourceManager;
+  resourceManager?: IRemoteResourceManager<GameState>;
   fileMap?: Map<string, string>;
 }
 
@@ -133,7 +136,7 @@ const GLB_MAGIC = 0x46546c67; // "glTF" in ASCII
 
 async function loadGLTFResource(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager,
+  resourceManager: IRemoteResourceManager<GameState>,
   url: string,
   fileMap?: Map<string, string>
 ) {
@@ -168,7 +171,7 @@ const CHUNK_HEADER_BYTE_LENGTH = 8;
 
 async function loadGLTFBinary(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager,
+  resourceManager: IRemoteResourceManager<GameState>,
   buffer: ArrayBuffer,
   url: string,
   fileMap?: Map<string, string>
@@ -210,7 +213,7 @@ async function loadGLTFBinary(
 
 async function loadGLTFJSON(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager,
+  resourceManager: IRemoteResourceManager<GameState>,
   json: unknown,
   url: string,
   binaryChunk?: SharedArrayBuffer,
@@ -253,15 +256,14 @@ async function loadGLTFJSON(
   return resource;
 }
 
-type GLTFSubresourceLoader<Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource, Options> = (
-  resource: GLTFResource,
-  property: Prop,
-  index: number,
-  options?: Options
-) => Promise<Subresource>;
+type GLTFSubresourceLoader<
+  Prop extends GLTFChildOfRootProperty,
+  Subresource extends RemoteResource<GameState>,
+  Options
+> = (resource: GLTFResource, property: Prop, index: number, options?: Options) => Promise<Subresource>;
 
 const createSubresourceLoader =
-  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource, Options = undefined>(
+  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource<GameState>, Options = undefined>(
     key: string,
     selector: (root: GLTFRoot) => Prop[] | undefined,
     loader: GLTFSubresourceLoader<Prop, Subresource, Options>,
@@ -501,11 +503,17 @@ export const loadGLTFScene = createSubresourceLoader(
           : undefined,
       });
 
+      const bloomStrength = extensions?.MX_postprocessing?.bloom?.strength;
+
       if (options?.existingScene) {
         remoteSceneOrNode = options?.existingScene;
         remoteSceneOrNode.audioEmitters = audioEmitters || [];
         remoteSceneOrNode.backgroundTexture = backgroundTexture;
         remoteSceneOrNode.reflectionProbe = reflectionProbe;
+
+        if (bloomStrength !== undefined) {
+          remoteSceneOrNode.bloomStrength = bloomStrength;
+        }
       } else {
         const world = resource.ctx.world;
         const eid = addEntity(world);
@@ -514,6 +522,7 @@ export const loadGLTFScene = createSubresourceLoader(
           audioEmitters,
           backgroundTexture,
           reflectionProbe,
+          bloomStrength,
         });
         addComponent(world, RemoteSceneComponent, eid);
         RemoteSceneComponent.set(eid, remoteSceneOrNode);
