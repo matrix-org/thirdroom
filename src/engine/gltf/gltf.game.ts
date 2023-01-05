@@ -498,7 +498,7 @@ export const loadGLTFScene = createSubresourceLoader(
               flipY: true,
             })
           : undefined,
-        reflectionProbe: extensions?.MX_reflection_probes?.reflectionProbe
+        reflectionProbe: extensions?.MX_reflection_probes
           ? loadGLTFReflectionProbe(resource, extensions.MX_reflection_probes.reflectionProbe)
           : undefined,
       });
