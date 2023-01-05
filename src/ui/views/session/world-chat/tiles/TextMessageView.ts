@@ -1,6 +1,7 @@
 import { TemplateView, TextTile, Builder, TileView } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
+import { linkifyText } from "../../../../utils/common";
 import "./TextMessageView.css";
 
 export class TextMessageView extends TemplateView<TextTile> implements TileView {
@@ -21,9 +22,9 @@ export class TextMessageView extends TemplateView<TextTile> implements TileView 
           ? ""
           : t.span(
               { className: "WorldChat__TextMessageView-sender Text Text-b2 Text--world Text--semi-bold" },
-              vm.displayName
+              `${vm.displayName}:`
             ),
-        body || "*** EMPTY MESSAGE ***",
+        t.span(linkifyText(body) || "*** EMPTY MESSAGE ***"),
       ])
     );
   }

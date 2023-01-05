@@ -1,5 +1,6 @@
 import { TextTile, Builder, BaseMessageTile } from "@thirdroom/hydrogen-view-sdk";
 
+import { linkifyText } from "../../../../utils/common";
 import { ChatBaseMessage } from "./ChatBaseMessage";
 
 import "./ChatMessage.css";
@@ -15,7 +16,7 @@ export class ChatMessage extends ChatBaseMessage {
     body += vm._getPlainBody?.();
     return t.div(
       { className: "ChatMessage__body flex" },
-      t.p({ className: "Text Text-b2 Text--surface Text--regular" }, body || "*** EMPTY MESSAGE ***")
+      t.p({ className: "Text Text-b2 Text--surface Text--regular" }, linkifyText(body) || "*** EMPTY MESSAGE ***")
     );
   }
   onClick() {}
