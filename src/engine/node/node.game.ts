@@ -37,7 +37,7 @@ export function addRemoteNodeComponent(
   ctx: GameState,
   eid: number,
   props: NodeProps = {},
-  resourceManager: IRemoteResourceManager = ctx.resourceManager
+  resourceManager: IRemoteResourceManager<GameState> = ctx.resourceManager
 ): RemoteNode {
   let remoteNode = RemoteNodeComponent.get(eid);
 

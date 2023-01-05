@@ -1,4 +1,4 @@
-import { addEntity } from "bitecs";
+import { addEntity, removeEntity } from "bitecs";
 import { AnimationClip } from "three";
 
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
@@ -70,14 +70,14 @@ export interface ResourceTransformData {
 interface ResourceModuleState {
   resourceIdCounter: number;
   resourceInfos: Map<ResourceId, ResourceInfo>;
-  resourcesByType: Map<ResourceType, RemoteResource[]>;
+  resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
   messageQueue: CreateResourceMessage[];
   resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
   resourceTransformData: Map<number, ResourceTransformData>;
   resourceDefByType: Map<number, ResourceDefinition>;
 }
 
-type RemoteResourceTypes = string | ArrayBuffer | RemoteResource;
+type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
 
 interface ResourceInfo {
   resource: RemoteResourceTypes;
@@ -249,7 +249,7 @@ function createResource(
   return id;
 }
 
-export function createRemoteResource(ctx: GameState, resource: RemoteResource): number {
+export function createRemoteResource(ctx: GameState, resource: RemoteResource<GameState>): number {
   const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
 
   const { resourcesByType } = getModule(ctx, ResourceModule);
@@ -262,7 +262,7 @@ export function createRemoteResource(ctx: GameState, resource: RemoteResource): 
     resourcesByType.set(resourceType, resourceArr);
   }
 
-  resourceArr.push(resource as unknown as RemoteResource);
+  resourceArr.push(resource as unknown as RemoteResource<GameState>);
 
   return resourceId;
 }
@@ -315,7 +315,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     }
 
     if (resource.dispose) {
-      resource.dispose();
+      resource.dispose(ctx);
     }
   }
 
@@ -339,9 +339,12 @@ export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): 
   return getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource as Res | undefined;
 }
 
-export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource>(
+export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource<GameState>>(
   ctx: GameState,
-  resourceClass: { new (manager: IRemoteResourceManager, props?: InitialRemoteResourceProps<Def>): T; resourceDef: Def }
+  resourceClass: {
+    new (manager: IRemoteResourceManager<GameState>, props?: InitialRemoteResourceProps<GameState, Def>): T;
+    resourceDef: Def;
+  }
 ): T[] {
   return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
 }
@@ -467,6 +470,10 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+    removeEntity(ctx.world, this.eid);
+  }
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {
@@ -490,12 +497,17 @@ export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
   declare reflectionProbe: RemoteReflectionProbe | undefined;
   declare audioEmitters: RemoteAudioEmitter[];
   declare firstNode: RemoteNode | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+    removeEntity(ctx.world, this.eid);
+  }
 }
 
 export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentResource) {
   declare activeScene: RemoteScene | undefined;
   declare gltfResource: GLTFResource;
-  dispose() {
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
     disposeGLTF(this.gltfResource);
   }
 }

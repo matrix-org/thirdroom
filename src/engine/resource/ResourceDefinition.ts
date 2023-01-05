@@ -441,6 +441,7 @@ export const defineResource = <T extends number, S extends Schema>(
 };
 
 type RemoteResourcePropValue<
+  ThreadContext extends BaseThreadContext,
   Def extends ResourceDefinition,
   Prop extends keyof Def["schema"]
 > = Def["schema"][Prop]["type"] extends "string"
@@ -472,31 +473,32 @@ type RemoteResourcePropValue<
   : Def["schema"][Prop]["type"] extends "ref"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>
-      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]> | undefined
+      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>[]
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "refMap"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>[]
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "selfRef"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def>
-      : RemoteResourceInstance<Def> | undefined
+      ? RemoteResourceInstance<Def, ThreadContext>
+      : RemoteResourceInstance<Def, ThreadContext> | undefined
     : unknown
   : never;
 
 type RemoteResourcePropValueMut<
+  ThreadContext extends BaseThreadContext,
   Def extends ResourceDefinition,
   Prop extends keyof Def["schema"]
 > = Def["schema"][Prop]["mutable"] extends false
-  ? Readonly<RemoteResourcePropValue<Def, Prop>>
-  : RemoteResourcePropValue<Def, Prop>;
+  ? Readonly<RemoteResourcePropValue<ThreadContext, Def, Prop>>
+  : RemoteResourcePropValue<ThreadContext, Def, Prop>;
 
 type LocalResourcePropValue<
   ThreadContext extends BaseThreadContext,
@@ -555,11 +557,11 @@ export interface Resource {
   tripleBuffer: TripleBuffer;
 }
 
-export interface RemoteResource extends Resource {
+export interface RemoteResource<ThreadContext extends BaseThreadContext> extends Resource {
   constructor: { name: string; resourceDef: ResourceDefinition };
   resourceDef: ResourceDefinition;
   resourceType: number;
-  manager: IRemoteResourceManager;
+  manager: IRemoteResourceManager<ThreadContext>;
   __props: { [key: string]: TypedArray32 };
   initialized: boolean;
   byteView: Uint8Array;
@@ -570,15 +572,24 @@ export interface RemoteResource extends Resource {
   ptr: number;
   addRef(): void;
   removeRef(): void;
-  dispose(): void;
+  dispose(ctx: ThreadContext): void;
 }
 
-export type RemoteResourceInstance<Def extends ResourceDefinition> = RemoteResource & {
-  [Prop in keyof Def["schema"]]: RemoteResourcePropValueMut<Def, Prop>;
+export type RemoteResourceInstance<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext
+> = RemoteResource<ThreadContext> & {
+  [Prop in keyof Def["schema"]]: RemoteResourcePropValueMut<ThreadContext, Def, Prop>;
 } & { resourceType: Def["resourceType"] };
 
-export interface IRemoteResourceClass<Def extends ResourceDefinition = ResourceDefinition> {
-  new (manager: IRemoteResourceManager, props?: InitialRemoteResourceProps<Def>): RemoteResourceInstance<Def>;
+export interface IRemoteResourceClass<
+  Def extends ResourceDefinition = ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (
+    manager: IRemoteResourceManager<ThreadContext>,
+    props?: InitialRemoteResourceProps<ThreadContext, Def>
+  ): RemoteResourceInstance<Def, ThreadContext>;
   resourceDef: Def;
 }
 
@@ -622,6 +633,7 @@ type RequiredProps<Def extends ResourceDefinition> = {
 }[keyof Def["schema"]];
 
 type InitialRemoteResourcePropValue<
+  ThreadContext extends BaseThreadContext,
   Def extends ResourceDefinition,
   Prop extends keyof Def["schema"]
 > = Def["schema"][Prop]["type"] extends "string"
@@ -653,31 +665,31 @@ type InitialRemoteResourcePropValue<
   : Def["schema"][Prop]["type"] extends "ref"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>
-      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]> | undefined
+      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>[]
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "refMap"
   ? {
       [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-        ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"]>
+        ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
         : never;
     }
   : Def["schema"][Prop]["type"] extends "selfRef"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def>
-      : RemoteResourceInstance<Def> | undefined
+      ? RemoteResourceInstance<Def, ThreadContext>
+      : RemoteResourceInstance<Def, ThreadContext> | undefined
     : unknown
   : never;
 
-export type InitialRemoteResourceProps<Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: InitialRemoteResourcePropValue<Def, Prop>;
+export type InitialRemoteResourceProps<ThreadContext extends BaseThreadContext, Def extends ResourceDefinition> = {
+  [Prop in RequiredProps<Def>]: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
 } & {
-  [Prop in keyof Def["schema"]]?: InitialRemoteResourcePropValue<Def, Prop>;
+  [Prop in keyof Def["schema"]]?: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
 };
 
 export interface ResourceData {
@@ -686,7 +698,7 @@ export interface ResourceData {
   tripleBuffer: TripleBuffer;
 }
 
-export interface IRemoteResourceManager {
+export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext> {
   getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
   cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;
   removeGLTFRef(uri: string): boolean;
@@ -695,12 +707,12 @@ export interface IRemoteResourceManager {
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   allocateResource(resourceDef: ResourceDefinition): ResourceData;
-  createResource(resource: RemoteResource): number;
+  createResource(resource: RemoteResource<ThreadContext>): number;
   disposeResource(resourceId: number): boolean;
-  getRef<T extends RemoteResource>(store: Uint32Array): T | undefined;
-  setRef(value: RemoteResource | undefined, store: Uint32Array, backRef: boolean): void;
-  setRefArrayItem(index: number, value: RemoteResource | undefined, store: Uint32Array): void;
-  getRefArrayItem<T extends RemoteResource>(index: number, store: Uint32Array): T | undefined;
+  getRef<T extends RemoteResource<ThreadContext>>(store: Uint32Array): T | undefined;
+  setRef(value: RemoteResource<ThreadContext> | undefined, store: Uint32Array, backRef: boolean): void;
+  setRefArrayItem(index: number, value: RemoteResource<ThreadContext> | undefined, store: Uint32Array): void;
+  getRefArrayItem<T extends RemoteResource<ThreadContext>>(index: number, store: Uint32Array): T | undefined;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }

@@ -21,7 +21,7 @@ export function RemoteCameraSystem(ctx: GameState) {
 
 export function createRemotePerspectiveCamera(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager = ctx.resourceManager
+  resourceManager: IRemoteResourceManager<GameState> = ctx.resourceManager
 ) {
   return new RemoteCamera(resourceManager, {
     type: CameraType.Perspective,

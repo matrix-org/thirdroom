@@ -59,7 +59,7 @@ export const AccessorTypeToElementSize: {
 
 export function getAccessorArrayView(
   accessor:
-    | RemoteResourceInstance<typeof AccessorResource>
+    | RemoteResourceInstance<typeof AccessorResource, BaseThreadContext>
     | LocalResourceInstance<typeof AccessorResource, BaseThreadContext>,
   deinterleave = true
 ): AccessorTypedArray {

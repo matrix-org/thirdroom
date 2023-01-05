@@ -22,7 +22,7 @@ export function addRemoteSceneComponent(
   ctx: GameState,
   eid: number,
   props: SceneProps = {},
-  resourceManager: IRemoteResourceManager = ctx.resourceManager
+  resourceManager: IRemoteResourceManager<GameState> = ctx.resourceManager
 ): RemoteScene {
   const remoteScene = new RemoteScene(resourceManager, { ...props, eid });
   addComponent(ctx.world, RemoteSceneComponent, eid);
@@ -44,7 +44,7 @@ export function RemoteSceneSystem(ctx: GameState) {
     const remoteScene = RemoteSceneComponent.get(eid);
 
     if (remoteScene) {
-      remoteScene.dispose();
+      remoteScene.dispose(ctx);
       RemoteSceneComponent.delete(eid);
     }
   }
