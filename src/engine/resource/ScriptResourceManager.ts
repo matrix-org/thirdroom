@@ -379,11 +379,14 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             | undefined;
 
           if (!resourceConstructor) {
-            throw console.error(`Resource "${resourceDef.name}" not registered with ScriptResourceManager.`);
             return -1;
           }
 
-          new resourceConstructor(this);
+          new resourceConstructor(this, {
+            ptr,
+            buffer: this.memory.buffer,
+            tripleBuffer: createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength),
+          });
 
           return 0;
         },

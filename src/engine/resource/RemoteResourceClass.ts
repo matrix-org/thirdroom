@@ -7,6 +7,7 @@ import {
   IRemoteResourceClass,
   IRemoteResourceManager,
   RemoteResource,
+  ResourceData,
 } from "./ResourceDefinition";
 
 export function defineRemoteResourceClass<T extends number, S extends Schema, Def extends DefinedResource<T, S>>(
@@ -17,34 +18,40 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
   function RemoteResourceClass(
     this: RemoteResource<GameState>,
     manager: IRemoteResourceManager<GameState>,
-    props?: InitialRemoteResourceProps<GameState, Def>
+    propsOrResourceData?: ResourceData | InitialRemoteResourceProps<GameState, Def>
   ) {
     this.manager = manager;
-    const resource = this.manager.allocateResource(resourceDef);
+    const isResourceData = propsOrResourceData && "ptr" in propsOrResourceData;
+    const resourceData = isResourceData
+      ? (propsOrResourceData as ResourceData)
+      : this.manager.allocateResource(resourceDef);
+    const initialProps = isResourceData
+      ? undefined
+      : (propsOrResourceData as InitialRemoteResourceProps<GameState, Def> | undefined);
     this.resourceType = resourceType;
     this.initialized = false;
-    this.ptr = resource.ptr;
-    this.byteView = new Uint8Array(resource.buffer, resource.ptr, resourceDef.byteLength);
+    this.ptr = resourceData.ptr;
+    this.byteView = new Uint8Array(resourceData.buffer, resourceData.ptr, resourceDef.byteLength);
     this.refView = new Uint32Array(
-      resource.buffer,
-      resource.ptr,
+      resourceData.buffer,
+      resourceData.ptr,
       resourceDef.byteLength / Uint32Array.BYTES_PER_ELEMENT
     );
     this.prevRefs = [];
-    this.tripleBuffer = resource.tripleBuffer;
+    this.tripleBuffer = resourceData.tripleBuffer;
     this.__props = {};
 
     const schema = (RemoteResourceClass as unknown as IRemoteResourceClass<Def>).resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
-      const store = new prop.arrayType(resource.buffer, this.ptr + prop.byteOffset, prop.size);
+      const store = new prop.arrayType(resourceData.buffer, this.ptr + prop.byteOffset, prop.size);
 
       // TODO handle setting defaults and prop validation when creating from ptr
       let initialValue: unknown;
 
-      if (props) {
-        initialValue = props[propName] !== undefined ? props[propName] : prop.default;
+      if (initialProps) {
+        initialValue = initialProps[propName] !== undefined ? initialProps[propName] : prop.default;
       } else {
         if (
           prop.default !== undefined &&

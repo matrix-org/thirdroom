@@ -179,7 +179,6 @@ function registerResource<Def extends ResourceDefinition>(
         const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
         refOffsets.push(refOffset);
         refIsString.push(prop.type === "string");
-        console.log(resourceDef, refOffset, propName);
       }
     } else if (prop.type === "arrayBuffer") {
       refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
@@ -307,8 +306,6 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
 
   const resource = resourceInfo.resource;
 
-  console.log("dispose", resource);
-
   if (typeof resource !== "string" && "resourceType" in resource) {
     const resourceType = resource.resourceType;
     const resourceArr = resourceModule.resourcesByType.get(resourceType);
@@ -338,7 +335,6 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
 
   if (resourceInfo) {
     resourceInfo.refCount++;
-    // console.log("addRef", resourceInfo.resource, resourceInfo.refCount);
   }
 }
 

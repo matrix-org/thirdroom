@@ -588,7 +588,7 @@ export interface IRemoteResourceClass<
 > {
   new (
     manager: IRemoteResourceManager<ThreadContext>,
-    props?: InitialRemoteResourceProps<ThreadContext, Def>
+    props?: ResourceData | InitialRemoteResourceProps<ThreadContext, Def>
   ): RemoteResourceInstance<Def, ThreadContext>;
   resourceDef: Def;
 }
