@@ -15,8 +15,8 @@ import {
   RemoteTilesRenderer,
 } from "../resource/resource.game";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
-
-export const RemoteNodeComponent: Map<number, RemoteNode> = new Map();
+import { RemoteSceneComponent } from "../scene/scene.game";
+import { RemoteNodeComponent } from "./RemoteNodeComponent";
 
 interface NodeProps {
   name?: string;
@@ -70,17 +70,33 @@ export function addRemoteNodeComponent(
 const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
 const remoteNodeExitQuery = exitQuery(remoteNodeQuery);
 
-export function RemoteNodeSystem(ctx: GameState) {
-  const disposedEntities = remoteNodeExitQuery(ctx.world);
+const remoteSceneQuery = defineQuery([RemoteSceneComponent]);
+const remoteSceneExitQuery = exitQuery(remoteSceneQuery);
 
-  for (let i = 0; i < disposedEntities.length; i++) {
-    const eid = disposedEntities[i];
+export function RemoteNodeSystem(ctx: GameState) {
+  const disposedNodeEntities = remoteNodeExitQuery(ctx.world);
+
+  for (let i = 0; i < disposedNodeEntities.length; i++) {
+    const eid = disposedNodeEntities[i];
 
     const remoteNode = RemoteNodeComponent.get(eid);
 
     if (remoteNode) {
       remoteNode.removeRef();
       RemoteNodeComponent.delete(eid);
+    }
+  }
+
+  const disposedSceneEntities = remoteSceneExitQuery(ctx.world);
+
+  for (let i = 0; i < disposedSceneEntities.length; i++) {
+    const eid = disposedSceneEntities[i];
+
+    const remoteScene = RemoteSceneComponent.get(eid);
+
+    if (remoteScene) {
+      remoteScene.removeRef();
+      RemoteSceneComponent.delete(eid);
     }
   }
 }

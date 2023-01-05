@@ -35,7 +35,6 @@ import {
   PerspectiveCamera,
   PointsMaterial,
   RepeatWrapping,
-  Scene,
   Skeleton,
   SkinnedMesh,
   Texture,
@@ -104,6 +103,9 @@ import {
   AnimationSamplerResource,
   AnimationChannelResource,
   AnimationResource,
+  WorldResource,
+  EnvironmentResource,
+  AvatarResource,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -694,10 +696,25 @@ export class RenderScene extends defineLocalResourceClass(SceneResource) {
   declare reflectionProbe: RenderReflectionProbe | undefined;
   declare audioEmitters: RenderAudioEmitter[];
   declare firstNode: RenderNode | undefined;
-  sceneObject: Scene = new Scene();
   currentBackgroundTextureResourceId = 0;
   currentReflectionProbeResourceId = 0;
   reflectionProbeNeedsUpdate = false;
+}
+
+export class RenderEnvironment extends defineLocalResourceClass(EnvironmentResource) {
+  declare activeScene: RenderScene | undefined;
+}
+
+export class RenderAvatar extends defineLocalResourceClass(AvatarResource) {
+  declare root: RenderNode;
+}
+
+export class RenderWorld extends defineLocalResourceClass(WorldResource) {
+  declare environment: RenderEnvironment | undefined;
+  declare avatars: RenderAvatar[];
+  declare persistentScene: RenderScene;
+  declare transientScene: RenderScene;
+  declare activeCameraNode: RenderNode | undefined;
 }
 
 const {
@@ -737,6 +754,9 @@ const {
   RenderAnimation,
   RenderAnimationChannel,
   RenderAnimationSampler,
+  RenderAvatar,
+  RenderEnvironment,
+  RenderWorld,
 ]);
 
 export {

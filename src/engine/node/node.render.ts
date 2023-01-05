@@ -70,11 +70,11 @@ export function updateLocalNodeResources(
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    const scene = activeSceneResource.sceneObject;
+    const scene = rendererModule.scene;
     updateNodeCamera(ctx, scene, node);
     updateNodeLight(ctx, scene, node);
     updateNodeReflectionProbe(ctx, scene, node);
-    updateNodeMesh(ctx, activeSceneResource, node);
+    updateNodeMesh(ctx, node);
     updateNodeTilesRenderer(ctx, scene, activeCameraNode, node);
   }
 }

@@ -11,6 +11,7 @@ import {
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 
 interface SceneProps {
+  name?: string;
   backgroundTexture?: RemoteTexture;
   reflectionProbe?: RemoteReflectionProbe;
   audioEmitters?: RemoteAudioEmitter[];

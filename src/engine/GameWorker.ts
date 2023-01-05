@@ -51,7 +51,7 @@ async function onInit({
     }
   }
 
-  const state: GameState = {
+  const ctx: GameState = {
     thread: Thread.Game,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
@@ -59,16 +59,16 @@ async function onInit({
     elapsed: performance.now(),
     dt: 0,
     world,
-    activeScene: undefined,
-    activeCamera: undefined,
     systems: gameConfig.systems,
     messageHandlers: new Map(),
     modules: new Map(),
     sendMessage: gameWorkerSendMessage,
+    // HACK: Figure out how to create the context such that these are initially set
     resourceManager: undefined as any,
+    worldResource: undefined as any,
   };
 
-  state.resourceManager = new GameResourceManager(state);
+  ctx.resourceManager = new GameResourceManager(ctx);
 
   const onMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {
@@ -81,11 +81,11 @@ async function onInit({
       return;
     }
 
-    const handlers = state.messageHandlers.get(message.type);
+    const handlers = ctx.messageHandlers.get(message.type);
 
     if (handlers) {
       for (let i = 0; i < handlers.length; i++) {
-        handlers[i](state, message);
+        handlers[i](ctx, message);
       }
     }
   };
@@ -100,7 +100,7 @@ async function onInit({
   // Initially blocks until main thread tells game thread to register modules
   // Register all modules
   // Then wait for main thread to start this worker and we call update()
-  const modulePromise = registerModules(Thread.Game, state, gameConfig.modules);
+  const modulePromise = registerModules(Thread.Game, ctx, gameConfig.modules);
 
   if (renderWorkerMessagePort) {
     renderWorkerMessagePort.start();
@@ -116,7 +116,7 @@ async function onInit({
     interval = setInterval(() => {
       const then = performance.now();
       try {
-        update(state);
+        update(ctx);
       } catch (error) {
         clearInterval(interval);
         throw error;
@@ -127,7 +127,7 @@ async function onInit({
         console.warn("game worker tick duration breached tick rate. elapsed:", elapsed);
         clearInterval(interval);
         try {
-          update(state);
+          update(ctx);
         } catch (error) {
           clearInterval(interval);
           throw error;

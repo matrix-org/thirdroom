@@ -21,7 +21,6 @@ import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { NOOP } from "../config.common";
-import { AudioModule } from "../audio/audio.main";
 import { ResourceType } from "../resource/schema";
 import { MainNode, MainScene } from "../resource/resource.main";
 
@@ -107,10 +106,8 @@ export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
 }
 
 function updateHierarchy(ctx: IMainThreadContext, editor: EditorModuleState) {
-  const audio = getModule(ctx, AudioModule);
-
   const event: HierarchyChangedEvent = {
-    scene: audio.activeScene && buildEditorNode(audio.activeScene),
+    scene: ctx.worldResource.environment?.activeScene && buildEditorNode(ctx.worldResource.environment.activeScene),
     activeEntity: editor.activeEntity,
     selectedEntities: editor.selectedEntities,
   };

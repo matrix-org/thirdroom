@@ -26,10 +26,11 @@ import {
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
 } from "./thirdroom.common";
-import { disposeGLTF, GLTFResource, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
+import { loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
+import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addPhysicsControls, PhysicsControls } from "../PhysicsCharacterController";
 import { addAvatar } from "../avatars/avatar.game";
@@ -72,6 +73,8 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteAvatar,
+  RemoteEnvironment,
   RemoteImage,
   RemoteNode,
   RemoteReflectionProbe,
@@ -80,10 +83,9 @@ import {
   RemoteTexture,
 } from "../../engine/resource/resource.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
+import { addRemoteSceneComponent } from "../../engine/scene/scene.game";
 
-interface ThirdRoomModuleState {
-  sceneGLTF?: GLTFResource;
-}
+type ThirdRoomModuleState = {};
 
 const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
   const camera = createCamera(ctx);
@@ -116,7 +118,9 @@ const createAvatarRig =
     addAvatarCamera(ctx, rig);
     addAvatarController(ctx, input, eid);
 
-    const characterControllerType = SceneCharacterControllerComponent.get(ctx.activeScene!.eid)?.type;
+    const characterControllerType = SceneCharacterControllerComponent.get(
+      ctx.worldResource.environment!.activeScene!.eid
+    )?.type;
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
       addFlyControls(ctx, eid);
     } else {
@@ -168,6 +172,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 
     registerPrefab(ctx, {
       name: "avatar",
+      type: PrefabType.Avatar,
       create: createAvatarRig(input, physics, network),
     });
 
@@ -237,7 +242,6 @@ const actionMap: ActionMap = {
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
     await loadEnvironment(ctx, message.url, message.scriptUrl);
-    loadPreviewCamera(ctx);
     await waitForCurrentSceneToRender(ctx);
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
@@ -277,23 +281,12 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
-  const thirdroom = getModule(ctx, ThirdRoomModule);
-
+  ctx.worldResource.activeCameraNode = undefined;
+  ctx.worldResource.environment = undefined;
+  ctx.worldResource.transientScene = undefined;
   ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
     type: ThirdRoomMessageType.ExitedWorld,
   });
-
-  if (ctx.activeScene) {
-    removeNode(ctx, ctx.activeScene);
-  }
-
-  if (thirdroom.sceneGLTF) {
-    disposeGLTF(thirdroom.sceneGLTF);
-    thirdroom.sceneGLTF = undefined;
-  }
-
-  ctx.activeCamera = undefined;
-  ctx.activeScene = undefined;
 }
 
 function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
@@ -331,19 +324,14 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 }
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
-  const thirdroom = getModule(ctx, ThirdRoomModule);
+  ctx.worldResource.environment = undefined;
+  ctx.worldResource.activeCameraNode = undefined;
 
-  if (ctx.activeScene) {
-    removeNode(ctx, ctx.activeScene);
-
-    if (thirdroom.sceneGLTF) {
-      disposeGLTF(thirdroom.sceneGLTF);
-      thirdroom.sceneGLTF = undefined;
-    }
-
-    ctx.activeScene = undefined;
-    ctx.activeCamera = undefined;
-  }
+  const transientSceneEid = addEntity(ctx.world);
+  const transientScene = addRemoteSceneComponent(ctx, transientSceneEid, {
+    name: "Transient Scene",
+  });
+  ctx.worldResource.transientScene = transientScene;
 
   let script: Script<ScriptExecutionEnvironment> | undefined;
 
@@ -370,19 +358,17 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
-  const sceneGltf = await loadGLTF(ctx, url, { fileMap, resourceManager });
-  const newScene = (await loadDefaultGLTFScene(sceneGltf)) as RemoteScene;
+  const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
+  const environmentScene = (await loadDefaultGLTFScene(environmentGLTFResource)) as RemoteScene;
 
   if (script) {
-    addScriptComponent(ctx, newScene, script);
+    addScriptComponent(ctx, environmentScene, script);
   }
 
-  thirdroom.sceneGLTF = sceneGltf;
-
-  if (!newScene.reflectionProbe || !newScene.backgroundTexture) {
-    const defaultEnvironmentMapTexture = new RemoteTexture(ctx.resourceManager, {
+  if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
+    const defaultEnvironmentMapTexture = new RemoteTexture(resourceManager, {
       name: "Environment Map Texture",
-      source: new RemoteImage(ctx.resourceManager, {
+      source: new RemoteImage(resourceManager, {
         name: "Environment Map Image",
         uri: "/cubemap/clouds_2k.hdr",
         flipY: true,
@@ -392,18 +378,44 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
       }),
     });
 
-    if (!newScene.reflectionProbe) {
-      newScene.reflectionProbe = new RemoteReflectionProbe(ctx.resourceManager, {
+    if (!environmentScene.reflectionProbe) {
+      environmentScene.reflectionProbe = new RemoteReflectionProbe(resourceManager, {
         reflectionProbeTexture: defaultEnvironmentMapTexture,
       });
     }
 
-    if (!newScene.backgroundTexture) {
-      newScene.backgroundTexture = defaultEnvironmentMapTexture;
+    if (!environmentScene.backgroundTexture) {
+      environmentScene.backgroundTexture = defaultEnvironmentMapTexture;
     }
   }
 
-  ctx.activeScene = newScene;
+  const environment = new RemoteEnvironment(resourceManager, {
+    activeScene: environmentScene,
+  });
+  environment.gltfResource = environmentGLTFResource;
+  ctx.worldResource.environment = environment;
+
+  const spawnPoints = getSpawnPoints(ctx);
+
+  let defaultCamera: RemoteNode | undefined;
+
+  if (!ctx.worldResource.activeCameraNode) {
+    const cameraEid = addEntity(ctx.world);
+
+    defaultCamera = addRemoteNodeComponent(ctx, cameraEid, {
+      camera: createRemotePerspectiveCamera(ctx),
+    });
+
+    addChild(ctx, transientScene, defaultCamera);
+
+    ctx.worldResource.activeCameraNode = defaultCamera;
+  }
+
+  if (ctx.worldResource.activeCameraNode === defaultCamera && spawnPoints.length > 0) {
+    vec3.copy(defaultCamera.position, spawnPoints[0].position);
+    defaultCamera.position[1] += 1.6;
+    vec3.copy(defaultCamera.quaternion, spawnPoints[0].quaternion);
+  }
 
   if (script) {
     script.ready = true;
@@ -412,34 +424,8 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
 export const spawnPointQuery = defineQuery([SpawnPoint]);
 
-function loadPreviewCamera(ctx: GameState) {
-  const spawnPoints = getSpawnPoints(ctx);
-
-  let defaultCamera: RemoteNode | undefined;
-
-  if (!ctx.activeCamera) {
-    const cameraEid = addEntity(ctx.world);
-
-    defaultCamera = addRemoteNodeComponent(ctx, cameraEid, {
-      camera: createRemotePerspectiveCamera(ctx),
-    });
-
-    addChild(ctx, ctx.activeScene!, defaultCamera);
-
-    ctx.activeCamera = defaultCamera;
-  }
-
-  if (ctx.activeCamera === defaultCamera && spawnPoints.length > 0) {
-    vec3.copy(defaultCamera.position, spawnPoints[0].position);
-    defaultCamera.position[1] += 1.6;
-    vec3.copy(defaultCamera.quaternion, spawnPoints[0].quaternion);
-  }
-}
-
 function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
-  if (ctx.activeCamera) {
-    removeNode(ctx, ctx.activeCamera);
-  }
+  ctx.worldResource.activeCameraNode = undefined;
 
   const rig = createPrefabEntity(ctx, "avatar");
   const eid = rig.eid;
@@ -455,9 +441,11 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx, ctx.activeScene!, rig);
+  const avatar = new RemoteAvatar(ctx.resourceManager, {
+    root: rig,
+  });
 
-  rig.parentScene = ctx.activeScene;
+  ctx.worldResource.avatars = [...ctx.worldResource.avatars, avatar];
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -505,7 +493,11 @@ function loadRemotePlayerRig(
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  addChild(ctx, ctx.activeScene!, rig);
+  const avatar = new RemoteAvatar(ctx.resourceManager, {
+    root: rig,
+  });
+
+  ctx.worldResource.avatars = [...ctx.worldResource.avatars, avatar];
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {

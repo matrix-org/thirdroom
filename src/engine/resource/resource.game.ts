@@ -1,7 +1,9 @@
+import { addEntity } from "bitecs";
 import { AnimationClip } from "three";
 
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
+import { disposeGLTF, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
@@ -53,6 +55,9 @@ import {
   AnimationResource,
   AnimationChannelResource,
   AnimationSamplerResource,
+  WorldResource,
+  EnvironmentResource,
+  AvatarResource,
 } from "./schema";
 
 export interface ResourceTransformData {
@@ -96,7 +101,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     };
   },
   init(ctx) {
-    return createDisposables([
+    const dispose = createDisposables([
       registerResource(ctx, RemoteNode),
       registerResource(ctx, RemoteAudioData),
       registerResource(ctx, RemoteAudioSource),
@@ -126,6 +131,15 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteAnimation),
       registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
     ]);
+
+    ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
+      persistentScene: new RemoteScene(ctx.resourceManager, {
+        eid: addEntity(ctx.world),
+        name: "Persistent Scene",
+      }),
+    });
+
+    return dispose;
   },
 });
 
@@ -476,4 +490,25 @@ export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
   declare reflectionProbe: RemoteReflectionProbe | undefined;
   declare audioEmitters: RemoteAudioEmitter[];
   declare firstNode: RemoteNode | undefined;
+}
+
+export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentResource) {
+  declare activeScene: RemoteScene | undefined;
+  declare gltfResource: GLTFResource;
+  dispose() {
+    disposeGLTF(this.gltfResource);
+  }
+}
+
+export class RemoteAvatar extends defineRemoteResourceClass(AvatarResource) {
+  declare root: RemoteNode;
+  declare gltfResource: GLTFResource;
+}
+
+export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
+  declare environment: RemoteEnvironment | undefined;
+  declare avatars: RemoteAvatar[];
+  declare persistentScene: RemoteScene;
+  declare transientScene: RemoteScene | undefined;
+  declare activeCameraNode: RemoteNode | undefined;
 }

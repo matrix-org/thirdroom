@@ -1,5 +1,5 @@
 import { defineConfig } from "./module/module.common";
-import { GameAudioModule, GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
+import { GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
@@ -16,7 +16,7 @@ import {
   EditorStateSystem,
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
-import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
+import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
@@ -39,7 +39,6 @@ export default defineConfig<GameState>({
   modules: [
     PrefabModule,
     ResourceModule,
-    GameAudioModule,
     InputModule,
     PhysicsModule,
     NetworkModule,
@@ -85,7 +84,6 @@ export default defineConfig<GameState>({
     OutboundNetworkSystem,
 
     GameAudioSystem,
-    RenderableSystem,
     RemoteCameraSystem,
     RemoteNodeSystem,
     RemoteSceneSystem,

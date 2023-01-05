@@ -6,7 +6,8 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
@@ -81,19 +82,6 @@ import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../plugins/CharacterController";
 import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
-
-export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
-  const eid = addEntity(ctx.world);
-  const node = addRemoteNodeComponent(ctx, eid);
-  loadGLTF(ctx, uri).then((resource) => {
-    if (resource.root.scene === undefined) {
-      throw new Error(`${uri} has no default scene`);
-    }
-
-    loadGLTFScene(resource, resource.root.scene, { existingNode: node });
-  });
-  return node;
-}
 
 export interface GLTFCacheEntry {
   refCount: number;
@@ -444,6 +432,19 @@ interface GLTFSceneOptions {
   existingScene?: RemoteScene;
 }
 
+export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
+  const eid = addEntity(ctx.world);
+  const node = addRemoteNodeComponent(ctx, eid);
+  loadGLTF(ctx, uri).then((resource) => {
+    if (resource.root.scene === undefined) {
+      throw new Error(`${uri} has no default scene`);
+    }
+
+    loadGLTFScene(resource, resource.root.scene, { existingNode: node });
+  });
+  return node;
+}
+
 export async function loadDefaultGLTFScene(resource: GLTFResource, options?: GLTFSceneOptions) {
   const defaultSceneIndex = resource.root.scene;
 
@@ -599,7 +600,7 @@ function loadGLTFHubsComponents(resource: GLTFResource, extension: GLTFHubsCompo
       zfar: 2000,
     });
 
-    ctx.activeCamera = node;
+    ctx.worldResource.activeCameraNode = node;
   }
 }
 

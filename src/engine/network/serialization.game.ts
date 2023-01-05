@@ -28,9 +28,10 @@ import { addChild, removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../node/node.game";
+import { addRemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
-import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
+import { Prefab, createPrefabEntity, getPrefabTemplate, PrefabType } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
   Networked,
@@ -55,6 +56,7 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteAvatar,
   RemoteNametag,
   RemoteNode,
 } from "../resource/resource.game";
@@ -241,8 +243,20 @@ export function createRemoteNetworkedEntity(
   Networked.networkId[node.eid] = nid;
   network.networkIdToEntityId.set(nid, node.eid);
 
-  // add to scene
-  addChild(ctx, ctx.activeScene!, node);
+  const template = getPrefabTemplate(ctx, prefab);
+
+  if (template.type === PrefabType.Avatar) {
+    ctx.worldResource.avatars = [
+      ...ctx.worldResource.avatars,
+      new RemoteAvatar(ctx.resourceManager, {
+        root: node,
+      }),
+    ];
+  } else if (template.type === PrefabType.Object) {
+    addChild(ctx, ctx.worldResource.transientScene!, node);
+  } else {
+    throw new Error("Unknown prefab type");
+  }
 
   return node;
 }

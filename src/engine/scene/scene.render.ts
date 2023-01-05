@@ -4,49 +4,64 @@ import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
+import { RenderNode, RenderScene, RenderWorld } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
 
-export function updateLocalSceneResources(ctx: RenderThreadState, activeSceneResourceId: number) {
-  const scenes = getLocalResources(ctx, RenderScene);
+export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: RenderScene | undefined) {
+  const rendererModule = getModule(ctx, RendererModule);
 
-  for (let i = 0; i < scenes.length; i++) {
-    const scene = scenes[i];
+  if (activeScene) {
+    rendererModule.scene.visible = true;
 
-    const currentBackgroundTextureResourceId = scene.currentBackgroundTextureResourceId;
-    const nextBackgroundTextureResourceId = scene.backgroundTexture?.resourceId || 0;
+    const currentBackgroundTextureResourceId = activeScene.currentBackgroundTextureResourceId;
+    const nextBackgroundTextureResourceId = activeScene.backgroundTexture?.resourceId || 0;
 
     if (nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId) {
-      if (scene.backgroundTexture) {
-        scene.sceneObject.background = scene.backgroundTexture.texture;
+      if (activeScene.backgroundTexture) {
+        rendererModule.scene.background = activeScene.backgroundTexture.texture;
       } else {
-        scene.sceneObject.background = null;
+        rendererModule.scene.background = null;
       }
     }
 
-    scene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
+    activeScene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
 
-    const rendererModule = getModule(ctx, RendererModule);
+    rendererModule.renderPipeline.bloomPass.strength = activeScene.bloomStrength;
 
-    if (scene.resourceId === activeSceneResourceId) {
-      rendererModule.renderPipeline.bloomPass.strength = scene.bloomStrength;
-      updateSceneVisibility(ctx, scene);
-    }
-
-    updateSceneReflectionProbe(ctx, scene);
+    updateSceneReflectionProbe(ctx, activeScene);
 
     if (rendererModule.enableMatrixMaterial) {
-      scene.sceneObject.overrideMaterial = rendererModule.matrixMaterial;
-      scene.sceneObject.background = blackBackground;
+      rendererModule.scene.overrideMaterial = rendererModule.matrixMaterial;
+      rendererModule.scene.background = blackBackground;
     } else {
-      scene.sceneObject.overrideMaterial = null;
-      scene.sceneObject.background = scene.backgroundTexture?.texture || null;
+      rendererModule.scene.overrideMaterial = null;
+      rendererModule.scene.background = activeScene.backgroundTexture?.texture || null;
     }
+  } else {
+    rendererModule.scene.visible = false;
   }
 }
 
-function updateSceneVisibility(ctx: RenderThreadState, scene: RenderScene) {
+export function updateWorldVisibility(worldResource: RenderWorld) {
+  updateSceneVisibility(worldResource.persistentScene);
+
+  if (worldResource.transientScene) {
+    updateSceneVisibility(worldResource.transientScene);
+  }
+
+  if (worldResource.environment?.activeScene) {
+    updateSceneVisibility(worldResource.environment.activeScene);
+  }
+
+  const avatars = worldResource.avatars;
+
+  for (let i = 0; i < avatars.length; i++) {
+    updateNodeVisibility(avatars[i].root, true);
+  }
+}
+
+function updateSceneVisibility(scene: RenderScene) {
   let curChild = scene.firstNode;
 
   while (curChild) {

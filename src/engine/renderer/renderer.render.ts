@@ -1,4 +1,5 @@
 import {
+  Scene,
   ImageBitmapLoader,
   LinearToneMapping,
   PCFSoftShadowMap,
@@ -10,22 +11,19 @@ import {
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, RenderNode, RenderScene } from "../resource/resource.render";
-import { updateLocalSceneResources } from "../scene/scene.render";
+import { RenderWorld } from "../resource/resource.render";
+import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
 import { StatsModule } from "../stats/stats.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
   EnableMatrixMaterialMessage,
   InitializeCanvasMessage,
-  InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
-  RendererStateTripleBuffer,
 } from "./renderer.common";
 import { updateLocalNodeResources } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
@@ -40,6 +38,7 @@ export interface RenderThreadState extends BaseThreadContext {
   elapsed: number;
   dt: number;
   gameToRenderTripleBufferFlags: Uint8Array;
+  worldResource: RenderWorld;
 }
 
 export interface RendererModuleState {
@@ -52,7 +51,6 @@ export interface RendererModuleState {
   imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
   ktx2Loader: KTX2Loader;
-  rendererStateTripleBuffer: RendererStateTripleBuffer;
   reflectionProbesMap: DataArrayTexture | null;
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
@@ -60,6 +58,7 @@ export interface RendererModuleState {
   sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
   matrixMaterial: MatrixMaterial;
   enableMatrixMaterial: boolean;
+  scene: Scene;
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
@@ -107,11 +106,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-    const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
-      Thread.Game,
-      RendererMessageType.InitializeRendererTripleBuffers
-    );
-
     const pmremGenerator = new PMREMGenerator(renderer);
 
     pmremGenerator.compileEquirectangularShader();
@@ -126,7 +120,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       renderPipeline: new RenderPipeline(renderer),
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
-      rendererStateTripleBuffer,
       scenes: [],
       imageBitmapLoader,
       imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
@@ -139,6 +132,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
+      scene: new Scene(),
     };
   },
   init(ctx) {
@@ -195,14 +189,11 @@ export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
   const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
 
-  const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
-  const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
-  const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
+  const activeScene = ctx.worldResource.environment?.activeScene;
+  const activeCameraNode = ctx.worldResource.activeCameraNode;
 
-  const activeSceneResource = getLocalResource<RenderScene>(ctx, activeSceneResourceId);
-  const activeCameraNode = getLocalResource<RenderNode>(ctx, activeCameraResourceId);
-
-  if (activeSceneResourceId !== rendererModule.prevSceneResource) {
+  // TODO: Remove this
+  if (activeScene?.resourceId !== rendererModule.prevSceneResource) {
     rendererModule.enableMatrixMaterial = false;
   }
 
@@ -210,7 +201,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     activeCameraNode &&
     activeCameraNode.cameraObject &&
     activeCameraNode.camera &&
-    (needsResize || rendererModule.prevCameraResource !== activeCameraResourceId)
+    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.resourceId)
   ) {
     if (
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
@@ -225,24 +216,24 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
-    rendererModule.prevCameraResource = activeCameraResourceId;
-    rendererModule.prevSceneResource = activeSceneResourceId;
+    rendererModule.prevCameraResource = activeCameraNode.resourceId;
+    rendererModule.prevSceneResource = activeScene?.resourceId;
   }
 
-  updateLocalSceneResources(ctx, activeSceneResourceId);
-  updateLocalNodeResources(ctx, rendererModule, activeSceneResource, activeCameraNode);
+  updateWorldVisibility(ctx.worldResource);
+  updateActiveSceneResource(ctx, activeScene);
+  updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
+  updateReflectionProbeTextureArray(ctx, activeScene);
+  updateNodeReflections(ctx, activeScene);
 
-  updateReflectionProbeTextureArray(ctx, activeSceneResource);
-  updateNodeReflections(ctx, activeSceneResource);
-
-  if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(activeSceneResource.sceneObject, activeCameraNode.cameraObject, ctx.dt);
+  if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
+    renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
   }
 
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
     const { id, sceneResourceId } = rendererModule.sceneRenderedRequests[i];
 
-    if (activeSceneResource && activeSceneResource.resourceId === sceneResourceId) {
+    if (activeScene && activeScene.resourceId === sceneResourceId) {
       ctx.sendMessage(Thread.Game, {
         type: RendererMessageType.SceneRenderedNotification,
         id,

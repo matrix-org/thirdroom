@@ -2,19 +2,8 @@ import { vec3, mat4 } from "gl-matrix";
 import EventEmitter from "events";
 
 import { IMainThreadContext } from "../MainThread";
-import { defineModule, getModule, Thread } from "../module/module.common";
-import { AudioMessageType, AudioStateTripleBuffer, InitializeAudioStateMessage } from "./audio.common";
-import {
-  getLocalResource,
-  getLocalResources,
-  MainAudioEmitter,
-  MainAudioSource,
-  MainNode,
-  MainScene,
-} from "../resource/resource.main";
-import { ResourceId } from "../resource/resource.common";
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { NOOP } from "../config.common";
+import { defineModule, getModule } from "../module/module.common";
+import { getLocalResources, MainAudioEmitter, MainAudioSource, MainNode, MainScene } from "../resource/resource.main";
 import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schema";
 
 /*********
@@ -22,7 +11,6 @@ import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schem
  ********/
 
 export interface MainAudioModule {
-  audioStateTripleBuffer: AudioStateTripleBuffer;
   context: AudioContext;
   // todo: MixerTrack/MixerInsert interface
   mainLimiter: DynamicsCompressorNode;
@@ -32,7 +20,6 @@ export interface MainAudioModule {
   musicGain: GainNode;
   mediaStreams: Map<string, MediaStream>;
   scenes: MainScene[];
-  activeScene?: MainScene;
   eventEmitter: EventEmitter;
 }
 
@@ -82,13 +69,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     const musicGain = new GainNode(audioContext);
     musicGain.connect(mainGain);
 
-    const { audioStateTripleBuffer } = await waitForMessage<InitializeAudioStateMessage>(
-      Thread.Game,
-      AudioMessageType.InitializeAudioState
-    );
-
     return {
-      audioStateTripleBuffer,
       context: audioContext,
       mainLimiter,
       mainGain,
@@ -119,19 +100,12 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 
 export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioModule = getModule(ctx, AudioModule);
-
-  const audioStateView = getReadObjectBufferView(audioModule.audioStateTripleBuffer);
-
-  const activeAudioListener = audioStateView.activeAudioListenerResourceId[0];
-  const activeSceneResourceId = audioStateView.activeSceneResourceId[0];
-
-  updateActiveScene(ctx, audioModule, activeSceneResourceId);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
-  updateNodeAudioEmitters(ctx, audioModule, activeAudioListener);
+  updateNodeAudioEmitters(ctx, audioModule);
 }
 
-function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule, activeAudioListener: number) {
+function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const nodes = getLocalResources(ctx, MainNode);
 
   for (let i = 0; i < nodes.length; i++) {
@@ -139,7 +113,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
 
     updateNodeAudioEmitter(ctx, audioModule, node);
 
-    if (node.resourceId === activeAudioListener) {
+    if (node === ctx.worldResource!.activeCameraNode) {
       setAudioListenerTransform(audioModule.context.listener, node.worldMatrix);
     }
   }
@@ -410,22 +384,6 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
   pannerNode.maxDistance = audioEmitter.maxDistance;
   pannerNode.refDistance = audioEmitter.refDistance;
   pannerNode.rolloffFactor = audioEmitter.rolloffFactor;
-}
-
-function updateActiveScene(ctx: IMainThreadContext, audioModule: MainAudioModule, nextSceneResourceId: ResourceId) {
-  const currentSceneResourceId = audioModule.activeScene?.resourceId || 0;
-
-  // if scene has changed
-  if (nextSceneResourceId !== currentSceneResourceId) {
-    // if scene was added
-    if (nextSceneResourceId !== NOOP) {
-      // Set new scene if it's loaded
-      audioModule.activeScene = getLocalResource<MainScene>(ctx, nextSceneResourceId);
-    } else {
-      // unset active scene
-      audioModule.activeScene = undefined;
-    }
-  }
 }
 
 /*********

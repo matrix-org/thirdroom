@@ -8,7 +8,8 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { projectPerspective } from "../../engine/camera/camera.game";
 import { NetworkModule } from "../../engine/network/network.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
 import { RemoteNametag, RemoteNode } from "../../engine/resource/resource.game";
@@ -83,13 +84,13 @@ export function NametagSystem(ctx: GameState) {
       const player = NametagComponent.entity[nametag];
       const nametagNode = RemoteNodeComponent.get(nametag);
 
-      if (!ctx.activeCamera || !nametagNode) {
+      if (!ctx.worldResource.activeCameraNode || !nametagNode) {
         continue;
       }
 
       // projection to camera space
       const nametagWorldPosition = mat4.getTranslation(_v, nametagNode.worldMatrix);
-      const projected = projectPerspective(ctx, ctx.activeCamera, nametagWorldPosition);
+      const projected = projectPerspective(ctx, ctx.worldResource.activeCameraNode, nametagWorldPosition);
 
       const peerId = network.entityIdToPeerId.get(player);
       if (peerId === undefined) {

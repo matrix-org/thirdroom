@@ -39,7 +39,8 @@ import {
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
 import { RemoteNode } from "../../../src/engine/resource/resource.game";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../../../src/engine/node/node.game";
+import { addRemoteNodeComponent } from "../../../src/engine/node/node.game";
+import { RemoteNodeComponent } from "../../../src/engine/node/RemoteNodeComponent";
 import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
 
 const clearComponentData = () => {

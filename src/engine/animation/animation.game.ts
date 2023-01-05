@@ -9,7 +9,7 @@ import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/network.game";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";

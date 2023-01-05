@@ -22,10 +22,11 @@ import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
-import { addRemoteNodeComponent, RemoteNodeComponent } from "../../engine/node/node.game";
+import { addRemoteNodeComponent } from "../../engine/node/node.game";
+import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
-import { createPrefabEntity, registerPrefab } from "../../engine/prefab/prefab.game";
+import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
   addResourceRef,
   RemoteAudioData,
@@ -83,6 +84,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "small-crate",
+      type: PrefabType.Object,
       create: (ctx, remote) => {
         const size = 1;
         const halfSize = size / 2;
@@ -125,6 +127,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "medium-crate",
+      type: PrefabType.Object,
       create: (ctx, remote) => {
         const size = 1.75;
         const halfSize = size / 2;
@@ -171,6 +174,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "large-crate",
+      type: PrefabType.Object,
       create: (ctx, remote) => {
         const size = 2.5;
         const halfSize = size / 2;
@@ -263,6 +267,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "mirror-ball",
+      type: PrefabType.Object,
       create: (ctx) => {
         const node = createBall(ctx, 1, mirrorMaterial);
 
@@ -302,6 +307,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "black-mirror-ball",
+      type: PrefabType.Object,
       create: (ctx) => {
         const node = createBall(ctx, 1, blackMirrorMaterial);
 
@@ -341,6 +347,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
     registerPrefab(ctx, {
       name: "emissive-ball",
+      type: PrefabType.Object,
       create: (ctx) => {
         const node = createBall(ctx, 2, emissiveMaterial);
 
@@ -521,7 +528,7 @@ export const updateSpawnables = (
 
     body.applyImpulse(_impulse, true);
 
-    addChild(ctx, ctx.activeScene!, prefab);
+    addChild(ctx, ctx.worldResource.transientScene!, prefab);
   }
 };
 

@@ -39,7 +39,7 @@ export function createCamera(ctx: GameState, setActive = false): RemoteNode {
   });
 
   if (setActive) {
-    ctx.activeCamera = node;
+    ctx.worldResource.activeCameraNode = node;
   }
 
   return node;
@@ -133,5 +133,5 @@ export function getCamera(ctx: GameState, root: RemoteNode): RemoteNode {
  * @param eid number
  */
 export function setActiveCamera(ctx: GameState, node: RemoteNode) {
-  ctx.activeCamera = getCamera(ctx, node);
+  ctx.worldResource.activeCameraNode = getCamera(ctx, node);
 }

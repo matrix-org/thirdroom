@@ -22,7 +22,7 @@ import { Networked, NetworkModule, Owned } from "../engine/network/network.game"
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { broadcastReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
-import { RemoteNodeComponent } from "../engine/node/node.game";
+import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
 import { RemoteNode } from "../engine/resource/resource.game";
 import { getAvatar } from "./avatars/getAvatar";
 

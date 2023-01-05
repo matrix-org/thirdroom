@@ -5,10 +5,10 @@ import { addChild, removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RigidBody } from "../physics/physics.game";
-import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
-import { RemoteNode } from "../resource/resource.game";
+import { getPrefabTemplate, Prefab, PrefabType } from "../prefab/prefab.game";
+import { RemoteAvatar, RemoteNode } from "../resource/resource.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -33,7 +33,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const eid = network.networkIdToEntityId.get(nid);
   const node = eid ? RemoteNodeComponent.get(eid) : undefined;
   if (node) {
-    removeNode(ctx.world, node);
+    removeNode(ctx, node);
   }
 };
 
@@ -41,12 +41,13 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   const eid = node.eid;
 
   if (!hasComponent(ctx.world, Owned, eid)) {
-    removeNode(ctx.world, node);
+    removeNode(ctx, node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
-    const newNode = getPrefabTemplate(ctx, prefabName).create(ctx);
+    const template = getPrefabTemplate(ctx, prefabName);
+    const newNode = template.create(ctx);
     const newEid = newNode.eid;
 
     const body = RigidBody.store.get(eid);
@@ -59,11 +60,18 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
     addComponent(ctx.world, Owned, newEid);
     addComponent(ctx.world, Networked, newEid);
 
-    if (!ctx.activeScene) {
-      throw new Error("No active scene set.");
+    if (template.type === PrefabType.Avatar) {
+      ctx.worldResource.avatars = [
+        ...ctx.worldResource.avatars,
+        new RemoteAvatar(ctx.resourceManager, {
+          root: node,
+        }),
+      ];
+    } else if (template.type === PrefabType.Object) {
+      addChild(ctx, ctx.worldResource.transientScene!, node);
+    } else {
+      throw new Error("Unknown prefab type");
     }
-
-    addChild(ctx.activeScene, newNode);
 
     // send message to remove on other side
     broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));

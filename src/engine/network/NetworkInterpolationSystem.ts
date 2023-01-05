@@ -17,7 +17,7 @@ import {
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { tickRate } from "../config.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RemoteNode } from "../resource/resource.game";
 
 const FRAME_MS = 1000 / tickRate;

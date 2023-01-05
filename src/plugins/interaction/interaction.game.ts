@@ -29,7 +29,7 @@ import {
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
 import { takeOwnership } from "../../engine/network/ownership.game";
-import { RemoteNodeComponent } from "../../engine/node/node.game";
+import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import {
   addCollisionGroupMembership,
   FocusCollisionGroup,
@@ -115,6 +115,11 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
     enableActionMap(controller, InteractionActionMap);
+
+    ctx.worldResource.persistentScene.audioEmitters = [
+      ...ctx.worldResource.persistentScene.audioEmitters,
+      module.clickEmitter,
+    ];
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
@@ -238,8 +243,6 @@ const _r = new Vector4();
 
 const zero = new Vector3();
 
-let lastActiveSceneId = 0;
-
 let heldOffset = 0;
 
 const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
@@ -250,15 +253,6 @@ export function InteractionSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
-
-  // HACK: add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
-  if (lastActiveSceneId !== ctx.activeScene?.eid) {
-    const remoteScene = ctx.activeScene;
-    if (remoteScene && interaction.clickEmitter && !remoteScene.audioEmitters.includes(interaction.clickEmitter)) {
-      remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
-    }
-    lastActiveSceneId = ctx.activeScene?.eid || 0;
-  }
 
   const remoteNodeEntities = remoteNodeQuery(ctx.world);
 

@@ -34,7 +34,6 @@ import {
   RenderMaterial,
   RenderMeshPrimitive,
   RenderNode,
-  RenderScene,
 } from "../resource/resource.render";
 import { InstancedMeshAttributeIndex, MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../resource/schema";
 
@@ -59,7 +58,6 @@ const tempMatrix4 = new Matrix4();
 function createMeshPrimitiveObject(
   ctx: RenderThreadState,
   node: RenderNode,
-  scene: RenderScene,
   primitive: RenderMeshPrimitive
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
@@ -88,7 +86,7 @@ function createMeshPrimitiveObject(
           if (jointNode) {
             const bone = (jointNode.bone = new Bone());
             bones.push(bone);
-            scene.sceneObject.add(bone);
+            rendererModule.scene.add(bone);
             setTransformFromNode(ctx, jointNode, bone);
 
             const inverseMatrix = new Matrix4();
@@ -337,14 +335,15 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
   }
 }
 
-export function updateNodeMesh(ctx: RenderThreadState, scene: RenderScene, node: RenderNode) {
+export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
+  const rendererModule = getModule(ctx, RendererModule);
   const currentMeshResourceId = node.currentMeshResourceId;
   const nextMeshResourceId = node.mesh?.resourceId || 0;
 
   if (currentMeshResourceId !== nextMeshResourceId && node.meshPrimitiveObjects) {
     for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
       const primitiveObject = node.meshPrimitiveObjects[i];
-      scene.sceneObject.remove(primitiveObject);
+      rendererModule.scene.remove(primitiveObject);
     }
 
     node.meshPrimitiveObjects = undefined;
@@ -359,9 +358,9 @@ export function updateNodeMesh(ctx: RenderThreadState, scene: RenderScene, node:
 
   if (!node.meshPrimitiveObjects) {
     node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, scene, primitive)
+      createMeshPrimitiveObject(ctx, node, primitive)
     );
-    scene.sceneObject.add(...node.meshPrimitiveObjects);
+    rendererModule.scene.add(...node.meshPrimitiveObjects);
   }
 
   if (node.meshPrimitiveObjects) {

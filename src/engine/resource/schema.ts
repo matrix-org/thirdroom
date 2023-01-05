@@ -29,8 +29,9 @@ export enum ResourceType {
   AnimationSampler,
   Node,
   Scene,
-  Asset,
-  GLTF,
+  World,
+  Avatar,
+  Environment,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -472,4 +473,20 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
   bloomStrength: PropType.f32({ script: true, default: 0.4 }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
+});
+
+export const EnvironmentResource = defineResource("environment", ResourceType.Environment, {
+  activeScene: PropType.ref(SceneResource, { script: true }),
+});
+
+export const AvatarResource = defineResource("avatar", ResourceType.Avatar, {
+  root: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
+});
+
+export const WorldResource = defineResource("world", ResourceType.World, {
+  environment: PropType.ref(EnvironmentResource, { script: false }),
+  avatars: PropType.refArray(AvatarResource, { size: 64 }),
+  persistentScene: PropType.ref(SceneResource, { required: true, script: false }),
+  transientScene: PropType.ref(SceneResource, { script: false }),
+  activeCameraNode: PropType.ref(NodeResource, { script: true }),
 });

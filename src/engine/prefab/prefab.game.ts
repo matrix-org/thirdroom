@@ -20,8 +20,14 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 /* Prefab Functions */
 
+export enum PrefabType {
+  Object,
+  Avatar,
+}
+
 export interface PrefabTemplate {
   name: string;
+  type: PrefabType;
   create: (ctx: GameState, remote?: boolean) => RemoteNode;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;

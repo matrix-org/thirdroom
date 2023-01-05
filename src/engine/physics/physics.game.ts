@@ -22,7 +22,7 @@ import {
   RemoteNode,
   removeResourceRef,
 } from "../resource/resource.game";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;

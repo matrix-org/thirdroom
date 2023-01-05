@@ -6,7 +6,7 @@ import { Networked } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
 import { ResourceType } from "../resource/schema";
 import { addResourceRef, RemoteNode, RemoteScene, removeResourceRef } from "../resource/resource.game";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 
 export const Axes = {
   X: vec3.fromValues(1, 0, 0),
@@ -160,7 +160,7 @@ export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents:
   }
 };
 
-export const updateMatrixWorld = (node: RemoteNode | RemoteScene, force = false) => {
+export const updateMatrixWorld = (node: RemoteScene | RemoteNode, force = false) => {
   if (node.resourceType === ResourceType.Node) {
     if (!node.isStatic) updateMatrix(node);
 
@@ -475,9 +475,17 @@ export function getDirection(out: vec3, matrix: mat4): vec3 {
 }
 
 export function UpdateMatrixWorldSystem(ctx: GameState) {
-  if (ctx.activeScene) {
-    updateMatrixWorld(ctx.activeScene);
+  if (ctx.worldResource.environment?.activeScene) {
+    updateMatrixWorld(ctx.worldResource.environment.activeScene);
   }
+
+  const avatars = ctx.worldResource.avatars;
+
+  for (let i = 0; i < avatars.length; i++) {
+    updateMatrixWorld(avatars[i].root);
+  }
+
+  updateMatrixWorld(ctx.worldResource!.persistentScene);
 }
 
 /*

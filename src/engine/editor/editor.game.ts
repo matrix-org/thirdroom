@@ -33,7 +33,7 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
 
 /*********

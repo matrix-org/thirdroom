@@ -38,7 +38,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { RemoteNodeComponent } from "../node/node.game";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 
 /*********
  * Types *
