@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
+import { RemoteNode, RemoteScene } from "../resource/resource.game";
 import { ResourceDefinition } from "../resource/ResourceDefinition";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
@@ -42,7 +43,8 @@ export const ScriptComponent = new Map<number, Script>();
 export const scriptQuery = defineQuery([ScriptComponent]);
 const scriptExitQuery = exitQuery(scriptQuery);
 
-export function addScriptComponent(ctx: GameState, eid: number, script: Script) {
+export function addScriptComponent(ctx: GameState, sceneOrNode: RemoteScene | RemoteNode, script: Script) {
+  const eid = sceneOrNode.eid;
   addComponent(ctx.world, ScriptComponent, eid);
   ScriptComponent.set(eid, script);
 }

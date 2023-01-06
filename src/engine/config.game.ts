@@ -1,5 +1,5 @@
 import { defineConfig } from "./module/module.common";
-import { GameAudioModule, GameAudioSystem } from "./audio/audio.game";
+import { GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
 import { PhysicsModule, StepPhysicsSystem, SyncPhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
@@ -20,7 +20,7 @@ import {
   EditorStateSystem,
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
-import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
+import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
@@ -31,7 +31,6 @@ import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/Fl
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
-import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
@@ -44,7 +43,6 @@ export default defineConfig<GameState>({
   modules: [
     PrefabModule,
     ResourceModule,
-    GameAudioModule,
     InputModule,
     PhysicsModule,
     NetworkModule,
@@ -97,16 +95,15 @@ export default defineConfig<GameState>({
     OutboundNetworkSystem,
 
     GameAudioSystem,
-    RenderableSystem,
     RemoteCameraSystem,
     RemoteNodeSystem,
     RemoteSceneSystem,
     GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
-    NameSystem,
 
     ResetInputSystem,
+    ResetAudioSourcesSystem,
     GameWorkerStatsSystem,
   ],
 });

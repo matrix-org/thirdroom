@@ -10,6 +10,7 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
+import { Axes } from "../engine/component/transform";
 import { ourPlayerQuery } from "../engine/component/Player";
 import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
@@ -23,6 +24,8 @@ import { Networked, NetworkModule } from "../engine/network/network.game";
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
+import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
+import { RemoteNode } from "../engine/resource/resource.game";
 
 type FirstPersonCameraModuleState = {};
 
@@ -46,17 +49,25 @@ const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
   const data: NetPipeData = [ctx, messageView, ""];
+  const network = getModule(ctx, NetworkModule);
+
+  const player = network.networkIdToEntityId.get(nid)!;
+  const playerNode = RemoteNodeComponent.get(player)!;
+  const cameraNode = RemoteNodeComponent.get(camera)!;
 
   writeMetadata(NetworkAction.UpdateCamera)(data);
 
   writeUint32(messageView, Networked.networkId[eid]);
 
-  writeFloat32(messageView, Transform.quaternion[eid][0]);
-  writeFloat32(messageView, Transform.quaternion[eid][1]);
-  writeFloat32(messageView, Transform.quaternion[eid][2]);
-  writeFloat32(messageView, Transform.quaternion[eid][3]);
+  writeFloat32(messageView, playerNode.quaternion[0]);
+  writeFloat32(messageView, playerNode.quaternion[1]);
+  writeFloat32(messageView, playerNode.quaternion[2]);
+  writeFloat32(messageView, playerNode.quaternion[3]);
 
-  writeFloat32(messageView, Transform.rotation[camera][0]);
+  writeFloat32(messageView, cameraNode.quaternion[0]);
+  writeFloat32(messageView, cameraNode.quaternion[1]);
+  writeFloat32(messageView, cameraNode.quaternion[2]);
+  writeFloat32(messageView, cameraNode.quaternion[3]);
 
   return sliceCursorView(messageView);
 }
@@ -69,16 +80,20 @@ function deserializeUpdateCamera(data: NetPipeData) {
 
   const nid = readUint32(view);
   const player = network.networkIdToEntityId.get(nid)!;
-  const camera = getCamera(ctx, player);
+  const playerNode = RemoteNodeComponent.get(player)!;
 
-  Transform.quaternion[player][0] = readFloat32(view);
-  Transform.quaternion[player][1] = readFloat32(view);
-  Transform.quaternion[player][2] = readFloat32(view);
-  Transform.quaternion[player][3] = readFloat32(view);
+  const camera = getCamera(ctx, playerNode);
+  const cameraNode = RemoteNodeComponent.get(player)!;
 
-  Transform.rotation[camera][0] = readFloat32(view);
+  playerNode.quaternion[0] = readFloat32(view);
+  playerNode.quaternion[1] = readFloat32(view);
+  playerNode.quaternion[2] = readFloat32(view);
+  playerNode.quaternion[3] = readFloat32(view);
 
-  setQuaternionFromEuler(Transform.quaternion[camera], Transform.rotation[camera]);
+  cameraNode.quaternion[0] = readFloat32(view);
+  cameraNode.quaternion[1] = readFloat32(view);
+  cameraNode.quaternion[2] = readFloat32(view);
+  cameraNode.quaternion[3] = readFloat32(view);
 
   return data;
 }
@@ -106,6 +121,7 @@ export const FirstPersonCameraActionMap: ActionMap = {
 };
 
 export const FirstPersonCameraPitchTarget = defineComponent({
+  pitch: Types.f32,
   maxAngle: Types.f32,
   minAngle: Types.f32,
   sensitivity: Types.f32,
@@ -116,50 +132,54 @@ export const FirstPersonCameraYawTarget = defineComponent({
 
 const DEFAULT_SENSITIVITY = 100;
 
-export function addCameraPitchTargetComponent(world: World, eid: number) {
+export function addCameraPitchTargetComponent(world: World, node: RemoteNode) {
+  const eid = node.eid;
   addComponent(world, FirstPersonCameraPitchTarget, eid);
   FirstPersonCameraPitchTarget.maxAngle[eid] = 89;
   FirstPersonCameraPitchTarget.minAngle[eid] = -89;
   FirstPersonCameraPitchTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
 }
 
-export function addCameraYawTargetComponent(world: World, eid: number) {
-  addComponent(world, FirstPersonCameraYawTarget, eid);
-  FirstPersonCameraYawTarget.sensitivity[eid] = DEFAULT_SENSITIVITY;
+export function addCameraYawTargetComponent(world: World, node: RemoteNode) {
+  addComponent(world, FirstPersonCameraYawTarget, node.eid);
+  FirstPersonCameraYawTarget.sensitivity[node.eid] = DEFAULT_SENSITIVITY;
 }
 
-export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, Transform]);
-export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Transform]);
+export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, RemoteNodeComponent]);
+export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNodeComponent]);
 
-function applyYaw(ctx: GameState, controller: InputController, eid: number) {
+function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [lookX] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookX) >= 1) {
-    const sensitivity = FirstPersonCameraYawTarget.sensitivity[eid] || 1;
-    const quaternion = Transform.quaternion[eid];
+    const sensitivity = FirstPersonCameraYawTarget.sensitivity[node.eid] || 1;
+    const quaternion = node.quaternion;
     quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
   }
 }
 
-function applyPitch(ctx: GameState, controller: InputController, eid: number) {
+function applyPitch(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [, lookY] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
 
   if (Math.abs(lookY) >= 1) {
-    const rotation = Transform.rotation[eid];
+    const eid = node.eid;
+    let pitch = FirstPersonCameraPitchTarget.pitch[eid];
     const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
     const maxAngle = FirstPersonCameraPitchTarget.maxAngle[eid];
     const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
     const maxAngleRads = glm.toRadian(maxAngle || 89);
     const minAngleRads = glm.toRadian(minAngle || -89);
-    rotation[0] -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
-    if (rotation[0] > maxAngleRads) {
-      rotation[0] = maxAngleRads;
-    } else if (rotation[0] < minAngleRads) {
-      rotation[0] = minAngleRads;
+    if (pitch > maxAngleRads) {
+      pitch = maxAngleRads;
+    } else if (pitch < minAngleRads) {
+      pitch = minAngleRads;
     }
 
-    setQuaternionFromEuler(Transform.quaternion[eid], Transform.rotation[eid]);
+    FirstPersonCameraPitchTarget.pitch[eid] = pitch;
+
+    quat.setAxisAngle(node.quaternion, Axes.X, pitch);
   }
 }
 
@@ -175,17 +195,59 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const pitchEntities = cameraPitchTargetQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
+    const node = RemoteNodeComponent.get(eid)!;
     // pitch target on camera, controller is on the parent of the camera
-    const parent = Transform.parent[eid];
-    const controller = getInputController(input, parent);
-    applyPitch(ctx, controller, eid);
+    const parent = node.parent;
+
+    if (!parent) {
+      continue;
+    }
+
+    const controller = getInputController(input, parent.eid);
+    applyPitch(ctx, controller, node);
+
+    // network the avatar's camera
+    const haveConnectedPeers = network.peers.length > 0;
+    const hosting = network.authoritative && isHost(network);
+    const avatar = getAvatar(ctx, parent);
+    const isOwnedAvatar =
+      avatar && hasComponent(ctx.world, Networked, parent.eid) && hasComponent(ctx.world, Owned, parent.eid);
+    if (hosting && haveConnectedPeers && isOwnedAvatar) {
+      const camera = getCamera(ctx, parent);
+      const msg = createUpdateCameraMessage(ctx, parent.eid, camera.eid);
+      if (msg.byteLength > 0) {
+        broadcastReliable(ctx, network, msg);
+      }
+    }
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
+    const node = RemoteNodeComponent.get(eid)!;
     const controller = getInputController(input, eid);
-    applyYaw(ctx, controller, eid);
+    applyYaw(ctx, controller, node);
+  }
+}
+
+export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+
+  if (!ourPlayer) {
+    return;
+  }
+
+  const network = getModule(ctx, NetworkModule);
+  const haveConnectedPeers = network.peers.length > 0;
+  const hosting = network.authoritative && isHost(network);
+  if (hosting || !haveConnectedPeers) {
+    return;
+  }
+
+  const camera = getCamera(ctx, ourPlayer);
+  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
+  if (msg.byteLength > 0) {
+    sendReliable(ctx, network, network.hostId, msg);
   }
 }
 

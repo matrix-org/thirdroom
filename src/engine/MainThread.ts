@@ -4,6 +4,9 @@ import { BaseThreadContext, Message, registerModules, Thread } from "./module/mo
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
+import { getLocalResources, MainWorld } from "./resource/resource.main";
+import { waitUntil } from "./utils/waitUntil";
+import { RenderWorld } from "./resource/resource.render";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -15,6 +18,7 @@ export interface IMainThreadContext extends BaseThreadContext {
   animationFrameId?: number;
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
+  worldResource: MainWorld;
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
@@ -39,7 +43,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
-  const context: IMainThreadContext = {
+  const ctx: IMainThreadContext = {
+    thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     systems: mainThreadConfig.systems,
@@ -50,6 +55,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     initialGameWorkerState: {},
     initialRenderWorkerState: {},
     sendMessage: mainThreadSendMessage,
+    // TODO: figure out how to create the main thread context such that this is initially set
+    worldResource: undefined as any,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -59,11 +66,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       return;
     }
 
-    const handlers = context.messageHandlers.get(message.type);
+    const handlers = ctx.messageHandlers.get(message.type);
 
     if (handlers) {
       for (let i = 0; i < handlers.length; i++) {
-        handlers[i](context, message);
+        handlers[i](ctx, message);
       }
     }
   }
@@ -72,11 +79,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   renderWorker.addEventListener("message", onWorkerMessage as any);
 
   /* Register module loader event handlers before we send the message (sendMessage synchronous to RenderThread when RenderThread is running on MainThread)*/
-  const moduleLoaderPromise = registerModules(Thread.Main, context, mainThreadConfig.modules);
+  const moduleLoaderPromise = registerModules(Thread.Main, ctx, mainThreadConfig.modules);
 
   /* Initialize workers */
 
-  context.sendMessage(
+  ctx.sendMessage(
     Thread.Game,
     {
       type: WorkerMessageType.InitializeGameWorker,
@@ -88,7 +95,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     useOffscreenCanvas ? [interWorkerMessageChannel.port1] : undefined
   );
 
-  context.sendMessage(
+  ctx.sendMessage(
     Thread.Render,
     {
       type: WorkerMessageType.InitializeRenderWorker,
@@ -102,28 +109,20 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   const disposeModules = await moduleLoaderPromise;
 
-  /* Start Workers */
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartRenderWorker,
-  });
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartGameWorker,
-  });
+  ctx.worldResource = await waitUntil(() => getLocalResources(ctx, RenderWorld)[0]);
 
   /* Update loop */
 
   function update() {
-    swapReadBufferFlags(context.gameToMainTripleBufferFlags);
+    swapReadBufferFlags(ctx.gameToMainTripleBufferFlags);
 
-    for (let i = 0; i < context.systems.length; i++) {
-      context.systems[i](context);
+    for (let i = 0; i < ctx.systems.length; i++) {
+      ctx.systems[i](ctx);
     }
 
-    swapWriteBufferFlags(context.mainToGameTripleBufferFlags);
+    swapWriteBufferFlags(ctx.mainToGameTripleBufferFlags);
 
-    context.animationFrameId = requestAnimationFrame(update);
+    ctx.animationFrameId = requestAnimationFrame(update);
   }
 
   console.log("MainThread initialized");
@@ -131,10 +130,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   update();
 
   return {
-    context,
+    ctx,
     dispose() {
-      if (context.animationFrameId !== undefined) {
-        cancelAnimationFrame(context.animationFrameId);
+      if (ctx.animationFrameId !== undefined) {
+        cancelAnimationFrame(ctx.animationFrameId);
       }
 
       disposeModules();

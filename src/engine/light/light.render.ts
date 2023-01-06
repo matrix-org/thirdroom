@@ -1,44 +1,22 @@
 import { DirectionalLight, Light, PointLight, Scene, SpotLight } from "three";
 
-import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResource, getResourceDisposed } from "../resource/resource.render";
-import { LightType, LocalLight } from "../resource/schema";
+import { RenderNode } from "../resource/resource.render";
+import { LightType } from "../resource/schema";
 
-export function updateNodeLight(
-  ctx: RenderThreadState,
-  scene: Scene,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
-  const currentLightResourceId = node.light?.resourceId || 0;
-  const nextLightResourceId = nodeReadView.light[0];
+export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+  const currentLightResourceId = node.currentLightResourceId;
+  const nextLightResourceId = node.light?.resourceId || 0;
 
   // TODO: Handle node.visible
 
-  if (getResourceDisposed(ctx, nextLightResourceId)) {
-    if (node.lightObject) {
-      scene.remove(node.lightObject);
-      node.lightObject = undefined;
-    }
-
-    node.light = undefined;
+  if (currentLightResourceId !== nextLightResourceId && node.lightObject) {
+    scene.remove(node.lightObject);
+    node.lightObject = undefined;
   }
 
-  if (currentLightResourceId !== nextLightResourceId) {
-    if (node.lightObject) {
-      scene.remove(node.lightObject);
-      node.lightObject = undefined;
-    }
-
-    if (nextLightResourceId) {
-      node.light = getLocalResource<LocalLight>(ctx, nextLightResourceId)?.resource;
-    } else {
-      node.light = undefined;
-    }
-  }
+  node.currentLightResourceId = nextLightResourceId;
 
   if (!node.light) {
     return;
@@ -117,7 +95,7 @@ export function updateNodeLight(
   }
 
   if (light) {
-    updateTransformFromNode(ctx, nodeReadView, light);
+    updateTransformFromNode(ctx, node, light);
   }
 
   node.lightObject = light;

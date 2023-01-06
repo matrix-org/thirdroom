@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 declare module "@matrix-org/olm" {
   export class Account {
     constructor();

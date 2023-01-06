@@ -1,13 +1,12 @@
-import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
-
 export const rendererModuleName = "renderer";
 
 export enum RendererMessageType {
   InitializeCanvas = "renderer-initialize-canvas",
-  InitializeResourceManager = "initialize-resource-manager",
   InitializeRendererTripleBuffers = "initialize-renderer-triple-buffers",
   NotifySceneRendered = "renderer-notify-scene-renderer",
   SceneRenderedNotification = "renderer-scene-rendered-notification",
+  CanvasResize = "canvas-resize",
+  EnableMatrixMaterial = "enable-matrix-material",
 }
 
 export interface InitializeCanvasMessage {
@@ -27,13 +26,13 @@ export interface SceneRenderedNotificationMessage {
   id: number;
 }
 
-export const rendererStateSchema = defineObjectBufferSchema({
-  activeSceneResourceId: [Uint32Array, 1],
-  activeCameraResourceId: [Uint32Array, 1],
-});
+export interface CanvasResizeMessage {
+  type: RendererMessageType.CanvasResize;
+  canvasWidth: number;
+  canvasHeight: number;
+}
 
-export type RendererStateTripleBuffer = ObjectTripleBuffer<typeof rendererStateSchema>;
-
-export interface InitializeRendererTripleBuffersMessage {
-  rendererStateTripleBuffer: RendererStateTripleBuffer;
+export interface EnableMatrixMaterialMessage {
+  type: RendererMessageType.EnableMatrixMaterial;
+  enabled: boolean;
 }

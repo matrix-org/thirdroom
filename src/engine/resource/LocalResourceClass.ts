@@ -1,32 +1,30 @@
 import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { BaseThreadContext } from "../module/module.common";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
-import { ILocalResourceManager, LocalResource, ResourceDefinition } from "./ResourceDefinition";
-
-export interface ILocalResourceClass<
-  Def extends ResourceDefinition,
-  ThreadContext extends BaseThreadContext = BaseThreadContext
-> {
-  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<
-    Def,
-    ThreadContext
-  >;
-  resourceDef: Def;
-}
+import {
+  DefinedResource,
+  ILocalResourceClass,
+  ILocalResourceManager,
+  LocalResource,
+  Schema,
+} from "./ResourceDefinition";
 
 export function defineLocalResourceClass<
-  Def extends ResourceDefinition,
+  T extends number,
+  S extends Schema,
+  Def extends DefinedResource<T, S>,
   ThreadContext extends BaseThreadContext = BaseThreadContext
 >(resourceDef: Def): ILocalResourceClass<Def, ThreadContext> {
-  const { name, schema } = resourceDef;
+  const { name, schema, resourceType } = resourceDef;
 
   function LocalResourceClass(
-    this: LocalResource<Def>,
+    this: LocalResource,
     manager: ILocalResourceManager,
     resourceId: number,
     tripleBuffer: TripleBuffer
   ) {
     this.resourceId = resourceId;
+    this.resourceType = resourceType;
     this.tripleBuffer = tripleBuffer;
     this.manager = manager;
     this.__props = {};
@@ -64,31 +62,31 @@ export function defineLocalResourceClass<
 
     if (prop.type === "string") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const resourceId = this.__props[propName][index][0];
-          return this.manager.getString(resourceId);
+          return this.manager.getResource(resourceId);
         },
       });
     } else if (prop.type === "arrayBuffer") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const resourceId = this.__props[propName][index][1];
-          return this.manager.getArrayBuffer(resourceId);
+          return this.manager.getResource(resourceId);
         },
       });
     } else if (prop.type === "ref") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const resourceId = this.__props[propName][index][0];
-          return this.manager.getResource((this.constructor as any).resourceDef, resourceId);
+          return this.manager.getResource(resourceId);
         },
       });
-    } else if (prop.type === "refArray" || prop.type === "refMap") {
+    } else if (prop.type === "refArray") {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           const arr = this.__props[propName][index];
           const resources = [];
@@ -98,22 +96,51 @@ export function defineLocalResourceClass<
               break;
             }
 
-            resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+            const resource = this.manager.getResource(arr[i]);
+
+            if (resource) {
+              resources.push(resource);
+            }
           }
 
           return resources;
         },
       });
+    } else if (prop.type === "refMap") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          const arr = this.__props[propName][index];
+          const resources = [];
+
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i]) {
+              resources.push(this.manager.getResource(arr[i]));
+            } else {
+              resources.push(undefined);
+            }
+          }
+
+          return resources;
+        },
+      });
+    } else if (prop.type === "bool") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource) {
+          const index = getReadBufferIndex(this.tripleBuffer);
+          return !!this.__props[propName][index][0];
+        },
+      });
     } else if (prop.size === 1) {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           return this.__props[propName][index][0];
         },
       });
     } else {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource<Def>) {
+        get(this: LocalResource) {
           const index = getReadBufferIndex(this.tripleBuffer);
           return this.__props[propName][index];
         },

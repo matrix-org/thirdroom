@@ -1,49 +1,57 @@
-import { TripleBuffer } from "../allocator/TripleBuffer";
+import { GameState } from "../GameTypes";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  Schema,
+  DefinedResource,
+  InitialRemoteResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceData,
+} from "./ResourceDefinition";
 
-export interface IRemoteResourceClass<Def extends ResourceDefinition> {
-  new (
-    manager: IRemoteResourceManager,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<Def>
-  ): RemoteResource<Def>;
-  resourceDef: Def;
-}
-
-export function defineRemoteResourceClass<Def extends ResourceDefinition>(resourceDef: Def): IRemoteResourceClass<Def> {
+export function defineRemoteResourceClass<T extends number, S extends Schema, Def extends DefinedResource<T, S>>(
+  resourceDef: Def
+): IRemoteResourceClass<Def> {
   const { name, schema, resourceType } = resourceDef;
 
   function RemoteResourceClass(
-    this: RemoteResource<Def>,
-    manager: IRemoteResourceManager,
-    buffer: ArrayBuffer,
-    ptr: number,
-    tripleBuffer: TripleBuffer,
-    props?: InitialResourceProps<Def>
+    this: RemoteResource<GameState>,
+    manager: IRemoteResourceManager<GameState>,
+    propsOrResourceData?: ResourceData | InitialRemoteResourceProps<GameState, Def>
   ) {
-    this.resourceId = 0;
+    this.manager = manager;
+    const isResourceData = propsOrResourceData && "ptr" in propsOrResourceData;
+    const resourceData = isResourceData
+      ? (propsOrResourceData as ResourceData)
+      : this.manager.allocateResource(resourceDef);
+    const initialProps = isResourceData
+      ? undefined
+      : (propsOrResourceData as InitialRemoteResourceProps<GameState, Def> | undefined);
     this.resourceType = resourceType;
     this.initialized = false;
-    this.manager = manager;
-    this.ptr = ptr;
-    this.byteView = new Uint8Array(buffer, ptr, resourceDef.byteLength);
-    this.tripleBuffer = tripleBuffer;
+    this.ptr = resourceData.ptr;
+    this.byteView = new Uint8Array(resourceData.buffer, resourceData.ptr, resourceDef.byteLength);
+    this.refView = new Uint32Array(
+      resourceData.buffer,
+      resourceData.ptr,
+      resourceDef.byteLength / Uint32Array.BYTES_PER_ELEMENT
+    );
+    this.prevRefs = [];
+    this.tripleBuffer = resourceData.tripleBuffer;
     this.__props = {};
 
     const schema = (RemoteResourceClass as unknown as IRemoteResourceClass<Def>).resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
-      const store = new prop.arrayType(buffer, this.ptr + prop.byteOffset, prop.size);
+      const store = new prop.arrayType(resourceData.buffer, this.ptr + prop.byteOffset, prop.size);
 
       // TODO handle setting defaults and prop validation when creating from ptr
-      let initialValue: any;
+      let initialValue: unknown;
 
-      if (props) {
-        initialValue = props[propName] !== undefined ? props[propName] : prop.default;
+      if (initialProps) {
+        initialValue = initialProps[propName] !== undefined ? initialProps[propName] : prop.default;
       } else {
         if (
           prop.default !== undefined &&
@@ -76,17 +84,28 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         this.__props[propName] = store;
       } else if (prop.type === "ref") {
         if (initialValue) {
-          this.manager.setRef(initialValue, store as Uint32Array);
+          this.manager.setRef(initialValue as RemoteResource<GameState>, store as Uint32Array, prop.backRef);
         }
 
         this.__props[propName] = store;
       } else if (prop.type === "refArray") {
         if (initialValue !== undefined) {
-          const refs = initialValue as RemoteResource<ResourceDefinition>[];
+          const refs = initialValue as RemoteResource<GameState>[];
 
           for (let i = 0; i < refs.length; i++) {
             const ref = refs[i];
             store[i] = ref.ptr || ref.resourceId;
+          }
+        }
+
+        this.__props[propName] = store;
+      } else if (prop.type === "refMap") {
+        if (initialValue !== undefined) {
+          const refs = initialValue as { [key: number]: RemoteResource<GameState> };
+
+          for (const key in refs) {
+            const ref = refs[key];
+            store[key] = ref.ptr || ref.resourceId;
           }
         }
 
@@ -103,6 +122,8 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
         this.__props[propName] = store;
       }
     }
+
+    this.resourceId = this.manager.createResource(this);
   }
 
   Object.defineProperties(RemoteResourceClass, {
@@ -112,17 +133,17 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
   Object.defineProperties(RemoteResourceClass.prototype, {
     addRef: {
-      value(this: RemoteResource<Def>) {
+      value(this: RemoteResource<GameState>) {
         this.manager.addRef(this.resourceId);
       },
     },
     removeRef: {
-      value(this: RemoteResource<Def>) {
+      value(this: RemoteResource<GameState>) {
         this.manager.removeRef(this.resourceId);
       },
     },
     dispose: {
-      value(this: RemoteResource<Def>) {
+      value(this: RemoteResource<GameState>, ctx: GameState) {
         this.manager.disposeResource(this.resourceId);
       },
     },
@@ -134,7 +155,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     if (prop.type === "string") {
       const setter = prop.mutable
         ? {
-            set(this: RemoteResource<Def>, value?: string) {
+            set(this: RemoteResource<GameState>, value?: string) {
               this.manager.setString(value, this.__props[propName] as Uint32Array);
             },
           }
@@ -142,44 +163,59 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
-        get(this: RemoteResource<Def>) {
+        get(this: RemoteResource<GameState>) {
           return this.manager.getString(this.__props[propName] as Uint32Array);
         },
       });
     } else if (prop.type === "arrayBuffer") {
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: RemoteResource<Def>) {
+        get(this: RemoteResource<GameState>) {
           return this.manager.getArrayBuffer(this.__props[propName] as Uint32Array);
         },
       });
     } else if (prop.type === "ref") {
       const setter = prop.mutable
         ? {
-            set(this: RemoteResource<Def>, value?: any) {
-              this.manager.setRef(value, this.__props[propName] as Uint32Array);
+            set(this: RemoteResource<GameState>, value?: RemoteResource<GameState>) {
+              this.manager.setRef(value, this.__props[propName] as Uint32Array, prop.backRef);
             },
           }
         : undefined;
 
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
-        get(this: RemoteResource<Def>) {
-          return this.manager.getRef((this.constructor as any).resourceDef, this.__props[propName] as Uint32Array);
+        get(this: RemoteResource<GameState>) {
+          return this.manager.getRef(this.__props[propName] as Uint32Array);
         },
       });
     } else if (prop.type === "refArray") {
-      // TODO
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<GameState>, value: RemoteResource<GameState>[]) {
+              const store = this.__props[propName] as Uint32Array;
+              for (let i = 0; i < value.length; i++) {
+                this.manager.setRefArrayItem(i, value[i], store);
+              }
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: RemoteResource<Def>) {
-          const arr = this.__props[propName];
+        ...setter,
+        get(this: RemoteResource<GameState>) {
+          const store = this.__props[propName] as Uint32Array;
           const resources = [];
 
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i] === 0) {
+          for (let i = 0; i < store.length; i++) {
+            if (store[i] === 0) {
               break;
             }
 
-            resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+            const resource = this.manager.getRefArrayItem(i, store);
+
+            if (resource) {
+              resources.push(resource);
+            }
           }
 
           return resources;
@@ -188,13 +224,13 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
     } else if (prop.type === "refMap") {
       // TODO
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
-        get(this: RemoteResource<Def>) {
-          const arr = this.__props[propName];
+        get(this: RemoteResource<GameState>) {
+          const store = this.__props[propName] as Uint32Array;
           const resources = [];
 
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i]) {
-              resources.push(this.manager.getResource((this.constructor as any).resourceDef, arr[i]));
+          for (let i = 0; i < store.length; i++) {
+            if (store[i]) {
+              resources.push(this.manager.getRefArrayItem(i, store));
             } else {
               resources.push(undefined);
             }
@@ -203,10 +239,25 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
           return resources;
         },
       });
+    } else if (prop.type === "bool") {
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<GameState>, value: boolean) {
+              this.__props[propName][0] = value ? 1 : 0;
+            },
+          }
+        : undefined;
+
+      Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        ...setter,
+        get(this: RemoteResource<GameState>) {
+          return !!this.__props[propName][0];
+        },
+      });
     } else if (prop.size === 1) {
       const setter = prop.mutable
         ? {
-            set(this: RemoteResource<Def>, value: number) {
+            set(this: RemoteResource<GameState>, value: number) {
               this.__props[propName][0] = value;
             },
           }
@@ -214,14 +265,14 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
-        get(this: RemoteResource<Def>) {
+        get(this: RemoteResource<GameState>) {
           return this.__props[propName][0];
         },
       });
     } else {
       const setter = prop.mutable
         ? {
-            set(this: RemoteResource<Def>, value: ArrayLike<number>) {
+            set(this: RemoteResource<GameState>, value: ArrayLike<number>) {
               this.__props[propName].set(value);
             },
           }
@@ -229,7 +280,7 @@ export function defineRemoteResourceClass<Def extends ResourceDefinition>(resour
 
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
         ...setter,
-        get(this: RemoteResource<Def>) {
+        get(this: RemoteResource<GameState>) {
           return this.__props[propName];
         },
       });

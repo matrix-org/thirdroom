@@ -2,6 +2,7 @@ import { IWorld } from "bitecs";
 
 import { BaseThreadContext } from "./module/module.common";
 import { GameResourceManager } from "./resource/GameResourceManager";
+import { RemoteWorld } from "./resource/resource.game";
 
 export type World = IWorld;
 
@@ -13,7 +14,6 @@ export interface GameState extends BaseThreadContext {
   dt: number;
   tick: number;
   world: World;
-  activeScene: number;
-  activeCamera: number;
+  worldResource: RemoteWorld;
   resourceManager: GameResourceManager;
 }

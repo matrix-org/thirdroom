@@ -4,12 +4,13 @@ import { addComponent } from "bitecs";
 import { GameState } from "../../engine/GameTypes";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModuleState, addRigidBody, Kinematic } from "../../engine/physics/physics.game";
+import { RemoteNode } from "../../engine/resource/resource.game";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_RADIUS } from "./common";
 
 export function addAvatarRigidBody(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  eid: number,
+  container: RemoteNode,
   options: AvatarOptions = {}
 ) {
   const {
@@ -35,5 +36,5 @@ export function addAvatarRigidBody(
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
-  addRigidBody(ctx, eid, rigidBody);
+  addRigidBody(ctx, container, rigidBody);
 }

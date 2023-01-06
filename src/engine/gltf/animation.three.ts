@@ -13,29 +13,47 @@ import {
   AnimationClip,
   Interpolant,
   Quaternion,
+  KeyframeTrack,
 } from "three";
 
-import { RemoteAccessor } from "../accessor/accessor.game";
-import { GameState } from "../GameTypes";
-import { GLTFAnimation, GLTFSampler, GLTFAnimationChannelTarget } from "./GLTF";
-import { GLTFResource, loadGLTFAccessor } from "./gltf.game";
+import { getAccessorArrayView } from "../accessor/accessor.common";
+import { RemoteAnimation, RemoteNode } from "../resource/resource.game";
+import { AnimationSamplerInterpolation, AnimationChannelTargetPath } from "../resource/schema";
 
-const PATH_PROPERTIES = {
-  scale: "scale",
-  translation: "position",
-  rotation: "quaternion",
-  weights: "morphTargetInfluences",
+const GLTFToThreeInterpolation = {
+  [AnimationSamplerInterpolation.CUBICSPLINE]: undefined,
+  [AnimationSamplerInterpolation.LINEAR]: InterpolateLinear,
+  [AnimationSamplerInterpolation.STEP]: InterpolateDiscrete,
 };
 
-type PATH_PROPERTIES_KEY = keyof typeof PATH_PROPERTIES;
-
-const INTERPOLATION = {
-  CUBICSPLINE: undefined,
-  LINEAR: InterpolateLinear,
-  STEP: InterpolateDiscrete,
+const GLTFToThreeAnimationPath = {
+  [AnimationChannelTargetPath.Scale]: "scale",
+  [AnimationChannelTargetPath.Translation]: "position",
+  [AnimationChannelTargetPath.Rotation]: "quaternion",
+  [AnimationChannelTargetPath.Weights]: "morphTargetInfluences",
 };
 
-type INTERPOLATION_KEY = keyof typeof INTERPOLATION;
+function getNormalizedComponentScale(constructor: Function) {
+  // Reference:
+  // https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_mesh_quantization#encoding-quantized-data
+
+  switch (constructor) {
+    case Int8Array:
+      return 1 / 127;
+
+    case Uint8Array:
+      return 1 / 255;
+
+    case Int16Array:
+      return 1 / 32767;
+
+    case Uint16Array:
+      return 1 / 65535;
+
+    default:
+      throw new Error("Unsupported normalized accessor component type.");
+  }
+}
 
 // Spline Interpolation
 // Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#appendix-c-spline-interpolation
@@ -100,7 +118,7 @@ class GLTFCubicSplineInterpolant extends Interpolant {
 const _q = new Quaternion();
 
 class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
-  interpolate_(i1: any, t0: any, t: any, t1: any) {
+  interpolate_(i1: number, t0: number, t: number, t1: number) {
     const result = super.interpolate_(i1, t0, t, t1);
 
     _q.fromArray(result).normalize().toArray(result);
@@ -109,112 +127,50 @@ class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
   }
 }
 
-function getNormalizedComponentScale(constructor: Function) {
-  // Reference:
-  // https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_mesh_quantization#encoding-quantized-data
+export function loadGLTFAnimationClip(
+  nodeToObject3D: Map<RemoteNode, Object3D>,
+  animation: RemoteAnimation
+): AnimationClip {
+  const tracks: KeyframeTrack[] = [];
 
-  switch (constructor) {
-    case Int8Array:
-      return 1 / 127;
+  for (const channel of animation.channels) {
+    const sampler = channel.sampler;
+    const targetNode = channel.targetNode;
+    const targetObj = nodeToObject3D.get(channel.targetNode);
 
-    case Uint8Array:
-      return 1 / 255;
-
-    case Int16Array:
-      return 1 / 32767;
-
-    case Uint16Array:
-      return 1 / 65535;
-
-    default:
-      throw new Error("Unsupported normalized accessor component type.");
-  }
-}
-
-export async function loadGLTFAnimationClip(
-  ctx: GameState,
-  resource: GLTFResource,
-  animation: GLTFAnimation,
-  index: number,
-  indexToObject3D: Map<number, Object3D>
-) {
-  const nodes: Object3D[] = [];
-  const pendingInputAccessors: Promise<RemoteAccessor<any>>[] = [];
-  const pendingOutputAccessors: Promise<RemoteAccessor<any>>[] = [];
-  const samplers: GLTFSampler[] = [];
-  const targets: GLTFAnimationChannelTarget[] = [];
-
-  for (let i = 0, il = animation.channels.length; i < il; i++) {
-    const channel = animation.channels[i];
-    const sampler = animation.samplers[channel.sampler];
-    const target = channel.target;
-    const input = animation.parameters !== undefined ? animation.parameters[sampler.input] : sampler.input;
-    const output = animation.parameters !== undefined ? animation.parameters[sampler.output] : sampler.output;
-
-    if (target.node !== undefined) {
-      const obj3d = indexToObject3D.get(target.node);
-      if (obj3d) nodes.push(obj3d);
-      else
-        throw new Error(
-          "glTF animation channel parse error: target node's object3d not found for index " + target.node
-        );
+    if (!targetObj) {
+      throw new Error(`Couldn't find target object for ${targetNode.name}`);
     }
 
-    pendingInputAccessors.push(loadGLTFAccessor(ctx, resource, input));
-    pendingOutputAccessors.push(loadGLTFAccessor(ctx, resource, output));
-
-    samplers.push(sampler);
-    targets.push(target);
-  }
-
-  const [inputAccessors, outputAccessors] = await Promise.all([
-    Promise.all(pendingInputAccessors),
-    Promise.all(pendingOutputAccessors),
-  ]);
-
-  const tracks = [];
-
-  for (let i = 0, il = nodes.length; i < il; i++) {
-    const node = nodes[i];
-    const inputAccessor = inputAccessors[i];
-    const outputAccessor = outputAccessors[i];
-    const sampler = samplers[i];
-    const target = targets[i];
-
-    if (node === undefined) continue;
-
-    node.updateMatrix();
-    node.matrixAutoUpdate = true;
+    targetObj.updateMatrix();
+    targetObj.matrixAutoUpdate = true;
 
     let TypedKeyframeTrack;
 
-    switch (PATH_PROPERTIES[target.path as PATH_PROPERTIES_KEY]) {
-      case PATH_PROPERTIES.weights:
+    switch (channel.targetPath) {
+      case AnimationChannelTargetPath.Weights:
         TypedKeyframeTrack = NumberKeyframeTrack;
         break;
 
-      case PATH_PROPERTIES.rotation:
+      case AnimationChannelTargetPath.Rotation:
         TypedKeyframeTrack = QuaternionKeyframeTrack;
         break;
 
-      case PATH_PROPERTIES.translation:
-      case PATH_PROPERTIES.scale:
+      case AnimationChannelTargetPath.Translation:
+      case AnimationChannelTargetPath.Scale:
       default:
         TypedKeyframeTrack = VectorKeyframeTrack;
         break;
     }
 
-    const targetName = node.name ? node.name : node.uuid;
+    const targetName = targetObj.name ? targetObj.name : targetObj.uuid;
 
-    const interpolation =
-      sampler.interpolation !== undefined
-        ? INTERPOLATION[sampler.interpolation as INTERPOLATION_KEY]
-        : InterpolateLinear;
+    const interpolation = GLTFToThreeInterpolation[sampler.interpolation];
 
     const targetNames = [];
 
-    if (PATH_PROPERTIES[target.path as PATH_PROPERTIES_KEY] === PATH_PROPERTIES.weights) {
-      node.traverse(function (object) {
+    if (channel.targetPath === AnimationChannelTargetPath.Weights) {
+      targetObj.traverse((object) => {
         if (object instanceof SkinnedMesh && object.morphTargetInfluences) {
           targetNames.push(object.name ? object.name : object.uuid);
         }
@@ -223,9 +179,9 @@ export async function loadGLTFAnimationClip(
       targetNames.push(targetName);
     }
 
-    let outputArray = outputAccessor.attribute.array;
+    let outputArray = getAccessorArrayView(sampler.output);
 
-    if (outputAccessor.attribute.normalized) {
+    if (sampler.output.normalized) {
       const scale = getNormalizedComponentScale(outputArray.constructor);
       const scaled = new Float32Array(outputArray.length);
 
@@ -237,14 +193,16 @@ export async function loadGLTFAnimationClip(
     }
 
     for (let j = 0, jl = targetNames.length; j < jl; j++) {
+      const inputArray = getAccessorArrayView(sampler.input);
+
       const track = new TypedKeyframeTrack(
-        targetNames[j] + "." + PATH_PROPERTIES[target.path as PATH_PROPERTIES_KEY],
-        inputAccessor.attribute.array as any[],
-        outputArray as any[],
+        targetNames[j] + "." + GLTFToThreeAnimationPath[channel.targetPath],
+        inputArray as unknown as any[],
+        outputArray as unknown as any[],
         interpolation
       );
 
-      if (sampler.interpolation === "CUBICSPLINE") {
+      if (sampler.interpolation === AnimationSamplerInterpolation.CUBICSPLINE) {
         (track as any).createInterpolant = function (result: any) {
           const interpolantType =
             this instanceof QuaternionKeyframeTrack ? GLTFCubicSplineQuaternionInterpolant : GLTFCubicSplineInterpolant;
@@ -259,7 +217,5 @@ export async function loadGLTFAnimationClip(
     }
   }
 
-  const name = animation.name ? animation.name : "animation_" + index;
-
-  return new AnimationClip(name, undefined, tracks);
+  return new AnimationClip(animation.name, undefined, tracks);
 }

@@ -3,7 +3,7 @@ import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
-import { removeRecursive } from "../component/transform";
+import { removeNode } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { ourPlayerQuery, Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -38,6 +38,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 
 /*********
  * Types *
@@ -170,22 +171,25 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     if (!network.authoritative) {
       for (let i = entities.length - 1; i >= 0; i--) {
         const eid = entities[i];
+        const node = RemoteNodeComponent.get(eid);
 
         const networkId = Networked.networkId[eid];
 
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
-        if (peerIndex === getPeerIndexFromNetworkId(networkId)) {
+        if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeRecursive(ctx.world, eid);
+          removeNode(ctx, node);
         }
       }
     }
 
     // remove this peer's avatar entity
     const eid = network.peerIdToEntityId.get(peerId);
-    if (eid) {
+    const node = eid ? RemoteNodeComponent.get(eid) : undefined;
+
+    if (eid && node) {
       network.entityIdToPeerId.delete(eid);
-      removeRecursive(ctx.world, eid);
+      removeNode(ctx, node);
     }
 
     network.peers.splice(peerArrIndex, 1);
@@ -237,7 +241,8 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
     // if we are new host, take authority over our avatar entity
     const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
     if (amNewHost) {
-      embodyAvatar(ctx, physics, input, eid);
+      const rig = RemoteNodeComponent.get(eid)!;
+      embodyAvatar(ctx, physics, input, rig);
     }
 
     // if host was re-elected, transfer ownership of old host's networked entities to new host

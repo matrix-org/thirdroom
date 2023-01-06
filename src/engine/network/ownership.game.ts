@@ -1,13 +1,13 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
-import { addChild, removeRecursive, Transform } from "../component/transform";
+import { addChild, removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RigidBody } from "../physics/physics.game";
-import { createPrefabEntity, Prefab } from "../prefab/prefab.game";
-import { isHost } from "./network.common";
+import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -30,34 +30,45 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
-  if (eid) {
-    removeRecursive(ctx.world, eid);
+  const node = eid ? RemoteNodeComponent.get(eid) : undefined;
+  if (node) {
+    removeNode(ctx, node);
   }
 };
 
 export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: number): number => {
-  if (network.authoritative && !isHost(network)) {
-    // TODO: when Authored component is implemented, add Owned component here
-  } else if (!hasComponent(ctx.world, Owned, eid)) {
-    removeRecursive(ctx.world, eid);
+  if (!hasComponent(ctx.world, Owned, eid)) {
+    removeNode(ctx, node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
-    const newEid = createPrefabEntity(ctx, prefabName);
+    const template = getPrefabTemplate(ctx, prefabName);
+    const newNode = template.create(ctx);
+    const newEid = newNode.eid;
 
     const body = RigidBody.store.get(eid);
     if (!body) throw new Error("rigidbody not found for eid: " + eid);
 
-    Transform.position[newEid].set(Transform.position[eid]);
-    Transform.scale[newEid].set(Transform.scale[eid]);
-    Transform.rotation[newEid].set(Transform.rotation[eid]);
-    Transform.quaternion[newEid].set(Transform.quaternion[eid]);
+    newNode.position.set(node.position);
+    newNode.scale.set(node.scale);
+    newNode.quaternion.set(node.quaternion);
 
     addComponent(ctx.world, Owned, newEid);
     addComponent(ctx.world, Networked, newEid);
 
-    addChild(ctx.activeScene, newEid);
+    if (template.type === PrefabType.Avatar) {
+      ctx.worldResource.avatars = [
+        ...ctx.worldResource.avatars,
+        new RemoteAvatar(ctx.resourceManager, {
+          root: node,
+        }),
+      ];
+    } else if (template.type === PrefabType.Object) {
+      addChild(ctx, ctx.worldResource.transientScene!, node);
+    } else {
+      throw new Error("Unknown prefab type");
+    }
 
     // send message to remove on other side
     broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));

@@ -1,23 +1,7 @@
 import { defineModule, Thread } from "../module/module.common";
 import { IMainThreadContext } from "../MainThread";
-import { WorkerMessageType } from "../WorkerMessage";
 import { RendererMessageType, rendererModuleName } from "./renderer.common";
-import { registerResource } from "../resource/resource.main";
 import { createDisposables } from "../utils/createDisposables";
-import {
-  BufferResource,
-  BufferViewResource,
-  CameraResource,
-  ImageResource,
-  InteractableResource,
-  LightResource,
-  MaterialResource,
-  MeshPrimitiveResource,
-  MeshResource,
-  NodeResource,
-  SamplerResource,
-  TextureResource,
-} from "../resource/schema";
 
 type MainRendererModuleState = {};
 
@@ -40,42 +24,28 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
   },
   init(ctx) {
     ctx.sendMessage(Thread.Render, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
     ctx.sendMessage(Thread.Game, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
-    return createDisposables([
-      registerResizeEventHandler(ctx),
-      registerResource(ctx, LightResource),
-      registerResource(ctx, SamplerResource),
-      registerResource(ctx, CameraResource),
-      registerResource(ctx, BufferResource),
-      registerResource(ctx, BufferViewResource),
-      registerResource(ctx, ImageResource),
-      registerResource(ctx, MaterialResource),
-      registerResource(ctx, TextureResource),
-      registerResource(ctx, MeshResource),
-      registerResource(ctx, NodeResource),
-      registerResource(ctx, MeshPrimitiveResource),
-      registerResource(ctx, InteractableResource),
-    ]);
+    return createDisposables([registerResizeEventHandler(ctx)]);
   },
 });
 
 const registerResizeEventHandler = (ctx: IMainThreadContext) => {
   function onResize() {
     ctx.sendMessage(Thread.Render, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });
     ctx.sendMessage(Thread.Game, {
-      type: WorkerMessageType.RenderWorkerResize,
+      type: RendererMessageType.CanvasResize,
       canvasWidth: ctx.canvas.clientWidth,
       canvasHeight: ctx.canvas.clientHeight,
     });

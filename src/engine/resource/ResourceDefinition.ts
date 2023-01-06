@@ -1,19 +1,22 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
-import { TypedArray32, TypedArrayConstructor32 } from "../allocator/types";
+import { TypedArray32, TypedArrayConstructor32 } from "../utils/typedarray";
 import { BaseThreadContext } from "../module/module.common";
+import { GLTFResource } from "../gltf/gltf.game";
 
-export interface ResourceDefinition<S extends Schema = Schema> {
+export interface ResourceDefinition {
   name: string;
   resourceType: number;
-  schema: ProcessedSchema<S>;
+  schema: {
+    [key: string]: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown> & { byteOffset: number };
+  };
   byteLength: number;
 }
 
-interface Schema {
+export type Schema = {
   [key: string]: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>;
-}
+};
 
 type ProcessedSchema<S extends Schema> = {
   [K in keyof S]: S[K] & { byteOffset: number };
@@ -35,414 +38,344 @@ export interface ResourcePropDef<
   mutableScript: boolean;
   script: boolean;
   default: DefaultValue;
-  enumType?: Enum;
+  enumType: Enum;
   resourceDef: Def;
   min?: number;
   max?: number;
   minExclusive?: number;
   maxExclusive?: number;
+  backRef: boolean;
 }
 
-function createBoolPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: boolean;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"bool", boolean, Mut extends true ? true : false, Req extends false ? false : true> {
+function createPropDef<
+  Type extends string,
+  Required extends boolean,
+  Mutable extends boolean,
+  EnumType,
+  ResourceDef,
+  Defaults extends {
+    type: Type;
+    required: Required;
+    mutable: Mutable;
+    default: unknown;
+    size?: number;
+    arrayType: TypedArrayConstructor32;
+    enumType?: EnumType;
+    resourceDef?: ResourceDef;
+  },
+  Options extends {
+    default?: Defaults["default"];
+    mutable?: boolean;
+    mutableScript?: boolean;
+    required?: boolean;
+    script?: boolean;
+    min?: number;
+    max?: number;
+    minExclusive?: number;
+    maxExclusive?: number;
+    backRef?: boolean;
+    size?: number;
+  }
+>(defaults: Defaults, options?: Options) {
   return {
-    type: "bool",
-    size: 1,
-    // TODO: look into byte alignment to make this smaller like using a Uin8tArray
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
+    mutableScript: options?.mutable !== undefined ? options.mutable : defaults.mutable,
     script: false,
-    default: false,
     resourceDef: undefined,
+    backRef: false,
+    size: 1,
+    ...defaults,
     ...options,
-  };
+  } as ResourcePropDef<
+    Defaults["type"],
+    Defaults["default"],
+    Options["mutable"] extends boolean ? Options["mutable"] : Defaults["mutable"],
+    Options["required"] extends boolean ? Options["required"] : Defaults["required"],
+    Defaults["enumType"],
+    Defaults["resourceDef"]
+  >;
 }
 
-function createU32PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: number;
-  mutable?: Mut;
+interface BasePropOptions {
+  mutable?: boolean;
   mutableScript?: boolean;
-  required?: Req;
+  required?: boolean;
   script?: boolean;
+}
+
+interface DefaultPropOptions<DefaultValue> extends BasePropOptions {
+  default?: DefaultValue;
+}
+
+type NoDefaultPropOptions<DefaultValue> = {
+  mutable?: boolean;
+  mutableScript?: boolean;
+  script?: boolean;
+} & (
+  | {
+      required: true;
+      default?: DefaultValue;
+    }
+  | { required?: false; default: DefaultValue }
+);
+
+interface ScalarPropOptions extends DefaultPropOptions<number> {
   min?: number;
   max?: number;
   minExclusive?: number;
   maxExclusive?: number;
-}): ResourcePropDef<"u32", number, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "u32",
-    size: 1,
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: 0,
-    resourceDef: undefined,
-    ...options,
-  };
 }
 
-function createF32PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: number;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-  min?: number;
-  max?: number;
-  minExclusive?: number;
-  maxExclusive?: number;
-}): ResourcePropDef<"f32", number, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "f32",
-    size: 1,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: 0,
-    resourceDef: undefined,
-    ...options,
-  };
+type VectorPropOptions = DefaultPropOptions<ArrayLike<number>>;
+
+interface RefPropOptions extends BasePropOptions {
+  backRef?: boolean;
 }
 
-function createVec2PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"vec2", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "vec2",
-    size: 2,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: vec2.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+interface RefArrayPropOptions extends RefPropOptions {
+  size: number;
 }
 
-function createVec3PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"vec3", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "vec3",
-    size: 3,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: true,
-    required: false as any,
-    script: false,
-    default: vec3.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+function createBoolPropDef<O extends DefaultPropOptions<boolean>>(options?: O) {
+  return createPropDef(
+    {
+      type: "bool",
+      // TODO: look into byte alignment to make this smaller like using a Uin8tArray
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: false,
+    },
+    options
+  );
 }
 
-function createRGBPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"rgb", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "rgb",
-    size: 3,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: vec3.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+function createU32PropDef<O extends ScalarPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "u32",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+    },
+    options
+  );
 }
 
-function createRGBAPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"rgba", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "rgba",
-    size: 4,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: vec4.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+function createF32PropDef<O extends ScalarPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "f32",
+      arrayType: Float32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+    },
+    options
+  );
 }
 
-function createQuatPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"quat", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "quat",
-    size: 4,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: quat.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+function createVec2PropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "vec2",
+      arrayType: Float32Array,
+      size: 2,
+      mutable: true,
+      required: false,
+      default: vec2.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createMat4PropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: ArrayLike<number>;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"mat4", ArrayLike<number>, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "mat4",
-    size: 16,
-    arrayType: Float32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: mat4.create(),
-    resourceDef: undefined,
-    ...options,
-  };
+function createVec3PropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "vec3",
+      arrayType: Float32Array,
+      size: 3,
+      mutable: true,
+      required: false,
+      default: vec3.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createBitmaskPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: number;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"bitmask", number, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "bitmask",
-    size: 1,
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: 0,
-    resourceDef: undefined,
-    ...options,
-  };
+function createRGBPropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "rgb",
+      arrayType: Float32Array,
+      size: 3,
+      mutable: true,
+      required: false,
+      default: vec3.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createEnumPropDef<T, Mut extends boolean, Req extends boolean>(
-  enumType: T,
-  options: {
-    default?: T[keyof T];
-    mutable?: Mut;
-    mutableScript?: boolean;
-    required?: Req;
-    script?: boolean;
-  }
-): ResourcePropDef<
-  "enum",
-  T[keyof T] | undefined,
-  Mut extends true ? true : false,
-  Req extends false ? false : true,
-  T
-> {
-  return {
-    type: "enum",
-    enumType,
-    size: 1,
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: undefined,
-    resourceDef: undefined,
-    ...options,
-  };
+function createRGBAPropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "rgba",
+      arrayType: Float32Array,
+      size: 4,
+      mutable: true,
+      required: false,
+      default: vec4.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createStringPropDef<Mut extends boolean, Req extends boolean>(options?: {
-  default?: string;
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<"string", string, Mut extends true ? true : false, Req extends false ? false : true> {
-  return {
-    type: "string",
-    size: 1,
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: "",
-    resourceDef: undefined,
-    ...options,
-  };
+function createQuatPropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "quat",
+      arrayType: Float32Array,
+      size: 4,
+      mutable: true,
+      required: false,
+      default: quat.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createArrayBufferPropDef(options?: {
-  script?: boolean;
-}): ResourcePropDef<"arrayBuffer", undefined, false, true> {
-  return {
-    type: "arrayBuffer",
-    size: 2,
-    arrayType: Uint32Array,
-    mutable: false,
-    mutableScript: false,
-    required: true,
-    script: false,
-    default: undefined,
-    resourceDef: undefined,
-    ...options,
-  };
+function createMat4PropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "mat4",
+      arrayType: Float32Array,
+      size: 16,
+      mutable: true,
+      required: false,
+      default: mat4.create() as ArrayLike<number>,
+    },
+    options
+  );
 }
 
-function createRefPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
+function createBitmaskPropDef<O extends DefaultPropOptions<number>>(options?: O) {
+  return createPropDef(
+    {
+      type: "bitmask",
+      arrayType: Uint32Array,
+      size: 1,
+      mutable: true,
+      required: false,
+      default: 0,
+    },
+    options
+  );
+}
+
+function createEnumPropDef<T, O extends NoDefaultPropOptions<Extract<T[keyof T], number>>>(enumType: T, options?: O) {
+  return createPropDef(
+    {
+      type: "enum",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+      enumType,
+    },
+    options
+  );
+}
+
+function createStringPropDef<O extends DefaultPropOptions<string>>(options?: O) {
+  return createPropDef(
+    {
+      type: "string",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: "",
+    },
+    options
+  );
+}
+
+function createArrayBufferPropDef<O extends { script?: boolean }>(options?: O) {
+  return createPropDef(
+    {
+      type: "arrayBuffer",
+      size: 2,
+      arrayType: Uint32Array,
+      mutable: false,
+      required: true,
+      default: undefined,
+    },
+    options
+  );
+}
+
+function createRefPropDef<Def extends ResourceDefinition | string, O extends RefPropOptions>(
   resourceDef: Def,
-  options?: {
-    mutable?: Mut;
-    mutableScript?: boolean;
-    required?: Req;
-    script?: boolean;
-  }
-): ResourcePropDef<"ref", number, Mut extends true ? true : false, Req extends false ? false : true, undefined, Def> {
-  return {
-    type: "ref",
-    size: 1,
-    arrayType: Uint32Array,
-    resourceDef,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: 0,
-    ...options,
-  };
+  options?: O
+) {
+  return createPropDef(
+    {
+      type: "ref",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+      resourceDef,
+    },
+    options
+  );
 }
 
-function createRefArrayPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
+function createRefArrayPropDef<Def extends ResourceDefinition | string, O extends RefArrayPropOptions>(
   resourceDef: Def,
-  options: {
-    size: number;
-    mutable?: Mut;
-    mutableScript?: boolean;
-    required?: Req;
-    script?: boolean;
-  }
-): ResourcePropDef<
-  "refArray",
-  ArrayLike<number>,
-  Mut extends true ? true : false,
-  Req extends false ? false : true,
-  undefined,
-  Def
-> {
-  const { size, ...rest } = options;
-  return {
-    type: "refArray",
-    size,
-    arrayType: Uint32Array,
-    resourceDef,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: new Uint32Array(size),
-    ...rest,
-  };
+  options: O
+) {
+  return createPropDef(
+    {
+      type: "refArray",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: new Uint32Array(options.size),
+      resourceDef,
+    },
+    options
+  );
 }
 
-function createRefMapPropDef<Def extends ResourceDefinition | string, Mut extends boolean, Req extends boolean>(
+function createRefMapPropDef<Def extends ResourceDefinition | string, O extends RefArrayPropOptions>(
   resourceDef: Def,
-  options: {
-    size: number;
-    mutable?: Mut;
-    mutableScript?: boolean;
-    required?: Req;
-    script?: boolean;
-  }
-): ResourcePropDef<
-  "refMap",
-  ArrayLike<number>,
-  Mut extends true ? true : false,
-  Req extends false ? false : true,
-  undefined,
-  Def
-> {
-  const { size, ...rest } = options;
-  return {
-    type: "refMap",
-    size,
-    arrayType: Uint32Array,
-    resourceDef,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: new Uint32Array(size),
-    ...rest,
-  };
+  options: O
+) {
+  return createPropDef(
+    {
+      type: "refMap",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: new Uint32Array(options.size),
+      resourceDef,
+    },
+    options
+  );
 }
 
-function createSelfRefPropDef<Def extends ResourceDefinition, Mut extends boolean, Req extends boolean>(options?: {
-  mutable?: Mut;
-  mutableScript?: boolean;
-  required?: Req;
-  script?: boolean;
-}): ResourcePropDef<
-  "selfRef",
-  number,
-  Mut extends true ? true : false,
-  Req extends false ? false : true,
-  undefined,
-  Def
-> {
-  return {
-    type: "selfRef",
-    size: 1,
-    arrayType: Uint32Array,
-    mutable: true as any,
-    mutableScript: options?.mutable !== undefined ? options.mutable : true,
-    required: false as any,
-    script: false,
-    default: 0,
-    resourceDef: undefined as unknown as Def, // To be assigned in defineResource
-    ...options,
-  };
+function createSelfRefPropDef<O extends RefPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "selfRef",
+      arrayType: Uint32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+    },
+    options
+  );
 }
 
 export const PropType = {
@@ -465,12 +398,17 @@ export const PropType = {
   selfRef: createSelfRefPropDef,
 };
 
-export const defineResource = <S extends Schema>(
+export interface DefinedResource<T extends number, S extends Schema> extends ResourceDefinition {
+  resourceType: T;
+  schema: ProcessedSchema<S>;
+}
+
+export const defineResource = <T extends number, S extends Schema>(
   name: string,
-  resourceType: number,
+  resourceType: T,
   schema: S
-): ResourceDefinition<S> => {
-  const resourceDef: ResourceDefinition<S> = {
+): DefinedResource<T, S> => {
+  const resourceDef: DefinedResource<T, S> = {
     name,
     resourceType,
     schema: schema as unknown as ProcessedSchema<S>,
@@ -487,8 +425,9 @@ export const defineResource = <S extends Schema>(
         mutable: prop.mutable,
         required: prop.required,
         script: prop.script,
-      }) as unknown as any;
-      (schema[propName] as any).byteOffset = cursor;
+        backRef: prop.backRef,
+      }) as S[Extract<keyof S, string>];
+      (schema[propName] as ProcessedSchema<S>[Extract<keyof S, string>]).byteOffset = cursor;
     } else {
       prop.byteOffset = cursor;
     }
@@ -498,13 +437,205 @@ export const defineResource = <S extends Schema>(
 
   resourceDef.byteLength = cursor;
 
-  return resourceDef as unknown as ResourceDefinition<S>;
+  return resourceDef;
 };
 
-type ResourcePropValue<
+type RemoteResourcePropValue<
+  ThreadContext extends BaseThreadContext,
   Def extends ResourceDefinition,
-  Prop extends keyof Def["schema"],
-  MutResource extends boolean
+  Prop extends keyof Def["schema"]
+> = Def["schema"][Prop]["type"] extends "string"
+  ? string
+  : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "arrayBuffer"
+  ? SharedArrayBuffer
+  : Def["schema"][Prop]["type"] extends "bool"
+  ? boolean
+  : Def["schema"][Prop]["type"] extends "mat4"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "f32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "rgba"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "rgb"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec2"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec3"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "quat"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "bitmask"
+  ? number
+  : Def["schema"][Prop]["type"] extends "enum"
+  ? Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
+  : Def["schema"][Prop]["type"] extends "ref"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
+    : unknown
+  : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "selfRef"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? RemoteResourceInstance<Def, ThreadContext>
+      : RemoteResourceInstance<Def, ThreadContext> | undefined
+    : unknown
+  : never;
+
+type RemoteResourcePropValueMut<
+  ThreadContext extends BaseThreadContext,
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"]
+> = Def["schema"][Prop]["mutable"] extends false
+  ? Readonly<RemoteResourcePropValue<ThreadContext, Def, Prop>>
+  : RemoteResourcePropValue<ThreadContext, Def, Prop>;
+
+type LocalResourcePropValue<
+  ThreadContext extends BaseThreadContext,
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"]
+> = Def["schema"][Prop]["type"] extends "string"
+  ? string
+  : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "arrayBuffer"
+  ? SharedArrayBuffer
+  : Def["schema"][Prop]["type"] extends "bool"
+  ? boolean
+  : Def["schema"][Prop]["type"] extends "mat4"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "f32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "rgba"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "rgb"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec2"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec3"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "quat"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "bitmask"
+  ? number
+  : Def["schema"][Prop]["type"] extends "enum"
+  ? Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
+  : Def["schema"][Prop]["type"] extends "ref"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? LocalResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+      : LocalResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
+    : unknown
+  : Def["schema"][Prop]["type"] extends "refArray"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? LocalResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "refMap"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? LocalResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
+    : unknown[]
+  : Def["schema"][Prop]["type"] extends "selfRef"
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? LocalResourceInstance<Def, ThreadContext>
+      : LocalResourceInstance<Def, ThreadContext> | undefined
+    : unknown
+  : never;
+
+export interface Resource {
+  resourceId: number;
+  tripleBuffer: TripleBuffer;
+}
+
+export interface RemoteResource<ThreadContext extends BaseThreadContext> extends Resource {
+  constructor: { name: string; resourceDef: ResourceDefinition };
+  resourceDef: ResourceDefinition;
+  resourceType: number;
+  manager: IRemoteResourceManager<ThreadContext>;
+  __props: { [key: string]: TypedArray32 };
+  initialized: boolean;
+  byteView: Uint8Array;
+  refView: Uint32Array;
+  prevRefs: number[];
+  translationIndices: Uint32Array;
+  translationValues: Uint32Array;
+  ptr: number;
+  addRef(): void;
+  removeRef(): void;
+  dispose(ctx: ThreadContext): void;
+}
+
+export type RemoteResourceInstance<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext
+> = RemoteResource<ThreadContext> & {
+  [Prop in keyof Def["schema"]]: RemoteResourcePropValueMut<ThreadContext, Def, Prop>;
+} & { resourceType: Def["resourceType"] };
+
+export interface IRemoteResourceClass<
+  Def extends ResourceDefinition = ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (
+    manager: IRemoteResourceManager<ThreadContext>,
+    props?: ResourceData | InitialRemoteResourceProps<ThreadContext, Def>
+  ): RemoteResourceInstance<Def, ThreadContext>;
+  resourceDef: Def;
+}
+
+export interface LocalResource<ThreadContext extends BaseThreadContext = BaseThreadContext> extends Resource {
+  resourceType: number;
+  manager: ILocalResourceManager;
+  __props: { [key: string]: TypedArray32[] };
+  load(ctx: ThreadContext): Promise<void>;
+  dispose(ctx: ThreadContext): void;
+}
+
+export type LocalResourceInstance<
+  Def extends ResourceDefinition,
+  ThreadContext extends BaseThreadContext
+> = LocalResource<ThreadContext> & {
+  readonly [Prop in keyof Def["schema"]]: LocalResourcePropValue<ThreadContext, Def, Prop>;
+} & { resourceType: Def["resourceType"] };
+
+export interface ILocalResourceClass<
+  Def extends ResourceDefinition = ResourceDefinition,
+  ThreadContext extends BaseThreadContext = BaseThreadContext
+> {
+  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResourceInstance<
+    Def,
+    ThreadContext
+  >;
+  resourceDef: Def;
+}
+
+export interface ILocalResourceConstructor<ThreadContext extends BaseThreadContext> {
+  new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): LocalResource<ThreadContext>;
+  resourceDef: ResourceDefinition;
+}
+
+export type IResourceClass<ThreadContext extends BaseThreadContext> =
+  | IRemoteResourceClass<ResourceDefinition>
+  | ILocalResourceClass<ResourceDefinition, ThreadContext>;
+
+type RequiredProps<Def extends ResourceDefinition> = {
+  [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
+}[keyof Def["schema"]];
+
+type InitialRemoteResourcePropValue<
+  ThreadContext extends BaseThreadContext,
+  Def extends ResourceDefinition,
+  Prop extends keyof Def["schema"]
 > = Def["schema"][Prop]["type"] extends "string"
   ? string
   : Def["schema"][Prop]["type"] extends "u32"
@@ -530,95 +661,64 @@ type ResourcePropValue<
   : Def["schema"][Prop]["type"] extends "bitmask"
   ? number
   : Def["schema"][Prop]["type"] extends "enum"
-  ? // TODO: actually return the enum type instead of number
-    // ex: Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
-    number
+  ? Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
   : Def["schema"][Prop]["type"] extends "ref"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
     ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? Resource<Def["schema"][Prop]["resourceDef"], MutResource>
-      : Resource<Def["schema"][Prop]["resourceDef"], MutResource> | undefined
+      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
     : unknown
   : Def["schema"][Prop]["type"] extends "refArray"
   ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
+    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
     : unknown[]
   : Def["schema"][Prop]["type"] extends "refMap"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Resource<Def["schema"][Prop]["resourceDef"]>[]
-    : unknown[]
+  ? {
+      [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+        ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
+        : never;
+    }
   : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Resource<Def, MutResource>
+  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
+    ? Def["schema"][Prop] extends { required: true; mutable: false }
+      ? RemoteResourceInstance<Def, ThreadContext>
+      : RemoteResourceInstance<Def, ThreadContext> | undefined
+    : unknown
   : never;
 
-type ResourcePropValueMut<
-  Def extends ResourceDefinition,
-  Prop extends keyof Def["schema"],
-  MutResource extends boolean
-> = MutResource extends false
-  ? Readonly<ResourcePropValue<Def, Prop, MutResource>>
-  : Def["schema"][Prop]["mutable"] extends false
-  ? Readonly<ResourcePropValue<Def, Prop, MutResource>>
-  : ResourcePropValue<Def, Prop, MutResource>;
-
-export type Resource<Def extends ResourceDefinition, MutResource extends boolean = true> = {
-  resourceId: number;
-  tripleBuffer: TripleBuffer;
-} & { [Prop in keyof Def["schema"]]: ResourcePropValueMut<Def, Prop, MutResource> };
-
-export type RemoteResource<Def extends ResourceDefinition> = Resource<Def, true> & {
-  resourceType: number;
-  manager: IRemoteResourceManager;
-  __props: { [key: string]: TypedArray32 };
-  initialized: boolean;
-  byteView: Uint8Array;
-  translationIndices: Uint32Array;
-  translationValues: Uint32Array;
-  ptr: number;
-  addRef(): void;
-  removeRef(): void;
-} & { constructor: { name: string; resourceDef: Def } };
-
-export type LocalResource<
-  Def extends ResourceDefinition,
-  ThreadContext extends BaseThreadContext = BaseThreadContext
-> = Resource<Def, false> & {
-  manager: ILocalResourceManager;
-  __props: { [key: string]: TypedArray32[] };
-  load(ctx: ThreadContext): Promise<void>;
-  dispose(ctx: ThreadContext): void;
-};
-
-type RequiredProps<Def extends ResourceDefinition> = {
-  [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
-}[keyof Def["schema"]];
-
-export type InitialResourceProps<Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: ResourcePropValue<Def, Prop, true>;
+export type InitialRemoteResourceProps<ThreadContext extends BaseThreadContext, Def extends ResourceDefinition> = {
+  [Prop in RequiredProps<Def>]: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
 } & {
-  [Prop in keyof Def["schema"]]?: ResourcePropValue<Def, Prop, true>;
+  [Prop in keyof Def["schema"]]?: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
 };
 
-export interface IRemoteResourceManager {
-  resources: RemoteResource<ResourceDefinition>[];
+export interface ResourceData {
+  ptr: number;
+  buffer: ArrayBuffer;
+  tripleBuffer: TripleBuffer;
+}
+
+export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext> {
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;
+  removeGLTFRef(uri: string): boolean;
   getString(store: Uint32Array): string;
   setString(value: string | undefined, store: Uint32Array): void;
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
-  createResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    props: InitialResourceProps<Def>
-  ): RemoteResource<Def>;
-  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource<Def> | undefined;
-  disposeResource(resourceId: number): void;
-  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined;
-  setRef(value: unknown | undefined, store: Uint32Array): void;
+  allocateResource(resourceDef: ResourceDefinition): ResourceData;
+  createResource(resource: RemoteResource<ThreadContext>): number;
+  disposeResource(resourceId: number): boolean;
+  getRef<T extends RemoteResource<ThreadContext>>(store: Uint32Array): T | undefined;
+  setRef(value: RemoteResource<ThreadContext> | undefined, store: Uint32Array, backRef: boolean): void;
+  setRefArrayItem(index: number, value: RemoteResource<ThreadContext> | undefined, store: Uint32Array): void;
+  getRefArrayItem<T extends RemoteResource<ThreadContext>>(index: number, store: Uint32Array): T | undefined;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
 }
 
+export type LocalResourceTypes = string | SharedArrayBuffer | LocalResource;
+
 export interface ILocalResourceManager {
-  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): LocalResource<Def> | undefined;
-  getString(resourceId: number): string;
-  getArrayBuffer(resourceId: number): SharedArrayBuffer | undefined;
+  getResource<T extends LocalResourceTypes>(resourceId: number): T | undefined;
 }

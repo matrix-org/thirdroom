@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState, World } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
+import { RemoteNode } from "../resource/resource.game";
 
 interface PrefabModuleState {
   prefabTemplateMap: Map<string, PrefabTemplate>;
@@ -19,9 +20,15 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 /* Prefab Functions */
 
+export enum PrefabType {
+  Object,
+  Avatar,
+}
+
 export interface PrefabTemplate {
   name: string;
-  create: (ctx: GameState, options: any) => number;
+  type: PrefabType;
+  create: (ctx: GameState, options: any) => RemoteNode;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;
   deserialize?: (ctx: GameState) => number;
@@ -38,9 +45,9 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   const create = template.create;
 
   template.create = (ctx: GameState, options = {}) => {
-    const eid = create(ctx, options);
-    addPrefabComponent(state.world, eid, template.name);
-    return eid;
+    const node = create(ctx, options);
+    addPrefabComponent(state.world, node.eid, template.name);
+    return node;
   };
 }
 
@@ -65,7 +72,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return template;
 }
 
-export const createPrefabEntity = (state: GameState, prefab: string, options = {}) => {
+export const createPrefabEntity = (state: GameState, prefab: string, options = {}): RemoteNode => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
 

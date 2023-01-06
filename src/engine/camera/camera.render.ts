@@ -1,44 +1,22 @@
 import { OrthographicCamera, PerspectiveCamera, Scene, MathUtils } from "three";
 
-import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResource, getResourceDisposed } from "../resource/resource.render";
-import { CameraType, LocalCamera } from "../resource/schema";
+import { RenderNode } from "../resource/resource.render";
+import { CameraType } from "../resource/schema";
 
-export function updateNodeCamera(
-  ctx: RenderThreadState,
-  scene: Scene,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
-  const currentCameraResourceId = node.camera?.resourceId || 0;
-  const nextCameraResourceId = nodeReadView.camera[0];
+export function updateNodeCamera(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+  const currentCameraResourceId = node.currentCameraResourceId;
+  const nextCameraResourceId = node.camera?.resourceId || 0;
 
   // TODO: Handle node.visible
 
-  if (getResourceDisposed(ctx, nextCameraResourceId)) {
-    if (node.cameraObject) {
-      scene.remove(node.cameraObject);
-      node.cameraObject = undefined;
-    }
-
-    node.camera = undefined;
+  if (currentCameraResourceId !== nextCameraResourceId && node.cameraObject) {
+    scene.remove(node.cameraObject);
+    node.cameraObject = undefined;
   }
 
-  if (currentCameraResourceId !== nextCameraResourceId) {
-    if (node.cameraObject) {
-      scene.remove(node.cameraObject);
-      node.cameraObject = undefined;
-    }
-
-    if (nextCameraResourceId) {
-      node.camera = getLocalResource<LocalCamera>(ctx, nextCameraResourceId)?.resource;
-    } else {
-      node.camera = undefined;
-    }
-  }
+  node.currentCameraResourceId = nextCameraResourceId;
 
   if (!node.camera) {
     return;
@@ -95,7 +73,7 @@ export function updateNodeCamera(
   }
 
   if (camera) {
-    updateTransformFromNode(ctx, nodeReadView, camera);
+    updateTransformFromNode(ctx, node, camera);
   }
 
   node.cameraObject = camera;

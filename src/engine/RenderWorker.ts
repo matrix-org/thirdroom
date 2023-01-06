@@ -3,6 +3,8 @@ import { Message, registerModules, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
 import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
+import { getLocalResources, RenderWorld } from "./resource/resource.render";
+import { waitUntil } from "./utils/waitUntil";
 
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;
@@ -63,7 +65,8 @@ async function onInit(
     }
   }
 
-  const state: RenderThreadState = {
+  const ctx: RenderThreadState = {
+    thread: Thread.Render,
     canvas,
     gameToRenderTripleBufferFlags,
     elapsed: performance.now(),
@@ -72,6 +75,8 @@ async function onInit(
     systems: renderConfig.systems,
     modules: new Map(),
     sendMessage: renderWorkerSendMessage,
+    // TODO: figure out how to create the main thread context such that this is initially set
+    worldResource: undefined as any,
   };
 
   const onMessage = ({ data }: MessageEvent) => {
@@ -85,11 +90,11 @@ async function onInit(
       return;
     }
 
-    const handlers = state.messageHandlers.get(message.type);
+    const handlers = ctx.messageHandlers.get(message.type);
 
     if (handlers) {
       for (const handler of handlers) {
-        handler(state, message);
+        handler(ctx, message);
       }
     }
   };
@@ -97,13 +102,15 @@ async function onInit(
   workerScope.addEventListener("message", onMessage as any);
   gameWorkerMessagePort.addEventListener("message", onMessage);
 
-  const modulePromise = registerModules(Thread.Render, state, renderConfig.modules);
+  const modulePromise = registerModules(Thread.Render, ctx, renderConfig.modules);
 
   gameWorkerMessagePort.start();
 
   await modulePromise;
 
+  ctx.worldResource = await waitUntil(() => getLocalResources(ctx, RenderWorld)[0]);
+
   console.log("RenderWorker initialized");
 
-  startRenderLoop(state);
+  startRenderLoop(ctx);
 }

@@ -1,5 +1,4 @@
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
-import { hierarchyObjectBufferSchema } from "../component/transform.common";
 
 /*********
  * Types *
@@ -19,10 +18,7 @@ export enum ReparentEntityPosition {
   On = "on",
 }
 
-export type HierarchyTripleBuffer = ObjectTripleBuffer<typeof hierarchyObjectBufferSchema>;
-
 export const editorStateSchema = defineObjectBufferSchema({
-  activeSceneEid: [Uint32Array, 1],
   activeEntity: [Uint32Array, 1],
 });
 
@@ -37,7 +33,6 @@ export enum EditorMessageType {
   LoadEditor = "load-editor",
   EditorLoaded = "editor-loaded",
   DisposeEditor = "dispose-editor",
-  NamesChanged = "names-changed",
   SelectionChanged = "selection-changed",
   ToggleSelectedEntity = "toggle-selected-entity",
   SetSelectedEntity = "set-selected-entity",
@@ -49,7 +44,6 @@ export enum EditorMessageType {
 
 export interface InitializeEditorStateMessage {
   editorStateTripleBuffer: EditorStateTripleBuffer;
-  hierarchyTripleBuffer: HierarchyTripleBuffer;
 }
 
 export interface LoadEditorMessage {
@@ -58,20 +52,12 @@ export interface LoadEditorMessage {
 
 export interface EditorLoadedMessage {
   type: EditorMessageType.EditorLoaded;
-  names: Map<number, string>;
   activeEntity: number;
   selectedEntities: number[];
 }
 
 export interface DisposeEditorMessage {
   type: EditorMessageType.DisposeEditor;
-}
-
-export interface NamesChangedMessage {
-  type: EditorMessageType.NamesChanged;
-  created: [number, string][];
-  updated: [number, string][];
-  deleted: number[];
 }
 
 export interface SelectionChangedMessage {

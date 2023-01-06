@@ -2,7 +2,7 @@ import { addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { getCamera } from "../engine/camera/camera.game";
-import { setEulerFromQuaternion, Transform, updateMatrixWorld } from "../engine/component/transform";
+import { updateMatrixWorld } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -14,6 +14,8 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
+import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
+import { RemoteNode } from "../engine/resource/resource.game";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -85,8 +87,8 @@ export function addFlyControls(ctx: GameState, eid: number) {
   return eid;
 }
 
-function applyFlyControls(ctx: GameState, controller: InputController, eid: number, camera: number) {
-  const { speed } = FlyControls.get(eid)!;
+function applyFlyControls(ctx: GameState, controller: InputController, playerRig: RemoteNode, camera: RemoteNode) {
+  const { speed } = FlyControls.get(playerRig.eid)!;
   const moveVec = controller.actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
   const boost = controller.actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
 
@@ -96,13 +98,11 @@ function applyFlyControls(ctx: GameState, controller: InputController, eid: numb
 
   updateMatrixWorld(camera);
 
-  mat4.getRotation(cameraWorldRotation, Transform.worldMatrix[camera]);
+  mat4.getRotation(cameraWorldRotation, camera.worldMatrix);
   vec3.transformQuat(velocityVec, velocityVec, cameraWorldRotation);
   vec3.normalize(velocityVec, velocityVec);
   vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);
-  vec3.add(Transform.position[eid], Transform.position[eid], velocityVec);
-
-  setEulerFromQuaternion(Transform.rotation[eid], Transform.quaternion[eid]);
+  vec3.add(playerRig.position, playerRig.position, velocityVec);
 }
 
 export function FlyControllerSystem(ctx: GameState) {
@@ -110,9 +110,10 @@ export function FlyControllerSystem(ctx: GameState) {
   const ents = flyControlsQuery(ctx.world);
 
   for (let i = 0; i < ents.length; i++) {
-    const playerRig = ents[i];
+    const playerRigEid = ents[i];
+    const playerRig = RemoteNodeComponent.get(playerRigEid)!;
     const camera = getCamera(ctx, playerRig);
-    const controller = getInputController(input, playerRig);
+    const controller = getInputController(input, playerRigEid);
 
     applyFlyControls(ctx, controller, playerRig, camera);
   }

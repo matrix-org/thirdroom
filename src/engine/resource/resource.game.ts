@@ -1,84 +1,211 @@
+import { addEntity, removeEntity } from "bitecs";
+import { AnimationClip } from "three";
+
+import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
+import { disposeGLTF, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
+import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import {
   ArrayBufferResourceType,
+  CreateResourceMessage,
   LoadResourcesMessage,
   ResourceDisposedError,
-  ResourceDisposedMessage,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
-  ResourceStatus,
+  ResourceProps,
   StringResourceType,
 } from "./resource.common";
-import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialRemoteResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+} from "./ResourceDefinition";
+import {
+  NametagResource,
+  SamplerResource,
+  BufferResource,
+  BufferViewResource,
+  AudioDataResource,
+  AudioSourceResource,
+  AudioEmitterResource,
+  ImageResource,
+  TextureResource,
+  ReflectionProbeResource,
+  MaterialResource,
+  LightResource,
+  CameraResource,
+  SparseAccessorResource,
+  AccessorResource,
+  MeshPrimitiveResource,
+  InstancedMeshResource,
+  MeshResource,
+  LightMapResource,
+  TilesRendererResource,
+  SkinResource,
+  InteractableResource,
+  NodeResource,
+  SceneResource,
+  ResourceType,
+  AnimationResource,
+  AnimationChannelResource,
+  AnimationSamplerResource,
+  WorldResource,
+  EnvironmentResource,
+  AvatarResource,
+} from "./schema";
 
-interface RemoteResourceInfo {
-  id: ResourceId;
-  name: string;
-  thread: Thread;
-  resourceType: string;
-  props: any;
-  loaded: boolean;
-  error?: string;
-  statusView: Uint8Array;
-  cacheKey?: string;
-  refCount: number;
-  dispose?: () => void;
+export interface ResourceTransformData {
+  writeView: Uint8Array;
+  refView: Uint32Array;
+  refOffsets: number[];
+  refIsString: boolean[];
 }
 
 interface ResourceModuleState {
   resourceIdCounter: number;
-  resources: Map<ResourceId, any>;
-  resourcesByType: Map<ResourceDefinition, RemoteResource<any>[]>;
-  resourceInfos: Map<ResourceId, RemoteResourceInfo>;
-  resourceIdMap: Map<string, Map<any, ResourceId>>;
-  deferredResources: Map<ResourceId, Deferred<undefined>>;
-  mainThreadMessageQueue: any[];
-  renderThreadMessageQueue: any[];
-  mainThreadTransferList: Transferable[];
-  renderThreadTransferList: Transferable[];
+  resourceInfos: Map<ResourceId, ResourceInfo>;
+  resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
+  messageQueue: CreateResourceMessage[];
+  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
+  resourceTransformData: Map<number, ResourceTransformData>;
+  resourceDefByType: Map<number, ResourceDefinition>;
+}
+
+type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
+
+interface ResourceInfo {
+  resource: RemoteResourceTypes;
+  refCount: number;
+  statusBuffer: TripleBuffer;
+  deferred: Deferred<undefined>;
+  dispose?: () => void;
 }
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
-  create() {
+  create(ctx: GameState) {
     return {
       resourceIdCounter: 1,
-      resources: new Map(),
-      resourcesByType: new Map(),
+      resourceConstructors: new Map(),
+      resourceTransformData: new Map(),
+      resourceDefByType: new Map(),
       resourceInfos: new Map(),
-      resourceIdMap: new Map(),
-      deferredResources: new Map(),
-      mainThreadMessageQueue: [],
-      renderThreadMessageQueue: [],
-      mainThreadTransferList: [],
-      renderThreadTransferList: [],
+      resourcesByType: new Map(),
+      messageQueue: [],
     };
   },
   init(ctx) {
-    return registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded);
+    const dispose = createDisposables([
+      registerResource(ctx, RemoteNode),
+      registerResource(ctx, RemoteAudioData),
+      registerResource(ctx, RemoteAudioSource),
+      registerResource(ctx, RemoteAudioEmitter),
+      registerResource(ctx, RemoteNametag),
+      registerResource(ctx, RemoteLight),
+      registerResource(ctx, RemoteSampler),
+      registerResource(ctx, RemoteCamera),
+      registerResource(ctx, RemoteBuffer),
+      registerResource(ctx, RemoteBufferView),
+      registerResource(ctx, RemoteImage),
+      registerResource(ctx, RemoteMaterial),
+      registerResource(ctx, RemoteTexture),
+      registerResource(ctx, RemoteMesh),
+      registerResource(ctx, RemoteScene),
+      registerResource(ctx, RemoteMeshPrimitive),
+      registerResource(ctx, RemoteInteractable),
+      registerResource(ctx, RemoteAccessor),
+      registerResource(ctx, RemoteSparseAccessor),
+      registerResource(ctx, RemoteSkin),
+      registerResource(ctx, RemoteInstancedMesh),
+      registerResource(ctx, RemoteLightMap),
+      registerResource(ctx, RemoteReflectionProbe),
+      registerResource(ctx, RemoteTilesRenderer),
+      registerResource(ctx, RemoteAnimationChannel),
+      registerResource(ctx, RemoteAnimationSampler),
+      registerResource(ctx, RemoteAnimation),
+      registerResource(ctx, RemoteAvatar),
+      registerResource(ctx, RemoteEnvironment),
+      registerResource(ctx, RemoteWorld),
+      registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
+    ]);
+
+    ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
+      persistentScene: new RemoteScene(ctx.resourceManager, {
+        eid: addEntity(ctx.world),
+        name: "Persistent Scene",
+      }),
+    });
+
+    return dispose;
   },
 });
+
+function registerResource<Def extends ResourceDefinition>(
+  ctx: GameState,
+  resourceDefOrClass: IRemoteResourceClass<Def>
+) {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  const RemoteResourceClass = resourceDefOrClass;
+
+  const resourceDef = RemoteResourceClass.resourceDef;
+
+  resourceModule.resourceConstructors.set(
+    resourceDef,
+    RemoteResourceClass as unknown as IRemoteResourceClass<ResourceDefinition>
+  );
+
+  resourceModule.resourceDefByType.set(resourceDef.resourceType, resourceDef);
+
+  const buffer = new ArrayBuffer(resourceDef.byteLength);
+  const writeView = new Uint8Array(buffer);
+  const refView = new Uint32Array(buffer);
+  const refOffsets: number[] = [];
+  const refIsString: boolean[] = [];
+
+  const schema = resourceDef.schema;
+
+  for (const propName in schema) {
+    const prop = schema[propName];
+
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
+      for (let i = 0; i < prop.size; i++) {
+        const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
+        refOffsets.push(refOffset);
+        refIsString.push(prop.type === "string");
+      }
+    } else if (prop.type === "arrayBuffer") {
+      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+      refIsString.push(false);
+    }
+  }
+
+  resourceModule.resourceTransformData.set(resourceDef.resourceType, {
+    writeView,
+    refView,
+    refOffsets,
+    refIsString,
+  });
+
+  return () => {
+    resourceModule.resourceConstructors.delete(RemoteResourceClass.resourceDef);
+  };
+}
 
 function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resourceInfo = resourceModule.resourceInfos.get(id);
-
-  if (!resourceInfo) {
-    return;
-  }
-
-  const deferred = resourceModule.deferredResources.get(id);
+  const deferred = resourceModule.resourceInfos.get(id)?.deferred;
 
   if (!deferred) {
     return;
   }
-
-  resourceInfo.loaded = loaded;
-  resourceInfo.error = error;
 
   if (error) {
     deferred.reject(error);
@@ -87,64 +214,16 @@ function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedM
   }
 }
 
-interface ResourceOptions {
-  name?: string;
-  transferList?: Transferable[];
-  cacheKey?: any;
-  dispose?: () => void;
-}
-
-const UNKNOWN_RESOURCE_NAME = "Unknown Resource";
-
-export function createResource<Props>(
+function createResource(
   ctx: GameState,
-  thread: Thread,
   resourceType: string,
-  props: Props,
-  options?: ResourceOptions
+  props: ResourceProps,
+  resource: RemoteResourceTypes,
+  dispose?: () => void
 ): number {
   const resourceModule = getModule(ctx, ResourceModule);
-
-  let resourceCache = resourceModule.resourceIdMap.get(resourceType);
-
-  if (resourceCache) {
-    if (options?.cacheKey !== undefined) {
-      const existingResourceId = resourceCache.get(options.cacheKey);
-
-      if (existingResourceId !== undefined) {
-        return existingResourceId;
-      }
-    }
-  } else {
-    resourceCache = new Map();
-    resourceModule.resourceIdMap.set(resourceType, resourceCache);
-  }
-
   const id = resourceModule.resourceIdCounter++;
-
-  // First byte loading flag, second byte is dispose flag
-  const statusBuffer = new SharedArrayBuffer(2);
-  const statusView = new Uint8Array(statusBuffer);
-  statusView[0] = ResourceStatus.Loading;
-
-  const name = options?.name || UNKNOWN_RESOURCE_NAME;
-
-  resourceModule.resourceInfos.set(id, {
-    id,
-    name,
-    thread,
-    resourceType,
-    props,
-    loaded: false,
-    statusView,
-    cacheKey: options?.cacheKey,
-    refCount: 0,
-    dispose: options?.dispose,
-  });
-
-  if (options?.cacheKey !== undefined) {
-    resourceCache.set(options.cacheKey, id);
-  }
+  const statusBuffer = createTripleBuffer(ctx.gameToRenderTripleBufferFlags, 1);
 
   const deferred = createDeferred<undefined>();
 
@@ -156,58 +235,51 @@ export function createResource<Props>(
     console.error(error);
   });
 
-  resourceModule.deferredResources.set(id, deferred);
+  resourceModule.resourceInfos.set(id, {
+    resource,
+    refCount: 0,
+    dispose,
+    statusBuffer,
+    deferred,
+  });
 
-  const message = {
+  resourceModule.messageQueue.push({
     resourceType,
     id,
-    name,
     props,
-    statusView,
-  };
-
-  if (thread === Thread.Game) {
-    throw new Error("Invalid resource thread target");
-  }
-
-  if (thread === Thread.Shared && options?.transferList) {
-    throw new Error("Cannot transfer resources to multiple threads");
-  }
-
-  if (thread === Thread.Main || thread === Thread.Shared) {
-    resourceModule.mainThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.mainThreadTransferList.push(...options.transferList);
-    }
-  }
-
-  if (thread === Thread.Render || thread === Thread.Shared) {
-    resourceModule.renderThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.renderThreadTransferList.push(...options.transferList);
-    }
-  }
+    statusBuffer,
+  });
 
   return id;
 }
 
-export function createStringResource(ctx: GameState, value: string): ResourceId {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceId = createResource(ctx, Thread.Shared, StringResourceType, value);
-  resourceModule.resources.set(resourceId, value);
+export function createRemoteResource(ctx: GameState, resource: RemoteResource<GameState>): number {
+  const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
+
+  const { resourcesByType } = getModule(ctx, ResourceModule);
+
+  const resourceType = resource.resourceType;
+  let resourceArr = resourcesByType.get(resourceType);
+
+  if (!resourceArr) {
+    resourceArr = [];
+    resourcesByType.set(resourceType, resourceArr);
+  }
+
+  resourceArr.push(resource as unknown as RemoteResource<GameState>);
+
   return resourceId;
+}
+
+export function createStringResource(ctx: GameState, value: string, dispose?: () => void): ResourceId {
+  return createResource(ctx, StringResourceType, value, value, dispose);
 }
 
 export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceId = createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
-  resourceModule.resources.set(resourceId, value);
-  return resourceId;
+  return createResource(ctx, ArrayBufferResourceType, value, value);
 }
 
-export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
+export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boolean {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resourceInfo = resourceModule.resourceInfos.get(resourceId);
@@ -216,9 +288,9 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     return false;
   }
 
-  resourceInfo.refCount--;
+  const refCount = --resourceInfo.refCount;
 
-  if (resourceInfo.refCount > 0) {
+  if (refCount > 0) {
     return false;
   }
 
@@ -226,32 +298,17 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     resourceInfo.dispose();
   }
 
-  if (resourceInfo.cacheKey) {
-    const resourceTypeCache = resourceModule.resourceIdMap.get(resourceInfo.resourceType);
-
-    if (resourceTypeCache) {
-      resourceTypeCache.delete(resourceInfo.cacheKey);
-    }
-  }
-
-  const deferred = resourceModule.deferredResources.get(resourceId);
-
-  if (deferred) {
-    deferred.reject(new ResourceDisposedError("Resource disposed"));
-    resourceModule.deferredResources.delete(resourceId);
-  }
-
-  // Set dispose flag
-  resourceInfo.statusView[1] = 1;
+  const statusBuffer = resourceInfo.statusBuffer;
+  const index = getWriteBufferIndex(statusBuffer);
+  statusBuffer.byteViews[index][0] = 1;
 
   resourceModule.resourceInfos.delete(resourceId);
 
-  const resource = resourceModule.resources.get(resourceId);
+  const resource = resourceInfo.resource;
 
-  const resourceDef = resource?.constructor?.resourceDef;
-
-  if (resourceDef) {
-    const resourceArr = resourceModule.resourcesByType.get(resourceDef);
+  if (typeof resource !== "string" && "resourceType" in resource) {
+    const resourceType = resource.resourceType;
+    const resourceArr = resourceModule.resourcesByType.get(resourceType);
 
     if (resourceArr) {
       const index = resourceArr.indexOf(resource);
@@ -262,25 +319,11 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     }
 
     if (resource.dispose) {
-      resource.dispose();
+      resource.dispose(ctx);
     }
   }
 
-  resourceModule.resources.delete(resourceId);
-
-  if (resourceInfo.thread === Thread.Main || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Main, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
-  }
-
-  if (resourceInfo.thread === Thread.Render || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Render, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
-  }
+  resourceInfo.deferred.reject(new ResourceDisposedError("Resource disposed"));
 
   return true;
 }
@@ -295,88 +338,202 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
   }
 }
 
-export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const deferred = resourceModule.deferredResources.get(resourceId);
-
-  if (deferred) {
-    return deferred.promise;
-  }
-
-  return Promise.reject(new Error(`Resource ${resourceId} not found.`));
-}
-
-export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
-  return resourceInfo ? resourceInfo.statusView[0] : ResourceStatus.None;
-}
-
-export function setRemoteResource<Res extends RemoteResource<any>>(
-  ctx: GameState,
-  resourceId: ResourceId,
-  resource: Res
-): void {
-  const { resources, resourcesByType } = getModule(ctx, ResourceModule);
-
-  resources.set(resourceId, resource);
-
-  const resourceDef = resource.constructor.resourceDef;
-  let resourceArr = resourcesByType.get(resourceDef);
-
-  if (!resourceArr) {
-    resourceArr = [];
-    resourcesByType.set(resourceDef, resourceArr);
-  }
-
-  resourceArr.push(resource);
-}
-
 export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
-  return getModule(ctx, ResourceModule).resources.get(resourceId) as Res | undefined;
+  return getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource as Res | undefined;
 }
 
-export function getRemoteResources<Def extends ResourceDefinition>(
+export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource<GameState>>(
   ctx: GameState,
-  resourceDef: Def
-): RemoteResource<Def>[] {
-  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceDef) || []) as unknown as RemoteResource<Def>[];
+  resourceClass: {
+    new (manager: IRemoteResourceManager<GameState>, props?: InitialRemoteResourceProps<GameState, Def>): T;
+    resourceDef: Def;
+  }
+): T[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  const resourceModule = getModule(ctx, ResourceModule);
+  const { messageQueue } = getModule(ctx, ResourceModule);
 
-  if (resourceModule.mainThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Main,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.mainThreadMessageQueue,
-      },
-      resourceModule.mainThreadTransferList.length > 0 ? resourceModule.mainThreadTransferList : undefined
-    );
+  if (messageQueue.length !== 0) {
+    ctx.sendMessage<LoadResourcesMessage>(Thread.Main, {
+      type: ResourceMessageType.LoadResources,
+      resources: messageQueue,
+    });
 
-    resourceModule.mainThreadMessageQueue = [];
+    ctx.sendMessage<LoadResourcesMessage>(Thread.Render, {
+      type: ResourceMessageType.LoadResources,
+      resources: messageQueue,
+    });
 
-    if (resourceModule.mainThreadTransferList.length > 0) {
-      resourceModule.mainThreadTransferList = [];
+    messageQueue.length = 0;
+  }
+}
+
+export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
+
+export class RemoteSampler extends defineRemoteResourceClass(SamplerResource) {}
+
+export class RemoteBuffer extends defineRemoteResourceClass(BufferResource) {}
+
+export class RemoteBufferView extends defineRemoteResourceClass(BufferViewResource) {
+  declare buffer: RemoteBuffer;
+}
+
+export class RemoteAudioData extends defineRemoteResourceClass(AudioDataResource) {
+  declare bufferView: RemoteBufferView | undefined;
+}
+
+export class RemoteAudioSource extends defineRemoteResourceClass(AudioSourceResource) {
+  declare audio: RemoteAudioData | undefined;
+}
+
+export class RemoteAudioEmitter extends defineRemoteResourceClass(AudioEmitterResource) {
+  declare sources: RemoteAudioSource[];
+}
+
+export class RemoteImage extends defineRemoteResourceClass(ImageResource) {
+  declare bufferView: RemoteBufferView | undefined;
+}
+
+export class RemoteTexture extends defineRemoteResourceClass(TextureResource) {
+  declare sampler: RemoteSampler | undefined;
+  declare source: RemoteImage;
+}
+
+export class RemoteReflectionProbe extends defineRemoteResourceClass(ReflectionProbeResource) {
+  declare reflectionProbeTexture: RemoteTexture | undefined;
+}
+
+export class RemoteMaterial extends defineRemoteResourceClass(MaterialResource) {
+  declare baseColorTexture: RemoteTexture | undefined;
+  declare metallicRoughnessTexture: RemoteTexture | undefined;
+  declare normalTexture: RemoteTexture | undefined;
+  declare occlusionTexture: RemoteTexture | undefined;
+  declare emissiveTexture: RemoteTexture | undefined;
+  declare transmissionTexture: RemoteTexture | undefined;
+  declare thicknessTexture: RemoteTexture | undefined;
+}
+
+export class RemoteLight extends defineRemoteResourceClass(LightResource) {}
+
+export class RemoteCamera extends defineRemoteResourceClass(CameraResource) {}
+
+export class RemoteSparseAccessor extends defineRemoteResourceClass(SparseAccessorResource) {
+  declare indicesBufferView: RemoteBufferView;
+  declare valuesBufferView: RemoteBufferView;
+}
+
+export class RemoteAccessor extends defineRemoteResourceClass(AccessorResource) {
+  declare bufferView: RemoteBufferView | undefined;
+  declare sparse: RemoteSparseAccessor | undefined;
+}
+
+export class RemoteMeshPrimitive extends defineRemoteResourceClass(MeshPrimitiveResource) {
+  declare attributes: RemoteAccessor[];
+  declare indices: RemoteAccessor | undefined;
+  declare material: RemoteMaterial | undefined;
+}
+
+export class RemoteInstancedMesh extends defineRemoteResourceClass(InstancedMeshResource) {
+  declare attributes: RemoteAccessor[];
+}
+
+export class RemoteMesh extends defineRemoteResourceClass(MeshResource) {
+  declare primitives: RemoteMeshPrimitive[];
+}
+
+export class RemoteLightMap extends defineRemoteResourceClass(LightMapResource) {
+  declare texture: RemoteTexture;
+}
+
+export class RemoteTilesRenderer extends defineRemoteResourceClass(TilesRendererResource) {}
+
+export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
+  declare joints: RemoteNode[];
+  declare inverseBindMatrices: RemoteAccessor | undefined;
+}
+
+export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
+
+export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
+  declare parentScene: RemoteScene | undefined;
+  declare parent: RemoteNode | undefined;
+  declare firstChild: RemoteNode | undefined;
+  declare prevSibling: RemoteNode | undefined;
+  declare nextSibling: RemoteNode | undefined;
+  declare mesh: RemoteMesh | undefined;
+  declare instancedMesh: RemoteInstancedMesh | undefined;
+  declare lightMap: RemoteLightMap | undefined;
+  declare skin: RemoteSkin | undefined;
+  declare light: RemoteLight | undefined;
+  declare reflectionProbe: RemoteReflectionProbe | undefined;
+  declare camera: RemoteCamera | undefined;
+  declare audioEmitter: RemoteAudioEmitter | undefined;
+  declare tilesRenderer: RemoteTilesRenderer | undefined;
+  declare nametag: RemoteNametag | undefined;
+  declare interactable: RemoteInteractable | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+    removeEntity(ctx.world, this.eid);
+  }
+}
+
+export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {
+  declare input: RemoteAccessor;
+  declare output: RemoteAccessor;
+}
+
+export class RemoteAnimationChannel extends defineRemoteResourceClass(AnimationChannelResource) {
+  declare sampler: RemoteAnimationSampler;
+  declare targetNode: RemoteNode;
+}
+
+export class RemoteAnimation extends defineRemoteResourceClass(AnimationResource) {
+  declare channels: RemoteAnimationChannel[];
+  declare samplers: RemoteAnimationSampler[];
+  declare clip: AnimationClip | undefined;
+}
+
+export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
+  declare backgroundTexture: RemoteTexture | undefined;
+  declare reflectionProbe: RemoteReflectionProbe | undefined;
+  declare audioEmitters: RemoteAudioEmitter[];
+  declare firstNode: RemoteNode | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+    removeEntity(ctx.world, this.eid);
+  }
+}
+
+export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentResource) {
+  declare activeScene: RemoteScene | undefined;
+  gltfResource: GLTFResource | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
+
+    if (this.gltfResource) {
+      disposeGLTF(this.gltfResource);
     }
   }
+}
 
-  if (resourceModule.renderThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Render,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.renderThreadMessageQueue,
-      },
-      resourceModule.renderThreadTransferList.length > 0 ? resourceModule.renderThreadTransferList : undefined
-    );
+export class RemoteAvatar extends defineRemoteResourceClass(AvatarResource) {
+  declare root: RemoteNode;
+  gltfResource: GLTFResource | undefined;
+  dispose(ctx: GameState) {
+    super.dispose(ctx);
 
-    resourceModule.renderThreadMessageQueue = [];
-
-    if (resourceModule.renderThreadTransferList.length > 0) {
-      resourceModule.renderThreadTransferList = [];
+    if (this.gltfResource) {
+      disposeGLTF(this.gltfResource);
     }
   }
+}
+
+export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
+  declare environment: RemoteEnvironment | undefined;
+  declare avatars: RemoteAvatar[];
+  declare persistentScene: RemoteScene;
+  declare transientScene: RemoteScene | undefined;
+  declare activeCameraNode: RemoteNode | undefined;
 }
