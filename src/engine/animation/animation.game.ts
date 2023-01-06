@@ -43,9 +43,11 @@ export const BoneComponent = new Map<number, Bone>();
 const animationQuery = defineQuery([AnimationComponent]);
 const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
+const exitBoneQuery = exitQuery(boneQuery);
 
 export function AnimationSystem(ctx: GameState) {
   disposeAnimations(ctx);
+  disposeBones(ctx);
   processAnimations(ctx);
   syncBones(ctx);
 }
@@ -110,8 +112,7 @@ function processAnimations(ctx: GameState) {
 
     if (animation && rigidBody) {
       // collectively fade all animations out each frame
-      const allActions: AnimationAction[] = Object.values(animation.actions);
-      reduceClipActionWeights(allActions, fadeOutAmount * ctx.dt);
+      reduceClipActionWeights(animation.actions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
       const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, animation);
@@ -134,17 +135,15 @@ function syncBones(ctx: GameState) {
     const bone = BoneComponent.get(eid);
     const node = RemoteNodeComponent.get(eid);
     if (bone && node) {
-      const p = node.position;
-      const q = node.quaternion;
-      bone.position.toArray(p);
-      bone.quaternion.toArray(q);
+      bone.position.toArray(node.position);
+      bone.quaternion.toArray(node.quaternion);
     }
   }
   return ctx;
 }
 
-function reduceClipActionWeights(actions: AnimationAction[], amount: number) {
-  for (const action of actions) {
+function reduceClipActionWeights(actions: Map<string, AnimationAction>, amount: number) {
+  for (const action of actions.values()) {
     if (action.weight > 0) {
       action.weight -= amount;
     } else {
@@ -291,5 +290,14 @@ function disposeAnimations(ctx: GameState) {
     }
 
     AnimationComponent.delete(eid);
+  }
+}
+
+function disposeBones(ctx: GameState) {
+  const entities = exitBoneQuery(ctx.world);
+
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
+    BoneComponent.delete(eid);
   }
 }

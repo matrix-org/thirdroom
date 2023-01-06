@@ -25,6 +25,7 @@ import {
   ExitedWorldMessage,
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
+  PrintResourcesMessage,
 } from "./thirdroom.common";
 import { loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { addRemoteNodeComponent } from "../../engine/node/node.game";
@@ -66,7 +67,7 @@ import {
 } from "../../engine/scripting/scripting.game";
 import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
 import * as Schema from "../../engine/resource/schema";
-import { ResourceDefinition } from "../../engine/resource/ResourceDefinition";
+import { RemoteResource, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
@@ -82,6 +83,8 @@ import {
   RemoteSampler,
   RemoteScene,
   RemoteTexture,
+  RemoteWorld,
+  ResourceModule,
 } from "../../engine/resource/resource.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addRemoteSceneComponent } from "../../engine/scene/scene.game";
@@ -164,8 +167,11 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
+      registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
     ];
+
+    await loadGLTF(ctx, "/gltf/full-animation-rig.glb");
 
     registerPrefab(ctx, {
       name: "avatar",
@@ -283,9 +289,7 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
-  ctx.worldResource.activeCameraNode = undefined;
-  ctx.worldResource.environment = undefined;
-  ctx.worldResource.transientScene = undefined;
+  disposeWorld(ctx.worldResource);
   ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
     type: ThirdRoomMessageType.ExitedWorld,
   });
@@ -293,6 +297,19 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
 
 function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
   console.log(Thread.Game, ctx);
+}
+
+function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
+  const resourceMap: { [key: string]: RemoteResource<GameState>[] } = {};
+
+  const { resourcesByType, resourceDefByType } = getModule(ctx, ResourceModule);
+
+  for (const [resourceType, resources] of resourcesByType) {
+    const resourceDef = resourceDefByType.get(resourceType)!;
+    resourceMap[resourceDef.name] = resources;
+  }
+
+  console.log(resourceMap);
 }
 
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
@@ -325,9 +342,15 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
   }
 }
 
+function disposeWorld(worldResource: RemoteWorld) {
+  worldResource.activeCameraNode = undefined;
+  worldResource.environment = undefined;
+  worldResource.transientScene = undefined;
+  worldResource.avatars = [];
+}
+
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
-  ctx.worldResource.environment = undefined;
-  ctx.worldResource.activeCameraNode = undefined;
+  disposeWorld(ctx.worldResource);
 
   const transientSceneEid = addEntity(ctx.world);
   const transientScene = addRemoteSceneComponent(ctx, transientSceneEid, {
@@ -361,7 +384,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
-  const environmentScene = (await loadDefaultGLTFScene(environmentGLTFResource)) as RemoteScene;
+  const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource)) as RemoteScene;
 
   if (script) {
     addScriptComponent(ctx, environmentScene, script);

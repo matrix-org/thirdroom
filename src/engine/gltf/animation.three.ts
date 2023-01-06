@@ -5,7 +5,6 @@
 import {
   InterpolateLinear,
   InterpolateDiscrete,
-  Object3D,
   NumberKeyframeTrack,
   QuaternionKeyframeTrack,
   VectorKeyframeTrack,
@@ -17,8 +16,9 @@ import {
 } from "three";
 
 import { getAccessorArrayView } from "../accessor/accessor.common";
-import { RemoteAnimation, RemoteNode } from "../resource/resource.game";
+import { RemoteAnimation } from "../resource/resource.game";
 import { AnimationSamplerInterpolation, AnimationChannelTargetPath } from "../resource/schema";
+import { GLTFLoaderContext } from "./gltf.game";
 
 const GLTFToThreeInterpolation = {
   [AnimationSamplerInterpolation.CUBICSPLINE]: undefined,
@@ -127,16 +127,13 @@ class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
   }
 }
 
-export function loadGLTFAnimationClip(
-  nodeToObject3D: Map<RemoteNode, Object3D>,
-  animation: RemoteAnimation
-): AnimationClip {
+export function loadGLTFAnimationClip(loaderCtx: GLTFLoaderContext, animation: RemoteAnimation): AnimationClip {
   const tracks: KeyframeTrack[] = [];
 
   for (const channel of animation.channels) {
     const sampler = channel.sampler;
     const targetNode = channel.targetNode;
-    const targetObj = nodeToObject3D.get(channel.targetNode);
+    const targetObj = loaderCtx.nodeToObject3D.get(channel.targetNode);
 
     if (!targetObj) {
       throw new Error(`Couldn't find target object for ${targetNode.name}`);

@@ -9,6 +9,7 @@ import {
   LoadWorldMessage,
   PrintThreadStateMessage,
   ThirdRoomMessageType,
+  PrintResourcesMessage,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
@@ -34,6 +35,12 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
       });
 
       console.log(Thread.Main, ctx);
+    });
+
+    registerThirdroomGlobalFn("printResources", () => {
+      ctx.sendMessage<PrintResourcesMessage>(Thread.Game, {
+        type: ThirdRoomMessageType.PrintResources,
+      });
     });
   },
 });

@@ -698,6 +698,11 @@ export interface ResourceData {
   tripleBuffer: TripleBuffer;
 }
 
+export interface ResourceManagerGLTFCacheEntry {
+  refCount: number;
+  promise: Promise<GLTFResource>;
+}
+
 export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext> {
   getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
   cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;
@@ -711,7 +716,8 @@ export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext>
   disposeResource(resourceId: number): boolean;
   getRef<T extends RemoteResource<ThreadContext>>(store: Uint32Array): T | undefined;
   setRef(value: RemoteResource<ThreadContext> | undefined, store: Uint32Array, backRef: boolean): void;
-  setRefArrayItem(index: number, value: RemoteResource<ThreadContext> | undefined, store: Uint32Array): void;
+  setRefArray(values: RemoteResource<ThreadContext>[], store: Uint32Array): void;
+  setRefMap(values: { [key: number]: RemoteResource<ThreadContext> }, store: Uint32Array): void;
   getRefArrayItem<T extends RemoteResource<ThreadContext>>(index: number, store: Uint32Array): T | undefined;
   addRef(resourceId: number): void;
   removeRef(resourceId: number): void;
