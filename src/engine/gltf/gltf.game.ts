@@ -386,6 +386,7 @@ async function loadGLTFSceneAnimations(
 
     traverse(remoteSceneOrNode, (node) => {
       if (node === remoteSceneOrNode) {
+        nodeToObject3D.set(node, rootObj);
         return;
       }
 
@@ -416,15 +417,13 @@ async function loadGLTFSceneAnimations(
       obj.quaternion.fromArray(node.quaternion);
       obj.scale.fromArray(node.scale);
 
-      if (node.parent) {
-        const parentObj = nodeToObject3D.get(node.parent);
+      const parentObj = node.parent && nodeToObject3D.get(node.parent);
 
-        if (parentObj) {
-          parentObj.add(obj);
-        }
-      } else {
-        rootObj.add(obj);
+      if (!parentObj) {
+        throw new Error("Node has no parent");
       }
+
+      parentObj.add(obj);
     });
 
     const options = { nodes: nodeMap, nodeToObject3D };
