@@ -5,6 +5,8 @@ import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../alloca
 import { GameState } from "../GameTypes";
 import { disposeGLTF, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
+import { RemoteSceneComponent } from "../scene/scene.game";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import { defineRemoteResourceClass } from "./RemoteResourceClass";
@@ -65,6 +67,7 @@ export interface ResourceTransformData {
   refView: Uint32Array;
   refOffsets: number[];
   refIsString: boolean[];
+  refIsBackRef: boolean[];
 }
 
 interface ResourceModuleState {
@@ -168,6 +171,7 @@ function registerResource<Def extends ResourceDefinition>(
   const refView = new Uint32Array(buffer);
   const refOffsets: number[] = [];
   const refIsString: boolean[] = [];
+  const refIsBackRef: boolean[] = [];
 
   const schema = resourceDef.schema;
 
@@ -179,10 +183,12 @@ function registerResource<Def extends ResourceDefinition>(
         const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
         refOffsets.push(refOffset);
         refIsString.push(prop.type === "string");
+        refIsBackRef.push(prop.backRef);
       }
     } else if (prop.type === "arrayBuffer") {
       refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
       refIsString.push(false);
+      refIsBackRef.push(prop.backRef);
     }
   }
 
@@ -191,6 +197,7 @@ function registerResource<Def extends ResourceDefinition>(
     refView,
     refOffsets,
     refIsString,
+    refIsBackRef,
   });
 
   return () => {
@@ -474,8 +481,9 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
   dispose(ctx: GameState) {
-    super.dispose(ctx);
     removeEntity(ctx.world, this.eid);
+    RemoteNodeComponent.delete(this.eid);
+    super.dispose(ctx);
   }
 }
 
@@ -501,8 +509,9 @@ export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
   declare audioEmitters: RemoteAudioEmitter[];
   declare firstNode: RemoteNode | undefined;
   dispose(ctx: GameState) {
-    super.dispose(ctx);
     removeEntity(ctx.world, this.eid);
+    RemoteSceneComponent.delete(this.eid);
+    super.dispose(ctx);
   }
 }
 

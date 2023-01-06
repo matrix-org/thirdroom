@@ -90,23 +90,13 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
         this.__props[propName] = store;
       } else if (prop.type === "refArray") {
         if (initialValue !== undefined) {
-          const refs = initialValue as RemoteResource<GameState>[];
-
-          for (let i = 0; i < refs.length; i++) {
-            const ref = refs[i];
-            store[i] = ref.ptr || ref.resourceId;
-          }
+          this.manager.setRefArray(initialValue as RemoteResource<GameState>[], store as Uint32Array);
         }
 
         this.__props[propName] = store;
       } else if (prop.type === "refMap") {
         if (initialValue !== undefined) {
-          const refs = initialValue as { [key: number]: RemoteResource<GameState> };
-
-          for (const key in refs) {
-            const ref = refs[key];
-            store[key] = ref.ptr || ref.resourceId;
-          }
+          this.manager.setRefMap(initialValue as { [key: number]: RemoteResource<GameState> }, store as Uint32Array);
         }
 
         this.__props[propName] = store;
@@ -192,10 +182,7 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       const setter = prop.mutable
         ? {
             set(this: RemoteResource<GameState>, value: RemoteResource<GameState>[]) {
-              const store = this.__props[propName] as Uint32Array;
-              for (let i = 0; i < value.length; i++) {
-                this.manager.setRefArrayItem(i, value[i], store);
-              }
+              this.manager.setRefArray(value, this.__props[propName] as Uint32Array);
             },
           }
         : undefined;
@@ -222,8 +209,16 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
         },
       });
     } else if (prop.type === "refMap") {
-      // TODO
+      const setter = prop.mutable
+        ? {
+            set(this: RemoteResource<GameState>, value: { [key: number]: RemoteResource<GameState> }) {
+              this.manager.setRefMap(value, this.__props[propName] as Uint32Array);
+            },
+          }
+        : undefined;
+
       Object.defineProperty(RemoteResourceClass.prototype, propName, {
+        ...setter,
         get(this: RemoteResource<GameState>) {
           const store = this.__props[propName] as Uint32Array;
           const resources = [];

@@ -128,7 +128,23 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
 }
 
 export function disposeGLTF(resource: GLTFResource): boolean {
-  return resource.manager.removeGLTFRef(resource.url);
+  if (resource.manager.removeGLTFRef(resource.url)) {
+    for (const cache of resource.caches.values()) {
+      for (const entry of cache.values()) {
+        entry.value?.removeRef();
+      }
+    }
+
+    URL.revokeObjectURL(resource.url);
+
+    for (const objectUrl of resource.fileMap.values()) {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 const GLB_HEADER_BYTE_LENGTH = 12;
@@ -311,6 +327,8 @@ const createSubresourceLoader =
         }
 
         result.value = value;
+
+        value.addRef();
 
         return value;
       });

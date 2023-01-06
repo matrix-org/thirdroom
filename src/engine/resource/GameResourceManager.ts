@@ -40,18 +40,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     const entry = this.gltfCache.get(uri);
 
     if (entry && --entry.refCount <= 0) {
-      entry.promise.then((resource) => {
-        // TODO: Dispose GLTF contents
-
-        URL.revokeObjectURL(resource.url);
-
-        for (const objectUrl of resource.fileMap.values()) {
-          URL.revokeObjectURL(objectUrl);
-        }
-      });
-
       this.gltfCache.delete(uri);
-
       return true;
     }
 
@@ -179,19 +168,44 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     store[0] = nextResourceId;
   }
 
-  setRefArrayItem(index: number, value: RemoteResource<GameState> | undefined, store: Uint32Array): void {
-    const curResourceId = store[index];
-    const nextResourceId = value?.resourceId || 0;
-
-    if (nextResourceId && nextResourceId !== curResourceId) {
-      this.addRef(nextResourceId);
+  setRefArray(value: RemoteResource<GameState>[], store: Uint32Array): void {
+    for (let i = 0; i < value.length; i++) {
+      this.addRef(value[i].resourceId);
     }
 
-    if (curResourceId && nextResourceId !== curResourceId) {
-      this.removeRef(curResourceId);
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
     }
 
-    store[index] = nextResourceId;
+    for (let i = 0; i < value.length; i++) {
+      store[i] = value[i].resourceId || 0;
+    }
+  }
+
+  setRefMap(value: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
+    for (const key in value) {
+      this.addRef(value[key].resourceId);
+    }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (const key in value) {
+      store[key] = value[key].resourceId || 0;
+    }
   }
 
   getRefArrayItem<T extends RemoteResource<GameState>>(index: number, store: Uint32Array): T | undefined {

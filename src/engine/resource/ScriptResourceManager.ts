@@ -83,18 +83,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     const entry = this.gltfCache.get(uri);
 
     if (entry && --entry.refCount <= 0) {
-      entry.promise.then((resource) => {
-        // TODO: Dispose GLTF contents
-
-        URL.revokeObjectURL(resource.url);
-
-        for (const objectUrl of resource.fileMap.values()) {
-          URL.revokeObjectURL(objectUrl);
-        }
-      });
-
       this.gltfCache.delete(uri);
-
       return true;
     }
 
@@ -131,7 +120,6 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
 
     const resourceModule = getModule(this.ctx, ResourceModule);
 
-    // TODO: Handle backRef
     const transform = resourceModule.resourceTransformData.get(resource.resourceType);
 
     if (!transform) {
@@ -139,7 +127,13 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     }
 
     for (let i = 0; i < transform.refOffsets.length; i++) {
-      const refOffset = transform.refOffsets[i];
+      const refIsBackRef = transform.refIsBackRef[i];
+
+      if (refIsBackRef) {
+        continue;
+      }
+
+      const refOffset = transform.refOffsets[i] / Uint32Array.BYTES_PER_ELEMENT;
       const refPtr = resource.refView[refOffset];
 
       if (refPtr) {
@@ -222,7 +216,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   }
 
   setRef(value: RemoteResource<GameState> | undefined, store: Uint32Array, backRef: boolean): void {
-    const curResourceId = store[0];
+    const curResourceId = this.ptrToResourceId.get(store[0]) || 0;
     const nextResourceId = value?.resourceId || 0;
 
     if (!backRef) {
@@ -238,19 +232,44 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     store[0] = value ? value.ptr : 0;
   }
 
-  setRefArrayItem(index: number, value: RemoteResource<GameState> | undefined, store: Uint32Array): void {
-    const curResourceId = store[index];
-    const nextResourceId = value?.resourceId || 0;
-
-    if (nextResourceId && nextResourceId !== curResourceId) {
-      this.addRef(nextResourceId);
+  setRefArray(value: RemoteResource<GameState>[], store: Uint32Array): void {
+    for (let i = 0; i < value.length; i++) {
+      this.addRef(value[i].resourceId);
     }
 
-    if (curResourceId && nextResourceId !== curResourceId) {
-      this.removeRef(curResourceId);
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = this.ptrToResourceId.get(store[i]);
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
     }
 
-    store[index] = value ? value.ptr : 0;
+    for (let i = 0; i < value.length; i++) {
+      store[i] = value[i].ptr || 0;
+    }
+  }
+
+  setRefMap(value: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
+    for (const key in value) {
+      this.addRef(value[key].resourceId);
+    }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = this.ptrToResourceId.get(store[i]);
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (const key in value) {
+      store[key] = value[key].ptr || 0;
+    }
   }
 
   getRefArrayItem<T extends RemoteResource<GameState>>(index: number, store: Uint32Array): T | undefined {
