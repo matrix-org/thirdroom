@@ -382,7 +382,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
-  const environmentScene = (await loadDefaultGLTFScene(environmentGLTFResource)) as RemoteScene;
+  const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource)) as RemoteScene;
 
   if (script) {
     addScriptComponent(ctx, environmentScene, script);

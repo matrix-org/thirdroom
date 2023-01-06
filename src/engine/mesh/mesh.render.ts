@@ -84,9 +84,14 @@ function createMeshPrimitiveObject(
           const jointNode = skin.joints[j];
 
           if (jointNode) {
-            const bone = (jointNode.bone = new Bone());
+            let bone = jointNode.bone;
+
+            if (!bone) {
+              bone = jointNode.bone = new Bone();
+              rendererModule.scene.add(bone);
+            }
+
             bones.push(bone);
-            rendererModule.scene.add(bone);
             setTransformFromNode(ctx, jointNode, bone);
 
             const inverseMatrix = new Matrix4();

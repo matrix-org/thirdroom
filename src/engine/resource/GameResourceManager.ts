@@ -1,6 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { GLTFCacheEntry, GLTFResource } from "../gltf/gltf.game";
+import { GLTFResource } from "../gltf/gltf.game";
 import {
   addResourceRef,
   createArrayBufferResource,
@@ -9,11 +9,17 @@ import {
   getRemoteResource,
   removeResourceRef,
 } from "./resource.game";
-import { IRemoteResourceManager, RemoteResource, ResourceDefinition, ResourceData } from "./ResourceDefinition";
+import {
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+  ResourceData,
+  ResourceManagerGLTFCacheEntry,
+} from "./ResourceDefinition";
 
 export class GameResourceManager implements IRemoteResourceManager<GameState> {
   public resources: RemoteResource<GameState>[] = [];
-  private gltfCache: Map<string, GLTFCacheEntry> = new Map();
+  private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
 
   constructor(private ctx: GameState) {}
 

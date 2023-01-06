@@ -3,7 +3,7 @@ import { AnimationClip } from "three";
 
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { disposeGLTF, GLTFResource } from "../gltf/gltf.game";
+import { removeGLTFResourceRef, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RemoteSceneComponent } from "../scene/scene.game";
@@ -522,7 +522,7 @@ export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentReso
     super.dispose(ctx);
 
     if (this.gltfResource) {
-      disposeGLTF(this.gltfResource);
+      removeGLTFResourceRef(this.gltfResource);
     }
   }
 }
@@ -534,7 +534,7 @@ export class RemoteAvatar extends defineRemoteResourceClass(AvatarResource) {
     super.dispose(ctx);
 
     if (this.gltfResource) {
-      disposeGLTF(this.gltfResource);
+      removeGLTFResourceRef(this.gltfResource);
     }
   }
 }

@@ -698,6 +698,11 @@ export interface ResourceData {
   tripleBuffer: TripleBuffer;
 }
 
+export interface ResourceManagerGLTFCacheEntry {
+  refCount: number;
+  promise: Promise<GLTFResource>;
+}
+
 export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext> {
   getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
   cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;

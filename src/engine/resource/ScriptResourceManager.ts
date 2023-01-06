@@ -1,6 +1,6 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { GLTFCacheEntry, GLTFResource } from "../gltf/gltf.game";
+import { GLTFResource } from "../gltf/gltf.game";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
@@ -20,6 +20,7 @@ import {
   RemoteResource,
   ResourceData,
   ResourceDefinition,
+  ResourceManagerGLTFCacheEntry,
 } from "./ResourceDefinition";
 import { decodeString } from "./strings";
 
@@ -31,7 +32,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   private textDecoder = new TextDecoder();
   private textEncoder = new TextEncoder();
   private instance?: ScriptWebAssemblyInstance;
-  private gltfCache: Map<string, GLTFCacheEntry> = new Map();
+  private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
 
   // When allocating resource, allocate space in WASM memory and a triplebuffer
   // At end of frame copy each resource to triple buffer using ptr and byteLength
