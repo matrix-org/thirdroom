@@ -22,7 +22,7 @@ export function addAvatarRigidBody(
 
   const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
 
-  if (kinematic) addComponent(ctx.world, Kinematic, eid);
+  if (kinematic) addComponent(ctx.world, Kinematic, container.eid);
 
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 

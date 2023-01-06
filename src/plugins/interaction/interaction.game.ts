@@ -468,11 +468,11 @@ function updateGrabThrow(
     );
 
     if (shapecastHit !== null) {
-      const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
+      const eid = physics.handleToEid.get(shapecastHit.collider.handle);
       const node = eid ? RemoteNodeComponent.get(eid) : undefined;
 
       if (!node || !eid) {
-        console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
+        console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
       } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
         if (Interactable.type[node.eid] === InteractableType.Grabbable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });

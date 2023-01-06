@@ -28,7 +28,7 @@ export enum PrefabType {
 export interface PrefabTemplate {
   name: string;
   type: PrefabType;
-  create: (ctx: GameState, options: any) => RemoteNode;
+  create: (ctx: GameState, options?: any) => RemoteNode;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;
   deserialize?: (ctx: GameState) => number;

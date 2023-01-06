@@ -7,7 +7,9 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RigidBody } from "../physics/physics.game";
-import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
+import { getPrefabTemplate, Prefab, PrefabType } from "../prefab/prefab.game";
+import { isHost } from "./network.common";
+import { RemoteAvatar, RemoteNode } from "../resource/resource.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -36,8 +38,11 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   }
 };
 
-export const takeOwnership = (ctx: GameState, network: GameNetworkState, eid: number): number => {
-  if (!hasComponent(ctx.world, Owned, eid)) {
+export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: RemoteNode): number => {
+  const eid = node.eid;
+  if (network.authoritative && !isHost(network)) {
+    // TODO: when Authored component is implemented, add Owned component here
+  } else if (!hasComponent(ctx.world, Owned, eid)) {
     removeNode(ctx, node);
 
     const prefabName = Prefab.get(eid);

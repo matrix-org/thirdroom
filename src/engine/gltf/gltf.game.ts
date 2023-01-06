@@ -649,7 +649,7 @@ function addTrimeshFromMesh(ctx: GameState, node: RemoteNode, mesh: RemoteMesh) 
 
     colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
 
-    physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+    physicsWorld.createCollider(colliderDesc, rigidBody);
 
     const primitiveEid = addEntity(ctx.world);
     const primitiveNode = addRemoteNodeComponent(ctx, primitiveEid);
@@ -740,7 +740,7 @@ async function loadGLTFCollider(resource: GLTFResource, node: RemoteNode, extens
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody);
 
   addRigidBody(resource.ctx, node, rigidBody);
 }

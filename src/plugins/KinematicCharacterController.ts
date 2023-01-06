@@ -1,7 +1,6 @@
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Vector3 } from "three";
 
-import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -16,7 +15,9 @@ import { getInputController, inputControllerQuery } from "../engine/input/InputC
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
+import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
+import { RemoteNode } from "../engine/resource/resource.game";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -136,14 +137,14 @@ function updateKinematicControls(
   ctx: GameState,
   { physicsWorld, characterController }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
-  eid: number
+  rig: RemoteNode
 ) {
-  const body = RigidBody.store.get(eid);
+  const body = RigidBody.store.get(rig.eid);
   if (!body) {
     return;
   }
 
-  obj.quaternion.fromArray(Transform.quaternion[eid]);
+  obj.quaternion.fromArray(rig.quaternion);
   body.setNextKinematicRotation(obj.quaternion);
 
   // Handle Input
@@ -243,6 +244,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
+    const node = RemoteNodeComponent.get(eid)!;
     const controller = getInputController(input, eid);
 
     // if not hosting
@@ -253,11 +255,11 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
         const [, actionStates] = controller.history[j];
         // console.log("reapplying input for tick:", tick);
         // console.log("current tick:", ctx.tick);
-        updateKinematicControls(ctx, physics, actionStates, eid);
+        updateKinematicControls(ctx, physics, actionStates, node);
       }
     } else {
       // if hosting or p2p, only apply inputs once
-      updateKinematicControls(ctx, physics, controller.actionStates, eid);
+      updateKinematicControls(ctx, physics, controller.actionStates, node);
     }
     // console.log("=============");
   }

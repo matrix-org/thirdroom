@@ -90,33 +90,6 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
   quaternion[3] = rigidRot.w;
 };
 
-export function addRigidBody(
-  ctx: GameState,
-  eid: number,
-  rigidBody: RapierRigidBody,
-  meshResourceId?: ResourceId,
-  primitiveResourceId?: ResourceId
-) {
-  addComponent(ctx.world, RigidBody, eid);
-  RigidBody.store.set(eid, rigidBody);
-
-  if (meshResourceId) {
-    addResourceRef(ctx, meshResourceId);
-  }
-
-  if (primitiveResourceId) {
-    addResourceRef(ctx, primitiveResourceId);
-  }
-
-  RigidBody.meshResourceId[eid] = meshResourceId || 0;
-  RigidBody.primitiveResourceId[eid] = primitiveResourceId || 0;
-}
-
-export function removeRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {
-  removeComponent(world, RigidBody, eid);
-  RigidBody.store.delete(eid);
-}
-
 export const SyncPhysicsSystem = (ctx: GameState) => {
   const { world } = ctx;
   const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);

@@ -545,26 +545,8 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     removeComponent(ctx.world, Networked, old);
   }
 
-  // if not our own avatar
-  if (peerId !== network.peerId) {
-    // add voip
-    addRemoteNodeComponent(ctx, peid, {
-      name: peerId,
-      audioEmitter: createRemotePositionalAudioEmitter(ctx, {
-        sources: [
-          createRemoteMediaStreamSource(ctx, {
-            stream: createRemoteMediaStream(ctx, { streamId: peerId }),
-          }),
-        ],
-      }),
-      nametag: createRemoteNametag(ctx, {
-        name: peerId,
-      }),
-    });
-
-    // embody new avatar
-    embodyAvatar(ctx, physics, input, peerNode);
-  }
+  // embody new avatar
+  embodyAvatar(ctx, physics, input, peerNode);
 
   return data;
 }

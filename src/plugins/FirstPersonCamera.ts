@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
 import { vec2, glMatrix as glm, quat } from "gl-matrix";
 
 import {
@@ -12,7 +12,6 @@ import {
 import { getCamera } from "../engine/camera/camera.game";
 import { Axes } from "../engine/component/transform";
 import { ourPlayerQuery } from "../engine/component/Player";
-import { setQuaternionFromEuler, Transform } from "../engine/component/transform";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
@@ -20,12 +19,13 @@ import { getInputController, InputController } from "../engine/input/InputContro
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
 import { isHost } from "../engine/network/network.common";
-import { Networked, NetworkModule } from "../engine/network/network.game";
+import { Networked, NetworkModule, Owned } from "../engine/network/network.game";
 import { NetworkAction } from "../engine/network/NetworkAction";
-import { sendReliable } from "../engine/network/outbound.game";
+import { broadcastReliable, sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
 import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
 import { RemoteNode } from "../engine/resource/resource.game";
+import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
 
@@ -49,20 +49,18 @@ const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
   const data: NetPipeData = [ctx, messageView, ""];
-  const network = getModule(ctx, NetworkModule);
 
-  const player = network.networkIdToEntityId.get(nid)!;
-  const playerNode = RemoteNodeComponent.get(player)!;
+  const node = RemoteNodeComponent.get(eid)!;
   const cameraNode = RemoteNodeComponent.get(camera)!;
 
   writeMetadata(NetworkAction.UpdateCamera)(data);
 
   writeUint32(messageView, Networked.networkId[eid]);
 
-  writeFloat32(messageView, playerNode.quaternion[0]);
-  writeFloat32(messageView, playerNode.quaternion[1]);
-  writeFloat32(messageView, playerNode.quaternion[2]);
-  writeFloat32(messageView, playerNode.quaternion[3]);
+  writeFloat32(messageView, node.quaternion[0]);
+  writeFloat32(messageView, node.quaternion[1]);
+  writeFloat32(messageView, node.quaternion[2]);
+  writeFloat32(messageView, node.quaternion[3]);
 
   writeFloat32(messageView, cameraNode.quaternion[0]);
   writeFloat32(messageView, cameraNode.quaternion[1]);
@@ -80,20 +78,19 @@ function deserializeUpdateCamera(data: NetPipeData) {
 
   const nid = readUint32(view);
   const player = network.networkIdToEntityId.get(nid)!;
-  const playerNode = RemoteNodeComponent.get(player)!;
+  const node = RemoteNodeComponent.get(player)!;
 
-  const camera = getCamera(ctx, playerNode);
-  const cameraNode = RemoteNodeComponent.get(player)!;
+  const camera = getCamera(ctx, node);
 
-  playerNode.quaternion[0] = readFloat32(view);
-  playerNode.quaternion[1] = readFloat32(view);
-  playerNode.quaternion[2] = readFloat32(view);
-  playerNode.quaternion[3] = readFloat32(view);
+  node.quaternion[0] = readFloat32(view);
+  node.quaternion[1] = readFloat32(view);
+  node.quaternion[2] = readFloat32(view);
+  node.quaternion[3] = readFloat32(view);
 
-  cameraNode.quaternion[0] = readFloat32(view);
-  cameraNode.quaternion[1] = readFloat32(view);
-  cameraNode.quaternion[2] = readFloat32(view);
-  cameraNode.quaternion[3] = readFloat32(view);
+  camera.quaternion[0] = readFloat32(view);
+  camera.quaternion[1] = readFloat32(view);
+  camera.quaternion[2] = readFloat32(view);
+  camera.quaternion[3] = readFloat32(view);
 
   return data;
 }
@@ -232,8 +229,9 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
 export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const playerNode = RemoteNodeComponent.get(ourPlayer)!;
 
-  if (!ourPlayer) {
+  if (!ourPlayer || !playerNode) {
     return;
   }
 
@@ -244,29 +242,8 @@ export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
     return;
   }
 
-  const camera = getCamera(ctx, ourPlayer);
-  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
-  if (msg.byteLength > 0) {
-    sendReliable(ctx, network, network.hostId, msg);
-  }
-}
-
-export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
-  const ourPlayer = ourPlayerQuery(ctx.world)[0];
-
-  if (!ourPlayer) {
-    return;
-  }
-
-  const network = getModule(ctx, NetworkModule);
-  const haveConnectedPeers = network.peers.length > 0;
-  const hosting = network.authoritative && isHost(network);
-  if (hosting || !haveConnectedPeers) {
-    return;
-  }
-
-  const camera = getCamera(ctx, ourPlayer);
-  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera);
+  const camera = getCamera(ctx, playerNode);
+  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera.eid);
   if (msg.byteLength > 0) {
     sendReliable(ctx, network, network.hostId, msg);
   }
