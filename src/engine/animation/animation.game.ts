@@ -109,8 +109,7 @@ function processAnimations(ctx: GameState) {
 
     if (animation && rigidBody) {
       // collectively fade all animations out each frame
-      const allActions: AnimationAction[] = Object.values(animation.actions);
-      reduceClipActionWeights(allActions, fadeOutAmount * ctx.dt);
+      reduceClipActionWeights(animation.actions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
       const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, animation);
@@ -142,8 +141,8 @@ function syncBones(ctx: GameState) {
   return ctx;
 }
 
-function reduceClipActionWeights(actions: AnimationAction[], amount: number) {
-  for (const action of actions) {
+function reduceClipActionWeights(actions: Map<string, AnimationAction>, amount: number) {
+  for (const action of actions.values()) {
     if (action.weight > 0) {
       action.weight -= amount;
     } else {
