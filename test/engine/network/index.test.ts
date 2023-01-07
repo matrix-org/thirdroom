@@ -1,6 +1,6 @@
 // import { describe, it } from "vitest";
 import { ok, strictEqual } from "assert";
-import { addComponent, addEntity, createWorld, entityExists, removeComponent } from "bitecs";
+import { addComponent, addEntity, entityExists, removeComponent } from "bitecs";
 
 import { GameState } from "../../../src/engine/GameTypes";
 import {
@@ -20,7 +20,7 @@ import {
   readUint16,
   readUint32,
 } from "../../../src/engine/allocator/CursorView";
-import { mockGameState, MockResourceManager } from "../mocks";
+import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
 import { RigidBody } from "../../../src/engine/physics/physics.game";
 import { addPrefabComponent } from "../../../src/engine/prefab/prefab.game";
@@ -38,13 +38,10 @@ import {
   serializeDeletes,
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
-import { RemoteNode } from "../../../src/engine/resource/resource.game";
-import { addRemoteNodeComponent } from "../../../src/engine/node/node.game";
-import { RemoteNodeComponent } from "../../../src/engine/node/RemoteNodeComponent";
 import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
+import { RemoteNode } from "../../../src/engine/resource/resource.game";
 
 const clearComponentData = () => {
-  RemoteNodeComponent.clear();
   new Uint8Array(RigidBody.velocity[0].buffer).fill(0);
   new Uint8Array(Networked.position[0].buffer).fill(0);
   new Uint8Array(Networked.velocity[0].buffer).fill(0);
@@ -80,11 +77,10 @@ describe("Network Tests", () => {
     it("should #serializeTransformSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 1]);
-      const velocity = RigidBody.velocity[eid];
+      const velocity = RigidBody.velocity[node.eid];
       velocity.set([4, 5, 6]);
 
       serializeTransformSnapshot(writer, node);
@@ -121,8 +117,8 @@ describe("Network Tests", () => {
     it("should #deserializeTransformSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
+      const eid = node.eid;
       node.position.set([1, 2, 3]);
       node.quaternion.set([7, 8, 9, 10]);
 
@@ -157,12 +153,12 @@ describe("Network Tests", () => {
     it("should #serializeTransformChanged() with all values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
+      const eid = node.eid;
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
-      serializeTransformChanged(writer, eid);
+      serializeTransformChanged(state, writer, eid);
 
       const reader = createCursorView(writer.buffer);
 
@@ -193,12 +189,12 @@ describe("Network Tests", () => {
     it("should #serializeTransformChanged() with some values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
+      const eid = node.eid;
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
-      serializeTransformChanged(writer, eid);
+      serializeTransformChanged(state, writer, eid);
 
       const reader = createCursorView(writer.buffer);
 
@@ -229,19 +225,19 @@ describe("Network Tests", () => {
     it("should #deserializeTransformChanged() with all values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
+      const eid = node.eid;
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
-      serializeTransformChanged(writer, eid);
+      serializeTransformChanged(state, writer, eid);
 
       node.position.set([0, 0, 0]);
       node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformChanged(reader, eid);
+      deserializeTransformChanged(state, reader, eid);
 
       strictEqual(Networked.position[eid][0], 1);
       strictEqual(Networked.position[eid][1], 2);
@@ -255,19 +251,19 @@ describe("Network Tests", () => {
     it("should #deserializeTransformChanged() with some values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const eid = addEntity(state.world);
-      const node = addRemoteNodeComponent(state, eid);
+      const node = new RemoteNode(state.resourceManager);
+      const eid = node.eid;
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
-      serializeTransformChanged(writer, eid);
+      serializeTransformChanged(state, writer, eid);
 
       node.position.set([0, 0, 0]);
       node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformChanged(reader, eid);
+      deserializeTransformChanged(state, reader, eid);
 
       strictEqual(Networked.position[eid][0], 0);
       strictEqual(Networked.position[eid][1], 2);
@@ -288,8 +284,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const eid = addEntity(state.world);
-          const node = addRemoteNodeComponent(state, eid);
+          const node = new RemoteNode(state.resourceManager);
+          const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           RigidBody.velocity[eid].set([1, 2, 3]);
@@ -335,8 +331,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const eid = addEntity(state.world);
-          const node = addRemoteNodeComponent(state, eid);
+          const node = new RemoteNode(state.resourceManager);
+          const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);
@@ -378,8 +374,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const eid = addEntity(state.world);
-          const node = addRemoteNodeComponent(state, eid);
+          const node = new RemoteNode(state.resourceManager);
+          const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);
@@ -422,8 +418,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const eid = addEntity(state.world);
-          const node = addRemoteNodeComponent(state, eid);
+          const node = new RemoteNode(state.resourceManager);
+          const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);

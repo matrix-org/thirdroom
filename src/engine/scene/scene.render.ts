@@ -1,6 +1,5 @@
 import { Color } from "three";
 
-import { addChild } from "../component/transform";
 import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
@@ -45,29 +44,20 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
 }
 
 export function updateWorldVisibility(worldResource: RenderWorld) {
+  if (worldResource.environment) {
+    updateSceneVisibility(worldResource.environment.privateScene);
+    updateSceneVisibility(worldResource.environment.publicScene);
+  }
+
+  let curObject = worldResource.firstObject;
+
+  while (curObject) {
+    updateNodeVisibility(curObject.publicRoot, true);
+    updateNodeVisibility(curObject.privateRoot, true);
+    curObject = curObject.nextSibling;
+  }
+
   updateSceneVisibility(worldResource.persistentScene);
-
-  const privateScene = worldResource.environment?.privateScene;
-
-  if (!privateScene) {
-    throw new Error("private scene not found on environment");
-  }
-
-  addChild(privateScene, prefab);
-
-  if (worldResource.transientScene) {
-    updateSceneVisibility(worldResource.transientScene);
-  }
-
-  if (worldResource.environment?.activeScene) {
-    updateSceneVisibility(worldResource.environment.activeScene);
-  }
-
-  const avatars = worldResource.avatars;
-
-  for (let i = 0; i < avatars.length; i++) {
-    updateNodeVisibility(avatars[i].root, true);
-  }
 }
 
 function updateSceneVisibility(scene: RenderScene) {

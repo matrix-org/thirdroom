@@ -26,12 +26,12 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { addChild, removeNode } from "../component/transform";
+import { removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
-import { Prefab, createPrefabEntity, getPrefabTemplate, PrefabType } from "../prefab/prefab.game";
+import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
   Networked,
@@ -53,12 +53,14 @@ import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
 import {
+  addObjectToWorld,
   getRemoteResource,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteNametag,
   RemoteNode,
+  RemoteObject,
   tryGetRemoteResource,
 } from "../resource/resource.game";
 
@@ -258,20 +260,13 @@ export function createRemoteNetworkedEntity(
   Networked.networkId[node.eid] = nid;
   network.networkIdToEntityId.set(nid, node.eid);
 
-  const template = getPrefabTemplate(ctx, prefab);
-
-  if (template.type === PrefabType.Avatar) {
-    ctx.worldResource.avatars = [
-      ...ctx.worldResource.avatars,
-      new RemoteAvatar(ctx.resourceManager, {
-        root: node,
-      }),
-    ];
-  } else if (template.type === PrefabType.Object) {
-    addChild(ctx.worldResource.transientScene!, node);
-  } else {
-    throw new Error("Unknown prefab type");
-  }
+  addObjectToWorld(
+    ctx.worldResource,
+    new RemoteObject(ctx.resourceManager, {
+      publicRoot: node,
+      privateRoot: new RemoteNode(ctx.resourceManager),
+    })
+  );
 
   return node;
 }

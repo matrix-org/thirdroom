@@ -189,7 +189,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
   const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
 
-  const activeScene = ctx.worldResource.environment?.activeScene;
+  const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
 
   // TODO: Remove this

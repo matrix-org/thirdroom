@@ -110,13 +110,6 @@ const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number
   return controller;
 };
 
-/*
-
-Container Entity
-      /\
-
-*/
-
 const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
     const spawnPoints = spawnPointQuery(ctx.world);

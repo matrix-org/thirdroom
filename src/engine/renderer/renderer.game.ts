@@ -57,7 +57,7 @@ export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {
   const id = rendererModule.sceneRenderedNotificationId++;
   rendererModule.sceneRenderedNotificationHandlers.set(id, deferred);
 
-  const sceneResourceId = ctx.worldResource.environment?.activeScene?.eid;
+  const sceneResourceId = ctx.worldResource.environment?.publicScene.eid;
 
   if (sceneResourceId === undefined) {
     throw new Error("activeScene not set");
