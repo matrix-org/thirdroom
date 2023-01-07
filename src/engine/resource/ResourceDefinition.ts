@@ -553,7 +553,7 @@ type LocalResourcePropValue<
   : never;
 
 export interface Resource {
-  resourceId: number;
+  eid: number;
   tripleBuffer: TripleBuffer;
 }
 
@@ -572,7 +572,7 @@ export interface RemoteResource<ThreadContext extends BaseThreadContext> extends
   ptr: number;
   addRef(): void;
   removeRef(): void;
-  dispose(ctx: ThreadContext): void;
+  onDispose(ctx: ThreadContext): void;
 }
 
 export type RemoteResourceInstance<

@@ -13,7 +13,7 @@ export function updateNodeTilesRenderer(
   node: RenderNode
 ) {
   const currentTilesRendererResourceId = node.currentTilesRendererResourceId;
-  const nextTilesRendererResourceId = node.tilesRenderer?.resourceId || 0;
+  const nextTilesRendererResourceId = node.tilesRenderer?.eid || 0;
 
   if (currentTilesRendererResourceId !== nextTilesRendererResourceId && node.tilesRendererObject) {
     scene.remove(node.tilesRendererObject.group);

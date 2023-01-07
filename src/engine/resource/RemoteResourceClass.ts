@@ -113,7 +113,7 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       }
     }
 
-    this.resourceId = this.manager.createResource(this);
+    this.eid = this.manager.createResource(this);
   }
 
   Object.defineProperties(RemoteResourceClass, {
@@ -124,17 +124,17 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
   Object.defineProperties(RemoteResourceClass.prototype, {
     addRef: {
       value(this: RemoteResource<GameState>) {
-        this.manager.addRef(this.resourceId);
+        this.manager.addRef(this.eid);
       },
     },
     removeRef: {
       value(this: RemoteResource<GameState>) {
-        this.manager.removeRef(this.resourceId);
+        this.manager.removeRef(this.eid);
       },
     },
     dispose: {
       value(this: RemoteResource<GameState>, ctx: GameState) {
-        this.manager.disposeResource(this.resourceId);
+        this.manager.disposeResource(this.eid);
       },
     },
   });

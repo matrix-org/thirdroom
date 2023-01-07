@@ -1,5 +1,6 @@
 import { Color } from "three";
 
+import { addChild } from "../component/transform";
 import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
@@ -15,7 +16,7 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
     rendererModule.scene.visible = true;
 
     const currentBackgroundTextureResourceId = activeScene.currentBackgroundTextureResourceId;
-    const nextBackgroundTextureResourceId = activeScene.backgroundTexture?.resourceId || 0;
+    const nextBackgroundTextureResourceId = activeScene.backgroundTexture?.eid || 0;
 
     if (nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId) {
       if (activeScene.backgroundTexture) {
@@ -45,6 +46,14 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
 
 export function updateWorldVisibility(worldResource: RenderWorld) {
   updateSceneVisibility(worldResource.persistentScene);
+
+  const privateScene = worldResource.environment?.privateScene;
+
+  if (!privateScene) {
+    throw new Error("private scene not found on environment");
+  }
+
+  addChild(privateScene, prefab);
 
   if (worldResource.transientScene) {
     updateSceneVisibility(worldResource.transientScene);

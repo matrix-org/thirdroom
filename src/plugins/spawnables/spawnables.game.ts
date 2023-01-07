@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, addEntity } from "bitecs";
+import { addComponent } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
@@ -22,8 +22,6 @@ import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
-import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
@@ -34,6 +32,7 @@ import {
   RemoteAudioSource,
   RemoteMaterial,
   RemoteNode,
+  tryGetRemoteResource,
 } from "../../engine/resource/resource.game";
 import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
@@ -83,7 +82,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "Crate Audio Data",
       uri: "/audio/hit.wav",
     });
-    addResourceRef(ctx, crateAudioData.resourceId);
+    addResourceRef(ctx, crateAudioData.eid);
 
     registerPrefab(ctx, {
       name: "small-crate",
@@ -226,19 +225,19 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "Ball Audio Data",
       uri: "/audio/bounce.wav",
     });
-    addResourceRef(ctx, ballAudioData.resourceId);
+    addResourceRef(ctx, ballAudioData.eid);
 
     const ballAudioData2 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 2",
       uri: "/audio/clink.wav",
     });
-    addResourceRef(ctx, ballAudioData2.resourceId);
+    addResourceRef(ctx, ballAudioData2.eid);
 
     const ballAudioData3 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 3",
       uri: "/audio/clink2.wav",
     });
-    addResourceRef(ctx, ballAudioData3.resourceId);
+    addResourceRef(ctx, ballAudioData3.eid);
 
     const emissiveMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Emissive Material",
@@ -249,7 +248,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       roughnessFactor: 1,
     });
 
-    addResourceRef(ctx, emissiveMaterial.resourceId);
+    addResourceRef(ctx, emissiveMaterial.eid);
 
     const mirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Mirror Material",
@@ -258,7 +257,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       metallicFactor: 1,
       roughnessFactor: 0,
     });
-    addResourceRef(ctx, mirrorMaterial.resourceId);
+    addResourceRef(ctx, mirrorMaterial.eid);
 
     const blackMirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Black Mirror Material",
@@ -267,7 +266,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       metallicFactor: 1,
       roughnessFactor: 0,
     });
-    addResourceRef(ctx, blackMirrorMaterial.resourceId);
+    addResourceRef(ctx, blackMirrorMaterial.eid);
 
     registerPrefab(ctx, {
       name: "mirror-ball",
@@ -477,7 +476,7 @@ export const SpawnableSystem = (ctx: GameState) => {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const camera = getCamera(ctx, node);
     const controller = getInputController(input, eid);
     updateSpawnables(ctx, spawnablesModule, controller, camera);
@@ -538,12 +537,18 @@ export const updateSpawnables = (
 
     body.applyImpulse(_impulse, true);
 
-    addChild(ctx, ctx.worldResource.transientScene!, prefab);
+    const privateScene = ctx.worldResource.environment?.privateScene;
+
+    if (!privateScene) {
+      throw new Error("private scene not found on environment");
+    }
+
+    addChild(privateScene, prefab);
   }
 };
 
-export const createBall = (state: GameState, size: number, material?: RemoteMaterial): RemoteNode => {
-  const { world } = state;
-  const eid = addEntity(world);
-  return addRemoteNodeComponent(state, eid, { mesh: createSphereMesh(state, size, material) });
+export const createBall = (ctx: GameState, size: number, material?: RemoteMaterial): RemoteNode => {
+  return new RemoteNode(ctx.resourceManager, {
+    mesh: createSphereMesh(ctx, size, material),
+  });
 };

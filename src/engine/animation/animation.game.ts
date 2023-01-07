@@ -9,11 +9,10 @@ import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/network.game";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
-import { RemoteAnimation, RemoteNode, removeResourceRef } from "../resource/resource.game";
+import { getRemoteResource, RemoteAnimation, RemoteNode, removeResourceRef } from "../resource/resource.game";
 
 export interface IAnimationComponent {
   animations: RemoteAnimation[];
@@ -99,7 +98,7 @@ function processAnimations(ctx: GameState) {
     const eid = ents[i];
     // animation component exists on the inner avatar entity
     const animation = AnimationComponent.get(eid);
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = getRemoteResource<RemoteNode>(ctx, eid)!;
 
     // avatars exist within a parent container which has all other components for this entity
     const parent = node.parent;
@@ -133,7 +132,7 @@ function syncBones(ctx: GameState) {
   for (let i = 0; i < bones.length; i++) {
     const eid = bones[i];
     const bone = BoneComponent.get(eid);
-    const node = RemoteNodeComponent.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
     if (bone && node) {
       bone.position.toArray(node.position);
       bone.quaternion.toArray(node.quaternion);
@@ -286,7 +285,7 @@ function disposeAnimations(ctx: GameState) {
 
     for (let i = 0; i < animations.length; i++) {
       const animation = animations[i];
-      removeResourceRef(ctx, animation.resourceId);
+      removeResourceRef(ctx, animation.eid);
     }
 
     AnimationComponent.delete(eid);

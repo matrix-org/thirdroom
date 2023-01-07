@@ -193,7 +193,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   const activeCameraNode = ctx.worldResource.activeCameraNode;
 
   // TODO: Remove this
-  if (activeScene?.resourceId !== rendererModule.prevSceneResource) {
+  if (activeScene?.eid !== rendererModule.prevSceneResource) {
     rendererModule.enableMatrixMaterial = false;
   }
 
@@ -201,7 +201,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     activeCameraNode &&
     activeCameraNode.cameraObject &&
     activeCameraNode.camera &&
-    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.resourceId)
+    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.eid)
   ) {
     if (
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
@@ -216,8 +216,8 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
-    rendererModule.prevCameraResource = activeCameraNode.resourceId;
-    rendererModule.prevSceneResource = activeScene?.resourceId;
+    rendererModule.prevCameraResource = activeCameraNode.eid;
+    rendererModule.prevSceneResource = activeScene?.eid;
   }
 
   updateWorldVisibility(ctx.worldResource);
@@ -233,7 +233,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
     const { id, sceneResourceId } = rendererModule.sceneRenderedRequests[i];
 
-    if (activeScene && activeScene.resourceId === sceneResourceId) {
+    if (activeScene && activeScene.eid === sceneResourceId) {
       ctx.sendMessage(Thread.Game, {
         type: RendererMessageType.SceneRenderedNotification,
         id,

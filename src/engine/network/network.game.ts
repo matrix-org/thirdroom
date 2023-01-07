@@ -38,7 +38,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
+import { getRemoteResource, RemoteNode, tryGetRemoteResource } from "../resource/resource.game";
 
 /*********
  * Types *
@@ -171,25 +171,25 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     if (!network.authoritative) {
       for (let i = entities.length - 1; i >= 0; i--) {
         const eid = entities[i];
-        const node = RemoteNodeComponent.get(eid);
+        const node = getRemoteResource<RemoteNode>(ctx, eid);
 
         const networkId = Networked.networkId[eid];
 
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
         if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeNode(ctx, node);
+          removeNode(node);
         }
       }
     }
 
     // remove this peer's avatar entity
     const eid = network.peerIdToEntityId.get(peerId);
-    const node = eid ? RemoteNodeComponent.get(eid) : undefined;
+    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
     if (eid && node) {
       network.entityIdToPeerId.delete(eid);
-      removeNode(ctx, node);
+      removeNode(node);
     }
 
     network.peers.splice(peerArrIndex, 1);
@@ -241,7 +241,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
     // if we are new host, take authority over our avatar entity
     const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
     if (amNewHost) {
-      const rig = RemoteNodeComponent.get(eid)!;
+      const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
       embodyAvatar(ctx, physics, input, rig);
     }
 

@@ -1,4 +1,4 @@
-import { addComponent, addEntity } from "bitecs";
+import { addComponent } from "bitecs";
 import { glMatrix, mat4, quat, vec3 } from "gl-matrix";
 import RAPIER, { ColliderDesc } from "@dimforge/rapier3d-compat";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
@@ -6,9 +6,6 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState } from "../GameTypes";
-import { addRemoteNodeComponent } from "../node/node.game";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
-import { RemoteSceneComponent } from "../scene/scene.game";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import {
@@ -180,8 +177,7 @@ export function removeGLTFResourceRef(resource: GLTFResource): boolean {
 }
 
 export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
-  const eid = addEntity(ctx.world);
-  const node = addRemoteNodeComponent(ctx, eid);
+  const node = new RemoteNode(ctx.resourceManager);
   loadGLTF(ctx, uri).then((resource) => loadDefaultGLTFScene(ctx, resource, { existingNode: node }));
   return node;
 }
@@ -615,22 +611,17 @@ const loadGLTFScene = createInstancedSubresourceLoader(
           remoteSceneOrNode.bloomStrength = bloomStrength;
         }
       } else {
-        const world = loaderCtx.ctx.world;
-        const eid = addEntity(world);
         remoteSceneOrNode = new RemoteScene(resource.manager, {
-          eid,
           audioEmitters,
           backgroundTexture,
           reflectionProbe,
           bloomStrength,
         });
-        addComponent(world, RemoteSceneComponent, eid);
-        RemoteSceneComponent.set(eid, remoteSceneOrNode);
       }
     }
 
     for (const node of nodes) {
-      addChild(loaderCtx.ctx, remoteSceneOrNode, node);
+      addChild(remoteSceneOrNode, node);
     }
 
     updateMatrixWorld(remoteSceneOrNode, true);
@@ -680,21 +671,15 @@ async function loadGLTFLightMap(resource: GLTFResource, extension: GLTFLightmap)
   });
 }
 
-function loadGLTFHubsComponents(
-  { ctx, resource }: GLTFLoaderContext,
-  extension: GLTFHubsComponents,
-  node: RemoteNode
-): void {
-  const world = ctx.world;
-
+function loadGLTFHubsComponents(loaderCtx: GLTFLoaderContext, extension: GLTFHubsComponents, node: RemoteNode): void {
   if (extension["spawn-point"] || extension["waypoint"]?.canBeSpawnPoint) {
     node.position[1] += 1.6;
     quat.rotateY(node.quaternion, node.quaternion, Math.PI);
-    addComponent(world, SpawnPoint, node.eid);
+    addComponent(loaderCtx.ctx.world, SpawnPoint, node.eid);
   }
 
   if ((extension["trimesh"] || extension["nav-mesh"]) && node.mesh) {
-    addTrimeshFromMesh(ctx, node, node.mesh);
+    addTrimeshFromMesh(loaderCtx, node, node.mesh);
   }
 
   if (extension.visible?.visible === false) {
@@ -702,14 +687,14 @@ function loadGLTFHubsComponents(
   }
 
   if (extension["scene-preview-camera"]) {
-    node.camera = new RemoteCamera(resource.manager, {
+    node.camera = new RemoteCamera(loaderCtx.resource.manager, {
       type: CameraType.Perspective,
       yfov: glMatrix.toRadian(75),
       znear: 0.1,
       zfar: 2000,
     });
 
-    ctx.worldResource.activeCameraNode = node;
+    loaderCtx.ctx.worldResource.activeCameraNode = node;
   }
 }
 
@@ -717,8 +702,8 @@ function loadGLTFSpawnPoint({ ctx }: GLTFLoaderContext, node: RemoteNode) {
   addComponent(ctx.world, SpawnPoint, node.eid);
 }
 
-function addTrimeshFromMesh(ctx: GameState, node: RemoteNode, mesh: RemoteMesh) {
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+function addTrimeshFromMesh(loaderCtx: GLTFLoaderContext, node: RemoteNode, mesh: RemoteMesh) {
+  const { physicsWorld } = getModule(loaderCtx.ctx, PhysicsModule);
 
   // TODO: We don't really need the whole RemoteMesh just for a trimesh and tracking
   // the resource is expensive.
@@ -751,10 +736,9 @@ function addTrimeshFromMesh(ctx: GameState, node: RemoteNode, mesh: RemoteMesh) 
 
     physicsWorld.createCollider(colliderDesc, rigidBody);
 
-    const primitiveEid = addEntity(ctx.world);
-    const primitiveNode = addRemoteNodeComponent(ctx, primitiveEid);
-    addChild(ctx, node, primitiveNode);
-    addRigidBody(ctx, primitiveNode, rigidBody, mesh, primitive);
+    const primitiveNode = new RemoteNode(loaderCtx.resource.manager);
+    addChild(node, primitiveNode);
+    addRigidBody(loaderCtx.ctx, primitiveNode, rigidBody, mesh, primitive);
   }
 }
 
@@ -827,7 +811,7 @@ async function loadGLTFCollider(loaderCtx: GLTFLoaderContext, node: RemoteNode, 
     }
 
     const colliderMesh = await loadGLTFMesh(resource, collider.mesh);
-    addTrimeshFromMesh(ctx, node, colliderMesh);
+    addTrimeshFromMesh(loaderCtx, node, colliderMesh);
 
     return;
   } else {
@@ -881,9 +865,6 @@ const loadGLTFNode = createInstancedSubresourceLoader(
     index
   ) => {
     const resource = loaderCtx.resource;
-    const ctx = loaderCtx.ctx;
-    const world = ctx.world;
-    const eid = addEntity(world);
 
     let children: RemoteNode[] | undefined;
 
@@ -892,12 +873,9 @@ const loadGLTFNode = createInstancedSubresourceLoader(
     }
 
     const node = new RemoteNode(resource.manager, {
-      eid,
       name,
     });
 
-    addComponent(world, RemoteNodeComponent, eid);
-    RemoteNodeComponent.set(eid, node);
     loaderCtx.nodeMap.set(index, node);
     loaderCtx.nodeIndexMap.set(node, index);
 
@@ -915,7 +893,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
 
     if (children) {
       for (const child of children) {
-        addChild(ctx, node, child);
+        addChild(node, child);
       }
     }
 

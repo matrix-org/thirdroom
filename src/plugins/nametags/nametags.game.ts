@@ -1,4 +1,4 @@
-import { addComponent, addEntity, defineComponent, defineQuery, enterQuery, hasComponent, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs";
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
@@ -6,13 +6,15 @@ import { addChild, findChild, getForwardVector, getPitch, getRoll } from "../../
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
-import { NetworkModule } from "../../engine/network/network.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
-import { addRemoteNodeComponent } from "../../engine/node/node.game";
-import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import { RemoteNametag, RemoteNode } from "../../engine/resource/resource.game";
+import {
+  getRemoteResource,
+  RemoteNametag,
+  RemoteNode,
+  tryGetRemoteResource,
+} from "../../engine/resource/resource.game";
 
 type NametagState = {
   enabled: boolean;
@@ -34,69 +36,35 @@ function onNametagsEnabledMessage(ctx: GameState, message: NametagsEnableMessage
   const nametagModule = getModule(ctx, NametagModule);
   nametagModule.enabled = message.enabled;
 }
-export const NametagComponent = defineComponent({
-  entity: Types.eid,
-  resourceId: Types.ui32,
-});
-const nametagQuery = defineQuery([NametagComponent]);
-const enteredNametagQuery = enterQuery(nametagQuery);
+
+export const NametagAnchor = defineComponent();
+
+const nametagAnchorQuery = defineQuery([NametagAnchor]);
 
 const _v = vec3.create();
 const _t = vec3.create();
 const _forward = vec3.create();
 
 export function NametagSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
   const renderer = getModule(ctx, RendererModule);
   const nametagModule = getModule(ctx, NametagModule);
   const ourPlayerEid = ourPlayerQuery(ctx.world)[0];
-  const ourPlayerNode = RemoteNodeComponent.get(ourPlayerEid);
+  const ourPlayerNode = getRemoteResource<RemoteNode>(ctx, ourPlayerEid);
 
   if (nametagModule.enabled && ourPlayerNode) {
     const ourWorldPosition = ourPlayerNode.position;
 
-    const entered = enteredNametagQuery(ctx.world);
-    for (let i = 0; i < entered.length; i++) {
-      const eid = entered[i];
-      const player = NametagComponent.entity[eid];
+    const nametagAchorEnts = nametagAnchorQuery(ctx.world);
+    for (let i = 0; i < nametagAchorEnts.length; i++) {
+      const anchorNode = tryGetRemoteResource<RemoteNode>(ctx, nametagAchorEnts[i]);
 
-      const peerId = network.entityIdToPeerId.get(player);
-
-      if (!peerId) {
-        console.warn("could not add nametag resource, no peerId for entity: ", eid);
-        continue;
-      }
-
-      const nametagResource = new RemoteNametag(ctx.resourceManager, {
-        name: peerId,
-      });
-
-      NametagComponent.resourceId[eid] = nametagResource.resourceId;
-
-      addRemoteNodeComponent(ctx, player, {
-        nametag: nametagResource,
-      });
-    }
-
-    const nametagEnts = nametagQuery(ctx.world);
-    for (let i = 0; i < nametagEnts.length; i++) {
-      const nametag = nametagEnts[i];
-      const player = NametagComponent.entity[nametag];
-      const nametagNode = RemoteNodeComponent.get(nametag);
-
-      if (!ctx.worldResource.activeCameraNode || !nametagNode) {
+      if (!ctx.worldResource.activeCameraNode) {
         continue;
       }
 
       // projection to camera space
-      const nametagWorldPosition = mat4.getTranslation(_v, nametagNode.worldMatrix);
+      const nametagWorldPosition = mat4.getTranslation(_v, anchorNode.worldMatrix);
       const projected = projectPerspective(ctx, ctx.worldResource.activeCameraNode, nametagWorldPosition);
-
-      const peerId = network.entityIdToPeerId.get(player);
-      if (peerId === undefined) {
-        // console.warn("could not find peerId for entityId " + nametag);
-        continue;
-      }
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
@@ -111,41 +79,41 @@ export function NametagSystem(ctx: GameState) {
       const dot = vec3.dot(target, forward);
       const angle = radToDeg(Math.acos(dot));
 
-      const remoteNode = RemoteNodeComponent.get(player);
-      if (remoteNode === undefined) throw new Error("could not find remote node for player " + peerId);
-      if (remoteNode.nametag === undefined) throw new Error("could not find nametag resource for player " + peerId);
+      const nametag = anchorNode.nametag!;
 
       if (angle < 100) {
         // projection to screenspace
         const screenX = Math.round((0.5 + projected[0] / 2) * renderer.canvasWidth);
         const screenY = Math.round((0.5 - projected[1] / 2) * renderer.canvasHeight);
 
-        remoteNode.nametag.screenX = screenX;
-        remoteNode.nametag.screenY = screenY;
-        remoteNode.nametag.distanceFromCamera = dist;
-        remoteNode.nametag.inFrustum = true;
+        nametag.screenX = screenX;
+        nametag.screenY = screenY;
+        nametag.distanceFromCamera = dist;
+        nametag.inFrustum = true;
       } else {
-        remoteNode.nametag.screenX = NaN;
-        remoteNode.nametag.screenY = NaN;
-        remoteNode.nametag.distanceFromCamera = dist;
-        remoteNode.nametag.inFrustum = false;
+        nametag.screenX = NaN;
+        nametag.screenY = NaN;
+        nametag.distanceFromCamera = dist;
+        nametag.inFrustum = false;
       }
     }
   }
 }
 
-export function addNametag(ctx: GameState, height: number, node: RemoteNode) {
-  const nametagEid = addEntity(ctx.world);
-  const nametag = addRemoteNodeComponent(ctx, nametagEid);
-  addComponent(ctx.world, NametagComponent, nametagEid);
-  nametag.position.set([0, height + height / 1.5, 0]);
-  addChild(ctx, node, nametag);
-  NametagComponent.entity[nametagEid] = node.eid;
+export function addNametag(ctx: GameState, height: number, node: RemoteNode, label: string) {
+  const nametag = new RemoteNode(ctx.resourceManager, {
+    position: [0, height + height / 1.5, 0],
+    nametag: new RemoteNametag(ctx.resourceManager, {
+      name: label,
+    }),
+  });
+  addComponent(ctx.world, NametagAnchor, nametag.eid);
+  addChild(node, nametag);
   return nametag;
 }
 
 export function getNametag(ctx: GameState, parent: RemoteNode) {
-  const nametag = findChild(parent, (child) => hasComponent(ctx.world, NametagComponent, child.eid));
+  const nametag = findChild(parent, (child) => hasComponent(ctx.world, NametagAnchor, child.eid));
   if (!nametag) throw new Error("avatar not found for entity " + parent.eid);
   return nametag;
 }

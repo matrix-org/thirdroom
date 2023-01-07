@@ -1,11 +1,9 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity } from "bitecs";
 import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import {
@@ -115,11 +113,7 @@ export const createPhysicsCube = (
 ): RemoteNode => {
   const physics = getModule(ctx, PhysicsModule);
   const { physicsWorld } = physics;
-  const { world } = ctx;
-
-  const eid = addEntity(world);
-
-  const node = addRemoteNodeComponent(ctx, eid, {
+  const node = new RemoteNode(ctx.resourceManager, {
     mesh: createCubeMesh(ctx, size, material),
   });
 
@@ -140,12 +134,7 @@ export const createPhysicsCube = (
 };
 
 export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
-  const { world } = ctx;
-  const eid = addEntity(world);
-
-  addRemoteNodeComponent(ctx, eid, {
+  return new RemoteNode(ctx.resourceManager, {
     mesh: createCubeMesh(ctx, size, material),
   });
-
-  return eid;
 };

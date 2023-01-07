@@ -1,15 +1,14 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
-import { addChild, removeNode } from "../component/transform";
+import { removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { RigidBody } from "../physics/physics.game";
-import { getPrefabTemplate, Prefab, PrefabType } from "../prefab/prefab.game";
+import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { isHost } from "./network.common";
-import { RemoteAvatar, RemoteNode } from "../resource/resource.game";
+import { addObjectToWorld, getRemoteResource, RemoteNode, RemoteObject } from "../resource/resource.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -32,9 +31,9 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
-  const node = eid ? RemoteNodeComponent.get(eid) : undefined;
+  const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
   if (node) {
-    removeNode(ctx, node);
+    removeNode(node);
   }
 };
 
@@ -43,7 +42,7 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   if (network.authoritative && !isHost(network)) {
     // TODO: when Authored component is implemented, add Owned component here
   } else if (!hasComponent(ctx.world, Owned, eid)) {
-    removeNode(ctx, node);
+    removeNode(node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
@@ -62,18 +61,13 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
     addComponent(ctx.world, Owned, newEid);
     addComponent(ctx.world, Networked, newEid);
 
-    if (template.type === PrefabType.Avatar) {
-      ctx.worldResource.avatars = [
-        ...ctx.worldResource.avatars,
-        new RemoteAvatar(ctx.resourceManager, {
-          root: node,
-        }),
-      ];
-    } else if (template.type === PrefabType.Object) {
-      addChild(ctx, ctx.worldResource.transientScene!, node);
-    } else {
-      throw new Error("Unknown prefab type");
-    }
+    addObjectToWorld(
+      ctx.worldResource,
+      new RemoteObject(ctx.resourceManager, {
+        privateRoot: newNode,
+        publicRoot: new RemoteNode(ctx.resourceManager),
+      })
+    );
 
     // send message to remove on other side
     broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));

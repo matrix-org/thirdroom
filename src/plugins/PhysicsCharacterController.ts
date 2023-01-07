@@ -15,10 +15,9 @@ import { getInputController, InputController, inputControllerQuery } from "../en
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
-import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { RemoteNode } from "../engine/resource/resource.game";
+import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -248,7 +247,7 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = getInputController(input, eid);
     updatePhysicsControls(ctx, physics, controller, node);
   }

@@ -143,7 +143,7 @@ export function Nametags({ room, show }: { room: Room; show: boolean }) {
       {show &&
         groupCall &&
         nametags.map((nametag) => (
-          <Nametag key={nametag.resourceId} room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
+          <Nametag key={nametag.eid} room={room} nametag={nametag} groupCall={groupCall as GroupCall} />
         ))}
     </div>
   );

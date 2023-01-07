@@ -7,12 +7,12 @@ import { defineMapComponent } from "../ecs/MapComponent";
 import { defineModule, getModule } from "../module/module.common";
 import {
   addResourceRef,
+  getRemoteResource,
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
   removeResourceRef,
 } from "../resource/resource.game";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
@@ -100,7 +100,7 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
     const eid = entered[i];
 
     const body = RigidBody.store.get(eid);
-    const node = RemoteNodeComponent.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
 
     if (body && node) {
       if (body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
@@ -136,7 +136,7 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
   for (let i = 0; i < physicsEntities.length; i++) {
     const eid = physicsEntities[i];
     const body = RigidBody.store.get(eid);
-    const node = RemoteNodeComponent.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
 
     if (node && body && body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
       // sync velocity
@@ -187,13 +187,13 @@ export function addRigidBody(
   RigidBody.store.set(node.eid, rigidBody);
 
   if (meshResource) {
-    addResourceRef(ctx, meshResource.resourceId);
-    RigidBody.meshResourceId[node.eid] = meshResource.resourceId;
+    addResourceRef(ctx, meshResource.eid);
+    RigidBody.meshResourceId[node.eid] = meshResource.eid;
   }
 
   if (primitiveResource) {
-    addResourceRef(ctx, primitiveResource.resourceId);
-    RigidBody.primitiveResourceId[node.eid] = primitiveResource.resourceId;
+    addResourceRef(ctx, primitiveResource.eid);
+    RigidBody.primitiveResourceId[node.eid] = primitiveResource.eid;
   }
 }
 

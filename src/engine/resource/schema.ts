@@ -389,7 +389,6 @@ export const InteractableResource = defineResource("interactable", ResourceType.
 });
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
-  eid: PropType.u32({ script: true, mutable: false, required: true }),
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene", { backRef: true }),
   parent: PropType.selfRef({ backRef: true }),
@@ -466,7 +465,6 @@ export const AnimationResource = defineResource("animation", ResourceType.Animat
 });
 
 export const SceneResource = defineResource("scene", ResourceType.Scene, {
-  eid: PropType.u32({ script: true, mutable: false, required: true }),
   name: PropType.string({ default: "Scene", script: true }),
   backgroundTexture: PropType.ref(TextureResource, { script: true }),
   reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
@@ -476,17 +474,20 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
 });
 
 export const EnvironmentResource = defineResource("environment", ResourceType.Environment, {
-  activeScene: PropType.ref(SceneResource, { script: true }),
+  publicScene: PropType.ref(SceneResource, { script: true, required: true, mutable: true }),
+  privateScene: PropType.ref(SceneResource, { script: false, required: true, mutable: false }),
 });
 
-export const AvatarResource = defineResource("avatar", ResourceType.Avatar, {
-  root: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
+export const ObjectResource = defineResource("object", ResourceType.Avatar, {
+  publicRoot: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
+  privateRoot: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
+  nextSibling: PropType.selfRef(),
+  prevSibling: PropType.selfRef({ backRef: true }),
 });
 
 export const WorldResource = defineResource("world", ResourceType.World, {
   environment: PropType.ref(EnvironmentResource, { script: false }),
-  avatars: PropType.refArray(AvatarResource, { size: 64 }),
+  firstObject: PropType.ref(ObjectResource),
   persistentScene: PropType.ref(SceneResource, { required: true, script: false }),
-  transientScene: PropType.ref(SceneResource, { script: false }),
   activeCameraNode: PropType.ref(NodeResource, { script: true }),
 });

@@ -7,7 +7,7 @@ import { CameraType } from "../resource/schema";
 
 export function updateNodeCamera(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentCameraResourceId = node.currentCameraResourceId;
-  const nextCameraResourceId = node.camera?.resourceId || 0;
+  const nextCameraResourceId = node.camera?.eid || 0;
 
   // TODO: Handle node.visible
 

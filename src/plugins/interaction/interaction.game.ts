@@ -30,7 +30,6 @@ import {
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
 import { takeOwnership } from "../../engine/network/ownership.game";
-import { RemoteNodeComponent } from "../../engine/node/RemoteNodeComponent";
 import {
   addCollisionGroupMembership,
   FocusCollisionGroup,
@@ -43,10 +42,12 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physi
 import { Prefab } from "../../engine/prefab/prefab.game";
 import {
   addResourceRef,
+  getRemoteResource,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteNode,
+  tryGetRemoteResource,
 } from "../../engine/resource/resource.game";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
@@ -82,13 +83,13 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
       name: "Click1 Audio Data",
       uri: "/audio/click1.wav",
     });
-    addResourceRef(ctx, clickAudio1.resourceId);
+    addResourceRef(ctx, clickAudio1.eid);
 
     const clickAudio2 = new RemoteAudioData(ctx.resourceManager, {
       name: "Click2 Audio Data",
       uri: "/audio/click2.wav",
     });
-    addResourceRef(ctx, clickAudio2.resourceId);
+    addResourceRef(ctx, clickAudio2.eid);
 
     const clickAudioSource1 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio1,
@@ -96,7 +97,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
       autoPlay: false,
       gain: 0.2,
     });
-    addResourceRef(ctx, clickAudioSource1.resourceId);
+    addResourceRef(ctx, clickAudioSource1.eid);
 
     const clickAudioSource2 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio2,
@@ -104,14 +105,14 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
       autoPlay: false,
       gain: 0.2,
     });
-    addResourceRef(ctx, clickAudioSource2.resourceId);
+    addResourceRef(ctx, clickAudioSource2.eid);
 
     module.clickEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
       type: AudioEmitterType.Global,
       sources: [clickAudioSource1, clickAudioSource2],
     });
 
-    addResourceRef(ctx, module.clickEmitter.resourceId);
+    addResourceRef(ctx, module.clickEmitter.eid);
 
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
@@ -251,7 +252,7 @@ const _r = new Vector4();
 
 const zero = new Vector3();
 
-const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
+const remoteNodeQuery = defineQuery([RemoteNode]);
 const interactableQuery = defineQuery([Interactable]);
 
 export function InteractionSystem(ctx: GameState) {
@@ -264,7 +265,7 @@ export function InteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < remoteNodeEntities.length; i++) {
     const eid = remoteNodeEntities[i];
-    const remoteNode = RemoteNodeComponent.get(eid)!;
+    const remoteNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const interactable = remoteNode.interactable;
     const hasInteractable = hasComponent(ctx.world, Interactable, eid);
 
@@ -284,7 +285,7 @@ export function InteractionSystem(ctx: GameState) {
       continue;
     }
 
-    const remoteNode = RemoteNodeComponent.get(eid);
+    const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
     const interactable = remoteNode?.interactable;
 
     if (interactable) {
@@ -297,7 +298,7 @@ export function InteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const rig = RemoteNodeComponent.get(eid)!;
+    const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const camera = getCamera(ctx, rig);
     const controller = getInputController(input, eid);
 
@@ -368,14 +369,14 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
   const deleteBtn = controller.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
-    const focused = RemoteNodeComponent.get(focusedEid);
+    const focused = getRemoteResource<RemoteNode>(ctx, focusedEid);
     // TODO: For now we only delete owned objects
     if (
       focused &&
       hasComponent(ctx.world, Owned, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeNode(ctx, focused);
+      removeNode(focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }
@@ -469,7 +470,7 @@ function updateGrabThrow(
 
     if (shapecastHit !== null) {
       const eid = physics.handleToEid.get(shapecastHit.collider.handle);
-      const node = eid ? RemoteNodeComponent.get(eid) : undefined;
+      const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
       if (!node || !eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
@@ -501,7 +502,7 @@ function updateGrabThrow(
         } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
           playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const remoteNode = RemoteNodeComponent.get(node.eid);
+          const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
           const interactable = remoteNode?.interactable;
 
           if (interactable) {
@@ -526,7 +527,7 @@ function updateGrabThrow(
         continue;
       }
 
-      const remoteNode = RemoteNodeComponent.get(eid);
+      const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
       const interactable = remoteNode?.interactable;
 
       if (interactable) {
@@ -540,7 +541,7 @@ function updateGrabThrow(
   // if still holding entity, move towards the held point
   heldEntity = GrabComponent.grabbedEntity[rig.eid];
 
-  const heldNode = RemoteNodeComponent.get(heldEntity);
+  const heldNode = getRemoteResource<RemoteNode>(ctx, heldEntity);
 
   if (heldNode) {
     // move held point upon scrolling
@@ -611,7 +612,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,
       interactableType,
-      name: Prefab.get(eid) || RemoteNodeComponent.get(eid)?.name,
+      name: Prefab.get(eid) || getRemoteResource<RemoteNode>(ctx, eid)?.name,
       held: hasComponent(ctx.world, GrabComponent, eid),
       action,
       peerId,

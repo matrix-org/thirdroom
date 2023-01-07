@@ -129,7 +129,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
     const localAudioSource = localAudioSources[i];
 
     const currentAudioDataResourceId = localAudioSource.activeAudioDataResourceId;
-    const nextAudioDataResourceId = localAudioSource.audio?.resourceId || 0;
+    const nextAudioDataResourceId = localAudioSource.audio?.eid || 0;
 
     // Dispose old sourceNode when changing audio data
     if (currentAudioDataResourceId !== nextAudioDataResourceId && localAudioSource.sourceNode) {
@@ -236,7 +236,7 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     for (let j = activeSources.length - 1; j >= 0; j--) {
       const activeSource = activeSources[j];
 
-      if (!nextSources.some((source) => activeSource.resourceId === source.resourceId)) {
+      if (!nextSources.some((source) => activeSource.eid === source.eid)) {
         activeSource.gainNode!.disconnect(audioEmitter.inputGain!);
         activeSources.splice(j, 1);
       }
@@ -246,7 +246,7 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     for (let j = 0; j < nextSources.length; j++) {
       const nextSource = nextSources[j];
 
-      const source = activeSources.find((s) => s.resourceId === nextSource.resourceId);
+      const source = activeSources.find((s) => s.eid === nextSource.eid);
 
       if (!source) {
         activeSources.push(nextSource);
@@ -323,7 +323,7 @@ const RAD2DEG = 180 / Math.PI;
 
 export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: MainAudioModule, node: MainNode) {
   const currentAudioEmitterResourceId = node.currentAudioEmitterResourceId;
-  const nextAudioEmitterResourceId = node.audioEmitter?.resourceId || 0;
+  const nextAudioEmitterResourceId = node.audioEmitter?.eid || 0;
 
   // If emitter changed
   if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId && node.emitterInputNode && node.emitterPannerNode) {

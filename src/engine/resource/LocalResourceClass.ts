@@ -23,7 +23,7 @@ export function defineLocalResourceClass<
     resourceId: number,
     tripleBuffer: TripleBuffer
   ) {
-    this.resourceId = resourceId;
+    this.eid = resourceId;
     this.resourceType = resourceType;
     this.tripleBuffer = tripleBuffer;
     this.manager = manager;

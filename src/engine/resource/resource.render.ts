@@ -105,7 +105,7 @@ import {
   AnimationResource,
   WorldResource,
   EnvironmentResource,
-  AvatarResource,
+  ObjectResource,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -702,18 +702,21 @@ export class RenderScene extends defineLocalResourceClass(SceneResource) {
 }
 
 export class RenderEnvironment extends defineLocalResourceClass(EnvironmentResource) {
-  declare activeScene: RenderScene | undefined;
+  declare publicScene: RenderScene;
+  declare privateScene: RenderScene;
 }
 
-export class RenderAvatar extends defineLocalResourceClass(AvatarResource) {
-  declare root: RenderNode;
+export class RenderObject extends defineLocalResourceClass(ObjectResource) {
+  declare publicRoot: RenderNode;
+  declare privateRoot: RenderNode;
+  declare nextSibling: RenderObject | undefined;
+  declare prevSibling: RenderObject | undefined;
 }
 
 export class RenderWorld extends defineLocalResourceClass(WorldResource) {
   declare environment: RenderEnvironment | undefined;
-  declare avatars: RenderAvatar[];
+  declare firstObject: RenderObject | undefined;
   declare persistentScene: RenderScene;
-  declare transientScene: RenderScene;
   declare activeCameraNode: RenderNode | undefined;
 }
 
@@ -754,7 +757,7 @@ const {
   RenderAnimation,
   RenderAnimationChannel,
   RenderAnimationSampler,
-  RenderAvatar,
+  RenderObject,
   RenderEnvironment,
   RenderWorld,
 ]);

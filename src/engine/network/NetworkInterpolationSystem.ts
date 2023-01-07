@@ -17,8 +17,7 @@ import {
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { isHost } from "./network.common";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
-import { RemoteNode } from "../resource/resource.game";
+import { getRemoteResource, RemoteNode } from "../resource/resource.game";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
@@ -39,13 +38,15 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entered = enteredRemoteEntityQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
-    const node = RemoteNodeComponent.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
     const body = RigidBody.store.get(eid);
     if (node && body) {
       applyNetworkedToEntity(node, body);
 
       // add to historian
+      console.log("Networked.networkId[eid]", Networked.networkId[eid]);
       const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
+      console.log("pidx", pidx);
       const peerId = network.indexToPeerId.get(pidx);
       if (!peerId) {
         throw new Error("peer not found for entity " + eid);
@@ -64,7 +65,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   const entities = remoteEntityQuery(ctx.world);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const node = RemoteNodeComponent.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
 
     if (!node) {
       console.warn("could not find node for:", eid);

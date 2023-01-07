@@ -1,12 +1,9 @@
-import { defineQuery, entityExists, getEntityComponents, removeComponent, removeEntity } from "bitecs";
+import { defineQuery } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
-import { Networked } from "../network/network.game";
-import { RigidBody } from "../physics/physics.game";
 import { ResourceType } from "../resource/schema";
-import { addResourceRef, RemoteNode, RemoteScene, removeResourceRef } from "../resource/resource.game";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
+import { getRemoteResource, RemoteNode, RemoteScene } from "../resource/resource.game";
 
 export const Axes = {
   X: vec3.fromValues(1, 0, 0),
@@ -54,44 +51,7 @@ export const findChild = (parent: RemoteNode | RemoteScene, predicate: (node: Re
   return result;
 };
 
-export function addChild(ctx: GameState, parent: RemoteNode | RemoteScene, child: RemoteNode) {
-  addResourceRef(ctx, child.resourceId);
-
-  const previousParent = child.parent || child.parentScene;
-
-  if (previousParent) {
-    removeChild(ctx, previousParent, child);
-  }
-
-  if (parent.resourceType === ResourceType.Node) {
-    child.parent = parent;
-  } else {
-    child.parentScene = parent;
-  }
-
-  const lastChild = getLastChild(parent);
-
-  if (lastChild) {
-    lastChild.nextSibling = child;
-    child.prevSibling = lastChild;
-    child.nextSibling = undefined;
-  } else {
-    if (parent.resourceType === ResourceType.Node) {
-      parent.firstChild = child;
-    } else {
-      parent.firstNode = child;
-    }
-
-    child.prevSibling = undefined;
-    child.nextSibling = undefined;
-  }
-
-  removeResourceRef(ctx, child.resourceId);
-}
-
-export function removeChild(ctx: GameState, parent: RemoteNode | RemoteScene, child: RemoteNode) {
-  addResourceRef(ctx, child.resourceId);
-
+function removeNodeFromLinkedList(parent: RemoteNode | RemoteScene, child: RemoteNode) {
   const prevSibling = child.prevSibling;
   const nextSibling = child.nextSibling;
 
@@ -124,13 +84,45 @@ export function removeChild(ctx: GameState, parent: RemoteNode | RemoteScene, ch
       parent.firstNode = nextSibling;
     }
   }
+}
 
+export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  const previousParent = child.parent || child.parentScene;
+
+  if (parent.resourceType === ResourceType.Node) {
+    child.parent = parent;
+  } else {
+    child.parentScene = parent;
+  }
+
+  if (previousParent) {
+    removeNodeFromLinkedList(previousParent, child);
+  }
+
+  const lastChild = getLastChild(parent);
+
+  if (lastChild) {
+    lastChild.nextSibling = child;
+    child.prevSibling = lastChild;
+    child.nextSibling = undefined;
+  } else {
+    if (parent.resourceType === ResourceType.Node) {
+      parent.firstChild = child;
+    } else {
+      parent.firstNode = child;
+    }
+
+    child.prevSibling = undefined;
+    child.nextSibling = undefined;
+  }
+}
+
+export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  removeNodeFromLinkedList(parent, child);
   child.parentScene = undefined;
   child.parent = undefined;
   child.nextSibling = undefined;
   child.prevSibling = undefined;
-
-  removeResourceRef(ctx, child.resourceId);
 }
 
 export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents: boolean, updateChildren: boolean) => {
@@ -420,36 +412,12 @@ export function traverseReverse(node: RemoteNode | RemoteScene, callback: (node:
   }
 }
 
-export function removeNode(ctx: GameState, node: RemoteNode | RemoteScene) {
-  const world = ctx.world;
-
-  if (!entityExists(world, node.eid)) {
-    return;
-  }
-
-  traverseReverse(node, (child) => {
-    const eid = child.eid;
-    // TODO: removeEntity should reset components
-    const components = getEntityComponents(world, eid);
-
-    for (let i = 0; i < components.length; i++) {
-      if (components[i] === Networked || components[i] === RigidBody) {
-        removeComponent(world, components[i], eid, false);
-      } else {
-        removeComponent(world, components[i], eid, true);
-      }
-    }
-
-    removeEntity(world, eid);
-  });
-
-  if (node.resourceType === ResourceType.Scene) {
-    removeEntity(world, node.eid);
-  } else {
+export function removeNode(node: RemoteNode | RemoteScene) {
+  if (node.resourceType === ResourceType.Node) {
     const parent = node.parent || node.parentScene;
 
     if (parent) {
-      removeChild(ctx, parent, node);
+      removeChild(parent, node);
     } else {
       node.firstChild = undefined;
       node.prevSibling = undefined;
@@ -475,18 +443,17 @@ export function getDirection(out: vec3, matrix: mat4): vec3 {
 }
 
 export function UpdateMatrixWorldSystem(ctx: GameState) {
-  if (ctx.worldResource.environment?.activeScene) {
-    updateMatrixWorld(ctx.worldResource.environment.activeScene);
+  if (ctx.worldResource.environment) {
+    updateMatrixWorld(ctx.worldResource.environment.privateScene);
+    updateMatrixWorld(ctx.worldResource.environment.publicScene);
   }
 
-  const avatars = ctx.worldResource.avatars;
+  let curObject = ctx.worldResource.firstObject;
 
-  for (let i = 0; i < avatars.length; i++) {
-    updateMatrixWorld(avatars[i].root);
-  }
-
-  if (ctx.worldResource.transientScene) {
-    updateMatrixWorld(ctx.worldResource.transientScene);
+  while (curObject) {
+    updateMatrixWorld(curObject.publicRoot);
+    updateMatrixWorld(curObject.privateRoot);
+    curObject = curObject.nextSibling;
   }
 
   updateMatrixWorld(ctx.worldResource.persistentScene);
@@ -529,14 +496,14 @@ export function getRightVector(out: vec3, roll: number) {
   return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
 }
 
-const skipRenderLerpQuery = defineQuery([RemoteNodeComponent]);
+const skipRenderLerpQuery = defineQuery([RemoteNode]);
 
 export function SkipRenderLerpSystem(ctx: GameState) {
   const ents = skipRenderLerpQuery(ctx.world);
 
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = getRemoteResource<RemoteNode>(ctx, eid)!;
 
     node.skipLerp -= 1;
 

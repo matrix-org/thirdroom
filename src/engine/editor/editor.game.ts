@@ -33,8 +33,8 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
-import { RemoteNodeComponent } from "../node/RemoteNodeComponent";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
+import { getRemoteResource, RemoteNode } from "../resource/resource.game";
 
 /*********
  * Types *
@@ -161,7 +161,7 @@ export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEn
 export function onFocusEntity(ctx: GameState, message: FocusEntityMessage) {}
 
 export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
-  const node = RemoteNodeComponent.get(message.eid);
+  const node = getRemoteResource<RemoteNode>(ctx, message.eid);
 
   if (node) {
     node.name = message.name;
@@ -202,7 +202,7 @@ export function EditorStateSystem(ctx: GameState) {
     // Recursively update this layer so that the selected effect can be applied to all descendants
     for (let i = 0; i < selectedRemoved.length; i++) {
       const eid = selectedRemoved[i];
-      const selectedNode = RemoteNodeComponent.get(eid)!;
+      const selectedNode = getRemoteResource<RemoteNode>(ctx, eid)!;
 
       traverse(selectedNode, (child) => {
         child.layers = removeLayer(child.layers, Layer.EditorSelection);
@@ -211,7 +211,7 @@ export function EditorStateSystem(ctx: GameState) {
 
     for (let i = 0; i < selectedAdded.length; i++) {
       const eid = selectedAdded[i];
-      const selectedNode = RemoteNodeComponent.get(eid)!;
+      const selectedNode = getRemoteResource<RemoteNode>(ctx, eid)!;
 
       traverse(selectedNode, (child) => {
         child.layers = addLayer(child.layers, Layer.EditorSelection);

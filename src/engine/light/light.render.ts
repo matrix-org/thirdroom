@@ -7,7 +7,7 @@ import { LightType } from "../resource/schema";
 
 export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentLightResourceId = node.currentLightResourceId;
-  const nextLightResourceId = node.light?.resourceId || 0;
+  const nextLightResourceId = node.light?.eid || 0;
 
   // TODO: Handle node.visible
 

@@ -315,7 +315,7 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
 
   for (let i = 0; i < meshPrimitives.length; i++) {
     const meshPrimitive = meshPrimitives[i];
-    const nextMaterialResourceId = meshPrimitive.material?.resourceId || 0;
+    const nextMaterialResourceId = meshPrimitive.material?.eid || 0;
     const nextMaterialResource = getLocalResource<RenderMaterial>(ctx, nextMaterialResourceId);
 
     const newMaterialObj = nextMaterialResource
@@ -343,7 +343,7 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
 export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
   const rendererModule = getModule(ctx, RendererModule);
   const currentMeshResourceId = node.currentMeshResourceId;
-  const nextMeshResourceId = node.mesh?.resourceId || 0;
+  const nextMeshResourceId = node.mesh?.eid || 0;
 
   if (currentMeshResourceId !== nextMeshResourceId && node.meshPrimitiveObjects) {
     for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {

@@ -15,9 +15,8 @@ import { getInputController, inputControllerQuery } from "../engine/input/InputC
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
-import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { RemoteNode } from "../engine/resource/resource.game";
+import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -244,7 +243,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = getInputController(input, eid);
 
     // if not hosting

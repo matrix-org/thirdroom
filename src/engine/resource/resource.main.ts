@@ -15,7 +15,6 @@ import {
   AudioEmitterResource,
   AudioEmitterType,
   AudioSourceResource,
-  AvatarResource,
   BufferResource,
   BufferViewResource,
   CameraResource,
@@ -39,6 +38,7 @@ import {
   TextureResource,
   TilesRendererResource,
   WorldResource,
+  ObjectResource,
 } from "./schema";
 
 export {
@@ -336,18 +336,22 @@ export class MainScene extends defineLocalResourceClass(SceneResource) {
 }
 
 export class MainEnvironment extends defineLocalResourceClass(EnvironmentResource) {
-  declare activeScene: MainScene | undefined;
-  declare activeCameraNode: MainNode | undefined;
+  declare publicScene: MainScene;
+  declare privateScene: MainScene;
 }
 
-export class MainAvatar extends defineLocalResourceClass(AvatarResource) {
-  declare root: MainNode;
+export class MainObject extends defineLocalResourceClass(ObjectResource) {
+  declare publicRoot: MainNode;
+  declare privateRoot: MainNode;
+  declare nextSibling: MainObject | undefined;
+  declare prevSibling: MainObject | undefined;
 }
 
 export class MainWorld extends defineLocalResourceClass(WorldResource) {
   declare environment: MainEnvironment | undefined;
-  declare avatars: MainAvatar[];
+  declare firstObject: MainObject | undefined;
   declare persistentScene: MainScene;
+  declare activeCameraNode: MainNode | undefined;
 }
 
 const {
@@ -388,6 +392,6 @@ const {
   MainAnimationSampler,
   MainAnimation,
   MainEnvironment,
-  MainAvatar,
+  MainObject,
   MainWorld,
 ]);

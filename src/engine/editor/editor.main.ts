@@ -107,7 +107,7 @@ export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
 
 function updateHierarchy(ctx: IMainThreadContext, editor: EditorModuleState) {
   const event: HierarchyChangedEvent = {
-    scene: ctx.worldResource.environment?.activeScene && buildEditorNode(ctx.worldResource.environment.activeScene),
+    scene: ctx.worldResource.environment?.publicScene && buildEditorNode(ctx.worldResource.environment.publicScene),
     activeEntity: editor.activeEntity,
     selectedEntities: editor.selectedEntities,
   };

@@ -14,8 +14,7 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
-import { RemoteNode } from "../engine/resource/resource.game";
+import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -111,7 +110,7 @@ export function FlyControllerSystem(ctx: GameState) {
 
   for (let i = 0; i < ents.length; i++) {
     const playerRigEid = ents[i];
-    const playerRig = RemoteNodeComponent.get(playerRigEid)!;
+    const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
     const camera = getCamera(ctx, playerRig);
     const controller = getInputController(input, playerRigEid);
 

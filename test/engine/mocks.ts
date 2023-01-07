@@ -1,12 +1,18 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld } from "bitecs";
+import { createWorld } from "bitecs";
 
-import { PrefabModule, registerPrefab } from "../../src/engine/prefab/prefab.game";
+import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
-import { RemoteNode, RemoteScene, ResourceModule } from "../../src/engine/resource/resource.game";
+import {
+  RemoteNode,
+  RemoteScene,
+  RemoteWorld,
+  ResourceModule,
+  RemoteEnvironment,
+} from "../../src/engine/resource/resource.game";
 import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import {
   IRemoteResourceManager,
@@ -15,16 +21,15 @@ import {
   ResourceData,
   ResourceManagerGLTFCacheEntry,
 } from "../../src/engine/resource/ResourceDefinition";
-import { addRemoteNodeComponent } from "../../src/engine/node/node.game";
 import { addChild } from "../../src/engine/component/transform";
 import { GLTFResource } from "../../src/engine/gltf/gltf.game";
 
-export function registerDefaultPrefabs(state: GameState) {
-  registerPrefab(state, {
+export function registerDefaultPrefabs(ctx: GameState) {
+  registerPrefab(ctx, {
     name: "test-prefab",
+    type: PrefabType.Object,
     create: () => {
-      const eid = addEntity(state.world);
-      return addRemoteNodeComponent(state, eid);
+      return new RemoteNode(ctx.resourceManager);
     },
   });
 }
@@ -106,10 +111,26 @@ export const mockGameState = () => {
     resourceManager: new MockResourceManager(),
   } as unknown as GameState;
 
-  ctx.activeScene = new RemoteScene(ctx.resourceManager);
-  ctx.activeCamera = new RemoteNode(ctx.resourceManager);
+  const activeCameraNode = new RemoteNode(ctx.resourceManager, {
+    name: "Camera",
+  });
+  const persistentScene = new RemoteScene(ctx.resourceManager, {
+    name: "Persistent Scene",
+  });
+  addChild(persistentScene, activeCameraNode);
 
-  addChild(ctx.activeScene, ctx.activeCamera);
+  ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
+    environment: new RemoteEnvironment(ctx.resourceManager, {
+      publicScene: new RemoteScene(ctx.resourceManager, {
+        name: "Public Scene",
+      }),
+      privateScene: new RemoteScene(ctx.resourceManager, {
+        name: "Private Scene",
+      }),
+    }),
+    activeCameraNode,
+    persistentScene,
+  });
 
   ctx.modules.set(PhysicsModule, mockPhysicsState());
   ctx.modules.set(NetworkModule, mockNetworkState());
@@ -122,10 +143,10 @@ export const mockGameState = () => {
   return ctx;
 };
 
-export class MockResourceManager implements IRemoteResourceManager {
-  private resources: RemoteResource[] = [];
+export class MockResourceManager implements IRemoteResourceManager<GameState> {
+  private resources: RemoteResource<GameState>[] = [];
   private nextResourceId = 1;
-  private resourcesById: Map<number, RemoteResource | string | SharedArrayBuffer> = new Map();
+  private resourcesById: Map<number, RemoteResource<GameState> | string | SharedArrayBuffer> = new Map();
   private resourceRefs: Map<number, number> = new Map();
   private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
 
@@ -218,7 +239,7 @@ export class MockResourceManager implements IRemoteResourceManager {
     };
   }
 
-  createResource(resource: RemoteResource): number {
+  createResource(resource: RemoteResource<GameState>): number {
     const resourceId = this.nextResourceId++;
     this.resources.push(resource);
     this.resourcesById.set(resourceId, resource);
@@ -226,12 +247,15 @@ export class MockResourceManager implements IRemoteResourceManager {
     return resourceId;
   }
 
-  getResource<Def extends ResourceDefinition>(resourceDef: Def, resourceId: number): RemoteResource | undefined {
-    return this.resourcesById.get(resourceId) as RemoteResource | undefined;
+  getResource<Def extends ResourceDefinition>(
+    resourceDef: Def,
+    resourceId: number
+  ): RemoteResource<GameState> | undefined {
+    return this.resourcesById.get(resourceId) as RemoteResource<GameState> | undefined;
   }
 
   disposeResource(resourceId: number): boolean {
-    const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
+    const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
     if (index === -1) {
       return false;
@@ -270,17 +294,17 @@ export class MockResourceManager implements IRemoteResourceManager {
     return true;
   }
 
-  getRef<T extends RemoteResource>(store: Uint32Array): T | undefined {
+  getRef<T extends RemoteResource<GameState>>(store: Uint32Array): T | undefined {
     return this.resourcesById.get(store[0]) as T | undefined;
   }
 
-  setRef(value: RemoteResource, store: Uint32Array, backRef?: boolean): void {
+  setRef(value: RemoteResource<GameState>, store: Uint32Array, backRef?: boolean): void {
     if (store[0] && !backRef) {
       this.removeRef(store[0]);
     }
 
     if (value) {
-      store[0] = value.resourceId;
+      store[0] = value.eid;
 
       if (!backRef) {
         this.addRef(store[0]);
@@ -290,16 +314,15 @@ export class MockResourceManager implements IRemoteResourceManager {
     }
   }
 
-  setRefArrayItem(index: number, value: RemoteResource | undefined, store: Uint32Array): void {
-    if (value) {
-      this.addRef(value.resourceId);
-      store[index] = value.resourceId;
-    } else {
-      store[index] = 0;
-    }
+  setRefArray(values: RemoteResource<GameState>[], store: Uint32Array): void {
+    throw new Error("Method not implemented.");
   }
 
-  getRefArrayItem<T extends RemoteResource>(index: number, store: Uint32Array): T | undefined {
+  setRefMap(values: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
+    throw new Error("Method not implemented.");
+  }
+
+  getRefArrayItem<T extends RemoteResource<GameState>>(index: number, store: Uint32Array): T | undefined {
     const resourceId = store[index];
     return resourceId ? (this.resourcesById.get(resourceId) as T | undefined) : undefined;
   }

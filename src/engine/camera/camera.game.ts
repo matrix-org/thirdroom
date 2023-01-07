@@ -1,10 +1,8 @@
-import { addEntity } from "bitecs";
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
 import { findChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
 import { RendererModule } from "../renderer/renderer.game";
 import { getRemoteResources, RemoteCamera, RemoteNode } from "../resource/resource.game";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
@@ -32,9 +30,7 @@ export function createRemotePerspectiveCamera(
 }
 
 export function createCamera(ctx: GameState, setActive = false): RemoteNode {
-  const eid = addEntity(ctx.world);
-
-  const node = addRemoteNodeComponent(ctx, eid, {
+  const node = new RemoteNode(ctx.resourceManager, {
     camera: createRemotePerspectiveCamera(ctx),
   });
 

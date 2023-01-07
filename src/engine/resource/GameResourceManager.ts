@@ -71,7 +71,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
   }
 
   disposeResource(resourceId: number): boolean {
-    const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
+    const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
     if (index === -1) {
       return false;
@@ -159,7 +159,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
 
   setRef(value: RemoteResource<GameState> | undefined, store: Uint32Array, backRef: boolean): void {
     const curResourceId = store[0];
-    const nextResourceId = value?.resourceId || 0;
+    const nextResourceId = value?.eid || 0;
 
     if (!backRef) {
       if (nextResourceId && nextResourceId !== curResourceId) {
@@ -176,7 +176,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
 
   setRefArray(value: RemoteResource<GameState>[], store: Uint32Array): void {
     for (let i = 0; i < value.length; i++) {
-      this.addRef(value[i].resourceId);
+      this.addRef(value[i].eid);
     }
 
     for (let i = 0; i < store.length; i++) {
@@ -190,13 +190,13 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     }
 
     for (let i = 0; i < value.length; i++) {
-      store[i] = value[i].resourceId || 0;
+      store[i] = value[i].eid || 0;
     }
   }
 
   setRefMap(value: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
     for (const key in value) {
-      this.addRef(value[key].resourceId);
+      this.addRef(value[key].eid);
     }
 
     for (let i = 0; i < store.length; i++) {
@@ -210,7 +210,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     }
 
     for (const key in value) {
-      store[key] = value[key].resourceId || 0;
+      store[key] = value[key].eid || 0;
     }
   }
 

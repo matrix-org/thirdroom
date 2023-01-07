@@ -25,7 +25,7 @@ function getReflectionProbes(ctx: RenderThreadState): ReflectionProbe[] {
 
 export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentReflectionProbeResourceId = node.currentReflectionProbeResourceId;
-  const nextReflectionProbeResourceId = node.reflectionProbe?.resourceId || 0;
+  const nextReflectionProbeResourceId = node.reflectionProbe?.eid || 0;
 
   if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId && node.reflectionProbeObject) {
     scene.remove(node.reflectionProbeObject);
@@ -49,7 +49,7 @@ export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, 
 
 export function updateSceneReflectionProbe(ctx: RenderThreadState, scene: RenderScene) {
   const currentReflectionProbeResourceId = scene.currentReflectionProbeResourceId;
-  const nextReflectionProbeResourceId = scene.reflectionProbe?.resourceId || 0;
+  const nextReflectionProbeResourceId = scene.reflectionProbe?.eid || 0;
 
   if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId) {
     scene.reflectionProbeNeedsUpdate = true;

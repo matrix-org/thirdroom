@@ -23,8 +23,7 @@ import { Networked, NetworkModule, Owned } from "../engine/network/network.game"
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { broadcastReliable, sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
-import { RemoteNodeComponent } from "../engine/node/RemoteNodeComponent";
-import { RemoteNode } from "../engine/resource/resource.game";
+import { getRemoteResource, RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
 import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};
@@ -50,8 +49,8 @@ const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
   const data: NetPipeData = [ctx, messageView, ""];
 
-  const node = RemoteNodeComponent.get(eid)!;
-  const cameraNode = RemoteNodeComponent.get(camera)!;
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  const cameraNode = tryGetRemoteResource<RemoteNode>(ctx, camera);
 
   writeMetadata(NetworkAction.UpdateCamera)(data);
 
@@ -78,7 +77,7 @@ function deserializeUpdateCamera(data: NetPipeData) {
 
   const nid = readUint32(view);
   const player = network.networkIdToEntityId.get(nid)!;
-  const node = RemoteNodeComponent.get(player)!;
+  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
 
   const camera = getCamera(ctx, node);
 
@@ -142,8 +141,8 @@ export function addCameraYawTargetComponent(world: World, node: RemoteNode) {
   FirstPersonCameraYawTarget.sensitivity[node.eid] = DEFAULT_SENSITIVITY;
 }
 
-export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, RemoteNodeComponent]);
-export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNodeComponent]);
+export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget, RemoteNode]);
+export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNode]);
 
 function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [lookX] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
@@ -192,7 +191,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const pitchEntities = cameraPitchTargetQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     // pitch target on camera, controller is on the parent of the camera
     const parent = node.parent;
 
@@ -221,7 +220,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   const yawEntities = cameraYawTargetQuery(ctx.world);
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
-    const node = RemoteNodeComponent.get(eid)!;
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = getInputController(input, eid);
     applyYaw(ctx, controller, node);
   }
@@ -229,7 +228,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
 export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
-  const playerNode = RemoteNodeComponent.get(ourPlayer)!;
+  const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer);
 
   if (!ourPlayer || !playerNode) {
     return;

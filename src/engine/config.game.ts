@@ -24,9 +24,7 @@ import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
 import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
-import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
-import { RemoteSceneSystem } from "./scene/scene.game";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
@@ -96,8 +94,6 @@ export default defineConfig<GameState>({
 
     GameAudioSystem,
     RemoteCameraSystem,
-    RemoteNodeSystem,
-    RemoteSceneSystem,
     GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
