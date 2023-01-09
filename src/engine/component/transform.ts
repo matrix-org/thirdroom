@@ -87,6 +87,7 @@ function removeNodeFromLinkedList(parent: RemoteNode | RemoteScene, child: Remot
 }
 
 export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  child.addRef();
   const previousParent = child.parent || child.parentScene;
 
   if (parent.resourceType === ResourceType.Node) {
@@ -115,14 +116,17 @@ export function addChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
     child.prevSibling = undefined;
     child.nextSibling = undefined;
   }
+  child.removeRef();
 }
 
 export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode) {
+  child.addRef();
   removeNodeFromLinkedList(parent, child);
   child.parentScene = undefined;
   child.parent = undefined;
-  child.nextSibling = undefined;
   child.prevSibling = undefined;
+  child.nextSibling = undefined;
+  child.removeRef();
 }
 
 export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents: boolean, updateChildren: boolean) => {
@@ -448,12 +452,8 @@ export function UpdateMatrixWorldSystem(ctx: GameState) {
     updateMatrixWorld(ctx.worldResource.environment.publicScene);
   }
 
-  let curObject = ctx.worldResource.firstObject;
-
-  while (curObject) {
-    updateMatrixWorld(curObject.publicRoot);
-    updateMatrixWorld(curObject.privateRoot);
-    curObject = curObject.nextSibling;
+  if (ctx.worldResource.firstNode) {
+    updateMatrixWorld(ctx.worldResource.firstNode);
   }
 
   updateMatrixWorld(ctx.worldResource.persistentScene);

@@ -3,7 +3,6 @@ import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
-import { removeNode } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { ourPlayerQuery, Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -38,7 +37,7 @@ import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { getRemoteResource, RemoteNode, tryGetRemoteResource } from "../resource/resource.game";
+import { getRemoteResource, RemoteNode, removeObjectFromWorld, tryGetRemoteResource } from "../resource/resource.game";
 
 /*********
  * Types *
@@ -178,7 +177,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
         if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeNode(node);
+          removeObjectFromWorld(ctx.worldResource, node);
         }
       }
     }
@@ -189,7 +188,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
 
     if (eid && node) {
       network.entityIdToPeerId.delete(eid);
-      removeNode(node);
+      removeObjectFromWorld(ctx.worldResource, node);
     }
 
     network.peers.splice(peerArrIndex, 1);

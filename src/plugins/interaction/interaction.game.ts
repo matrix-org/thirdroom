@@ -6,7 +6,6 @@ import { Quaternion, Vector3, Vector4 } from "three";
 import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
-import { removeNode } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import {
@@ -47,6 +46,7 @@ import {
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteNode,
+  removeObjectFromWorld,
   tryGetRemoteResource,
 } from "../../engine/resource/resource.game";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
@@ -376,7 +376,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       hasComponent(ctx.world, Owned, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeNode(focused);
+      removeObjectFromWorld(ctx.worldResource, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }

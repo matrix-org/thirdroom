@@ -49,12 +49,8 @@ export function updateWorldVisibility(worldResource: RenderWorld) {
     updateSceneVisibility(worldResource.environment.publicScene);
   }
 
-  let curObject = worldResource.firstObject;
-
-  while (curObject) {
-    updateNodeVisibility(curObject.publicRoot, true);
-    updateNodeVisibility(curObject.privateRoot, true);
-    curObject = curObject.nextSibling;
+  if (worldResource.firstNode) {
+    updateNodeVisibility(worldResource.firstNode, true);
   }
 
   updateSceneVisibility(worldResource.persistentScene);

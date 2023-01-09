@@ -2,6 +2,7 @@ import { addComponent, addEntity, defineComponent, getEntityComponents, removeCo
 import { AnimationClip } from "three";
 
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
+import { addChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { removeGLTFResourceRef, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -59,7 +60,6 @@ import {
   AnimationSamplerResource,
   WorldResource,
   EnvironmentResource,
-  ObjectResource,
 } from "./schema";
 
 const ResourceComponent = defineComponent();
@@ -132,7 +132,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteAnimationChannel),
       registerResource(ctx, RemoteAnimationSampler),
       registerResource(ctx, RemoteAnimation),
-      registerResource(ctx, RemoteObject),
       registerResource(ctx, RemoteEnvironment),
       registerResource(ctx, RemoteWorld),
       registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
@@ -547,45 +546,31 @@ export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentReso
   }
 }
 
-export class RemoteObject extends defineRemoteResourceClass(ObjectResource) {
-  declare publicRoot: RemoteNode;
-  declare privateRoot: RemoteNode;
-  declare nextSibling: RemoteObject | undefined;
-  declare prevSibling: RemoteObject | undefined;
-  gltfResource: GLTFResource | undefined;
-  dispose(ctx: GameState) {
-    super.onDispose(ctx);
-
-    if (this.gltfResource) {
-      removeGLTFResourceRef(this.gltfResource);
-    }
-  }
-}
-
 export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare environment: RemoteEnvironment | undefined;
-  declare firstObject: RemoteObject | undefined;
+  declare firstNode: RemoteNode | undefined;
   declare persistentScene: RemoteScene;
   declare activeCameraNode: RemoteNode | undefined;
 }
 
-export function addObjectToWorld(worldResource: RemoteWorld, object: RemoteObject) {
-  const firstObject = worldResource.firstObject;
+export function addObjectToWorld(worldResource: RemoteWorld, object: RemoteNode) {
+  const firstNode = worldResource.firstNode;
 
-  if (!firstObject) {
-    worldResource.firstObject = object;
+  if (!firstNode) {
+    worldResource.firstNode = object;
   } else {
-    firstObject.prevSibling = object;
-    worldResource.firstObject = object;
+    object.nextSibling = firstNode;
+    firstNode.prevSibling = object;
+    worldResource.firstNode = object;
   }
 }
 
-export function removeObjectFromWorld(worldResource: RemoteWorld, object: RemoteObject) {
+export function removeObjectFromWorld(worldResource: RemoteWorld, object: RemoteNode) {
   const prevSibling = object.prevSibling;
   const nextSibling = object.nextSibling;
 
-  if (worldResource.firstObject === object) {
-    worldResource.firstObject = undefined;
+  if (worldResource.firstNode === object) {
+    worldResource.firstNode = undefined;
   }
 
   // [prev, child, next]
@@ -600,6 +585,21 @@ export function removeObjectFromWorld(worldResource: RemoteWorld, object: Remote
   // [child, next]
   if (nextSibling && !prevSibling) {
     nextSibling.prevSibling = undefined;
-    worldResource.firstObject = nextSibling;
+    worldResource.firstNode = nextSibling;
   }
+}
+
+export function createRemoteObject(ctx: GameState, publicRoot: RemoteNode, privateRoot?: RemoteNode) {
+  const root = new RemoteNode(ctx.resourceManager);
+  addChild(root, privateRoot || new RemoteNode(ctx.resourceManager));
+  addChild(root, publicRoot);
+  return root;
+}
+
+export function getObjectPrivateRoot(root: RemoteNode): RemoteNode {
+  return root.firstChild!;
+}
+
+export function getObjectPublicRoot(root: RemoteNode): RemoteNode {
+  return root.firstChild!.nextSibling!;
 }

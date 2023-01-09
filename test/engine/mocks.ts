@@ -1,9 +1,9 @@
-import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld } from "bitecs";
+import RAPIER, { RigidBody } from "@dimforge/rapier3d-compat";
+import { addEntity, createWorld, getEntityComponents, removeComponent, removeEntity } from "bitecs";
 
 import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
-import { NetworkModule } from "../../src/engine/network/network.game";
+import { Networked, NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
 import {
@@ -24,6 +24,8 @@ import {
 import { addChild } from "../../src/engine/component/transform";
 import { GLTFResource } from "../../src/engine/gltf/gltf.game";
 import { GameResourceManager } from "../../src/engine/resource/GameResourceManager";
+import { getModule } from "../../src/engine/module/module.common";
+import { createDeferred } from "../../src/engine/utils/Deferred";
 
 export function registerDefaultPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
@@ -112,6 +114,12 @@ export const mockGameState = () => {
     resourceManager: undefined as any,
   } as unknown as GameState;
 
+  ctx.modules.set(PhysicsModule, mockPhysicsState());
+  ctx.modules.set(NetworkModule, mockNetworkState());
+  ctx.modules.set(RendererModule, mockRenderState());
+  ctx.modules.set(ResourceModule, mockResourceModule());
+  ctx.modules.set(PrefabModule, mockPrefabState());
+
   // NOOP Entity
   addEntity(ctx.world);
 
@@ -137,12 +145,6 @@ export const mockGameState = () => {
     activeCameraNode,
     persistentScene,
   });
-
-  ctx.modules.set(PhysicsModule, mockPhysicsState());
-  ctx.modules.set(NetworkModule, mockNetworkState());
-  ctx.modules.set(RendererModule, mockRenderState());
-  ctx.modules.set(ResourceModule, mockResourceModule());
-  ctx.modules.set(PrefabModule, mockPrefabState());
 
   registerDefaultPrefabs(ctx);
 
@@ -248,7 +250,14 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
   }
 
   createResource(resource: RemoteResource<GameState>): number {
+    const resourceModule = getModule(this.ctx, ResourceModule);
     const resourceId = addEntity(this.ctx.world);
+    resourceModule.resourceInfos.set(resourceId, {
+      resource,
+      refCount: 0,
+      statusBuffer: createTripleBuffer(new Uint8Array([0x6]), 1),
+      deferred: createDeferred(false),
+    });
     this.resources.push(resource);
     this.resourcesById.set(resourceId, resource);
     this.resourceRefs.set(resourceId, 0);
@@ -270,6 +279,19 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     }
 
     const resource = this.resources[index];
+
+    const components = getEntityComponents(this.ctx.world, resourceId);
+
+    // NOTE: removeEntity does not remove components explicitly, so removing components here triggers exit queries
+    for (let i = 0; i < components.length; i++) {
+      if (components[i] === Networked || components[i] === RigidBody) {
+        removeComponent(this.ctx.world, components[i], resourceId, false);
+      } else {
+        removeComponent(this.ctx.world, components[i], resourceId, true);
+      }
+    }
+
+    removeEntity(this.ctx.world, resourceId);
 
     const schema = resource.constructor.resourceDef.schema;
 

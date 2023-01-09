@@ -1,9 +1,9 @@
 import { addComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
-import { vec3 } from "gl-matrix";
+import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, removeNode } from "../../engine/component/transform";
+import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -27,11 +27,10 @@ import {
   GLTFViewerLoadedMessage,
   PrintResourcesMessage,
 } from "./thirdroom.common";
-import { loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
+import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import { addAvatar } from "../avatars/avatar.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -73,7 +72,6 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
-  RemoteObject,
   RemoteEnvironment,
   RemoteImage,
   RemoteNode,
@@ -85,10 +83,13 @@ import {
   ResourceModule,
   getRemoteResource,
   tryGetRemoteResource,
+  createRemoteObject,
   addObjectToWorld,
+  removeObjectFromWorld,
 } from "../../engine/resource/resource.game";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
+import { AvatarComponent } from "../avatars/components";
 
 type ThirdRoomModuleState = {};
 
@@ -114,24 +115,30 @@ const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
     const spawnPoints = spawnPointQuery(ctx.world);
 
-    const rig = new RemoteNode(ctx.resourceManager);
-    addAvatar(ctx, "/gltf/full-animation-rig.glb", rig);
+    const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
+    const obj = createRemoteObject(ctx, rig);
+
+    addComponent(ctx.world, AvatarComponent, rig.eid);
+    rig.position.set([0, -1, 0]);
+    quat.fromEuler(rig.quaternion, 0, 180, 0);
+    rig.scale.set([1.3, 1.3, 1.3]);
     addAvatarCamera(ctx, rig);
     addAvatarController(ctx, input, rig.eid);
 
+    // on container
     const characterControllerType = SceneCharacterControllerComponent.get(
       ctx.worldResource.environment!.publicScene!.eid
     )?.type;
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-      addFlyControls(ctx, rig.eid);
+      addFlyControls(ctx, obj.eid);
     } else {
-      addKinematicControls(ctx, rig.eid);
+      addKinematicControls(ctx, obj.eid);
     }
 
-    addAvatarRigidBody(ctx, physics, rig);
-    addInteractableComponent(ctx, physics, rig, InteractableType.Player);
+    addAvatarRigidBody(ctx, physics, obj);
+    addInteractableComponent(ctx, physics, obj, InteractableType.Player);
 
-    return rig;
+    return obj;
   };
 
 const tempSpawnPoints: RemoteNode[] = [];
@@ -207,7 +214,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
           hasComponent(ctx.world, Owned, entity) &&
           !hasComponent(ctx.world, Player, entity)
         ) {
-          removeNode(node);
+          removeObjectFromWorld(ctx.worldResource, node);
         } else if (hasComponent(ctx.world, Player, entity)) {
           const spawnPoints = getSpawnPoints(ctx);
           spawnEntity(spawnPoints, node);
@@ -345,7 +352,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 function disposeWorld(worldResource: RemoteWorld) {
   worldResource.activeCameraNode = undefined;
   worldResource.environment = undefined;
-  worldResource.firstObject = undefined;
+  worldResource.firstNode = undefined;
 }
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
@@ -462,11 +469,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
-  const avatar = new RemoteObject(ctx.resourceManager, {
-    publicRoot: rig,
-    privateRoot: new RemoteNode(ctx.resourceManager),
-  });
-
+  const avatar = createRemoteObject(ctx, rig);
   addObjectToWorld(ctx.worldResource, avatar);
 
   const spawnPoints = getSpawnPoints(ctx);
@@ -488,14 +491,15 @@ function loadRemotePlayerRig(
   peerId: string
 ) {
   const rig = createPrefabEntity(ctx, "avatar", { nametag: true });
-  const eid = rig.eid;
+  const avatar = createRemoteObject(ctx, rig);
+  addObjectToWorld(ctx.worldResource, avatar);
 
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
-  removeInteractableComponent(ctx, physics, rig);
+  removeInteractableComponent(ctx, physics, avatar);
 
-  addNametag(ctx, AVATAR_HEIGHT, rig, peerId);
+  addNametag(ctx, AVATAR_HEIGHT, avatar, peerId);
 
-  associatePeerWithEntity(network, peerId, rig.eid);
+  associatePeerWithEntity(network, peerId, avatar.eid);
 
   rig.name = peerId;
 
@@ -512,17 +516,10 @@ function loadRemotePlayerRig(
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   // TODO: add Authoring component for authoritatively controlled entities as a host,
   //       use Owned to distinguish actual ownership on all clients
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Player, eid);
+  addComponent(ctx.world, Owned, avatar.eid);
+  addComponent(ctx.world, Player, avatar.eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
-
-  const avatar = new RemoteObject(ctx.resourceManager, {
-    privateRoot: rig,
-    publicRoot: new RemoteNode(ctx.resourceManager),
-  });
-
-  addObjectToWorld(ctx.worldResource, avatar);
+  addComponent(ctx.world, Networked, avatar.eid, true);
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {

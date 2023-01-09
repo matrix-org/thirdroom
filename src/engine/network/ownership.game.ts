@@ -1,14 +1,19 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
-import { removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { isHost } from "./network.common";
-import { addObjectToWorld, getRemoteResource, RemoteNode, RemoteObject } from "../resource/resource.game";
+import {
+  addObjectToWorld,
+  createRemoteObject,
+  getRemoteResource,
+  RemoteNode,
+  removeObjectFromWorld,
+} from "../resource/resource.game";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
@@ -33,7 +38,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const eid = network.networkIdToEntityId.get(nid);
   const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
   if (node) {
-    removeNode(node);
+    removeObjectFromWorld(ctx.worldResource, node);
   }
 };
 
@@ -42,14 +47,13 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   if (network.authoritative && !isHost(network)) {
     // TODO: when Authored component is implemented, add Owned component here
   } else if (!hasComponent(ctx.world, Owned, eid)) {
-    removeNode(node);
+    removeObjectFromWorld(ctx.worldResource, node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
     const template = getPrefabTemplate(ctx, prefabName);
     const newNode = template.create(ctx);
-    const newEid = newNode.eid;
 
     const body = RigidBody.store.get(eid);
     if (!body) throw new Error("rigidbody not found for eid: " + eid);
@@ -58,21 +62,15 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
     newNode.scale.set(node.scale);
     newNode.quaternion.set(node.quaternion);
 
-    addComponent(ctx.world, Owned, newEid);
-    addComponent(ctx.world, Networked, newEid);
-
-    addObjectToWorld(
-      ctx.worldResource,
-      new RemoteObject(ctx.resourceManager, {
-        privateRoot: newNode,
-        publicRoot: new RemoteNode(ctx.resourceManager),
-      })
-    );
+    const obj = createRemoteObject(ctx, newNode);
+    addComponent(ctx.world, Owned, obj.eid);
+    addComponent(ctx.world, Networked, obj.eid);
+    addObjectToWorld(ctx.worldResource, obj);
 
     // send message to remove on other side
-    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, eid));
+    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, obj.eid));
 
-    return newEid;
+    return obj.eid;
   }
 
   return NOOP;

@@ -478,16 +478,9 @@ export const EnvironmentResource = defineResource("environment", ResourceType.En
   privateScene: PropType.ref(SceneResource, { script: false, required: true, mutable: false }),
 });
 
-export const ObjectResource = defineResource("object", ResourceType.Avatar, {
-  publicRoot: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
-  privateRoot: PropType.ref(NodeResource, { script: true, required: true, mutable: false }),
-  nextSibling: PropType.selfRef(),
-  prevSibling: PropType.selfRef({ backRef: true }),
-});
-
 export const WorldResource = defineResource("world", ResourceType.World, {
   environment: PropType.ref(EnvironmentResource, { script: false }),
-  firstObject: PropType.ref(ObjectResource),
+  firstNode: PropType.ref(NodeResource),
   persistentScene: PropType.ref(SceneResource, { required: true, script: false }),
   activeCameraNode: PropType.ref(NodeResource, { script: true }),
 });

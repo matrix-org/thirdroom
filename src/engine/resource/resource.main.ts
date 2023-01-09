@@ -38,7 +38,6 @@ import {
   TextureResource,
   TilesRendererResource,
   WorldResource,
-  ObjectResource,
 } from "./schema";
 
 export {
@@ -340,16 +339,9 @@ export class MainEnvironment extends defineLocalResourceClass(EnvironmentResourc
   declare privateScene: MainScene;
 }
 
-export class MainObject extends defineLocalResourceClass(ObjectResource) {
-  declare publicRoot: MainNode;
-  declare privateRoot: MainNode;
-  declare nextSibling: MainObject | undefined;
-  declare prevSibling: MainObject | undefined;
-}
-
 export class MainWorld extends defineLocalResourceClass(WorldResource) {
   declare environment: MainEnvironment | undefined;
-  declare firstObject: MainObject | undefined;
+  declare firstNode: MainNode | undefined;
   declare persistentScene: MainScene;
   declare activeCameraNode: MainNode | undefined;
 }
@@ -392,6 +384,5 @@ const {
   MainAnimationSampler,
   MainAnimation,
   MainEnvironment,
-  MainObject,
   MainWorld,
 ]);

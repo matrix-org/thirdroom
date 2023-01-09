@@ -27,6 +27,7 @@ import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/phy
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
   addResourceRef,
+  createRemoteObject,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -92,8 +93,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         const halfSize = size / 2;
 
         const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
+        const obj = createRemoteObject(ctx, node);
 
-        node.scale.set([size, size, size]);
+        obj.scale.set([size, size, size]);
 
         const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
           audio: crateAudioData,
@@ -106,9 +108,9 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
           sources: [hitAudioSource],
         });
 
-        node.audioEmitter = audioEmitter;
+        obj.audioEmitter = audioEmitter;
 
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
+        module.hitAudioEmitters.set(obj.eid, audioEmitter);
 
         const rigidBodyDesc = kinematic
           ? RAPIER.RigidBodyDesc.kinematicPositionBased()
@@ -122,11 +124,11 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
         physicsWorld.createCollider(colliderDesc, rigidBody);
 
-        addRigidBody(ctx, node, rigidBody);
+        addRigidBody(ctx, obj, rigidBody);
 
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
+        addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
 
-        return node;
+        return obj;
       },
     });
 

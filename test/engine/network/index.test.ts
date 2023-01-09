@@ -1,6 +1,6 @@
 // import { describe, it } from "vitest";
 import { ok, strictEqual } from "assert";
-import { addComponent, addEntity, entityExists, removeComponent } from "bitecs";
+import { addComponent, entityExists, removeComponent } from "bitecs";
 
 import { GameState } from "../../../src/engine/GameTypes";
 import {
@@ -39,7 +39,7 @@ import {
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
 import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
-import { RemoteNode } from "../../../src/engine/resource/resource.game";
+import { createRemoteObject, RemoteNode } from "../../../src/engine/resource/resource.game";
 
 const clearComponentData = () => {
   new Uint8Array(RigidBody.velocity[0].buffer).fill(0);
@@ -72,14 +72,17 @@ describe("Network Tests", () => {
       strictEqual(nid, 0x000f_00ff);
     });
   });
-  describe("tranform serialization", () => {
+  describe("transform serialization", () => {
     beforeEach(clearComponentData);
     it("should #serializeTransformSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 1]);
+
       const velocity = RigidBody.velocity[node.eid];
       velocity.set([4, 5, 6]);
 
@@ -117,8 +120,11 @@ describe("Network Tests", () => {
     it("should #deserializeTransformSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
       const eid = node.eid;
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([7, 8, 9, 10]);
 
@@ -153,7 +159,8 @@ describe("Network Tests", () => {
     it("should #serializeTransformChanged() with all values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
       const eid = node.eid;
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
@@ -189,8 +196,11 @@ describe("Network Tests", () => {
     it("should #serializeTransformChanged() with some values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
       const eid = node.eid;
+
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
@@ -225,8 +235,11 @@ describe("Network Tests", () => {
     it("should #deserializeTransformChanged() with all values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
       const eid = node.eid;
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
@@ -251,8 +264,11 @@ describe("Network Tests", () => {
     it("should #deserializeTransformChanged() with some values", () => {
       const writer = createCursorView();
       const state = mockGameState();
-      const node = new RemoteNode(state.resourceManager);
+
+      const publicNode = new RemoteNode(state.resourceManager);
+      const node = createRemoteObject(state, publicNode);
       const eid = node.eid;
+
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
@@ -284,7 +300,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const node = new RemoteNode(state.resourceManager);
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
           const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
@@ -331,7 +348,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const node = new RemoteNode(state.resourceManager);
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
           const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
@@ -374,7 +392,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const node = new RemoteNode(state.resourceManager);
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
           const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
@@ -418,7 +437,8 @@ describe("Network Tests", () => {
       const nodes = Array(3)
         .fill(0)
         .map(() => {
-          const node = new RemoteNode(state.resourceManager);
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
           const eid = node.eid;
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
@@ -448,15 +468,19 @@ describe("Network Tests", () => {
     });
   });
   describe("creates serialization", () => {
-    it("should #serializeCreates()", () => {
+    it.only("should #serializeCreates()", () => {
       const state = mockGameState();
       const writer = createCursorView();
 
       const ents = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
+        .map(() => {
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
+          return node;
+        });
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
@@ -472,7 +496,7 @@ describe("Network Tests", () => {
       const count = readUint32(reader);
       strictEqual(count, 3);
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         strictEqual(readUint32(reader), eid);
         strictEqual(readString(reader), "test-prefab");
       });
@@ -485,17 +509,23 @@ describe("Network Tests", () => {
 
       const ents = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
+        .map(() => {
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
+          return node;
+        });
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
+        addComponent(state.world, Owned, eid);
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
-        addComponent(state.world, Owned, eid);
         addPrefabComponent(state.world, eid, "test-prefab");
       });
 
       const localEntities = ownedNetworkedQuery(state.world);
       strictEqual(localEntities.length, 3);
+
+      strictEqual(remoteNetworkedQuery(state.world).length, 0);
 
       serializeCreates([state, writer, ""]);
 
@@ -524,9 +554,13 @@ describe("Network Tests", () => {
 
       const ents = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
+        .map(() => {
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
+          return node;
+        });
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
@@ -535,7 +569,7 @@ describe("Network Tests", () => {
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         // todo: default removeComponent to not clear component data
         removeComponent(state.world, Networked, eid, false);
       });
@@ -547,7 +581,7 @@ describe("Network Tests", () => {
       const count = readUint32(reader);
       strictEqual(count, 3);
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         strictEqual(readUint32(reader), eid);
       });
     });
@@ -557,9 +591,13 @@ describe("Network Tests", () => {
 
       const ents = Array(3)
         .fill(0)
-        .map(() => addEntity(state.world));
+        .map(() => {
+          const publicNode = new RemoteNode(state.resourceManager);
+          const node = createRemoteObject(state, publicNode);
+          return node;
+        });
 
-      ents.forEach((eid) => {
+      ents.forEach(({ eid }) => {
         addComponent(state.world, Networked, eid);
         Networked.networkId[eid] = eid;
         addComponent(state.world, Owned, eid);
@@ -577,8 +615,8 @@ describe("Network Tests", () => {
       const remoteEntities = remoteNetworkedQuery(state.world);
       strictEqual(remoteEntities.length, 3);
 
-      ents.forEach((eid) => {
-        removeComponent(state.world, Networked, eid, false);
+      ents.forEach((node) => {
+        removeComponent(state.world, Networked, node.eid, false);
       });
 
       strictEqual(ownedNetworkedQuery(state.world).length, 0);

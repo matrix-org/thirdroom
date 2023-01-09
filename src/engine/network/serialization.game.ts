@@ -26,7 +26,6 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { removeNode } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -60,7 +59,7 @@ import {
   RemoteAudioSource,
   RemoteNametag,
   RemoteNode,
-  RemoteObject,
+  removeObjectFromWorld,
   tryGetRemoteResource,
 } from "../resource/resource.game";
 
@@ -259,14 +258,7 @@ export function createRemoteNetworkedEntity(
   addComponent(ctx.world, Networked, node.eid, true);
   Networked.networkId[node.eid] = nid;
   network.networkIdToEntityId.set(nid, node.eid);
-
-  addObjectToWorld(
-    ctx.worldResource,
-    new RemoteObject(ctx.resourceManager, {
-      publicRoot: node,
-      privateRoot: new RemoteNode(ctx.resourceManager),
-    })
-  );
+  addObjectToWorld(ctx.worldResource, node);
 
   return node;
 }
@@ -318,8 +310,8 @@ export function deserializeCreates(input: NetPipeData) {
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
-    const node = createRemoteNetworkedEntity(state, network, nid, prefabName);
-    console.info("deserializing creation - nid", nid, "eid", node.eid, "prefab", prefabName);
+    const obj = createRemoteNetworkedEntity(state, network, nid, prefabName);
+    console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
   }
   return input;
 }
@@ -429,7 +421,7 @@ export function deserializeDeletes(input: NetPipeData) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.info("deserialized deletion for nid", nid, "eid", eid);
-      removeNode(node);
+      removeObjectFromWorld(ctx.worldResource, node);
       network.networkIdToEntityId.delete(nid);
     }
   }

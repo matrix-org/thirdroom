@@ -106,6 +106,12 @@ describe("Transform Unit Tests", function () {
           const childA = new RemoteNode(manager);
           const childB = new RemoteNode(manager);
           const childC = new RemoteNode(manager);
+          /**
+           *    parent
+           *   /  |  \
+           *  A   B   C
+           *
+           */
           addChild(parent, childA);
           addChild(parent, childB);
           addChild(parent, childC);
