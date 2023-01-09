@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { createWorld } from "bitecs";
+import { addEntity, createWorld } from "bitecs";
 
 import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
@@ -13,7 +13,7 @@ import {
   ResourceModule,
   RemoteEnvironment,
 } from "../../src/engine/resource/resource.game";
-import { createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
+import { copyToWriteBuffer, createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import {
   IRemoteResourceManager,
   RemoteResource,
@@ -23,6 +23,7 @@ import {
 } from "../../src/engine/resource/ResourceDefinition";
 import { addChild } from "../../src/engine/component/transform";
 import { GLTFResource } from "../../src/engine/gltf/gltf.game";
+import { GameResourceManager } from "../../src/engine/resource/GameResourceManager";
 
 export function registerDefaultPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
@@ -108,8 +109,13 @@ export const mockGameState = () => {
     messageHandlers: new Map(),
     scopes: new Map(),
     modules: new Map(),
-    resourceManager: new MockResourceManager(),
+    resourceManager: undefined as any,
   } as unknown as GameState;
+
+  // NOOP Entity
+  addEntity(ctx.world);
+
+  ctx.resourceManager = new MockResourceManager(ctx) as unknown as GameResourceManager;
 
   const activeCameraNode = new RemoteNode(ctx.resourceManager, {
     name: "Camera",
@@ -144,11 +150,13 @@ export const mockGameState = () => {
 };
 
 export class MockResourceManager implements IRemoteResourceManager<GameState> {
-  private resources: RemoteResource<GameState>[] = [];
+  public resources: RemoteResource<GameState>[] = [];
   private nextResourceId = 1;
   private resourcesById: Map<number, RemoteResource<GameState> | string | SharedArrayBuffer> = new Map();
   private resourceRefs: Map<number, number> = new Map();
   private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
+
+  constructor(private ctx: GameState) {}
 
   getCachedGLTF(uri: string): Promise<GLTFResource> | undefined {
     const entry = this.gltfCache.get(uri);
@@ -240,7 +248,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
   }
 
   createResource(resource: RemoteResource<GameState>): number {
-    const resourceId = this.nextResourceId++;
+    const resourceId = addEntity(this.ctx.world);
     this.resources.push(resource);
     this.resourcesById.set(resourceId, resource);
     this.resourceRefs.set(resourceId, 0);
@@ -314,12 +322,44 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     }
   }
 
-  setRefArray(values: RemoteResource<GameState>[], store: Uint32Array): void {
-    throw new Error("Method not implemented.");
+  setRefArray(value: RemoteResource<GameState>[], store: Uint32Array): void {
+    for (let i = 0; i < value.length; i++) {
+      this.addRef(value[i].eid);
+    }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (let i = 0; i < value.length; i++) {
+      store[i] = value[i].eid || 0;
+    }
   }
 
-  setRefMap(values: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
-    throw new Error("Method not implemented.");
+  setRefMap(value: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
+    for (const key in value) {
+      this.addRef(value[key].eid);
+    }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (const key in value) {
+      store[key] = value[key].eid || 0;
+    }
   }
 
   getRefArrayItem<T extends RemoteResource<GameState>>(index: number, store: Uint32Array): T | undefined {
@@ -338,6 +378,25 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
       this.disposeResource(resourceId);
     } else {
       this.resourceRefs.set(resourceId, refCount - 1);
+    }
+  }
+
+  commitResources() {
+    const resources = this.resources;
+
+    for (let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+      const byteView = resource.byteView;
+
+      if (resource.initialized) {
+        copyToWriteBuffer(resource.tripleBuffer, byteView);
+      } else {
+        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+        tripleBufferByteViews[0].set(byteView);
+        tripleBufferByteViews[1].set(byteView);
+        tripleBufferByteViews[2].set(byteView);
+        resource.initialized = true;
+      }
     }
   }
 }

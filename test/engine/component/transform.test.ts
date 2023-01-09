@@ -9,28 +9,29 @@ import {
   traverseReverse,
 } from "../../../src/engine/component/transform";
 import { RemoteNode } from "../../../src/engine/resource/resource.game";
-import { MockResourceManager } from "../mocks";
+import { mockGameState } from "../mocks";
 
 describe("Transform Unit Tests", function () {
   describe("scene graph hierarchy", function () {
     describe("parenting", function () {
       describe("#getLastChild()", function () {
         test("should get last child of undefined with no children", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           expect(getLastChild(parent)).toStrictEqual(undefined);
         });
         test("should get last child of 1 children", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const child = new RemoteNode(manager);
-          console.log("before", parent.__props.firstChild);
           parent.firstChild = child;
-          console.log("after", parent.__props.firstChild);
           expect(getLastChild(parent)).toStrictEqual(child);
         });
         test("should get last child of 2 children", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const childA = new RemoteNode(manager);
           const childB = new RemoteNode(manager);
@@ -41,14 +42,16 @@ describe("Transform Unit Tests", function () {
       });
       describe("#getChildAt()", function () {
         test("should get child at index 0", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const child = new RemoteNode(manager);
           parent.firstChild = child;
           expect(getChildAt(parent, 0)).toStrictEqual(child);
         });
         test("should get child at index 1", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const childA = new RemoteNode(manager);
           const childB = new RemoteNode(manager);
@@ -59,14 +62,16 @@ describe("Transform Unit Tests", function () {
       });
       describe("#addChild()", function () {
         test("should add one child", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const child = new RemoteNode(manager);
           addChild(parent, child);
           expect(parent.firstChild).toStrictEqual(child);
         });
         test("should add multiple children", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const childA = new RemoteNode(manager);
           const childB = new RemoteNode(manager);
@@ -85,7 +90,8 @@ describe("Transform Unit Tests", function () {
       });
       describe("#removeChild", function () {
         test("should remove one child", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const child = new RemoteNode(manager);
           addChild(parent, child);
@@ -94,7 +100,8 @@ describe("Transform Unit Tests", function () {
           expect(parent.firstChild).toStrictEqual(undefined);
         });
         test("should remove multiple children", function () {
-          const manager = new MockResourceManager();
+          const ctx = mockGameState();
+          const manager = ctx.resourceManager;
           const parent = new RemoteNode(manager);
           const childA = new RemoteNode(manager);
           const childB = new RemoteNode(manager);
@@ -130,7 +137,8 @@ describe("Transform Unit Tests", function () {
 
   describe("traverse", () => {
     test("should traverse in depth first order recursively", () => {
-      const manager = new MockResourceManager();
+      const ctx = mockGameState();
+      const manager = ctx.resourceManager;
 
       /**
        * 1 --> 2 ---> 5
@@ -163,7 +171,8 @@ describe("Transform Unit Tests", function () {
     });
 
     test("should skip children if you return false", () => {
-      const manager = new MockResourceManager();
+      const ctx = mockGameState();
+      const manager = ctx.resourceManager;
 
       /**
        *       root(1)
@@ -215,7 +224,8 @@ describe("Transform Unit Tests", function () {
     });
 
     test("should correctly traverse a sub-tree", () => {
-      const manager = new MockResourceManager();
+      const ctx = mockGameState();
+      const manager = ctx.resourceManager;
 
       /**
        *       A(1)
@@ -251,7 +261,8 @@ describe("Transform Unit Tests", function () {
     });
 
     test("should traverse a single entity", () => {
-      const manager = new MockResourceManager();
+      const ctx = mockGameState();
+      const manager = ctx.resourceManager;
 
       const entityA = new RemoteNode(manager);
       const entityB = new RemoteNode(manager);
@@ -272,7 +283,8 @@ describe("Transform Unit Tests", function () {
 
   describe("traverseReverse", () => {
     test("should traverse with reverse ordering", () => {
-      const manager = new MockResourceManager();
+      const ctx = mockGameState();
+      const manager = ctx.resourceManager;
 
       /**
        *       root(1)
