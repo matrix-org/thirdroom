@@ -39,16 +39,14 @@ import {
 } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
+import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
-  addResourceRef,
-  getRemoteResource,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteNode,
   removeObjectFromWorld,
-  tryGetRemoteResource,
-} from "../../engine/resource/resource.game";
+} from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";

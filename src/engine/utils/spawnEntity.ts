@@ -1,7 +1,7 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { Axes, isolateQuaternionAxis } from "../component/transform";
-import { RemoteNode } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
 import { teleportEntity } from "./teleportEntity";
 
 const _p = vec3.create();

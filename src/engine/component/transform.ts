@@ -3,7 +3,8 @@ import { vec3, quat, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { ResourceType } from "../resource/schema";
-import { getRemoteResource, RemoteNode, RemoteScene } from "../resource/resource.game";
+import { getRemoteResource } from "../resource/resource.game";
+import { RemoteNode, RemoteScene } from "../resource/RemoteResources";
 
 export const Axes = {
   X: vec3.fromValues(1, 0, 0),

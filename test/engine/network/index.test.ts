@@ -39,7 +39,7 @@ import {
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
 import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
-import { createRemoteObject, RemoteNode } from "../../../src/engine/resource/resource.game";
+import { createRemoteObject, RemoteNode } from "../../../src/engine/resource/RemoteResources";
 
 const clearComponentData = () => {
   new Uint8Array(RigidBody.velocity[0].buffer).fill(0);

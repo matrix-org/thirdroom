@@ -51,17 +51,16 @@ import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import {
   addObjectToWorld,
-  getRemoteResource,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteNametag,
   RemoteNode,
   removeObjectFromWorld,
-  tryGetRemoteResource,
-} from "../resource/resource.game";
+} from "../resource/RemoteResources";
 
 export type NetPipeData = [GameState, CursorView, string];
 

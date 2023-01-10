@@ -3,7 +3,7 @@ import { addComponent } from "bitecs";
 import { GameState } from "../../engine/GameTypes";
 import { getModule } from "../../engine/module/module.common";
 import { PhysicsModule } from "../../engine/physics/physics.game";
-import { RemoteNode } from "../../engine/resource/resource.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { InteractableType } from "../../engine/resource/schema";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { PortalProps } from "./portals.common";

@@ -16,7 +16,8 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
+import { tryGetRemoteResource } from "../engine/resource/resource.game";
+import { RemoteNode } from "../engine/resource/RemoteResources";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;

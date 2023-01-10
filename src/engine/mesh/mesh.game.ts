@@ -14,7 +14,7 @@ import {
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
-} from "../resource/resource.game";
+} from "../resource/RemoteResources";
 import {
   AccessorComponentType,
   AccessorType,

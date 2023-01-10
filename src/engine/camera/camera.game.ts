@@ -4,7 +4,8 @@ import { findChild } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
-import { getRemoteResources, RemoteCamera, RemoteNode } from "../resource/resource.game";
+import { getRemoteResources } from "../resource/resource.game";
+import { RemoteCamera, RemoteNode } from "../resource/RemoteResources";
 import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { CameraType } from "../resource/schema";
 

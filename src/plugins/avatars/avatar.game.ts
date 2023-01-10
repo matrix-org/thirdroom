@@ -4,7 +4,7 @@ import { quat } from "gl-matrix";
 import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
-import { RemoteNode } from "../../engine/resource/resource.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { AvatarComponent } from "./components";
 
 export function addAvatar(ctx: GameState, uri: string, rig: RemoteNode): RemoteNode {

@@ -8,7 +8,7 @@ import {
   traverse,
   traverseReverse,
 } from "../../../src/engine/component/transform";
-import { RemoteNode } from "../../../src/engine/resource/resource.game";
+import { RemoteNode } from "../../../src/engine/resource/RemoteResources";
 import { mockGameState } from "../mocks";
 
 describe("Transform Unit Tests", function () {

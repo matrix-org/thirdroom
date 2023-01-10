@@ -16,7 +16,7 @@ import {
 } from "three";
 
 import { getAccessorArrayView } from "../accessor/accessor.common";
-import { RemoteAnimation } from "../resource/resource.game";
+import { RemoteAnimation } from "../resource/RemoteResources";
 import { AnimationSamplerInterpolation, AnimationChannelTargetPath } from "../resource/schema";
 import { GLTFLoaderContext } from "./gltf.game";
 

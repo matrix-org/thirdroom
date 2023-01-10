@@ -7,13 +7,8 @@ import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { isHost } from "./network.common";
-import {
-  addObjectToWorld,
-  createRemoteObject,
-  getRemoteResource,
-  RemoteNode,
-  removeObjectFromWorld,
-} from "../resource/resource.game";
+import { getRemoteResource } from "../resource/resource.game";
+import { addObjectToWorld, createRemoteObject, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";

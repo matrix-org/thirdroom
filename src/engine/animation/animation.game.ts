@@ -12,7 +12,8 @@ import { Networked, Owned } from "../network/network.game";
 // import { Networked } from "../network/network.game";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../physics/physics.game";
-import { getRemoteResource, RemoteAnimation, RemoteNode, removeResourceRef } from "../resource/resource.game";
+import { getRemoteResource, removeResourceRef } from "../resource/resource.game";
+import { RemoteAnimation, RemoteNode } from "../resource/RemoteResources";
 
 export interface IAnimationComponent {
   animations: RemoteAnimation[];

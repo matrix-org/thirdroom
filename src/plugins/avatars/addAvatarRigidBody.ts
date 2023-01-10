@@ -4,7 +4,7 @@ import { addComponent } from "bitecs";
 import { GameState } from "../../engine/GameTypes";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModuleState, addRigidBody, Kinematic } from "../../engine/physics/physics.game";
-import { RemoteNode } from "../../engine/resource/resource.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_RADIUS } from "./common";
 
 export function addAvatarRigidBody(

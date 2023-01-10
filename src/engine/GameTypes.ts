@@ -2,7 +2,7 @@ import { IWorld } from "bitecs";
 
 import { BaseThreadContext } from "./module/module.common";
 import { GameResourceManager } from "./resource/GameResourceManager";
-import { RemoteWorld } from "./resource/resource.game";
+import { RemoteWorld } from "./resource/RemoteResources";
 
 export type World = IWorld;
 

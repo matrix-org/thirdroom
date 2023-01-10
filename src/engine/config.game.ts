@@ -36,6 +36,7 @@ import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
+import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -97,6 +98,7 @@ export default defineConfig<GameState>({
     GameResourceSystem,
     ResourceLoaderSystem,
     PrefabDisposalSystem,
+    GLTFResourceDisposalSystem,
 
     ResetInputSystem,
     ResetAudioSourcesSystem,

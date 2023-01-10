@@ -1,11 +1,11 @@
-import { addComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery } from "bitecs";
 import { glMatrix, mat4, quat, vec3 } from "gl-matrix";
 import RAPIER, { ColliderDesc } from "@dimforge/rapier3d-compat";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { GameState, World } from "../GameTypes";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import {
@@ -70,7 +70,7 @@ import {
   RemoteSparseAccessor,
   RemoteTexture,
   RemoteTilesRenderer,
-} from "../resource/resource.game";
+} from "../resource/RemoteResources";
 import { addPortalComponent } from "../../plugins/portals/portals.game";
 import { getModule } from "../module/module.common";
 import { addRigidBody, PhysicsModule } from "../physics/physics.game";
@@ -156,7 +156,7 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
  * If GLTFResource is disposed object urls will be revoked and all cached
  * resources will have their references removed.
  */
-export function removeGLTFResourceRef(resource: GLTFResource): boolean {
+function removeGLTFResourceRef(resource: GLTFResource): boolean {
   if (resource.manager.removeGLTFRef(resource.url)) {
     for (const cache of resource.caches.values()) {
       for (const entry of cache.values()) {
@@ -176,6 +176,30 @@ export function removeGLTFResourceRef(resource: GLTFResource): boolean {
   return false;
 }
 
+const GLTFResourceComponent = new Map();
+
+function addGLTFResourceComponent(world: World, eid: number, resource: GLTFResource) {
+  addComponent(world, GLTFResourceComponent, eid);
+  GLTFResourceComponent.set(eid, resource);
+}
+
+const gltfResourceQuery = defineQuery([GLTFResourceComponent]);
+const gltfResourceExitQuery = exitQuery(gltfResourceQuery);
+
+export function GLTFResourceDisposalSystem(ctx: GameState) {
+  const entities = gltfResourceExitQuery(ctx.world);
+
+  for (let i = 0; i < entities.length; i++) {
+    const eid = entities[i];
+    const gltfResource = GLTFResourceComponent.get(eid);
+
+    if (gltfResource) {
+      removeGLTFResourceRef(gltfResource);
+      GLTFResourceComponent.delete(eid);
+    }
+  }
+}
+
 export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
   const node = new RemoteNode(ctx.resourceManager);
   loadGLTF(ctx, uri).then((resource) => loadDefaultGLTFScene(ctx, resource, { existingNode: node }));
@@ -192,6 +216,7 @@ export async function loadDefaultGLTFScene(ctx: GameState, resource: GLTFResourc
   const loaderCtx = createGLTFLoaderContext(ctx, resource);
   const scene = await loadGLTFScene(loaderCtx, defaultSceneIndex, options);
   await postLoad(loaderCtx, scene);
+  addGLTFResourceComponent(ctx.world, scene.eid, resource);
   return scene;
 }
 
@@ -507,7 +532,7 @@ async function loadGLTFSceneAnimations(loaderCtx: GLTFLoaderContext, remoteScene
       const nodeIndex = loaderCtx.nodeIndexMap.get(node);
 
       if (nodeIndex === undefined) {
-        throw new Error("Couldn't find node");
+        return false;
       }
 
       const isBone = joints.has(nodeIndex);
@@ -625,8 +650,6 @@ const loadGLTFScene = createInstancedSubresourceLoader(
     }
 
     updateMatrixWorld(remoteSceneOrNode, true);
-
-    loaderCtx.postLoadCallbacks.push(async () => {});
 
     if (remoteSceneOrNode.resourceType == ResourceType.Scene) {
       if (extensions?.MX_character_controller) {
@@ -875,6 +898,8 @@ const loadGLTFNode = createInstancedSubresourceLoader(
     const node = new RemoteNode(resource.manager, {
       name,
     });
+
+    console.log("load node", node, index);
 
     loaderCtx.nodeMap.set(index, node);
     loaderCtx.nodeIndexMap.set(node, index);

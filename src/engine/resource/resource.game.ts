@@ -1,16 +1,42 @@
-import { addComponent, addEntity, defineComponent, getEntityComponents, removeComponent, removeEntity } from "bitecs";
-import { AnimationClip } from "three";
+import { addComponent, addEntity, defineComponent } from "bitecs";
 
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
-import { addChild } from "../component/transform";
+import { removeEntityWithComponents } from "../ecs/removeEntityWithComponents";
 import { GameState } from "../GameTypes";
-import { removeGLTFResourceRef, GLTFResource } from "../gltf/gltf.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { Networked } from "../network/network.game";
-import { RigidBody } from "../physics/physics.game";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
-import { defineRemoteResourceClass } from "./RemoteResourceClass";
+import {
+  RemoteNode,
+  RemoteAudioData,
+  RemoteAudioSource,
+  RemoteAudioEmitter,
+  RemoteNametag,
+  RemoteLight,
+  RemoteSampler,
+  RemoteCamera,
+  RemoteBuffer,
+  RemoteBufferView,
+  RemoteImage,
+  RemoteMaterial,
+  RemoteTexture,
+  RemoteMesh,
+  RemoteScene,
+  RemoteMeshPrimitive,
+  RemoteInteractable,
+  RemoteAccessor,
+  RemoteSparseAccessor,
+  RemoteSkin,
+  RemoteInstancedMesh,
+  RemoteLightMap,
+  RemoteReflectionProbe,
+  RemoteTilesRenderer,
+  RemoteAnimationChannel,
+  RemoteAnimationSampler,
+  RemoteAnimation,
+  RemoteEnvironment,
+  RemoteWorld,
+} from "./RemoteResources";
 import {
   ArrayBufferResourceType,
   CreateResourceMessage,
@@ -29,38 +55,7 @@ import {
   RemoteResource,
   ResourceDefinition,
 } from "./ResourceDefinition";
-import {
-  NametagResource,
-  SamplerResource,
-  BufferResource,
-  BufferViewResource,
-  AudioDataResource,
-  AudioSourceResource,
-  AudioEmitterResource,
-  ImageResource,
-  TextureResource,
-  ReflectionProbeResource,
-  MaterialResource,
-  LightResource,
-  CameraResource,
-  SparseAccessorResource,
-  AccessorResource,
-  MeshPrimitiveResource,
-  InstancedMeshResource,
-  MeshResource,
-  LightMapResource,
-  TilesRendererResource,
-  SkinResource,
-  InteractableResource,
-  NodeResource,
-  SceneResource,
-  ResourceType,
-  AnimationResource,
-  AnimationChannelResource,
-  AnimationSamplerResource,
-  WorldResource,
-  EnvironmentResource,
-} from "./schema";
+import { ResourceType } from "./schema";
 
 const ResourceComponent = defineComponent();
 
@@ -306,18 +301,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     return false;
   }
 
-  const components = getEntityComponents(ctx.world, resourceId);
-
-  // NOTE: removeEntity does not remove components explicitly, so removing components here triggers exit queries
-  for (let i = 0; i < components.length; i++) {
-    if (components[i] === Networked || components[i] === RigidBody) {
-      removeComponent(ctx.world, components[i], resourceId, false);
-    } else {
-      removeComponent(ctx.world, components[i], resourceId, true);
-    }
-  }
-
-  removeEntity(ctx.world, resourceId);
+  removeEntityWithComponents(ctx.world, resourceId);
 
   if (resourceInfo.dispose) {
     resourceInfo.dispose();
@@ -403,203 +387,4 @@ export function ResourceLoaderSystem(ctx: GameState) {
 
     messageQueue.length = 0;
   }
-}
-
-export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
-
-export class RemoteSampler extends defineRemoteResourceClass(SamplerResource) {}
-
-export class RemoteBuffer extends defineRemoteResourceClass(BufferResource) {}
-
-export class RemoteBufferView extends defineRemoteResourceClass(BufferViewResource) {
-  declare buffer: RemoteBuffer;
-}
-
-export class RemoteAudioData extends defineRemoteResourceClass(AudioDataResource) {
-  declare bufferView: RemoteBufferView | undefined;
-}
-
-export class RemoteAudioSource extends defineRemoteResourceClass(AudioSourceResource) {
-  declare audio: RemoteAudioData | undefined;
-}
-
-export class RemoteAudioEmitter extends defineRemoteResourceClass(AudioEmitterResource) {
-  declare sources: RemoteAudioSource[];
-}
-
-export class RemoteImage extends defineRemoteResourceClass(ImageResource) {
-  declare bufferView: RemoteBufferView | undefined;
-}
-
-export class RemoteTexture extends defineRemoteResourceClass(TextureResource) {
-  declare sampler: RemoteSampler | undefined;
-  declare source: RemoteImage;
-}
-
-export class RemoteReflectionProbe extends defineRemoteResourceClass(ReflectionProbeResource) {
-  declare reflectionProbeTexture: RemoteTexture | undefined;
-}
-
-export class RemoteMaterial extends defineRemoteResourceClass(MaterialResource) {
-  declare baseColorTexture: RemoteTexture | undefined;
-  declare metallicRoughnessTexture: RemoteTexture | undefined;
-  declare normalTexture: RemoteTexture | undefined;
-  declare occlusionTexture: RemoteTexture | undefined;
-  declare emissiveTexture: RemoteTexture | undefined;
-  declare transmissionTexture: RemoteTexture | undefined;
-  declare thicknessTexture: RemoteTexture | undefined;
-}
-
-export class RemoteLight extends defineRemoteResourceClass(LightResource) {}
-
-export class RemoteCamera extends defineRemoteResourceClass(CameraResource) {}
-
-export class RemoteSparseAccessor extends defineRemoteResourceClass(SparseAccessorResource) {
-  declare indicesBufferView: RemoteBufferView;
-  declare valuesBufferView: RemoteBufferView;
-}
-
-export class RemoteAccessor extends defineRemoteResourceClass(AccessorResource) {
-  declare bufferView: RemoteBufferView | undefined;
-  declare sparse: RemoteSparseAccessor | undefined;
-}
-
-export class RemoteMeshPrimitive extends defineRemoteResourceClass(MeshPrimitiveResource) {
-  declare attributes: RemoteAccessor[];
-  declare indices: RemoteAccessor | undefined;
-  declare material: RemoteMaterial | undefined;
-}
-
-export class RemoteInstancedMesh extends defineRemoteResourceClass(InstancedMeshResource) {
-  declare attributes: RemoteAccessor[];
-}
-
-export class RemoteMesh extends defineRemoteResourceClass(MeshResource) {
-  declare primitives: RemoteMeshPrimitive[];
-}
-
-export class RemoteLightMap extends defineRemoteResourceClass(LightMapResource) {
-  declare texture: RemoteTexture;
-}
-
-export class RemoteTilesRenderer extends defineRemoteResourceClass(TilesRendererResource) {}
-
-export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
-  declare joints: RemoteNode[];
-  declare inverseBindMatrices: RemoteAccessor | undefined;
-}
-
-export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
-
-export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
-  declare parentScene: RemoteScene | undefined;
-  declare parent: RemoteNode | undefined;
-  declare firstChild: RemoteNode | undefined;
-  declare prevSibling: RemoteNode | undefined;
-  declare nextSibling: RemoteNode | undefined;
-  declare mesh: RemoteMesh | undefined;
-  declare instancedMesh: RemoteInstancedMesh | undefined;
-  declare lightMap: RemoteLightMap | undefined;
-  declare skin: RemoteSkin | undefined;
-  declare light: RemoteLight | undefined;
-  declare reflectionProbe: RemoteReflectionProbe | undefined;
-  declare camera: RemoteCamera | undefined;
-  declare audioEmitter: RemoteAudioEmitter | undefined;
-  declare tilesRenderer: RemoteTilesRenderer | undefined;
-  declare nametag: RemoteNametag | undefined;
-  declare interactable: RemoteInteractable | undefined;
-}
-
-export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {
-  declare input: RemoteAccessor;
-  declare output: RemoteAccessor;
-}
-
-export class RemoteAnimationChannel extends defineRemoteResourceClass(AnimationChannelResource) {
-  declare sampler: RemoteAnimationSampler;
-  declare targetNode: RemoteNode;
-}
-
-export class RemoteAnimation extends defineRemoteResourceClass(AnimationResource) {
-  declare channels: RemoteAnimationChannel[];
-  declare samplers: RemoteAnimationSampler[];
-  declare clip: AnimationClip | undefined;
-}
-
-export class RemoteScene extends defineRemoteResourceClass(SceneResource) {
-  declare backgroundTexture: RemoteTexture | undefined;
-  declare reflectionProbe: RemoteReflectionProbe | undefined;
-  declare audioEmitters: RemoteAudioEmitter[];
-  declare firstNode: RemoteNode | undefined;
-}
-
-export class RemoteEnvironment extends defineRemoteResourceClass(EnvironmentResource) {
-  declare publicScene: RemoteScene;
-  declare privateScene: RemoteScene;
-  gltfResource: GLTFResource | undefined;
-  dispose(ctx: GameState) {
-    super.onDispose(ctx);
-
-    if (this.gltfResource) {
-      removeGLTFResourceRef(this.gltfResource);
-    }
-  }
-}
-
-export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
-  declare environment: RemoteEnvironment | undefined;
-  declare firstNode: RemoteNode | undefined;
-  declare persistentScene: RemoteScene;
-  declare activeCameraNode: RemoteNode | undefined;
-}
-
-export function addObjectToWorld(worldResource: RemoteWorld, object: RemoteNode) {
-  const firstNode = worldResource.firstNode;
-
-  if (!firstNode) {
-    worldResource.firstNode = object;
-  } else {
-    object.nextSibling = firstNode;
-    firstNode.prevSibling = object;
-    worldResource.firstNode = object;
-  }
-}
-
-export function removeObjectFromWorld(worldResource: RemoteWorld, object: RemoteNode) {
-  const prevSibling = object.prevSibling;
-  const nextSibling = object.nextSibling;
-
-  if (worldResource.firstNode === object) {
-    worldResource.firstNode = undefined;
-  }
-
-  // [prev, child, next]
-  if (prevSibling && nextSibling) {
-    prevSibling.nextSibling = nextSibling;
-    nextSibling.prevSibling = prevSibling;
-  }
-  // [prev, child]
-  if (prevSibling && !nextSibling) {
-    prevSibling.nextSibling = undefined;
-  }
-  // [child, next]
-  if (nextSibling && !prevSibling) {
-    nextSibling.prevSibling = undefined;
-    worldResource.firstNode = nextSibling;
-  }
-}
-
-export function createRemoteObject(ctx: GameState, publicRoot: RemoteNode, privateRoot?: RemoteNode) {
-  const root = new RemoteNode(ctx.resourceManager);
-  addChild(root, privateRoot || new RemoteNode(ctx.resourceManager));
-  addChild(root, publicRoot);
-  return root;
-}
-
-export function getObjectPrivateRoot(root: RemoteNode): RemoteNode {
-  return root.firstChild!;
-}
-
-export function getObjectPublicRoot(root: RemoteNode): RemoteNode {
-  return root.firstChild!.nextSibling!;
 }

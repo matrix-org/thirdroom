@@ -1,5 +1,6 @@
 import { GameState } from "../GameTypes";
-import { getRemoteResources, RemoteAudioSource } from "../resource/resource.game";
+import { getRemoteResources } from "../resource/resource.game";
+import { RemoteAudioSource } from "../resource/RemoteResources";
 
 export interface PlayAudioOptions {
   gain?: number;

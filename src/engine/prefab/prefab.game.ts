@@ -2,7 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState, World } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
-import { RemoteNode } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
 
 interface PrefabModuleState {
   prefabTemplateMap: Map<string, PrefabTemplate>;

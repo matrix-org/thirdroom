@@ -9,12 +9,8 @@ import { projectPerspective } from "../../engine/camera/camera.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import {
-  getRemoteResource,
-  RemoteNametag,
-  RemoteNode,
-  tryGetRemoteResource,
-} from "../../engine/resource/resource.game";
+import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { RemoteNametag, RemoteNode } from "../../engine/resource/RemoteResources";
 
 type NametagState = {
   enabled: boolean;

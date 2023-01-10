@@ -2,7 +2,7 @@ import { hasComponent } from "bitecs";
 
 import { findChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
-import { RemoteNode } from "../../engine/resource/resource.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { AvatarComponent } from "./components";
 
 export function getAvatar(ctx: GameState, node: RemoteNode) {

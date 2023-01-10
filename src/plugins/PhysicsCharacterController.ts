@@ -17,7 +17,8 @@ import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
-import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
+import { tryGetRemoteResource } from "../engine/resource/resource.game";
+import { RemoteNode } from "../engine/resource/RemoteResources";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;

@@ -68,6 +68,7 @@ import { RemoteResource, ResourceDefinition } from "../../engine/resource/Resour
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions, AVATAR_HEIGHT } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
+import { ResourceModule, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
   RemoteAudioData,
   RemoteAudioEmitter,
@@ -80,13 +81,10 @@ import {
   RemoteScene,
   RemoteTexture,
   RemoteWorld,
-  ResourceModule,
-  getRemoteResource,
-  tryGetRemoteResource,
   createRemoteObject,
   addObjectToWorld,
   removeObjectFromWorld,
-} from "../../engine/resource/resource.game";
+} from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
 import { AvatarComponent } from "../avatars/components";
@@ -95,6 +93,7 @@ type ThirdRoomModuleState = {};
 
 const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
   const camera = createCamera(ctx);
+  camera.name = "Avatar Camera";
   camera.position[1] = 1.2;
   addChild(rig, camera);
   addCameraYawTargetComponent(ctx.world, rig);
@@ -418,12 +417,10 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     }
   }
 
-  const environment = new RemoteEnvironment(resourceManager, {
+  ctx.worldResource.environment = new RemoteEnvironment(resourceManager, {
     publicScene: environmentScene,
     privateScene: transientScene,
   });
-  ctx.worldResource.environment = environment;
-  environment.gltfResource = environmentGLTFResource;
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -431,6 +428,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   if (!ctx.worldResource.activeCameraNode) {
     defaultCamera = new RemoteNode(ctx.resourceManager, {
+      name: "Default Camera",
       camera: createRemotePerspectiveCamera(ctx),
     });
     addChild(transientScene, defaultCamera);

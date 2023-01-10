@@ -2,7 +2,7 @@ import { vec3, quat } from "gl-matrix";
 import { Vector3, Quaternion } from "three";
 
 import { RigidBody } from "../physics/physics.game";
-import { RemoteNode } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
 
 const zero = new Vector3();
 const tmpVec = new Vector3();

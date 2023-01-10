@@ -5,14 +5,8 @@ import { Quaternion, Vector3 } from "three";
 import { GameState, World } from "../GameTypes";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { defineModule, getModule } from "../module/module.common";
-import {
-  addResourceRef,
-  getRemoteResource,
-  RemoteMesh,
-  RemoteMeshPrimitive,
-  RemoteNode,
-  removeResourceRef,
-} from "../resource/resource.game";
+import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
+import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;

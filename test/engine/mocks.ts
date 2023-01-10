@@ -1,18 +1,13 @@
-import RAPIER, { RigidBody } from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld, getEntityComponents, removeComponent, removeEntity } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { addEntity, createWorld } from "bitecs";
 
 import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
-import { Networked, NetworkModule } from "../../src/engine/network/network.game";
+import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
-import {
-  RemoteNode,
-  RemoteScene,
-  RemoteWorld,
-  ResourceModule,
-  RemoteEnvironment,
-} from "../../src/engine/resource/resource.game";
+import { ResourceModule } from "../../src/engine/resource/resource.game";
+import { RemoteNode, RemoteScene, RemoteWorld, RemoteEnvironment } from "../../src/engine/resource/RemoteResources";
 import { copyToWriteBuffer, createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import {
   IRemoteResourceManager,
@@ -26,6 +21,7 @@ import { GLTFResource } from "../../src/engine/gltf/gltf.game";
 import { GameResourceManager } from "../../src/engine/resource/GameResourceManager";
 import { getModule } from "../../src/engine/module/module.common";
 import { createDeferred } from "../../src/engine/utils/Deferred";
+import { removeEntityWithComponents } from "../../src/engine/ecs/removeEntityWithComponents";
 
 export function registerDefaultPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
@@ -280,18 +276,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
 
     const resource = this.resources[index];
 
-    const components = getEntityComponents(this.ctx.world, resourceId);
-
-    // NOTE: removeEntity does not remove components explicitly, so removing components here triggers exit queries
-    for (let i = 0; i < components.length; i++) {
-      if (components[i] === Networked || components[i] === RigidBody) {
-        removeComponent(this.ctx.world, components[i], resourceId, false);
-      } else {
-        removeComponent(this.ctx.world, components[i], resourceId, true);
-      }
-    }
-
-    removeEntity(this.ctx.world, resourceId);
+    removeEntityWithComponents(this.ctx.world, resourceId);
 
     const schema = resource.constructor.resourceDef.schema;
 

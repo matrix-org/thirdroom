@@ -14,7 +14,8 @@ import {
 import { InputModule } from "../engine/input/input.game";
 import { getInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
+import { tryGetRemoteResource } from "../engine/resource/resource.game";
+import { RemoteNode } from "../engine/resource/RemoteResources";
 
 type FlyCharacterControllerModuleState = {};
 

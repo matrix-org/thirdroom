@@ -34,7 +34,8 @@ import {
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
-import { getRemoteResource, RemoteNode } from "../resource/resource.game";
+import { getRemoteResource } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
 
 /*********
  * Types *

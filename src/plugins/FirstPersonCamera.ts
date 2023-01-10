@@ -23,7 +23,8 @@ import { Networked, NetworkModule, Owned } from "../engine/network/network.game"
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { broadcastReliable, sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
-import { getRemoteResource, RemoteNode, tryGetRemoteResource } from "../engine/resource/resource.game";
+import { getRemoteResource, tryGetRemoteResource } from "../engine/resource/resource.game";
+import { RemoteNode } from "../engine/resource/RemoteResources";
 import { getAvatar } from "./avatars/getAvatar";
 
 type FirstPersonCameraModuleState = {};

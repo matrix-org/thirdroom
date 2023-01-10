@@ -25,16 +25,15 @@ import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engi
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
+import { addResourceRef, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
-  addResourceRef,
   createRemoteObject,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
   RemoteMaterial,
   RemoteNode,
-  tryGetRemoteResource,
-} from "../../engine/resource/resource.game";
+} from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
