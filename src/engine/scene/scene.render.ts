@@ -4,7 +4,7 @@ import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { RenderNode, RenderScene, RenderWorld } from "../resource/resource.render";
+import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
 
@@ -43,14 +43,25 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
   }
 }
 
-export function updateWorldVisibility(worldResource: RenderWorld) {
+export function updateWorldVisibility(ctx: RenderThreadState) {
+  const nodes = getLocalResources(ctx, RenderNode);
+
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].object3DVisible = false;
+  }
+
+  const worldResource = ctx.worldResource;
+
   if (worldResource.environment) {
     updateSceneVisibility(worldResource.environment.privateScene);
     updateSceneVisibility(worldResource.environment.publicScene);
   }
 
-  if (worldResource.firstNode) {
-    updateNodeVisibility(worldResource.firstNode, true);
+  let nextNode = worldResource.firstNode;
+
+  while (nextNode) {
+    updateNodeVisibility(nextNode, true);
+    nextNode = nextNode.nextSibling;
   }
 
   updateSceneVisibility(worldResource.persistentScene);

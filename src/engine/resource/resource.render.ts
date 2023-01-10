@@ -635,6 +635,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   object3DVisible = true;
 
   dispose() {
+    console.log("dispose render node", this.eid);
     if (this.meshPrimitiveObjects) {
       for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
         const primitive = this.meshPrimitiveObjects[i];

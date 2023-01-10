@@ -1,3 +1,4 @@
+import { addComponent, defineComponent, hasComponent } from "bitecs";
 import { AnimationClip } from "three";
 
 import { addChild } from "../component/transform";
@@ -175,7 +176,14 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeCameraNode: RemoteNode | undefined;
 }
 
-export function addObjectToWorld(worldResource: RemoteWorld, object: RemoteNode) {
+const RemoteObject = defineComponent();
+
+export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
+  if (!hasComponent(ctx.world, RemoteObject, object.eid)) {
+    throw new Error(`Node is not a RemoteObject`);
+  }
+
+  const worldResource = ctx.worldResource;
   const firstNode = worldResource.firstNode;
 
   if (!firstNode) {
@@ -187,7 +195,14 @@ export function addObjectToWorld(worldResource: RemoteWorld, object: RemoteNode)
   }
 }
 
-export function removeObjectFromWorld(worldResource: RemoteWorld, object: RemoteNode) {
+export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
+  if (!hasComponent(ctx.world, RemoteObject, object.eid)) {
+    throw new Error(`Node is not a RemoteObject`);
+  }
+
+  object.addRef();
+
+  const worldResource = ctx.worldResource;
   const prevSibling = object.prevSibling;
   const nextSibling = object.nextSibling;
 
@@ -209,11 +224,20 @@ export function removeObjectFromWorld(worldResource: RemoteWorld, object: Remote
     nextSibling.prevSibling = undefined;
     worldResource.firstNode = nextSibling;
   }
+
+  object.parentScene = undefined;
+  object.parent = undefined;
+  object.prevSibling = undefined;
+  object.nextSibling = undefined;
+  object.firstChild = undefined;
+
+  object.removeRef();
 }
 
 export function createRemoteObject(ctx: GameState, publicRoot: RemoteNode, privateRoot?: RemoteNode) {
   const root = new RemoteNode(ctx.resourceManager);
-  addChild(root, privateRoot || new RemoteNode(ctx.resourceManager));
+  addComponent(ctx.world, RemoteObject, root.eid);
+  addChild(root, privateRoot || new RemoteNode(ctx.resourceManager, { name: "Private Root" }));
   addChild(root, publicRoot);
   return root;
 }

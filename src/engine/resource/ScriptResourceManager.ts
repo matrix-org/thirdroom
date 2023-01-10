@@ -110,7 +110,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     return resourceId;
   }
 
-  disposeResource(resourceId: number): boolean {
+  removeResourceRefs(resourceId: number): boolean {
     const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
     if (index === -1) {
@@ -417,7 +417,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             return 0;
           }
 
-          if (this.disposeResource(resourceId)) {
+          if (this.removeResourceRefs(resourceId)) {
             return 1;
           }
 

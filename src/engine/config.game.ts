@@ -1,7 +1,7 @@
 import { defineConfig } from "./module/module.common";
 import { GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
 import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
-import { PhysicsModule, StepPhysicsSystem, SyncPhysicsSystem } from "./physics/physics.game";
+import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
@@ -69,11 +69,8 @@ export default defineConfig<GameState>({
     SpawnableSystem,
     ThirdroomSystem,
 
-    // step physics forward
-    StepPhysicsSystem,
-
-    // copy rigidbody data to transform component
-    SyncPhysicsSystem,
+    // step physics forward and copy rigidbody data to transform component
+    PhysicsSystem,
 
     // interpolate towards authoritative state
     NetworkInterpolationSystem,

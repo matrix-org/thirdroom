@@ -267,7 +267,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     return this.resourcesById.get(resourceId) as RemoteResource<GameState> | undefined;
   }
 
-  disposeResource(resourceId: number): boolean {
+  removeResourceRefs(resourceId: number): boolean {
     const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
     if (index === -1) {
@@ -382,7 +382,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     const refCount = this.resourceRefs.get(resourceId) || 0;
 
     if (refCount <= 1) {
-      this.disposeResource(resourceId);
+      this.removeResourceRefs(resourceId);
     } else {
       this.resourceRefs.set(resourceId, refCount - 1);
     }

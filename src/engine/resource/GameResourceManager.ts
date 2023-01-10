@@ -70,7 +70,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     return resourceId;
   }
 
-  disposeResource(resourceId: number): boolean {
+  removeResourceRefs(resourceId: number): boolean {
     const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
     if (index === -1) {

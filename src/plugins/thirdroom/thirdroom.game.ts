@@ -210,7 +210,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
           hasComponent(ctx.world, Owned, entity) &&
           !hasComponent(ctx.world, Player, entity)
         ) {
-          removeObjectFromWorld(ctx.worldResource, node);
+          removeObjectFromWorld(ctx, node);
         } else if (hasComponent(ctx.world, Player, entity)) {
           const spawnPoints = getSpawnPoints(ctx);
           spawnEntity(spawnPoints, node);
@@ -465,7 +465,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   addComponent(ctx.world, Networked, eid, true);
 
   const avatar = createRemoteObject(ctx, rig);
-  addObjectToWorld(ctx.worldResource, avatar);
+  addObjectToWorld(ctx, avatar);
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -487,7 +487,7 @@ function loadRemotePlayerRig(
 ) {
   const rig = createPrefabEntity(ctx, "avatar", { nametag: true });
   const avatar = createRemoteObject(ctx, rig);
-  addObjectToWorld(ctx.worldResource, avatar);
+  addObjectToWorld(ctx, avatar);
 
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, avatar);

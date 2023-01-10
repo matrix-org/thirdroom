@@ -257,7 +257,7 @@ export function createRemoteNetworkedEntity(
   addComponent(ctx.world, Networked, node.eid, true);
   Networked.networkId[node.eid] = nid;
   network.networkIdToEntityId.set(nid, node.eid);
-  addObjectToWorld(ctx.worldResource, node);
+  addObjectToWorld(ctx, node);
 
   return node;
 }
@@ -420,7 +420,7 @@ export function deserializeDeletes(input: NetPipeData) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.info("deserialized deletion for nid", nid, "eid", eid);
-      removeObjectFromWorld(ctx.worldResource, node);
+      removeObjectFromWorld(ctx, node);
       network.networkIdToEntityId.delete(nid);
     }
   }

@@ -29,6 +29,7 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       ? undefined
       : (propsOrResourceData as InitialRemoteResourceProps<GameState, Def> | undefined);
     this.resourceType = resourceType;
+    this.resourceDef = resourceDef;
     this.initialized = false;
     this.ptr = resourceData.ptr;
     this.byteView = new Uint8Array(resourceData.buffer, resourceData.ptr, resourceDef.byteLength);
@@ -130,11 +131,6 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
     removeRef: {
       value(this: RemoteResource<GameState>) {
         this.manager.removeRef(this.eid);
-      },
-    },
-    dispose: {
-      value(this: RemoteResource<GameState>, ctx: GameState) {
-        this.manager.disposeResource(this.eid);
       },
     },
   });

@@ -348,6 +348,9 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     } else if (hit.toi <= Interactable.interactionDistance[eid]) {
       addComponent(ctx.world, FocusComponent, rig.eid);
       FocusComponent.focusedEntity[rig.eid] = eid;
+    } else {
+      // clear focus
+      removeComponent(ctx.world, FocusComponent, rig.eid, true);
     }
   } else {
     // clear focus
@@ -374,7 +377,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       hasComponent(ctx.world, Owned, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeObjectFromWorld(ctx.worldResource, focused);
+      removeObjectFromWorld(ctx, focused);
       playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
     }
   }

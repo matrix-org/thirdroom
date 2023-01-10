@@ -84,9 +84,9 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
   quaternion[3] = rigidRot.w;
 };
 
-export const SyncPhysicsSystem = (ctx: GameState) => {
-  const { world } = ctx;
-  const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);
+export function PhysicsSystem(ctx: GameState) {
+  const { world, dt } = ctx;
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(ctx, PhysicsModule);
 
   // apply transform to rigidbody for new physics entities
   const entered = enteredRigidBodyQuery(world);
@@ -125,6 +125,22 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
     }
   }
 
+  physicsWorld.timestep = dt;
+  physicsWorld.step(eventQueue);
+
+  eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
+    const eid1 = handleToEid.get(handle1);
+    const eid2 = handleToEid.get(handle2);
+
+    if (eid1 === undefined || eid2 === undefined) {
+      return;
+    }
+
+    for (const collisionHandler of collisionHandlers) {
+      collisionHandler(eid1, eid2, handle1, handle2);
+    }
+  });
+
   // apply rigidbody to transform for regular physics entities
   const physicsEntities = rigidBodyQuery(world);
   for (let i = 0; i < physicsEntities.length; i++) {
@@ -143,31 +159,6 @@ export const SyncPhysicsSystem = (ctx: GameState) => {
       applyRigidBodyToTransform(body, node);
     }
   }
-};
-
-export function StepPhysicsSystem(ctx: GameState) {
-  const { dt } = ctx;
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(ctx, PhysicsModule);
-
-  physicsWorld.timestep = dt;
-  physicsWorld.step(eventQueue);
-
-  eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
-    const eid1 = handleToEid.get(handle1);
-    if (eid1 === undefined) {
-      console.warn(`Contact with unregistered physics handle ${handle1}`);
-      // return;
-    }
-    const eid2 = handleToEid.get(handle2);
-    if (eid2 === undefined) {
-      console.warn(`Contact with unregistered physics handle ${handle2}`);
-      // return;
-    }
-
-    for (const collisionHandler of collisionHandlers) {
-      collisionHandler(eid1, eid2, handle1, handle2);
-    }
-  });
 }
 
 export function addRigidBody(

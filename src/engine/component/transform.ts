@@ -127,6 +127,7 @@ export function removeChild(parent: RemoteNode | RemoteScene, child: RemoteNode)
   child.parent = undefined;
   child.prevSibling = undefined;
   child.nextSibling = undefined;
+  child.firstChild = undefined;
   child.removeRef();
 }
 
@@ -453,8 +454,11 @@ export function UpdateMatrixWorldSystem(ctx: GameState) {
     updateMatrixWorld(ctx.worldResource.environment.publicScene);
   }
 
-  if (ctx.worldResource.firstNode) {
-    updateMatrixWorld(ctx.worldResource.firstNode);
+  let nextNode = ctx.worldResource.firstNode;
+
+  while (nextNode) {
+    updateMatrixWorld(nextNode);
+    nextNode = nextNode.nextSibling;
   }
 
   updateMatrixWorld(ctx.worldResource.persistentScene);

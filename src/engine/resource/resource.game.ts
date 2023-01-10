@@ -325,10 +325,8 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
       if (index !== -1) {
         resourceArr.splice(index, 1);
       }
-    }
 
-    if (resource.onDispose) {
-      resource.onDispose(ctx);
+      resource.manager.removeResourceRefs(resourceId);
     }
   }
 

@@ -220,7 +220,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevSceneResource = activeScene?.eid;
   }
 
-  updateWorldVisibility(ctx.worldResource);
+  updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
   updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);

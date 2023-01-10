@@ -5,7 +5,6 @@ import { Vector3 } from "three";
 
 import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
-import { addChild } from "../../engine/component/transform";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
@@ -23,10 +22,11 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { isHost } from "../../engine/network/network.common";
 import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
-import { addResourceRef, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
+  addObjectToWorld,
   createRemoteObject,
   RemoteAudioData,
   RemoteAudioEmitter,
@@ -82,52 +82,14 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "Crate Audio Data",
       uri: "/audio/hit.wav",
     });
-    addResourceRef(ctx, crateAudioData.eid);
+    crateAudioData.addRef();
 
     registerPrefab(ctx, {
       name: "small-crate",
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
         const size = 1;
-        const halfSize = size / 2;
-
-        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-        const obj = createRemoteObject(ctx, node);
-
-        obj.scale.set([size, size, size]);
-
-        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
-          audio: crateAudioData,
-          loop: false,
-          autoPlay: false,
-        });
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [hitAudioSource],
-        });
-
-        obj.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(obj.eid, audioEmitter);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, obj, rigidBody);
-
-        addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
-
-        return obj;
+        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
       },
     });
 
@@ -136,44 +98,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
         const size = 1.75;
-        const halfSize = size / 2;
-
-        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-
-        node.scale.set([size, size, size]);
-
-        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
-          audio: crateAudioData,
-          loop: false,
-          autoPlay: false,
-        });
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [hitAudioSource],
-        });
-
-        node.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, node, rigidBody);
-
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-        return node;
+        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
       },
     });
 
@@ -182,43 +107,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
         const size = 2.5;
-        const halfSize = size / 2;
-
-        const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-
-        node.scale.set([size, size, size]);
-
-        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
-          audio: crateAudioData,
-          loop: false,
-          autoPlay: false,
-        });
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [hitAudioSource],
-        });
-
-        node.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, node, rigidBody);
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-        return node;
+        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
       },
     });
 
@@ -226,19 +115,19 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "Ball Audio Data",
       uri: "/audio/bounce.wav",
     });
-    addResourceRef(ctx, ballAudioData.eid);
+    ballAudioData.addRef();
 
     const ballAudioData2 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 2",
       uri: "/audio/clink.wav",
     });
-    addResourceRef(ctx, ballAudioData2.eid);
+    ballAudioData2.addRef();
 
     const ballAudioData3 = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data 3",
       uri: "/audio/clink2.wav",
     });
-    addResourceRef(ctx, ballAudioData3.eid);
+    ballAudioData3.addRef();
 
     const emissiveMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Emissive Material",
@@ -248,8 +137,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       metallicFactor: 0,
       roughnessFactor: 1,
     });
-
-    addResourceRef(ctx, emissiveMaterial.eid);
+    emissiveMaterial.addRef();
 
     const mirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Mirror Material",
@@ -258,7 +146,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       metallicFactor: 1,
       roughnessFactor: 0,
     });
-    addResourceRef(ctx, mirrorMaterial.eid);
+    mirrorMaterial.addRef();
 
     const blackMirrorMaterial = new RemoteMaterial(ctx.resourceManager, {
       name: "Black Mirror Material",
@@ -267,47 +155,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       metallicFactor: 1,
       roughnessFactor: 0,
     });
-    addResourceRef(ctx, blackMirrorMaterial.eid);
+    blackMirrorMaterial.addRef();
 
     registerPrefab(ctx, {
       name: "mirror-ball",
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
-        const node = createBall(ctx, 1, mirrorMaterial);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const colliderDesc = RAPIER.ColliderDesc.ball(1 / 2)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups)
-          .setRestitution(1)
-          .setDensity(1);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, node, rigidBody);
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [
-            new RemoteAudioSource(ctx.resourceManager, {
-              audio: ballAudioData,
-              loop: false,
-              autoPlay: false,
-            }),
-          ],
-        });
-
-        node.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
-
-        return node;
+        return createBall(ctx, module, physics, 1, mirrorMaterial, ballAudioData, kinematic);
       },
     });
 
@@ -315,41 +169,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "black-mirror-ball",
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
-        const node = createBall(ctx, 1, blackMirrorMaterial);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const colliderDesc = RAPIER.ColliderDesc.ball(1 / 2)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups)
-          .setRestitution(1)
-          .setDensity(1);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, node, rigidBody);
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [
-            new RemoteAudioSource(ctx.resourceManager, {
-              audio: ballAudioData,
-              loop: false,
-              autoPlay: false,
-            }),
-          ],
-        });
-
-        node.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
-
-        return node;
+        return createBall(ctx, module, physics, 1, blackMirrorMaterial, ballAudioData, kinematic);
       },
     });
 
@@ -357,43 +177,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       name: "emissive-ball",
       type: PrefabType.Object,
       create: (ctx, { kinematic }) => {
-        const node = createBall(ctx, 2, emissiveMaterial);
-
-        const rigidBodyDesc = kinematic
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.dynamic();
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        rigidBody.setGravityScale(0.9, true);
-
-        const colliderDesc = RAPIER.ColliderDesc.ball(1)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-          .setCollisionGroups(dynamicObjectCollisionGroups)
-          .setRestitution(1)
-          .setDensity(0.1);
-
-        physicsWorld.createCollider(colliderDesc, rigidBody);
-
-        addRigidBody(ctx, node, rigidBody);
-        addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-        const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
-          audio: ballAudioData,
-          loop: false,
-          autoPlay: false,
-        });
-
-        const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-          type: AudioEmitterType.Positional,
-          sources: [hitAudioSource],
-        });
-
-        node.audioEmitter = audioEmitter;
-
-        module.hitAudioEmitters.set(node.eid, audioEmitter);
-
-        return node;
+        return createBall(ctx, module, physics, 2, emissiveMaterial, ballAudioData, kinematic);
       },
     });
 
@@ -452,6 +236,104 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
 });
+
+function createBall(
+  ctx: GameState,
+  module: SpawnablesModuleState,
+  physics: PhysicsModuleState,
+  size: number,
+  material: RemoteMaterial,
+  ballAudioData: RemoteAudioData,
+  kinematic = false
+) {
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh: createSphereMesh(ctx, size, material),
+  });
+
+  const obj = createRemoteObject(ctx, node);
+
+  const physicsWorld = physics.physicsWorld;
+
+  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
+
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.ball(size / 2)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(dynamicObjectCollisionGroups)
+    .setRestitution(1)
+    .setDensity(1);
+
+  physicsWorld.createCollider(colliderDesc, rigidBody);
+
+  addRigidBody(ctx, obj, rigidBody);
+  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
+
+  const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: ballAudioData,
+        loop: false,
+        autoPlay: false,
+      }),
+    ],
+  });
+
+  obj.audioEmitter = audioEmitter;
+
+  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+
+  return obj;
+}
+
+function createCrate(
+  ctx: GameState,
+  module: SpawnablesModuleState,
+  physics: PhysicsModuleState,
+  size: number,
+  crateAudioData: RemoteAudioData,
+  kinematic = false
+) {
+  const { physicsWorld } = physics;
+
+  const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
+  const obj = createRemoteObject(ctx, node);
+
+  const halfSize = size / 2;
+
+  obj.scale.set([size, size, size]);
+
+  const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
+    audio: crateAudioData,
+    loop: false,
+    autoPlay: false,
+  });
+
+  const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [hitAudioSource],
+  });
+
+  obj.audioEmitter = audioEmitter;
+
+  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+
+  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
+
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(dynamicObjectCollisionGroups);
+
+  physicsWorld.createCollider(colliderDesc, rigidBody);
+
+  addRigidBody(ctx, obj, rigidBody);
+
+  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
+  return obj;
+}
 
 function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
   const module = getModule(ctx, SpawnablesModule);
@@ -544,12 +426,6 @@ export const updateSpawnables = (
       throw new Error("private scene not found on environment");
     }
 
-    addChild(privateScene, prefab);
+    addObjectToWorld(ctx, prefab);
   }
-};
-
-export const createBall = (ctx: GameState, size: number, material?: RemoteMaterial): RemoteNode => {
-  return new RemoteNode(ctx.resourceManager, {
-    mesh: createSphereMesh(ctx, size, material),
-  });
 };

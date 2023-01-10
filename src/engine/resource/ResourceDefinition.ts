@@ -572,7 +572,6 @@ export interface RemoteResource<ThreadContext extends BaseThreadContext> extends
   ptr: number;
   addRef(): void;
   removeRef(): void;
-  onDispose(ctx: ThreadContext): void;
 }
 
 export type RemoteResourceInstance<
@@ -713,7 +712,7 @@ export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext>
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
   allocateResource(resourceDef: ResourceDefinition): ResourceData;
   createResource(resource: RemoteResource<ThreadContext>): number;
-  disposeResource(resourceId: number): boolean;
+  removeResourceRefs(resourceId: number): boolean;
   getRef<T extends RemoteResource<ThreadContext>>(store: Uint32Array): T | undefined;
   setRef(value: RemoteResource<ThreadContext> | undefined, store: Uint32Array, backRef: boolean): void;
   setRefArray(values: RemoteResource<ThreadContext>[], store: Uint32Array): void;

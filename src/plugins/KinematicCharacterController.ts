@@ -141,7 +141,6 @@ function updateKinematicControls(
   rig: RemoteNode,
   body: RAPIER.RigidBody
 ) {
-  console.log(rig.quaternion);
   _q.fromArray(rig.quaternion);
   body.setNextKinematicRotation(_q);
 

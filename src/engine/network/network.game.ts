@@ -178,7 +178,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
         if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeObjectFromWorld(ctx.worldResource, node);
+          removeObjectFromWorld(ctx, node);
         }
       }
     }
@@ -189,7 +189,7 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
 
     if (eid && node) {
       network.entityIdToPeerId.delete(eid);
-      removeObjectFromWorld(ctx.worldResource, node);
+      removeObjectFromWorld(ctx, node);
     }
 
     network.peers.splice(peerArrIndex, 1);

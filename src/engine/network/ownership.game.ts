@@ -33,7 +33,7 @@ export const deserializeRemoveOwnership = (input: NetPipeData) => {
   const eid = network.networkIdToEntityId.get(nid);
   const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
   if (node) {
-    removeObjectFromWorld(ctx.worldResource, node);
+    removeObjectFromWorld(ctx, node);
   }
 };
 
@@ -42,7 +42,7 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   if (network.authoritative && !isHost(network)) {
     // TODO: when Authored component is implemented, add Owned component here
   } else if (!hasComponent(ctx.world, Owned, eid)) {
-    removeObjectFromWorld(ctx.worldResource, node);
+    removeObjectFromWorld(ctx, node);
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
@@ -60,7 +60,7 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
     const obj = createRemoteObject(ctx, newNode);
     addComponent(ctx.world, Owned, obj.eid);
     addComponent(ctx.world, Networked, obj.eid);
-    addObjectToWorld(ctx.worldResource, obj);
+    addObjectToWorld(ctx, obj);
 
     // send message to remove on other side
     broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, obj.eid));
