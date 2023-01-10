@@ -11,6 +11,7 @@ import { useInviteList } from "../../../hooks/useInviteList";
 import { UserMenu } from "../menus/UserMenu";
 import "./SpacesView.css";
 import { RoomTypes, useRoomsOfType } from "../../../hooks/useRoomsOfType";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
 
 export function SpacesView() {
   const { session } = useHydrogen(true);
@@ -19,6 +20,7 @@ export function SpacesView() {
   const [directs] = useRoomsOfType(session, RoomTypes.Direct);
   const { selectedSidebarTab, selectSidebarTab } = useStore((state) => state.overlaySidebar);
   const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
+  const [discoverPage] = useLocalStorage("feature_discoverPage", false);
 
   const roomsNotifCount = rooms.reduce((total, room) => total + room.notificationCount, 0);
   const directsNotifCount = directs.reduce((total, room) => total + room.notificationCount, 0);
@@ -55,13 +57,15 @@ export function SpacesView() {
             variant="surface-low"
           />
         </BadgeWrapper>
-        <SidebarTab
-          onClick={() => selectWindow(OverlayWindow.Discover)}
-          isActive={selectedWindow === OverlayWindow.Discover}
-          name="Discover"
-          iconSrc={ExploreIC}
-          variant="surface-low"
-        />
+        {discoverPage && (
+          <SidebarTab
+            onClick={() => selectWindow(OverlayWindow.Discover)}
+            isActive={selectedWindow === OverlayWindow.Discover}
+            name="Discover"
+            iconSrc={ExploreIC}
+            variant="surface-low"
+          />
+        )}
       </div>
       <div className="shrink-0 flex flex-column items-center gap-xs">
         <UserMenu />
