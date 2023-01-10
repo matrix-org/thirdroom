@@ -194,7 +194,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
     const eid = pitchEntities[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     // pitch target on camera, controller is on the parent of the camera
-    const parent = node.parent;
+    const parent = node.parent!.parent;
 
     if (!parent) {
       continue;

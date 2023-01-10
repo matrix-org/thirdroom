@@ -899,8 +899,6 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       name,
     });
 
-    console.log("load node", node, index);
-
     loaderCtx.nodeMap.set(index, node);
     loaderCtx.nodeIndexMap.set(node, index);
 

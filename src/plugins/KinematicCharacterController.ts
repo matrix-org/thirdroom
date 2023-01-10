@@ -1,5 +1,6 @@
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
-import { Object3D, Vector3 } from "three";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { Quaternion, Vector3 } from "three";
 
 import { GameState } from "../engine/GameTypes";
 import {
@@ -105,7 +106,7 @@ export const KinematicControls = defineComponent();
 export const kinematicControlsQuery = defineQuery([KinematicControls]);
 export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
 
-const obj = new Object3D();
+const _q = new Quaternion();
 
 const walkSpeed = 200;
 const drag = 30;
@@ -137,15 +138,12 @@ function updateKinematicControls(
   ctx: GameState,
   { physicsWorld, characterController }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
-  rig: RemoteNode
+  rig: RemoteNode,
+  body: RAPIER.RigidBody
 ) {
-  const body = RigidBody.store.get(rig.eid);
-  if (!body) {
-    return;
-  }
-
-  obj.quaternion.fromArray(rig.quaternion);
-  body.setNextKinematicRotation(obj.quaternion);
+  console.log(rig.quaternion);
+  _q.fromArray(rig.quaternion);
+  body.setNextKinematicRotation(_q);
 
   // Handle Input
   const moveVec = actionStates.get(KinematicCharacterControllerActions.Move) as Float32Array;
@@ -165,7 +163,7 @@ function updateKinematicControls(
     moveForce
       .set(moveVec[0], 0, -moveVec[1])
       .normalize()
-      .applyQuaternion(obj.quaternion)
+      .applyQuaternion(_q)
       .multiplyScalar(walkSpeed * ctx.dt);
 
     if (!isGrounded) {
@@ -179,7 +177,7 @@ function updateKinematicControls(
 
   // TODO: Check to see if velocity matches orientation before sliding
   if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
-    slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(obj.quaternion);
+    slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(_q);
     moveForce.add(slideForce);
     isSliding = true;
     lastSlideTime = ctx.elapsed;
@@ -242,10 +240,16 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   }
 
   const rigs = inputControllerQuery(ctx.world);
+
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = getInputController(input, eid);
+    const body = RigidBody.store.get(eid);
+
+    if (!body) {
+      throw new Error("rigidbody not found on eid " + eid);
+    }
 
     // if not hosting
     if (network.authoritative && !isHost(network)) {
@@ -255,11 +259,11 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
         const [, actionStates] = controller.history[j];
         // console.log("reapplying input for tick:", tick);
         // console.log("current tick:", ctx.tick);
-        updateKinematicControls(ctx, physics, actionStates, node);
+        updateKinematicControls(ctx, physics, actionStates, node, body);
       }
     } else {
       // if hosting or p2p, only apply inputs once
-      updateKinematicControls(ctx, physics, controller.actionStates, node);
+      updateKinematicControls(ctx, physics, controller.actionStates, node, body);
     }
     // console.log("=============");
   }

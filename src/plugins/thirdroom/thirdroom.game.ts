@@ -84,22 +84,13 @@ import {
   createRemoteObject,
   addObjectToWorld,
   removeObjectFromWorld,
+  getObjectPrivateRoot,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
 import { AvatarComponent } from "../avatars/components";
 
 type ThirdRoomModuleState = {};
-
-const addAvatarCamera = (ctx: GameState, rig: RemoteNode) => {
-  const camera = createCamera(ctx);
-  camera.name = "Avatar Camera";
-  camera.position[1] = 1.2;
-  addChild(rig, camera);
-  addCameraYawTargetComponent(ctx.world, rig);
-  addCameraPitchTargetComponent(ctx.world, camera);
-  return camera;
-};
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -121,8 +112,6 @@ const createAvatarRig =
     rig.position.set([0, -1, 0]);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.scale.set([1.3, 1.3, 1.3]);
-    addAvatarCamera(ctx, rig);
-    addAvatarController(ctx, input, rig.eid);
 
     // on container
     const characterControllerType = SceneCharacterControllerComponent.get(
@@ -134,6 +123,14 @@ const createAvatarRig =
       addKinematicControls(ctx, obj.eid);
     }
 
+    const camera = createCamera(ctx);
+    camera.name = "Avatar Camera";
+    camera.position[1] = 1.2;
+    addChild(getObjectPrivateRoot(obj), camera);
+    addCameraYawTargetComponent(ctx.world, obj);
+    addCameraPitchTargetComponent(ctx.world, camera);
+
+    addAvatarController(ctx, input, obj.eid);
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
 

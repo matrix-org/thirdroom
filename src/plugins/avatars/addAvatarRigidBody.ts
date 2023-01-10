@@ -26,8 +26,6 @@ export function addAvatarRigidBody(
 
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  if (!kinematic) rigidBody.lockRotations(true, true);
-
   const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius).setActiveEvents(
     RAPIER.ActiveEvents.COLLISION_EVENTS
   );
