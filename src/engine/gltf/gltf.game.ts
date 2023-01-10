@@ -139,6 +139,8 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
 
   let promise = resourceManager.getCachedGLTF(url.href);
 
+  console.log("loadGLTF", url.href, !!promise);
+
   if (promise) {
     return promise;
   }
@@ -176,7 +178,7 @@ function removeGLTFResourceRef(resource: GLTFResource): boolean {
   return false;
 }
 
-const GLTFResourceComponent = new Map();
+const GLTFResourceComponent = new Map<number, GLTFResource>();
 
 function addGLTFResourceComponent(world: World, eid: number, resource: GLTFResource) {
   addComponent(world, GLTFResourceComponent, eid);
@@ -194,6 +196,7 @@ export function GLTFResourceDisposalSystem(ctx: GameState) {
     const gltfResource = GLTFResourceComponent.get(eid);
 
     if (gltfResource) {
+      console.log("dispose GLTFResource", gltfResource.url);
       removeGLTFResourceRef(gltfResource);
       GLTFResourceComponent.delete(eid);
     }

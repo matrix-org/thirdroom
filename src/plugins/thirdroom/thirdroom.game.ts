@@ -31,7 +31,7 @@ import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../eng
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, Player } from "../../engine/component/Player";
@@ -190,8 +190,12 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
       .setCollisionGroups(boundsCheckCollisionGroups);
     physicsWorld.createCollider(colliderDesc, rigidBody);
-
     rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
+    const oobCollider = new RemoteNode(ctx.resourceManager, {
+      name: "Out of Bounds Collider",
+    });
+    addRigidBody(ctx, oobCollider, rigidBody);
+    addChild(ctx.worldResource.persistentScene, oobCollider);
 
     collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
       const entity = eid1 || eid2;
@@ -201,6 +205,8 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       if (hasComponent(ctx.world, Networked, entity) && !hasComponent(ctx.world, Owned, entity)) return;
 
       const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
+
+      console.log(entity, floor);
 
       if (entity && floor) {
         const node = tryGetRemoteResource<RemoteNode>(ctx, entity);

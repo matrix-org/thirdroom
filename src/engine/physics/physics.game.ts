@@ -132,6 +132,8 @@ export function PhysicsSystem(ctx: GameState) {
     const eid1 = handleToEid.get(handle1);
     const eid2 = handleToEid.get(handle2);
 
+    console.log(handle1, handle2, eid1, eid2);
+
     if (eid1 === undefined || eid2 === undefined) {
       return;
     }
