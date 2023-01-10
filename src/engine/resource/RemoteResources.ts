@@ -176,7 +176,7 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeCameraNode: RemoteNode | undefined;
 }
 
-const RemoteObject = defineComponent();
+export const RemoteObject = defineComponent();
 
 export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
   if (!hasComponent(ctx.world, RemoteObject, object.eid)) {

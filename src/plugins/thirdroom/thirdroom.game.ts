@@ -85,6 +85,7 @@ import {
   addObjectToWorld,
   removeObjectFromWorld,
   getObjectPrivateRoot,
+  RemoteObject,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -198,29 +199,32 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     addChild(ctx.worldResource.persistentScene, oobCollider);
 
     collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
-      const entity = eid1 || eid2;
+      if (!eid1 || !eid2) return;
 
-      if (!entity) return;
+      let objectEid: number | undefined;
+      let floorHandle: number | undefined;
 
-      if (hasComponent(ctx.world, Networked, entity) && !hasComponent(ctx.world, Owned, entity)) return;
+      if (hasComponent(ctx.world, RemoteObject, eid1)) {
+        objectEid = eid1;
+        floorHandle = handle2;
+      } else if (hasComponent(ctx.world, RemoteObject, eid2)) {
+        objectEid = eid2;
+        floorHandle = handle1;
+      } else {
+        return;
+      }
 
-      const floor = handle1 === rigidBody.handle || handle2 === rigidBody.handle;
+      if (floorHandle !== rigidBody.handle) {
+        return;
+      }
 
-      console.log(entity, floor);
+      const node = tryGetRemoteResource<RemoteNode>(ctx, objectEid);
 
-      if (entity && floor) {
-        const node = tryGetRemoteResource<RemoteNode>(ctx, entity);
-
-        if (
-          hasComponent(ctx.world, Networked, entity) &&
-          hasComponent(ctx.world, Owned, entity) &&
-          !hasComponent(ctx.world, Player, entity)
-        ) {
-          removeObjectFromWorld(ctx, node);
-        } else if (hasComponent(ctx.world, Player, entity)) {
-          const spawnPoints = getSpawnPoints(ctx);
-          spawnEntity(spawnPoints, node);
-        }
+      if (hasComponent(ctx.world, Player, objectEid)) {
+        const spawnPoints = getSpawnPoints(ctx);
+        spawnEntity(spawnPoints, node);
+      } else {
+        removeObjectFromWorld(ctx, node);
       }
     });
 
