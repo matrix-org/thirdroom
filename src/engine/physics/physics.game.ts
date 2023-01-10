@@ -26,9 +26,10 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleToEid = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
-    const characterController = physicsWorld.createCharacterController(0.5);
+    const characterController = physicsWorld.createCharacterController(0.01);
+    characterController.enableAutostep(0.5, 0.25, false);
+    characterController.enableSnapToGround(0.25);
     characterController.setApplyImpulsesToDynamicBodies(true);
-    characterController.enableAutostep(0.5, 0.5, false);
 
     return {
       physicsWorld,

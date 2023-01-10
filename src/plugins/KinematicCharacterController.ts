@@ -108,10 +108,10 @@ export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
 
 const _q = new Quaternion();
 
-const walkSpeed = 200;
-const drag = 30;
-const maxWalkSpeed = 1000;
-const maxSprintSpeed = 1000;
+const walkAccel = 100;
+const drag = 3;
+const maxWalkSpeed = 1.5;
+const maxSprintSpeed = 8;
 const sprintModifier = 2.5;
 const jumpForce = 7;
 const inAirModifier = 0.5;
@@ -123,11 +123,17 @@ const slideModifier = 50;
 const slideDrag = 150;
 const slideCooldown = 1;
 
-const moveForce = new Vector3();
-const dragForce = new Vector3();
-const linearVelocity = new Vector3();
+const _acceleration = new Vector3();
+// const _zero = new Vector3();
+// const _velocity = new Vector3();
+const _dragForce = new Vector3();
+const _linearVelocity = new Vector3();
+const _maxWalkVec = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed);
+const _maxWalkVecNeg = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed).negate();
+const _maxSprintVec = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed);
+const _maxSprintVecNeg = new Vector3(maxSprintSpeed, Infinity, maxSprintSpeed).negate();
 let isSliding = false;
-const slideForce = new Vector3();
+const _slideForce = new Vector3();
 let lastSlideTime = 0;
 
 export function addKinematicControls(ctx: GameState, eid: number) {
@@ -150,34 +156,38 @@ function updateKinematicControls(
   const crouch = actionStates.get(KinematicCharacterControllerActions.Crouch) as ButtonActionState;
   const sprint = actionStates.get(KinematicCharacterControllerActions.Sprint) as ButtonActionState;
 
-  linearVelocity.copy(body.linvel() as Vector3);
+  _linearVelocity.copy(body.linvel() as Vector3);
 
   const isGrounded = characterController.computedGrounded();
   const isSprinting = isGrounded && sprint.held && !isSliding;
 
-  const speed = linearVelocity.length();
-  const maxSpeed = isSprinting ? maxSprintSpeed : maxWalkSpeed;
+  const speed = Math.sqrt(_linearVelocity.x * _linearVelocity.x + _linearVelocity.z * _linearVelocity.z);
 
-  if (speed < maxSpeed) {
-    moveForce
-      .set(moveVec[0], 0, -moveVec[1])
-      .normalize()
-      .applyQuaternion(_q)
-      .multiplyScalar(walkSpeed * ctx.dt);
+  _acceleration.set(moveVec[0], 0, -moveVec[1]).normalize().applyQuaternion(_q).multiplyScalar(walkAccel);
 
-    if (!isGrounded) {
-      moveForce.multiplyScalar(inAirModifier);
-    } else if (isGrounded && crouch.held && !isSliding) {
-      moveForce.multiplyScalar(crouchModifier);
-    } else if (isGrounded && sprint.held && !isSliding) {
-      moveForce.multiplyScalar(sprintModifier);
+  if (!isGrounded) {
+    _acceleration.multiplyScalar(inAirModifier);
+  } else {
+    if (crouch.held && !isSliding) {
+      _acceleration.multiplyScalar(crouchModifier);
+    } else if (sprint.held && !isSliding) {
+      _acceleration.multiplyScalar(sprintModifier);
     }
+  }
+
+  if (isSprinting) _acceleration.clamp(_maxSprintVecNeg, _maxSprintVec);
+  else _acceleration.clamp(_maxWalkVecNeg, _maxWalkVec);
+
+  if (isGrounded) {
+    _acceleration.y = 0;
+  } else {
+    _acceleration.y = physicsWorld.gravity.y;
   }
 
   // TODO: Check to see if velocity matches orientation before sliding
   if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
-    slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(_q);
-    moveForce.add(slideForce);
+    _slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(_q);
+    _acceleration.add(_slideForce);
     isSliding = true;
     lastSlideTime = ctx.elapsed;
   } else if (crouch.released || ctx.dt > lastSlideTime + slideCooldown) {
@@ -193,38 +203,33 @@ function updateKinematicControls(
       dragMultiplier = inAirDrag;
     }
 
-    dragForce
-      .copy(linearVelocity)
-      .negate()
-      .multiplyScalar(dragMultiplier * ctx.dt);
+    _dragForce.copy(_linearVelocity).negate().multiplyScalar(dragMultiplier);
 
-    dragForce.y = 0;
+    _dragForce.y = 0;
 
-    moveForce.add(dragForce);
+    _acceleration.add(_dragForce);
   }
 
   if (jump.pressed && isGrounded) {
     const jumpModifier = crouch.held ? crouchJumpModifier : 1;
-    moveForce.y += jumpForce * jumpModifier;
+    _acceleration.y += jumpForce * jumpModifier;
   }
 
-  moveForce.add(physicsWorld.gravity as Vector3);
+  _acceleration.multiplyScalar(ctx.dt);
 
-  moveForce.multiplyScalar(ctx.dt);
+  _linearVelocity.add(_acceleration).multiplyScalar(ctx.dt);
 
   const translation = body.translation();
 
   const collider = body.collider(0);
 
-  characterController.computeColliderMovement(collider, moveForce);
+  characterController.computeColliderMovement(collider, _linearVelocity);
 
   const corrected = characterController.computedMovement();
 
-  // console.log("translation before", translation);
   translation.x += corrected.x;
   translation.y += corrected.y;
   translation.z += corrected.z;
-  // console.log("translation after", translation);
 
   body.setNextKinematicTranslation(translation);
 }
