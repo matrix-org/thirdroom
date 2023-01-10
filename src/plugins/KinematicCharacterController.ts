@@ -12,7 +12,7 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController, inputControllerQuery } from "../engine/input/InputController";
+import { getInputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
@@ -243,7 +243,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
     return;
   }
 
-  const rigs = inputControllerQuery(ctx.world);
+  const rigs = kinematicControlsQuery(ctx.world);
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];

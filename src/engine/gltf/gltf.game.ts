@@ -845,7 +845,7 @@ async function loadGLTFCollider(loaderCtx: GLTFLoaderContext, node: RemoteNode, 
     return;
   }
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.newStatic();
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
   rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
   rigidBodyDesc.setRotation(new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3]));
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
