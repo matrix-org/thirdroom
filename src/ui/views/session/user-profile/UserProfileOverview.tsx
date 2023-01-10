@@ -72,7 +72,7 @@ export function UserProfileOverview() {
     if (isAvatarChanged) {
       let mxc = "";
       if (typeof avatarData.blob === "object") {
-        mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
+        mxc = (await uploadAttachment(session.hsApi, avatarData.blob)) ?? "";
       }
       session.hsApi.setProfileAvatarUrl(session.userId, mxc);
     }

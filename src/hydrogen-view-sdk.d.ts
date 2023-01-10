@@ -333,7 +333,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export interface IBlobHandle {
-    nativeBlob: any;
+    nativeBlob: Blob;
     url: string;
     size: number;
     mimeType: string;
@@ -1495,14 +1495,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     format?: string;
   }
   export type RequestFunction = (url: string, options: IRequestOptions) => RequestResult;
-  export interface IBlobHandle {
-    nativeBlob: any;
-    url: string;
-    size: number;
-    mimeType: string;
-    readAsBuffer(): BufferSource;
-    dispose(): any;
-  }
+
   export type File = {
     readonly name: string;
     readonly blob: IBlobHandle;
@@ -2202,7 +2195,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       payload: Record<string, any>,
       options?: BaseRequestOptions
     ): IHomeServerRequest;
-    uploadAttachment(blob: Blob, filename: string, options?: BaseRequestOptions): IHomeServerRequest;
+    uploadAttachment(blob: IBlobHandle, filename: string, options?: BaseRequestOptions): IHomeServerRequest;
     setPusher(pusher: Record<string, any>, options?: BaseRequestOptions): IHomeServerRequest;
     getPushers(options?: BaseRequestOptions): IHomeServerRequest;
     join(roomId: string, options?: BaseRequestOptions): IHomeServerRequest;

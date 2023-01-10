@@ -19,6 +19,8 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { UserProfile, useSearchProfile } from "../../../hooks/useSearchProfile";
 import { ProfileSuggestion } from "./ProfileSuggestion";
 import { Chip } from "../../../atoms/chip/Chip";
+import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
+import { Avatar } from "../../../atoms/avatar/Avatar";
 
 const MXID_REG = /^@(\S+):(\S+)$/;
 interface InviteDialogProps {
@@ -27,7 +29,7 @@ interface InviteDialogProps {
 }
 
 export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
-  const { session } = useHydrogen(true);
+  const { session, platform } = useHydrogen(true);
 
   const formRef = useRef<HTMLFormElement>(null);
   const [inviting, setInviting] = useState(false);
@@ -63,6 +65,7 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
         userIdInput: HTMLInputElement;
       };
       form.userIdInput.value = "";
+      form.userIdInput.focus();
     }
     addInvite(profile);
   };
@@ -103,18 +106,21 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
 
   const handleInputChange = (evt: FormEvent<HTMLInputElement>) => {
     const value = evt.currentTarget.value;
-    if (value.endsWith(" ") && value.trim().match(MXID_REG)) {
-      handleAddInvite({
-        userId: value.trim(),
-      });
-    } else {
-      debouncedSuggestProfile(value);
-    }
+    if (!value.startsWith("@")) debouncedSuggestProfile(value);
   };
 
   const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
-    if (evt.key === "Backspace") {
-      if (inviteList.length === 0 || evt.currentTarget.value !== "") return;
+    const value = evt.currentTarget.value.trim();
+
+    if (evt.key === " " && value.match(MXID_REG)) {
+      evt.preventDefault();
+      handleAddInvite({ userId: value });
+    }
+    if (evt.key === "Enter") {
+      if (value.length > 0) evt.preventDefault();
+      if (value.match(MXID_REG)) handleAddInvite({ userId: value });
+    }
+    if (evt.key === "Backspace" && inviteList.length > 0 && value === "") {
       setInviteList(
         produce(inviteList, (draftList) => {
           draftList.pop();
@@ -155,14 +161,31 @@ export function InviteDialog({ roomId, requestClose }: InviteDialogProps) {
               autoFocus
               onKeyDown={handleKeyDown}
               placeholder="@user:server.name"
-              before={inviteList.map((profile) => (
-                <Chip key={profile.userId}>
-                  <IconButton onClick={() => removeInvite(profile)} size="sm" iconSrc={CrossIC} label="Remove" />
-                  <Text className="truncate" variant="b3" weight="medium">
-                    {profile.displayName ?? profile.userId.match(MXID_REG)?.[1] ?? profile.userId}
-                  </Text>
-                </Chip>
-              ))}
+              before={
+                inviteList.length > 0 && (
+                  <div className="flex gap-xs flex-wrap" style={{ width: "100%", marginTop: "var(--sp-xs)" }}>
+                    {inviteList.map((profile) => (
+                      <Chip key={profile.userId}>
+                        <Avatar
+                          imageSrc={
+                            profile.avatarUrl
+                              ? getAvatarHttpUrl(profile.avatarUrl, 16, platform, session.mediaRepository)
+                              : undefined
+                          }
+                          name={profile.displayName ?? profile.userId.slice(1)}
+                          bgColor={`var(--usercolor${getIdentifierColorNumber(profile.userId)})`}
+                          size="xxs"
+                          shape="circle"
+                        />
+                        <Text className="truncate" variant="b3" weight="medium">
+                          {profile.userId.slice(1)}
+                        </Text>
+                        <IconButton onClick={() => removeInvite(profile)} size="sm" iconSrc={CrossIC} label="Remove" />
+                      </Chip>
+                    ))}
+                  </div>
+                )
+              }
             />
           </SettingTile>
           <div style={{ minHeight: "74px" }}>
