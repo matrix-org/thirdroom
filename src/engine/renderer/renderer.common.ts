@@ -19,6 +19,7 @@ export interface NotifySceneRendererMessage {
   type: RendererMessageType.NotifySceneRendered;
   sceneResourceId: number;
   id: number;
+  frames: number;
 }
 
 export interface SceneRenderedNotificationMessage {

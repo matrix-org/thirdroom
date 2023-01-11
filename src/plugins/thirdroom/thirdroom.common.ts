@@ -1,5 +1,7 @@
 export enum ThirdRoomMessageType {
   EnterWorld = "enter-world",
+  EnteredWorld = "entered-world",
+  EnterWorldError = "enter-world-error",
   ExitWorld = "exit-world",
   ExitedWorld = "exited-world",
   LoadWorld = "load-world",
@@ -15,6 +17,18 @@ export enum ThirdRoomMessageType {
 
 export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
+  id: number;
+}
+
+export interface EnteredWorldMessage {
+  type: ThirdRoomMessageType.EnteredWorld;
+  id: number;
+}
+
+export interface EnterWorldErrorMessage {
+  type: ThirdRoomMessageType.EnterWorldError;
+  id: number;
+  error: string;
 }
 
 export interface ExitWorldMessage {

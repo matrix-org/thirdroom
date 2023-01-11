@@ -51,7 +51,7 @@ function onSceneRenderedNotification(ctx: GameState, { id }: SceneRenderedNotifi
   }
 }
 
-export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {
+export function waitForCurrentSceneToRender(ctx: GameState, frames = 1): Promise<void> {
   const deferred = createDeferred<void>(false);
   const rendererModule = getModule(ctx, RendererModule);
   const id = rendererModule.sceneRenderedNotificationId++;
@@ -67,6 +67,7 @@ export function waitForCurrentSceneToRender(ctx: GameState): Promise<void> {
     type: RendererMessageType.NotifySceneRendered,
     sceneResourceId,
     id,
+    frames,
   });
 
   return deferred.promise;

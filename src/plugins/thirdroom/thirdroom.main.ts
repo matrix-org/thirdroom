@@ -10,10 +10,13 @@ import {
   PrintThreadStateMessage,
   ThirdRoomMessageType,
   PrintResourcesMessage,
+  EnteredWorldMessage,
+  EnterWorldErrorMessage,
+  EnterWorldMessage,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
-  loadWorldMessageId: number;
+  messageId: number;
   environmentUrl?: string;
 }
 
@@ -21,7 +24,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   name: "thirdroom",
   create() {
     return {
-      loadWorldMessageId: 0,
+      messageId: 0,
     };
   },
   init(ctx) {
@@ -49,7 +52,7 @@ export function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl: strin
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 
-  const id = thirdroom.loadWorldMessageId++;
+  const id = thirdroom.messageId++;
 
   // eslint-disable-next-line prefer-const
   let disposeHandlers: () => void;
@@ -91,10 +94,41 @@ export function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl: strin
   return loadingEnvironment.promise;
 }
 
-export function enterWorld(context: IMainThreadContext) {
-  context.sendMessage(Thread.Game, {
+export async function enterWorld(ctx: IMainThreadContext) {
+  const thirdroom = getModule(ctx, ThirdroomModule);
+  const enteringWorld = createDeferred(false);
+
+  const id = thirdroom.messageId++;
+
+  // eslint-disable-next-line prefer-const
+  let disposeHandlers: () => void;
+
+  const onEnteredWorld = (ctx: IMainThreadContext, message: EnteredWorldMessage) => {
+    if (message.id === id) {
+      enteringWorld.resolve(undefined);
+      disposeHandlers();
+    }
+  };
+
+  const onEnterWorldError = (ctx: IMainThreadContext, message: EnterWorldErrorMessage) => {
+    console.log(`error`, message);
+    if (message.id === id) {
+      enteringWorld.reject(new Error(message.error));
+      disposeHandlers();
+    }
+  };
+
+  disposeHandlers = createDisposables([
+    registerMessageHandler(ctx, ThirdRoomMessageType.EnteredWorld, onEnteredWorld),
+    registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorldError, onEnterWorldError),
+  ]);
+
+  ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
+    id,
   });
+
+  return enteringWorld.promise;
 }
 
 export function exitWorld(context: IMainThreadContext) {

@@ -126,7 +126,7 @@ function useEnterWorld() {
       }
 
       const powerLevels = await world.observePowerLevels();
-      const disposer = createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
+      const disposer = await createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
 
       const audio = getModule(mainThread, AudioModule);
       audio.context.resume();

@@ -53,7 +53,7 @@ export interface RendererModuleState {
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
-  sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
+  sceneRenderedRequests: { id: number; sceneResourceId: ResourceId; frames: number }[];
   matrixMaterial: MatrixMaterial;
   enableMatrixMaterial: boolean;
   scene: Scene;
@@ -173,9 +173,9 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Canva
   renderer.canvasHeight = canvasHeight;
 }
 
-function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: NotifySceneRendererMessage) {
+function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
-  renderer.sceneRenderedRequests.push({ id, sceneResourceId });
+  renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
 export function RendererSystem(ctx: RenderThreadState) {
@@ -224,12 +224,12 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
-    const { id, sceneResourceId } = rendererModule.sceneRenderedRequests[i];
+    const request = rendererModule.sceneRenderedRequests[i];
 
-    if (activeScene && activeScene.eid === sceneResourceId) {
+    if (activeScene && activeScene.eid === request.sceneResourceId && --request.frames <= 0) {
       ctx.sendMessage(Thread.Game, {
         type: RendererMessageType.SceneRenderedNotification,
-        id,
+        id: request.id,
       });
 
       rendererModule.sceneRenderedRequests.splice(i, 1);

@@ -26,6 +26,8 @@ import {
   GLTFViewerLoadErrorMessage,
   GLTFViewerLoadedMessage,
   PrintResourcesMessage,
+  EnteredWorldMessage,
+  EnterWorldErrorMessage,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
@@ -34,7 +36,7 @@ import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { OurPlayer, Player } from "../../engine/component/Player";
+import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
 import {
   ActionMap,
   ActionType,
@@ -90,6 +92,7 @@ import {
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
 import { AvatarComponent } from "../avatars/components";
+import { waitUntil } from "../../engine/utils/waitUntil";
 
 type ThirdRoomModuleState = {};
 
@@ -292,15 +295,30 @@ function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
 
 // when we join the world
 async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
-  const network = getModule(ctx, NetworkModule);
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
+  try {
+    const network = getModule(ctx, NetworkModule);
+    const physics = getModule(ctx, PhysicsModule);
+    const input = getModule(ctx, InputModule);
 
-  // wait for peer connections & host before spawning in
-  // BUG: this induces a consistently reproducible race condition
-  // await waitUntil(() => network.hostId !== "" && network.peers.length > 0);
+    loadPlayerRig(ctx, physics, input, network);
 
-  loadPlayerRig(ctx, physics, input, network);
+    await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
+
+    await waitForCurrentSceneToRender(ctx, 10);
+
+    ctx.sendMessage<EnteredWorldMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.EnteredWorld,
+      id: message.id,
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    ctx.sendMessage<EnterWorldErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.EnterWorldError,
+      id: message.id,
+      error: error.message || "Unknown error",
+    });
+  }
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
