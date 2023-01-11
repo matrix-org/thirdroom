@@ -174,6 +174,7 @@ function updatePhysicsControls(
     colliderShape,
     ctx.dt * 6,
     true,
+    0,
     playerShapeCastCollisionGroups
   );
 

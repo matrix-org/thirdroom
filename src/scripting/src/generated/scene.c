@@ -36,19 +36,6 @@ static JSValue js_scene_constructor(JSContext *ctx, JSValueConst new_target, int
 }
 
 
-static JSValue js_scene_get_eid(JSContext *ctx, JSValueConst this_val) {
-  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
-
-  if (!scene) {
-    return JS_EXCEPTION;
-  } else {
-    JSValue val;
-    val = JS_NewUint32(ctx, scene->eid);
-    return val;
-  }
-}
-
-
 static JSValue js_scene_get_name(JSContext *ctx, JSValueConst this_val) {
   Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
@@ -192,7 +179,6 @@ static JSClassDef js_scene_class = {
 };
 
 static const JSCFunctionListEntry js_scene_proto_funcs[] = {
-  JS_CGETSET_DEF("eid", js_scene_get_eid, NULL),
   JS_CGETSET_DEF("name", js_scene_get_name, js_scene_set_name),
   JS_CGETSET_DEF("backgroundTexture", js_scene_get_background_texture, js_scene_set_background_texture),
   JS_CGETSET_DEF("reflectionProbe", js_scene_get_reflection_probe, js_scene_set_reflection_probe),

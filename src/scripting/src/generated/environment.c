@@ -33,26 +33,26 @@ static JSValue js_environment_constructor(JSContext *ctx, JSValueConst new_targe
 }
 
 
-static JSValue js_environment_get_active_scene(JSContext *ctx, JSValueConst this_val) {
+static JSValue js_environment_get_public_scene(JSContext *ctx, JSValueConst this_val) {
   Environment *environment = JS_GetOpaque2(ctx, this_val, js_environment_class_id);
 
   if (!environment) {
     return JS_EXCEPTION;
   } else {
     JSValue val;
-    val = create_scene_from_ptr(ctx, environment->active_scene);
+    val = create_scene_from_ptr(ctx, environment->public_scene);
     return val;
   }
 }
 
 
-static JSValue js_environment_set_active_scene(JSContext *ctx, JSValueConst this_val, JSValue val) {
+static JSValue js_environment_set_public_scene(JSContext *ctx, JSValueConst this_val, JSValue val) {
   Environment *environment = JS_GetOpaque2(ctx, this_val, js_environment_class_id);
 
   if (!environment) {
     return JS_EXCEPTION;
   } else {
-    environment->active_scene = JS_GetOpaque(val, js_scene_class_id);
+    environment->public_scene = JS_GetOpaque(val, js_scene_class_id);
     return JS_UNDEFINED;
   }
 }
@@ -72,7 +72,7 @@ static JSClassDef js_environment_class = {
 };
 
 static const JSCFunctionListEntry js_environment_proto_funcs[] = {
-  JS_CGETSET_DEF("activeScene", js_environment_get_active_scene, js_environment_set_active_scene),
+  JS_CGETSET_DEF("publicScene", js_environment_get_public_scene, js_environment_set_public_scene),
   JS_CFUNC_DEF("dispose", 0, js_environment_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Environment", JS_PROP_CONFIGURABLE),
 };

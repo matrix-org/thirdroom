@@ -13,9 +13,8 @@
 #include "websg.h"
 #include "world.h"
 #include "environment.h"
-#include "avatar.h"
-#include "scene.h"
 #include "node.h"
+#include "scene.h"
 
 /**
  * WebSG.World

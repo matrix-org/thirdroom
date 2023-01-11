@@ -29,7 +29,6 @@
 #include "animation.h"
 #include "scene.h"
 #include "environment.h"
-#include "avatar.h"
 #include "world.h"
 
 void js_define_websg_api(JSContext *ctx, JSValue *global) {
@@ -62,7 +61,6 @@ void js_define_websg_api(JSContext *ctx, JSValue *global) {
   js_define_animation_api(ctx, &jsSceneGraphNamespace);
   js_define_scene_api(ctx, &jsSceneGraphNamespace);
   js_define_environment_api(ctx, &jsSceneGraphNamespace);
-  js_define_avatar_api(ctx, &jsSceneGraphNamespace);
   js_define_world_api(ctx, &jsSceneGraphNamespace);
   JS_SetPropertyStr(ctx, *global, "WebSG", jsSceneGraphNamespace);
 }

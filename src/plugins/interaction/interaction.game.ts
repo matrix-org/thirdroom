@@ -336,6 +336,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     colliderShape,
     10.0,
     true,
+    0,
     focusShapeCastCollisionGroups
   );
 
@@ -466,6 +467,7 @@ function updateGrabThrow(
       colliderShape,
       10.0,
       true,
+      0,
       grabShapeCastCollisionGroups
     );
 

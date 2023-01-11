@@ -444,7 +444,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     }
   }
 
-  ctx.worldResource.environment = new RemoteEnvironment(resourceManager, {
+  ctx.worldResource.environment = new RemoteEnvironment(ctx.resourceManager, {
     publicScene: environmentScene,
     privateScene: transientScene,
   });

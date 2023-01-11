@@ -389,7 +389,6 @@ typedef struct Interactable {
 } Interactable;
 
 typedef struct _Node {
-  unsigned int eid;
   const char *name;
   Scene *parent_scene;
   Node *parent;
@@ -452,7 +451,6 @@ typedef struct Animation {
 } Animation;
 
 typedef struct _Scene {
-  unsigned int eid;
   const char *name;
   Texture *background_texture;
   ReflectionProbe *reflection_probe;
@@ -462,18 +460,14 @@ typedef struct _Scene {
 } Scene;
 
 typedef struct Environment {
-  Scene *active_scene;
+  Scene *public_scene;
+  Scene *private_scene;
 } Environment;
-
-typedef struct Avatar {
-  Node *root;
-} Avatar;
 
 typedef struct World {
   Environment *environment;
-  Avatar *avatars[64];
+  Node *first_node;
   Scene *persistent_scene;
-  Scene *transient_scene;
   Node *active_camera_node;
 } World;
 

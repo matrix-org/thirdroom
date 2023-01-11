@@ -44,19 +44,6 @@ static JSValue js_node_constructor(JSContext *ctx, JSValueConst new_target, int 
 }
 
 
-static JSValue js_node_get_eid(JSContext *ctx, JSValueConst this_val) {
-  Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
-
-  if (!node) {
-    return JS_EXCEPTION;
-  } else {
-    JSValue val;
-    val = JS_NewUint32(ctx, node->eid);
-    return val;
-  }
-}
-
-
 static JSValue js_node_get_name(JSContext *ctx, JSValueConst this_val) {
   Node *node = JS_GetOpaque2(ctx, this_val, js_node_class_id);
 
@@ -496,7 +483,6 @@ static JSClassDef js_node_class = {
 };
 
 static const JSCFunctionListEntry js_node_proto_funcs[] = {
-  JS_CGETSET_DEF("eid", js_node_get_eid, NULL),
   JS_CGETSET_DEF("name", js_node_get_name, js_node_set_name),
   JS_CGETSET_DEF("worldMatrixNeedsUpdate", js_node_get_world_matrix_needs_update, js_node_set_world_matrix_needs_update),
   JS_CGETSET_DEF("visible", js_node_get_visible, js_node_set_visible),
