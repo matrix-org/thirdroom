@@ -12,7 +12,8 @@ export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
-  collisionHandlers: ((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => void)[];
+  characterCollision: RAPIER.CharacterCollision;
+  collisionHandlers: ((eid1: number, eid2: number, handle1: number, handle2: number) => void)[];
   characterController: RAPIER.KinematicCharacterController;
 }
 
@@ -36,6 +37,7 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
       eventQueue,
       handleToEid,
       collisionHandlers: [],
+      characterCollision: new RAPIER.CharacterCollision(),
       characterController,
     };
   },
@@ -132,8 +134,6 @@ export function PhysicsSystem(ctx: GameState) {
   eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
     const eid1 = handleToEid.get(handle1);
     const eid2 = handleToEid.get(handle2);
-
-    console.log(handle1, handle2, eid1, eid2);
 
     if (eid1 === undefined || eid2 === undefined) {
       return;

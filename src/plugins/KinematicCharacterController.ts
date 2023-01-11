@@ -2,6 +2,7 @@ import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
+import type { RawCharacterCollision } from "@dimforge/rapier3d-compat/rapier_wasm3d";
 import { GameState } from "../engine/GameTypes";
 import {
   ActionMap,
@@ -141,7 +142,7 @@ export function addKinematicControls(ctx: GameState, eid: number) {
 
 function updateKinematicControls(
   ctx: GameState,
-  { physicsWorld, characterController }: PhysicsModuleState,
+  { physicsWorld, characterController, collisionHandlers, handleToEid, characterCollision }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
   rig: RemoteNode,
   body: RAPIER.RigidBody
@@ -239,7 +240,7 @@ function updateKinematicControls(
 
   _linearVelocity.add(_acceleration).multiplyScalar(ctx.dt);
 
-  const translation = body.translation();
+  const translation = body.nextTranslation();
 
   const collider = body.collider(0);
 
@@ -252,6 +253,29 @@ function updateKinematicControls(
   translation.z += corrected.z;
 
   body.setNextKinematicTranslation(translation);
+
+  for (let i = 0; i < characterController.numComputedCollisions(); i++) {
+    if (characterController.computedCollision(i, characterCollision) !== null) {
+      // TODO: Rapier v0.10.0 doesn't expose collider on characterCollision so manually grab it
+      const rawCollision = (characterController as any).rawCharacterCollision as RawCharacterCollision;
+      const collisionColliderHandle = rawCollision.handle();
+      const collisionCollider = physicsWorld.getCollider(collisionColliderHandle);
+
+      if (!collisionCollider) {
+        return;
+      }
+
+      const collisionColliderEid = handleToEid.get(collisionColliderHandle);
+
+      if (!collisionColliderEid) {
+        continue;
+      }
+
+      for (const collisionHandler of collisionHandlers) {
+        collisionHandler(rig.eid, collisionColliderEid, collider.handle, collisionColliderHandle);
+      }
+    }
+  }
 }
 
 export const KinematicCharacterControllerSystem = (ctx: GameState) => {

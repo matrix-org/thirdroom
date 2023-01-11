@@ -202,9 +202,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     addRigidBody(ctx, oobCollider, rigidBody);
     addChild(ctx.worldResource.persistentScene, oobCollider);
 
-    collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
-      if (!eid1 || !eid2) return;
-
+    collisionHandlers.push((eid1: number, eid2: number, handle1: number, handle2: number) => {
       let objectEid: number | undefined;
       let floorHandle: number | undefined;
 
