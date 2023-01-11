@@ -1,7 +1,7 @@
-import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
+import RAPIER from "@dimforge/rapier3d-compat";
 import { defineQuery, exitQuery, hasComponent } from "bitecs";
 import { vec3 } from "gl-matrix";
-import { AnimationAction, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
+import { AnimationAction, AnimationMixer, Bone, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
 import { getForwardVector, getPitch, getRightVector, getRoll } from "../component/transform";
@@ -9,9 +9,7 @@ import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/network.game";
-// import { Networked } from "../network/network.game";
-import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../physics/physics.game";
+import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteAnimation, RemoteNode } from "../resource/RemoteResources";
 
@@ -56,35 +54,6 @@ const _vel = vec3.create();
 const _forward = vec3.create();
 const _right = vec3.create();
 
-// TODO: reuse isGrounded for char controller
-const interactionGroup = playerShapeCastCollisionGroups;
-const colliderShape = new Capsule(0.1, 0.5);
-const shapeTranslationOffset = new Vector3(0, 0, 0);
-const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
-const shapeCastPosition = new Vector3();
-const shapeCastRotation = new Quaternion();
-const _obj = new Object3D();
-
-const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
-  shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
-  shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
-
-  const shapeCastResult = physicsWorld.castShape(
-    shapeCastPosition,
-    shapeCastRotation,
-    physicsWorld.gravity,
-    colliderShape,
-    ctx.dt * 6,
-    true,
-    0,
-    interactionGroup
-  );
-
-  const isGrounded = !!shapeCastResult;
-
-  return isGrounded;
-};
-
 const idleThreshold = 0.5;
 const walkThreshold = 10;
 
@@ -94,7 +63,7 @@ const fadeOutAmount = fadeInAmount / 2;
 const lastYrot = new Float32Array(maxEntities);
 
 function processAnimations(ctx: GameState) {
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const physics = getModule(ctx, PhysicsModule);
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
@@ -116,7 +85,7 @@ function processAnimations(ctx: GameState) {
       reduceClipActionWeights(animation.actions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
-      const actionsToPlay = getClipActionsUsingVelocity(ctx, physicsWorld, parent, rigidBody, animation);
+      const actionsToPlay = getClipActionsUsingVelocity(ctx, physics, parent, rigidBody, animation);
       // synchronize selected clip action times
       synchronizeClipActions(actionsToPlay);
       // fade in selected animations
@@ -179,7 +148,7 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
 
 function getClipActionsUsingVelocity(
   ctx: GameState,
-  physicsWorld: RAPIER.World,
+  physics: PhysicsModuleState,
   node: RemoteNode,
   rigidBody: RAPIER.RigidBody,
   animation: IAnimationComponent
@@ -215,7 +184,7 @@ function getClipActionsUsingVelocity(
     lastYrot[eid] = yRot;
   }
 
-  const jumping = !isGrounded(ctx, physicsWorld, rigidBody);
+  const jumping = !physics.eidTocharacterController.get(node.eid)?.computedGrounded();
 
   // choose clip based on velocity
   const actions: AnimationAction[] = [];

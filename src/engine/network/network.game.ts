@@ -97,7 +97,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       entityIdToPeerId: new Map(),
       indexToPeerId: new Map(),
       peerIdCount: 0,
-      localIdCount: 0,
+      localIdCount: 1,
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
@@ -144,6 +144,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  *******************/
 
 const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
+  console.log("onAddPeerId", message.peerId);
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
 

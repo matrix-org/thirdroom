@@ -5,7 +5,14 @@ import { quat, vec3 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
-import { GameNetworkState, getPeerIndexFromNetworkId, Networked, NetworkModule, Owned } from "./network.game";
+import {
+  GameNetworkState,
+  getPeerIndexFromNetworkId,
+  Networked,
+  NetworkModule,
+  Owned,
+  ownedPlayerQuery,
+} from "./network.game";
 import { getModule } from "../module/module.common";
 import {
   INTERP_BUFFER_MS,
@@ -36,7 +43,12 @@ const _quat = new Quaternion();
 export function NetworkInterpolationSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
 
-  // console.log("remoteEntityQuery(ctx.world)", remoteEntityQuery(ctx.world));
+  const haveConnectedPeers = network.peers.length > 0;
+  const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
+
+  if (!haveConnectedPeers || !spawnedPlayerRig) {
+    return;
+  }
 
   const entered = enteredRemoteEntityQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
@@ -47,12 +59,11 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       applyNetworkedToEntity(node, body);
 
       // add to historian
-      console.log("Networked.networkId[eid]", Networked.networkId[eid]);
       const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
-      console.log("pidx", pidx);
       const peerId = network.indexToPeerId.get(pidx);
+
       if (!peerId) {
-        throw new Error("peer not found for entity " + eid);
+        throw new Error("peer not found for entity " + eid + " peerIndex " + pidx);
       }
       const historian = network.peerIdToHistorian.get(peerId);
       if (!historian) {
