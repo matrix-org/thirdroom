@@ -36,6 +36,8 @@ const _quat = new Quaternion();
 export function NetworkInterpolationSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
 
+  // console.log("remoteEntityQuery(ctx.world)", remoteEntityQuery(ctx.world));
+
   const entered = enteredRemoteEntityQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];

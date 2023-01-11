@@ -109,9 +109,9 @@ export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
 const _q = new Quaternion();
 
 const walkAccel = 100;
-const drag = 3;
-const maxWalkSpeed = 1.5;
-const maxSprintSpeed = 8;
+const drag = 10;
+const maxWalkSpeed = 10;
+const maxSprintSpeed = 50;
 const sprintModifier = 2.5;
 const jumpForce = 7;
 const inAirModifier = 0.5;
@@ -124,14 +124,8 @@ const slideDrag = 150;
 const slideCooldown = 1;
 
 const _acceleration = new Vector3();
-// const _zero = new Vector3();
-// const _velocity = new Vector3();
 const _dragForce = new Vector3();
 const _linearVelocity = new Vector3();
-const _maxWalkVec = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed);
-const _maxWalkVecNeg = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed).negate();
-const _maxSprintVec = new Vector3(maxWalkSpeed, Infinity, maxWalkSpeed);
-const _maxSprintVecNeg = new Vector3(maxSprintSpeed, Infinity, maxSprintSpeed).negate();
 let isSliding = false;
 const _slideForce = new Vector3();
 let lastSlideTime = 0;
@@ -175,8 +169,11 @@ function updateKinematicControls(
     }
   }
 
-  if (isSprinting) _acceleration.clamp(_maxSprintVecNeg, _maxSprintVec);
-  else _acceleration.clamp(_maxWalkVecNeg, _maxWalkVec);
+  if (isSprinting) {
+    _acceleration.clampLength(0, maxSprintSpeed);
+  } else {
+    _acceleration.clampLength(0, maxWalkSpeed);
+  }
 
   if (isGrounded) {
     _acceleration.y = 0;
