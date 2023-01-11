@@ -227,10 +227,10 @@ function updateKinematicControls(
     const delta = amplitude * Math.sin(2 * Math.PI * time * wavelength + phase);
     camera.position[1] = -delta;
 
-    if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
+    if (rig.audioEmitter && delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
       // footstep
       const i = Math.floor(randomRange(0, 5));
-      playAudio(rig.audioEmitter!.sources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+      playAudio(rig.audioEmitter.sources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
       lastFootstepFrame = ctx.tick;
     }
   }
