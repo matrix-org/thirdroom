@@ -369,20 +369,22 @@ export function getRemoteResources<Def extends ResourceDefinition, T extends Rem
   return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
 }
 
+const MAX_RESOURCE_BATCH_SIZE = 512;
+
 export function ResourceLoaderSystem(ctx: GameState) {
   const { messageQueue } = getModule(ctx, ResourceModule);
 
   if (messageQueue.length !== 0) {
+    const resources = messageQueue.splice(0, Math.min(messageQueue.length, MAX_RESOURCE_BATCH_SIZE));
+
     ctx.sendMessage<LoadResourcesMessage>(Thread.Main, {
       type: ResourceMessageType.LoadResources,
-      resources: messageQueue,
+      resources,
     });
 
     ctx.sendMessage<LoadResourcesMessage>(Thread.Render, {
       type: ResourceMessageType.LoadResources,
-      resources: messageQueue,
+      resources,
     });
-
-    messageQueue.length = 0;
   }
 }

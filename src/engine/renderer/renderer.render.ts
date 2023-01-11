@@ -47,8 +47,6 @@ export interface RendererModuleState {
   canvasHeight: number;
   renderer: WebGLRenderer;
   renderPipeline: RenderPipeline;
-  imageBitmapLoader: ImageBitmapLoader;
-  imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
   ktx2Loader: KTX2Loader;
   reflectionProbesMap: DataArrayTexture | null;
@@ -111,7 +109,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     pmremGenerator.compileEquirectangularShader();
 
     const imageBitmapLoader = new ImageBitmapLoader();
-
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
     return {
@@ -121,10 +118,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
       scenes: [],
-      imageBitmapLoader,
-      imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
-        imageOrientation: "flipY",
-      }),
       rgbeLoader: new RGBELoader(),
       ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
       reflectionProbesMap: null,

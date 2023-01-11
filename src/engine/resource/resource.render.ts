@@ -43,6 +43,7 @@ import {
   UVMapping,
   Wrapping,
 } from "three";
+import { RGBE } from "three/examples/jsm/loaders/RGBELoader";
 
 import {
   AccessorComponentTypeToTypedArray,
@@ -63,6 +64,12 @@ import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { toArrayBuffer } from "../utils/arraybuffer";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
+import {
+  createDataTextureFromRGBE,
+  loadImageBitmapFromBlob,
+  loadKTX2TextureFromArrayBuffer,
+  loadRGBEFromArrayBuffer,
+} from "../utils/textures";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createLocalResourceModule } from "./resource.common";
@@ -134,65 +141,48 @@ const HDRExtension = ".hdr";
 const KTX2MimeType = "image/ktx2";
 const KTX2Extension = ".ktx2";
 
-export enum ImageFormat {
-  RGBA = "rgba",
-  RGBE = "rgbe",
-}
-
 export class RenderImage extends defineLocalResourceClass(ImageResource) {
   declare bufferView: RenderBufferView | undefined;
 
-  format?: ImageFormat;
-  image?: ImageBitmap;
-  texture?: Texture | CompressedTexture;
+  image?: ImageBitmap | RGBE;
+  texture?: CompressedTexture;
 
   async load(ctx: RenderThreadState) {
-    const { rgbeLoader, ktx2Loader, imageBitmapLoader, imageBitmapLoaderFlipY } = getModule(ctx, RendererModule);
-
-    let uri: string;
-    let isObjectUrl = false;
+    const { rgbeLoader, ktx2Loader } = getModule(ctx, RendererModule);
 
     if (this.bufferView) {
       const bufferView = this.bufferView;
       const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
 
-      const blob = new Blob([buffer], {
-        type: this.mimeType,
-      });
-
-      uri = URL.createObjectURL(blob);
-      isObjectUrl = true;
-    } else {
-      uri = this.uri;
-    }
-
-    const isRGBE = uri.endsWith(HDRExtension) || this.mimeType === HDRMimeType;
-    const isKTX2 = uri.endsWith(KTX2Extension) || this.mimeType === KTX2MimeType;
-
-    try {
-      if (isRGBE) {
-        const texture = await rgbeLoader.loadAsync(uri);
-        this.format = ImageFormat.RGBE;
-        this.texture = texture;
-      } else if (isKTX2) {
-        const texture = await ktx2Loader.loadAsync(uri);
-        this.format = ImageFormat.RGBA;
-        this.texture = texture;
+      if (this.mimeType === HDRMimeType) {
+        this.image = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      } else if (this.mimeType === KTX2MimeType) {
+        // TODO: RenderImage should only store image data and not textures
+        this.texture = await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
       } else {
-        const loader = this.flipY ? imageBitmapLoaderFlipY : imageBitmapLoader;
-        const image = await loader.loadAsync(uri);
-        this.format = ImageFormat.RGBA;
-        this.image = image;
+        const blob = new Blob([buffer], { type: this.mimeType });
+        this.image = await loadImageBitmapFromBlob(blob, this.flipY);
       }
-    } finally {
-      if (isObjectUrl) {
-        URL.revokeObjectURL(uri);
+    } else {
+      const uri = this.uri;
+      const response = await fetch(uri);
+
+      if (uri.endsWith(HDRExtension)) {
+        const buffer = await response.arrayBuffer();
+        this.image = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      } else if (uri.endsWith(KTX2Extension)) {
+        const buffer = await response.arrayBuffer();
+        // TODO: RenderImage should only store image data and not textures
+        this.texture = await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
+      } else {
+        const blob = await response.blob();
+        this.image = await loadImageBitmapFromBlob(blob, this.flipY);
       }
     }
   }
 
   dispose(ctx: BaseThreadContext) {
-    if (this.image) {
+    if (this.image instanceof ImageBitmap) {
       this.image.close();
     } else if (this.texture) {
       this.texture.dispose();
@@ -241,32 +231,38 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   async load(ctx: RenderThreadState) {
     const rendererModule = getModule(ctx, RendererModule);
 
-    // TODO: Add ImageBitmap to Texture types
-    const texture = this.source.texture || new Texture(this.source.image as any);
+    let texture;
+
+    if (this.source.texture) {
+      texture = this.source.texture;
+      // TODO: Can we determine texture encoding when applying to the material?
+      texture.encoding = this.encoding as unknown as ThreeTextureEncoding;
+      texture.needsUpdate = true;
+    } else if (this.source.image instanceof ImageBitmap) {
+      // TODO: Add ImageBitmap to Texture types
+      texture = new Texture(this.source.image as any);
+      texture.flipY = false;
+      // TODO: Can we determine texture encoding when applying to the material?
+      texture.encoding = this.encoding as unknown as ThreeTextureEncoding;
+      texture.needsUpdate = true;
+    } else {
+      // TODO: RGBE texture encoding should be set in the glTF loader using an extension
+      texture = createDataTextureFromRGBE(this.source.image as RGBE);
+    }
 
     const sampler = this.sampler;
 
     if (sampler) {
-      if (this.source.format === ImageFormat.RGBA) {
-        texture.magFilter = ThreeMagFilters[sampler.magFilter];
-        texture.minFilter = ThreeMinFilters[sampler.minFilter];
-        texture.wrapS = ThreeWrappings[sampler.wrapS];
-        texture.wrapT = ThreeWrappings[sampler.wrapT];
-      }
-
+      texture.magFilter = ThreeMagFilters[sampler.magFilter];
+      texture.minFilter = ThreeMinFilters[sampler.minFilter];
+      texture.wrapS = ThreeWrappings[sampler.wrapS];
+      texture.wrapT = ThreeWrappings[sampler.wrapT];
       texture.mapping = ThreeMapping[sampler.mapping];
     } else {
       texture.magFilter = LinearFilter;
       texture.minFilter = LinearMipmapLinearFilter;
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
-    }
-
-    if (this.source.format === ImageFormat.RGBA) {
-      texture.flipY = false;
-      // TODO: Can we determine texture encoding when applying to the material?
-      texture.encoding = this.encoding as unknown as ThreeTextureEncoding;
-      texture.needsUpdate = true;
     }
 
     // Set the texture anisotropy which improves rendering at extreme angles.
@@ -278,8 +274,8 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   }
 
   dispose(ctx: RenderThreadState) {
-    if (this.source && this.source.format === ImageFormat.RGBA && this.source.texture) {
-      this.source.texture.dispose();
+    if (this.texture && !this.source.texture) {
+      this.texture.dispose();
     }
   }
 }
@@ -301,6 +297,7 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
   materialCache: MaterialCacheEntry[] = [];
 
   getMaterialForMeshPrimitive(ctx: RenderThreadState, meshPrimitive: RenderMeshPrimitive): PrimitiveMaterial {
+    const rendererModule = getModule(ctx, RendererModule);
     const mode = meshPrimitive.mode;
     const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
     const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
@@ -373,7 +370,7 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
         mode === MeshPrimitiveMode.TRIANGLE_STRIP
       ) {
         if (isPhysicalMaterial(this)) {
-          material = new MeshPhysicalMaterial(
+          const physicalMaterial = new MeshPhysicalMaterial(
             removeUndefinedProperties({
               ...baseParameters,
               color,
@@ -399,10 +396,44 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             })
           );
 
-          material.normalScale.set(
+          if (physicalMaterial.map) {
+            rendererModule.renderer.initTexture(physicalMaterial.map);
+          }
+
+          if (physicalMaterial.metalnessMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.metalnessMap);
+          }
+
+          if (physicalMaterial.aoMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.aoMap);
+          }
+
+          if (physicalMaterial.emissiveMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.emissiveMap);
+          }
+
+          if (physicalMaterial.normalMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.normalMap);
+          }
+
+          if (physicalMaterial.normalMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.normalMap);
+          }
+
+          if (physicalMaterial.thicknessMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.thicknessMap);
+          }
+
+          if (physicalMaterial.transmissionMap) {
+            rendererModule.renderer.initTexture(physicalMaterial.transmissionMap);
+          }
+
+          physicalMaterial.normalScale.set(
             this.normalTextureScale,
             useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
           );
+
+          material = physicalMaterial;
         } else {
           material = new MeshStandardMaterial(
             removeUndefinedProperties({
@@ -427,6 +458,26 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             this.normalTextureScale,
             useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
           );
+
+          if (material.map) {
+            rendererModule.renderer.initTexture(material.map);
+          }
+
+          if (material.metalnessMap) {
+            rendererModule.renderer.initTexture(material.metalnessMap);
+          }
+
+          if (material.aoMap) {
+            rendererModule.renderer.initTexture(material.aoMap);
+          }
+
+          if (material.emissiveMap) {
+            rendererModule.renderer.initTexture(material.emissiveMap);
+          }
+
+          if (material.normalMap) {
+            rendererModule.renderer.initTexture(material.normalMap);
+          }
         }
 
         patchMaterial(ctx, material);
@@ -445,6 +496,10 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             sizeAttenuation: false,
           })
         );
+
+        if (material.map) {
+          rendererModule.renderer.initTexture(material.map);
+        }
       } else {
         throw new Error(`Unsupported mesh mode ${mode}`);
       }
