@@ -110,12 +110,12 @@ const _q = new Quaternion();
 
 const walkAccel = 100;
 const drag = 10;
-const maxWalkSpeed = 10;
+const maxWalkSpeed = 20;
 const maxSprintSpeed = 50;
 const sprintModifier = 2.5;
 const jumpForce = 7;
-const inAirModifier = 0.5;
-const inAirDrag = 8;
+// const inAirModifier = 0.5;
+const inAirDrag = 6;
 const crouchModifier = 0.7;
 const crouchJumpModifier = 1.5;
 const minSlideSpeed = 3;
@@ -159,15 +159,15 @@ function updateKinematicControls(
 
   _acceleration.set(moveVec[0], 0, -moveVec[1]).normalize().applyQuaternion(_q).multiplyScalar(walkAccel);
 
-  if (!isGrounded) {
-    _acceleration.multiplyScalar(inAirModifier);
-  } else {
-    if (crouch.held && !isSliding) {
-      _acceleration.multiplyScalar(crouchModifier);
-    } else if (sprint.held && !isSliding) {
-      _acceleration.multiplyScalar(sprintModifier);
-    }
+  // if (!isGrounded) {
+  // _acceleration.multiplyScalar(inAirModifier);
+  // } else {
+  if (crouch.held && !isSliding) {
+    _acceleration.multiplyScalar(crouchModifier);
+  } else if (sprint.held && !isSliding) {
+    _acceleration.multiplyScalar(sprintModifier);
   }
+  // }
 
   if (isSprinting) {
     _acceleration.clampLength(0, maxSprintSpeed);
@@ -191,13 +191,18 @@ function updateKinematicControls(
     isSliding = false;
   }
 
+  if (jump.pressed && isGrounded) {
+    const jumpModifier = crouch.held ? crouchJumpModifier : 1;
+    _linearVelocity.y += jumpForce * jumpModifier;
+  }
+
   if (speed !== 0) {
     let dragMultiplier = drag;
 
     if (isSliding) {
       dragMultiplier = slideDrag;
     } else if (!isGrounded) {
-      dragMultiplier = inAirDrag;
+      dragMultiplier = sprint.held ? inAirDrag / 1.5 : inAirDrag;
     }
 
     _dragForce.copy(_linearVelocity).negate().multiplyScalar(dragMultiplier);
@@ -205,11 +210,6 @@ function updateKinematicControls(
     _dragForce.y = 0;
 
     _acceleration.add(_dragForce);
-  }
-
-  if (jump.pressed && isGrounded) {
-    const jumpModifier = crouch.held ? crouchJumpModifier : 1;
-    _acceleration.y += jumpForce * jumpModifier;
   }
 
   _acceleration.multiplyScalar(ctx.dt);
