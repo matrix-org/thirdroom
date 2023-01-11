@@ -112,11 +112,11 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
   name: PropType.string({ default: "AudioSource", script: true }),
   audio: PropType.ref(AudioDataResource, { script: true }),
   gain: PropType.f32({ default: 1, min: 0, script: true }),
-  autoPlay: PropType.bool({ default: true, script: true, mutable: false }),
+  autoPlay: PropType.bool({ default: false, script: true, mutable: false }),
   seek: PropType.f32({ min: 0 }),
   play: PropType.bool({ default: false }),
   playing: PropType.bool({ default: false }),
-  loop: PropType.bool({ default: true, script: true }),
+  loop: PropType.bool({ default: false, script: true }),
   playbackRate: PropType.f32({ default: 1 }),
   // TODO add in currentTime, playing, and duration flags which are set from the main thread
 });

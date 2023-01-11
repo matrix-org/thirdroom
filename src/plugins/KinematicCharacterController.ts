@@ -20,6 +20,8 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { getCamera } from "../engine/camera/camera.game";
+import { playAudio } from "../engine/audio/audio.game";
+import randomRange from "../engine/utils/randomRange";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -131,6 +133,8 @@ let isSliding = false;
 const _slideForce = new Vector3();
 let lastSlideTime = 0;
 
+let lastFootstepFrame = 0;
+
 export function addKinematicControls(ctx: GameState, eid: number) {
   addComponent(ctx.world, KinematicControls, eid);
 }
@@ -222,6 +226,13 @@ function updateKinematicControls(
     const phase = 0;
     const delta = amplitude * Math.sin(2 * Math.PI * time * wavelength + phase);
     camera.position[1] = -delta;
+
+    if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
+      // footstep
+      const i = Math.floor(randomRange(0, 5));
+      playAudio(rig.audioEmitter!.sources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+      lastFootstepFrame = ctx.tick;
+    }
   }
 
   _acceleration.multiplyScalar(ctx.dt);

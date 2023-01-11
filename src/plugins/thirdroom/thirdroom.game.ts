@@ -469,6 +469,27 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
 
   associatePeerWithEntity(network, network.peerId, eid);
 
+  rig.name = network.peerId;
+
+  // setup positional audio emitter for footsteps
+  rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
+    ],
+  });
+
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   // TODO: add Authoring component for authoritatively controlled entities as a host,
   //       use Owned to distinguish actual ownership on all clients
@@ -512,10 +533,22 @@ function loadRemotePlayerRig(
 
   rig.name = peerId;
 
-  // setup positional audio emitter for VoIP
+  // setup positional audio emitter for VoIP & footsteps
   rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
     type: AudioEmitterType.Positional,
     sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
       new RemoteAudioSource(ctx.resourceManager, {
         audio: new RemoteAudioData(ctx.resourceManager, { uri: `mediastream:${peerId}` }),
       }),
