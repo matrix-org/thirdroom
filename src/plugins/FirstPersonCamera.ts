@@ -193,25 +193,26 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    // pitch target on camera, controller is on the parent of the camera
-    const parent = node.parent!.parent;
+    // pitch target on camera, controller is on the parent of the parent of the camera
+    const cameraAnchor = node.parent!.parent!;
+    const container = cameraAnchor.parent;
 
-    if (!parent) {
+    if (!container) {
       continue;
     }
 
-    const controller = getInputController(input, parent.eid);
+    const controller = getInputController(input, container.eid);
     applyPitch(ctx, controller, node);
 
     // network the avatar's camera
     const haveConnectedPeers = network.peers.length > 0;
     const hosting = network.authoritative && isHost(network);
-    const avatar = getAvatar(ctx, parent);
+    const avatar = getAvatar(ctx, container);
     const isOwnedAvatar =
-      avatar && hasComponent(ctx.world, Networked, parent.eid) && hasComponent(ctx.world, Owned, parent.eid);
+      avatar && hasComponent(ctx.world, Networked, container.eid) && hasComponent(ctx.world, Owned, container.eid);
     if (hosting && haveConnectedPeers && isOwnedAvatar) {
-      const camera = getCamera(ctx, parent);
-      const msg = createUpdateCameraMessage(ctx, parent.eid, camera.eid);
+      const camera = getCamera(ctx, container);
+      const msg = createUpdateCameraMessage(ctx, container.eid, camera.eid);
       if (msg.byteLength > 0) {
         broadcastReliable(ctx, network, msg);
       }

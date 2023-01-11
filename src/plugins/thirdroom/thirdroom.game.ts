@@ -124,10 +124,14 @@ const createAvatarRig =
       addKinematicControls(ctx, obj.eid);
     }
 
+    const cameraAnchor = new RemoteNode(ctx.resourceManager);
+    cameraAnchor.name = "Avatar Camera Anchor";
+    cameraAnchor.position[1] = 1.2;
+    addChild(getObjectPrivateRoot(obj), cameraAnchor);
+
     const camera = createCamera(ctx);
     camera.name = "Avatar Camera";
-    camera.position[1] = 1.2;
-    addChild(getObjectPrivateRoot(obj), camera);
+    addChild(cameraAnchor, camera);
     addCameraYawTargetComponent(ctx.world, obj);
     addCameraPitchTargetComponent(ctx.world, camera);
 
