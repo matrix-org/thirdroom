@@ -142,13 +142,15 @@ export function addKinematicControls(ctx: GameState, eid: number) {
 
 function updateKinematicControls(
   ctx: GameState,
-  { physicsWorld, characterController, collisionHandlers, handleToEid, characterCollision }: PhysicsModuleState,
+  { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
   rig: RemoteNode,
   body: RAPIER.RigidBody
 ) {
   _q.fromArray(rig.quaternion);
   body.setNextKinematicRotation(_q);
+
+  const characterController = eidTocharacterController.get(rig.eid)!;
 
   // Handle Input
   const moveVec = actionStates.get(KinematicCharacterControllerActions.Move) as Float32Array;
@@ -157,6 +159,11 @@ function updateKinematicControls(
   const sprint = actionStates.get(KinematicCharacterControllerActions.Sprint) as ButtonActionState;
 
   _linearVelocity.copy(body.linvel() as Vector3);
+
+  // HACK - for when autostep misbehaves and spikes Y velocity
+  if (_linearVelocity.y > 10) {
+    _linearVelocity.y = 1;
+  }
 
   const isGrounded = characterController.computedGrounded();
   const isSprinting = isGrounded && sprint.held && !isSliding;
@@ -184,7 +191,7 @@ function updateKinematicControls(
   if (isGrounded) {
     _acceleration.y = 0;
   } else {
-    _acceleration.y = physicsWorld.gravity.y;
+    _acceleration.y = physicsWorld.gravity.y * 1.5;
   }
 
   // TODO: Check to see if velocity matches orientation before sliding
@@ -223,9 +230,9 @@ function updateKinematicControls(
     const camera = getCamera(ctx, rig);
     const amplitude = 0.04;
     const time = ctx.elapsed;
-    const wavelength = isSprinting ? 0.0025 : 0.0015;
+    const frequency = isSprinting ? 0.003 : 0.0015; // radians per second
     const phase = 0;
-    const delta = amplitude * Math.sin(2 * Math.PI * time * wavelength + phase);
+    const delta = amplitude * Math.sin(2 * Math.PI * time * frequency + phase);
     camera.position[1] = -delta;
 
     if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
@@ -285,6 +292,16 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
 
   if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
     return;
+  }
+
+  const entered = enteredKinematicControlsQuery(ctx.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    const characterController = physics.physicsWorld.createCharacterController(0.1);
+    characterController.enableAutostep(0.2, 0.2, true);
+    characterController.enableSnapToGround(0.3);
+    characterController.setApplyImpulsesToDynamicBodies(true);
+    physics.eidTocharacterController.set(eid, characterController);
   }
 
   const rigs = kinematicControlsQuery(ctx.world);

@@ -501,7 +501,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   addComponent(ctx.world, Player, peid);
 
-  const peerNode = getRemoteResource<RemoteNode>(ctx, peid) || new RemoteNode(ctx.resourceManager);
+  const peerNode = getRemoteResource<RemoteNode>(ctx, peid)!; // || new RemoteNode(ctx.resourceManager);
 
   if (peerId !== network.peerId) {
     // if not our own avatar, add voip
@@ -509,6 +509,18 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
       type: AudioEmitterType.Positional,
       sources: [
+        new RemoteAudioSource(ctx.resourceManager, {
+          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+        }),
+        new RemoteAudioSource(ctx.resourceManager, {
+          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+        }),
+        new RemoteAudioSource(ctx.resourceManager, {
+          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+        }),
+        new RemoteAudioSource(ctx.resourceManager, {
+          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+        }),
         new RemoteAudioSource(ctx.resourceManager, {
           audio: new RemoteAudioData(ctx.resourceManager, {
             uri: `mediastream:${peerId}`,
@@ -528,10 +540,9 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
     removeComponent(ctx.world, Networked, old);
+    // embody new avatar
+    embodyAvatar(ctx, physics, input, peerNode);
   }
-
-  // embody new avatar
-  embodyAvatar(ctx, physics, input, peerNode);
 
   return data;
 }
