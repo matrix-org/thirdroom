@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
+import { Room, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
@@ -19,6 +19,7 @@ import { Text } from "../../../atoms/text/Text";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useUnknownWorldPath } from "../../../hooks/useWorld";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
+import { useUpdateScene } from "../../../hooks/useUpdateScene";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -96,13 +97,107 @@ function JoinWorldCard({ worldIdOrAlias }: { worldIdOrAlias: string }) {
   );
 }
 
-export function WorldPreview() {
+function EnterWorldButton({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
   const micPermission = usePermissionState("microphone");
   const requestStream = useStreamRequest(platform, micPermission);
   const [micException, setMicException] = useState<RequestException>();
-
   const { enterWorld } = useWorldAction(session);
+  const [needsUpdate, setNeedsUpdate] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { checkForUpdate, updateScene } = useUpdateScene(session, room);
+
+  const handleLoadWorld = () => {
+    enterWorld(room.id);
+  };
+
+  const handleEnterWorld = async (checkUpdate = false) => {
+    setNeedsUpdate(false);
+    setMicException(undefined);
+    setLoading(true);
+
+    if (checkUpdate && (await checkForUpdate())) {
+      setNeedsUpdate(true);
+      setLoading(false);
+      return;
+    }
+    if (micPermission === "granted") {
+      setLoading(false);
+      handleLoadWorld();
+      return;
+    }
+    const [stream, exception] = await requestStream(true, false);
+    if (stream) {
+      stream.getAudioTracks().forEach((track) => track.stop());
+      setLoading(false);
+      handleLoadWorld();
+    }
+    if (exception) {
+      setMicException(exception);
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateScene = async () => {
+    setLoading(true);
+    setNeedsUpdate(false);
+    await updateScene();
+    handleEnterWorld();
+  };
+
+  return (
+    <>
+      {micException && (
+        <AlertDialog
+          open={!!micException}
+          title="Microphone"
+          content={
+            <div className="flex flex-column gap-xs">
+              <Text variant="b2">{exceptionToString(micException)}</Text>
+              <Text variant="b2">
+                Connecting to other users may be unreliable without microphone access. We intend to fix this in the near
+                future.
+              </Text>
+            </div>
+          }
+          buttons={
+            <Button fill="outline" onClick={handleLoadWorld}>
+              Enter without Microphone
+            </Button>
+          }
+          requestClose={() => setMicException(undefined)}
+        />
+      )}
+      {needsUpdate && (
+        <AlertDialog
+          open={!!needsUpdate}
+          requestClose={() => setNeedsUpdate(false)}
+          title="Update Scene"
+          content={
+            <div className="flex flex-column gap-xs">
+              <Text variant="b2">New version of your world scene is available.</Text>
+            </div>
+          }
+          buttons={
+            <div className="flex flex-column gap-xs">
+              <Button onClick={handleUpdateScene}>Update</Button>
+              <Button fill="outline" onClick={() => handleEnterWorld()}>
+                Enter without Update
+              </Button>
+            </div>
+          }
+        />
+      )}
+      <Button size="lg" variant="primary" disabled={loading} onClick={() => handleEnterWorld(true)}>
+        {loading ? "Entering..." : "Enter World"}
+      </Button>
+    </>
+  );
+}
+
+export function WorldPreview() {
+  const { session } = useHydrogen(true);
 
   const worldId = useStore((state) => state.world.worldId);
   const { selectedWorldId } = useStore((state) => state.overlayWorld);
@@ -119,11 +214,6 @@ export function WorldPreview() {
     error: roomStatusError,
     value: roomStatus,
   } = useRoomStatus(session, previewWorldId);
-
-  const handleLoadWorld = () => {
-    if (!selectedWorldId) return;
-    enterWorld(selectedWorldId);
-  };
 
   return (
     <div className="WorldPreview grow flex flex-column justify-end items-center">
@@ -164,54 +254,14 @@ export function WorldPreview() {
           return <WorldPreviewCard title="Room Archived" />;
         } else if (roomStatus & RoomStatus.Joined) {
           return (
-            <WorldPreviewCard
-              title={room?.name || "Unnamed Room"}
-              memberCount={room?.joinedMemberCount || 0}
-              onMembersClick={() => setIsMemberDialog(true)}
-              options={
-                <>
-                  {micException && (
-                    <AlertDialog
-                      open={!!micException}
-                      title="Microphone"
-                      content={
-                        <div className="flex flex-column gap-xs">
-                          <Text variant="b2">{exceptionToString(micException)}</Text>
-                          <Text variant="b2">
-                            Connecting to other users may be unreliable without microphone access. We intend to fix this
-                            in the near future.
-                          </Text>
-                        </div>
-                      }
-                      buttons={
-                        <Button fill="outline" onClick={handleLoadWorld}>
-                          Enter without Microphone
-                        </Button>
-                      }
-                      requestClose={() => setMicException(undefined)}
-                    />
-                  )}
-                  <Button
-                    size="lg"
-                    variant="primary"
-                    onClick={async () => {
-                      if (micPermission === "granted") {
-                        handleLoadWorld();
-                        return;
-                      }
-                      const [stream, exception] = await requestStream(true, false);
-                      if (stream) {
-                        stream.getAudioTracks().forEach((track) => track.stop());
-                        handleLoadWorld();
-                      }
-                      if (exception) setMicException(exception);
-                    }}
-                  >
-                    Enter World
-                  </Button>
-                </>
-              }
-            />
+            room && (
+              <WorldPreviewCard
+                title={room?.name || "Unnamed Room"}
+                memberCount={room?.joinedMemberCount || 0}
+                onMembersClick={() => setIsMemberDialog(true)}
+                options={<EnterWorldButton room={room} />}
+              />
+            )
           );
         }
 

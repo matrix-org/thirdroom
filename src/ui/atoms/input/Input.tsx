@@ -12,7 +12,7 @@ interface IInput {
   inputSize?: "sm" | "md" | "lg";
   state?: "success" | "error";
   value?: string | number;
-  defaultValue?: string;
+  defaultValue?: string | number;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
   onKeyUp?: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -60,6 +60,7 @@ export function Input({
     <div className={inputClass}>
       {before}
       <input
+        data-ui-state={state}
         id={id}
         name={name}
         placeholder={placeholder}
