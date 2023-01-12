@@ -233,6 +233,8 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
 
     let texture;
 
+    let isRGBE = false;
+
     if (this.source.texture) {
       texture = this.source.texture;
       // TODO: Can we determine texture encoding when applying to the material?
@@ -248,15 +250,20 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
     } else {
       // TODO: RGBE texture encoding should be set in the glTF loader using an extension
       texture = createDataTextureFromRGBE(this.source.image as RGBE);
+      isRGBE = true;
     }
 
     const sampler = this.sampler;
 
     if (sampler) {
-      texture.magFilter = ThreeMagFilters[sampler.magFilter];
-      texture.minFilter = ThreeMinFilters[sampler.minFilter];
-      texture.wrapS = ThreeWrappings[sampler.wrapS];
-      texture.wrapT = ThreeWrappings[sampler.wrapT];
+      // TODO: RGBE background texture needs to use correct texture sampler parameters
+      if (!isRGBE) {
+        texture.magFilter = ThreeMagFilters[sampler.magFilter];
+        texture.minFilter = ThreeMinFilters[sampler.minFilter];
+        texture.wrapS = ThreeWrappings[sampler.wrapS];
+        texture.wrapT = ThreeWrappings[sampler.wrapT];
+      }
+
       texture.mapping = ThreeMapping[sampler.mapping];
     } else {
       texture.magFilter = LinearFilter;
@@ -690,7 +697,6 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   object3DVisible = true;
 
   dispose() {
-    console.log("dispose render node", this.eid);
     if (this.meshPrimitiveObjects) {
       for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
         const primitive = this.meshPrimitiveObjects[i];
