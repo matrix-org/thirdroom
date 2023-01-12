@@ -237,7 +237,9 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
       const activeSource = activeSources[j];
 
       if (!nextSources.some((source) => activeSource.eid === source.eid)) {
-        activeSource.gainNode!.disconnect(audioEmitter.inputGain!);
+        try {
+          activeSource.gainNode!.disconnect(audioEmitter.inputGain!);
+        } catch {}
         activeSources.splice(j, 1);
       }
     }
@@ -327,7 +329,9 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
   // If emitter changed
   if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId && node.emitterInputNode && node.emitterPannerNode) {
-    node.emitterInputNode.disconnect(node.emitterPannerNode);
+    try {
+      node.emitterInputNode.disconnect(node.emitterPannerNode);
+    } catch {}
     node.emitterPannerNode.disconnect();
     node.emitterInputNode = undefined;
     node.emitterPannerNode = undefined;
