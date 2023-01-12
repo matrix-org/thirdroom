@@ -163,13 +163,15 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const world = roomId ? session.rooms.get(roomId) : undefined;
   const [creator, setCreator] = useState<string>();
 
-  if (roomId && prevRoomId !== roomId) {
-    closeOverlay();
-  }
+  useEffect(() => {
+    if (roomId && prevRoomId !== roomId) {
+      closeOverlay();
+    }
 
-  if (!roomId && prevRoomId) {
-    openOverlay();
-  }
+    if (!roomId && prevRoomId) {
+      openOverlay();
+    }
+  }, [roomId, prevRoomId, openOverlay, closeOverlay]);
 
   const loadWorld = useLoadWorld();
   const enterWorld = useEnterWorld();
