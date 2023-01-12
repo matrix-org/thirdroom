@@ -139,8 +139,6 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
 
   let promise = resourceManager.getCachedGLTF(url.href);
 
-  console.log("loadGLTF", url.href, !!promise);
-
   if (promise) {
     return promise;
   }
@@ -196,7 +194,6 @@ export function GLTFResourceDisposalSystem(ctx: GameState) {
     const gltfResource = GLTFResourceComponent.get(eid);
 
     if (gltfResource) {
-      console.log("dispose GLTFResource", gltfResource.url);
       removeGLTFResourceRef(gltfResource);
       GLTFResourceComponent.delete(eid);
     }
@@ -209,14 +206,18 @@ export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
   return node;
 }
 
-export async function loadDefaultGLTFScene(ctx: GameState, resource: GLTFResource, options?: GLTFSceneOptions) {
+export async function loadDefaultGLTFScene(
+  ctx: GameState,
+  resource: GLTFResource,
+  options?: GLTFSceneOptions & GLTFLoaderOptions
+) {
   const defaultSceneIndex = resource.root.scene;
 
   if (defaultSceneIndex === undefined) {
     throw new Error("glTF file has no default scene");
   }
 
-  const loaderCtx = createGLTFLoaderContext(ctx, resource);
+  const loaderCtx = createGLTFLoaderContext(ctx, resource, options);
   const scene = await loadGLTFScene(loaderCtx, defaultSceneIndex, options);
   await postLoad(loaderCtx, scene);
   addGLTFResourceComponent(ctx.world, scene.eid, resource);
@@ -347,11 +348,16 @@ async function loadGLTFJSON(
   return resource;
 }
 
+export interface GLTFLoaderOptions {
+  audioOutput?: AudioEmitterOutput;
+  createDefaultMeshColliders?: boolean;
+}
+
 /**
  * Context used for the loading of a Scene / Node hierarchy.
  * tempCache is only used for resources that are referenced when building this hierarchy
  */
-export interface GLTFLoaderContext {
+export type GLTFLoaderContext = {
   ctx: GameState;
   resource: GLTFResource;
   nodeIndexMap: Map<RemoteNode, number>;
@@ -359,10 +365,13 @@ export interface GLTFLoaderContext {
   nodeToObject3D: Map<RemoteNode, Object3D>;
   tempCache: Map<string, GLTFSubresourceCache>;
   postLoadCallbacks: GLTFPostLoadCallback[];
-  audioOutput?: AudioEmitterOutput;
-}
+} & GLTFLoaderOptions;
 
-const createGLTFLoaderContext = (ctx: GameState, resource: GLTFResource): GLTFLoaderContext => ({
+const createGLTFLoaderContext = (
+  ctx: GameState,
+  resource: GLTFResource,
+  options?: GLTFLoaderOptions
+): GLTFLoaderContext => ({
   ctx,
   resource,
   nodeMap: new Map(),
@@ -370,6 +379,7 @@ const createGLTFLoaderContext = (ctx: GameState, resource: GLTFResource): GLTFLo
   nodeToObject3D: new Map(),
   tempCache: new Map(),
   postLoadCallbacks: [],
+  ...options,
 });
 
 /**
@@ -960,6 +970,12 @@ const loadGLTFNode = createInstancedSubresourceLoader(
 
       if (extensions?.MOZ_hubs_components) {
         loadGLTFHubsComponents(loaderCtx, extensions.MOZ_hubs_components, node);
+      } else if (
+        loaderCtx.createDefaultMeshColliders &&
+        node.mesh &&
+        !(resource.root.extensionsUsed && resource.root.extensionsUsed.includes("OMI_collider"))
+      ) {
+        addTrimeshFromMesh(loaderCtx, node, node.mesh);
       }
 
       if (extensions?.MX_spawn_point) {

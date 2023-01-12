@@ -55,8 +55,6 @@ export function createDataTextureFromRGBE(texData: RGBE) {
   texture.generateMipmaps = false;
   texture.flipY = true;
 
-  console.log({ header: texData.header, gamma: texData.gamma, exposure: texData.exposure });
-
   return texture;
 }
 
