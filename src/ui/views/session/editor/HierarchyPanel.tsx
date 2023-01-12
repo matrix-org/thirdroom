@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import classNames from "classnames";
 import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
@@ -13,6 +12,14 @@ import {
   setSelectedEntity,
   toggleSelectedEntity,
 } from "../../../../engine/editor/editor.main";
+import { HierarchyNode, HierarchyNodeContent, HierarchyNodeDropTarget, HierarchyNodeLeafSpacer } from "./HierarchyNode";
+import { IconButton } from "../../../atoms/button/IconButton";
+import TriangleRightIC from "../../../../../res/ic/triangle-right.svg";
+import TriangleBottomIC from "../../../../../res/ic/triangle-bottom.svg";
+import CircleIC from "../../../../../res/ic/circle.svg";
+import LanguageIC from "../../../../../res/ic/language.svg";
+import { Text } from "../../../atoms/text/Text";
+import { Icon } from "../../../atoms/icon/Icon";
 
 enum DnDItemTypes {
   Node = "node",
@@ -198,63 +205,64 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
         }) => {
           return (
             <li {...listItemProps}>
-              <div
-                {...dragContainerProps}
-                className={classNames("HierarchyPanel__node", {
-                  "HierarchyPanel__node--root": depth === 0,
-                  "HierarchyPanel__node--selected": isSelected,
-                  "HierarchyPanel__node--active": isActive,
-                })}
+              <HierarchyNode
+                depth={depth}
+                selected={isSelected}
+                active={isActive}
+                nodeRef={dragContainerProps.ref}
+                onMouseDown={dragContainerProps.onMouseDown}
+                onKeyDown={dragContainerProps.onKeyDown}
+                tabIndex={dragContainerProps.tabIndex}
               >
-                <div
-                  ref={beforeDropTargetRef}
-                  className={classNames("HierarchyPanel__drop-target", "HierarchyPanel__drop-target--before", {
-                    "HierarchyPanel__drop-target--accept":
-                      beforeDropTargetState.canDrop && beforeDropTargetState.isOver,
-                  })}
+                <HierarchyNodeDropTarget
+                  placement="before"
+                  dropTargetRef={beforeDropTargetRef}
+                  canDrop={beforeDropTargetState.canDrop}
+                  isOver={beforeDropTargetState.isOver}
                 />
-                <div
-                  ref={onDropTargetRef}
-                  className="HierarchyPanel__node-content"
-                  style={{ paddingLeft: depth * 8 + 2 }}
+                <HierarchyNodeContent
+                  className="grow flex items-center"
+                  dropTargetRef={onDropTargetRef}
+                  isOver={onDropTargetState.isOver}
+                  canDrop={onDropTargetState.canDrop}
                 >
-                  {isLeaf ? (
-                    <div className="HierarchyPanel__leaf-spacer" />
+                  {isLeaf || depth === 0 ? (
+                    <HierarchyNodeLeafSpacer />
                   ) : (
-                    <button
+                    <IconButton
+                      size="sm"
+                      variant={isSelected ? "on-primary" : "surface"}
+                      label={isExpanded ? "Collapse" : "Expand"}
+                      iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
                       {...toggleProps}
-                      className={classNames("HierarchyPanel__node-toggle", {
-                        "HierarchyPanel__node-toggle--expanded": isExpanded,
-                      })}
                     />
                   )}
-                  <div className="HierarchyPanel__node-select-target">
-                    <div className="HierarchyPanel__node-icon" />
-                    <div className="HierarchyPanel__node-label-container">
-                      {isRenaming ? (
-                        <div className="HierarchyPanel__rename-input-container">
-                          <input {...nameInputProps} className="HierarchyPanel__rename-input" />
-                        </div>
-                      ) : (
-                        <div
-                          className={classNames("HierarchyPanel__node-label", {
-                            "HierarchyPanel__node-label--accept-drop":
-                              onDropTargetState.canDrop && onDropTargetState.isOver,
-                          })}
-                        >
+                  <div className="flex items-center gap-xs">
+                    {isRenaming ? (
+                      <div>
+                        <input {...nameInputProps} />
+                      </div>
+                    ) : (
+                      <>
+                        <Icon
+                          color={isSelected ? "on-primary" : "surface"}
+                          size="sm"
+                          src={depth > 0 ? CircleIC : LanguageIC}
+                        />
+                        <Text color={isSelected ? "on-primary" : "surface"} variant="b2" weight="medium">
                           {name}
-                        </div>
-                      )}
-                    </div>
+                        </Text>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div
-                  ref={afterDropTargetRef}
-                  className={classNames("HierarchyPanel__drop-target", "HierarchyPanel__drop-target--after", {
-                    "HierarchyPanel__drop-target--accept": afterDropTargetState.canDrop && afterDropTargetState.isOver,
-                  })}
+                </HierarchyNodeContent>
+                <HierarchyNodeDropTarget
+                  placement="after"
+                  dropTargetRef={afterDropTargetRef}
+                  canDrop={afterDropTargetState.canDrop}
+                  isOver={afterDropTargetState.isOver}
                 />
-              </div>
+              </HierarchyNode>
             </li>
           );
         }}
