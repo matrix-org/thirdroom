@@ -45,7 +45,7 @@ import { NetworkAction } from "./NetworkAction";
 import { GameInputModule, InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
 import { setActiveCamera } from "../camera/camera.game";
-import { getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
+import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
@@ -61,6 +61,7 @@ import {
   RemoteNode,
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
+import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -480,6 +481,7 @@ export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipe
 
   return data;
 };
+
 export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
@@ -525,12 +527,15 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
           audio: new RemoteAudioData(ctx.resourceManager, {
             uri: `mediastream:${peerId}`,
           }),
+          autoPlay: true,
         }),
       ],
     });
     peerNode.nametag = new RemoteNametag(ctx.resourceManager, {
       name: peerId,
     });
+
+    addNametag(ctx, AVATAR_HEIGHT, peerNode, peerId);
   }
 
   // if our own avatar
@@ -540,6 +545,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
     removeComponent(ctx.world, Networked, old);
+
     // embody new avatar
     embodyAvatar(ctx, physics, input, peerNode);
   }

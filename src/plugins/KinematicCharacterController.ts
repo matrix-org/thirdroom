@@ -237,8 +237,11 @@ function updateKinematicControls(
 
     if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
       // footstep
-      const i = Math.floor(randomRange(0, 4));
-      playAudio(rig.audioEmitter!.sources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+      const audioSources = rig.audioEmitter!.sources.filter((s) => s.audio?.uri.includes("footstep"));
+      if (audioSources.length) {
+        const i = Math.floor(randomRange(0, audioSources.length));
+        playAudio(audioSources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+      }
       lastFootstepFrame = ctx.tick;
     }
   }
