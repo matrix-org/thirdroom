@@ -1,4 +1,4 @@
-export const maxEntities = 10000;
+export const maxEntities = 50000;
 
 export const tickRate = 60;
 
