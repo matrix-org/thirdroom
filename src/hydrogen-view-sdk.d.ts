@@ -2130,6 +2130,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       content: Record<string, any>,
       options?: BaseRequestOptions
     ): IHomeServerRequest;
+    event(roomId: string, eventId: string, options?: BaseRequestOptions): IHomeServerRequest;
     redact(
       roomId: string,
       eventId: string,
@@ -2739,4 +2740,6 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     getAllUserIds(roomId: string): Promise<string[]>;
     removeAllForRoom(roomId: string): void;
   }
+
+  export function makeTxnId(): string;
 }

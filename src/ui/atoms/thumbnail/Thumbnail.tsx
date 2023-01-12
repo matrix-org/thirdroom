@@ -5,17 +5,24 @@ import "./Thumbnail.css";
 interface ThumbnailProps {
   className?: string;
   bgColor?: string;
-  size?: "md" | "sm";
+  size?: "lg" | "md" | "sm";
   outlined?: boolean;
-  children: ReactNode;
+  wide?: boolean;
+  children?: ReactNode;
 }
 
-export function Thumbnail({ className, bgColor, size = "md", outlined, children }: ThumbnailProps) {
+export function Thumbnail({ className, bgColor, size = "md", outlined, wide, children }: ThumbnailProps) {
   const style: CSSProperties = {};
   if (bgColor) style.backgroundColor = bgColor;
   return (
     <div
-      className={classNames("Thumbnail", `Thumbnail--${size}`, { "Thumbnail--outlined": outlined }, className)}
+      className={classNames(
+        "Thumbnail",
+        `Thumbnail--${size}`,
+        { "Thumbnail--outlined": outlined },
+        { "Thumbnail--wide": wide },
+        className
+      )}
       style={style}
     >
       {children}
