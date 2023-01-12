@@ -27,7 +27,7 @@ export interface AuthenticatedHydrogenContext extends HydrogenContext {
   profileRoom: Room;
 }
 
-const HydrogenContext = createContext<HydrogenContext | undefined>(undefined);
+export const HydrogenContext = createContext<HydrogenContext | undefined>(undefined);
 
 export const HydrogenContextProvider = HydrogenContext.Provider;
 

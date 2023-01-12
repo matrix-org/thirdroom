@@ -1,0 +1,11 @@
+.DiscoverAdmin__content {
+  padding: var(--sp-md);
+  max-width: 660px;
+  margin: 0 auto;
+
+  & .FeaturedItem {
+    padding: var(--sp-sm) 0;
+    min-height: 80px;
+    border-bottom: 1px solid var(--bg-surface-low);
+  }
+}

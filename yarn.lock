@@ -1049,10 +1049,10 @@
     "@thi.ng/checks" "^3.3.1"
     "@thi.ng/errors" "^2.2.2"
 
-"@thirdroom/hydrogen-view-sdk@0.0.27":
-  version "0.0.27"
-  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.27.tgz#ea3bd049c17d6146addb2e887248931fb37202e1"
-  integrity sha512-csLBuRxOfz3rYkeSbZobaUKBma+QkOtul+sUPqMW4e6dCCPIvNeuhb/hiF79rPA1VpB3UTlOKzpRp5fldeaTRA==
+"@thirdroom/hydrogen-view-sdk@0.0.29":
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.29.tgz#2dc2d903d95da8119e2bb08e63ebcb3edf23e1d3"
+  integrity sha512-8iv/RmKl+ipJejVQplehsPlwXZqEvL5n7Rr0n7W0RpzgOn2d0Rn34bdvezqpuoMlMeM89n7xPypJOw6QhQhfhg==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.8.tgz"
     another-json "^0.2.0"
