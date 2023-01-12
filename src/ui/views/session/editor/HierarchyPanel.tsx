@@ -233,7 +233,7 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
                 ) : (
                   <IconButton
                     size="sm"
-                    variant={isSelected ? "on-primary" : "surface"}
+                    variant={isSelected ? "primary" : "surface"}
                     label={isExpanded ? "Collapse" : "Expand"}
                     iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
                     {...toggleProps}
@@ -247,11 +247,11 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
                   ) : (
                     <>
                       <Icon
-                        color={isSelected ? "on-primary" : "surface"}
+                        color={isSelected ? "primary" : "surface"}
                         size="sm"
                         src={depth > 0 ? CircleIC : LanguageIC}
                       />
-                      <Text color={isSelected ? "on-primary" : "surface"} variant="b2" weight="medium">
+                      <Text color={isSelected ? "primary" : "surface"} variant="b2" weight="medium">
                         {name}
                       </Text>
                     </>
@@ -281,8 +281,8 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
   const [tab, setTab] = useState(HierarchyTab.Scenes);
 
   return (
-    <div className="HierarchyPanel">
-      <HierarchyHeader>
+    <div className="HierarchyPanel flex flex-column">
+      <HierarchyHeader className="shrink-0">
         <HierarchyHeaderTab active={tab === HierarchyTab.Scenes} onClick={() => setTab(HierarchyTab.Scenes)}>
           <Icon color={tab === HierarchyTab.Scenes ? "primary" : "surface"} size="sm" src={TreeIC} />
           <Text color={tab === HierarchyTab.Scenes ? "primary" : "surface"} variant="b2" weight="semi-bold">
@@ -296,9 +296,11 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
           </Text>
         </HierarchyHeaderTab>
       </HierarchyHeader>
-      {tab === HierarchyTab.Scenes && (
-        <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
-      )}
+      <div className="grow">
+        {tab === HierarchyTab.Scenes && (
+          <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
+        )}
+      </div>
     </div>
   );
 }

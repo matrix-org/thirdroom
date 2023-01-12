@@ -3,8 +3,8 @@ import { MouseEventHandler, ReactNode } from "react";
 
 import "./HierarchyHeader.css";
 
-export function HierarchyHeader({ children }: { children: ReactNode }) {
-  return <div className="HierarchyHeader">{children}</div>;
+export function HierarchyHeader({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={classNames("HierarchyHeader", className)}>{children}</div>;
 }
 
 export function HierarchyHeaderTab({
