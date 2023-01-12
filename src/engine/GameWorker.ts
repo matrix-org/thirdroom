@@ -1,4 +1,4 @@
-import { addEntity, createWorld } from "bitecs";
+import { addEntity, createWorld, enableManualEntityRecycling, flushRemovedEntities } from "bitecs";
 
 import { SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
@@ -39,6 +39,8 @@ async function onInit({
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);
+
+  enableManualEntityRecycling(world);
 
   // noop entity
   addEntity(world);
@@ -153,6 +155,8 @@ function update(ctx: GameState) {
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
+
+  flushRemovedEntities(ctx.world);
 
   swapWriteBufferFlags(ctx.gameToMainTripleBufferFlags);
   swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);
