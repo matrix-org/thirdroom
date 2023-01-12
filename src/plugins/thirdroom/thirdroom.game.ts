@@ -113,7 +113,6 @@ const createAvatarRig =
     const obj = createRemoteObject(ctx, rig);
 
     addComponent(ctx.world, AvatarComponent, rig.eid);
-    rig.position.set([0, -1, 0]);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.scale.set([1.3, 1.3, 1.3]);
 
@@ -129,7 +128,7 @@ const createAvatarRig =
 
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
-    cameraAnchor.position[1] = 1.2;
+    cameraAnchor.position[1] = AVATAR_HEIGHT;
     addChild(getObjectPrivateRoot(obj), cameraAnchor);
 
     const camera = createCamera(ctx);

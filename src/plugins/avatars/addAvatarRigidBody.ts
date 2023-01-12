@@ -26,11 +26,10 @@ export function addAvatarRigidBody(
 
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius).setActiveEvents(
-    RAPIER.ActiveEvents.COLLISION_EVENTS
-  );
-
-  colliderDesc.setCollisionGroups(collisionGroup);
+  const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(collisionGroup)
+    .setTranslation(0, height / 2, 0);
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 

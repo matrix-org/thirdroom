@@ -14,7 +14,7 @@ export function spawnEntity(
 ) {
   const spawnWorldMatrix = spawnPoints[spawnPointIndex].worldMatrix;
   const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
-  spawnPosition[1] += 5;
+  spawnPosition[1] += 1;
   const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
   isolateQuaternionAxis(spawnQuaternion, Axes.Y);
 
