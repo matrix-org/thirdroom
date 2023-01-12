@@ -13,6 +13,7 @@ import {
   EnteredWorldMessage,
   EnterWorldErrorMessage,
   EnterWorldMessage,
+  FindResourceRetainersMessage,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
@@ -43,6 +44,13 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
     registerThirdroomGlobalFn("printResources", () => {
       ctx.sendMessage<PrintResourcesMessage>(Thread.Game, {
         type: ThirdRoomMessageType.PrintResources,
+      });
+    });
+
+    registerThirdroomGlobalFn("findResourceRetainers", (resourceId) => {
+      ctx.sendMessage<FindResourceRetainersMessage>(Thread.Game, {
+        type: ThirdRoomMessageType.FindResourceRetainers,
+        resourceId,
       });
     });
   },

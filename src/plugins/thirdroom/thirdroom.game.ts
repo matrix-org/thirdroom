@@ -28,6 +28,7 @@ import {
   PrintResourcesMessage,
   EnteredWorldMessage,
   EnterWorldErrorMessage,
+  FindResourceRetainersMessage,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
@@ -93,6 +94,7 @@ import { CharacterControllerType, SceneCharacterControllerComponent } from "../C
 import { addNametag } from "../nametags/nametags.game";
 import { AvatarComponent } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
+import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 
 type ThirdRoomModuleState = {};
 
@@ -179,6 +181,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
+      registerMessageHandler(ctx, ThirdRoomMessageType.FindResourceRetainers, onFindResourceRetainers),
     ];
 
     await loadGLTF(ctx, "/gltf/full-animation-rig.glb");
@@ -342,6 +345,18 @@ function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
   }
 
   console.log(resourceMap);
+}
+
+function onFindResourceRetainers(ctx: GameState, message: FindResourceRetainersMessage) {
+  const { refs, refCount } = findResourceRetainers(ctx, message.resourceId);
+  const roots = findResourceRetainerRoots(ctx, message.resourceId);
+
+  console.log({
+    resourceId: message.resourceId,
+    refCount,
+    refs,
+    roots,
+  });
 }
 
 async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {

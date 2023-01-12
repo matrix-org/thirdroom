@@ -78,6 +78,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
     }
 
     const resource = this.resources[index];
+    this.resources.splice(index, 1);
 
     const schema = resource.constructor.resourceDef.schema;
 

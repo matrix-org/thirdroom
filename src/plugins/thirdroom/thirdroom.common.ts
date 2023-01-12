@@ -13,6 +13,7 @@ export enum ThirdRoomMessageType {
   GLTFViewerLoaded = "gltf-viewer-loaded",
   GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
+  FindResourceRetainers = "find-resource-retainers",
 }
 
 export interface EnterWorldMessage {
@@ -82,4 +83,9 @@ export interface GLTFViewerLoadedMessage {
 export interface GLTFViewerLoadErrorMessage {
   type: ThirdRoomMessageType.GLTFViewerLoadError;
   error: string;
+}
+
+export interface FindResourceRetainersMessage {
+  type: ThirdRoomMessageType.FindResourceRetainers;
+  resourceId: number;
 }
