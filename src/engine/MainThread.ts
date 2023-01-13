@@ -4,9 +4,8 @@ import { BaseThreadContext, Message, registerModules, Thread } from "./module/mo
 import mainThreadConfig from "./config.main";
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
-import { getLocalResources, MainWorld } from "./resource/resource.main";
+import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
 import { waitUntil } from "./utils/waitUntil";
-import { RenderWorld } from "./resource/resource.render";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -109,7 +108,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   const disposeModules = await moduleLoaderPromise;
 
-  ctx.worldResource = await waitUntil(() => getLocalResources(ctx, RenderWorld)[0]);
+  ctx.worldResource = await waitUntil(() => {
+    ResourceLoaderSystem(ctx);
+    return getLocalResources(ctx, MainWorld)[0];
+  });
 
   /* Update loop */
 

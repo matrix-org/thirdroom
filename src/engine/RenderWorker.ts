@@ -3,7 +3,7 @@ import { Message, registerModules, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
 import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
-import { getLocalResources, RenderWorld } from "./resource/resource.render";
+import { getLocalResources, RenderWorld, ResourceLoaderSystem } from "./resource/resource.render";
 import { waitUntil } from "./utils/waitUntil";
 
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
@@ -108,7 +108,10 @@ async function onInit(
 
   await modulePromise;
 
-  ctx.worldResource = await waitUntil(() => getLocalResources(ctx, RenderWorld)[0]);
+  ctx.worldResource = await waitUntil(() => {
+    ResourceLoaderSystem(ctx);
+    return getLocalResources(ctx, RenderWorld)[0];
+  });
 
   console.log("RenderWorker initialized");
 

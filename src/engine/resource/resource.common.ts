@@ -1,6 +1,6 @@
 import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { NOOP } from "../config.common";
-import { defineModule, Thread, registerMessageHandler, getModule, BaseThreadContext } from "../module/module.common";
+import { defineModule, Thread, getModule, BaseThreadContext } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import {
@@ -11,6 +11,7 @@ import {
 } from "./ResourceDefinition";
 import { LocalResource } from "./ResourceDefinition";
 import { defineLocalResourceClass } from "./LocalResourceClass";
+import { createMessageQueueConsumer } from "./MessageQueue";
 
 export type ResourceId = number;
 
@@ -83,6 +84,11 @@ export class ResourceDisposedError extends Error {}
 export const createLocalResourceModule = <ThreadContext extends BaseThreadContext>(
   resourceDefinitions: ILocalResourceConstructor<ThreadContext>[]
 ) => {
+  const [drainResourceMessages, registerResourceMessageHandler] = createMessageQueueConsumer<
+    ThreadContext,
+    CreateResourceMessage
+  >(ResourceMessageType.LoadResources);
+
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
     create() {
@@ -97,20 +103,12 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     init(ctx) {
       return createDisposables([
         ...resourceDefinitions.map((def) => registerResource(ctx, def)),
-        registerMessageHandler(ctx, ResourceMessageType.LoadResources, onLoadResources),
         registerResourceLoader(ctx, StringResourceType, onLoadStringResource),
         registerResourceLoader(ctx, ArrayBufferResourceType, onLoadArrayBufferResource),
+        registerResourceMessageHandler(ctx),
       ]);
     },
   });
-
-  function onLoadResources(ctx: ThreadContext, { resources }: LoadResourcesMessage) {
-    const resourceModule = getModule(ctx, ResourceModule);
-
-    for (const resource of resources) {
-      loadResource(ctx, resourceModule, resource);
-    }
-  }
 
   async function loadResource(
     ctx: ThreadContext,
@@ -118,6 +116,10 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     resourceMessage: CreateResourceMessage
   ) {
     const { id, resourceType, props, statusBuffer } = resourceMessage;
+
+    if (resourceModule.resourceInfos.has(id)) {
+      throw new Error(`Resource ${id} already exists`);
+    }
 
     const resourceInfo: LocalResourceInfo = {
       id,
@@ -332,6 +334,13 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     return props as SharedArrayBuffer;
   }
 
+  function ResourceLoaderSystem(ctx: ThreadContext) {
+    const resourceModule = getModule(ctx, ResourceModule);
+    for (const resource of drainResourceMessages()) {
+      loadResource(ctx, resourceModule, resource);
+    }
+  }
+
   function ResourceDisposalSystem(ctx: ThreadContext) {
     const { deferredResources, resourceInfos, resourcesByType, resourceIds } = getModule(ctx, ResourceModule);
 
@@ -384,5 +393,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     getLocalResources,
     getResourceDisposed,
     ResourceDisposalSystem,
+    ResourceLoaderSystem,
   };
 };

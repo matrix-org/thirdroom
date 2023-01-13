@@ -783,6 +783,7 @@ const {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
+  ResourceLoaderSystem,
 } = createLocalResourceModule<RenderThreadState>([
   RenderNode,
   RenderAudioData,
@@ -824,4 +825,5 @@ export {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
+  ResourceLoaderSystem,
 };

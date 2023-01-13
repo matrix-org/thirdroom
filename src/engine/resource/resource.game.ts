@@ -3,9 +3,10 @@ import { addComponent, addEntity, defineComponent } from "bitecs";
 import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
 import { removeEntityWithComponents } from "../ecs/removeEntityWithComponents";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
+import { createMessageQueueProducer } from "./MessageQueue";
 import {
   RemoteNode,
   RemoteAudioData,
@@ -40,7 +41,6 @@ import {
 import {
   ArrayBufferResourceType,
   CreateResourceMessage,
-  LoadResourcesMessage,
   ResourceDisposedError,
   ResourceId,
   ResourceLoadedMessage,
@@ -70,7 +70,6 @@ export interface ResourceTransformData {
 interface ResourceModuleState {
   resourceInfos: Map<ResourceId, ResourceInfo>;
   resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
-  messageQueue: CreateResourceMessage[];
   resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
   resourceTransformData: Map<number, ResourceTransformData>;
   resourceDefByType: Map<number, ResourceDefinition>;
@@ -86,6 +85,10 @@ interface ResourceInfo {
   dispose?: () => void;
 }
 
+const [queueResourceMessage, sendResourceMessages] = createMessageQueueProducer<GameState, CreateResourceMessage>(
+  ResourceMessageType.LoadResources
+);
+
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
   create(ctx: GameState) {
@@ -95,7 +98,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       resourceDefByType: new Map(),
       resourceInfos: new Map(),
       resourcesByType: new Map(),
-      messageQueue: [],
     };
   },
   init(ctx) {
@@ -244,7 +246,7 @@ function createResource(
     deferred,
   });
 
-  resourceModule.messageQueue.push({
+  queueResourceMessage({
     resourceType,
     id,
     props,
@@ -372,19 +374,5 @@ export function getRemoteResources<Def extends ResourceDefinition, T extends Rem
 const MAX_RESOURCE_BATCH_SIZE = 512;
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  const { messageQueue } = getModule(ctx, ResourceModule);
-
-  if (messageQueue.length !== 0) {
-    const resources = messageQueue.splice(0, Math.min(messageQueue.length, MAX_RESOURCE_BATCH_SIZE));
-
-    ctx.sendMessage<LoadResourcesMessage>(Thread.Main, {
-      type: ResourceMessageType.LoadResources,
-      resources,
-    });
-
-    ctx.sendMessage<LoadResourcesMessage>(Thread.Render, {
-      type: ResourceMessageType.LoadResources,
-      resources,
-    });
-  }
+  sendResourceMessages(ctx, MAX_RESOURCE_BATCH_SIZE);
 }

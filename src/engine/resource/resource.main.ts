@@ -49,6 +49,7 @@ export {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
+  ResourceLoaderSystem,
 };
 
 export class MainNametag extends defineLocalResourceClass(NametagResource) {
@@ -355,6 +356,7 @@ const {
   registerResourceLoader,
   getResourceDisposed,
   ResourceDisposalSystem,
+  ResourceLoaderSystem,
 } = createLocalResourceModule<IMainThreadContext>([
   MainNode,
   MainAudioData,
