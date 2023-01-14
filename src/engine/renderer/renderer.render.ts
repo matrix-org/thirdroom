@@ -11,7 +11,7 @@ import {
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
-import { swapReadBufferFlags } from "../allocator/TripleBuffer";
+import { swapReadBufferFlags, swapWriteBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
@@ -38,6 +38,7 @@ export interface RenderThreadState extends BaseThreadContext {
   elapsed: number;
   dt: number;
   gameToRenderTripleBufferFlags: Uint8Array;
+  renderToGameTripleBufferFlags: Uint8Array;
   worldResource: RenderWorld;
 }
 
@@ -142,18 +143,18 @@ export function startRenderLoop(state: RenderThreadState) {
   renderer.setAnimationLoop(() => onUpdate(state));
 }
 
-function onUpdate(state: RenderThreadState) {
-  const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
+function onUpdate(ctx: RenderThreadState) {
+  const bufferSwapped = swapReadBufferFlags(ctx.gameToRenderTripleBufferFlags);
 
   const now = performance.now();
-  state.dt = (now - state.elapsed) / 1000;
-  state.elapsed = now;
+  ctx.dt = (now - ctx.elapsed) / 1000;
+  ctx.elapsed = now;
 
-  for (let i = 0; i < state.systems.length; i++) {
-    state.systems[i](state);
+  for (let i = 0; i < ctx.systems.length; i++) {
+    ctx.systems[i](ctx);
   }
 
-  const stats = getModule(state, StatsModule);
+  const stats = getModule(ctx, StatsModule);
 
   if (bufferSwapped) {
     if (stats.staleTripleBufferCounter > 1) {
@@ -164,6 +165,8 @@ function onUpdate(state: RenderThreadState) {
   } else {
     stats.staleTripleBufferCounter++;
   }
+
+  swapWriteBufferFlags(ctx.renderToGameTripleBufferFlags);
 }
 
 function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {

@@ -37,6 +37,7 @@ import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
 import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
+import { SyncRecycleBinSystem, NextRecycleBinSystem } from "./RecycleBin";
 
 export default defineConfig<GameState>({
   modules: [
@@ -57,6 +58,8 @@ export default defineConfig<GameState>({
     NametagModule,
   ],
   systems: [
+    NextRecycleBinSystem,
+
     ApplyInputSystem,
     ActionMappingSystem,
 
@@ -100,5 +103,7 @@ export default defineConfig<GameState>({
     ResetInputSystem,
     ResetAudioSourcesSystem,
     GameWorkerStatsSystem,
+
+    SyncRecycleBinSystem,
   ],
 });

@@ -39,6 +39,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   }
 
   const mainToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const renderToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
@@ -90,6 +91,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       mainToGameTripleBufferFlags,
       gameToMainTripleBufferFlags,
       gameToRenderTripleBufferFlags,
+      renderToGameTripleBufferFlags,
     } as InitializeGameWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port1] : undefined
   );
@@ -100,6 +102,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       type: WorkerMessageType.InitializeRenderWorker,
       gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
+      renderToGameTripleBufferFlags,
     } as InitializeRenderWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port2] : undefined
   );

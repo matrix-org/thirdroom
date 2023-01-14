@@ -1,4 +1,4 @@
-import { addEntity, createWorld, enableManualEntityRecycling, flushRemovedEntities } from "bitecs";
+import { addEntity, createWorld } from "bitecs";
 
 import { SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
@@ -33,14 +33,13 @@ workerScope.addEventListener("message", onInitMessage);
 async function onInit({
   renderWorkerMessagePort,
   mainToGameTripleBufferFlags,
+  renderToGameTripleBufferFlags,
   gameToMainTripleBufferFlags,
   gameToRenderTripleBufferFlags,
 }: InitializeGameWorkerMessage) {
   const renderPort = renderWorkerMessagePort || workerScope;
 
   const world = createWorld<World>(maxEntities);
-
-  enableManualEntityRecycling(world);
 
   // noop entity
   addEntity(world);
@@ -55,6 +54,7 @@ async function onInit({
 
   const ctx: GameState = {
     thread: Thread.Game,
+    renderToGameTripleBufferFlags,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     gameToRenderTripleBufferFlags,
@@ -151,12 +151,11 @@ function update(ctx: GameState) {
   ctx.tick++;
 
   swapReadBufferFlags(ctx.mainToGameTripleBufferFlags);
+  swapReadBufferFlags(ctx.renderToGameTripleBufferFlags);
 
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
-
-  flushRemovedEntities(ctx.world);
 
   swapWriteBufferFlags(ctx.gameToMainTripleBufferFlags);
   swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);

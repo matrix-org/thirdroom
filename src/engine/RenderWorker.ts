@@ -51,7 +51,11 @@ function startRenderWorker(
 
 async function onInit(
   workerScope: DedicatedWorkerGlobalScope | MessagePort,
-  { gameWorkerMessageTarget, gameToRenderTripleBufferFlags }: InitializeRenderWorkerMessage,
+  {
+    gameWorkerMessageTarget,
+    gameToRenderTripleBufferFlags,
+    renderToGameTripleBufferFlags,
+  }: InitializeRenderWorkerMessage,
   canvas?: HTMLCanvasElement,
   mockGameWorkerPort?: MockMessagePort
 ) {
@@ -69,6 +73,7 @@ async function onInit(
     thread: Thread.Render,
     canvas,
     gameToRenderTripleBufferFlags,
+    renderToGameTripleBufferFlags,
     elapsed: performance.now(),
     dt: 0,
     messageHandlers: new Map(),

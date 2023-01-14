@@ -21,7 +21,7 @@ import { GLTFResource } from "../../src/engine/gltf/gltf.game";
 import { GameResourceManager } from "../../src/engine/resource/GameResourceManager";
 import { getModule } from "../../src/engine/module/module.common";
 import { createDeferred } from "../../src/engine/utils/Deferred";
-import { removeEntityWithComponents } from "../../src/engine/ecs/removeEntityWithComponents";
+import { removeAllEntityComponents } from "../../src/engine/ecs/removeAllEntityComponents";
 
 export function registerDefaultPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
@@ -251,7 +251,6 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     resourceModule.resourceInfos.set(resourceId, {
       resource,
       refCount: 0,
-      statusBuffer: createTripleBuffer(new Uint8Array([0x6]), 1),
       deferred: createDeferred(false),
     });
     this.resources.push(resource);
@@ -276,7 +275,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
 
     const resource = this.resources[index];
 
-    removeEntityWithComponents(this.ctx.world, resourceId);
+    removeAllEntityComponents(this.ctx, resourceId);
 
     const schema = resource.constructor.resourceDef.schema;
 

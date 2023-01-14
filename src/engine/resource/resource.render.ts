@@ -781,8 +781,6 @@ const {
   waitForLocalResource,
   registerResource,
   registerResourceLoader,
-  getResourceDisposed,
-  ResourceDisposalSystem,
   ResourceLoaderSystem,
 } = createLocalResourceModule<RenderThreadState>([
   RenderNode,
@@ -823,7 +821,5 @@ export {
   waitForLocalResource,
   registerResource,
   registerResourceLoader,
-  getResourceDisposed,
-  ResourceDisposalSystem,
   ResourceLoaderSystem,
 };

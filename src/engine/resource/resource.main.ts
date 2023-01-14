@@ -47,8 +47,6 @@ export {
   waitForLocalResource,
   registerResource,
   registerResourceLoader,
-  getResourceDisposed,
-  ResourceDisposalSystem,
   ResourceLoaderSystem,
 };
 
@@ -354,8 +352,6 @@ const {
   waitForLocalResource,
   registerResource,
   registerResourceLoader,
-  getResourceDisposed,
-  ResourceDisposalSystem,
   ResourceLoaderSystem,
 } = createLocalResourceModule<IMainThreadContext>([
   MainNode,

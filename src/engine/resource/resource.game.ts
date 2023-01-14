@@ -1,9 +1,9 @@
 import { addComponent, addEntity, defineComponent } from "bitecs";
 
-import { createTripleBuffer, getWriteBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
-import { removeEntityWithComponents } from "../ecs/removeEntityWithComponents";
+import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import { createMessageQueueProducer } from "./MessageQueue";
@@ -41,12 +41,17 @@ import {
 import {
   ArrayBufferResourceType,
   CreateResourceMessage,
+  fromGameResourceModuleStateSchema,
+  FromGameResourceModuleStateTripleBuffer,
+  InitGameResourceModuleMessage,
+  InitRemoteResourceModuleMessage,
   ResourceDisposedError,
   ResourceId,
   ResourceLoadedMessage,
   ResourceMessageType,
   ResourceProps,
   StringResourceType,
+  ToGameResourceModuleStateTripleBuffer,
 } from "./resource.common";
 import {
   InitialRemoteResourceProps,
@@ -56,6 +61,15 @@ import {
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { ResourceType } from "./schema";
+import { Pool, createPool, obtainFromPool } from "../utils/Pool";
+import { Historian, createHistorian } from "../utils/Historian";
+import { RecycleBin } from "../RecycleBin";
+import {
+  createResourceRingBuffer,
+  ResourceRingBuffer,
+  enqueueResourceRingBuffer,
+  ResourceCommand,
+} from "./DisposeResourceRingBuffer";
 
 const ResourceComponent = defineComponent();
 
@@ -67,12 +81,20 @@ export interface ResourceTransformData {
   refIsBackRef: boolean[];
 }
 
-interface ResourceModuleState {
+export interface ResourceModuleState {
   resourceInfos: Map<ResourceId, ResourceInfo>;
   resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
   resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
   resourceTransformData: Map<number, ResourceTransformData>;
   resourceDefByType: Map<number, ResourceDefinition>;
+  fromGameState: FromGameResourceModuleStateTripleBuffer;
+  mainToGameState: ToGameResourceModuleStateTripleBuffer;
+  renderToGameState: ToGameResourceModuleStateTripleBuffer;
+  recycleBinPool: Pool<RecycleBin>;
+  recycleBinHistorian: Historian<RecycleBin>;
+  activeRecycleBin: RecycleBin;
+  mainDisposedResources: ResourceRingBuffer;
+  renderDisposedResources: ResourceRingBuffer;
 }
 
 type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
@@ -80,7 +102,6 @@ type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
 interface ResourceInfo {
   resource: RemoteResourceTypes;
   refCount: number;
-  statusBuffer: TripleBuffer;
   deferred: Deferred<undefined>;
   dispose?: () => void;
 }
@@ -91,13 +112,54 @@ const [queueResourceMessage, sendResourceMessages] = createMessageQueueProducer<
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
-  create(ctx: GameState) {
+  async create(ctx: GameState, { sendMessage, waitForMessage }) {
+    const fromGameState = createObjectTripleBuffer(
+      fromGameResourceModuleStateSchema,
+      ctx.gameToRenderTripleBufferFlags
+    );
+
+    const mainDisposedResources = createResourceRingBuffer();
+    const renderDisposedResources = createResourceRingBuffer();
+
+    sendMessage<InitGameResourceModuleMessage>(Thread.Main, ResourceMessageType.InitGameResourceModule, {
+      fromGameState,
+      toGameStateTripleBufferFlags: ctx.mainToGameTripleBufferFlags,
+      disposedResources: mainDisposedResources,
+    });
+
+    sendMessage<InitGameResourceModuleMessage>(Thread.Render, ResourceMessageType.InitGameResourceModule, {
+      fromGameState,
+      toGameStateTripleBufferFlags: ctx.renderToGameTripleBufferFlags,
+      disposedResources: renderDisposedResources,
+    });
+
+    const { toGameState: mainToGameState } = await waitForMessage<InitRemoteResourceModuleMessage>(
+      Thread.Main,
+      ResourceMessageType.InitRemoteResourceModule
+    );
+
+    const { toGameState: renderToGameState } = await waitForMessage<InitRemoteResourceModuleMessage>(
+      Thread.Render,
+      ResourceMessageType.InitRemoteResourceModule
+    );
+
+    const recycleBinPool = createPool<RecycleBin>(() => []);
+    const recycleBinHistorian = createHistorian<RecycleBin>();
+
     return {
       resourceConstructors: new Map(),
       resourceTransformData: new Map(),
       resourceDefByType: new Map(),
       resourceInfos: new Map(),
       resourcesByType: new Map(),
+      fromGameState,
+      mainToGameState,
+      renderToGameState,
+      recycleBinPool,
+      recycleBinHistorian,
+      mainDisposedResources,
+      renderDisposedResources,
+      activeRecycleBin: obtainFromPool(recycleBinPool),
     };
   },
   init(ctx) {
@@ -226,7 +288,6 @@ function createResource(
   const resourceModule = getModule(ctx, ResourceModule);
   const id = addEntity(ctx.world);
   addComponent(ctx.world, ResourceComponent, id);
-  const statusBuffer = createTripleBuffer(ctx.gameToRenderTripleBufferFlags, 1);
 
   const deferred = createDeferred<undefined>();
 
@@ -242,7 +303,6 @@ function createResource(
     resource,
     refCount: 0,
     dispose,
-    statusBuffer,
     deferred,
   });
 
@@ -250,8 +310,11 @@ function createResource(
     resourceType,
     id,
     props,
-    statusBuffer,
   });
+
+  console.log(`${ctx.thread} enqueue create [${id}] on tick ${ctx.tick}`);
+  enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Create, ctx.tick, id);
+  enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Create, ctx.tick, id);
 
   return id;
 }
@@ -303,15 +366,20 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     return false;
   }
 
-  removeEntityWithComponents(ctx.world, resourceId);
+  // removal all components from the entity so that all relevant exit queries are hit
+  removeAllEntityComponents(ctx.world, resourceId);
 
   if (resourceInfo.dispose) {
     resourceInfo.dispose();
   }
 
-  const statusBuffer = resourceInfo.statusBuffer;
-  const index = getWriteBufferIndex(statusBuffer);
-  statusBuffer.byteViews[index][0] = 1;
+  // queue up the tick this entity was disposed on
+  console.log(`${ctx.thread} enqueue dispose [${resourceId}] on tick ${ctx.tick}`);
+  enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
+  enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
+
+  // add entity to the frame-synchronized recycle bin
+  resourceModule.activeRecycleBin.push(resourceId);
 
   resourceModule.resourceInfos.delete(resourceId);
 

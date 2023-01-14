@@ -6,6 +6,7 @@ export enum WorkerMessageType {
 export interface InitializeGameWorkerMessage {
   type: WorkerMessageType.InitializeGameWorker;
   renderWorkerMessagePort?: MessagePort;
+  renderToGameTripleBufferFlags: Uint8Array;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
   gameToRenderTripleBufferFlags: Uint8Array;
@@ -14,5 +15,6 @@ export interface InitializeGameWorkerMessage {
 export interface InitializeRenderWorkerMessage {
   type: WorkerMessageType.InitializeRenderWorker;
   gameWorkerMessageTarget: MessagePort;
+  renderToGameTripleBufferFlags: Uint8Array;
   gameToRenderTripleBufferFlags: Uint8Array;
 }

@@ -12,6 +12,14 @@ import {
 import { LocalResource } from "./ResourceDefinition";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createMessageQueueConsumer } from "./MessageQueue";
+import {
+  createObjectTripleBuffer,
+  defineObjectBufferSchema,
+  getReadObjectBufferView,
+  getWriteObjectBufferView,
+  ObjectTripleBuffer,
+} from "../allocator/ObjectBufferView";
+import { ResourceRingBuffer, drainResourceRingBuffer, ResourceCommand } from "./DisposeResourceRingBuffer";
 
 export type ResourceId = number;
 
@@ -19,8 +27,31 @@ export const StringResourceType = "string";
 export const ArrayBufferResourceType = "arrayBuffer";
 
 export enum ResourceMessageType {
+  InitGameResourceModule = "init-game-resource-module",
+  InitRemoteResourceModule = "init-remote-resource-module",
   LoadResources = "load-resources",
   ResourceLoaded = "resource-loaded",
+}
+
+export const fromGameResourceModuleStateSchema = defineObjectBufferSchema({
+  tick: [Uint32Array, 1],
+});
+
+export const toGameResourceModuleStateSchema = defineObjectBufferSchema({
+  lastProcessedTick: [Uint32Array, 1],
+});
+
+export type FromGameResourceModuleStateTripleBuffer = ObjectTripleBuffer<typeof fromGameResourceModuleStateSchema>;
+export type ToGameResourceModuleStateTripleBuffer = ObjectTripleBuffer<typeof toGameResourceModuleStateSchema>;
+
+export interface InitGameResourceModuleMessage {
+  fromGameState: FromGameResourceModuleStateTripleBuffer;
+  disposedResources: ResourceRingBuffer;
+  toGameStateTripleBufferFlags: Uint8Array;
+}
+
+export interface InitRemoteResourceModuleMessage {
+  toGameState: ToGameResourceModuleStateTripleBuffer;
 }
 
 export type ResourceProps = SharedArrayBuffer | string | TripleBuffer;
@@ -29,7 +60,6 @@ export interface CreateResourceMessage {
   resourceType: string;
   id: number;
   props: ResourceProps;
-  statusBuffer: TripleBuffer;
 }
 
 export interface LoadResourcesMessage {
@@ -51,7 +81,7 @@ interface LocalResourceInfo {
   error?: string;
   resourceType: string;
   resource?: LocalResourceTypes;
-  statusBuffer: TripleBuffer;
+  disposed: boolean;
 }
 
 export type RegisterResourceLoaderFunction<ThreadContext extends BaseThreadContext> = (
@@ -72,11 +102,14 @@ export type ResourceDefLoader<ThreadContext extends BaseThreadContext> = (
 ) => Promise<LocalResource<ThreadContext>>;
 
 interface ResourceModuleState<ThreadContext extends BaseThreadContext> {
-  resourceIds: ResourceId[];
   resourceInfos: Map<ResourceId, LocalResourceInfo>;
   resourcesByType: Map<string, LocalResourceTypes[]>;
   deferredResources: Map<ResourceId, Deferred<unknown>>;
   resourceLoaders: Map<string, ResourceLoader<ThreadContext>>;
+  fromGameState: FromGameResourceModuleStateTripleBuffer;
+  toGameState: ToGameResourceModuleStateTripleBuffer;
+  disposedResources: ResourceRingBuffer;
+  createResourceMap: Map<ResourceId, number>;
 }
 
 export class ResourceDisposedError extends Error {}
@@ -91,13 +124,25 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
   const ResourceModule = defineModule<ThreadContext, ResourceModuleState<ThreadContext>>({
     name: "resource",
-    create() {
+    async create(ctx, { waitForMessage, sendMessage }) {
+      const { fromGameState, toGameStateTripleBufferFlags, disposedResources } =
+        await waitForMessage<InitGameResourceModuleMessage>(Thread.Game, ResourceMessageType.InitGameResourceModule);
+
+      const toGameState = createObjectTripleBuffer(toGameResourceModuleStateSchema, toGameStateTripleBufferFlags);
+
+      sendMessage<InitRemoteResourceModuleMessage>(Thread.Game, ResourceMessageType.InitRemoteResourceModule, {
+        toGameState,
+      });
+
       return {
-        resourceIds: [],
         resourceInfos: new Map(),
         resourcesByType: new Map(),
         deferredResources: new Map(),
         resourceLoaders: new Map(),
+        fromGameState,
+        toGameState,
+        disposedResources,
+        createResourceMap: new Map(),
       };
     },
     init(ctx) {
@@ -110,12 +155,12 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     },
   });
 
-  async function loadResource(
+  function loadResource(
     ctx: ThreadContext,
     resourceModule: ResourceModuleState<ThreadContext>,
     resourceMessage: CreateResourceMessage
   ) {
-    const { id, resourceType, props, statusBuffer } = resourceMessage;
+    const { id, resourceType, props } = resourceMessage;
 
     if (resourceModule.resourceInfos.has(id)) {
       throw new Error(`Resource ${id} already exists`);
@@ -125,10 +170,8 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       id,
       loaded: false,
       resourceType,
-      statusBuffer,
+      disposed: false,
     };
-
-    resourceModule.resourceIds.push(id);
 
     resourceModule.resourceInfos.set(id, resourceInfo);
 
@@ -154,20 +197,27 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         throw new Error(`No registered resource loader for ${resourceType}`);
       }
 
-      const resource = await resourceLoader(ctx, id, props);
-      resourceInfo.resource = resource;
-      resourceInfo.loaded = true;
+      resourceLoader(ctx, id, props).then((resource) => {
+        if (resourceInfo.disposed) {
+          if (typeof resource !== "string" && "dispose" in resource) {
+            resource.dispose(ctx);
+          }
+        }
 
-      let resourceArr = resourceModule.resourcesByType.get(resourceType);
+        resourceInfo.resource = resource;
+        resourceInfo.loaded = true;
 
-      if (!resourceArr) {
-        resourceArr = [];
-        resourceModule.resourcesByType.set(resourceType, resourceArr);
-      }
+        let resourceArr = resourceModule.resourcesByType.get(resourceType);
 
-      resourceArr.push(resource);
+        if (!resourceArr) {
+          resourceArr = [];
+          resourceModule.resourcesByType.set(resourceType, resourceArr);
+        }
 
-      deferred.resolve(resourceInfo.resource);
+        resourceArr.push(resource);
+
+        deferred!.resolve(resourceInfo.resource);
+      });
     } catch (error) {
       console.error(`Error loading ${resourceType} ${id}:`, error);
       resourceInfo.error = error instanceof Error ? error.message : "Unknown error";
@@ -305,19 +355,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     return (resourceModule.resourcesByType.get(resourceDef.name) || []) as T[];
   }
 
-  function getResourceDisposed(ctx: ThreadContext, resourceId: ResourceId): boolean {
-    const resourceModule = getModule(ctx, ResourceModule);
-    const resource = resourceModule.resourceInfos.get(resourceId);
-
-    if (!resource) {
-      return false;
-    }
-
-    const index = getReadBufferIndex(resource.statusBuffer);
-
-    return !!resource.statusBuffer.byteViews[index][0];
-  }
-
   async function onLoadStringResource<ThreadContext extends BaseThreadContext>(
     ctx: ThreadContext,
     id: ResourceId,
@@ -336,51 +373,91 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
   function ResourceLoaderSystem(ctx: ThreadContext) {
     const resourceModule = getModule(ctx, ResourceModule);
-    for (const resource of drainResourceMessages()) {
-      loadResource(ctx, resourceModule, resource);
+    const createResourceMap = resourceModule.createResourceMap;
+
+    const { tick } = getReadObjectBufferView(resourceModule.fromGameState);
+
+    /**
+     * Create 1 1
+     * Dispose 1 1
+     * Create 1 2
+     *
+     * CreateResourceMessage 1 2
+     * CreateResourceMessage 1 1
+     */
+
+    for (const [command, eid] of drainResourceRingBuffer(resourceModule.disposedResources, tick[0])) {
+      const curCount = createResourceMap.get(eid) || 0;
+
+      if (command === ResourceCommand.Create) {
+        createResourceMap.set(eid, curCount + 1);
+        console.log(`${ctx.thread} dequeue create [${eid}] on tick ${tick[0]} curCount ${curCount + 1}`);
+      } else if (command === ResourceCommand.Dispose) {
+        if (disposeResource(ctx, resourceModule, eid)) {
+          console.log(`${ctx.thread} dequeue dispose [${eid}] on tick ${tick[0]} curCount ${curCount - 1}`);
+        } else {
+          console.log(
+            `${ctx.thread} dequeue dispose [${eid}] on tick ${tick[0]} curCount ${curCount - 1} couldn't dispose`
+          );
+        }
+        createResourceMap.set(eid, curCount - 1);
+      }
     }
+
+    for (const message of drainResourceMessages()) {
+      const eid = message.id;
+      const curCount = createResourceMap.get(eid) || 0;
+
+      if (curCount === 1) {
+        console.log(`${ctx.thread} load [${eid}] on tick ${tick[0]} curCount ${curCount} loading`);
+        loadResource(ctx, resourceModule, message);
+      } else {
+        console.log(`${ctx.thread} load [${eid}] on tick ${tick[0]} curCount ${curCount} skipping load`);
+      }
+    }
+
+    const { lastProcessedTick } = getWriteObjectBufferView(resourceModule.toGameState);
+    lastProcessedTick[0] = tick[0];
   }
 
-  function ResourceDisposalSystem(ctx: ThreadContext) {
-    const { deferredResources, resourceInfos, resourcesByType, resourceIds } = getModule(ctx, ResourceModule);
+  function disposeResource(ctx: ThreadContext, resourceModule: ResourceModuleState<ThreadContext>, resourceId: number) {
+    const { deferredResources, resourceInfos, resourcesByType } = resourceModule;
 
-    for (let i = resourceIds.length - 1; i >= 0; i--) {
-      const resourceId = resourceIds[i];
+    const resourceInfo = resourceInfos.get(resourceId);
 
-      if (getResourceDisposed(ctx, resourceId)) {
-        const resourceInfo = resourceInfos.get(resourceId);
+    if (resourceInfo) {
+      const deferredResource = deferredResources.get(resourceId);
 
-        if (resourceInfo) {
-          const deferredResource = deferredResources.get(resourceId);
+      if (deferredResource) {
+        deferredResource.reject(new ResourceDisposedError("Resource disposed"));
+        deferredResources.delete(resourceId);
+      }
 
-          if (deferredResource) {
-            deferredResource.reject(new ResourceDisposedError("Resource disposed"));
-            deferredResources.delete(resourceId);
+      const resource = resourceInfo.resource;
+
+      if (resource) {
+        const resourceArr = resourcesByType.get(resourceInfo.resourceType);
+
+        if (resourceArr) {
+          const index = resourceArr.indexOf(resource);
+
+          if (index !== -1) {
+            resourceArr.splice(index, 1);
           }
+        }
 
-          const resource = resourceInfo.resource;
-
-          if (resource) {
-            const resourceArr = resourcesByType.get(resourceInfo.resourceType);
-
-            if (resourceArr) {
-              const index = resourceArr.indexOf(resource);
-
-              if (index !== -1) {
-                resourceArr.splice(index, 1);
-              }
-            }
-
-            if (typeof resource !== "string" && "dispose" in resource) {
-              resource.dispose(ctx);
-            }
-          }
-
-          resourceInfos.delete(resourceId);
-
-          resourceIds.splice(i, 1);
+        if (typeof resource !== "string" && "dispose" in resource) {
+          resource.dispose(ctx);
         }
       }
+
+      resourceInfo.disposed = true;
+
+      resourceInfos.delete(resourceId);
+
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -391,8 +468,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     waitForLocalResource,
     getLocalResource,
     getLocalResources,
-    getResourceDisposed,
-    ResourceDisposalSystem,
     ResourceLoaderSystem,
   };
 };
