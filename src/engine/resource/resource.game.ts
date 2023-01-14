@@ -312,7 +312,6 @@ function createResource(
     props,
   });
 
-  console.log(`${ctx.thread} enqueue create [${id}] on tick ${ctx.tick}`);
   enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Create, ctx.tick, id);
   enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Create, ctx.tick, id);
 
@@ -374,7 +373,6 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
   }
 
   // queue up the tick this entity was disposed on
-  console.log(`${ctx.thread} enqueue dispose [${resourceId}] on tick ${ctx.tick}`);
   enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
   enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
 

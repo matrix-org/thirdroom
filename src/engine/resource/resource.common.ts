@@ -377,29 +377,13 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     const { tick } = getReadObjectBufferView(resourceModule.fromGameState);
 
-    /**
-     * Create 1 1
-     * Dispose 1 1
-     * Create 1 2
-     *
-     * CreateResourceMessage 1 2
-     * CreateResourceMessage 1 1
-     */
-
     for (const [command, eid] of drainResourceRingBuffer(resourceModule.disposedResources, tick[0])) {
       const curCount = createResourceMap.get(eid) || 0;
 
       if (command === ResourceCommand.Create) {
         createResourceMap.set(eid, curCount + 1);
-        console.log(`${ctx.thread} dequeue create [${eid}] on tick ${tick[0]} curCount ${curCount + 1}`);
       } else if (command === ResourceCommand.Dispose) {
-        if (disposeResource(ctx, resourceModule, eid)) {
-          console.log(`${ctx.thread} dequeue dispose [${eid}] on tick ${tick[0]} curCount ${curCount - 1}`);
-        } else {
-          console.log(
-            `${ctx.thread} dequeue dispose [${eid}] on tick ${tick[0]} curCount ${curCount - 1} couldn't dispose`
-          );
-        }
+        disposeResource(ctx, resourceModule, eid);
         createResourceMap.set(eid, curCount - 1);
       }
     }
@@ -409,10 +393,7 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       const curCount = createResourceMap.get(eid) || 0;
 
       if (curCount === 1) {
-        console.log(`${ctx.thread} load [${eid}] on tick ${tick[0]} curCount ${curCount} loading`);
         loadResource(ctx, resourceModule, message);
-      } else {
-        console.log(`${ctx.thread} load [${eid}] on tick ${tick[0]} curCount ${curCount} skipping load`);
       }
     }
 
