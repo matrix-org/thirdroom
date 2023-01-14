@@ -61,7 +61,7 @@ import {
   RemoteNode,
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
-import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
+import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -535,7 +535,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
       name: peerId,
     });
 
-    addNametag(ctx, AVATAR_HEIGHT, peerNode, peerId);
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, peerNode, peerId);
   }
 
   // if our own avatar

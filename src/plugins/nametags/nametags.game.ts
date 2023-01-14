@@ -98,7 +98,7 @@ export function NametagSystem(ctx: GameState) {
 
 export function addNametag(ctx: GameState, height: number, node: RemoteNode, label: string) {
   const nametag = new RemoteNode(ctx.resourceManager, {
-    position: [0, height + height / 1.5, 0],
+    position: [0, height + height, 0],
     nametag: new RemoteNametag(ctx.resourceManager, {
       name: label,
     }),

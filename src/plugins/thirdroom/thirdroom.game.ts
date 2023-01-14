@@ -69,7 +69,7 @@ import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine
 import * as Schema from "../../engine/resource/schema";
 import { RemoteResource, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
-import { AvatarOptions, AVATAR_HEIGHT } from "../avatars/common";
+import { AvatarOptions, AVATAR_HEIGHT, AVATAR_OFFSET } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
 import { ResourceModule, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
@@ -116,6 +116,7 @@ const createAvatarRig =
 
     addComponent(ctx.world, AvatarComponent, rig.eid);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
+    rig.position.set([0, AVATAR_OFFSET, 0]);
     rig.scale.set([1.3, 1.3, 1.3]);
 
     // on container
@@ -497,7 +498,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   const rig = createPrefabEntity(ctx, "avatar");
   const eid = rig.eid;
 
-  addNametag(ctx, AVATAR_HEIGHT, rig, network.peerId);
+  addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, network.peerId);
 
   associatePeerWithEntity(network, network.peerId, eid);
 
@@ -559,7 +560,7 @@ function loadRemotePlayerRig(
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
   removeInteractableComponent(ctx, physics, avatar);
 
-  addNametag(ctx, AVATAR_HEIGHT, avatar, peerId);
+  addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, avatar, peerId);
 
   associatePeerWithEntity(network, peerId, avatar.eid);
 
