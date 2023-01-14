@@ -28,8 +28,8 @@ export enum ResourceCommand {
 
 const MAX_PACKET_SIZE = 3 * Uint32Array.BYTES_PER_ELEMENT;
 
-export function createResourceRingBuffer(): ResourceRingBuffer {
-  const ringBuffer = createRingBuffer(Uint32Array, maxEntities * MAX_PACKET_SIZE);
+export function createResourceRingBuffer(size = maxEntities): ResourceRingBuffer {
+  const ringBuffer = createRingBuffer(Uint32Array, size * MAX_PACKET_SIZE);
   const buffer = new ArrayBuffer(MAX_PACKET_SIZE);
   const array = new Uint8Array(buffer);
   const view = createCursorView(buffer);
@@ -55,7 +55,7 @@ export function enqueueResourceRingBuffer(rb: ResourceRingBuffer, command: Resou
   writeUint32(view, eid);
 
   if (availableWrite(rb) < MAX_PACKET_SIZE) {
-    return false;
+    throw new Error("Resource ring buffer full.");
   }
 
   return pushRingBuffer(rb, rb.array) === MAX_PACKET_SIZE;
@@ -98,7 +98,8 @@ export function drainResourceRingBuffer(
     if (tick <= currentTick) {
       results.push([command, eid]);
     } else {
-      tickQueue.push(eid);
+      commandQueue.push(command);
+      tickQueue.push(tick);
       eidQueue.push(eid);
     }
   }
