@@ -47,7 +47,11 @@ export function updateWorldVisibility(ctx: RenderThreadState) {
   const nodes = getLocalResources(ctx, RenderNode);
 
   for (let i = 0; i < nodes.length; i++) {
-    nodes[i].object3DVisible = false;
+    const node = nodes[i];
+
+    if (!node.isStatic) {
+      node.object3DVisible = false;
+    }
   }
 
   const worldResource = ctx.worldResource;
@@ -77,6 +81,10 @@ function updateSceneVisibility(scene: RenderScene) {
 }
 
 function updateNodeVisibility(node: RenderNode, parentVisibility: boolean) {
+  if (node.isStatic) {
+    return;
+  }
+
   node.object3DVisible = node.visible && parentVisibility;
 
   let curChild = node.firstChild;

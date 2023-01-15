@@ -18,7 +18,7 @@ export type Schema = {
   [key: string]: ResourcePropDef<string, unknown, boolean, boolean, unknown, unknown>;
 };
 
-type ProcessedSchema<S extends Schema> = {
+export type ProcessedSchema<S extends Schema> = {
   [K in keyof S]: S[K] & { byteOffset: number };
 };
 
@@ -595,7 +595,9 @@ export interface IRemoteResourceClass<
 export interface LocalResource<ThreadContext extends BaseThreadContext = BaseThreadContext> extends Resource {
   resourceType: number;
   manager: ILocalResourceManager;
-  __props: { [key: string]: TypedArray32[] };
+  u32Views: Uint32Array[];
+  f32Views: Float32Array[];
+  vecViews: Float32Array[][];
   load(ctx: ThreadContext): Promise<void>;
   dispose(ctx: ThreadContext): void;
 }
@@ -725,5 +727,6 @@ export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext>
 export type LocalResourceTypes = string | SharedArrayBuffer | LocalResource;
 
 export interface ILocalResourceManager {
-  getResource<T extends LocalResourceTypes>(resourceId: number): T | undefined;
+  readBufferIndex: number;
+  resources: Map<number, LocalResourceTypes>;
 }

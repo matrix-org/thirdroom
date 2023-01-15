@@ -695,6 +695,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   currentReflectionProbeResourceId = 0;
   reflectionProbeObject?: ReflectionProbe;
   object3DVisible = true;
+  needsUpdate = true;
 
   dispose() {
     if (this.meshPrimitiveObjects) {

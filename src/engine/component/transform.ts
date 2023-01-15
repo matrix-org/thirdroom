@@ -160,7 +160,11 @@ export const updateWorldMatrix = (node: RemoteNode | RemoteScene, updateParents:
 
 export const updateMatrixWorld = (node: RemoteScene | RemoteNode, force = false) => {
   if (node.resourceType === ResourceType.Node) {
-    if (!node.isStatic) updateMatrix(node);
+    if (node.isStatic) {
+      return;
+    }
+
+    updateMatrix(node);
 
     if (node.worldMatrixNeedsUpdate || force) {
       const parent = node.parent;

@@ -1,4 +1,4 @@
-import { getReadBufferIndex, TripleBuffer } from "../allocator/TripleBuffer";
+import { TripleBuffer } from "../allocator/TripleBuffer";
 import { BaseThreadContext } from "../module/module.common";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import {
@@ -6,8 +6,115 @@ import {
   ILocalResourceClass,
   ILocalResourceManager,
   LocalResource,
+  ProcessedSchema,
   Schema,
 } from "./ResourceDefinition";
+
+function defineProp<S extends Schema>(
+  LocalResourceClass: Function,
+  prop: ProcessedSchema<S>[Extract<keyof S, string>],
+  propName: string,
+  vecPropIndex: number
+) {
+  const offset = prop.byteOffset / 4;
+  const size = prop.size;
+
+  if (prop.type === "string") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        const resourceId = this.u32Views[index][offset];
+        return this.manager.resources.get(resourceId);
+      },
+    });
+  } else if (prop.type === "arrayBuffer") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        const resourceId = this.u32Views[index][offset + 1];
+        return this.manager.resources.get(resourceId);
+      },
+    });
+  } else if (prop.type === "ref") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        const resourceId = this.u32Views[index][offset];
+        return this.manager.resources.get(resourceId);
+      },
+    });
+  } else if (prop.type === "refArray") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        const arr = this.u32Views[index];
+        const resources = [];
+
+        for (let i = offset; i < offset + size; i++) {
+          if (arr[i] === 0) {
+            break;
+          }
+
+          const resource = this.manager.resources.get(arr[i]);
+
+          if (resource) {
+            resources.push(resource);
+          }
+        }
+
+        return resources;
+      },
+    });
+  } else if (prop.type === "refMap") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        const arr = this.u32Views[index];
+        const resources = [];
+
+        for (let i = offset; i < offset + size; i++) {
+          if (arr[i]) {
+            resources.push(this.manager.resources.get(arr[i]));
+          } else {
+            resources.push(undefined);
+          }
+        }
+
+        return resources;
+      },
+    });
+  } else if (prop.type === "bool") {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        return !!this.u32Views[index][offset];
+      },
+    });
+  } else if (prop.size === 1) {
+    if (prop.type === "f32") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource) {
+          const index = this.manager.readBufferIndex;
+          return this.f32Views[index][offset];
+        },
+      });
+    } else {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource) {
+          const index = this.manager.readBufferIndex;
+          return this.u32Views[index][offset];
+        },
+      });
+    }
+  } else {
+    Object.defineProperty(LocalResourceClass.prototype, propName, {
+      get(this: LocalResource) {
+        const index = this.manager.readBufferIndex;
+        return this.vecViews[vecPropIndex][index];
+      },
+    });
+  }
+}
 
 export function defineLocalResourceClass<
   T extends number,
@@ -27,19 +134,26 @@ export function defineLocalResourceClass<
     this.resourceType = resourceType;
     this.tripleBuffer = tripleBuffer;
     this.manager = manager;
-    this.__props = {};
 
     const buffers = this.tripleBuffer.buffers;
     const schema = (LocalResourceClass as unknown as ILocalResourceClass<Def>).resourceDef.schema;
 
+    this.u32Views = [new Uint32Array(buffers[0]), new Uint32Array(buffers[1]), new Uint32Array(buffers[2])];
+    this.f32Views = [new Float32Array(buffers[0]), new Float32Array(buffers[1]), new Float32Array(buffers[2])];
+
+    this.vecViews = [];
+
     for (const propName in schema) {
       const prop = schema[propName];
 
-      this.__props[propName] = [
-        new prop.arrayType(buffers[0], prop.byteOffset, prop.size),
-        new prop.arrayType(buffers[1], prop.byteOffset, prop.size),
-        new prop.arrayType(buffers[2], prop.byteOffset, prop.size),
-      ];
+      if (prop.size > 1 && prop.arrayType === Float32Array) {
+        console.log("define", propName);
+        this.vecViews.push([
+          new prop.arrayType(buffers[0], prop.byteOffset, prop.size),
+          new prop.arrayType(buffers[1], prop.byteOffset, prop.size),
+          new prop.arrayType(buffers[2], prop.byteOffset, prop.size),
+        ]);
+      }
     }
   }
 
@@ -57,94 +171,16 @@ export function defineLocalResourceClass<
     dispose: { value() {} },
   });
 
+  let vecViewIndex = 0;
+
   for (const propName in schema) {
     const prop = schema[propName];
 
-    if (prop.type === "string") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const resourceId = this.__props[propName][index][0];
-          return this.manager.getResource(resourceId);
-        },
-      });
-    } else if (prop.type === "arrayBuffer") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const resourceId = this.__props[propName][index][1];
-          return this.manager.getResource(resourceId);
-        },
-      });
-    } else if (prop.type === "ref") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const resourceId = this.__props[propName][index][0];
-          return this.manager.getResource(resourceId);
-        },
-      });
-    } else if (prop.type === "refArray") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const arr = this.__props[propName][index];
-          const resources = [];
-
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i] === 0) {
-              break;
-            }
-
-            const resource = this.manager.getResource(arr[i]);
-
-            if (resource) {
-              resources.push(resource);
-            }
-          }
-
-          return resources;
-        },
-      });
-    } else if (prop.type === "refMap") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          const arr = this.__props[propName][index];
-          const resources = [];
-
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i]) {
-              resources.push(this.manager.getResource(arr[i]));
-            } else {
-              resources.push(undefined);
-            }
-          }
-
-          return resources;
-        },
-      });
-    } else if (prop.type === "bool") {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          return !!this.__props[propName][index][0];
-        },
-      });
-    } else if (prop.size === 1) {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          return this.__props[propName][index][0];
-        },
-      });
+    if (prop.size > 1 && prop.arrayType === Float32Array) {
+      console.log("index", propName, vecViewIndex);
+      defineProp(LocalResourceClass, prop, propName, vecViewIndex++);
     } else {
-      Object.defineProperty(LocalResourceClass.prototype, propName, {
-        get(this: LocalResource) {
-          const index = getReadBufferIndex(this.tripleBuffer);
-          return this.__props[propName][index];
-        },
-      });
+      defineProp(LocalResourceClass, prop, propName, -1);
     }
   }
 

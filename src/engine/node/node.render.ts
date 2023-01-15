@@ -70,11 +70,18 @@ export function updateLocalNodeResources(
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
+
+    if (node.isStatic && !node.needsUpdate) {
+      continue;
+    }
+
     const scene = rendererModule.scene;
     updateNodeCamera(ctx, scene, node);
     updateNodeLight(ctx, scene, node);
     updateNodeReflectionProbe(ctx, scene, node);
     updateNodeMesh(ctx, node);
     updateNodeTilesRenderer(ctx, scene, activeCameraNode, node);
+
+    node.needsUpdate = false;
   }
 }

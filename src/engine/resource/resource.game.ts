@@ -124,12 +124,14 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     sendMessage<InitGameResourceModuleMessage>(Thread.Main, ResourceMessageType.InitGameResourceModule, {
       fromGameState,
       toGameStateTripleBufferFlags: ctx.mainToGameTripleBufferFlags,
+      fromGameStateTripleBufferFlags: ctx.gameToMainTripleBufferFlags,
       disposedResources: mainDisposedResources,
     });
 
     sendMessage<InitGameResourceModuleMessage>(Thread.Render, ResourceMessageType.InitGameResourceModule, {
       fromGameState,
       toGameStateTripleBufferFlags: ctx.renderToGameTripleBufferFlags,
+      fromGameStateTripleBufferFlags: ctx.gameToRenderTripleBufferFlags,
       disposedResources: renderDisposedResources,
     });
 

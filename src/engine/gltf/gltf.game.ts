@@ -351,6 +351,7 @@ async function loadGLTFJSON(
 export interface GLTFLoaderOptions {
   audioOutput?: AudioEmitterOutput;
   createDefaultMeshColliders?: boolean;
+  isStatic?: boolean;
 }
 
 /**
@@ -967,6 +968,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       node.light = light;
       node.audioEmitter = audioEmitter;
       node.reflectionProbe = reflectionProbe;
+      node.isStatic = loaderCtx.isStatic || false;
 
       if (extensions?.MOZ_hubs_components) {
         loadGLTFHubsComponents(loaderCtx, extensions.MOZ_hubs_components, node);
