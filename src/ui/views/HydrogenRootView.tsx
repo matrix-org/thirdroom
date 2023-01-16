@@ -293,7 +293,7 @@ function useOidcComplete(
     const loginMethod = await getOidcLoginMethod(platform, urlRouter, state, code);
     if (!loginMethod) return;
     login(loginMethod);
-    navigate("/", { replace: true });
+    navigate("/");
   };
   const location = useLocation();
 
