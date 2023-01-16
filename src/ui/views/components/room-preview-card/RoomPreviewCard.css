@@ -1,0 +1,6 @@
+.RoomPreviewCard {
+  padding: var(--sp-md);
+  background-color: var(--bg-surface-low);
+  border-radius: var(--br-xs);
+  height: 96px;
+}

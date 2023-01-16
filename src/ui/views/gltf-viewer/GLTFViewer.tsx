@@ -1,6 +1,7 @@
-import { DragEvent, useCallback, useEffect, useRef, useState } from "react";
+import { DragEvent, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { useSearchParams } from "react-router-dom";
 
 import { registerMessageHandler, Thread } from "../../../engine/module/module.common";
 import { createDisposables } from "../../../engine/utils/createDisposables";
@@ -15,6 +16,7 @@ import { EditorView } from "../session/editor/EditorView";
 import { Stats } from "../session/stats/Stats";
 import { Text } from "../../atoms/text/Text";
 import "./GLTFViewer.css";
+import { HydrogenContext } from "../../hooks/useHydrogen";
 import { EntityTooltip } from "../session/entity-tooltip/EntityTooltip";
 import { ActiveEntityState } from "../session/world/WorldView";
 import {
@@ -34,6 +36,50 @@ export default function GLTFViewer() {
     loading: false,
     loaded: false,
   });
+
+  const { session } = useContext(HydrogenContext) || {};
+
+  const [params] = useSearchParams();
+
+  useEffect(() => {
+    const mxcUrl = params.get("url");
+
+    if (!mxcUrl) {
+      return;
+    }
+
+    if (!session) {
+      setLoadState({ loading: false, loaded: false, error: "Not signed in" });
+      return;
+    }
+
+    const sceneUrl = session.mediaRepository.mxcUrl(mxcUrl);
+
+    if (!sceneUrl) {
+      setLoadState({ loading: false, loaded: false, error: "Invalid scene url" });
+      return;
+    }
+
+    const loadScene = async () => {
+      const response = await fetch(sceneUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (mainThread && url) {
+        setLoadState({ loading: true, loaded: false });
+
+        mainThread.sendMessage(Thread.Game, {
+          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
+          url,
+          fileMap: new Map(),
+        });
+      }
+    };
+
+    loadScene().catch((error) => {
+      setLoadState({ loading: false, loaded: true, error: error.message });
+    });
+  }, [mainThread, session, params]);
 
   useEffect(() => {
     if (mainThread) {

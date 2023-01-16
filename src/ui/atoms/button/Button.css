@@ -11,6 +11,10 @@
     flex-shrink: 0;
   }
 
+  & > .Text {
+    white-space: nowrap;
+  }
+
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;

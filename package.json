@@ -42,7 +42,7 @@
     "@sentry/react": "^7.13.0",
     "@sentry/tracing": "^7.13.0",
     "@thi.ng/malloc": "^6.1.19",
-    "@thirdroom/hydrogen-view-sdk": "0.0.27",
+    "@thirdroom/hydrogen-view-sdk": "0.0.29",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
     "@types/murmurhash-js": "^1.0.3",

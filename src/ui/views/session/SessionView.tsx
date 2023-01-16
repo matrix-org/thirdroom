@@ -11,13 +11,18 @@ import { useStore } from "../../hooks/useStore";
 import { LoadingScreen } from "../components/loading-screen/LoadingScreen";
 import { useHomeWorld } from "../../hooks/useHomeWorld";
 import { useUnknownWorldPath } from "../../hooks/useWorld";
+import { useAutoJoinRoom } from "../../hooks/useAutoJoinRoom";
+import { useHydrogen } from "../../hooks/useHydrogen";
+import config from "../../../../config.json";
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
+  const { session } = useHydrogen(true);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
   const [worldId, worldAlias] = useUnknownWorldPath();
   const homeWorldId = useHomeWorld();
+  useAutoJoinRoom(session, config.repositoryRoomIdOrAlias);
 
   useEffect(() => {
     if (!worldId && !worldAlias && homeWorldId) {
