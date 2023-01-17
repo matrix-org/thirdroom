@@ -462,11 +462,11 @@ export function HydrogenRootView() {
   }
 
   if (!session && !sessionInfo && href.match(WORLD_PATH_REG)) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace={true} />;
   }
 
   if (!previewPath && !loginPath && !session && !sessionInfo) {
-    return <Navigate to="/preview" />;
+    return <Navigate to="/preview" replace={true} />;
   }
 
   const onLoginRedirectPath = localStorage.getItem("on_login_redirect_uri")?.match(WORLD_PATH_REG)?.[1];
@@ -476,7 +476,7 @@ export function HydrogenRootView() {
   }
 
   if (loginPath && sessionInfo) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace={true} />;
   }
 
   return (
