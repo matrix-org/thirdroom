@@ -1,0 +1,16 @@
+.HierarchyHeader {
+  display: flex;
+  min-height: 32px;
+  border-bottom: 1px solid var(--bg-surface-border);
+}
+
+.HierarchyHeaderTab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+  padding: 0 var(--sp-xs);
+  cursor: pointer;
+}
+.HierarchyHeaderTab--active {
+  border-bottom: 1px solid var(--bg-primary);
+}
