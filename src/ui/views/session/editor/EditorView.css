@@ -1,11 +1,10 @@
 .EditorView_rightPanel {
   --status-bar-height: 48px;
   --controls-height: 58px;
-  --status-bar-bottom: calc(var(--status-bar-height) + var(--sp-xs));
   --controls-top: calc(var(--controls-height) + var(--sp-xs));
   position: absolute;
-  right: var(--sp-xs);
-  top: calc(var(--status-bar-bottom) + var(--sp-xs));
+  left: var(--sp-md);
+  top: calc(var(--status-bar-height) + var(--sp-xs));
   bottom: calc(var(--controls-top) + var(--sp-xs));
   pointer-events: none;
   display: flex;
