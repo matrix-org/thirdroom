@@ -72,10 +72,6 @@ export function updateWorldVisibility(ctx: RenderThreadState) {
 }
 
 function updateSceneVisibility(scene: RenderScene) {
-  if (!scene) {
-    debugger;
-  }
-
   let curChild = scene.firstNode;
 
   while (curChild) {

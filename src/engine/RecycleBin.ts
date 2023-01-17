@@ -33,20 +33,23 @@ export function recycleEntity(recycleCtx: RecycleBinContext, eid: number) {
 }
 
 export function recycleBinNextTick(recycleCtx: RecycleBinContext, tick: number) {
-  const nextBin = obtainFromPool(recycleCtx.pool);
   addHistory(recycleCtx.historian, tick, recycleCtx.active);
-  recycleCtx.active = nextBin;
+  recycleCtx.active = obtainFromPool(recycleCtx.pool);
 }
 
-export function recycleBinReleaseEntities(recycleCtx: RecycleBinContext, world: World, lastProcessedTick: number) {
+export function recycleBinReleaseEntities(
+  recycleCtx: RecycleBinContext,
+  world: World,
+  lastProcessedTick: number,
+  removeEntityFn: (world: World, eid: number) => void = removeEntity
+) {
   const trimmed = trimHistorian(recycleCtx.historian, lastProcessedTick);
 
   trimmed.forEach((bin) => {
     // give EIDs back to bitecs so they are made available for internal recycling
     for (let i = 0; i < bin.length; i++) {
       const eid = bin[i];
-      console.log("dispose", eid);
-      removeEntity(world, eid);
+      removeEntityFn(world, eid);
     }
     releaseToPool(recycleCtx.pool, bin);
   });
@@ -71,5 +74,8 @@ export function SyncRecycleBinSystem(ctx: GameState) {
   const lastProcessedTick = Math.min(lastProcessedTickMain[0], lastProcessedTickRender[0]);
 
   // Dispose resources that have been fully removed on the main and render threads
-  recycleBinReleaseEntities(recycleBin, ctx.world, lastProcessedTick);
+
+  // TODO: remove this recycling delay
+  const recycleDelay = 500;
+  recycleBinReleaseEntities(recycleBin, ctx.world, lastProcessedTick - recycleDelay);
 }

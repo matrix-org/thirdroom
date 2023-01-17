@@ -531,7 +531,12 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   addComponent(ctx.world, Player, eid);
   addComponent(ctx.world, OurPlayer, eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
+  addComponent(ctx.world, Networked, eid);
+  Networked.networkId[eid] = 0;
+  Networked.parent[eid] = 0;
+  Networked.position[eid].fill(0);
+  Networked.quaternion[eid].fill(0);
+  Networked.velocity[eid].fill(0);
 
   const avatar = createRemoteObject(ctx, rig);
   addObjectToWorld(ctx, avatar);
@@ -595,7 +600,12 @@ function loadRemotePlayerRig(
   addComponent(ctx.world, Owned, avatar.eid);
   addComponent(ctx.world, Player, avatar.eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, avatar.eid, true);
+  addComponent(ctx.world, Networked, avatar.eid);
+  Networked.networkId[avatar.eid] = 0;
+  Networked.parent[avatar.eid] = 0;
+  Networked.position[avatar.eid].fill(0);
+  Networked.quaternion[avatar.eid].fill(0);
+  Networked.velocity[avatar.eid].fill(0);
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {
