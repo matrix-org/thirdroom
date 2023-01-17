@@ -20,6 +20,7 @@ import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
   EnableMatrixMaterialMessage,
+  EnterXRMessage,
   InitializeCanvasMessage,
   NotifySceneRendererMessage,
   RendererMessageType,
@@ -63,10 +64,8 @@ export interface RendererModuleState {
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
-      Thread.Main,
-      RendererMessageType.InitializeCanvas
-    );
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, enableXR } =
+      await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
 
@@ -105,6 +104,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
+    if (enableXR) {
+      renderer.xr.enabled = true;
+    }
+
     const pmremGenerator = new PMREMGenerator(renderer);
 
     pmremGenerator.compileEquirectangularShader();
@@ -134,6 +137,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerMessageHandler(ctx, RendererMessageType.EnableMatrixMaterial, onEnableMatrixMaterial),
+      registerMessageHandler(ctx, RendererMessageType.EnterXR, onEnterXR),
     ]);
   },
 });
@@ -179,6 +183,11 @@ function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: Canva
 function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
+}
+
+function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
+  const { renderer } = getModule(ctx, RendererModule);
+  renderer.xr.setSession(session as unknown as any);
 }
 
 export function RendererSystem(ctx: RenderThreadState) {

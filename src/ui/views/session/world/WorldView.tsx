@@ -59,6 +59,7 @@ import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { InteractableType } from "../../../../engine/resource/schema";
+import { useWebXRSession } from "../../../hooks/useWebXRSession";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -380,6 +381,8 @@ export function WorldView({ world }: WorldViewProps) {
 
   usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
+  const { isWebXRSupported, enterXR } = useWebXRSession();
+
   const renderControl = () => (
     <>
       {!isChatOpen && (
@@ -397,6 +400,16 @@ export function WorldView({ world }: WorldViewProps) {
         </Hotbar>
       )}
       <div className="WorldView__controls flex">
+        {isWebXRSupported && (
+          <div className="flex flex-column items-center">
+            <Tooltip content="Enter XR">
+              <IconButton variant="world" label="Enter XR" iconSrc={HelpIC} onClick={enterXR} />
+            </Tooltip>
+            <Text variant="b3" color="world" weight="bold">
+              /
+            </Text>
+          </div>
+        )}
         <div className="flex flex-column items-center">
           <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
             <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />

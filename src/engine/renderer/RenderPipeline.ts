@@ -75,19 +75,23 @@ export class RenderPipeline {
   }
 
   render(scene: Scene, camera: PerspectiveCamera | OrthographicCamera, dt: number) {
-    this.renderPass.scene = scene;
-    this.renderPass.camera = camera;
-    this.outlinePass.renderScene = scene;
-    this.outlinePass.renderCamera = camera;
+    if (this.renderer.xr.isPresenting) {
+      this.renderer.render(scene, camera);
+    } else {
+      this.renderPass.scene = scene;
+      this.renderPass.camera = camera;
+      this.outlinePass.renderScene = scene;
+      this.outlinePass.renderCamera = camera;
 
-    this.outlinePass.selectedObjects.length = 0;
+      this.outlinePass.selectedObjects.length = 0;
 
-    scene.traverse((child) => {
-      if (child.layers.test(this.outlineLayers)) {
-        this.outlinePass.selectedObjects.push(child);
-      }
-    });
+      scene.traverse((child) => {
+        if (child.layers.test(this.outlineLayers)) {
+          this.outlinePass.selectedObjects.push(child);
+        }
+      });
 
-    this.effectComposer.render(dt);
+      this.effectComposer.render(dt);
+    }
   }
 }
