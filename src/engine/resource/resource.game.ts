@@ -61,9 +61,7 @@ import {
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { ResourceType } from "./schema";
-import { Pool, createPool, obtainFromPool } from "../utils/Pool";
-import { Historian, createHistorian } from "../utils/Historian";
-import { RecycleBin } from "../RecycleBin";
+import { createRecycleBinContext, RecycleBinContext, recycleEntity } from "../RecycleBin";
 import {
   createResourceRingBuffer,
   ResourceRingBuffer,
@@ -90,9 +88,8 @@ export interface ResourceModuleState {
   fromGameState: FromGameResourceModuleStateTripleBuffer;
   mainToGameState: ToGameResourceModuleStateTripleBuffer;
   renderToGameState: ToGameResourceModuleStateTripleBuffer;
-  recycleBinPool: Pool<RecycleBin>;
-  recycleBinHistorian: Historian<RecycleBin>;
-  activeRecycleBin: RecycleBin;
+  recycleBin: RecycleBinContext;
+
   mainDisposedResources: ResourceRingBuffer;
   renderDisposedResources: ResourceRingBuffer;
 }
@@ -145,9 +142,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       ResourceMessageType.InitRemoteResourceModule
     );
 
-    const recycleBinPool = createPool<RecycleBin>(() => []);
-    const recycleBinHistorian = createHistorian<RecycleBin>();
-
     return {
       resourceConstructors: new Map(),
       resourceTransformData: new Map(),
@@ -157,11 +151,9 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       fromGameState,
       mainToGameState,
       renderToGameState,
-      recycleBinPool,
-      recycleBinHistorian,
       mainDisposedResources,
       renderDisposedResources,
-      activeRecycleBin: obtainFromPool(recycleBinPool),
+      recycleBin: createRecycleBinContext(),
     };
   },
   init(ctx) {
@@ -379,7 +371,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
   enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
 
   // add entity to the frame-synchronized recycle bin
-  resourceModule.activeRecycleBin.push(resourceId);
+  recycleEntity(resourceModule.recycleBin, resourceId);
 
   resourceModule.resourceInfos.delete(resourceId);
 

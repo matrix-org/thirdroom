@@ -78,8 +78,6 @@ export interface ResourceLoadedMessage<Response = unknown> {
 
 interface LocalResourceInfo {
   id: number;
-  loaded: boolean;
-  error?: string;
   resourceType: string;
   disposed: boolean;
 }
@@ -181,7 +179,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     const resourceInfo: LocalResourceInfo = {
       id,
-      loaded: false,
       resourceType,
       disposed: false,
     };
@@ -203,14 +200,14 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
       console.error(error);
     });
 
-    try {
-      const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
+    const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
 
-      if (!resourceLoader) {
-        throw new Error(`No registered resource loader for ${resourceType}`);
-      }
+    if (!resourceLoader) {
+      throw new Error(`No registered resource loader for ${resourceType}`);
+    }
 
-      resourceLoader(ctx, id, props).then((resource) => {
+    resourceLoader(ctx, id, props)
+      .then((resource) => {
         if (resourceInfo.disposed) {
           if (typeof resource !== "string" && "dispose" in resource) {
             resource.dispose(ctx);
@@ -220,7 +217,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         }
 
         resourceModule.resources.set(id, resource);
-        resourceInfo.loaded = true;
 
         let resourceArr = resourceModule.resourcesByType.get(resourceType);
 
@@ -232,19 +228,29 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
         resourceArr.push(resource);
 
         deferred!.resolve(resource);
-      });
-    } catch (error) {
-      console.error(`Error loading ${resourceType} ${id}:`, error);
-      resourceInfo.error = error instanceof Error ? error.message : "Unknown error";
-      deferred.reject(error);
-    }
 
-    ctx.sendMessage<ResourceLoadedMessage>(Thread.Game, {
-      type: ResourceMessageType.ResourceLoaded,
-      id,
-      loaded: resourceInfo.loaded,
-      error: resourceInfo.error,
-    });
+        ctx.sendMessage<ResourceLoadedMessage>(Thread.Game, {
+          type: ResourceMessageType.ResourceLoaded,
+          id,
+          loaded: true,
+        });
+      })
+      .catch((error) => {
+        if (error instanceof ResourceDisposedError) {
+          // TODO: If a dependency failed to load, did it change?
+          return;
+        }
+
+        console.error(`Error loading ${resourceType} ${id}:`, error);
+        deferred!.reject(error);
+
+        ctx.sendMessage<ResourceLoadedMessage>(Thread.Game, {
+          type: ResourceMessageType.ResourceLoaded,
+          id,
+          loaded: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      });
   }
 
   function registerResourceLoader(
@@ -342,6 +348,15 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
 
     if (!deferred) {
       deferred = createDeferred<unknown>(30000, `Loading resource ${resourceId} ${description} timed out.`);
+
+      deferred.promise.catch((error) => {
+        if (error instanceof ResourceDisposedError) {
+          return;
+        }
+
+        console.error(error);
+      });
+
       resourceModule.deferredResources.set(resourceId, deferred);
     }
 
