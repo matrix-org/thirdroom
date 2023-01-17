@@ -1,0 +1,30 @@
+.Checkbox {
+  width: 20px;
+  height: 20px;
+  line-height: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--br-xxs);
+  cursor: pointer;
+
+  &[data-state="unchecked"] {
+    border: 1px solid var(--bg-surface-border);
+  }
+  &[data-state="checked"] {
+    background-color: var(--bg-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  & span[data-state="checked"] {
+    width: 12px;
+    height: 6px;
+    border: 4px solid var(--tc-on-primary);
+    border-width: 0 0 2px 2px;
+    transform: translateY(-20%) rotateZ(-45deg);
+  }
+}
