@@ -19,6 +19,12 @@
       color: var(--tc-surface-low);
     }
   }
+  & input[type="number"]::-webkit-inner-spin-button,
+  & input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+    opacity: 0;
+  }
   &:focus-within {
     outline: var(--tc-surface) solid 2px;
     outline-offset: var(--focus-outline-offset);
@@ -27,8 +33,8 @@
 
 .Input--sm {
   gap: var(--sp-xxs);
-  padding: 0 var(--sp-xxs);
-  border-radius: var(--br-xs);
+  padding: 0 var(--sp-xs);
+  border-radius: var(--br-xxs);
 }
 .Input--md {
   gap: var(--sp-xxs);
@@ -55,6 +61,11 @@
 }
 .Input--lg input {
   min-height: 60px;
+}
+
+.Input--outlined {
+  box-shadow: inset 0 0 0 1px var(--bg-surface-border);
+  background-color: transparent;
 }
 
 .Input--success {

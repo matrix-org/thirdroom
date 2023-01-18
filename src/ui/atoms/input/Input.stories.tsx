@@ -14,6 +14,7 @@ export default function InputStories() {
       <Input placeholder="Search" after={<Icon color="surface" src={SearchIC} />} />
       <Input placeholder="john" before={<Text variant="b2">@</Text>} after={<Text variant="b2">:matrix.org</Text>} />
       <Input placeholder="ex: John Doe" inputSize="sm" />
+      <Input placeholder="ex: John Doe" inputSize="sm" outlined />
       <Input placeholder="ex: John Doe" state="success" />
       <Input placeholder="ex: John Doe" state="error" />
       <Input placeholder="ex: John Doe" disabled />
