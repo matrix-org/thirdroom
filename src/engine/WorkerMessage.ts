@@ -1,3 +1,5 @@
+import { TripleBuffer } from "./allocator/TripleBuffer";
+
 export enum WorkerMessageType {
   InitializeGameWorker = "initialize-game-worker",
   InitializeRenderWorker = "initialize-render-worker",
@@ -10,6 +12,7 @@ export interface InitializeGameWorkerMessage {
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
   gameToRenderTripleBufferFlags: Uint8Array;
+  sharedHeap: TripleBuffer;
 }
 
 export interface InitializeRenderWorkerMessage {
@@ -17,4 +20,5 @@ export interface InitializeRenderWorkerMessage {
   gameWorkerMessageTarget: MessagePort;
   renderToGameTripleBufferFlags: Uint8Array;
   gameToRenderTripleBufferFlags: Uint8Array;
+  sharedHeap: TripleBuffer;
 }

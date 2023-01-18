@@ -696,7 +696,6 @@ export type InitialRemoteResourceProps<ThreadContext extends BaseThreadContext, 
 export interface ResourceData {
   ptr: number;
   buffer: ArrayBuffer;
-  tripleBuffer: TripleBuffer;
 }
 
 export interface ResourceManagerGLTFCacheEntry {

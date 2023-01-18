@@ -2,7 +2,7 @@ import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
 import { BaseThreadContext, Message, registerModules, Thread } from "./module/module.common";
 import mainThreadConfig from "./config.main";
-import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
+import { createTripleBuffer, swapReadBufferFlags, swapWriteBufferFlags, TripleBuffer } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
 import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
 import { waitUntil } from "./utils/waitUntil";
@@ -13,6 +13,7 @@ export interface IMainThreadContext extends BaseThreadContext {
   useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
+  sharedHeap: TripleBuffer;
   canvas: HTMLCanvasElement;
   animationFrameId?: number;
   initialGameWorkerState: { [key: string]: any };
@@ -43,10 +44,14 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
+  const heapSize = 134_217_728; // 128mb
+  const sharedHeap = createTripleBuffer(gameToMainTripleBufferFlags, heapSize);
+
   const ctx: IMainThreadContext = {
     thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
+    sharedHeap,
     systems: mainThreadConfig.systems,
     modules: new Map(),
     useOffscreenCanvas,
@@ -92,6 +97,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       gameToMainTripleBufferFlags,
       gameToRenderTripleBufferFlags,
       renderToGameTripleBufferFlags,
+      sharedHeap,
     } as InitializeGameWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port1] : undefined
   );
@@ -103,6 +109,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
       renderToGameTripleBufferFlags,
+      sharedHeap,
     } as InitializeRenderWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port2] : undefined
   );

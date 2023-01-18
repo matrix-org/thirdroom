@@ -39,7 +39,6 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       resourceDef.byteLength / Uint32Array.BYTES_PER_ELEMENT
     );
     this.prevRefs = [];
-    this.tripleBuffer = resourceData.tripleBuffer;
     this.__props = {};
 
     const schema = (RemoteResourceClass as unknown as IRemoteResourceClass<Def>).resourceDef.schema;

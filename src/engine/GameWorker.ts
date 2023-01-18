@@ -1,4 +1,5 @@
 import { addEntity, createWorld } from "bitecs";
+import { MemPool } from "@thi.ng/malloc";
 
 import { SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
@@ -36,6 +37,7 @@ async function onInit({
   renderToGameTripleBufferFlags,
   gameToMainTripleBufferFlags,
   gameToRenderTripleBufferFlags,
+  sharedHeap,
 }: InitializeGameWorkerMessage) {
   const renderPort = renderWorkerMessagePort || workerScope;
 
@@ -52,12 +54,18 @@ async function onInit({
     }
   }
 
+  const localHeap = new SharedArrayBuffer(sharedHeap.byteLength);
+  const memPool = new MemPool({ buf: localHeap });
+
   const ctx: GameState = {
     thread: Thread.Game,
     renderToGameTripleBufferFlags,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     gameToRenderTripleBufferFlags,
+    localHeap,
+    memPool,
+    sharedHeap,
     elapsed: performance.now(),
     dt: 0,
     tick: 0,

@@ -1,4 +1,3 @@
-import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
 import {
@@ -20,6 +19,7 @@ import {
 export class GameResourceManager implements IRemoteResourceManager<GameState> {
   public resources: RemoteResource<GameState>[] = [];
   private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
+  private ptrToResource: Map<number, RemoteResource<GameState>> = new Map();
 
   constructor(private ctx: GameState) {}
 
@@ -54,13 +54,9 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
   }
 
   allocateResource(resourceDef: ResourceDefinition): ResourceData {
-    const buffer = new ArrayBuffer(resourceDef.byteLength);
-    const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-
     return {
-      ptr: 0,
-      buffer,
-      tripleBuffer,
+      ptr: this.ctx.memPool.calloc(resourceDef.byteLength),
+      buffer: this.ctx.localHeap,
     };
   }
 
@@ -226,24 +222,5 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
 
   removeRef(resourceId: number) {
     removeResourceRef(this.ctx, resourceId);
-  }
-
-  commitResources() {
-    const resources = this.resources;
-
-    for (let i = 0; i < resources.length; i++) {
-      const resource = resources[i];
-      const byteView = resource.byteView;
-
-      if (resource.initialized) {
-        copyToWriteBuffer(resource.tripleBuffer, byteView);
-      } else {
-        const tripleBufferByteViews = resource.tripleBuffer.byteViews;
-        tripleBufferByteViews[0].set(byteView);
-        tripleBufferByteViews[1].set(byteView);
-        tripleBufferByteViews[2].set(byteView);
-        resource.initialized = true;
-      }
-    }
   }
 }
