@@ -156,58 +156,6 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     },
   });
 
-  function loadResource(
-    ctx: ThreadContext,
-    resourceModule: ResourceModuleState<ThreadContext>,
-    resourceMessage: CreateResourceMessage
-  ) {
-    const { id, resourceType, props } = resourceMessage;
-
-    if (resourceModule.resourceInfos.has(id)) {
-      throw new Error(`Resource ${id} already exists`);
-    }
-
-    const resourceInfo: LocalResourceInfo = {
-      id,
-      resourceType,
-      disposed: false,
-    };
-
-    resourceModule.resourceInfos.set(id, resourceInfo);
-
-    const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
-
-    if (!resourceLoader) {
-      throw new Error(`No registered resource loader for ${resourceType}`);
-    }
-
-    const resource = resourceLoader(ctx, id, props);
-
-    resourceModule.resources.set(id, resource);
-
-    let resourceArr = resourceModule.resourcesByType.get(resourceType);
-
-    if (!resourceArr) {
-      resourceArr = [];
-      resourceModule.resourcesByType.set(resourceType, resourceArr);
-    }
-
-    resourceArr.push(resource);
-  }
-
-  function registerResourceLoader(
-    ctx: ThreadContext,
-    resourceType: string,
-    resourceLoader: ResourceLoader<ThreadContext>
-  ) {
-    const resourceModule = getModule(ctx, ResourceModule);
-    resourceModule.resourceLoaders.set(resourceType, resourceLoader);
-
-    return () => {
-      resourceModule.resourceLoaders.delete(resourceType);
-    };
-  }
-
   function registerResource(ctx: ThreadContext, resourceDefOrClass: ILocalResourceConstructor<ThreadContext>) {
     const resourceModule = getModule(ctx, ResourceModule);
 
@@ -255,23 +203,17 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     };
   }
 
-  function getLocalResource<Resource extends LocalResourceTypes>(
+  function registerResourceLoader(
     ctx: ThreadContext,
-    resourceId: ResourceId
-  ): Resource | undefined {
+    resourceType: string,
+    resourceLoader: ResourceLoader<ThreadContext>
+  ) {
     const resourceModule = getModule(ctx, ResourceModule);
-    return resourceModule.resources.get(resourceId) as Resource | undefined;
-  }
+    resourceModule.resourceLoaders.set(resourceType, resourceLoader);
 
-  function getLocalResources<Def extends ResourceDefinition, T extends LocalResource>(
-    ctx: ThreadContext,
-    resourceDefOrClass:
-      | Def
-      | { new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): T; resourceDef: Def }
-  ): T[] {
-    const resourceModule = getModule(ctx, ResourceModule);
-    const resourceDef = "resourceDef" in resourceDefOrClass ? resourceDefOrClass.resourceDef : resourceDefOrClass;
-    return (resourceModule.resourcesByType.get(resourceDef.name) || []) as T[];
+    return () => {
+      resourceModule.resourceLoaders.delete(resourceType);
+    };
   }
 
   function onLoadStringResource<ThreadContext extends BaseThreadContext>(
@@ -324,6 +266,45 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     lastProcessedTick[0] = tick[0];
   }
 
+  function loadResource(
+    ctx: ThreadContext,
+    resourceModule: ResourceModuleState<ThreadContext>,
+    resourceMessage: CreateResourceMessage
+  ) {
+    const { id, resourceType, props } = resourceMessage;
+
+    if (resourceModule.resourceInfos.has(id)) {
+      throw new Error(`Resource ${id} already exists`);
+    }
+
+    const resourceInfo: LocalResourceInfo = {
+      id,
+      resourceType,
+      disposed: false,
+    };
+
+    resourceModule.resourceInfos.set(id, resourceInfo);
+
+    const resourceLoader = resourceModule.resourceLoaders.get(resourceType);
+
+    if (!resourceLoader) {
+      throw new Error(`No registered resource loader for ${resourceType}`);
+    }
+
+    const resource = resourceLoader(ctx, id, props);
+
+    resourceModule.resources.set(id, resource);
+
+    let resourceArr = resourceModule.resourcesByType.get(resourceType);
+
+    if (!resourceArr) {
+      resourceArr = [];
+      resourceModule.resourcesByType.set(resourceType, resourceArr);
+    }
+
+    resourceArr.push(resource);
+  }
+
   function disposeResource(ctx: ThreadContext, resourceModule: ResourceModuleState<ThreadContext>, resourceId: number) {
     const { resourceInfos, resources, resourcesByType } = resourceModule;
 
@@ -356,6 +337,25 @@ export const createLocalResourceModule = <ThreadContext extends BaseThreadContex
     } else {
       return false;
     }
+  }
+
+  function getLocalResource<Resource extends LocalResourceTypes>(
+    ctx: ThreadContext,
+    resourceId: ResourceId
+  ): Resource | undefined {
+    const resourceModule = getModule(ctx, ResourceModule);
+    return resourceModule.resources.get(resourceId) as Resource | undefined;
+  }
+
+  function getLocalResources<Def extends ResourceDefinition, T extends LocalResource>(
+    ctx: ThreadContext,
+    resourceDefOrClass:
+      | Def
+      | { new (manager: ILocalResourceManager, resourceId: number, tripleBuffer: TripleBuffer): T; resourceDef: Def }
+  ): T[] {
+    const resourceModule = getModule(ctx, ResourceModule);
+    const resourceDef = "resourceDef" in resourceDefOrClass ? resourceDefOrClass.resourceDef : resourceDefOrClass;
+    return (resourceModule.resourcesByType.get(resourceDef.name) || []) as T[];
   }
 
   return {
