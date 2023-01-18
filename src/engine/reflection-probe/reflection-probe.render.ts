@@ -85,7 +85,7 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
     const reflectionProbeTextures: Texture[] = [];
 
     // Add the scene reflection probe to the texture array
-    if (scene.reflectionProbe && scene.reflectionProbe.reflectionProbeTexture) {
+    if (scene.reflectionProbe && scene.reflectionProbe.reflectionProbeTexture?.texture) {
       scene.reflectionProbe.textureArrayIndex = reflectionProbeTextures.length;
       scene.reflectionProbeNeedsUpdate = false;
       reflectionProbeTextures.push(scene.reflectionProbe.reflectionProbeTexture.texture);
@@ -93,14 +93,15 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
 
     // Add each node reflection probe to the texture array array
     for (const reflectionProbe of reflectionProbes) {
-      reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
-      reflectionProbe.needsUpdate = false;
-
       if (!reflectionProbe.resource.reflectionProbeTexture) {
         throw new Error("Reflection probe texture not yet loaded");
       }
 
-      reflectionProbeTextures.push(reflectionProbe.resource.reflectionProbeTexture.texture);
+      if (reflectionProbe.resource.reflectionProbeTexture.texture) {
+        reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
+        reflectionProbe.needsUpdate = false;
+        reflectionProbeTextures.push(reflectionProbe.resource.reflectionProbeTexture.texture);
+      }
     }
 
     if (rendererModule.reflectionProbesMap) {

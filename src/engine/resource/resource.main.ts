@@ -1,9 +1,8 @@
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
-import { toArrayBuffer } from "../utils/arraybuffer";
 import { defineLocalResourceClass } from "./LocalResourceClass";
-import { createLocalResourceModule, ResourceId } from "./resource.common";
+import { createLocalResourceModule, LoadStatus, ResourceId } from "./resource.common";
 import {
   AccessorComponentType,
   AccessorResource,
@@ -44,7 +43,6 @@ export {
   ResourceModule,
   getLocalResource,
   getLocalResources,
-  waitForLocalResource,
   registerResource,
   registerResourceLoader,
   ResourceLoaderSystem,
@@ -53,7 +51,7 @@ export {
 export class MainNametag extends defineLocalResourceClass(NametagResource) {
   declare resourceType: ResourceType.Nametag;
 
-  async load(ctx: IMainThreadContext) {
+  load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const nametags = getLocalResources(ctx, MainNametag);
     audioModule.eventEmitter.emit("nametags-changed", [...nametags, this]);
@@ -75,73 +73,17 @@ export class MainBufferView extends defineLocalResourceClass(BufferViewResource)
   declare buffer: MainBuffer;
 }
 
-const MAX_AUDIO_BYTES = 640_000;
-
-const audioExtensionToMimeType: { [key: string]: string } = {
-  mp3: "audio/mpeg",
-  aac: "audio/mpeg",
-  opus: "audio/ogg",
-  ogg: "audio/ogg",
-  wav: "audio/wav",
-  flac: "audio/flac",
-  mp4: "audio/mp4",
-  webm: "audio/webm",
-};
-
-// TODO: Read fetch response headers
-function getAudioMimeType(uri: string) {
-  const extension = uri.split(".").pop() || "";
-  return audioExtensionToMimeType[extension] || "audio/mpeg";
-}
-
 export class MainAudioData extends defineLocalResourceClass(AudioDataResource) {
   declare bufferView: MainBufferView | undefined;
   data: AudioBuffer | HTMLAudioElement | MediaStream | undefined;
+  loadStatus: LoadStatus = LoadStatus.Uninitialized;
+  abortController?: AbortController;
 
-  async load(ctx: IMainThreadContext) {
-    const audio = getModule(ctx, AudioModule);
+  dispose() {
+    this.loadStatus = LoadStatus.Disposed;
 
-    let buffer: ArrayBuffer;
-    let mimeType: string;
-
-    if (this.bufferView) {
-      buffer = toArrayBuffer(this.bufferView.buffer.data, this.bufferView.byteOffset, this.bufferView.byteLength);
-      mimeType = this.mimeType;
-    } else {
-      const url = new URL(this.uri, window.location.href);
-
-      if (url.protocol === "mediastream:") {
-        this.data = audio.mediaStreams.get(url.pathname);
-        return;
-      }
-
-      const response = await fetch(url.href);
-
-      const contentType = response.headers.get("Content-Type");
-
-      if (contentType) {
-        mimeType = contentType;
-      } else {
-        mimeType = getAudioMimeType(this.uri);
-      }
-
-      buffer = await response.arrayBuffer();
-    }
-
-    if (buffer.byteLength > MAX_AUDIO_BYTES) {
-      const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
-
-      const audioEl = new Audio();
-
-      await new Promise((resolve, reject) => {
-        audioEl.oncanplaythrough = resolve;
-        audioEl.onerror = reject;
-        audioEl.src = objectUrl;
-      });
-
-      this.data = audioEl;
-    } else {
-      this.data = await audio.context.decodeAudioData(buffer);
+    if (this.abortController) {
+      this.abortController.abort();
     }
   }
 }
@@ -152,7 +94,7 @@ export class MainAudioSource extends defineLocalResourceClass(AudioSourceResourc
   sourceNode: MediaElementAudioSourceNode | AudioBufferSourceNode | MediaStreamAudioSourceNode | undefined;
   gainNode: GainNode | undefined;
 
-  async load(ctx: IMainThreadContext) {
+  load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
     this.gainNode = audioContext.createGain();
@@ -176,7 +118,7 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
 
-  async load(ctx: IMainThreadContext) {
+  load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
@@ -349,7 +291,6 @@ const {
   ResourceModule,
   getLocalResource,
   getLocalResources,
-  waitForLocalResource,
   registerResource,
   registerResourceLoader,
   ResourceLoaderSystem,

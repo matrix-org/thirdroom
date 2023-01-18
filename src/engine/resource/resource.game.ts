@@ -3,9 +3,8 @@ import { addComponent, addEntity, defineComponent } from "bitecs";
 import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
 import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
-import { createDeferred, Deferred } from "../utils/Deferred";
 import { createMessageQueueProducer } from "./MessageQueue";
 import {
   RemoteNode,
@@ -45,9 +44,7 @@ import {
   FromGameResourceModuleStateTripleBuffer,
   InitGameResourceModuleMessage,
   InitRemoteResourceModuleMessage,
-  ResourceDisposedError,
   ResourceId,
-  ResourceLoadedMessage,
   ResourceMessageType,
   ResourceProps,
   StringResourceType,
@@ -99,7 +96,6 @@ type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
 interface ResourceInfo {
   resource: RemoteResourceTypes;
   refCount: number;
-  deferred: Deferred<undefined>;
   dispose?: () => void;
 }
 
@@ -187,7 +183,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteAnimation),
       registerResource(ctx, RemoteEnvironment),
       registerResource(ctx, RemoteWorld),
-      registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
     ]);
 
     ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
@@ -256,22 +251,6 @@ function registerResource<Def extends ResourceDefinition>(
   };
 }
 
-function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
-  const resourceModule = getModule(ctx, ResourceModule);
-
-  const deferred = resourceModule.resourceInfos.get(id)?.deferred;
-
-  if (!deferred) {
-    return;
-  }
-
-  if (error) {
-    deferred.reject(error);
-  } else {
-    deferred.resolve(undefined);
-  }
-}
-
 function createResource(
   ctx: GameState,
   resourceType: string,
@@ -283,21 +262,10 @@ function createResource(
   const id = addEntity(ctx.world);
   addComponent(ctx.world, ResourceComponent, id);
 
-  const deferred = createDeferred<undefined>();
-
-  deferred.promise.catch((error) => {
-    if (error instanceof ResourceDisposedError) {
-      return;
-    }
-
-    console.error(error);
-  });
-
   resourceModule.resourceInfos.set(id, {
     resource,
     refCount: 0,
     dispose,
-    deferred,
   });
 
   queueResourceMessage({
@@ -391,8 +359,6 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
       resource.manager.removeResourceRefs(resourceId);
     }
   }
-
-  resourceInfo.deferred.reject(new ResourceDisposedError("Resource disposed"));
 
   return true;
 }

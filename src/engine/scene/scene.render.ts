@@ -19,7 +19,7 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
 
     if (nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId) {
       if (activeScene.backgroundTexture) {
-        rendererModule.scene.background = activeScene.backgroundTexture.texture;
+        rendererModule.scene.background = activeScene.backgroundTexture.texture || null;
       } else {
         rendererModule.scene.background = null;
       }

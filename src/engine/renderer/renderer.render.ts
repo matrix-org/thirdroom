@@ -32,6 +32,7 @@ import patchShaderChunks from "../material/patchShaderChunks";
 import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
 import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
+import { updateImageResources } from "../utils/textures";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -216,6 +217,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevSceneResource = activeScene?.eid;
   }
 
+  updateImageResources(ctx);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
   updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
