@@ -7,6 +7,7 @@ import { defineMapComponent } from "../ecs/MapComponent";
 import { defineModule, getModule } from "../module/module.common";
 import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
+import { maxEntities } from "../config.common";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
@@ -46,11 +47,14 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
   init(ctx) {},
 });
 
-const RigidBodySoA = defineComponent({
-  velocity: [Types.f32, 3],
-  meshResourceId: Types.ui32,
-  primitiveResourceId: Types.ui32,
-});
+const RigidBodySoA = defineComponent(
+  {
+    velocity: [Types.f32, 3],
+    meshResourceId: Types.ui32,
+    primitiveResourceId: Types.ui32,
+  },
+  maxEntities
+);
 
 // data flows from rigidbody->transform
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);

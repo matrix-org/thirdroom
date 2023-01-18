@@ -25,6 +25,19 @@ export function getLastChild(parent: RemoteNode | RemoteScene): RemoteNode | und
   return last;
 }
 
+export function getLastSibling(node: RemoteNode): RemoteNode {
+  let cursor: RemoteNode | undefined = node;
+
+  let last = cursor;
+
+  while (cursor) {
+    last = cursor;
+    cursor = cursor.nextSibling;
+  }
+
+  return last;
+}
+
 export function getChildAt(parent: RemoteNode | RemoteScene, index: number): RemoteNode | undefined {
   let cursor = parent.resourceType === ResourceType.Node ? parent.firstChild : parent.firstNode;
 
