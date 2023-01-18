@@ -41,6 +41,7 @@ import {
   ResourceType,
   AnimationChannelTargetPath,
   AnimationSamplerInterpolation,
+  TextureFormat,
 } from "../resource/schema";
 import { IRemoteResourceManager, RemoteResource } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -1140,6 +1141,8 @@ const loadGLTFTexture = createCachedSubresourceLoader(
       source,
       encoding: options?.encoding,
       sampler,
+      format: basisSourceIndex !== undefined ? TextureFormat.Basis : TextureFormat.Unknown,
+      depth: 0, // TODO
     });
   }
 );

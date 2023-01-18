@@ -5,7 +5,6 @@ import {
   BufferGeometry,
   Camera,
   Color,
-  CompressedTexture,
   DoubleSide,
   FrontSide,
   InstancedMesh,
@@ -24,7 +23,6 @@ import {
   SkinnedMesh,
   Texture,
 } from "three";
-import { RGBE } from "three/examples/jsm/loaders/RGBELoader";
 
 import {
   AccessorComponentTypeToTypedArray,
@@ -40,10 +38,11 @@ import {
   PrimitiveMaterial,
 } from "../material/material.render";
 import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../mesh/mesh.render";
-import { BaseThreadContext, getModule } from "../module/module.common";
+import { getModule } from "../module/module.common";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
+import { RenderImageData, RenderImageDataType } from "../utils/textures";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createLocalResourceModule, LoadStatus } from "./resource.common";
@@ -109,23 +108,19 @@ export class RenderAudioEmitter extends defineLocalResourceClass(AudioEmitterRes
 export class RenderImage extends defineLocalResourceClass(ImageResource) {
   declare bufferView: RenderBufferView | undefined;
 
-  image?: ImageBitmap | RGBE | CompressedTexture;
+  imageData?: RenderImageData;
   loadStatus: LoadStatus = LoadStatus.Uninitialized;
   abortController?: AbortController;
 
-  dispose(ctx: BaseThreadContext) {
+  dispose() {
     this.loadStatus = LoadStatus.Disposed;
 
     if (this.abortController) {
       this.abortController.abort();
     }
 
-    if (this.image) {
-      if (this.image instanceof ImageBitmap) {
-        this.image.close();
-      } else if ("isCompressedTexture" in this.image) {
-        this.image.dispose();
-      }
+    if (this.imageData && this.imageData.type === RenderImageDataType.ImageBitmap) {
+      this.imageData.data.close();
     }
   }
 }
@@ -134,10 +129,18 @@ export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   declare sampler: RenderSampler | undefined;
   declare source: RenderImage;
 
-  texture: Texture | undefined;
+  texture?: Texture;
+  loadStatus: LoadStatus = LoadStatus.Uninitialized;
+  abortController?: AbortController;
 
-  dispose(ctx: RenderThreadState) {
-    if (this.texture && !("isCompressedTexture" in (this.source.image || {}))) {
+  dispose() {
+    this.loadStatus = LoadStatus.Disposed;
+
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    if (this.texture) {
       this.texture.dispose();
     }
   }

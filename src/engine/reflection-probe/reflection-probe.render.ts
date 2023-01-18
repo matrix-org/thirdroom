@@ -2,6 +2,7 @@ import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRender
 
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 import { ReflectionProbe } from "./ReflectionProbe";
 
@@ -85,7 +86,10 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
     const reflectionProbeTextures: Texture[] = [];
 
     // Add the scene reflection probe to the texture array
-    if (scene.reflectionProbe && scene.reflectionProbe.reflectionProbeTexture?.texture) {
+    if (
+      scene.reflectionProbe?.reflectionProbeTexture?.loadStatus === LoadStatus.Loaded &&
+      scene.reflectionProbe.reflectionProbeTexture.texture
+    ) {
       scene.reflectionProbe.textureArrayIndex = reflectionProbeTextures.length;
       scene.reflectionProbeNeedsUpdate = false;
       reflectionProbeTextures.push(scene.reflectionProbe.reflectionProbeTexture.texture);
@@ -93,14 +97,16 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
 
     // Add each node reflection probe to the texture array array
     for (const reflectionProbe of reflectionProbes) {
-      if (!reflectionProbe.resource.reflectionProbeTexture) {
+      const reflectionProbeTexture = reflectionProbe.resource.reflectionProbeTexture;
+
+      if (!reflectionProbeTexture) {
         throw new Error("Reflection probe texture not yet loaded");
       }
 
-      if (reflectionProbe.resource.reflectionProbeTexture.texture) {
+      if (reflectionProbeTexture.loadStatus === LoadStatus.Loaded && reflectionProbeTexture.texture) {
         reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
         reflectionProbe.needsUpdate = false;
-        reflectionProbeTextures.push(reflectionProbe.resource.reflectionProbeTexture.texture);
+        reflectionProbeTextures.push(reflectionProbeTexture.texture);
       }
     }
 

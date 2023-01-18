@@ -24,28 +24,86 @@ import {
   UVMapping,
   Wrapping,
   TextureEncoding as ThreeTextureEncoding,
+  CompressedPixelFormat,
+  Data3DTexture,
+  WebGLRenderer,
 } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { RGBE, RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { KTX2Container, VK_FORMAT_UNDEFINED } from "ktx-parse";
 
 import { getModule } from "../module/module.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderImage, RenderTexture } from "../resource/resource.render";
-import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap } from "../resource/schema";
+import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap, TextureFormat } from "../resource/schema";
 import { toArrayBuffer } from "./arraybuffer";
 
 /**
  * These loader functions allow us to avoid converting from
  * ArrayBuffer -> Blob -> fetch() -> Response -> ArrayBuffer
  * when loading from a glTF where the image data is in a BufferView.
- */
+ **/
 
-type ArrayBufferKTX2Loader = KTX2Loader & { _createTexture: (buffer: ArrayBuffer) => Promise<CompressedTexture> };
+export interface KTX2TranscodeResult {
+  type: "transcode";
+  mipmaps: ImageData[];
+  width: number;
+  height: number;
+  hasAlpha: boolean;
+  format: CompressedPixelFormat;
+  dfdTransferFn: number;
+  dfdFlags: number;
+}
 
-function loadKTX2TextureFromArrayBuffer(ktx2Loader: KTX2Loader, buffer: ArrayBuffer): Promise<CompressedTexture> {
-  // TODO: Expose _createTexture publicly in KTX2Loader
-  return (ktx2Loader as ArrayBufferKTX2Loader)._createTexture(buffer);
+interface KTX2TranscodeError {
+  type: "error";
+  error: string;
+}
+
+export type ArrayBufferKTX2Loader = KTX2Loader & {
+  init(): Promise<void>;
+  _readKTX2Container(buffer: ArrayBuffer): Promise<KTX2Container>;
+  _transcodeTexture(
+    buffer: ArrayBuffer,
+    config?: unknown
+  ): Promise<MessageEvent<KTX2TranscodeResult | KTX2TranscodeError>>;
+  _loadTextureFromTranscodeResult(transcodeResult: KTX2TranscodeResult, texture: CompressedTexture): void;
+  _loadTextureFromKTX2Container<T extends DataTexture | Data3DTexture>(
+    container: KTX2Container,
+    texture: T
+  ): Promise<T>;
+};
+
+export async function initKTX2Loader(transcoderPath: string, renderer: WebGLRenderer): Promise<ArrayBufferKTX2Loader> {
+  const ktx2Loader = new KTX2Loader()
+    .setTranscoderPath(transcoderPath)
+    .detectSupport(renderer) as ArrayBufferKTX2Loader;
+  await ktx2Loader.init();
+  return ktx2Loader;
+}
+
+async function loadKTX2DataFromArrayBuffer(
+  ktx2Loader: ArrayBufferKTX2Loader,
+  buffer: ArrayBuffer
+): Promise<KTX2TranscodeResult | KTX2Container> {
+  const loader = ktx2Loader as ArrayBufferKTX2Loader;
+
+  const container = await loader._readKTX2Container(buffer);
+
+  if (container.vkFormat !== VK_FORMAT_UNDEFINED) {
+    return container;
+  }
+
+  const event = await loader._transcodeTexture(buffer);
+
+  const result = event.data;
+
+  if (result.type === "error") {
+    throw new Error(result.error);
+  }
+
+  return result;
 }
 
 interface DataTextureImage {
@@ -68,9 +126,7 @@ function loadRGBEFromArrayBuffer(rgbeLoader: RGBELoader, buffer: ArrayBuffer): R
   return texData;
 }
 
-function createDataTextureFromRGBE(texData: RGBE) {
-  const texture = new DataTexture();
-
+function loadTextureFromRGBE(texData: RGBE, texture: DataTexture): DataTexture {
   // TODO: Three.js types are wrong here
   const image = texture.image as unknown as DataTextureImage;
 
@@ -101,23 +157,46 @@ const HDRExtension = ".hdr";
 const KTX2MimeType = "image/ktx2";
 const KTX2Extension = ".ktx2";
 
+export enum RenderImageDataType {
+  RGBE,
+  ImageBitmap,
+  KTX2,
+}
+
+export type RenderImageData =
+  | {
+      type: RenderImageDataType.RGBE;
+      data: RGBE;
+    }
+  | {
+      type: RenderImageDataType.ImageBitmap;
+      data: ImageBitmap;
+    }
+  | {
+      type: RenderImageDataType.KTX2;
+      data: KTX2Container | KTX2TranscodeResult;
+    };
+
 async function loadRenderImageData(
   { rgbeLoader, ktx2Loader }: RendererModuleState,
   renderImage: RenderImage,
   signal: AbortSignal
-): Promise<ImageBitmap | RGBE | CompressedTexture> {
+): Promise<RenderImageData> {
   if (renderImage.bufferView) {
     const bufferView = renderImage.bufferView;
     const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
 
     if (renderImage.mimeType === HDRMimeType) {
-      return loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      const data = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      return { type: RenderImageDataType.RGBE, data };
     } else if (renderImage.mimeType === KTX2MimeType) {
       // TODO: RenderImage should only store image data and not textures
-      return await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
+      const data = await loadKTX2DataFromArrayBuffer(ktx2Loader, buffer);
+      return { type: RenderImageDataType.KTX2, data };
     } else {
       const blob = new Blob([buffer], { type: renderImage.mimeType });
-      return await loadImageBitmapFromBlob(blob, renderImage.flipY);
+      const data = await loadImageBitmapFromBlob(blob, renderImage.flipY);
+      return { type: RenderImageDataType.ImageBitmap, data };
     }
   } else {
     const uri = renderImage.uri;
@@ -125,14 +204,17 @@ async function loadRenderImageData(
 
     if (uri.endsWith(HDRExtension)) {
       const buffer = await response.arrayBuffer();
-      return loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      const data = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
+      return { type: RenderImageDataType.RGBE, data };
     } else if (uri.endsWith(KTX2Extension)) {
       const buffer = await response.arrayBuffer();
       // TODO: RenderImage should only store image data and not textures
-      return await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
+      const data = await loadKTX2DataFromArrayBuffer(ktx2Loader, buffer);
+      return { type: RenderImageDataType.KTX2, data };
     } else {
       const blob = await response.blob();
-      return loadImageBitmapFromBlob(blob, renderImage.flipY);
+      const data = await loadImageBitmapFromBlob(blob, renderImage.flipY);
+      return { type: RenderImageDataType.ImageBitmap, data };
     }
   }
 }
@@ -159,7 +241,7 @@ export function updateImageResources(ctx: RenderThreadState) {
           }
 
           if (renderImage.loadStatus !== LoadStatus.Disposed) {
-            renderImage.image = imageData;
+            renderImage.imageData = imageData;
             renderImage.loadStatus = LoadStatus.Loaded;
           }
         })
@@ -203,29 +285,80 @@ const ThreeMapping: { [key: number]: Mapping } = {
   [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
 };
 
-function loadTexture(rendererModule: RendererModuleState, renderTexture: RenderTexture): Texture {
-  let texture;
+function initRenderTexture(
+  renderer: WebGLRenderer,
+  renderTexture: RenderTexture
+): Texture | CompressedTexture | DataTexture | Data3DTexture {
+  const source = renderTexture.source;
+
+  let texture: Texture | CompressedTexture | DataTexture | Data3DTexture;
 
   let isRGBE = false;
 
-  if (renderTexture.source.image && "isCompressedTexture" in renderTexture.source.image) {
-    texture = renderTexture.source.image;
-    // TODO: Can we determine texture encoding when applying to the material?
-    texture.encoding = renderTexture.encoding as unknown as ThreeTextureEncoding;
-    texture.needsUpdate = true;
-  } else if (renderTexture.source.image instanceof ImageBitmap) {
-    // TODO: Add ImageBitmap to Texture types
-    texture = new Texture(renderTexture.source.image as any);
-    texture.flipY = false;
-    // TODO: Can we determine texture encoding when applying to the material?
-    texture.encoding = renderTexture.encoding as unknown as ThreeTextureEncoding;
-    texture.needsUpdate = true;
-  } else {
-    // TODO: RGBE texture encoding should be set in the glTF loader using an extension
-    texture = createDataTextureFromRGBE(renderTexture.source.image as RGBE);
+  if (source.mimeType === HDRMimeType || source.uri?.endsWith(HDRExtension)) {
     isRGBE = true;
+    texture = new DataTexture();
+  } else if (source.mimeType === KTX2MimeType || source.uri?.endsWith(KTX2Extension)) {
+    if (renderTexture.format === TextureFormat.Unknown) {
+      if (renderTexture.depth > 1) {
+        texture = new (Data3DTexture as any)();
+      } else {
+        texture = new DataTexture();
+      }
+    } else {
+      // TODO: CompressedArrayTexture
+      texture = new (CompressedTexture as any)();
+    }
+  } else {
+    texture = new Texture();
+    texture.flipY = false;
   }
 
+  updateTextureProperties(renderer, renderTexture, texture, isRGBE);
+
+  return texture;
+}
+
+async function loadRenderTexture<T extends Texture | CompressedTexture | DataTexture | Data3DTexture>(
+  renderer: WebGLRenderer,
+  ktx2Loader: ArrayBufferKTX2Loader,
+  renderTexture: RenderTexture,
+  imageData: RenderImageData,
+  texture: T
+): Promise<T> {
+  let isRGBE = false;
+
+  if (imageData.type === RenderImageDataType.KTX2) {
+    const ktx2 = imageData.data;
+
+    if ("type" in ktx2) {
+      ktx2Loader._loadTextureFromTranscodeResult(ktx2, texture as CompressedTexture);
+    } else {
+      await ktx2Loader._loadTextureFromKTX2Container(ktx2, texture as DataTexture | Data3DTexture);
+    }
+  } else if (imageData.type === RenderImageDataType.ImageBitmap) {
+    texture.image = imageData.data;
+  } else if (imageData.type === RenderImageDataType.RGBE) {
+    // TODO: RGBE texture encoding should be set in the glTF loader using an extension
+    loadTextureFromRGBE(imageData.data, texture as DataTexture);
+    isRGBE = true;
+  } else {
+    throw new Error("Unknown image data type");
+  }
+
+  updateTextureProperties(renderer, renderTexture, texture, isRGBE);
+
+  texture.needsUpdate = true;
+
+  return texture;
+}
+
+function updateTextureProperties(
+  renderer: WebGLRenderer,
+  renderTexture: RenderTexture,
+  texture: Texture,
+  isRGBE: boolean
+) {
   const sampler = renderTexture.sampler;
 
   if (sampler) {
@@ -245,16 +378,18 @@ function loadTexture(rendererModule: RendererModuleState, renderTexture: RenderT
     texture.wrapT = RepeatWrapping;
   }
 
+  if (!isRGBE) {
+    texture.encoding = renderTexture.encoding as unknown as ThreeTextureEncoding;
+  }
+
   // Set the texture anisotropy which improves rendering at extreme angles.
   // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
   // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
-  texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
-
-  return texture;
+  texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 }
 
 export function updateTextureResources(ctx: RenderThreadState) {
-  const rendererModule = getModule(ctx, RendererModule);
+  const { renderer, ktx2Loader } = getModule(ctx, RendererModule);
 
   const renderTextures = getLocalResources(ctx, RenderTexture);
 
@@ -262,7 +397,33 @@ export function updateTextureResources(ctx: RenderThreadState) {
     const renderTexture = renderTextures[i];
 
     if (renderTexture.texture === undefined) {
-      renderTexture.texture = loadTexture(rendererModule, renderTexture);
+      renderTexture.texture = initRenderTexture(renderer, renderTexture);
+    }
+
+    if (renderTexture.loadStatus === LoadStatus.Uninitialized && renderTexture.source.imageData) {
+      const abortController = new AbortController();
+
+      renderTexture.abortController = abortController;
+
+      renderTexture.loadStatus = LoadStatus.Loading;
+
+      loadRenderTexture(renderer, ktx2Loader, renderTexture, renderTexture.source.imageData, renderTexture.texture)
+        .then(() => {
+          if (renderTexture.loadStatus === LoadStatus.Loaded) {
+            throw new Error("Attempted to load a resource that has already been loaded.");
+          }
+
+          if (renderTexture.loadStatus !== LoadStatus.Disposed) {
+            renderTexture.loadStatus = LoadStatus.Loaded;
+          }
+        })
+        .catch((error) => {
+          if (error.name === "AbortError") {
+            return;
+          }
+
+          renderTexture.loadStatus = LoadStatus.Error;
+        });
     }
   }
 }

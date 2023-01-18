@@ -9,7 +9,6 @@ import {
   PMREMGenerator,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import { swapReadBufferFlags, swapWriteBufferFlags } from "../allocator/TripleBuffer";
 import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -32,7 +31,7 @@ import patchShaderChunks from "../material/patchShaderChunks";
 import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
 import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
-import { updateImageResources } from "../utils/textures";
+import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 
 export interface RenderThreadState extends BaseThreadContext {
   canvas?: HTMLCanvasElement;
@@ -50,7 +49,7 @@ export interface RendererModuleState {
   renderer: WebGLRenderer;
   renderPipeline: RenderPipeline;
   rgbeLoader: RGBELoader;
-  ktx2Loader: KTX2Loader;
+  ktx2Loader: ArrayBufferKTX2Loader;
   reflectionProbesMap: DataArrayTexture | null;
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
@@ -113,6 +112,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     const imageBitmapLoader = new ImageBitmapLoader();
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
+    const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+
     return {
       needsResize: true,
       renderer,
@@ -121,7 +122,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       scenes: [],
       rgbeLoader: new RGBELoader(),
-      ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
+      ktx2Loader,
       reflectionProbesMap: null,
       pmremGenerator,
       sceneRenderedRequests: [],
@@ -218,6 +219,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 
   updateImageResources(ctx);
+  updateTextureResources(ctx);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
   updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
