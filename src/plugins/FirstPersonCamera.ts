@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, hasComponent, Types } from "bitecs";
+import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { vec2, glMatrix as glm, quat } from "gl-matrix";
 
 import {
@@ -19,13 +19,13 @@ import { getInputController, InputController } from "../engine/input/InputContro
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
 import { isHost } from "../engine/network/network.common";
-import { Networked, NetworkModule, Owned } from "../engine/network/network.game";
+import { Networked, NetworkModule } from "../engine/network/network.game";
 import { NetworkAction } from "../engine/network/NetworkAction";
-import { broadcastReliable, sendReliable } from "../engine/network/outbound.game";
+import { sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";
 import { getRemoteResource, tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
-import { getAvatar } from "./avatars/getAvatar";
+import { maxEntities } from "../engine/config.common";
 
 type FirstPersonCameraModuleState = {};
 
@@ -117,15 +117,21 @@ export const FirstPersonCameraActionMap: ActionMap = {
   ],
 };
 
-export const FirstPersonCameraPitchTarget = defineComponent({
-  pitch: Types.f32,
-  maxAngle: Types.f32,
-  minAngle: Types.f32,
-  sensitivity: Types.f32,
-});
-export const FirstPersonCameraYawTarget = defineComponent({
-  sensitivity: Types.f32,
-});
+export const FirstPersonCameraPitchTarget = defineComponent(
+  {
+    pitch: Types.f32,
+    maxAngle: Types.f32,
+    minAngle: Types.f32,
+    sensitivity: Types.f32,
+  },
+  maxEntities
+);
+export const FirstPersonCameraYawTarget = defineComponent(
+  {
+    sensitivity: Types.f32,
+  },
+  maxEntities
+);
 
 const DEFAULT_SENSITIVITY = 100;
 
@@ -203,20 +209,6 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 
     const controller = getInputController(input, container.eid);
     applyPitch(ctx, controller, node);
-
-    // network the avatar's camera
-    const haveConnectedPeers = network.peers.length > 0;
-    const hosting = network.authoritative && isHost(network);
-    const avatar = getAvatar(ctx, container);
-    const isOwnedAvatar =
-      avatar && hasComponent(ctx.world, Networked, container.eid) && hasComponent(ctx.world, Owned, container.eid);
-    if (hosting && haveConnectedPeers && isOwnedAvatar) {
-      const camera = getCamera(ctx, container);
-      const msg = createUpdateCameraMessage(ctx, container.eid, camera.eid);
-      if (msg.byteLength > 0) {
-        broadcastReliable(ctx, network, msg);
-      }
-    }
   }
 
   const yawEntities = cameraYawTargetQuery(ctx.world);
@@ -231,12 +223,12 @@ export function FirstPersonCameraSystem(ctx: GameState) {
 export function NetworkedFirstPersonCameraSystem(ctx: GameState) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer);
+  const network = getModule(ctx, NetworkModule);
 
-  if (!ourPlayer || !playerNode) {
+  if (!network.authoritative || !ourPlayer || !playerNode) {
     return;
   }
 
-  const network = getModule(ctx, NetworkModule);
   const haveConnectedPeers = network.peers.length > 0;
   const hosting = network.authoritative && isHost(network);
   if (hosting || !haveConnectedPeers) {

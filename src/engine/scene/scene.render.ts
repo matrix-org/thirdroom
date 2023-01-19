@@ -4,6 +4,7 @@ import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
+import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
@@ -17,15 +18,18 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
     const currentBackgroundTextureResourceId = activeScene.currentBackgroundTextureResourceId;
     const nextBackgroundTextureResourceId = activeScene.backgroundTexture?.eid || 0;
 
-    if (nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId) {
+    if (
+      nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId &&
+      activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded
+    ) {
       if (activeScene.backgroundTexture) {
-        rendererModule.scene.background = activeScene.backgroundTexture.texture;
+        rendererModule.scene.background = activeScene.backgroundTexture.texture || null;
       } else {
         rendererModule.scene.background = null;
       }
-    }
 
-    activeScene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
+      activeScene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
+    }
 
     rendererModule.renderPipeline.bloomPass.strength = activeScene.bloomStrength;
 
@@ -36,7 +40,12 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
       rendererModule.scene.background = blackBackground;
     } else {
       rendererModule.scene.overrideMaterial = null;
-      rendererModule.scene.background = activeScene.backgroundTexture?.texture || null;
+
+      if (activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded) {
+        rendererModule.scene.background = activeScene.backgroundTexture?.texture || null;
+      } else {
+        rendererModule.scene.background = null;
+      }
     }
   } else {
     rendererModule.scene.visible = false;

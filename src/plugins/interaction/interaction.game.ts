@@ -6,7 +6,7 @@ import { Quaternion, Vector3, Vector4 } from "three";
 import { playAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
-import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
+import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import {
   enableActionMap,
@@ -208,20 +208,29 @@ const InteractionActionMap: ActionMap = {
   ],
 };
 
-export const Interactable = defineComponent({
-  type: Types.ui8,
-  interactionDistance: Types.f32,
-});
+export const Interactable = defineComponent(
+  {
+    type: Types.ui8,
+    interactionDistance: Types.f32,
+  },
+  maxEntities
+);
 
-const FocusComponent = defineComponent({
-  focusedEntity: Types.eid,
-});
+const FocusComponent = defineComponent(
+  {
+    focusedEntity: Types.eid,
+  },
+  maxEntities
+);
 
-export const GrabComponent = defineComponent({
-  grabbedEntity: Types.eid,
-  heldOffset: Types.f32,
-  joint: [Types.f32, 3],
-});
+export const GrabComponent = defineComponent(
+  {
+    grabbedEntity: Types.eid,
+    heldOffset: Types.f32,
+    joint: [Types.f32, 3],
+  },
+  maxEntities
+);
 
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;

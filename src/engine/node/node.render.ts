@@ -7,7 +7,7 @@ import { updateNodeLight } from "../light/light.render";
 import { updateNodeMesh } from "../mesh/mesh.render";
 import { updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
-import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
+import { getLocalResources, RenderNode } from "../resource/resource.render";
 import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 
 const tempMatrix4 = new Matrix4();
@@ -56,17 +56,8 @@ export function setTransformFromNode(
   object3D.layers.mask = node.layers;
 }
 
-export function updateLocalNodeResources(
-  ctx: RenderThreadState,
-  rendererModule: RendererModuleState,
-  activeSceneResource: RenderScene | undefined,
-  activeCameraNode: RenderNode | undefined
-) {
+export function updateLocalNodeResources(ctx: RenderThreadState, rendererModule: RendererModuleState) {
   const nodes = getLocalResources(ctx, RenderNode);
-
-  if (!activeSceneResource) {
-    return;
-  }
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -80,7 +71,7 @@ export function updateLocalNodeResources(
     updateNodeLight(ctx, scene, node);
     updateNodeReflectionProbe(ctx, scene, node);
     updateNodeMesh(ctx, node);
-    updateNodeTilesRenderer(ctx, scene, activeCameraNode, node);
+    updateNodeTilesRenderer(ctx, scene, node);
 
     node.needsUpdate = false;
   }

@@ -25,25 +25,36 @@ export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
   init() {},
 });
 
-export function RenderThreadStatsSystem(state: RenderThreadState) {
-  const renderModule = getModule(state, RendererModule);
+export function RenderThreadStatsSystem(ctx: RenderThreadState) {
+  const renderModule = getModule(ctx, RendererModule);
   const {
     render: { frame, calls, triangles, points, lines },
     memory: { geometries, textures },
     programs,
   } = renderModule.renderer.info;
 
-  const { statsBuffer, staleFrameCounter } = getModule(state, StatsModule);
+  const stats = getModule(ctx, StatsModule);
+
+  if (ctx.isStaleFrame) {
+    stats.staleTripleBufferCounter++;
+  } else {
+    if (stats.staleTripleBufferCounter > 1) {
+      stats.staleFrameCounter++;
+    }
+
+    stats.staleTripleBufferCounter = 0;
+  }
 
   const end = performance.now();
 
-  const frameDuration = (end - state.elapsed) / 1000;
+  const frameDuration = (end - ctx.elapsed) / 1000;
 
-  statsBuffer.f32[Stats.fps] = 1 / state.dt;
-  statsBuffer.f32[Stats.frameTime] = state.dt * 1000;
+  const statsBuffer = stats.statsBuffer;
+  statsBuffer.f32[Stats.fps] = 1 / ctx.dt;
+  statsBuffer.f32[Stats.frameTime] = ctx.dt * 1000;
   statsBuffer.f32[Stats.frameDuration] = frameDuration;
   statsBuffer.u32[Stats.frame] = frame;
-  statsBuffer.u32[Stats.staleFrames] = staleFrameCounter;
+  statsBuffer.u32[Stats.staleFrames] = stats.staleFrameCounter;
   statsBuffer.u32[Stats.drawCalls] = calls;
   statsBuffer.u32[Stats.programs] = programs ? programs.length : 0;
   statsBuffer.u32[Stats.geometries] = geometries;

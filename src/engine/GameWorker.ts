@@ -1,12 +1,10 @@
 import { addEntity, createWorld } from "bitecs";
 
-import { SkipRenderLerpSystem } from "./component/transform";
 import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
-import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
@@ -150,15 +148,7 @@ function update(ctx: GameState) {
   ctx.elapsed = now;
   ctx.tick++;
 
-  swapReadBufferFlags(ctx.mainToGameTripleBufferFlags);
-  swapReadBufferFlags(ctx.renderToGameTripleBufferFlags);
-
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
-
-  swapWriteBufferFlags(ctx.gameToMainTripleBufferFlags);
-  swapWriteBufferFlags(ctx.gameToRenderTripleBufferFlags);
-
-  SkipRenderLerpSystem(ctx);
 }

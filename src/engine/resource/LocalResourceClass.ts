@@ -147,7 +147,6 @@ export function defineLocalResourceClass<
       const prop = schema[propName];
 
       if (prop.size > 1 && prop.arrayType === Float32Array) {
-        console.log("define", propName);
         this.vecViews.push([
           new prop.arrayType(buffers[0], prop.byteOffset, prop.size),
           new prop.arrayType(buffers[1], prop.byteOffset, prop.size),
@@ -177,7 +176,6 @@ export function defineLocalResourceClass<
     const prop = schema[propName];
 
     if (prop.size > 1 && prop.arrayType === Float32Array) {
-      console.log("index", propName, vecViewIndex);
       defineProp(LocalResourceClass, prop, propName, vecViewIndex++);
     } else {
       defineProp(LocalResourceClass, prop, propName, -1);

@@ -1,7 +1,7 @@
 import { addComponent, defineComponent, hasComponent } from "bitecs";
 import { AnimationClip } from "three";
 
-import { addChild } from "../component/transform";
+import { addChild, getLastSibling } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import {
@@ -189,9 +189,9 @@ export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
   if (!firstNode) {
     worldResource.firstNode = object;
   } else {
-    object.nextSibling = firstNode;
-    firstNode.prevSibling = object;
-    worldResource.firstNode = object;
+    const lastSibling = getLastSibling(firstNode);
+    lastSibling.nextSibling = object;
+    object.prevSibling = lastSibling;
   }
 }
 

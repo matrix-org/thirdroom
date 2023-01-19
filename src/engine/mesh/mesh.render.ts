@@ -217,12 +217,13 @@ function createMeshPrimitiveObject(
 
     mesh.userData.reflectionProbeParams = new Vector3();
 
-    if (lightMap) {
-      const lightMapTexture = lightMap.texture;
-      lightMapTexture.texture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
-      lightMapTexture.texture.type = FloatType;
-      lightMapTexture.texture.minFilter = LinearFilter;
-      lightMapTexture.texture.generateMipmaps = false;
+    const lightMapTexture = lightMap?.texture?.texture;
+
+    if (lightMapTexture) {
+      lightMapTexture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
+      lightMapTexture.type = FloatType;
+      lightMapTexture.minFilter = LinearFilter;
+      lightMapTexture.generateMipmaps = false;
 
       mesh.userData.lightMap = lightMap;
     }
@@ -251,7 +252,7 @@ function createMeshPrimitiveObject(
           meshMaterial.needsUpdate = true;
         }
 
-        meshMaterial.lightMap = lightMap.texture.texture;
+        meshMaterial.lightMap = lightMap.texture.texture || null;
 
         ((meshMaterial.userData.lightMapTransform as Uniform).value as Matrix3).setUvTransform(
           lightMap.offset[0],

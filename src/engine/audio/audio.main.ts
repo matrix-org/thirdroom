@@ -3,8 +3,17 @@ import EventEmitter from "events";
 
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule } from "../module/module.common";
-import { getLocalResources, MainAudioEmitter, MainAudioSource, MainNode, MainScene } from "../resource/resource.main";
+import {
+  getLocalResources,
+  MainAudioData,
+  MainAudioEmitter,
+  MainAudioSource,
+  MainNode,
+  MainScene,
+} from "../resource/resource.main";
 import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schema";
+import { toArrayBuffer } from "../utils/arraybuffer";
+import { LoadStatus } from "../resource/resource.common";
 
 /*********
  * Types *
@@ -100,9 +109,81 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 
 export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioModule = getModule(ctx, AudioModule);
+  updateAudioDatas(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
   updateNodeAudioEmitters(ctx, audioModule);
+}
+
+const MAX_AUDIO_BYTES = 640_000;
+
+const audioExtensionToMimeType: { [key: string]: string } = {
+  mp3: "audio/mpeg",
+  aac: "audio/mpeg",
+  opus: "audio/ogg",
+  ogg: "audio/ogg",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  mp4: "audio/mp4",
+  webm: "audio/webm",
+};
+
+// TODO: Read fetch response headers
+function getAudioMimeType(uri: string) {
+  const extension = uri.split(".").pop() || "";
+  return audioExtensionToMimeType[extension] || "audio/mpeg";
+}
+
+async function loadAudioData(
+  audioModule: MainAudioModule,
+  audioData: MainAudioData,
+  signal: AbortSignal
+): Promise<AudioBuffer | HTMLAudioElement | MediaStream | undefined> {
+  let buffer: ArrayBuffer;
+  let mimeType: string;
+
+  if (audioData.bufferView) {
+    buffer = toArrayBuffer(
+      audioData.bufferView.buffer.data,
+      audioData.bufferView.byteOffset,
+      audioData.bufferView.byteLength
+    );
+    mimeType = audioData.mimeType;
+  } else {
+    const url = new URL(audioData.uri, window.location.href);
+
+    if (url.protocol === "mediastream:") {
+      return audioModule.mediaStreams.get(url.pathname);
+    }
+
+    const response = await fetch(url.href, { signal });
+
+    const contentType = response.headers.get("Content-Type");
+
+    if (contentType) {
+      mimeType = contentType;
+    } else {
+      mimeType = getAudioMimeType(audioData.uri);
+    }
+
+    buffer = await response.arrayBuffer();
+  }
+
+  if (buffer.byteLength > MAX_AUDIO_BYTES) {
+    const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
+
+    const audioEl = new Audio();
+
+    await new Promise((resolve, reject) => {
+      audioEl.oncanplaythrough = resolve;
+      audioEl.onerror = reject;
+      audioEl.src = objectUrl;
+    });
+
+    return audioEl;
+  } else {
+    return audioModule.context.decodeAudioData(buffer);
+  }
 }
 
 function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
@@ -115,6 +196,41 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
 
     if (node === ctx.worldResource!.activeCameraNode) {
       setAudioListenerTransform(audioModule.context.listener, node.worldMatrix);
+    }
+  }
+}
+
+function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+  const audioDatas = getLocalResources(ctx, MainAudioData);
+
+  for (let i = 0; i < audioDatas.length; i++) {
+    const audioData = audioDatas[i];
+
+    if (audioData.loadStatus === LoadStatus.Uninitialized) {
+      const abortController = new AbortController();
+
+      audioData.abortController = abortController;
+
+      audioData.loadStatus = LoadStatus.Loading;
+
+      loadAudioData(audioModule, audioData, abortController.signal)
+        .then((data) => {
+          if (audioData.loadStatus === LoadStatus.Loaded) {
+            throw new Error("Attempted to load a resource that has already been loaded.");
+          }
+
+          if (audioData.loadStatus !== LoadStatus.Disposed) {
+            audioData.data = data;
+            audioData.loadStatus = LoadStatus.Loaded;
+          }
+        })
+        .catch((error) => {
+          if (error.name === "AbortError") {
+            return;
+          }
+
+          audioData.loadStatus = LoadStatus.Error;
+        });
     }
   }
 }
@@ -142,6 +258,8 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
     }
 
     const audioData = localAudioSource.audio.data;
+
+    // Handle first load of audio data here?
 
     localAudioSource.activeAudioDataResourceId = nextAudioDataResourceId;
 

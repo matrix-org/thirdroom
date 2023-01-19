@@ -4,46 +4,25 @@ import {
   BufferAttribute,
   BufferGeometry,
   Camera,
-  ClampToEdgeWrapping,
   Color,
-  CompressedTexture,
-  CubeReflectionMapping,
-  CubeRefractionMapping,
-  CubeUVReflectionMapping,
   DoubleSide,
-  EquirectangularReflectionMapping,
-  EquirectangularRefractionMapping,
   FrontSide,
   InstancedMesh,
   InterleavedBuffer,
   InterleavedBufferAttribute,
   Light,
-  LinearFilter,
-  LinearMipmapLinearFilter,
-  LinearMipmapNearestFilter,
   LineBasicMaterial,
-  Mapping,
   MaterialParameters,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  MirroredRepeatWrapping,
-  NearestFilter,
-  NearestMipmapLinearFilter,
-  NearestMipmapNearestFilter,
   OrthographicCamera,
   PerspectiveCamera,
   PointsMaterial,
-  RepeatWrapping,
   Skeleton,
   SkinnedMesh,
   Texture,
-  TextureEncoding as ThreeTextureEncoding,
-  TextureFilter,
-  UVMapping,
-  Wrapping,
 } from "three";
-import { RGBE } from "three/examples/jsm/loaders/RGBELoader";
 
 import {
   AccessorComponentTypeToTypedArray,
@@ -59,20 +38,14 @@ import {
   PrimitiveMaterial,
 } from "../material/material.render";
 import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../mesh/mesh.render";
-import { BaseThreadContext, getModule } from "../module/module.common";
+import { getModule } from "../module/module.common";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { toArrayBuffer } from "../utils/arraybuffer";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
-import {
-  createDataTextureFromRGBE,
-  loadImageBitmapFromBlob,
-  loadKTX2TextureFromArrayBuffer,
-  loadRGBEFromArrayBuffer,
-} from "../utils/textures";
+import { RenderImageData, RenderImageDataType } from "../utils/textures";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import { defineLocalResourceClass } from "./LocalResourceClass";
-import { createLocalResourceModule } from "./resource.common";
+import { createLocalResourceModule, LoadStatus } from "./resource.common";
 import {
   SamplerResource,
   LightResource,
@@ -99,10 +72,6 @@ import {
   MeshResource,
   NodeResource,
   ReflectionProbeResource,
-  SamplerMagFilter,
-  SamplerMapping,
-  SamplerMinFilter,
-  SamplerWrap,
   SceneResource,
   SkinResource,
   TextureResource,
@@ -136,152 +105,42 @@ export class RenderAudioEmitter extends defineLocalResourceClass(AudioEmitterRes
   declare sources: RenderAudioSource[];
 }
 
-const HDRMimeType = "image/vnd.radiance";
-const HDRExtension = ".hdr";
-const KTX2MimeType = "image/ktx2";
-const KTX2Extension = ".ktx2";
-
 export class RenderImage extends defineLocalResourceClass(ImageResource) {
   declare bufferView: RenderBufferView | undefined;
 
-  image?: ImageBitmap | RGBE;
-  texture?: CompressedTexture;
+  imageData?: RenderImageData;
+  loadStatus: LoadStatus = LoadStatus.Uninitialized;
+  abortController?: AbortController;
 
-  async load(ctx: RenderThreadState) {
-    const { rgbeLoader, ktx2Loader } = getModule(ctx, RendererModule);
+  dispose() {
+    this.loadStatus = LoadStatus.Disposed;
 
-    if (this.bufferView) {
-      const bufferView = this.bufferView;
-      const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
-
-      if (this.mimeType === HDRMimeType) {
-        this.image = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
-      } else if (this.mimeType === KTX2MimeType) {
-        // TODO: RenderImage should only store image data and not textures
-        this.texture = await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
-      } else {
-        const blob = new Blob([buffer], { type: this.mimeType });
-        this.image = await loadImageBitmapFromBlob(blob, this.flipY);
-      }
-    } else {
-      const uri = this.uri;
-      const response = await fetch(uri);
-
-      if (uri.endsWith(HDRExtension)) {
-        const buffer = await response.arrayBuffer();
-        this.image = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
-      } else if (uri.endsWith(KTX2Extension)) {
-        const buffer = await response.arrayBuffer();
-        // TODO: RenderImage should only store image data and not textures
-        this.texture = await loadKTX2TextureFromArrayBuffer(ktx2Loader, buffer);
-      } else {
-        const blob = await response.blob();
-        this.image = await loadImageBitmapFromBlob(blob, this.flipY);
-      }
+    if (this.abortController) {
+      this.abortController.abort();
     }
-  }
 
-  dispose(ctx: BaseThreadContext) {
-    if (this.image instanceof ImageBitmap) {
-      this.image.close();
-    } else if (this.texture) {
-      this.texture.dispose();
+    if (this.imageData && this.imageData.type === RenderImageDataType.ImageBitmap) {
+      this.imageData.data.close();
     }
   }
 }
-
-const ThreeMinFilters: { [key: number]: TextureFilter } = {
-  [SamplerMinFilter.NEAREST]: NearestFilter,
-  [SamplerMinFilter.LINEAR]: LinearFilter,
-  [SamplerMinFilter.NEAREST_MIPMAP_NEAREST]: NearestMipmapNearestFilter,
-  [SamplerMinFilter.LINEAR_MIPMAP_NEAREST]: LinearMipmapNearestFilter,
-  [SamplerMinFilter.NEAREST_MIPMAP_LINEAR]: NearestMipmapLinearFilter,
-  [SamplerMinFilter.LINEAR_MIPMAP_LINEAR]: LinearMipmapLinearFilter,
-};
-
-const ThreeMagFilters: { [key: number]: TextureFilter } = {
-  [SamplerMagFilter.NEAREST]: NearestFilter,
-  [SamplerMagFilter.LINEAR]: LinearFilter,
-};
-
-const ThreeWrappings: { [key: number]: Wrapping } = {
-  [SamplerWrap.CLAMP_TO_EDGE]: ClampToEdgeWrapping,
-  [SamplerWrap.MIRRORED_REPEAT]: MirroredRepeatWrapping,
-  [SamplerWrap.REPEAT]: RepeatWrapping,
-};
-
-const ThreeMapping: { [key: number]: Mapping } = {
-  [SamplerMapping.UVMapping]: UVMapping,
-  [SamplerMapping.CubeReflectionMapping]: CubeReflectionMapping,
-  [SamplerMapping.CubeRefractionMapping]: CubeRefractionMapping,
-  [SamplerMapping.EquirectangularReflectionMapping]: EquirectangularReflectionMapping,
-  [SamplerMapping.EquirectangularRefractionMapping]: EquirectangularRefractionMapping,
-  [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
-};
-
-// Should never actually be used but allows us to async initialize the texture in load()
-const defaultTexture = new Texture();
 
 export class RenderTexture extends defineLocalResourceClass(TextureResource) {
   declare sampler: RenderSampler | undefined;
   declare source: RenderImage;
 
-  texture: Texture = defaultTexture;
+  texture?: Texture;
+  loadStatus: LoadStatus = LoadStatus.Uninitialized;
+  abortController?: AbortController;
 
-  async load(ctx: RenderThreadState) {
-    const rendererModule = getModule(ctx, RendererModule);
+  dispose() {
+    this.loadStatus = LoadStatus.Disposed;
 
-    let texture;
-
-    let isRGBE = false;
-
-    if (this.source.texture) {
-      texture = this.source.texture;
-      // TODO: Can we determine texture encoding when applying to the material?
-      texture.encoding = this.encoding as unknown as ThreeTextureEncoding;
-      texture.needsUpdate = true;
-    } else if (this.source.image instanceof ImageBitmap) {
-      // TODO: Add ImageBitmap to Texture types
-      texture = new Texture(this.source.image as any);
-      texture.flipY = false;
-      // TODO: Can we determine texture encoding when applying to the material?
-      texture.encoding = this.encoding as unknown as ThreeTextureEncoding;
-      texture.needsUpdate = true;
-    } else {
-      // TODO: RGBE texture encoding should be set in the glTF loader using an extension
-      texture = createDataTextureFromRGBE(this.source.image as RGBE);
-      isRGBE = true;
+    if (this.abortController) {
+      this.abortController.abort();
     }
 
-    const sampler = this.sampler;
-
-    if (sampler) {
-      // TODO: RGBE background texture needs to use correct texture sampler parameters
-      if (!isRGBE) {
-        texture.magFilter = ThreeMagFilters[sampler.magFilter];
-        texture.minFilter = ThreeMinFilters[sampler.minFilter];
-        texture.wrapS = ThreeWrappings[sampler.wrapS];
-        texture.wrapT = ThreeWrappings[sampler.wrapT];
-      }
-
-      texture.mapping = ThreeMapping[sampler.mapping];
-    } else {
-      texture.magFilter = LinearFilter;
-      texture.minFilter = LinearMipmapLinearFilter;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-    }
-
-    // Set the texture anisotropy which improves rendering at extreme angles.
-    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
-    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
-    texture.anisotropy = Math.min(rendererModule.renderer.capabilities.getMaxAnisotropy(), 8);
-
-    this.texture = texture;
-  }
-
-  dispose(ctx: RenderThreadState) {
-    if (this.texture && !this.source.texture) {
+    if (this.texture) {
       this.texture.dispose();
     }
   }
@@ -569,7 +428,7 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
 
   attribute: BufferAttribute | InterleavedBufferAttribute = defaultAttribute;
 
-  async load(ctx: RenderThreadState) {
+  load(ctx: RenderThreadState) {
     const elementSize = AccessorTypeToElementSize[this.type];
     const arrConstructor = AccessorComponentTypeToTypedArray[this.componentType];
     const componentByteLength = arrConstructor.BYTES_PER_ELEMENT;
@@ -607,7 +466,7 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
   geometryObj: BufferGeometry = defaultGeometry;
   materialObj: PrimitiveMaterial = defaultMaterial;
 
-  async load(ctx: RenderThreadState) {
+  load(ctx: RenderThreadState) {
     let geometryObj = new BufferGeometry();
 
     if (this.indices) {
@@ -697,7 +556,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   object3DVisible = true;
   needsUpdate = true;
 
-  dispose() {
+  dispose(ctx: RenderThreadState) {
     if (this.meshPrimitiveObjects) {
       for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
         const primitive = this.meshPrimitiveObjects[i];
@@ -730,9 +589,17 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
     }
 
     if (this.tilesRendererObject) {
+      const { tileRendererNodes } = getModule(ctx, RendererModule);
+
       const obj = this.tilesRendererObject.group;
       obj.parent?.remove(obj);
       this.tilesRendererObject.dispose();
+
+      const index = tileRendererNodes.indexOf(this);
+
+      if (index !== -1) {
+        tileRendererNodes.splice(index, 1);
+      }
     }
   }
 }
@@ -779,10 +646,10 @@ const {
   ResourceModule,
   getLocalResource,
   getLocalResources,
-  waitForLocalResource,
   registerResource,
   registerResourceLoader,
   ResourceLoaderSystem,
+  ReturnRecycledResourcesSystem,
 } = createLocalResourceModule<RenderThreadState>([
   RenderNode,
   RenderAudioData,
@@ -819,8 +686,8 @@ export {
   ResourceModule,
   getLocalResource,
   getLocalResources,
-  waitForLocalResource,
   registerResource,
   registerResourceLoader,
   ResourceLoaderSystem,
+  ReturnRecycledResourcesSystem,
 };

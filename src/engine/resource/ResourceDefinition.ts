@@ -598,7 +598,7 @@ export interface LocalResource<ThreadContext extends BaseThreadContext = BaseThr
   u32Views: Uint32Array[];
   f32Views: Float32Array[];
   vecViews: Float32Array[][];
-  load(ctx: ThreadContext): Promise<void>;
+  load(ctx: ThreadContext): void;
   dispose(ctx: ThreadContext): void;
 }
 

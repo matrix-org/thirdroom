@@ -82,6 +82,7 @@ async function onInit(
     sendMessage: renderWorkerSendMessage,
     // TODO: figure out how to create the main thread context such that this is initially set
     worldResource: undefined as any,
+    isStaleFrame: false,
   };
 
   const onMessage = ({ data }: MessageEvent) => {

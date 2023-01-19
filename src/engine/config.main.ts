@@ -6,8 +6,12 @@ import { MainThreadNetworkSystem, NetworkModule } from "./network/network.main";
 import { StatsModule } from "./stats/stats.main";
 import { IMainThreadContext } from "./MainThread";
 import { RendererModule } from "./renderer/renderer.main";
-import { ResourceModule, ResourceLoaderSystem } from "./resource/resource.main";
+import { ResourceModule, ResourceLoaderSystem, ReturnRecycledResourcesSystem } from "./resource/resource.main";
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.main";
+import {
+  IncomingMainThreadTripleBufferSystem,
+  OutgoingMainThreadTripleBufferSystem,
+} from "./MainThreadTripleBufferSystems";
 
 export default defineConfig<IMainThreadContext>({
   modules: [
@@ -20,5 +24,13 @@ export default defineConfig<IMainThreadContext>({
     RendererModule,
     ThirdroomModule,
   ],
-  systems: [ResourceLoaderSystem, MainThreadAudioSystem, MainThreadNetworkSystem, MainThreadEditorSystem],
+  systems: [
+    IncomingMainThreadTripleBufferSystem,
+    ResourceLoaderSystem,
+    MainThreadAudioSystem,
+    MainThreadNetworkSystem,
+    MainThreadEditorSystem,
+    OutgoingMainThreadTripleBufferSystem,
+    ReturnRecycledResourcesSystem,
+  ],
 });

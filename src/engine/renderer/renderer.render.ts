@@ -9,13 +9,16 @@ import {
   PMREMGenerator,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
-import { swapReadBufferFlags, swapWriteBufferFlags } from "../allocator/TripleBuffer";
-import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { RenderWorld } from "../resource/resource.render";
+import {
+  ConsumerThreadContext,
+  defineModule,
+  getModule,
+  registerMessageHandler,
+  Thread,
+} from "../module/module.common";
+import { RenderNode, RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
-import { StatsModule } from "../stats/stats.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
@@ -33,8 +36,10 @@ import patchShaderChunks from "../material/patchShaderChunks";
 import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
 import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
+import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
+import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 
-export interface RenderThreadState extends BaseThreadContext {
+export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
@@ -50,8 +55,9 @@ export interface RendererModuleState {
   renderer: WebGLRenderer;
   renderPipeline: RenderPipeline;
   rgbeLoader: RGBELoader;
-  ktx2Loader: KTX2Loader;
+  ktx2Loader: ArrayBufferKTX2Loader;
   reflectionProbesMap: DataArrayTexture | null;
+  tileRendererNodes: RenderNode[];
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
@@ -115,6 +121,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     const imageBitmapLoader = new ImageBitmapLoader();
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
+    const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+
     return {
       needsResize: true,
       renderer,
@@ -123,8 +131,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvasHeight: initialCanvasHeight,
       scenes: [],
       rgbeLoader: new RGBELoader(),
-      ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
+      ktx2Loader,
       reflectionProbesMap: null,
+      tileRendererNodes: [],
       pmremGenerator,
       sceneRenderedRequests: [],
       matrixMaterial,
@@ -148,8 +157,6 @@ export function startRenderLoop(state: RenderThreadState) {
 }
 
 function onUpdate(ctx: RenderThreadState) {
-  const bufferSwapped = swapReadBufferFlags(ctx.gameToRenderTripleBufferFlags);
-
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
@@ -157,20 +164,6 @@ function onUpdate(ctx: RenderThreadState) {
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
-
-  const stats = getModule(ctx, StatsModule);
-
-  if (bufferSwapped) {
-    if (stats.staleTripleBufferCounter > 1) {
-      stats.staleFrameCounter++;
-    }
-
-    stats.staleTripleBufferCounter = 0;
-  } else {
-    stats.staleTripleBufferCounter++;
-  }
-
-  swapWriteBufferFlags(ctx.renderToGameTripleBufferFlags);
 }
 
 function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
@@ -192,7 +185,7 @@ function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
@@ -225,9 +218,12 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevSceneResource = activeScene?.eid;
   }
 
+  updateImageResources(ctx);
+  updateTextureResources(ctx);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
-  updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
+  updateLocalNodeResources(ctx, rendererModule);
+  updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);
 

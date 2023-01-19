@@ -34,7 +34,7 @@ import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../eng
 import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
@@ -95,6 +95,7 @@ import { addNametag } from "../nametags/nametags.game";
 import { AvatarComponent } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
+import { teleportEntity } from "../../engine/utils/teleportEntity";
 
 type ThirdRoomModuleState = {};
 
@@ -531,7 +532,12 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   addComponent(ctx.world, Player, eid);
   addComponent(ctx.world, OurPlayer, eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
+  addComponent(ctx.world, Networked, eid);
+  Networked.networkId[eid] = 0;
+  Networked.parent[eid] = 0;
+  Networked.position[eid].fill(0);
+  Networked.quaternion[eid].fill(0);
+  Networked.velocity[eid].fill(0);
 
   const avatar = createRemoteObject(ctx, rig);
   addObjectToWorld(ctx, avatar);
@@ -540,6 +546,8 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
 
   if (spawnPoints.length > 0) {
     spawnEntity(spawnPoints, rig);
+  } else {
+    teleportEntity(rig, vec3.fromValues(0, 0, 0), quat.create());
   }
 
   embodyAvatar(ctx, physics, input, rig);
@@ -595,7 +603,12 @@ function loadRemotePlayerRig(
   addComponent(ctx.world, Owned, avatar.eid);
   addComponent(ctx.world, Player, avatar.eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, avatar.eid, true);
+  addComponent(ctx.world, Networked, avatar.eid);
+  Networked.networkId[avatar.eid] = 0;
+  Networked.parent[avatar.eid] = 0;
+  Networked.position[avatar.eid].fill(0);
+  Networked.quaternion[avatar.eid].fill(0);
+  Networked.velocity[avatar.eid].fill(0);
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {
@@ -605,16 +618,12 @@ function loadRemotePlayerRig(
 
 function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, KinematicControls, node.eid);
-  removeComponent(ctx.world, RigidBody, node.eid);
-
-  addComponent(ctx.world, FlyControls, node.eid);
-  FlyControls.set(node.eid, { speed: 10 });
+  addFlyControls(ctx, node.eid);
 }
 
 function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, FlyControls, node.eid);
   addComponent(ctx.world, KinematicControls, node.eid);
-  addAvatarRigidBody(ctx, physics, node);
 }
 
 export function ThirdroomSystem(ctx: GameState) {

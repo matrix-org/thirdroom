@@ -1,11 +1,15 @@
-import { addComponent, addEntity, defineComponent } from "bitecs";
+import { addComponent, addEntity, defineComponent, removeEntity } from "bitecs";
+import { availableRead } from "@thirdroom/ringbuffer";
 
-import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import {
+  createObjectTripleBuffer,
+  getReadObjectBufferView,
+  getWriteObjectBufferView,
+} from "../allocator/ObjectBufferView";
 import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
-import { createDeferred, Deferred } from "../utils/Deferred";
 import { createMessageQueueProducer } from "./MessageQueue";
 import {
   RemoteNode,
@@ -45,9 +49,7 @@ import {
   FromGameResourceModuleStateTripleBuffer,
   InitGameResourceModuleMessage,
   InitRemoteResourceModuleMessage,
-  ResourceDisposedError,
   ResourceId,
-  ResourceLoadedMessage,
   ResourceMessageType,
   ResourceProps,
   StringResourceType,
@@ -61,15 +63,13 @@ import {
   ResourceDefinition,
 } from "./ResourceDefinition";
 import { ResourceType } from "./schema";
-import { Pool, createPool, obtainFromPool } from "../utils/Pool";
-import { Historian, createHistorian } from "../utils/Historian";
-import { RecycleBin } from "../RecycleBin";
 import {
   createResourceRingBuffer,
   ResourceRingBuffer,
   enqueueResourceRingBuffer,
-  ResourceCommand,
-} from "./DisposeResourceRingBuffer";
+  dequeueResourceRingBuffer,
+  ResourceRingBufferItem,
+} from "./ResourceRingBuffer";
 
 const ResourceComponent = defineComponent();
 
@@ -90,11 +90,13 @@ export interface ResourceModuleState {
   fromGameState: FromGameResourceModuleStateTripleBuffer;
   mainToGameState: ToGameResourceModuleStateTripleBuffer;
   renderToGameState: ToGameResourceModuleStateTripleBuffer;
-  recycleBinPool: Pool<RecycleBin>;
-  recycleBinHistorian: Historian<RecycleBin>;
-  activeRecycleBin: RecycleBin;
   mainDisposedResources: ResourceRingBuffer;
   renderDisposedResources: ResourceRingBuffer;
+  mainRecycleResources: ResourceRingBuffer;
+  renderRecycleResources: ResourceRingBuffer;
+  disposedResourcesQueue: number[];
+  disposeRefCounts: Map<number, number>;
+  deferredRemovals: ResourceRingBufferItem[];
 }
 
 type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
@@ -102,7 +104,6 @@ type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
 interface ResourceInfo {
   resource: RemoteResourceTypes;
   refCount: number;
-  deferred: Deferred<undefined>;
   dispose?: () => void;
 }
 
@@ -120,12 +121,17 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
 
     const mainDisposedResources = createResourceRingBuffer();
     const renderDisposedResources = createResourceRingBuffer();
+    const mainRecycleResources = createResourceRingBuffer();
+    const renderRecycleResources = createResourceRingBuffer();
 
     sendMessage<InitGameResourceModuleMessage>(Thread.Main, ResourceMessageType.InitGameResourceModule, {
       fromGameState,
       toGameStateTripleBufferFlags: ctx.mainToGameTripleBufferFlags,
-      fromGameStateTripleBufferFlags: ctx.gameToMainTripleBufferFlags,
+      // All resource use gameToRenderTripleBufferFlags. Unsure if this could cause a race since there is
+      // synchronization between render/main with requestAnimationFrame
+      fromGameStateTripleBufferFlags: ctx.gameToRenderTripleBufferFlags,
       disposedResources: mainDisposedResources,
+      recycleResources: mainRecycleResources,
     });
 
     sendMessage<InitGameResourceModuleMessage>(Thread.Render, ResourceMessageType.InitGameResourceModule, {
@@ -133,6 +139,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       toGameStateTripleBufferFlags: ctx.renderToGameTripleBufferFlags,
       fromGameStateTripleBufferFlags: ctx.gameToRenderTripleBufferFlags,
       disposedResources: renderDisposedResources,
+      recycleResources: renderRecycleResources,
     });
 
     const { toGameState: mainToGameState } = await waitForMessage<InitRemoteResourceModuleMessage>(
@@ -145,9 +152,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       ResourceMessageType.InitRemoteResourceModule
     );
 
-    const recycleBinPool = createPool<RecycleBin>(() => []);
-    const recycleBinHistorian = createHistorian<RecycleBin>();
-
     return {
       resourceConstructors: new Map(),
       resourceTransformData: new Map(),
@@ -157,11 +161,13 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       fromGameState,
       mainToGameState,
       renderToGameState,
-      recycleBinPool,
-      recycleBinHistorian,
       mainDisposedResources,
       renderDisposedResources,
-      activeRecycleBin: obtainFromPool(recycleBinPool),
+      mainRecycleResources,
+      renderRecycleResources,
+      disposedResourcesQueue: [],
+      disposeRefCounts: new Map(),
+      deferredRemovals: [],
     };
   },
   init(ctx) {
@@ -195,7 +201,6 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteAnimation),
       registerResource(ctx, RemoteEnvironment),
       registerResource(ctx, RemoteWorld),
-      registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded),
     ]);
 
     ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
@@ -264,22 +269,6 @@ function registerResource<Def extends ResourceDefinition>(
   };
 }
 
-function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
-  const resourceModule = getModule(ctx, ResourceModule);
-
-  const deferred = resourceModule.resourceInfos.get(id)?.deferred;
-
-  if (!deferred) {
-    return;
-  }
-
-  if (error) {
-    deferred.reject(error);
-  } else {
-    deferred.resolve(undefined);
-  }
-}
-
 function createResource(
   ctx: GameState,
   resourceType: string,
@@ -291,31 +280,18 @@ function createResource(
   const id = addEntity(ctx.world);
   addComponent(ctx.world, ResourceComponent, id);
 
-  const deferred = createDeferred<undefined>();
-
-  deferred.promise.catch((error) => {
-    if (error instanceof ResourceDisposedError) {
-      return;
-    }
-
-    console.error(error);
-  });
-
   resourceModule.resourceInfos.set(id, {
     resource,
     refCount: 0,
     dispose,
-    deferred,
   });
 
   queueResourceMessage({
     resourceType,
     id,
+    tick: ctx.tick,
     props,
   });
-
-  enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Create, ctx.tick, id);
-  enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Create, ctx.tick, id);
 
   return id;
 }
@@ -374,12 +350,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
     resourceInfo.dispose();
   }
 
-  // queue up the tick this entity was disposed on
-  enqueueResourceRingBuffer(resourceModule.mainDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
-  enqueueResourceRingBuffer(resourceModule.renderDisposedResources, ResourceCommand.Dispose, ctx.tick, resourceId);
-
-  // add entity to the frame-synchronized recycle bin
-  resourceModule.activeRecycleBin.push(resourceId);
+  resourceModule.disposedResourcesQueue.push(resourceId);
 
   resourceModule.resourceInfos.delete(resourceId);
 
@@ -399,8 +370,6 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
       resource.manager.removeResourceRefs(resourceId);
     }
   }
-
-  resourceInfo.deferred.reject(new ResourceDisposedError("Resource disposed"));
 
   return true;
 }
@@ -439,8 +408,96 @@ export function getRemoteResources<Def extends ResourceDefinition, T extends Rem
   return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
 }
 
-const MAX_RESOURCE_BATCH_SIZE = 512;
+export function ResourceTickSystem(ctx: GameState) {
+  const { fromGameState } = getModule(ctx, ResourceModule);
+  const { tick } = getWriteObjectBufferView(fromGameState);
+  // Tell Main/Render threads what the game thread's tick is
+  tick[0] = ctx.tick;
+}
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  sendResourceMessages(ctx, MAX_RESOURCE_BATCH_SIZE);
+  sendResourceMessages(ctx);
+}
+
+export function ResourceDisposalSystem(ctx: GameState) {
+  const { disposedResourcesQueue, mainDisposedResources, renderDisposedResources, disposeRefCounts } = getModule(
+    ctx,
+    ResourceModule
+  );
+
+  while (disposedResourcesQueue.length) {
+    const eid = disposedResourcesQueue.shift()!;
+
+    if (disposeRefCounts.has(eid)) {
+      throw new Error("Disposed resource already has ref counts");
+    }
+
+    disposeRefCounts.set(eid, 2);
+
+    //console.log(`${ctx.thread} enqueue disposal ${eid} tick ${ctx.tick}`);
+
+    enqueueResourceRingBuffer(mainDisposedResources, eid, ctx.tick);
+    enqueueResourceRingBuffer(renderDisposedResources, eid, ctx.tick);
+  }
+}
+
+function processResourceRingBuffer(
+  resourceRingBuffer: ResourceRingBuffer,
+  disposeRefCounts: Map<number, number>,
+  deferredRemovals: ResourceRingBufferItem[]
+) {
+  while (availableRead(resourceRingBuffer)) {
+    const item = dequeueResourceRingBuffer(resourceRingBuffer, { eid: 0, tick: 0 });
+
+    let refCount = disposeRefCounts.get(item.eid);
+
+    if (refCount === undefined) {
+      throw new Error("Tried to dispose entity which has no dispose ref counts");
+    }
+
+    if (--refCount === 0) {
+      deferredRemovals.push(item);
+    } else {
+      disposeRefCounts.set(item.eid, refCount);
+    }
+  }
+}
+
+export function RecycleResourcesSystem(ctx: GameState) {
+  const {
+    mainRecycleResources,
+    renderRecycleResources,
+    disposeRefCounts,
+    deferredRemovals,
+    mainToGameState,
+    renderToGameState,
+  } = getModule(ctx, ResourceModule);
+
+  const { lastProcessedTick: lastProcessedTickMain } = getReadObjectBufferView(mainToGameState);
+  const { lastProcessedTick: lastProcessedTickRender } = getReadObjectBufferView(renderToGameState);
+
+  // What is the last fully processed tick for both the main and render thread?
+  const lastProcessedTick = Math.min(lastProcessedTickMain[0], lastProcessedTickRender[0]);
+
+  // Dequeue items representing resources being disposed on a specified tick on each of the following threads
+  // Decrement a ref count for a particular resource from 2 to 0 representing how many threads it is waiting on
+  // to be removed.
+  // If the ref count reaches 0 then we know that the resource has been properly disposed on both threads.
+  processResourceRingBuffer(mainRecycleResources, disposeRefCounts, deferredRemovals);
+  processResourceRingBuffer(renderRecycleResources, disposeRefCounts, deferredRemovals);
+
+  for (let i = 0; i < deferredRemovals.length; i++) {
+    const item = deferredRemovals[i];
+
+    if (item.tick <= lastProcessedTick && ctx.tick > lastProcessedTick) {
+      //console.log(`${ctx.thread} dispose ${item.eid} tick ${ctx.tick}`);
+      disposeRefCounts.delete(item.eid);
+      removeEntity(ctx.world, item.eid);
+      deferredRemovals.splice(i, 1);
+      i--;
+    }
+    // } else {
+    //   console.log(`eid ${item.eid} tick is greater than the last processed tick. Deferring.`);
+    // }
+  }
 }
