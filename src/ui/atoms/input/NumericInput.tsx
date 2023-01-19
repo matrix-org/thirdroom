@@ -1,28 +1,92 @@
-import { ChangeEvent, FocusEventHandler, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FocusEventHandler, KeyboardEvent, RefObject, useEffect, useRef, useState } from "react";
 
 import { Input, InputProps } from "./Input";
 
-interface NumericInputProps extends Omit<InputProps, "type" | "onChange" | "step"> {
-  type?: "u32" | "f32";
+type InputType = "u32" | "f32";
+type StepType = "sm" | "md" | "lg";
+interface NumericInputProps extends Omit<InputProps, "type" | "onChange" | "step" | "defaultValue"> {
+  type?: InputType;
   smStep?: number;
   mdStep?: number;
   lgStep?: number;
-  displayPrecision?: number; // Floating point digits to display when not focused
-  roundPrecision?: number; // Max digits to round to when changed (0 means integer?)
+  floatPrecision?: number; // Max digits to round to when changed (0 means integer?)
   forwardRef?: HTMLInputElement | null;
-  value?: number;
-  defaultValue?: number;
-  onChange?: (value: number) => void;
+  min?: number;
+  max?: number;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+function useValue(
+  inputRef: RefObject<HTMLInputElement | null>,
+  type: InputType,
+  floatPrecision?: number,
+  min?: number,
+  max?: number
+) {
+  const getCurrentValue = (): number | undefined => {
+    if (inputRef.current) {
+      const value = inputRef.current.value.replace(/\s/g, "");
+      const currentValue = value.includes(".") ? parseFloat(value) : parseInt(value);
+      if (isNaN(currentValue)) return undefined;
+      return currentValue;
+    }
+    return undefined;
+  };
+
+  const constrainValue = (value?: number) => {
+    if (typeof value !== "number") return undefined;
+    let v = value;
+    if (type !== "f32") {
+      v = Math.round(v);
+    }
+    if (type === "u32") {
+      v = Math.abs(v);
+    }
+    if (type == "f32" && typeof floatPrecision === "number") {
+      v = parseFloat(v.toFixed(floatPrecision));
+    }
+    if (typeof min === "number" && v < min) return min;
+    if (typeof max === "number" && v > max) return max;
+    return v;
+  };
+
+  return {
+    getCurrentValue,
+    constrainValue,
+  };
+}
+
+function useStep(smStep?: number, mdStep?: number, lgStep?: number) {
+  const getStep = (stepType: StepType, backwards: boolean): number => {
+    let nextStep = mdStep ?? 1;
+    if (stepType === "sm" && smStep) nextStep = smStep;
+    if (stepType === "lg" && lgStep) nextStep = lgStep;
+    return backwards ? -1 * nextStep : nextStep;
+  };
+
+  const getStepType = (evt: KeyboardEvent<HTMLInputElement>): StepType => {
+    let stepType: StepType = "md";
+    if (evt.shiftKey) stepType = "lg";
+    else if (evt.ctrlKey) stepType = "sm";
+
+    return stepType;
+  };
+
+  return {
+    getStep,
+    getStepType,
+  };
 }
 
 export function NumericInput({
-  type = "u32", // TODO:
+  type = "u32",
   smStep,
   mdStep,
   lgStep,
-  displayPrecision, // TODO:
-  roundPrecision, // TODO:
-  defaultValue,
+  floatPrecision,
+  min,
+  max,
   value,
   onChange,
   onKeyDown,
@@ -30,70 +94,54 @@ export function NumericInput({
   forwardRef,
   ...props
 }: NumericInputProps) {
-  const [inputValue, setInputValue] = useState(value ?? defaultValue ?? "");
+  const [localValue, setLocalValue] = useState<number | string>(value);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { getCurrentValue, constrainValue } = useValue(inputRef, type, floatPrecision, min, max);
+  const { getStep, getStepType } = useStep(smStep, mdStep, lgStep);
+
   useEffect(() => {
-    if (value) setInputValue(value);
+    setLocalValue(value);
   }, [value]);
 
-  const getIncomingValue = (): number => {
-    return value ?? defaultValue ?? 0;
-  };
-
-  const getCurrentValue = (): number => {
-    if (inputRef.current) {
-      const value = inputRef.current.value;
-      const currentValue = value.includes(".") ? parseFloat(value) : parseInt(value);
-      if (isNaN(currentValue)) return getIncomingValue();
-      return currentValue;
-    }
-    return getIncomingValue();
-  };
-
-  const getStep = (ctrl: boolean, shift: boolean, dir: "f" | "b"): number => {
-    let nextStep = mdStep ?? 1;
-    if (ctrl && smStep) nextStep = smStep;
-    if (shift && lgStep) nextStep = lgStep;
-    return dir === "f" ? nextStep : -1 * nextStep;
-  };
-
-  console.log(inputValue, "-=");
   const handleChange = (evt: ChangeEvent<HTMLInputElement>) => {
-    setInputValue(evt.currentTarget.value);
-    console.log(evt.currentTarget.value);
+    setLocalValue(evt.currentTarget.value);
+  };
+
+  const saveValue = (newValue?: number) => {
+    const constrainedValue = constrainValue(newValue);
+    setLocalValue(constrainedValue ?? value);
+    if (typeof constrainedValue === "number") {
+      onChange(constrainedValue);
+    }
+  };
+
+  const restoreValue = () => {
+    setLocalValue(value);
   };
 
   const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(evt);
 
-    if (evt.key === "Backspace") return;
     if (evt.key === "Escape" && inputRef.current) {
-      inputRef.current.value = getIncomingValue().toString();
+      restoreValue();
       inputRef.current.blur();
       return;
     }
     if (evt.key === "Enter") {
-      onChange?.(getCurrentValue());
+      saveValue(getCurrentValue());
       return;
     }
     if (evt.key === "ArrowUp" || evt.key === "ArrowDown") {
-      const nextStep = getStep(evt.ctrlKey || evt.altKey, evt.shiftKey, evt.key === "ArrowUp" ? "f" : "b");
-      onChange?.(getCurrentValue() + nextStep);
+      const nextStep = getStep(getStepType(evt), evt.key === "ArrowDown");
+      saveValue((getCurrentValue() ?? 0) + nextStep);
       evt.preventDefault();
       return;
-    }
-    if (!evt.key.match(/^[\d\\.]$/)) {
-      evt.preventDefault();
     }
   };
 
   const handleBlur: FocusEventHandler<HTMLInputElement> = (evt) => {
     onBlur?.(evt);
-    const oldValue = getIncomingValue();
-    const newValue = getCurrentValue();
-    if (oldValue !== newValue) {
-      onChange?.(newValue);
-    }
+    saveValue(getCurrentValue());
   };
 
   return (
@@ -102,9 +150,10 @@ export function NumericInput({
         forwardRef = ref;
         inputRef.current = ref;
       }}
-      type="number"
-      defaultValue={defaultValue}
-      value={inputValue}
+      type="text"
+      min={min}
+      max={max}
+      value={localValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
