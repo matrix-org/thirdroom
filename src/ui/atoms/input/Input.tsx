@@ -14,7 +14,10 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type = "text", inputSize = "md", state, outlined, disabled, before, after, ...props }, ref) => {
+  (
+    { className, type = "text", inputSize = "md", state, outlined, size = 1, disabled, before, after, ...props },
+    ref
+  ) => {
     const inputClass = classNames(
       `Input Input--${inputSize}`,
       {
@@ -29,7 +32,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={inputClass}>
         {before}
-        <input ref={ref} data-ui-state={state} type={type} disabled={disabled} {...props} />
+        <input ref={ref} data-ui-state={state} type={type} size={size} disabled={disabled} {...props} />
         {after}
       </div>
     );
