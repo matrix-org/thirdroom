@@ -1,5 +1,5 @@
 import { ComponentPropertyInfo, ComponentPropertyType } from "../../../../engine/component/types";
-import { Vector3Input } from "../../../atoms/input/Vector3Input";
+import { VectorInput } from "../../components/property-panel/VectorInput";
 import { Label } from "../../../atoms/text/Label";
 import { useComponentProperty } from "../../../hooks/useComponentProperty";
 
@@ -10,7 +10,7 @@ export function ComponentPropertyContainer({ id, name, type }: ComponentProperty
     return (
       <div className="flex flex-column gap-xxs">
         <Label className="shrink-0">{name}:</Label>
-        <Vector3Input {...props} />
+        <VectorInput type="vec3" {...props} />
       </div>
     );
   } else {
