@@ -17,7 +17,7 @@ import {
   registerMessageHandler,
   Thread,
 } from "../module/module.common";
-import { RenderWorld } from "../resource/resource.render";
+import { RenderNode, RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -36,6 +36,7 @@ import { updateNodeReflections, updateReflectionProbeTextureArray } from "../ref
 import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
+import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -55,6 +56,7 @@ export interface RendererModuleState {
   rgbeLoader: RGBELoader;
   ktx2Loader: ArrayBufferKTX2Loader;
   reflectionProbesMap: DataArrayTexture | null;
+  tileRendererNodes: RenderNode[];
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
@@ -128,6 +130,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       rgbeLoader: new RGBELoader(),
       ktx2Loader,
       reflectionProbesMap: null,
+      tileRendererNodes: [],
       pmremGenerator,
       sceneRenderedRequests: [],
       matrixMaterial,
@@ -173,7 +176,7 @@ function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, fr
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
@@ -210,7 +213,8 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateTextureResources(ctx);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
-  updateLocalNodeResources(ctx, rendererModule, activeScene, activeCameraNode);
+  updateLocalNodeResources(ctx, rendererModule);
+  updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);
 

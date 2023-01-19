@@ -556,7 +556,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   object3DVisible = true;
   needsUpdate = true;
 
-  dispose() {
+  dispose(ctx: RenderThreadState) {
     if (this.meshPrimitiveObjects) {
       for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
         const primitive = this.meshPrimitiveObjects[i];
@@ -589,9 +589,17 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
     }
 
     if (this.tilesRendererObject) {
+      const { tileRendererNodes } = getModule(ctx, RendererModule);
+
       const obj = this.tilesRendererObject.group;
       obj.parent?.remove(obj);
       this.tilesRendererObject.dispose();
+
+      const index = tileRendererNodes.indexOf(this);
+
+      if (index !== -1) {
+        tileRendererNodes.splice(index, 1);
+      }
     }
   }
 }
