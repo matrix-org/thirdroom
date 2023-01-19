@@ -1,5 +1,7 @@
 import { addComponent, defineQuery } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { Quaternion, Vector3 } from "three";
 
 import { getCamera } from "../engine/camera/camera.game";
 import { updateMatrixWorld } from "../engine/component/transform";
@@ -16,6 +18,7 @@ import { getInputController, InputController } from "../engine/input/InputContro
 import { defineModule, getModule } from "../engine/module/module.common";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
+import { RigidBody } from "../engine/physics/physics.game";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -87,7 +90,16 @@ export function addFlyControls(ctx: GameState, eid: number) {
   return eid;
 }
 
-function applyFlyControls(ctx: GameState, controller: InputController, playerRig: RemoteNode, camera: RemoteNode) {
+const _q = new Quaternion();
+const _p = new Vector3();
+
+function applyFlyControls(
+  ctx: GameState,
+  body: RAPIER.RigidBody,
+  controller: InputController,
+  playerRig: RemoteNode,
+  camera: RemoteNode
+) {
   const { speed } = FlyControls.get(playerRig.eid)!;
   const moveVec = controller.actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
   const boost = controller.actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
@@ -103,6 +115,12 @@ function applyFlyControls(ctx: GameState, controller: InputController, playerRig
   vec3.normalize(velocityVec, velocityVec);
   vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);
   vec3.add(playerRig.position, playerRig.position, velocityVec);
+
+  _q.fromArray(playerRig.quaternion);
+  _p.fromArray(playerRig.position);
+
+  body.setNextKinematicRotation(_q);
+  body.setNextKinematicTranslation(_p);
 }
 
 export function FlyControllerSystem(ctx: GameState) {
@@ -115,6 +133,12 @@ export function FlyControllerSystem(ctx: GameState) {
     const camera = getCamera(ctx, playerRig);
     const controller = getInputController(input, playerRigEid);
 
-    applyFlyControls(ctx, controller, playerRig, camera);
+    const body = RigidBody.store.get(playerRigEid);
+
+    if (!body) {
+      throw new Error("rigidbody not found on eid " + playerRigEid);
+    }
+
+    applyFlyControls(ctx, body, controller, playerRig, camera);
   }
 }
