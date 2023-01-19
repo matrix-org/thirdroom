@@ -1,9 +1,6 @@
 import { removeEntity } from "bitecs";
 
-import { getReadObjectBufferView, getWriteObjectBufferView } from "./allocator/ObjectBufferView";
-import { getModule } from "./module/module.common";
-import { ResourceModule } from "./resource/resource.game";
-import { GameState, World } from "./GameTypes";
+import { World } from "./GameTypes";
 import { addHistory, trimHistorian, Historian, createHistorian } from "./utils/Historian";
 import { obtainFromPool, releaseToPool, Pool, createPool } from "./utils/Pool";
 
@@ -53,29 +50,4 @@ export function recycleBinReleaseEntities(
     }
     releaseToPool(recycleCtx.pool, bin);
   });
-}
-
-export function NextRecycleBinSystem(ctx: GameState) {
-  const resourceModule = getModule(ctx, ResourceModule);
-  recycleBinNextTick(resourceModule.recycleBin, ctx.tick);
-}
-
-export function SyncRecycleBinSystem(ctx: GameState) {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const { fromGameState, mainToGameState, renderToGameState, recycleBin } = resourceModule;
-  const { tick } = getWriteObjectBufferView(fromGameState);
-  const { lastProcessedTick: lastProcessedTickMain } = getReadObjectBufferView(mainToGameState);
-  const { lastProcessedTick: lastProcessedTickRender } = getReadObjectBufferView(renderToGameState);
-
-  // Tell Main/Render threads what the game thread's tick is
-  tick[0] = ctx.tick;
-
-  // What is the last fully processed tick for both the main and render thread?
-  const lastProcessedTick = Math.min(lastProcessedTickMain[0], lastProcessedTickRender[0]);
-
-  // Dispose resources that have been fully removed on the main and render threads
-
-  // TODO: remove this recycling delay
-  const recycleDelay = 500;
-  recycleBinReleaseEntities(recycleBin, ctx.world, lastProcessedTick - recycleDelay);
 }

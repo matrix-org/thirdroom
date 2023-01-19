@@ -1,5 +1,9 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
+export interface ConsumerThreadContext extends BaseThreadContext {
+  isStaleFrame: boolean;
+}
+
 export interface BaseThreadContext {
   thread: Thread;
   systems: ThreadSystem<any>[];

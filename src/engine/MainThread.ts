@@ -1,15 +1,14 @@
 import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
-import { BaseThreadContext, Message, registerModules, Thread } from "./module/module.common";
+import { ConsumerThreadContext, Message, registerModules, Thread } from "./module/module.common";
 import mainThreadConfig from "./config.main";
-import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
 import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
 import { waitUntil } from "./utils/waitUntil";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
-export interface IMainThreadContext extends BaseThreadContext {
+export interface IMainThreadContext extends ConsumerThreadContext {
   useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
@@ -57,6 +56,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     sendMessage: mainThreadSendMessage,
     // TODO: figure out how to create the main thread context such that this is initially set
     worldResource: undefined as any,
+    isStaleFrame: false,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -119,13 +119,9 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   /* Update loop */
 
   function update() {
-    swapReadBufferFlags(ctx.gameToMainTripleBufferFlags);
-
     for (let i = 0; i < ctx.systems.length; i++) {
       ctx.systems[i](ctx);
     }
-
-    swapWriteBufferFlags(ctx.mainToGameTripleBufferFlags);
 
     ctx.animationFrameId = requestAnimationFrame(update);
   }

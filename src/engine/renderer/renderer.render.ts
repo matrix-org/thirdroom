@@ -10,11 +10,15 @@ import {
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-import { swapReadBufferFlags, swapWriteBufferFlags } from "../allocator/TripleBuffer";
-import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import {
+  ConsumerThreadContext,
+  defineModule,
+  getModule,
+  registerMessageHandler,
+  Thread,
+} from "../module/module.common";
 import { RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
-import { StatsModule } from "../stats/stats.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
@@ -33,7 +37,7 @@ import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 
-export interface RenderThreadState extends BaseThreadContext {
+export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
@@ -146,8 +150,6 @@ export function startRenderLoop(state: RenderThreadState) {
 }
 
 function onUpdate(ctx: RenderThreadState) {
-  const bufferSwapped = swapReadBufferFlags(ctx.gameToRenderTripleBufferFlags);
-
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
@@ -155,20 +157,6 @@ function onUpdate(ctx: RenderThreadState) {
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
-
-  const stats = getModule(ctx, StatsModule);
-
-  if (bufferSwapped) {
-    if (stats.staleTripleBufferCounter > 1) {
-      stats.staleFrameCounter++;
-    }
-
-    stats.staleTripleBufferCounter = 0;
-  } else {
-    stats.staleTripleBufferCounter++;
-  }
-
-  swapWriteBufferFlags(ctx.renderToGameTripleBufferFlags);
 }
 
 function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {

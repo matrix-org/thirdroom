@@ -5,7 +5,7 @@ import {
   enqueueResourceRingBuffer,
   drainResourceRingBuffer,
   ResourceCommand,
-} from "./DisposeResourceRingBuffer";
+} from "./ResourceRingBuffer";
 
 describe("DisposeResourceRingBuffer", () => {
   it("should enqueue and drain a create resource command", () => {

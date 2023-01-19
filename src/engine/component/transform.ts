@@ -1,9 +1,7 @@
-import { defineQuery } from "bitecs";
 import { vec3, quat, mat4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { ResourceType } from "../resource/schema";
-import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode, RemoteScene } from "../resource/RemoteResources";
 
 export const Axes = {
@@ -516,21 +514,4 @@ export function getForwardVector(out: vec3, pitch: number, roll: number) {
 
 export function getRightVector(out: vec3, roll: number) {
   return vec3.set(out, Math.cos(roll), 0, -Math.sin(roll));
-}
-
-const skipRenderLerpQuery = defineQuery([RemoteNode]);
-
-export function SkipRenderLerpSystem(ctx: GameState) {
-  const ents = skipRenderLerpQuery(ctx.world);
-
-  for (let i = 0; i < ents.length; i++) {
-    const eid = ents[i];
-    const node = getRemoteResource<RemoteNode>(ctx, eid)!;
-
-    node.skipLerp -= 1;
-
-    if (node.skipLerp <= 0) {
-      node.skipLerp = 0;
-    }
-  }
 }

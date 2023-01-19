@@ -22,7 +22,13 @@ import {
 import { GameState } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
-import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
+import {
+  RecycleResourcesSystem,
+  ResourceDisposalSystem,
+  ResourceLoaderSystem,
+  ResourceModule,
+  ResourceTickSystem,
+} from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
@@ -37,7 +43,9 @@ import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
 import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
-import { SyncRecycleBinSystem, NextRecycleBinSystem } from "./RecycleBin";
+import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSystem";
+import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
+import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
 
 export default defineConfig<GameState>({
   modules: [
@@ -58,7 +66,7 @@ export default defineConfig<GameState>({
     NametagModule,
   ],
   systems: [
-    NextRecycleBinSystem,
+    IncomingTripleBufferSystem,
 
     ApplyInputSystem,
     ActionMappingSystem,
@@ -78,9 +86,7 @@ export default defineConfig<GameState>({
     // interpolate towards authoritative state
     NetworkInterpolationSystem,
 
-    // Copy Transform to RemoteNode
     ScriptingSystem,
-    // Copy RemoteNode to Transform
 
     AnimationSystem,
 
@@ -95,15 +101,20 @@ export default defineConfig<GameState>({
 
     GameAudioSystem,
     RemoteCameraSystem,
-    GameResourceSystem,
-    ResourceLoaderSystem,
     PrefabDisposalSystem,
     GLTFResourceDisposalSystem,
 
     ResetInputSystem,
-    ResetAudioSourcesSystem,
     GameWorkerStatsSystem,
 
-    SyncRecycleBinSystem,
+    GameResourceSystem, // Commit Resources to TripleBuffer
+    ResourceTickSystem,
+    OutgoingTripleBufferSystem, // Swap write triplebuffers
+    RecycleResourcesSystem, // Drain entity recycle queues. Call removeEntity if released by other threads.
+    ResourceDisposalSystem, // Drain entity disposal queues. Enqueue into shared ringbuffers.
+    ResourceLoaderSystem, // Drain entity creation queue. postMessage to other threads.
+
+    SkipRenderLerpSystem, // Change node.skipLerp after commit
+    ResetAudioSourcesSystem, // Change audioSource.play/seek after commit
   ],
 });
