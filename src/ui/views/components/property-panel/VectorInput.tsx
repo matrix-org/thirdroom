@@ -3,14 +3,16 @@ import { NumericInput } from "../../../atoms/input/NumericInput";
 
 interface VectorInputProps {
   type: "vec2" | "vec3";
-  value: Float32Array | undefined;
+  value: Float32Array;
   onChange: (value: Float32Array) => void;
 }
 
 export function VectorInput({ value, type, onChange }: VectorInputProps) {
-  const [x, y, z] = value || new Float32Array(3);
+  const [x = 0, y = 0, z = 0] = value;
 
-  const handleChange = (values: number[]) => {
+  const handleChange = (x: number, y: number, z: number) => {
+    const values = [x, y];
+    if (type == "vec3") values.push(z);
     onChange(new Float32Array(values));
   };
 
@@ -22,7 +24,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
         type="f32"
         value={x}
         inputSize="sm"
-        onChange={(value) => handleChange([value, y, z])}
+        onChange={(value) => handleChange(value, y, z)}
       />
       <Label className="shrink-0">Y:</Label>
       <NumericInput
@@ -30,7 +32,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
         type="f32"
         value={y}
         inputSize="sm"
-        onChange={(value) => handleChange([x, value, z])}
+        onChange={(value) => handleChange(x, value, z)}
       />
       {type === "vec3" && (
         <>
@@ -40,7 +42,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             type="f32"
             value={z}
             inputSize="sm"
-            onChange={(value) => handleChange([x, y, value])}
+            onChange={(value) => handleChange(x, y, value)}
           />
         </>
       )}
