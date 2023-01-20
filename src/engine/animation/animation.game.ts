@@ -62,6 +62,33 @@ const fadeOutAmount = fadeInAmount / 2;
 
 const lastYrot = new Float32Array(maxEntities);
 
+// const interactionGroup = playerShapeCastCollisionGroups;
+// const colliderShape = new Capsule(1, 1);
+// const shapeTranslationOffset = new Vector3(0, 0, 0);
+// const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
+// const shapeCastPosition = new Vector3();
+// const shapeCastRotation = new Quaternion();
+// const _obj = new Object3D();
+
+// const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
+//   shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
+//   // shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
+
+//   const shapeCastResult = physicsWorld.castShape(
+//     shapeCastPosition,
+//     shapeCastRotation,
+//     new Vector3(0, -1, 0),
+//     colliderShape,
+//     0.1,
+//     true,
+//     interactionGroup
+//   );
+
+//   const isGrounded = !!shapeCastResult;
+
+//   return isGrounded;
+// };
+
 function processAnimations(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const ents = animationQuery(ctx.world);
@@ -184,6 +211,7 @@ function getClipActionsUsingVelocity(
     lastYrot[eid] = yRot;
   }
 
+  // const jumping = isGrounded(ctx, physics.physicsWorld, RigidBody.store.get(node.eid)!);
   const jumping = !physics.eidTocharacterController.get(node.eid)?.computedGrounded();
 
   // choose clip based on velocity

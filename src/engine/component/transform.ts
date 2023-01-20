@@ -433,20 +433,6 @@ export function traverseReverse(node: RemoteNode | RemoteScene, callback: (node:
   }
 }
 
-export function removeNode(node: RemoteNode | RemoteScene) {
-  if (node.resourceType === ResourceType.Node) {
-    const parent = node.parent || node.parentScene;
-
-    if (parent) {
-      removeChild(parent, node);
-    } else {
-      node.firstChild = undefined;
-      node.prevSibling = undefined;
-      node.nextSibling = undefined;
-    }
-  }
-}
-
 export function* getChildren(node: RemoteNode | RemoteScene): Generator<RemoteNode, undefined> {
   let cursor = node.resourceType === ResourceType.Node ? node.firstChild : node.firstNode;
 

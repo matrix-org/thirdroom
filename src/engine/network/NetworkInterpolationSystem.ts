@@ -26,8 +26,10 @@ import { clamp } from "../utils/interpolation";
 import { isHost } from "./network.common";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
+import { OurPlayer } from "../component/Player";
 
-export const remoteEntityQuery = defineQuery([Networked, Not(Owned)]);
+export const remoteEntityQuery = defineQuery([Networked, Not(Owned), Not(OurPlayer)]);
+
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
 export const exitedRemoteEntityQuery = exitQuery(remoteEntityQuery);
 
@@ -270,7 +272,7 @@ function postprocessHistorians(ctx: GameState, network: GameNetworkState) {
   }
 }
 
-function applyNetworkedToEntity(node: RemoteNode, body?: RapierRigidBody) {
+export function applyNetworkedToEntity(node: RemoteNode, body?: RapierRigidBody) {
   const eid = node.eid;
   const netPosition = Networked.position[eid];
   const netQuaternion = Networked.quaternion[eid];

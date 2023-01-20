@@ -48,6 +48,11 @@ export const deserializeCommands = (data: NetPipeData) => {
 
   const controller = getInputController(input, eid);
 
+  if (!controller) {
+    console.warn("could not deserialize commands for peerId", peerId, ", controller not found");
+    return data;
+  }
+
   const count = readUint8(readView);
   for (let i = 0; i < count; i++) {
     const id = readUint8(readView);

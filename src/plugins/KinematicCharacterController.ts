@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
+import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
@@ -13,16 +13,19 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController } from "../engine/input/InputController";
+import { tryGetInputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
-import { NetworkModule } from "../engine/network/network.game";
+import { Networked, NetworkModule, Owned } from "../engine/network/network.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { getCamera } from "../engine/camera/camera.game";
 import { playAudio } from "../engine/audio/audio.game";
 import randomRange from "../engine/utils/randomRange";
+import { OurPlayer } from "../engine/component/Player";
+import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
+import { AVATAR_HEIGHT, AVATAR_RADIUS } from "./avatars/common";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -110,29 +113,29 @@ export const KinematicControls = defineComponent();
 export const kinematicControlsQuery = defineQuery([KinematicControls]);
 export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
 
-const _q = new Quaternion();
+export const _q = new Quaternion();
 
-const walkAccel = 100;
-const drag = 10;
-const maxWalkSpeed = 20;
-const maxSprintSpeed = 50;
-const sprintModifier = 2.5;
-const jumpForce = 7;
-const inAirModifier = 0.5;
-const inAirDrag = 6;
-const crouchModifier = 0.7;
-const crouchJumpModifier = 1.5;
-const minSlideSpeed = 3;
-const slideModifier = 50;
-const slideDrag = 150;
-const slideCooldown = 1;
+export const walkAccel = 100;
+export const drag = 10;
+export const maxWalkSpeed = 20;
+export const maxSprintSpeed = 50;
+export const sprintModifier = 2.5;
+export const jumpForce = 7;
+export const inAirModifier = 0.5;
+export const inAirDrag = 6;
+export const crouchModifier = 0.7;
+export const crouchJumpModifier = 1.5;
+export const minSlideSpeed = 3;
+export const slideModifier = 50;
+export const slideDrag = 150;
+export const slideCooldown = 1;
 
-const _acceleration = new Vector3();
-const _dragForce = new Vector3();
-const _linearVelocity = new Vector3();
-let isSliding = false;
-const _slideForce = new Vector3();
-let lastSlideTime = 0;
+export const _acceleration = new Vector3();
+export const _dragForce = new Vector3();
+export const _linearVelocity = new Vector3();
+export let isSliding = false;
+export const _slideForce = new Vector3();
+export let lastSlideTime = 0;
 
 let lastFootstepFrame = 0;
 
@@ -140,7 +143,7 @@ export function addKinematicControls(ctx: GameState, eid: number) {
   addComponent(ctx.world, KinematicControls, eid);
 }
 
-function updateKinematicControls(
+export function updateKinematicControls(
   ctx: GameState,
   { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
@@ -293,7 +296,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
-  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+  if (network.authoritative && !isHost(network)) {
     return;
   }
 
@@ -312,27 +315,205 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = getInputController(input, eid);
+    const controller = tryGetInputController(input, eid);
     const body = RigidBody.store.get(eid);
 
     if (!body) {
-      throw new Error("rigidbody not found on eid " + eid);
+      console.warn("skipping kinematic controller - rigidbody not found on eid " + eid);
+      continue;
     }
 
-    // if not hosting
-    if (network.authoritative && !isHost(network)) {
-      // reapply all inputs since last host-processed input
-      // which will ideally predict us into the same place as we are on the host
-      for (let j = 0; j < controller.history.length; j++) {
-        const [, actionStates] = controller.history[j];
-        // console.log("reapplying input for tick:", tick);
-        // console.log("current tick:", ctx.tick);
-        updateKinematicControls(ctx, physics, actionStates, node, body);
-      }
-    } else {
-      // if hosting or p2p, only apply inputs once
-      updateKinematicControls(ctx, physics, controller.actionStates, node, body);
-    }
-    // console.log("=============");
+    updateKinematicControls(ctx, physics, controller.actionStates, node, body);
   }
 };
+
+// client-side prediction
+const cspQuery = defineQuery([Networked, KinematicControls, OurPlayer, Not(Owned)]);
+
+function updateKinematicControlsCsp(
+  ctx: GameState,
+  { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
+  actionStates: Map<string, ActionState>,
+  rig: RemoteNode,
+  body: RAPIER.RigidBody,
+  divisor: number
+) {
+  const characterController = eidTocharacterController.get(rig.eid)!;
+
+  // Handle Input
+  const moveVec = actionStates.get(KinematicCharacterControllerActions.Move) as Float32Array;
+  const jump = actionStates.get(KinematicCharacterControllerActions.Jump) as ButtonActionState;
+  const crouch = actionStates.get(KinematicCharacterControllerActions.Crouch) as ButtonActionState;
+  const sprint = actionStates.get(KinematicCharacterControllerActions.Sprint) as ButtonActionState;
+
+  _linearVelocity.copy(body.linvel() as Vector3);
+
+  // // HACK - for when autostep misbehaves and spikes Y velocity
+  if (_linearVelocity.y > 10) {
+    _linearVelocity.y = 1;
+  }
+
+  const isGrounded = characterController.computedGrounded();
+  const isSprinting = isGrounded && sprint.held && !isSliding;
+
+  const speed = Math.sqrt(_linearVelocity.x * _linearVelocity.x + _linearVelocity.z * _linearVelocity.z);
+
+  _acceleration.set(moveVec[0], 0, -moveVec[1]).normalize().applyQuaternion(_q).multiplyScalar(walkAccel);
+
+  if (!isGrounded) {
+    _acceleration.multiplyScalar(inAirModifier);
+  } else {
+    if (crouch.held && !isSliding) {
+      _acceleration.multiplyScalar(crouchModifier);
+    } else if (sprint.held && !isSliding) {
+      _acceleration.multiplyScalar(sprintModifier);
+    }
+  }
+
+  if (isSprinting) {
+    _acceleration.clampLength(0, maxSprintSpeed);
+  } else {
+    _acceleration.clampLength(0, maxWalkSpeed);
+  }
+
+  if (isGrounded) {
+    _acceleration.y = 0;
+  } else {
+    _acceleration.y = physicsWorld.gravity.y * 1.5;
+  }
+
+  // TODO: Check to see if velocity matches orientation before sliding
+  if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
+    _slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(_q);
+    _acceleration.add(_slideForce);
+    isSliding = true;
+    lastSlideTime = ctx.elapsed;
+  } else if (crouch.released || ctx.dt > lastSlideTime + slideCooldown) {
+    isSliding = false;
+  }
+
+  if (jump.pressed && isGrounded) {
+    const jumpModifier = crouch.held ? crouchJumpModifier : 1;
+    _linearVelocity.y += jumpForce * jumpModifier;
+  }
+
+  if (speed !== 0) {
+    let dragMultiplier = drag;
+
+    if (isSliding) {
+      dragMultiplier = slideDrag;
+    } else if (!isGrounded) {
+      dragMultiplier = sprint.held ? inAirDrag / 1.5 : inAirDrag;
+    }
+
+    _dragForce.copy(_linearVelocity).negate().multiplyScalar(dragMultiplier);
+
+    _dragForce.y = 0;
+
+    _acceleration.add(_dragForce);
+  }
+
+  _acceleration.multiplyScalar(ctx.dt);
+
+  _linearVelocity.add(_acceleration).multiplyScalar(ctx.dt);
+
+  _linearVelocity.divideScalar(divisor);
+
+  const translation = body.nextTranslation();
+
+  const collider = body.collider(0);
+
+  characterController.computeColliderMovement(collider, _linearVelocity);
+
+  const corrected = characterController.computedMovement();
+
+  translation.x += corrected.x;
+  translation.y += corrected.y;
+  translation.z += corrected.z;
+
+  body.setNextKinematicTranslation(translation);
+}
+
+let authRigidBody: RAPIER.RigidBody;
+function createAuthRigidBody(physics: PhysicsModuleState) {
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+  const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
+
+  const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_HEIGHT / 2, AVATAR_RADIUS)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(playerShapeCastCollisionGroups)
+    .setTranslation(0, AVATAR_HEIGHT / 2, 0);
+
+  physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+
+  return rigidBody;
+}
+
+export function ClientSidePredictionSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+
+  const haveConnectedPeers = network.peers.length > 0;
+  const authNet = network.authoritative;
+  const hosting = authNet && isHost(network);
+  const cspEnabled = network.clientSidePrediction;
+
+  if (!haveConnectedPeers) return;
+  if (!authNet) return;
+  if (!cspEnabled) return;
+  if (hosting) return;
+
+  const physics = getModule(ctx, PhysicsModule);
+  const input = getModule(ctx, InputModule);
+
+  if (authRigidBody === undefined) {
+    authRigidBody = createAuthRigidBody(physics);
+  }
+
+  const eid = cspQuery(ctx.world)[0];
+  if (!eid) return;
+
+  let characterController = physics.eidTocharacterController.get(eid);
+  if (!characterController) {
+    characterController = physics.physicsWorld.createCharacterController(0.1);
+    characterController.enableAutostep(0.2, 0.2, true);
+    characterController.enableSnapToGround(0.3);
+    characterController.setApplyImpulsesToDynamicBodies(true);
+    physics.eidTocharacterController.set(eid, characterController);
+  }
+
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+
+  const body = RigidBody.store.get(eid);
+  if (!body) {
+    console.warn("skipping CSP - rigidbody not found on eid " + eid);
+    return;
+  }
+
+  const netPosition = Networked.position[eid];
+  const netVelocity = Networked.velocity[eid];
+  const pos = new Vector3().fromArray(netPosition);
+  const vel = new Vector3().fromArray(netVelocity);
+
+  // set our own rotation
+  _q.fromArray(node.quaternion);
+  body.setNextKinematicRotation(_q);
+
+  const controller = tryGetInputController(input, eid);
+
+  if ((controller as any).needsUpdate) {
+    (controller as any).needsUpdate = false;
+
+    body.setTranslation(pos, true);
+    body.setLinvel(vel, true);
+
+    // reapply all inputs since last host-processed input
+    // which will ideally predict us into the same place as we are on the host
+    for (let j = 0; j < controller.history.length; j++) {
+      const [, actionStates] = controller.history[j];
+      updateKinematicControlsCsp(ctx, physics, actionStates, node, body, controller.history.length);
+    }
+  } else {
+    updateKinematicControls(ctx, physics, controller.actionStates, node, body);
+    return;
+  }
+}

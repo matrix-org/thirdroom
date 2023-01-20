@@ -23,6 +23,7 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
   if (network.authoritative && !isHost(network) && inputTick) {
     const actionStatesIndex = controller.history.findIndex(([tick]) => tick > inputTick);
     controller.history.splice(0, actionStatesIndex);
+    (controller as any).needsUpdate = true;
 
     // now we as the client want to continue deserializing the full update of this packet
     // and then afterwards we can reapply our inputs (PhysicsCharacterController) that happened after inputTick

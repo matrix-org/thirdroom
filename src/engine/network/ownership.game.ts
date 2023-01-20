@@ -8,13 +8,14 @@ import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { isHost } from "./network.common";
 import { getRemoteResource } from "../resource/resource.game";
-import { addObjectToWorld, createRemoteObject, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
+import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { GameNetworkState, Networked, NetworkModule, Owned } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
 import { writeMetadata, NetPipeData } from "./serialization.game";
 
-const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
+// const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
+const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 30));
 
 export const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
   writeMetadata(NetworkAction.RemoveOwnershipMessage)([ctx, messageView]);
@@ -44,11 +45,17 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   } else if (!hasComponent(ctx.world, Owned, eid)) {
     removeObjectFromWorld(ctx, node);
 
+    // send message to remove on other side
+    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, node.eid));
+
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
 
     const template = getPrefabTemplate(ctx, prefabName);
     const newNode = template.create(ctx);
+
+    addComponent(ctx.world, Owned, newNode.eid);
+    addComponent(ctx.world, Networked, newNode.eid);
 
     const body = RigidBody.store.get(eid);
     if (!body) throw new Error("rigidbody not found for eid: " + eid);
@@ -57,15 +64,9 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
     newNode.scale.set(node.scale);
     newNode.quaternion.set(node.quaternion);
 
-    const obj = createRemoteObject(ctx, newNode);
-    addComponent(ctx.world, Owned, obj.eid);
-    addComponent(ctx.world, Networked, obj.eid);
-    addObjectToWorld(ctx, obj);
+    addObjectToWorld(ctx, newNode);
 
-    // send message to remove on other side
-    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, obj.eid));
-
-    return obj.eid;
+    return newNode.eid;
   }
 
   return NOOP;

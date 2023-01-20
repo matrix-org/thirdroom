@@ -16,7 +16,7 @@ import {
   ButtonActionState,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { tryGetInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import {
@@ -307,7 +307,7 @@ export function InteractionSystem(ctx: GameState) {
     const eid = rigs[i];
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const camera = getCamera(ctx, rig);
-    const controller = getInputController(input, eid);
+    const controller = tryGetInputController(input, eid);
 
     updateFocus(ctx, physics, rig, camera);
 

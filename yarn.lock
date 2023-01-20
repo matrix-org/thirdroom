@@ -1680,10 +1680,9 @@ binary-extensions@^2.0.0:
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
 
-bitecs@^0.3.38:
+bitecs@NateTheGreatt/bitECS:
   version "0.3.38"
-  resolved "https://registry.yarnpkg.com/bitecs/-/bitecs-0.3.38.tgz#4c90f3bb6c4523482f179a4348bc7ce4e826136a"
-  integrity sha512-vfz6wjPElg/0O7c06Ttb/BeWMInBspSuekRvNoLqPyEZV87tLWipxqpjtGPKZBhin8jv4OuQkrkZZfZpaqOndQ==
+  resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/5e8bf7a3b874bd1d76a60cba350938bd3e770c79"
 
 brace-expansion@^1.1.7:
   version "1.1.11"

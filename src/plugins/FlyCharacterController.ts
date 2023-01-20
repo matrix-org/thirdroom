@@ -14,7 +14,7 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController, InputController } from "../engine/input/InputController";
+import { tryGetInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
@@ -131,7 +131,7 @@ export function FlyControllerSystem(ctx: GameState) {
     const playerRigEid = ents[i];
     const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
     const camera = getCamera(ctx, playerRig);
-    const controller = getInputController(input, playerRigEid);
+    const controller = tryGetInputController(input, playerRigEid);
 
     const body = RigidBody.store.get(playerRigEid);
 

@@ -51,7 +51,7 @@ import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/netwo
 import {
   addInputController,
   createInputController,
-  getInputController,
+  tryGetInputController,
   InputController,
   inputControllerQuery,
 } from "../../engine/input/InputController";
@@ -500,7 +500,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   const rig = createPrefabEntity(ctx, "avatar");
   const eid = rig.eid;
 
-  addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, network.peerId);
+  // addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, network.peerId);
 
   associatePeerWithEntity(network, network.peerId, eid);
 
@@ -532,15 +532,9 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   addComponent(ctx.world, Player, eid);
   addComponent(ctx.world, OurPlayer, eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid);
-  Networked.networkId[eid] = 0;
-  Networked.parent[eid] = 0;
-  Networked.position[eid].fill(0);
-  Networked.quaternion[eid].fill(0);
-  Networked.velocity[eid].fill(0);
+  addComponent(ctx.world, Networked, eid, true);
 
-  const avatar = createRemoteObject(ctx, rig);
-  addObjectToWorld(ctx, avatar);
+  addObjectToWorld(ctx, rig);
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -562,16 +556,15 @@ function loadRemotePlayerRig(
   network: GameNetworkState,
   peerId: string
 ) {
-  const rig = createPrefabEntity(ctx, "avatar", { nametag: true });
-  const avatar = createRemoteObject(ctx, rig);
-  addObjectToWorld(ctx, avatar);
+  console.log("loadRemotePlayerRig for peerId", peerId);
+  const rig = createPrefabEntity(ctx, "avatar");
 
-  // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to kee them interactable for the host's entity
-  removeInteractableComponent(ctx, physics, avatar);
+  // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to keep them interactable for the host's entity
+  removeInteractableComponent(ctx, physics, rig);
 
-  addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, avatar, peerId);
+  addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, peerId);
 
-  associatePeerWithEntity(network, peerId, avatar.eid);
+  associatePeerWithEntity(network, peerId, rig.eid);
 
   rig.name = peerId;
 
@@ -600,15 +593,12 @@ function loadRemotePlayerRig(
   // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
   // TODO: add Authoring component for authoritatively controlled entities as a host,
   //       use Owned to distinguish actual ownership on all clients
-  addComponent(ctx.world, Owned, avatar.eid);
-  addComponent(ctx.world, Player, avatar.eid);
+  addComponent(ctx.world, Owned, rig.eid);
+  addComponent(ctx.world, Player, rig.eid);
   // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, avatar.eid);
-  Networked.networkId[avatar.eid] = 0;
-  Networked.parent[avatar.eid] = 0;
-  Networked.position[avatar.eid].fill(0);
-  Networked.quaternion[avatar.eid].fill(0);
-  Networked.velocity[avatar.eid].fill(0);
+  addComponent(ctx.world, Networked, rig.eid, true);
+
+  addObjectToWorld(ctx, rig);
 
   const spawnPoints = getSpawnPoints(ctx);
   if (spawnPoints.length > 0) {
@@ -639,7 +629,7 @@ export function ThirdroomSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = getInputController(input, eid);
+    const controller = tryGetInputController(input, eid);
     updateThirdroom(ctx, physics, controller, node);
   }
 }

@@ -44,7 +44,7 @@
     "@thirdroom/hydrogen-view-sdk": "0.0.27",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
-    "bitecs": "^0.3.38",
+    "bitecs": "NateTheGreatt/bitECS",
     "classnames": "^2.3.1",
     "draco3dgltf": "^1.5.3",
     "events": "^3.3.0",

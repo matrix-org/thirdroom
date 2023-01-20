@@ -10,6 +10,7 @@ import {
   NetworkedFirstPersonCameraSystem,
 } from "../plugins/FirstPersonCamera";
 import {
+  ClientSidePredictionSystem,
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
 } from "../plugins/KinematicCharacterController";
@@ -75,6 +76,7 @@ export default defineConfig<GameState>({
 
     FirstPersonCameraSystem,
     KinematicCharacterControllerSystem,
+    ClientSidePredictionSystem,
     FlyControllerSystem,
     InteractionSystem,
     SpawnableSystem,
