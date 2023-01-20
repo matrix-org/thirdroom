@@ -9,12 +9,21 @@ interface NumericInputProps extends Omit<InputProps, "type" | "onChange" | "step
   smStep?: number;
   mdStep?: number;
   lgStep?: number;
-  floatPrecision?: number; // Max digits to round to when changed (0 means integer?)
+  floatPrecision?: number;
+  displayPrecision?: number;
   forwardRef?: HTMLInputElement | null;
   min?: number;
   max?: number;
   value: number;
   onChange: (value: number) => void;
+}
+
+export function strToFixed(str: string, digits?: number): string {
+  if (typeof digits !== "number" || digits < 0) return str;
+  const pointIndex = str.indexOf(".");
+  if (pointIndex < 0) return str;
+  if (pointIndex === str.length - 1 || digits === 0) return str.slice(0, pointIndex);
+  return str.slice(0, pointIndex + 1 + digits);
 }
 
 function useValue(
@@ -40,8 +49,8 @@ function useValue(
     if (type !== "f32") {
       v = Math.round(v);
     }
-    if (type === "u32") {
-      v = Math.abs(v);
+    if (type === "u32" && v < 0) {
+      v = 0;
     }
     if (type == "f32" && typeof floatPrecision === "number") {
       v = parseFloat(v.toFixed(floatPrecision));
@@ -85,22 +94,25 @@ export function NumericInput({
   mdStep,
   lgStep,
   floatPrecision,
+  displayPrecision,
   min,
   max,
   value,
   onChange,
   onKeyDown,
   onBlur,
+  onFocus,
   forwardRef,
   ...props
 }: NumericInputProps) {
-  const [localValue, setLocalValue] = useState<number | string>(value);
+  const [localValue, setLocalValue] = useState<string>(value.toString());
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [focus, setFocus] = useState(false);
   const { getCurrentValue, constrainValue } = useValue(inputRef, type, floatPrecision, min, max);
   const { getStep, getStepType } = useStep(smStep, mdStep, lgStep);
 
   useEffect(() => {
-    setLocalValue(value);
+    setLocalValue(value.toString());
   }, [value]);
 
   const handleChange = (evt: ChangeEvent<HTMLInputElement>) => {
@@ -109,14 +121,14 @@ export function NumericInput({
 
   const saveValue = (newValue?: number) => {
     const constrainedValue = constrainValue(newValue);
-    setLocalValue(constrainedValue ?? value);
+    setLocalValue(constrainedValue?.toString() ?? value.toString());
     if (typeof constrainedValue === "number") {
       onChange(constrainedValue);
     }
   };
 
   const restoreValue = () => {
-    setLocalValue(value);
+    setLocalValue(value.toString());
   };
 
   const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
@@ -141,7 +153,13 @@ export function NumericInput({
 
   const handleBlur: FocusEventHandler<HTMLInputElement> = (evt) => {
     onBlur?.(evt);
+    setFocus(false);
     saveValue(getCurrentValue());
+  };
+
+  const handleFocus: FocusEventHandler<HTMLInputElement> = (evt) => {
+    onFocus?.(evt);
+    setFocus(true);
   };
 
   return (
@@ -153,10 +171,13 @@ export function NumericInput({
       type="text"
       min={min}
       max={max}
-      value={localValue}
+      value={
+        focus === false && typeof displayPrecision === "number" ? strToFixed(localValue, displayPrecision) : localValue
+      }
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
+      onFocus={handleFocus}
       {...props}
     />
   );
