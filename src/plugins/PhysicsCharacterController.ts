@@ -11,7 +11,7 @@ import {
   enableActionMap,
 } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
+import { tryGetInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
@@ -250,7 +250,7 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = getInputController(input, eid);
+    const controller = tryGetInputController(input, eid);
     updatePhysicsControls(ctx, physics, controller, node);
   }
 };

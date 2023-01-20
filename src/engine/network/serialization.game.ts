@@ -57,7 +57,6 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
-  RemoteNametag,
   RemoteNode,
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
@@ -289,13 +288,13 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
       console.info("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
-      throw new Error(`could not write entity prefab name, ${eid} does not exist in entityPrefabMap`);
+      throw new Error(`could not serialize creations, ${eid} has no prefab`);
     }
   }
   return input;
@@ -500,47 +499,45 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
   associatePeerWithEntity(network, peerId, peid);
-
   addComponent(ctx.world, Player, peid);
 
-  const peerNode = getRemoteResource<RemoteNode>(ctx, peid)!; // || new RemoteNode(ctx.resourceManager);
+  const peerNode = getRemoteResource<RemoteNode>(ctx, peid)!;
 
+  peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, {
+          uri: `mediastream:${peerId}`,
+        }),
+        autoPlay: true,
+      }),
+    ],
+  });
+
+  peerNode.name = peerId;
+
+  // if not our own avatar, add nametag
   if (peerId !== network.peerId) {
-    // if not our own avatar, add voip
-    peerNode.name = peerId;
-    peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-      type: AudioEmitterType.Positional,
-      sources: [
-        new RemoteAudioSource(ctx.resourceManager, {
-          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
-        }),
-        new RemoteAudioSource(ctx.resourceManager, {
-          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
-        }),
-        new RemoteAudioSource(ctx.resourceManager, {
-          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
-        }),
-        new RemoteAudioSource(ctx.resourceManager, {
-          audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
-        }),
-        new RemoteAudioSource(ctx.resourceManager, {
-          audio: new RemoteAudioData(ctx.resourceManager, {
-            uri: `mediastream:${peerId}`,
-          }),
-          autoPlay: true,
-        }),
-      ],
-    });
-    peerNode.nametag = new RemoteNametag(ctx.resourceManager, {
-      name: peerId,
-    });
-
     addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, peerNode, peerId);
   }
 
   // if our own avatar
   if (network.authoritative && !isHost(network) && peerId === network.peerId) {
     // unset our old avatar
+    // TODO: actually remove this entity. this leaks atm, but fixes a bug when removing the entire node
     const old = ourPlayerQuery(ctx.world)[0];
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
@@ -552,6 +549,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   return data;
 }
+
 export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
   const input: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.InformPlayerNetworkId)(input);

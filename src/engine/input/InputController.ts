@@ -60,10 +60,14 @@ export function removeInputController(world: World, input: GameInputModule, eid:
   input.controllers.delete(eid);
 }
 
-export function getInputController(input: GameInputModule, eid: number) {
+export function tryGetInputController(input: GameInputModule, eid: number) {
   const controller = input.controllers.get(eid);
   if (!controller) throw new Error("could not find input controller for eid: " + eid);
   return controller;
+}
+
+export function getInputController(input: GameInputModule, eid: number) {
+  return input.controllers.get(eid);
 }
 
 /**

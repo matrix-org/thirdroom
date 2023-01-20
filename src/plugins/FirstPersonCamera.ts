@@ -15,7 +15,7 @@ import { ourPlayerQuery } from "../engine/component/Player";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap, ActionMap, ActionType, BindingType } from "../engine/input/ActionMappingSystem";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController, InputController } from "../engine/input/InputController";
+import { tryGetInputController, InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
 import { isHost } from "../engine/network/network.common";
@@ -207,7 +207,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
       continue;
     }
 
-    const controller = getInputController(input, container.eid);
+    const controller = tryGetInputController(input, container.eid);
     applyPitch(ctx, controller, node);
   }
 
@@ -215,7 +215,7 @@ export function FirstPersonCameraSystem(ctx: GameState) {
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = getInputController(input, eid);
+    const controller = tryGetInputController(input, eid);
     applyYaw(ctx, controller, node);
   }
 }
