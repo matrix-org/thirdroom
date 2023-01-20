@@ -1295,12 +1295,14 @@
   dependencies:
     "@types/jest" "*"
 
-"@types/three@0.139.0":
-  version "0.139.0"
-  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.139.0.tgz#69af1f0c52f8eea390f513e05478af1dd7f49e6f"
-  integrity sha512-4V/jZhyq7Mv05coUzxL3bz8AuBOSi/1F0RY7ujisHTV0Amy/fnYJ+s7TSJ1/hXjZukSkpuFRgV+wvWUEMbsMbQ==
+"@types/three@^0.148.0":
+  version "0.148.0"
+  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.148.0.tgz#bf7f0f6f12a9b318eebb7dc3813ae69824e13ae6"
+  integrity sha512-1GiErjt1pJMadO8EhaxNrtULzdn+f3BbM3YTukiiXBVeRvvx4CXc2rpYdEuEBU/ouCX7Rc95j1HoVG9kFQXQJw==
+  dependencies:
+    "@types/webxr" "*"
 
-"@types/webxr@^0.5.0":
+"@types/webxr@*", "@types/webxr@^0.5.0":
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@types/webxr/-/webxr-0.5.0.tgz#aae1cef3210d88fd4204f8c33385a0bbc4da07c9"
   integrity sha512-IUMDPSXnYIbEO2IereEFcgcqfDREOgmbGqtrMpVPpACTU6pltYLwHgVkrnYv0XhWEcjio9sYEfIEzgn3c7nDqA==
@@ -5301,10 +5303,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-"three@npm:@thirdroom/three@^0.144.2":
-  version "0.144.2"
-  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.144.2.tgz#b4ce1b2c5e6ec1c309e8cb4dbbc0eb11aba1ab1c"
-  integrity sha512-RSIRfioTQVQ+/Zr+xjRvTMQDOAg12IE+nKZs/PC9G+vViqaMHGVna/Q91Us3qpZ8JIjZqpVZeKtlDf6jdEYzjA==
+"three@npm:@thirdroom/three@^0.148.0":
+  version "0.148.0"
+  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.0.tgz#46779399f7134e281789d36bc202184b728ddb86"
+  integrity sha512-hIzLhzeTSeVwQ6ELWuxBkEuh99kGKGlsqvIfQ61jSdmS1W91veZdl8xVF0+Uajn+yRZ509gdOeHaCuIyuwXxtg==
 
 through@^2.3.4:
   version "2.3.8"

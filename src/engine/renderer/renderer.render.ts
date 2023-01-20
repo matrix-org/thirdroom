@@ -7,6 +7,7 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
+  Texture,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -109,6 +110,11 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
+
+    // Set the texture anisotropy which improves rendering at extreme angles.
+    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+    Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
     if (enableXR) {
       renderer.xr.enabled = true;

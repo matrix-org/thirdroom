@@ -61,7 +61,7 @@
     "react-router-dom": "6",
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.7",
-    "three": "npm:@thirdroom/three@^0.144.2",
+    "three": "npm:@thirdroom/three@^0.148.0",
     "zustand": "^4.0.0-rc.0"
   },
   "devDependencies": {
@@ -80,7 +80,7 @@
     "@types/react-dom": "^17.0.10",
     "@types/react-virtualized-auto-sizer": "^1.0.1",
     "@types/react-window": "^1.8.5",
-    "@types/three": "0.139.0",
+    "@types/three": "^0.148.0",
     "@types/webxr": "^0.5.0",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.17.0",

@@ -285,10 +285,7 @@ const ThreeMapping: { [key: number]: Mapping } = {
   [SamplerMapping.CubeUVReflectionMapping]: CubeUVReflectionMapping,
 };
 
-function initRenderTexture(
-  renderer: WebGLRenderer,
-  renderTexture: RenderTexture
-): Texture | CompressedTexture | DataTexture | Data3DTexture {
+function initRenderTexture(renderTexture: RenderTexture): Texture | CompressedTexture | DataTexture | Data3DTexture {
   const source = renderTexture.source;
 
   let texture: Texture | CompressedTexture | DataTexture | Data3DTexture;
@@ -314,13 +311,12 @@ function initRenderTexture(
     texture.flipY = false;
   }
 
-  updateTextureProperties(renderer, renderTexture, texture, isRGBE);
+  updateTextureProperties(renderTexture, texture, isRGBE);
 
   return texture;
 }
 
 async function loadRenderTexture<T extends Texture | CompressedTexture | DataTexture | Data3DTexture>(
-  renderer: WebGLRenderer,
   ktx2Loader: ArrayBufferKTX2Loader,
   renderTexture: RenderTexture,
   imageData: RenderImageData,
@@ -346,19 +342,14 @@ async function loadRenderTexture<T extends Texture | CompressedTexture | DataTex
     throw new Error("Unknown image data type");
   }
 
-  updateTextureProperties(renderer, renderTexture, texture, isRGBE);
+  updateTextureProperties(renderTexture, texture, isRGBE);
 
   texture.needsUpdate = true;
 
   return texture;
 }
 
-function updateTextureProperties(
-  renderer: WebGLRenderer,
-  renderTexture: RenderTexture,
-  texture: Texture,
-  isRGBE: boolean
-) {
+function updateTextureProperties(renderTexture: RenderTexture, texture: Texture, isRGBE: boolean) {
   const sampler = renderTexture.sampler;
 
   if (sampler) {
@@ -381,15 +372,10 @@ function updateTextureProperties(
   if (!isRGBE) {
     texture.encoding = renderTexture.encoding as unknown as ThreeTextureEncoding;
   }
-
-  // Set the texture anisotropy which improves rendering at extreme angles.
-  // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
-  // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
-  texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 }
 
 export function updateTextureResources(ctx: RenderThreadState) {
-  const { renderer, ktx2Loader } = getModule(ctx, RendererModule);
+  const { ktx2Loader } = getModule(ctx, RendererModule);
 
   const renderTextures = getLocalResources(ctx, RenderTexture);
 
@@ -397,7 +383,7 @@ export function updateTextureResources(ctx: RenderThreadState) {
     const renderTexture = renderTextures[i];
 
     if (renderTexture.texture === undefined) {
-      renderTexture.texture = initRenderTexture(renderer, renderTexture);
+      renderTexture.texture = initRenderTexture(renderTexture);
     }
 
     if (renderTexture.loadStatus === LoadStatus.Uninitialized && renderTexture.source.imageData) {
@@ -407,7 +393,7 @@ export function updateTextureResources(ctx: RenderThreadState) {
 
       renderTexture.loadStatus = LoadStatus.Loading;
 
-      loadRenderTexture(renderer, ktx2Loader, renderTexture, renderTexture.source.imageData, renderTexture.texture)
+      loadRenderTexture(ktx2Loader, renderTexture, renderTexture.source.imageData, renderTexture.texture)
         .then(() => {
           if (renderTexture.loadStatus === LoadStatus.Loaded) {
             throw new Error("Attempted to load a resource that has already been loaded.");

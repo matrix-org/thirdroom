@@ -20,13 +20,6 @@ import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectio
 
 import { Layer } from "../node/node.common";
 
-// TODO: Add samples property to official three types package
-declare module "three" {
-  interface WebGLRenderTargetOptions {
-    samples: number;
-  }
-}
-
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
  * for various platforms. This implementation is only focused on desktops with integrated or dedicated GPUs.
