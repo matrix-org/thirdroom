@@ -68,6 +68,13 @@ export interface RendererModuleState {
   scene: Scene;
 }
 
+// TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
+declare module "three" {
+  interface WebGLRendererParameters {
+    multiviewStereo: boolean;
+  }
+}
+
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage }) {
@@ -100,6 +107,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
+      multiviewStereo: true,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
