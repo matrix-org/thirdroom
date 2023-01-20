@@ -14,7 +14,7 @@ export function Header({ className, left, center, right }: HeaderProps) {
     <header className={classNames("Header", className)}>
       {left && <div className="Header__left">{left}</div>}
       {center && <div className="Header__center">{center}</div>}
-      {right && <div className="Header__right">{right}</div>}
+      {right || (center && <div className="Header__right">{right}</div>)}
     </header>
   );
 }

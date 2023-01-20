@@ -1,5 +1,4 @@
-import { useCallback } from "react";
-import classNames from "classnames";
+import { useCallback, useState } from "react";
 import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
@@ -13,6 +12,17 @@ import {
   setSelectedEntity,
   toggleSelectedEntity,
 } from "../../../../engine/editor/editor.main";
+import { HierarchyNode, HierarchyNodeContent, HierarchyNodeDropTarget, HierarchyNodeLeafSpacer } from "./HierarchyNode";
+import { IconButton } from "../../../atoms/button/IconButton";
+import TriangleRightIC from "../../../../../res/ic/triangle-right.svg";
+import TriangleBottomIC from "../../../../../res/ic/triangle-bottom.svg";
+import CircleIC from "../../../../../res/ic/circle.svg";
+import LanguageIC from "../../../../../res/ic/language.svg";
+import TreeIC from "../../../../../res/ic/tree.svg";
+import FormattedListIC from "../../../../../res/ic/formatted-list.svg";
+import { Text } from "../../../atoms/text/Text";
+import { Icon } from "../../../atoms/icon/Icon";
+import { HierarchyHeader, HierarchyHeaderTab } from "./HierarchyHeader";
 
 enum DnDItemTypes {
   Node = "node",
@@ -69,7 +79,7 @@ interface HierarchyPanelProps {
   scene: EditorNode;
 }
 
-export function HierarchyPanel({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
   const mainThread = useMainThreadContext();
 
   const canDrop = useCallback(
@@ -158,107 +168,139 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
   );
 
   return (
-    <div className="HierarchyPanel">
-      <TreeView
-        tree={scene}
-        selected={selectedEntities}
-        active={activeEntity}
-        itemSize={32}
-        onToggleSelectedNode={onToggleSelectedNode}
-        onAddSelectedNode={onAddSelectedNode}
-        onSetSelectedNode={onSetSelectedNode}
-        onDoubleClickNode={onDoubleClickNode}
-        onRenameNode={onRenameNode}
-        dropAccept={dropAccept}
-        onDrop={onDrop}
-        canDrop={canDrop}
-        dragItemType={dragItemType}
-        canDrag={canDrag}
-        getDragItem={getDragItem}
-      >
-        {({
-          id,
-          name,
-          depth,
-          isExpanded,
-          isSelected,
-          isActive,
-          isLeaf,
-          isRenaming,
-          listItemProps,
-          dragContainerProps,
-          beforeDropTargetState,
-          beforeDropTargetRef,
-          afterDropTargetState,
-          afterDropTargetRef,
-          onDropTargetState,
-          onDropTargetRef,
-          toggleProps,
-          nameInputProps,
-        }) => {
-          return (
-            <li {...listItemProps}>
-              <div
-                {...dragContainerProps}
-                className={classNames("HierarchyPanel__node", {
-                  "HierarchyPanel__node--root": depth === 0,
-                  "HierarchyPanel__node--selected": isSelected,
-                  "HierarchyPanel__node--active": isActive,
-                })}
+    <TreeView
+      tree={scene}
+      selected={selectedEntities}
+      active={activeEntity}
+      itemSize={32}
+      onToggleSelectedNode={onToggleSelectedNode}
+      onAddSelectedNode={onAddSelectedNode}
+      onSetSelectedNode={onSetSelectedNode}
+      onDoubleClickNode={onDoubleClickNode}
+      onRenameNode={onRenameNode}
+      dropAccept={dropAccept}
+      onDrop={onDrop}
+      canDrop={canDrop}
+      dragItemType={dragItemType}
+      canDrag={canDrag}
+      getDragItem={getDragItem}
+    >
+      {({
+        id,
+        name,
+        depth,
+        isExpanded,
+        isSelected,
+        isActive,
+        isLeaf,
+        isRenaming,
+        listItemProps,
+        dragContainerProps,
+        beforeDropTargetState,
+        beforeDropTargetRef,
+        afterDropTargetState,
+        afterDropTargetRef,
+        onDropTargetState,
+        onDropTargetRef,
+        toggleProps,
+        nameInputProps,
+      }) => {
+        return (
+          <li {...listItemProps}>
+            <HierarchyNode
+              depth={depth}
+              selected={isSelected}
+              active={isActive}
+              nodeRef={dragContainerProps.ref}
+              onMouseDown={dragContainerProps.onMouseDown}
+              onKeyDown={dragContainerProps.onKeyDown}
+              tabIndex={dragContainerProps.tabIndex}
+            >
+              <HierarchyNodeDropTarget
+                placement="before"
+                dropTargetRef={beforeDropTargetRef}
+                canDrop={beforeDropTargetState.canDrop}
+                isOver={beforeDropTargetState.isOver}
+              />
+              <HierarchyNodeContent
+                className="grow flex items-center"
+                dropTargetRef={onDropTargetRef}
+                isOver={onDropTargetState.isOver}
+                canDrop={onDropTargetState.canDrop}
               >
-                <div
-                  ref={beforeDropTargetRef}
-                  className={classNames("HierarchyPanel__drop-target", "HierarchyPanel__drop-target--before", {
-                    "HierarchyPanel__drop-target--accept":
-                      beforeDropTargetState.canDrop && beforeDropTargetState.isOver,
-                  })}
-                />
-                <div
-                  ref={onDropTargetRef}
-                  className="HierarchyPanel__node-content"
-                  style={{ paddingLeft: depth * 8 + 2 }}
-                >
-                  {isLeaf ? (
-                    <div className="HierarchyPanel__leaf-spacer" />
-                  ) : (
-                    <button
-                      {...toggleProps}
-                      className={classNames("HierarchyPanel__node-toggle", {
-                        "HierarchyPanel__node-toggle--expanded": isExpanded,
-                      })}
-                    />
-                  )}
-                  <div className="HierarchyPanel__node-select-target">
-                    <div className="HierarchyPanel__node-icon" />
-                    <div className="HierarchyPanel__node-label-container">
-                      {isRenaming ? (
-                        <div className="HierarchyPanel__rename-input-container">
-                          <input {...nameInputProps} className="HierarchyPanel__rename-input" />
-                        </div>
-                      ) : (
-                        <div
-                          className={classNames("HierarchyPanel__node-label", {
-                            "HierarchyPanel__node-label--accept-drop":
-                              onDropTargetState.canDrop && onDropTargetState.isOver,
-                          })}
-                        >
-                          {name}
-                        </div>
-                      )}
+                {isLeaf || depth === 0 ? (
+                  <HierarchyNodeLeafSpacer />
+                ) : (
+                  <IconButton
+                    size="sm"
+                    variant={isSelected ? "primary" : "surface"}
+                    label={isExpanded ? "Collapse" : "Expand"}
+                    iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
+                    {...toggleProps}
+                  />
+                )}
+                <div className="flex items-center gap-xs">
+                  {isRenaming ? (
+                    <div>
+                      <input {...nameInputProps} />
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <Icon
+                        color={isSelected ? "primary" : "surface"}
+                        size="sm"
+                        src={depth > 0 ? CircleIC : LanguageIC}
+                      />
+                      <Text color={isSelected ? "primary" : "surface"} variant="b2" weight="medium">
+                        {name}
+                      </Text>
+                    </>
+                  )}
                 </div>
-                <div
-                  ref={afterDropTargetRef}
-                  className={classNames("HierarchyPanel__drop-target", "HierarchyPanel__drop-target--after", {
-                    "HierarchyPanel__drop-target--accept": afterDropTargetState.canDrop && afterDropTargetState.isOver,
-                  })}
-                />
-              </div>
-            </li>
-          );
-        }}
-      </TreeView>
+              </HierarchyNodeContent>
+              <HierarchyNodeDropTarget
+                placement="after"
+                dropTargetRef={afterDropTargetRef}
+                canDrop={afterDropTargetState.canDrop}
+                isOver={afterDropTargetState.isOver}
+              />
+            </HierarchyNode>
+          </li>
+        );
+      }}
+    </TreeView>
+  );
+}
+
+enum HierarchyTab {
+  Scenes = "Scenes",
+  Resources = "Resources",
+}
+
+export function HierarchyPanel({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+  const [tab, setTab] = useState(HierarchyTab.Scenes);
+
+  return (
+    <div className="HierarchyPanel flex flex-column">
+      <HierarchyHeader className="shrink-0">
+        <HierarchyHeaderTab active={tab === HierarchyTab.Scenes} onClick={() => setTab(HierarchyTab.Scenes)}>
+          <Icon color={tab === HierarchyTab.Scenes ? "primary" : "surface"} size="sm" src={TreeIC} />
+          <Text color={tab === HierarchyTab.Scenes ? "primary" : "surface"} variant="b2" weight="semi-bold">
+            Scenes
+          </Text>
+        </HierarchyHeaderTab>
+        <HierarchyHeaderTab active={tab === HierarchyTab.Resources} onClick={() => setTab(HierarchyTab.Resources)}>
+          <Icon color={tab === HierarchyTab.Resources ? "primary" : "surface"} size="sm" src={FormattedListIC} />
+          <Text color={tab === HierarchyTab.Resources ? "primary" : "surface"} variant="b2" weight="semi-bold">
+            Resources
+          </Text>
+        </HierarchyHeaderTab>
+      </HierarchyHeader>
+      <div className="grow">
+        {tab === HierarchyTab.Scenes && (
+          <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
+        )}
+      </div>
     </div>
   );
 }

@@ -1015,10 +1015,44 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@thirdroom/hydrogen-view-sdk@0.0.27":
-  version "0.0.27"
-  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.27.tgz#ea3bd049c17d6146addb2e887248931fb37202e1"
-  integrity sha512-csLBuRxOfz3rYkeSbZobaUKBma+QkOtul+sUPqMW4e6dCCPIvNeuhb/hiF79rPA1VpB3UTlOKzpRp5fldeaTRA==
+"@thi.ng/api@^8.4.3":
+  version "8.4.3"
+  resolved "https://registry.yarnpkg.com/@thi.ng/api/-/api-8.4.3.tgz#525cd13633bb7bad56b03bebecf9c2177e01f43e"
+  integrity sha512-g9MWEXp27OdhRx/2uc2GUmH+MZKtKqBVKm9daIW4rxaWsswrHlZGUXtbmYSIQxA0fgdJhfqmb8swltOgjVkr6w==
+
+"@thi.ng/binary@^3.3.7":
+  version "3.3.7"
+  resolved "https://registry.yarnpkg.com/@thi.ng/binary/-/binary-3.3.7.tgz#484120efe859dee46b3ef3e9d5a64e53ebec3c7d"
+  integrity sha512-56nOWO7UeLE+0r5mcXFfFpt8ktKBlgW2Hjnd6s4e+daaDk0zxb4uAkvArIvis7T/cZ8G2tpGRYBk5rt66S/RmA==
+  dependencies:
+    "@thi.ng/api" "^8.4.3"
+
+"@thi.ng/checks@^3.3.1":
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/@thi.ng/checks/-/checks-3.3.1.tgz#4d0b48e547bc6203b6e56d44b4e6cee13b51280f"
+  integrity sha512-j0Zueewyf/ZJc5WOF94b4ljKohd4tRoy5j3NhvIjqDO+GauyAMyY3xPyHx5fDYCkcGMPedklZ3qWOnKx4U5FvA==
+  dependencies:
+    tslib "^2.4.0"
+
+"@thi.ng/errors@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@thi.ng/errors/-/errors-2.2.2.tgz#92c301a5d2684a95fdc0c9cca17f4bae17f505f2"
+  integrity sha512-/JuWg0ar+uQv31CSv2tXRJCKAYRamAI/ex9vy87pkigdyxU3yTfxqnphWKIUCrIQVZ/S5Bd0pC8qAWfvotGRMQ==
+
+"@thi.ng/malloc@^6.1.19":
+  version "6.1.19"
+  resolved "https://registry.yarnpkg.com/@thi.ng/malloc/-/malloc-6.1.19.tgz#645ca54ec4c1303ca6945125caddd8ae8891d20c"
+  integrity sha512-FBKAp9qA67mnhcEFbZC6owZkCi8X9kaziF5Dx8jMV9q5YRZsKA1eOmEjQ9I4Rh1IBeH/yRK17ZJaFTqQNP31WQ==
+  dependencies:
+    "@thi.ng/api" "^8.4.3"
+    "@thi.ng/binary" "^3.3.7"
+    "@thi.ng/checks" "^3.3.1"
+    "@thi.ng/errors" "^2.2.2"
+
+"@thirdroom/hydrogen-view-sdk@0.0.29":
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/@thirdroom/hydrogen-view-sdk/-/hydrogen-view-sdk-0.0.29.tgz#2dc2d903d95da8119e2bb08e63ebcb3edf23e1d3"
+  integrity sha512-8iv/RmKl+ipJejVQplehsPlwXZqEvL5n7Rr0n7W0RpzgOn2d0Rn34bdvezqpuoMlMeM89n7xPypJOw6QhQhfhg==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.8.tgz"
     another-json "^0.2.0"
@@ -3586,9 +3620,9 @@ json-stringify-safe@~5.0.1:
   integrity sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA==
 
 json5@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/json5/-/json5-1.0.1.tgz#779fb0018604fa854eacbf6252180d83543e3dbe"
-  integrity sha512-aKS4WQjPenRxiQsC93MNfjx+nbF4PAdYzmd/1JIj8HYzqfbu86beTuNgXDzPknWk0n0uARlyewZo4s++ES36Ow==
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/json5/-/json5-1.0.2.tgz#63d98d60f21b313b77c4d6da18bfa69d80e1d593"
+  integrity sha512-g1MWMLBiz8FKi1e4w0UyVL3w+iJceWAFBAaBnnGKOpNa5f8TLktkbre1+s6oICydWAm+HRUGTmI+//xv2hvXYA==
   dependencies:
     minimist "^1.2.0"
 
@@ -3838,9 +3872,9 @@ minimist-options@4.1.0:
     kind-of "^6.0.3"
 
 minimist@^1.2.0, minimist@^1.2.6:
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
-  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
+  version "1.2.7"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.7.tgz#daa1c4d91f507390437c6a8bc01078e7000c4d18"
+  integrity sha512-bzfL1YUZsP41gmu/qjrEk0Q6i2ix/cVeAhbCbqH9u3zYutS1cLg00qhrD0M2MVdCcx4Sc0UpP2eBWo9rotpq6g==
 
 mlly@^0.5.14, mlly@^0.5.2:
   version "0.5.14"
