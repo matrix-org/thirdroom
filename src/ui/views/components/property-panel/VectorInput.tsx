@@ -23,6 +23,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
         className="flex grow"
         type="f32"
         value={x}
+        displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(value, y, z)}
       />
@@ -31,6 +32,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
         className="flex grow"
         type="f32"
         value={y}
+        displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(x, value, z)}
       />
@@ -41,6 +43,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             className="flex grow"
             type="f32"
             value={z}
+            displayPrecision={3}
             inputSize="sm"
             onChange={(value) => handleChange(x, y, value)}
           />

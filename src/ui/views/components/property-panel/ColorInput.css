@@ -1,0 +1,34 @@
+.ColorPreview {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--br-xxs);
+  overflow: hidden;
+  cursor: pointer;
+  background-image: repeating-linear-gradient(
+      45deg,
+      var(--bg-surface-low) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--bg-surface-low) 75%,
+      var(--bg-surface-low)
+    ),
+    repeating-linear-gradient(
+      45deg,
+      var(--bg-surface-low) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--bg-surface-low) 75%,
+      var(--bg-surface-low)
+    );
+
+  background-position: 0 0, 5px 5px;
+  background-size: calc(2 * 5px) calc(2 * 5px);
+  box-shadow: inset 0 0 0 1px var(--bg-surface-low);
+
+  & > span {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+  }
+}
