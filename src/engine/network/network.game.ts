@@ -39,7 +39,7 @@ import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
-import { maxEntities } from "../config.common";
+import { maxEntities, tickRate } from "../config.common";
 
 /*********
  * Types *
@@ -102,7 +102,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
-      tickRate: 10,
+      tickRate,
       interpolate: true,
       clientSidePrediction: true,
       authoritative,
