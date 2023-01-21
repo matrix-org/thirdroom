@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import { vec2, vec3 } from "gl-matrix";
 
 import {
   createCursorView,
@@ -9,10 +9,14 @@ import {
   writeFloat32,
   writeUint8,
 } from "../allocator/CursorView";
+import { ourPlayerQuery } from "../component/Player";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { isHost } from "../network/network.common";
 import { GameNetworkState, NetworkModule } from "../network/network.game";
+import { RigidBody } from "../physics/physics.game";
+import { RemoteNode } from "../resource/RemoteResources";
+import { getRemoteResource } from "../resource/resource.game";
 import { InputModule } from "./input.game";
 import { InputController } from "./InputController";
 
@@ -227,7 +231,20 @@ export function ActionMappingSystem(ctx: GameState) {
   // add a copy of all the actionStates for the active controller to the input history for reconciliation later
   const hosting = network.authoritative && isHost(network);
   if (!hosting) {
-    input.activeController.history.push([ctx.tick, new Map(input.activeController.actionStates)]);
+    const eid = ourPlayerQuery(ctx.world)[0];
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
+    const body = RigidBody.store.get(eid);
+    if (!eid || !node || !body) {
+      return;
+    }
+
+    const vel = body.linvel();
+
+    input.activeController.history.push([
+      ctx.tick,
+      new Map(input.activeController.actionStates),
+      { position: vec3.clone(node.position), velocity: vec3.set(vec3.create(), vel.x, vel.y, vel.z) },
+    ]);
   }
 }
 

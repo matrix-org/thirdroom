@@ -1,3 +1,4 @@
+import { vec3 } from "@gltf-transform/core";
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
 import { World } from "../GameTypes";
@@ -14,8 +15,9 @@ export interface InputController {
   pathToId: Map<string, number>;
   pathToDef: Map<string, ActionDefinition>;
   idToPath: Map<number, string>;
-  // [tick, actionStates during that tick]
-  history: [number, Map<string, ActionState>][];
+  // [tick, actionStates, ]
+  // TODO: refactor this?
+  history: [number, Map<string, ActionState>, { position: vec3; velocity: vec3 }][];
 }
 
 export interface InputControllerProps {
