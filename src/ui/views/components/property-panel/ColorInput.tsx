@@ -46,11 +46,13 @@ export function ColorPicker<T extends ColorType>({ type, value, onChange, childr
       <Popover.Trigger asChild>{children}</Popover.Trigger>
       <Popover.Portal>
         <Popover.Content sideOffset={5}>
-          {type === "rgb" ? (
-            <RgbColorPicker color={value} onChange={onChange} />
-          ) : (
-            <RgbaColorPicker color={value} onChange={onChange} />
-          )}
+          <div className="ColorPicker">
+            {type === "rgb" ? (
+              <RgbColorPicker color={value} onChange={onChange} />
+            ) : (
+              <RgbaColorPicker color={value} onChange={onChange} />
+            )}
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -32,3 +32,10 @@
     height: 100%;
   }
 }
+
+.ColorPicker {
+  padding: 4px;
+  background-color: var(--bg-surface);
+  border-radius: var(--br-md);
+  box-shadow: var(--bs-dropdown);
+}
