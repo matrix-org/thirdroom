@@ -18,8 +18,12 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
 
   return (
     <div className="flex items-center grow gap-xs">
-      <Label className="shrink-0">X:</Label>
       <NumericInput
+        before={
+          <Label color="surface-low" className="shrink-0">
+            X:
+          </Label>
+        }
         className="flex grow"
         type="f32"
         value={x}
@@ -27,8 +31,12 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
         inputSize="sm"
         onChange={(value) => handleChange(value, y, z)}
       />
-      <Label className="shrink-0">Y:</Label>
       <NumericInput
+        before={
+          <Label color="surface-low" className="shrink-0">
+            Y:
+          </Label>
+        }
         className="flex grow"
         type="f32"
         value={y}
@@ -38,8 +46,12 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
       />
       {type === "vec3" && (
         <>
-          <Label className="shrink-0">Z:</Label>
           <NumericInput
+            before={
+              <Label color="surface-low" className="shrink-0">
+                Z:
+              </Label>
+            }
             className="flex grow"
             type="f32"
             value={z}
