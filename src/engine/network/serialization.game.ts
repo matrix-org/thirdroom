@@ -61,6 +61,7 @@ import {
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
+import { setLocalXRAvatarRig } from "../input/XRAvatarRig";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -580,6 +581,7 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
   // set the active camera & input controller to this entity's
   ctx.worldResource.activeCameraNode = getCamera(ctx, node);
   ctx.worldResource.activeAvatarNode = node;
+  setLocalXRAvatarRig(ctx, node.eid);
   setActiveInputController(input, node.eid);
 }
 

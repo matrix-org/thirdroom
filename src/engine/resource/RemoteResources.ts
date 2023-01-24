@@ -175,6 +175,8 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare persistentScene: RemoteScene;
   declare activeCameraNode: RemoteNode | undefined;
   declare activeAvatarNode: RemoteNode | undefined;
+  declare activeLeftControllerNode: RemoteNode | undefined;
+  declare activeRightControllerNode: RemoteNode | undefined;
 }
 
 export const RemoteObject = defineComponent();

@@ -12,7 +12,7 @@ import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { addChild, setFromLocalMatrix } from "../component/transform";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Keys } from "./KeyCodes";
-import { XRController, xrControllerQuery } from "./XRController";
+import { XRAvatarRig, xrAvatarRigQuery } from "./XRAvatarRig";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 
 const out: InputComponentState = { inputSourceId: 0, componentId: 0, button: 0, xAxis: 0, yAxis: 0, state: 0 };
@@ -73,35 +73,56 @@ export function ApplyInputSystem(ctx: GameState) {
     removeInputController(ctx.world, input, eid);
   }
 
-  const controllers = xrControllerQuery(ctx.world);
+  const rigs = xrAvatarRigQuery(ctx.world);
 
-  for (let i = 0; i < controllers.length; i++) {
-    const eid = controllers[i];
-    const controller = XRController.get(eid);
+  for (let i = 0; i < rigs.length; i++) {
+    const eid = rigs[i];
+    const rig = XRAvatarRig.get(eid);
 
-    if (!controller) {
+    if (!rig || !rig.local) {
       return;
     }
 
-    const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const leftControllerNode = tryGetRemoteResource<RemoteNode>(ctx, rig.leftControllerEid);
 
-    if (!controller.inputSource) {
-      controller.inputSource = xrInputSources.find((source) => source.handedness === controller.hand);
+    if (!rig.leftControllerInputSource) {
+      rig.leftControllerInputSource = xrInputSources.find((source) => source.handedness === "left");
 
-      if (controller.inputSource) {
+      if (rig.leftControllerInputSource) {
         // TODO: Handle controller disconnect / lose tracking
-        const modelNode = createNodeFromGLTFURI(ctx, controller.inputSource.layout.assetPath);
-        addChild(controllerNode, modelNode);
+        const modelNode = createNodeFromGLTFURI(ctx, rig.leftControllerInputSource.layout.assetPath);
+        addChild(leftControllerNode, modelNode);
       }
     }
 
-    const inputSource = controller.inputSource;
+    const leftInputSource = rig.leftControllerInputSource;
 
-    controllerNode.visible = !!inputSource;
+    leftControllerNode.visible = !!leftInputSource;
 
-    if (inputSource) {
-      const controllerPoses = getReadObjectBufferView(inputSource.controllerPoses);
-      setFromLocalMatrix(controllerNode, controllerPoses.gripPose);
+    if (leftInputSource) {
+      const leftControllerPoses = getReadObjectBufferView(leftInputSource.controllerPoses);
+      setFromLocalMatrix(leftControllerNode, leftControllerPoses.gripPose);
+    }
+
+    const rightControllerNode = tryGetRemoteResource<RemoteNode>(ctx, rig.rightControllerEid);
+
+    if (!rig.rightControllerInputSource) {
+      rig.rightControllerInputSource = xrInputSources.find((source) => source.handedness === "right");
+
+      if (rig.rightControllerInputSource) {
+        // TODO: Handle controller disconnect / lose tracking
+        const modelNode = createNodeFromGLTFURI(ctx, rig.rightControllerInputSource.layout.assetPath);
+        addChild(rightControllerNode, modelNode);
+      }
+    }
+
+    const rightInputSource = rig.rightControllerInputSource;
+
+    rightControllerNode.visible = !!rightInputSource;
+
+    if (rightInputSource) {
+      const rightControllerPoses = getReadObjectBufferView(rightInputSource.controllerPoses);
+      setFromLocalMatrix(rightControllerNode, rightControllerPoses.gripPose);
     }
   }
 }

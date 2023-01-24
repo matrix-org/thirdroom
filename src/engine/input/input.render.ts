@@ -39,6 +39,9 @@ export interface RenderInputModule {
   inputSourceItems: XRInputSourceItem[];
   inputRingBuffer: InputRingBuffer;
   inputProfileManager: XRInputProfileManager;
+  cameraPose?: XRViewerPose;
+  leftControllerPose?: XRPose;
+  rightControllerPose?: XRPose;
 }
 
 /******************
@@ -200,9 +203,14 @@ const out: InputComponentState = {
 };
 
 export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
-  const { inputSourceItems, inputRingBuffer } = getModule(ctx, InputModule);
+  const inputModule = getModule(ctx, InputModule);
+  const { inputSourceItems, inputRingBuffer } = inputModule;
   const rendererModule = getModule(ctx, RendererModule);
   const renderer = rendererModule.renderer;
+
+  inputModule.cameraPose = undefined;
+  inputModule.leftControllerPose = undefined;
+  inputModule.rightControllerPose = undefined;
 
   if (!renderer.xr.isPresenting) {
     return;
@@ -215,6 +223,8 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
   if (!referenceSpace) {
     return;
   }
+
+  inputModule.cameraPose = frame.getViewerPose(referenceSpace);
 
   for (const { id: inputSourceId, inputSource, layout, controllerPoses, handPoses } of inputSourceItems) {
     const components = layout.components;
@@ -261,6 +271,12 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
 
       if (gripPose) {
         controllerPosesView.gripPose.set(gripPose.transform.matrix);
+
+        if (inputSource.handedness === "left") {
+          inputModule.leftControllerPose = gripPose;
+        } else if (inputSource.handedness === "right") {
+          inputModule.rightControllerPose = gripPose;
+        }
       }
     }
 

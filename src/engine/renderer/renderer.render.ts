@@ -31,7 +31,7 @@ import {
   RendererMessageType,
   rendererModuleName,
 } from "./renderer.common";
-import { updateLocalNodeResources, updateTransformFromNode } from "../node/node.render";
+import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
@@ -40,6 +40,7 @@ import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
+import { InputModule } from "../input/input.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -160,7 +161,6 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       enableMatrixMaterial: false,
       scene,
       xrAvatarRoot,
-      xrBaseReferenceSpace: null,
     };
   },
   init(ctx) {
@@ -207,12 +207,11 @@ function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, scene, xrAvatarRoot, renderer } =
-    rendererModule;
+  const inputModule = getModule(ctx, InputModule);
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
-  const activeAvatarNode = ctx.worldResource.activeAvatarNode;
 
   // TODO: Remove this
   if (activeScene?.eid !== rendererModule.prevSceneResource) {
@@ -250,22 +249,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);
-
-  if (activeCameraNode && activeCameraNode.cameraObject) {
-    if (renderer.xr.isPresenting) {
-      if (activeCameraNode.cameraObject.parent !== xrAvatarRoot) {
-        xrAvatarRoot.add(activeCameraNode.cameraObject);
-      }
-
-      if (activeAvatarNode) {
-        updateTransformFromNode(ctx, activeAvatarNode, xrAvatarRoot);
-      }
-    } else {
-      if (activeCameraNode.cameraObject.parent !== scene) {
-        scene.add(activeCameraNode.cameraObject);
-      }
-    }
-  }
+  updateNodesFromXRPoses(ctx, rendererModule, inputModule);
 
   if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
