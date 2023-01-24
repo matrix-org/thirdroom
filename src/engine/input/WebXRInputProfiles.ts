@@ -127,7 +127,7 @@ export class XRInputProfileManager {
   constructor(private basePath: string) {}
 
   private async loadJSON<T>(path: string): Promise<T> {
-    const url = `${this.basePath}/${path}`;
+    const url = this.resolveAssetPath(path);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -174,7 +174,7 @@ export class XRInputProfileManager {
   }
 
   resolveAssetPath(assetPath: string): string {
-    return new URL(assetPath, this.basePath).href;
+    return `${this.basePath}/${assetPath}`;
   }
 }
 

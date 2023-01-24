@@ -1,6 +1,7 @@
 import { defineConfig } from "./module/module.common";
 import { GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
-import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
+import { InputModule, ResetInputSystem } from "./input/input.game";
+import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";

@@ -96,6 +96,7 @@ import { AvatarComponent } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
+import { addXRController } from "../../engine/input/XRController";
 
 type ThirdRoomModuleState = {};
 
@@ -130,10 +131,12 @@ const createAvatarRig =
       addKinematicControls(ctx, obj.eid);
     }
 
+    const privateRoot = getObjectPrivateRoot(obj);
+
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
     cameraAnchor.position[1] = AVATAR_HEIGHT;
-    addChild(getObjectPrivateRoot(obj), cameraAnchor);
+    addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {
       name: "Avatar Camera",
@@ -146,6 +149,14 @@ const createAvatarRig =
     addAvatarController(ctx, input, obj.eid);
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
+
+    const leftController = new RemoteNode(ctx.resourceManager);
+    addXRController(ctx.world, leftController.eid, "left");
+    addChild(privateRoot, leftController);
+
+    const rightController = new RemoteNode(ctx.resourceManager);
+    addXRController(ctx.world, rightController.eid, "right");
+    addChild(privateRoot, rightController);
 
     return obj;
   };

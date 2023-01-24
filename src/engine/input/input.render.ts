@@ -1,6 +1,7 @@
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
+  HandJointNameToIndex,
   InitializeInputStateMessage,
   InputComponentState,
   InputMessageType,
@@ -176,7 +177,7 @@ async function createXRInputSourceItem(
     throw new Error(`No "${inputSource.handedness}" layout found for WebXR controller ${profile.profileId}`);
   }
 
-  const assetPath = inputProfileManager.resolveAssetPath(layout.assetPath);
+  const assetPath = inputProfileManager.resolveAssetPath(`${profile.profileId}/${layout.assetPath}`);
 
   const modifiedLayout = { ...layout, assetPath };
 
@@ -266,10 +267,11 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
     if (hand && frame.getJointPose && handPoses) {
       const handPosesView = getWriteObjectBufferView(handPoses);
 
-      for (const [index, jointSpace] of hand.entries()) {
+      for (const [jointName, jointSpace] of hand.entries()) {
         const jointPose = frame.getJointPose(jointSpace, referenceSpace);
 
         if (jointPose) {
+          const index = HandJointNameToIndex[jointName as unknown as string];
           handPosesView.matrices[index].set(jointPose.transform.matrix);
           handPosesView.radii[index] = jointPose.radius || 0;
         }

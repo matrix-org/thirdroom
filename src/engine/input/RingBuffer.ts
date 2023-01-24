@@ -13,11 +13,9 @@ import {
   moveCursorView,
   readFloat32,
   readUint32,
-  readUint8,
   sliceCursorView,
   writeFloat32,
   writeUint32,
-  writeUint8,
 } from "../allocator/CursorView";
 import { InputComponentState } from "./input.common";
 
@@ -27,10 +25,11 @@ export interface InputRingBuffer extends RingBuffer<Float32ArrayConstructor> {
   view: CursorView;
 }
 
-export const RING_BUFFER_MAX = 200;
+const numElements = 6;
 
-const BYTE_LENGTH =
-  2 * Uint8Array.BYTES_PER_ELEMENT + 3 * Float32Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT;
+export const RING_BUFFER_MAX = 256 * numElements;
+
+const BYTE_LENGTH = numElements * Float32Array.BYTES_PER_ELEMENT;
 
 export function createInputRingBuffer(capacity?: number): InputRingBuffer {
   const ringBuffer = createRingBuffer(Float32Array, capacity);
@@ -56,8 +55,8 @@ export function enqueueInputRingBuffer(
   const { view } = irb;
 
   moveCursorView(view, 0);
-  writeUint8(view, inputSourceId);
-  writeUint8(view, componentId);
+  writeUint32(view, inputSourceId);
+  writeUint32(view, componentId);
   writeFloat32(view, button);
   writeFloat32(view, xAxis);
   writeFloat32(view, yAxis);
@@ -79,8 +78,8 @@ export function dequeueInputRingBuffer(irb: InputRingBuffer, out: InputComponent
   const { view } = irb;
   moveCursorView(view, 0);
 
-  out.inputSourceId = readUint8(view);
-  out.componentId = readUint8(view);
+  out.inputSourceId = readUint32(view);
+  out.componentId = readUint32(view);
   out.button = readFloat32(view);
   out.xAxis = readFloat32(view);
   out.yAxis = readFloat32(view);
