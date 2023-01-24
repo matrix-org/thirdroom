@@ -640,6 +640,7 @@ export class RenderWorld extends defineLocalResourceClass(WorldResource) {
   declare firstNode: RenderNode | undefined;
   declare persistentScene: RenderScene;
   declare activeCameraNode: RenderNode | undefined;
+  declare activeAvatarNode: RenderNode | undefined;
 }
 
 const {

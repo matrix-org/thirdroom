@@ -1,4 +1,5 @@
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.render";
+import { InputModule, UpdateXRInputSourcesSystem } from "./input/input.render";
 import { UpdateRendererMaterialSystem } from "./material/UpdateRendererMaterialSystem";
 import { UpdateRendererMeshPrimitivesSystem } from "./mesh/mesh.render";
 import { defineConfig } from "./module/module.common";
@@ -9,9 +10,10 @@ import { ResourceModule, ResourceLoaderSystem, ReturnRecycledResourcesSystem } f
 import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
 
 export default defineConfig({
-  modules: [ResourceModule, RendererModule, StatsModule, ThirdroomModule],
+  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule],
   systems: [
     RendererIncomingTripleBufferSystem,
+    UpdateXRInputSourcesSystem,
     ResourceLoaderSystem, // Drain dispose queue and create messages. Add eid to recycle queue if disposed.
     UpdateRendererMaterialSystem,
     UpdateRendererMeshPrimitivesSystem,

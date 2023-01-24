@@ -8,6 +8,7 @@ import {
   DataArrayTexture,
   PMREMGenerator,
   Texture,
+  Object3D,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -30,7 +31,7 @@ import {
   RendererMessageType,
   rendererModuleName,
 } from "./renderer.common";
-import { updateLocalNodeResources } from "../node/node.render";
+import { updateLocalNodeResources, updateTransformFromNode } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
@@ -66,6 +67,7 @@ export interface RendererModuleState {
   matrixMaterial: MatrixMaterial;
   enableMatrixMaterial: boolean;
   scene: Scene;
+  xrAvatarRoot: Object3D;
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -137,6 +139,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
 
     const ktx2Loader = await initKTX2Loader("/basis/", renderer);
 
+    const scene = new Scene();
+    const xrAvatarRoot = new Object3D();
+    scene.add(xrAvatarRoot);
+
     return {
       needsResize: true,
       renderer,
@@ -152,7 +158,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
-      scene: new Scene(),
+      scene,
+      xrAvatarRoot,
+      xrBaseReferenceSpace: null,
     };
   },
   init(ctx) {
@@ -199,10 +207,12 @@ function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, scene, xrAvatarRoot, renderer } =
+    rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
+  const activeAvatarNode = ctx.worldResource.activeAvatarNode;
 
   // TODO: Remove this
   if (activeScene?.eid !== rendererModule.prevSceneResource) {
@@ -240,6 +250,22 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);
+
+  if (activeCameraNode && activeCameraNode.cameraObject) {
+    if (renderer.xr.isPresenting) {
+      if (activeCameraNode.cameraObject.parent !== xrAvatarRoot) {
+        xrAvatarRoot.add(activeCameraNode.cameraObject);
+      }
+
+      if (activeAvatarNode) {
+        updateTransformFromNode(ctx, activeAvatarNode, xrAvatarRoot);
+      }
+    } else {
+      if (activeCameraNode.cameraObject.parent !== scene) {
+        scene.add(activeCameraNode.cameraObject);
+      }
+    }
+  }
 
   if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);

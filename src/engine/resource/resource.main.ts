@@ -286,6 +286,7 @@ export class MainWorld extends defineLocalResourceClass(WorldResource) {
   declare firstNode: MainNode | undefined;
   declare persistentScene: MainScene;
   declare activeCameraNode: MainNode | undefined;
+  declare activeAvatarNode: MainNode | undefined;
 }
 
 const {

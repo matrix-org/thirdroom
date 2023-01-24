@@ -53,6 +53,11 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
           left: "Keyboard/KeyA",
           right: "Keyboard/KeyD",
         },
+        {
+          type: BindingType.Axes,
+          x: "XRInputSource/secondary/xr-standard-thumbstick/x-axis",
+          y: "XRInputSource/secondary/xr-standard-thumbstick/y-axis",
+        },
       ],
       networked: true,
     },
@@ -64,6 +69,10 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
         {
           type: BindingType.Button,
           path: "Keyboard/Space",
+        },
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/primary/xr-standard-thumbstick/button",
         },
       ],
       networked: true,
@@ -88,6 +97,10 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
         {
           type: BindingType.Button,
           path: "Keyboard/ShiftLeft",
+        },
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/secondary/xr-standard-thumbstick/button",
         },
       ],
       networked: true,

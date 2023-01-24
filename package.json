@@ -44,6 +44,7 @@
     "@thirdroom/hydrogen-view-sdk": "0.0.27",
     "@thirdroom/manifold-editor-components": "^0.0.4",
     "@thirdroom/ringbuffer": "^0.0.1",
+    "@webxr-input-profiles/assets": "^1.0.13",
     "bitecs": "NateTheGreatt/bitECS",
     "classnames": "^2.3.1",
     "draco3dgltf": "^1.5.3",
@@ -111,6 +112,7 @@
     "vite": "3.1.1",
     "vite-node": "^0.9.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
+    "vite-plugin-static-copy": "^0.13.0",
     "vitest": "0.17.0",
     "ws": "^8.5.0"
   }

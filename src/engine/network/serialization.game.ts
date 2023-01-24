@@ -44,7 +44,7 @@ import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { GameInputModule, InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
-import { setActiveCamera } from "../camera/camera.game";
+import { getCamera } from "../camera/camera.game";
 import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
@@ -578,7 +578,8 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
   removeInteractableComponent(ctx, physics, node);
 
   // set the active camera & input controller to this entity's
-  setActiveCamera(ctx, node);
+  ctx.worldResource.activeCameraNode = getCamera(ctx, node);
+  ctx.worldResource.activeAvatarNode = node;
   setActiveInputController(input, node.eid);
 }
 

@@ -6,7 +6,7 @@ import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 
 export interface InputController {
-  inputRingBuffer: InputRingBuffer<Float32ArrayConstructor>;
+  inputRingBuffer: InputRingBuffer;
   actionStates: Map<string, ActionState>;
   actionMaps: ActionMap[];
   raw: { [path: string]: number };
@@ -19,7 +19,7 @@ export interface InputController {
 }
 
 export interface InputControllerProps {
-  inputRingBuffer?: InputRingBuffer<Float32ArrayConstructor>;
+  inputRingBuffer?: InputRingBuffer;
   actionStates?: Map<string, ActionState>;
   actionMaps?: ActionMap[];
   pathToId?: Map<string, number>;
@@ -29,7 +29,7 @@ export interface InputControllerProps {
 
 export const createInputController = (props?: InputControllerProps): InputController => {
   const controller = {
-    inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(Float32Array, RING_BUFFER_MAX),
+    inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(RING_BUFFER_MAX),
     actionMaps: (props && props.actionMaps) || [],
     actionStates: new Map(),
     pathToId: new Map(),

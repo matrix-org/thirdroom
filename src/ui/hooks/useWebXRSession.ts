@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { XRSessionMode } from "three";
 
 import { Thread } from "../../engine/module/module.common";
 import { EnterXRMessage, RendererMessageType } from "../../engine/renderer/renderer.common";
@@ -13,22 +12,6 @@ export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionI
   const ctx = useMainThreadContext();
 
   const [isPresenting, setIsPresenting] = useState(false);
-
-  // useEffect(() => {
-  //   if ("xr" in navigator && navigator.xr !== undefined) {
-  //     const xr = navigator.xr;
-
-  //     const onDeviceChange = (event: XRSystemDeviceChangeEvent) => {
-  //       event.
-  //     };
-
-  //     xr.addEventListener("devicechange", onDeviceChange);
-
-  //     return () => {
-  //       xr.removeEventListener("devicechange", onDeviceChange);
-  //     };
-  //   }
-  // }, [mode]);
 
   const {
     loading: checkingWebXRSupport,
