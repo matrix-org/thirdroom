@@ -21,7 +21,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
       <NumericInput
         before={
           <Label color="surface-low" className="shrink-0">
-            X:
+            X
           </Label>
         }
         className="flex grow"
@@ -34,7 +34,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
       <NumericInput
         before={
           <Label color="surface-low" className="shrink-0">
-            Y:
+            Y
           </Label>
         }
         className="flex grow"
@@ -49,7 +49,7 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
           <NumericInput
             before={
               <Label color="surface-low" className="shrink-0">
-                Z:
+                Z
               </Label>
             }
             className="flex grow"
