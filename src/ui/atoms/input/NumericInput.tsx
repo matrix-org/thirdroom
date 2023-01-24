@@ -134,9 +134,12 @@ export function NumericInput({
   const handleKeyDown = (evt: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(evt);
 
-    if (evt.key === "Escape" && inputRef.current) {
+    if (evt.key === "Escape") {
       restoreValue();
-      inputRef.current.blur();
+      setTimeout(() => {
+        // Set timeout so handleBlur won't save edited value.
+        inputRef.current?.blur();
+      }, 100);
       return;
     }
     if (evt.key === "Enter") {
