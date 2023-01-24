@@ -1,4 +1,4 @@
-import { vec3 } from "@gltf-transform/core";
+import { vec3 } from "gl-matrix";
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
 import { World } from "../GameTypes";
