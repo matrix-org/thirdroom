@@ -1,0 +1,5 @@
+.DiscoverHome__content {
+  padding: var(--sp-md);
+  max-width: var(--discover-content-max-width);
+  margin: 0 auto;
+}

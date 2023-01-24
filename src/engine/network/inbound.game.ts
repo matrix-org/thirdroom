@@ -21,19 +21,28 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
 
   // trim off all inputs since the most recent host-processed input tick
   if (network.authoritative && !isHost(network) && inputTick) {
-    const actionStatesIndex = controller.history.findIndex(([tick]) => tick > inputTick);
+    // console.log("auth tick recieved", inputTick);
+    // console.log(
+    //   "history before",
+    //   controller.history.map(([tick]) => tick)
+    // );
+    const actionStatesIndex = controller.history.findIndex(([tick]) => tick >= inputTick);
     controller.history.splice(0, actionStatesIndex);
+    // console.log(
+    //   "history after",
+    //   controller.history.map(([tick]) => tick)
+    // );
     (controller as any).needsUpdate = true;
 
     // now we as the client want to continue deserializing the full update of this packet
     // and then afterwards we can reapply our inputs (PhysicsCharacterController) that happened after inputTick
     // this should put our avatar in the same place as it is on the host
-    // console.log("controller.history after", controller.history);
   }
 
   const historian = network.peerIdToHistorian.get(peerId);
 
   if (historian) {
+    // this value is written onto outgoing packet headers
     historian.latestTick = inputTick;
     historian.latestTime = elapsed;
     historian.localTime = elapsed;

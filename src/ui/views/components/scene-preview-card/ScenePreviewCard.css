@@ -1,0 +1,14 @@
+.ScenePreviewCard {
+  background-color: var(--bg-surface-low);
+  border-radius: var(--br-lg);
+  overflow: hidden;
+
+  & .Thumbnail {
+    border-radius: 0;
+  }
+}
+
+.ScenePreviewCard__Content {
+  padding: var(--sp-xs);
+  padding-top: 0;
+}

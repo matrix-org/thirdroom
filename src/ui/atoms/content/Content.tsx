@@ -5,7 +5,7 @@ import "./Content.css";
 interface ContentProps {
   className?: string;
   top?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   bottom?: ReactNode;
   onSubmit?: FormEventHandler;
   onReset?: FormEventHandler;

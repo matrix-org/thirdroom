@@ -1,6 +1,7 @@
 import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
+import { vec3 } from "gl-matrix";
 
 import type { RawCharacterCollision } from "@dimforge/rapier3d-compat/rapier_wasm3d";
 import { GameState } from "../engine/GameTypes";
@@ -24,8 +25,6 @@ import { getCamera } from "../engine/camera/camera.game";
 import { playAudio } from "../engine/audio/audio.game";
 import randomRange from "../engine/utils/randomRange";
 import { OurPlayer } from "../engine/component/Player";
-import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
-import { AVATAR_HEIGHT, AVATAR_RADIUS } from "./avatars/common";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -156,6 +155,28 @@ export function addKinematicControls(ctx: GameState, eid: number) {
   addComponent(ctx.world, KinematicControls, eid);
 }
 
+function cameraHeadBob(ctx: GameState, rig: RemoteNode, speed: number, isGrounded: boolean, isSprinting: boolean) {
+  if (speed > 0.1 && isGrounded) {
+    const camera = getCamera(ctx, rig);
+    const amplitude = 0.04;
+    const time = ctx.elapsed;
+    const frequency = isSprinting ? 0.003 : 0.0015; // radians per second
+    const phase = 0;
+    const delta = amplitude * Math.sin(2 * Math.PI * time * frequency + phase);
+    camera.position[1] = -delta;
+
+    if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
+      // footstep
+      const audioSources = rig.audioEmitter!.sources.filter((s) => s.audio?.uri.includes("footstep"));
+      if (audioSources.length) {
+        const i = Math.floor(randomRange(0, audioSources.length));
+        playAudio(audioSources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+      }
+      lastFootstepFrame = ctx.tick;
+    }
+  }
+}
+
 export function updateKinematicControls(
   ctx: GameState,
   { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
@@ -241,26 +262,7 @@ export function updateKinematicControls(
     _acceleration.add(_dragForce);
   }
 
-  if (speed > 0.1 && isGrounded) {
-    // camera bob
-    const camera = getCamera(ctx, rig);
-    const amplitude = 0.04;
-    const time = ctx.elapsed;
-    const frequency = isSprinting ? 0.003 : 0.0015; // radians per second
-    const phase = 0;
-    const delta = amplitude * Math.sin(2 * Math.PI * time * frequency + phase);
-    camera.position[1] = -delta;
-
-    if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
-      // footstep
-      const audioSources = rig.audioEmitter!.sources.filter((s) => s.audio?.uri.includes("footstep"));
-      if (audioSources.length) {
-        const i = Math.floor(randomRange(0, audioSources.length));
-        playAudio(audioSources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
-      }
-      lastFootstepFrame = ctx.tick;
-    }
-  }
+  cameraHeadBob(ctx, rig, speed, isGrounded, isSprinting);
 
   _acceleration.multiplyScalar(ctx.dt);
 
@@ -349,6 +351,7 @@ function updateKinematicControlsCsp(
   actionStates: Map<string, ActionState>,
   rig: RemoteNode,
   body: RAPIER.RigidBody,
+  entityState: { position: vec3; velocity: vec3 },
   divisor: number
 ) {
   const characterController = eidTocharacterController.get(rig.eid)!;
@@ -360,6 +363,7 @@ function updateKinematicControlsCsp(
   const sprint = actionStates.get(KinematicCharacterControllerActions.Sprint) as ButtonActionState;
 
   _linearVelocity.copy(body.linvel() as Vector3);
+  // _linearVelocity.fromArray(entityState.velocity);
 
   // // HACK - for when autostep misbehaves and spikes Y velocity
   if (_linearVelocity.y > 10) {
@@ -426,6 +430,8 @@ function updateKinematicControlsCsp(
     _acceleration.add(_dragForce);
   }
 
+  cameraHeadBob(ctx, rig, speed, isGrounded, isSprinting);
+
   _acceleration.multiplyScalar(ctx.dt);
 
   _linearVelocity.add(_acceleration).multiplyScalar(ctx.dt);
@@ -440,26 +446,14 @@ function updateKinematicControlsCsp(
 
   const corrected = characterController.computedMovement();
 
+  // console.log("_linearVelocity", _linearVelocity);
+  // console.log("corrected", corrected);
+
   translation.x += corrected.x;
   translation.y += corrected.y;
   translation.z += corrected.z;
 
   body.setNextKinematicTranslation(translation);
-}
-
-let authRigidBody: RAPIER.RigidBody;
-function createAuthRigidBody(physics: PhysicsModuleState) {
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-  const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_HEIGHT / 2, AVATAR_RADIUS)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(playerShapeCastCollisionGroups)
-    .setTranslation(0, AVATAR_HEIGHT / 2, 0);
-
-  physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  return rigidBody;
 }
 
 export function ClientSidePredictionSystem(ctx: GameState) {
@@ -477,10 +471,6 @@ export function ClientSidePredictionSystem(ctx: GameState) {
 
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
-
-  if (authRigidBody === undefined) {
-    authRigidBody = createAuthRigidBody(physics);
-  }
 
   const eid = cspQuery(ctx.world)[0];
   if (!eid) return;
@@ -502,31 +492,44 @@ export function ClientSidePredictionSystem(ctx: GameState) {
     return;
   }
 
-  const netPosition = Networked.position[eid];
-  const netVelocity = Networked.velocity[eid];
-  const pos = new Vector3().fromArray(netPosition);
-  const vel = new Vector3().fromArray(netVelocity);
-
   // set our own rotation
   _q.fromArray(node.quaternion);
   body.setNextKinematicRotation(_q);
 
   const controller = tryGetInputController(input, eid);
 
+  updateKinematicControls(ctx, physics, controller.actionStates, node, body);
+
   if ((controller as any).needsUpdate) {
     (controller as any).needsUpdate = false;
 
-    body.setTranslation(pos, true);
-    body.setLinvel(vel, true);
+    const serverPosition = Networked.position[eid];
+    const serverVelocity = Networked.velocity[eid];
 
-    // reapply all inputs since last host-processed input
-    // which will ideally predict us into the same place as we are on the host
-    for (let j = 0; j < controller.history.length; j++) {
-      const [, actionStates] = controller.history[j];
-      updateKinematicControlsCsp(ctx, physics, actionStates, node, body, controller.history.length);
+    const [, , pastState] = controller.history[0];
+    const threshold = 0.001;
+
+    // compare auth position to tick-equivalent position from the history
+    const dist = vec3.dist(serverPosition, pastState.position);
+    if (dist > threshold) {
+      console.warn("PREDICTION ERROR!", dist);
+      // reset to auth position
+      body.setTranslation(new Vector3().fromArray(serverPosition), true);
+      body.setLinvel(new Vector3().fromArray(serverVelocity), true);
+      // roll forward using input history
+
+      for (let j = 1; j < controller.history.length; j++) {
+        const [, actionStates, pastState] = controller.history[j];
+        updateKinematicControlsCsp(
+          ctx,
+          physics,
+          actionStates,
+          node,
+          body,
+          pastState,
+          Math.max(1, controller.history.length - 1)
+        );
+      }
     }
-  } else {
-    updateKinematicControls(ctx, physics, controller.actionStates, node, body);
-    return;
   }
 }
