@@ -1,7 +1,7 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { addChild, setFromLocalMatrix } from "../component/transform";
+import { addChild, removeChild, setFromLocalMatrix } from "../component/transform";
 import { GameState, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { getModule } from "../module/module.common";
@@ -12,7 +12,9 @@ import { InputModule } from "./input.game";
 
 export interface XRAvatarRig {
   leftControllerEid?: number;
+  prevLeftAssetPath?: string;
   rightControllerEid?: number;
+  prevRightAssetPath?: string;
 }
 
 export const XRAvatarRig: Map<number, XRAvatarRig> = new Map();
@@ -38,8 +40,8 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
       continue;
     }
 
-    rig.leftControllerEid = updateXRController(ctx, xrInputSourcesByHand, rigNode, "left", rig.leftControllerEid);
-    rig.rightControllerEid = updateXRController(ctx, xrInputSourcesByHand, rigNode, "right", rig.rightControllerEid);
+    updateXRController(ctx, xrInputSourcesByHand, rigNode, rig, "left");
+    updateXRController(ctx, xrInputSourcesByHand, rigNode, rig, "right");
   }
 
   const exited = xrAvatarRigExitQuery(ctx.world);
@@ -70,27 +72,44 @@ function updateXRController(
   ctx: GameState,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
   rigNode: RemoteNode,
-  hand: XRHandedness,
-  eid?: number
-): number | undefined {
+  rig: XRAvatarRig,
+  hand: XRHandedness
+) {
   const inputSource = xrInputSourcesByHand.get(hand);
 
+  const eid = hand === "left" ? rig.leftControllerEid : rig.rightControllerEid;
+
   if (inputSource) {
+    const assetPath = inputSource.layout.assetPath;
     let controllerNode: RemoteNode | undefined;
 
     if (eid) {
       controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-      controllerNode.visible = true;
-    } else {
-      controllerNode = createNodeFromGLTFURI(ctx, inputSource.layout.assetPath);
-      eid = controllerNode.eid;
+
+      if (hand === "left" && rig.prevLeftAssetPath !== assetPath) {
+        removeChild(rigNode, controllerNode);
+        controllerNode = undefined;
+      } else if (hand === "right" && rig.prevRightAssetPath !== assetPath) {
+        removeChild(rigNode, controllerNode);
+        controllerNode = undefined;
+      } else {
+        controllerNode.visible = true;
+      }
+    }
+
+    if (!controllerNode) {
+      controllerNode = createNodeFromGLTFURI(ctx, assetPath);
       addChild(rigNode, controllerNode);
 
       const worldResource = ctx.worldResource;
 
       if (hand === "left") {
+        rig.leftControllerEid = controllerNode.eid;
+        rig.prevLeftAssetPath = assetPath;
         worldResource.activeLeftControllerNode = controllerNode;
       } else if (hand === "right") {
+        rig.rightControllerEid = controllerNode.eid;
+        rig.prevRightAssetPath = assetPath;
         worldResource.activeRightControllerNode = controllerNode;
       }
     }
@@ -101,6 +120,4 @@ function updateXRController(
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     controllerNode.visible = false;
   }
-
-  return eid;
 }
