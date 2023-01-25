@@ -48,6 +48,7 @@ import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
 import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSystem";
 import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
 import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
+import { WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
 
 export default defineConfig<GameState>({
   modules: [
@@ -71,6 +72,7 @@ export default defineConfig<GameState>({
     IncomingTripleBufferSystem,
 
     ApplyInputSystem,
+    WebXRAvatarRigSystem,
     ActionMappingSystem,
 
     InboundNetworkSystem,

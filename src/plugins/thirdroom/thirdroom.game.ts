@@ -96,7 +96,6 @@ import { AvatarComponent } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
-import { addXRAvatarRig } from "../../engine/input/XRAvatarRig";
 
 type ThirdRoomModuleState = {};
 
@@ -149,12 +148,6 @@ const createAvatarRig =
     addAvatarController(ctx, input, obj.eid);
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
-
-    const leftController = new RemoteNode(ctx.resourceManager);
-    addChild(privateRoot, leftController);
-    const rightController = new RemoteNode(ctx.resourceManager);
-    addChild(privateRoot, rightController);
-    addXRAvatarRig(ctx.world, obj.eid, leftController.eid, rightController.eid);
 
     return obj;
   };
@@ -405,8 +398,6 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 function disposeWorld(worldResource: RemoteWorld) {
   worldResource.activeCameraNode = undefined;
   worldResource.activeAvatarNode = undefined;
-  worldResource.activeLeftControllerNode = undefined;
-  worldResource.activeRightControllerNode = undefined;
   worldResource.environment = undefined;
   worldResource.firstNode = undefined;
 }

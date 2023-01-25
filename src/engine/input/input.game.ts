@@ -17,7 +17,8 @@ export interface GameInputModule {
   controllers: Map<number, InputController>;
   defaultController: InputController;
   activeController: InputController;
-  xrInputSources: SharedXRInputSource[];
+  xrInputSources: Map<number, SharedXRInputSource>;
+  xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>;
   xrPrimaryHand: XRHandedness;
 }
 
@@ -39,8 +40,9 @@ export const InputModule = defineModule<GameState, GameInputModule>({
       controllers: InputControllerComponent,
       defaultController: controller,
       activeController: controller,
-      xrInputSources: [],
+      xrInputSources: new Map(),
       xrPrimaryHand: "right",
+      xrInputSourcesByHand: new Map(),
     };
   },
   init(ctx) {
@@ -51,18 +53,20 @@ export const InputModule = defineModule<GameState, GameInputModule>({
 });
 
 function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInputSourcesMessage) {
-  const { xrInputSources } = getModule(ctx, InputModule);
+  const { xrInputSources, xrInputSourcesByHand } = getModule(ctx, InputModule);
 
   for (const id of removed) {
-    const index = xrInputSources.findIndex((item) => item.id === id);
+    const inputSource = xrInputSources.get(id);
 
-    if (index === -1) {
-      xrInputSources.splice(index, 1);
+    if (inputSource) {
+      xrInputSourcesByHand.delete(inputSource.handedness);
+      xrInputSources.delete(id);
     }
   }
 
   for (const item of added) {
-    xrInputSources.push(item);
+    xrInputSources.set(item.id, item);
+    xrInputSourcesByHand.set(item.handedness, item);
   }
 }
 

@@ -2,18 +2,12 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RemoteNode } from "../resource/RemoteResources";
-import { tryGetRemoteResource } from "../resource/resource.game";
 import { InputComponentId, InputComponentState, SharedXRInputSource, XRInputComponentIdToName } from "./input.common";
 import { exitedInputControllerQuery, removeInputController } from "./InputController";
 import { dequeueInputRingBuffer } from "./RingBuffer";
 import { InputModule } from "./input.game";
-import { createNodeFromGLTFURI } from "../gltf/gltf.game";
-import { addChild, setFromLocalMatrix } from "../component/transform";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Keys } from "./KeyCodes";
-import { XRAvatarRig, xrAvatarRigQuery } from "./XRAvatarRig";
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 
 const out: InputComponentState = { inputSourceId: 0, componentId: 0, button: 0, xAxis: 0, yAxis: 0, state: 0 };
 
@@ -72,59 +66,6 @@ export function ApplyInputSystem(ctx: GameState) {
     const eid = exited[i];
     removeInputController(ctx.world, input, eid);
   }
-
-  const rigs = xrAvatarRigQuery(ctx.world);
-
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
-    const rig = XRAvatarRig.get(eid);
-
-    if (!rig || !rig.local) {
-      return;
-    }
-
-    const leftControllerNode = tryGetRemoteResource<RemoteNode>(ctx, rig.leftControllerEid);
-
-    if (!rig.leftControllerInputSource) {
-      rig.leftControllerInputSource = xrInputSources.find((source) => source.handedness === "left");
-
-      if (rig.leftControllerInputSource) {
-        // TODO: Handle controller disconnect / lose tracking
-        const modelNode = createNodeFromGLTFURI(ctx, rig.leftControllerInputSource.layout.assetPath);
-        addChild(leftControllerNode, modelNode);
-      }
-    }
-
-    const leftInputSource = rig.leftControllerInputSource;
-
-    leftControllerNode.visible = !!leftInputSource;
-
-    if (leftInputSource) {
-      const leftControllerPoses = getReadObjectBufferView(leftInputSource.controllerPoses);
-      setFromLocalMatrix(leftControllerNode, leftControllerPoses.gripPose);
-    }
-
-    const rightControllerNode = tryGetRemoteResource<RemoteNode>(ctx, rig.rightControllerEid);
-
-    if (!rig.rightControllerInputSource) {
-      rig.rightControllerInputSource = xrInputSources.find((source) => source.handedness === "right");
-
-      if (rig.rightControllerInputSource) {
-        // TODO: Handle controller disconnect / lose tracking
-        const modelNode = createNodeFromGLTFURI(ctx, rig.rightControllerInputSource.layout.assetPath);
-        addChild(rightControllerNode, modelNode);
-      }
-    }
-
-    const rightInputSource = rig.rightControllerInputSource;
-
-    rightControllerNode.visible = !!rightInputSource;
-
-    if (rightInputSource) {
-      const rightControllerPoses = getReadObjectBufferView(rightInputSource.controllerPoses);
-      setFromLocalMatrix(rightControllerNode, rightControllerPoses.gripPose);
-    }
-  }
 }
 
 enum MouseButton {
@@ -162,13 +103,12 @@ function applyKeyboardButton(raw: { [path: string]: number }, o: InputComponentS
 function applyXRButton(
   raw: { [path: string]: number },
   o: InputComponentState,
-  inputSources: SharedXRInputSource[],
+  inputSources: Map<number, SharedXRInputSource>,
   primaryHand: XRHandedness
 ) {
-  const inputSource = inputSources.find((source) => source.id === o.inputSourceId);
+  const inputSource = inputSources.get(o.inputSourceId);
 
   if (!inputSource) {
-    console.warn("Couldn't find XR input source");
     return;
   }
 
@@ -187,13 +127,12 @@ function applyXRButton(
 function applyXRThumbstick(
   raw: { [path: string]: number },
   o: InputComponentState,
-  inputSources: SharedXRInputSource[],
+  inputSources: Map<number, SharedXRInputSource>,
   primaryHand: XRHandedness
 ) {
-  const inputSource = inputSources.find((source) => source.id === o.inputSourceId);
+  const inputSource = inputSources.get(o.inputSourceId);
 
   if (!inputSource) {
-    console.warn("Couldn't find XR input source");
     return;
   }
 
