@@ -18,6 +18,7 @@ import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
+import XRIC from "../../../../../res/ic/xr.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
@@ -174,6 +175,8 @@ export function WorldView({ world }: WorldViewProps) {
   const [portalProcess, setPortalProcess] = useState<IPortalProcess>({});
   const mouseDown = useMouseDown(mainThread.canvas);
 
+  const { isWebXRSupported, enterXR } = useWebXRSession();
+
   useEffect(() => {
     let unSubStatusObserver: () => void | undefined;
     const onInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
@@ -314,6 +317,9 @@ export function WorldView({ world }: WorldViewProps) {
       if (e.altKey && e.code === "KeyL") {
         exitWorld();
       }
+      if (e.altKey && e.code === "KeyX" && isWebXRSupported) {
+        enterXR();
+      }
       if (e.code === "KeyM" && muteBtnRef.current !== null) {
         muteBtnRef.current.click();
       }
@@ -347,6 +353,8 @@ export function WorldView({ world }: WorldViewProps) {
       closeWorldChat,
       openOverlay,
       closeOverlay,
+      enterXR,
+      isWebXRSupported,
     ]
   );
 
@@ -381,8 +389,6 @@ export function WorldView({ world }: WorldViewProps) {
 
   usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
-  const { isWebXRSupported, enterXR } = useWebXRSession();
-
   const renderControl = () => (
     <>
       {!isChatOpen && (
@@ -400,16 +406,6 @@ export function WorldView({ world }: WorldViewProps) {
         </Hotbar>
       )}
       <div className="WorldView__controls flex">
-        {isWebXRSupported && (
-          <div className="flex flex-column items-center">
-            <Tooltip content="Enter XR">
-              <IconButton variant="world" label="Enter XR" iconSrc={HelpIC} onClick={enterXR} />
-            </Tooltip>
-            <Text variant="b3" color="world" weight="bold">
-              /
-            </Text>
-          </div>
-        )}
         <div className="flex flex-column items-center">
           <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
             <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
@@ -418,6 +414,16 @@ export function WorldView({ world }: WorldViewProps) {
             /
           </Text>
         </div>
+        {isWebXRSupported && (
+          <div className="flex flex-column items-center">
+            <Tooltip content="Enter XR">
+              <IconButton variant="world" label="Enter XR" iconSrc={XRIC} onClick={enterXR} />
+            </Tooltip>
+            <Text variant="b3" color="world" weight="bold">
+              Alt + X
+            </Text>
+          </div>
+        )}
         <div className="flex flex-column items-center">
           <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
             <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />

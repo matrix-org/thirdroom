@@ -29,6 +29,10 @@ export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionI
     error: webXRSessionError,
   } = useAsyncCallback<() => Promise<XRSession | undefined>, XRSession | undefined>(async () => {
     if ("xr" in navigator && navigator.xr) {
+      if (isPresenting) {
+        return;
+      }
+
       const session = await navigator.xr.requestSession(mode, xrSessionInit);
 
       ctx.sendMessage<EnterXRMessage>(Thread.Render, {
@@ -40,7 +44,7 @@ export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionI
     }
 
     return undefined;
-  }, [ctx, mode, xrSessionInit]);
+  }, [ctx, mode, xrSessionInit, isPresenting]);
 
   useEffect(() => {
     if (session) {
