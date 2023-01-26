@@ -1,6 +1,5 @@
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useStore } from "../../../hooks/useStore";
-import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { useWorldPath } from "../../../hooks/useWorld";
 import { WorldLoading } from "./WorldLoading";
 import { WorldThumbnail } from "./WorldThumbnail";
@@ -13,11 +12,9 @@ export default function WorldRootView() {
 
   const [roomId, reloadId] = useWorldPath();
 
-  const { isPresenting } = useWebXRSession();
-
   return (
     <>
-      {world && entered && !isPresenting && <WorldView world={world} />}
+      {world && entered && <WorldView world={world} />}
       <WorldThumbnail />
       <WorldLoading roomId={roomId} reloadId={reloadId} />
     </>

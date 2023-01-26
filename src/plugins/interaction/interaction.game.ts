@@ -359,28 +359,28 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   );
 
   let eid;
-  let sendMsg = false;
   if (hit !== null) {
     eid = physics.handleToEid.get(hit.collider.handle);
     if (!eid) {
       console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
     } else if (hit.toi <= Interactable.interactionDistance[eid]) {
       addComponent(ctx.world, FocusComponent, rig.eid);
-      sendMsg = FocusComponent.focusedEntity[rig.eid] !== eid;
       FocusComponent.focusedEntity[rig.eid] = eid;
     } else {
       // clear focus
       removeComponent(ctx.world, FocusComponent, rig.eid, true);
+      FocusComponent.focusedEntity[rig.eid] = 0;
     }
   } else {
     // clear focus
     removeComponent(ctx.world, FocusComponent, rig.eid, true);
+    FocusComponent.focusedEntity[rig.eid] = 0;
   }
 
   // only update UI if it's our player
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
-  if (ourPlayer && sendMsg) {
+  if (ourPlayer) {
     // TODO: only send these messages when they change
     if (FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
     if (!FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
