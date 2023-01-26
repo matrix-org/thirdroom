@@ -61,7 +61,6 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
 
     if (!pointLight) {
       pointLight = new PointLight();
-      pointLight.decay = 2;
 
       scene.add(pointLight);
     }
@@ -79,7 +78,6 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
       spotLight = new SpotLight();
       spotLight.target.position.set(0, 0, -1);
       spotLight.add(spotLight.target);
-      spotLight.decay = 2;
 
       scene.add(spotLight);
     }

@@ -12,25 +12,27 @@ import {
   CursorView,
   moveCursorView,
   readFloat32,
-  readUint8,
+  readUint32,
   sliceCursorView,
   writeFloat32,
-  writeUint8,
+  writeUint32,
 } from "../allocator/CursorView";
-import { TypedArrayConstructor } from "../utils/typedarray";
+import { InputComponentState } from "./input.common";
 
-export interface InputRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
+export interface InputRingBuffer extends RingBuffer<Float32ArrayConstructor> {
   buffer: ArrayBuffer;
   array: Uint8Array;
   view: CursorView;
 }
 
-export const RING_BUFFER_MAX = 100;
+const numElements = 6;
 
-const BYTE_LENGTH = Uint8Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
+export const RING_BUFFER_MAX = 512 * numElements;
 
-export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, capacity?: number): InputRingBuffer<T> {
-  const ringBuffer = createRingBuffer(type, capacity);
+const BYTE_LENGTH = numElements * Float32Array.BYTES_PER_ELEMENT;
+
+export function createInputRingBuffer(capacity?: number): InputRingBuffer {
+  const ringBuffer = createRingBuffer(Float32Array, capacity);
   const buffer = new ArrayBuffer(BYTE_LENGTH);
   const array = new Uint8Array(buffer);
   const view = createCursorView(buffer);
@@ -41,17 +43,24 @@ export function createInputRingBuffer<T extends TypedArrayConstructor>(type: T, 
   });
 }
 
-export function enqueueInputRingBuffer<T extends TypedArrayConstructor>(
-  irb: InputRingBuffer<T>,
-  keyCode: number,
-  ...values: number[]
+export function enqueueInputRingBuffer(
+  irb: InputRingBuffer,
+  inputSourceId: number,
+  componentId: number,
+  button: number,
+  xAxis: number,
+  yAxis: number,
+  state: number
 ) {
   const { view } = irb;
 
   moveCursorView(view, 0);
-  writeUint8(view, keyCode);
-  writeFloat32(view, values[0] || 0);
-  writeFloat32(view, values[1] || 0);
+  writeUint32(view, inputSourceId);
+  writeUint32(view, componentId);
+  writeFloat32(view, button);
+  writeFloat32(view, xAxis);
+  writeFloat32(view, yAxis);
+  writeUint32(view, state);
 
   if (availableWrite(irb) < BYTE_LENGTH) {
     return false;
@@ -60,10 +69,7 @@ export function enqueueInputRingBuffer<T extends TypedArrayConstructor>(
   return pushRingBuffer(irb, irb.array) === BYTE_LENGTH;
 }
 
-export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
-  irb: InputRingBuffer<T>,
-  out: { keyCode: number; values: number[] }
-) {
+export function dequeueInputRingBuffer(irb: InputRingBuffer, out: InputComponentState) {
   if (isRingBufferEmpty(irb)) {
     return false;
   }
@@ -72,9 +78,12 @@ export function dequeueInputRingBuffer<T extends TypedArrayConstructor>(
   const { view } = irb;
   moveCursorView(view, 0);
 
-  out.keyCode = readUint8(view);
-  out.values[0] = readFloat32(view);
-  out.values[1] = readFloat32(view);
+  out.inputSourceId = readUint32(view);
+  out.componentId = readUint32(view);
+  out.button = readFloat32(view);
+  out.xAxis = readFloat32(view);
+  out.yAxis = readFloat32(view);
+  out.state = readUint32(view);
 
   return sliceCursorView(view);
 }

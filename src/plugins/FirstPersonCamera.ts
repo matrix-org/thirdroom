@@ -97,6 +97,7 @@ function deserializeUpdateCamera(data: NetPipeData) {
 
 export const FirstPersonCameraActions = {
   Look: "FirstPersonCamera/Look",
+  SnapTurn: "FirstPersonCamera/SnapTurn",
 };
 
 export const FirstPersonCameraActionMap: ActionMap = {
@@ -114,6 +115,18 @@ export const FirstPersonCameraActionMap: ActionMap = {
         },
       ],
     },
+    {
+      id: "snap-turn",
+      path: FirstPersonCameraActions.SnapTurn,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          x: "XRInputSource/primary/xr-standard-thumbstick/x-axis",
+        },
+      ],
+      networked: true,
+    },
   ],
 };
 
@@ -129,6 +142,7 @@ export const FirstPersonCameraPitchTarget = defineComponent(
 export const FirstPersonCameraYawTarget = defineComponent(
   {
     sensitivity: Types.f32,
+    snapTurnDisabled: Types.ui8,
   },
   maxEntities
 );
@@ -153,6 +167,19 @@ export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, Rem
 
 function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode) {
   const [lookX] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
+  const [snapX] = controller.actionStates.get(FirstPersonCameraActions.SnapTurn) as Float32Array;
+
+  if (Math.abs(snapX) >= 0.5) {
+    if (FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] === 0) {
+      const quaternion = node.quaternion;
+      const snapDirection = snapX > 0 ? -1 : 1;
+      const snapAngle = (Math.PI / 6) * snapDirection;
+      quat.rotateY(quaternion, quaternion, snapAngle);
+      FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] = 1;
+    }
+  } else {
+    FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] = 0;
+  }
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = FirstPersonCameraYawTarget.sensitivity[node.eid] || 1;

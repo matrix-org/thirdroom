@@ -142,14 +142,6 @@ const InteractionActionMap: ActionMap = {
           type: BindingType.Button,
           path: "Mouse/Left",
         },
-      ],
-      networked: true,
-    },
-    {
-      id: "grab2",
-      path: "Grab2",
-      type: ActionType.Button,
-      bindings: [
         {
           type: BindingType.Button,
           path: "Keyboard/KeyE",
@@ -166,14 +158,6 @@ const InteractionActionMap: ActionMap = {
           type: BindingType.Button,
           path: "Mouse/Right",
         },
-      ],
-      networked: true,
-    },
-    {
-      id: "throw2",
-      path: "Throw2",
-      type: ActionType.Button,
-      bindings: [
         {
           type: BindingType.Button,
           path: "Mouse/Left",
@@ -406,13 +390,11 @@ function updateGrabThrow(
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
-  const grabBtn2 = controller.actionStates.get("Grab2") as ButtonActionState;
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
-  const throwBtn2 = controller.actionStates.get("Throw2") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed || grabBtn2.pressed;
-  const grabReleased = grabBtn.released || grabBtn2.released;
-  const throwPressed = throwBtn.pressed || throwBtn2.pressed;
+  const grabPressed = grabBtn.pressed;
+  const grabReleased = grabBtn.released;
+  const throwPressed = throwBtn.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 

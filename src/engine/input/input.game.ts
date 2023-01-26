@@ -1,18 +1,13 @@
-import { availableRead } from "@thirdroom/ringbuffer";
-
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, Thread } from "../module/module.common";
-import { checkBitflag } from "../utils/checkBitflag";
-import { InitializeInputStateMessage, InputMessageType } from "./input.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
 import {
-  InputController,
-  createInputController,
-  InputControllerComponent,
-  exitedInputControllerQuery,
-  removeInputController,
-} from "./InputController";
-import { KeyCodes, Keys } from "./KeyCodes";
-import { dequeueInputRingBuffer } from "./RingBuffer";
+  InitializeInputStateMessage,
+  InputMessageType,
+  SharedXRInputSource,
+  UpdateXRInputSourcesMessage,
+} from "./input.common";
+import { InputController, createInputController, InputControllerComponent } from "./InputController";
 
 /*********
  * Types *
@@ -22,6 +17,9 @@ export interface GameInputModule {
   controllers: Map<number, InputController>;
   defaultController: InputController;
   activeController: InputController;
+  xrInputSources: Map<number, SharedXRInputSource>;
+  xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>;
+  xrPrimaryHand: XRHandedness;
 }
 
 /******************
@@ -42,66 +40,33 @@ export const InputModule = defineModule<GameState, GameInputModule>({
       controllers: InputControllerComponent,
       defaultController: controller,
       activeController: controller,
+      xrInputSources: new Map(),
+      xrPrimaryHand: "right",
+      xrInputSourcesByHand: new Map(),
     };
   },
-  init(ctx) {},
+  init(ctx) {
+    return createDisposables([
+      registerMessageHandler(ctx, InputMessageType.UpdateXRInputSources, onUpdateXRInputSources),
+    ]);
+  },
 });
 
-enum MouseButton {
-  Left = 1 << 0,
-  Right = 1 << 1,
-  Middle = 1 << 2,
-  Four = 1 << 3,
-  Five = 1 << 4,
-  Scroll = 1 << 5,
-}
+function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInputSourcesMessage) {
+  const { xrInputSources, xrInputSourcesByHand } = getModule(ctx, InputModule);
 
-const out: { keyCode: number; values: [number, number] } = { keyCode: 0, values: [0, 0] };
-export function applyMouseButtons(raw: { [path: string]: number }, o: typeof out) {
-  const buttons = o.values[0];
-  raw["Mouse/Left"] = checkBitflag(buttons, MouseButton.Left) ? 1 : 0;
-  raw["Mouse/Right"] = checkBitflag(buttons, MouseButton.Right) ? 1 : 0;
-  raw["Mouse/Middle"] = checkBitflag(buttons, MouseButton.Middle) ? 1 : 0;
-  raw["Mouse/Four"] = checkBitflag(buttons, MouseButton.Four) ? 1 : 0;
-  raw["Mouse/Five"] = checkBitflag(buttons, MouseButton.Five) ? 1 : 0;
-}
+  for (const id of removed) {
+    const inputSource = xrInputSources.get(id);
 
-export function applyMouseMovement(raw: { [path: string]: number }, o: typeof out) {
-  raw["Mouse/movementX"] = o.values[0];
-  raw["Mouse/movementY"] = o.values[1];
-}
-
-export function applyMouseScroll(raw: { [path: string]: number }, o: typeof out) {
-  raw["Mouse/Scroll"] = o.values[0];
-}
-
-export function ApplyInputSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-
-  const { inputRingBuffer, raw } = input.activeController;
-
-  while (availableRead(inputRingBuffer)) {
-    dequeueInputRingBuffer(inputRingBuffer, out);
-
-    switch (out.keyCode) {
-      case KeyCodes.MouseButtons:
-        applyMouseButtons(raw, out);
-        break;
-      case KeyCodes.MouseMovement:
-        applyMouseMovement(raw, out);
-        break;
-      case KeyCodes.MouseScroll:
-        applyMouseScroll(raw, out);
-        break;
-      default:
-        raw[`Keyboard/${Keys[out.keyCode]}`] = out.values[0];
+    if (inputSource) {
+      xrInputSourcesByHand.delete(inputSource.handedness);
+      xrInputSources.delete(id);
     }
   }
 
-  const exited = exitedInputControllerQuery(ctx.world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    removeInputController(ctx.world, input, eid);
+  for (const item of added) {
+    xrInputSources.set(item.id, item);
+    xrInputSourcesByHand.set(item.handedness, item);
   }
 }
 

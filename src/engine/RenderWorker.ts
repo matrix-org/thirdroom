@@ -42,7 +42,7 @@ function startRenderWorker(
 
     if (message.type === WorkerMessageType.InitializeRenderWorker) {
       workerScope.removeEventListener("message", onInitMessage as any);
-      onInit(workerScope, message, canvas, mockGameWorkerPort);
+      onInit(workerScope, message, canvas, mockGameWorkerPort).catch(console.error);
     }
   };
 

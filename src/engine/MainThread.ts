@@ -17,13 +17,20 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
   worldResource: MainWorld;
+  enableXR: boolean;
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
   const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
-  const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
+  let useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
+  let enableXR = false;
+
+  if ("xr" in navigator && navigator.xr && (await navigator.xr.isSessionSupported("immersive-vr"))) {
+    useOffscreenCanvas = false;
+    enableXR = true;
+  }
 
   const gameWorker = new GameWorker();
   const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas);
@@ -56,6 +63,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     sendMessage: mainThreadSendMessage,
     // TODO: figure out how to create the main thread context such that this is initially set
     worldResource: undefined as any,
+    enableXR,
     isStaleFrame: false,
   };
 

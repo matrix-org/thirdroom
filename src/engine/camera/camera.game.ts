@@ -30,18 +30,6 @@ export function createRemotePerspectiveCamera(
   });
 }
 
-export function createCamera(ctx: GameState, setActive = false): RemoteNode {
-  const node = new RemoteNode(ctx.resourceManager, {
-    camera: createRemotePerspectiveCamera(ctx),
-  });
-
-  if (setActive) {
-    ctx.worldResource.activeCameraNode = node;
-  }
-
-  return node;
-}
-
 const _pm = mat4.create();
 const _icm = mat4.create();
 export function projectPerspective(ctx: GameState, cameraNode: RemoteNode, v3: vec3) {
@@ -121,14 +109,4 @@ export function getCamera(ctx: GameState, root: RemoteNode): RemoteNode {
   const camera = findChild(root, (child) => child.camera !== undefined);
   if (!camera) throw new Error(`Camera not found on node "${root.name}"`);
   return camera;
-}
-
-/**
- * Sets the the active camera to the last camera added to the provided entity
- *
- * @param ctx GameState
- * @param eid number
- */
-export function setActiveCamera(ctx: GameState, node: RemoteNode) {
-  ctx.worldResource.activeCameraNode = getCamera(ctx, node);
 }

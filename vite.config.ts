@@ -4,6 +4,7 @@ import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
 import pluginRewriteAll from "@thirdroom/vite-plugin-rewrite-all";
 import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 
 import testnetServerPlugin from "./src/testnet";
@@ -13,6 +14,7 @@ export default defineConfig({
   appType: "mpa",
   server: {
     port: 3000,
+    hmr: false,
   },
   plugins: [
     pluginRewriteAll({
@@ -23,6 +25,14 @@ export default defineConfig({
     testnetServerPlugin(),
     serviceWorkerPlugin({
       filename: "sw.ts",
+    }),
+    viteStaticCopy({
+      targets: [
+        {
+          src: path.resolve(__dirname, "node_modules/@webxr-input-profiles/assets/dist/**/*"),
+          dest: "webxr-input-profiles",
+        },
+      ],
     }),
   ],
   resolve: {
