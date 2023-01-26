@@ -13,6 +13,7 @@ import {
   Light,
   LineBasicMaterial,
   MaterialParameters,
+  Matrix4,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
@@ -555,6 +556,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   reflectionProbeObject?: ReflectionProbe;
   object3DVisible = true;
   needsUpdate = true;
+  object3DWorldMatrix = new Matrix4();
 
   dispose(ctx: RenderThreadState) {
     if (this.meshPrimitiveObjects) {
@@ -640,6 +642,9 @@ export class RenderWorld extends defineLocalResourceClass(WorldResource) {
   declare firstNode: RenderNode | undefined;
   declare persistentScene: RenderScene;
   declare activeCameraNode: RenderNode | undefined;
+  declare activeAvatarNode: RenderNode | undefined;
+  declare activeLeftControllerNode: RenderNode | undefined;
+  declare activeRightControllerNode: RenderNode | undefined;
 }
 
 const {

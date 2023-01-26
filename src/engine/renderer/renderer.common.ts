@@ -7,9 +7,11 @@ export enum RendererMessageType {
   SceneRenderedNotification = "renderer-scene-rendered-notification",
   CanvasResize = "canvas-resize",
   EnableMatrixMaterial = "enable-matrix-material",
+  EnterXR = "enter-xr",
 }
 
 export interface InitializeCanvasMessage {
+  enableXR: boolean;
   canvasTarget?: OffscreenCanvas;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
@@ -36,4 +38,9 @@ export interface CanvasResizeMessage {
 export interface EnableMatrixMaterialMessage {
   type: RendererMessageType.EnableMatrixMaterial;
   enabled: boolean;
+}
+
+export interface EnterXRMessage {
+  type: RendererMessageType.EnterXR;
+  session: XRSession;
 }

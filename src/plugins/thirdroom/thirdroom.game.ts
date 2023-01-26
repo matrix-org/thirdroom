@@ -31,7 +31,7 @@ import {
   FindResourceRetainersMessage,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
-import { createCamera, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
+import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
@@ -130,13 +130,17 @@ const createAvatarRig =
       addKinematicControls(ctx, obj.eid);
     }
 
+    const privateRoot = getObjectPrivateRoot(obj);
+
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
     cameraAnchor.position[1] = AVATAR_HEIGHT;
-    addChild(getObjectPrivateRoot(obj), cameraAnchor);
+    addChild(privateRoot, cameraAnchor);
 
-    const camera = createCamera(ctx);
-    camera.name = "Avatar Camera";
+    const camera = new RemoteNode(ctx.resourceManager, {
+      name: "Avatar Camera",
+      camera: createRemotePerspectiveCamera(ctx),
+    });
     addChild(cameraAnchor, camera);
     addCameraYawTargetComponent(ctx.world, obj);
     addCameraPitchTargetComponent(ctx.world, camera);
@@ -393,6 +397,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 
 function disposeWorld(worldResource: RemoteWorld) {
   worldResource.activeCameraNode = undefined;
+  worldResource.activeAvatarNode = undefined;
   worldResource.environment = undefined;
   worldResource.firstNode = undefined;
 }

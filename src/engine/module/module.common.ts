@@ -314,7 +314,7 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
             `timeout reached while waiting on message ${key} from thread ${fromThread} on thread ${localThread}`
           )
         );
-      }, 5000);
+      }, 30000);
       const msg = { fromThread, key, resolve, reject, timeoutId };
       deferredMessages.push(msg);
     });

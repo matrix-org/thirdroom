@@ -401,6 +401,13 @@ export function lookAt(node: RemoteNode, targetVec: vec3, upVec: vec3 = defaultU
   }
 }
 
+export function setFromLocalMatrix(node: RemoteNode, localMatrix: mat4) {
+  node.localMatrix.set(localMatrix);
+  mat4.getTranslation(node.position, localMatrix);
+  mat4.getRotation(node.quaternion, localMatrix);
+  mat4.getScaling(node.scale, localMatrix);
+}
+
 export function traverse(node: RemoteNode | RemoteScene, callback: (child: RemoteNode) => unknown | false) {
   let curChild;
 

@@ -490,5 +490,8 @@ export const WorldResource = defineResource("world", ResourceType.World, {
   environment: PropType.ref(EnvironmentResource, { script: false }),
   firstNode: PropType.ref(NodeResource),
   persistentScene: PropType.ref(SceneResource, { required: true, script: false }),
-  activeCameraNode: PropType.ref(NodeResource, { script: true }),
+  activeCameraNode: PropType.ref(NodeResource, { script: false }),
+  activeAvatarNode: PropType.ref(NodeResource, { script: false }),
+  activeLeftControllerNode: PropType.ref(NodeResource, { script: false }),
+  activeRightControllerNode: PropType.ref(NodeResource, { script: false }),
 });

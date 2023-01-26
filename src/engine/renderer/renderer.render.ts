@@ -7,6 +7,8 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
+  Texture,
+  Object3D,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -23,12 +25,13 @@ import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
   EnableMatrixMaterialMessage,
+  EnterXRMessage,
   InitializeCanvasMessage,
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
 } from "./renderer.common";
-import { updateLocalNodeResources } from "../node/node.render";
+import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
@@ -37,6 +40,7 @@ import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
+import { InputModule } from "../input/input.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -64,15 +68,21 @@ export interface RendererModuleState {
   matrixMaterial: MatrixMaterial;
   enableMatrixMaterial: boolean;
   scene: Scene;
+  xrAvatarRoot: Object3D;
+}
+
+// TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
+declare module "three" {
+  interface WebGLRendererParameters {
+    multiviewStereo: boolean;
+  }
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
-      Thread.Main,
-      RendererMessageType.InitializeCanvas
-    );
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, enableXR } =
+      await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
 
@@ -100,6 +110,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
+      multiviewStereo: true,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
@@ -111,6 +122,15 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
+    // Set the texture anisotropy which improves rendering at extreme angles.
+    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+    Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+
+    if (enableXR) {
+      renderer.xr.enabled = true;
+    }
+
     const pmremGenerator = new PMREMGenerator(renderer);
 
     pmremGenerator.compileEquirectangularShader();
@@ -119,6 +139,10 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
     const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+
+    const scene = new Scene();
+    const xrAvatarRoot = new Object3D();
+    scene.add(xrAvatarRoot);
 
     return {
       needsResize: true,
@@ -135,7 +159,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
-      scene: new Scene(),
+      scene,
+      xrAvatarRoot,
     };
   },
   init(ctx) {
@@ -143,6 +168,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerMessageHandler(ctx, RendererMessageType.EnableMatrixMaterial, onEnableMatrixMaterial),
+      registerMessageHandler(ctx, RendererMessageType.EnterXR, onEnterXR),
     ]);
   },
 });
@@ -174,8 +200,14 @@ function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, fr
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
+function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
+  const { renderer } = getModule(ctx, RendererModule);
+  renderer.xr.setSession(session as unknown as any);
+}
+
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
+  const inputModule = getModule(ctx, InputModule);
   const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
@@ -217,6 +249,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);
+  updateNodesFromXRPoses(ctx, rendererModule, inputModule);
 
   if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
     renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
