@@ -4,16 +4,17 @@ import { InputModule, ResetInputSystem } from "./input/input.game";
 import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkModule } from "./network/network.game";
-import { ActionMappingSystem } from "./input/ActionMappingSystem";
+import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   FirstPersonCameraModule,
   FirstPersonCameraSystem,
   NetworkedFirstPersonCameraSystem,
 } from "../plugins/FirstPersonCamera";
 import {
-  ClientSidePredictionSystem,
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
+  SendClientPosition,
+  UpdateClientPosition,
 } from "../plugins/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
@@ -80,14 +81,20 @@ export default defineConfig<GameState>({
 
     FirstPersonCameraSystem,
     KinematicCharacterControllerSystem,
-    ClientSidePredictionSystem,
+    // ClientSidePredictionSystem,
     FlyControllerSystem,
     InteractionSystem,
     SpawnableSystem,
     ThirdroomSystem,
 
+    // update client position
+    UpdateClientPosition,
+
     // step physics forward and copy rigidbody data to transform component
     PhysicsSystem,
+
+    // send client position to host
+    SendClientPosition,
 
     // interpolate towards authoritative state
     NetworkInterpolationSystem,
@@ -109,6 +116,7 @@ export default defineConfig<GameState>({
     PrefabDisposalSystem,
     GLTFResourceDisposalSystem,
 
+    ActionMapHistorianSystem, // Store this frame's player input and the state it resulted in
     ResetInputSystem,
     GameWorkerStatsSystem,
 

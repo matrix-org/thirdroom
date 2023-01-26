@@ -123,28 +123,27 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
           broadcastReliable(ctx, network, createInformPlayerNetworkIdMessage(ctx, theirPeerId));
         }
       }
-    } else {
-      // send state updates if hosting
-      const msg = createFullChangedMessage(data);
-      if (msg.byteLength) {
-        network.peers.forEach((peerId) => {
-          // HACK: host adds last input tick processed from this peer to each packet
-          // TODO: should instead formalize a pipeline for serializing unique per-peer data
-          const { latestTick } = network.peerIdToHistorian.get(peerId)!;
+    }
 
-          const v = createCursorView(msg);
-          // move cursor to input tick area
-          moveCursorView(v, Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT);
-          // write the input tick for this particular peer
-          writeUint32(v, latestTick);
+    // send state updates if hosting
+    const msg = createFullChangedMessage(data);
+    if (msg.byteLength) {
+      network.peers.forEach((peerId) => {
+        // HACK: host adds last input tick processed from this peer to each packet
+        // TODO: should instead formalize a pipeline for serializing unique per-peer data
+        const { latestTick } = network.peerIdToHistorian.get(peerId)!;
 
-          sendReliable(ctx, network, peerId, msg);
-        });
-      }
+        const v = createCursorView(msg);
+        // move cursor to input tick area
+        moveCursorView(v, Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT);
+        // write the input tick for this particular peer
+        writeUint32(v, latestTick);
+
+        sendReliable(ctx, network, peerId, msg);
+      });
     }
   } else if (network.commands.length) {
     if (haveNewPeers) network.newPeers = [];
-
     // send commands to host if not hosting
     const msg = createCommandsMessage(ctx, network.commands);
     if (msg.byteLength) {
@@ -207,6 +206,7 @@ export function OutboundNetworkSystem(ctx: GameState) {
 
   // throttle by network tickRate
   if (network.authoritative && isHost(network) && network.tickRate !== tickRate) {
+    // if (network.tickRate !== tickRate) {
     const target = 1000 / network.tickRate;
     delta += performance.now() - then;
     then = performance.now();

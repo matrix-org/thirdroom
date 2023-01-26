@@ -4,6 +4,7 @@ import { createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
+import { trimHistory } from "../utils/Historian";
 import { isHost } from "./network.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
@@ -21,22 +22,10 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
 
   // trim off all inputs since the most recent host-processed input tick
   if (network.authoritative && !isHost(network) && inputTick) {
-    // console.log("auth tick recieved", inputTick);
-    // console.log(
-    //   "history before",
-    //   controller.history.map(([tick]) => tick)
-    // );
-    const actionStatesIndex = controller.history.findIndex(([tick]) => tick >= inputTick);
-    controller.history.splice(0, actionStatesIndex);
-    // console.log(
-    //   "history after",
-    //   controller.history.map(([tick]) => tick)
-    // );
+    // trim history up to this last recieved input tick
+    trimHistory(controller.outbound, inputTick);
+    // trigger input prediction
     (controller as any).needsUpdate = true;
-
-    // now we as the client want to continue deserializing the full update of this packet
-    // and then afterwards we can reapply our inputs (PhysicsCharacterController) that happened after inputTick
-    // this should put our avatar in the same place as it is on the host
   }
 
   const historian = network.peerIdToHistorian.get(peerId);

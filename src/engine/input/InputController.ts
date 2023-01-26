@@ -2,6 +2,7 @@ import { vec3 } from "gl-matrix";
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
 
 import { World } from "../GameTypes";
+import { createHistorian, Historian } from "../utils/Historian";
 import { ActionState, ActionMap, ActionDefinition, initializeActionMap } from "./ActionMappingSystem";
 import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
@@ -15,9 +16,9 @@ export interface InputController {
   pathToId: Map<string, number>;
   pathToDef: Map<string, ActionDefinition>;
   idToPath: Map<number, string>;
-  // [tick, actionStates, ]
   // TODO: refactor this?
-  history: [number, Map<string, ActionState>, { position: vec3; velocity: vec3 }][];
+  outbound: Historian<[Map<string, ActionState>, { position: vec3; velocity: vec3 }]>;
+  inbound: [number, ActionState][];
 }
 
 export interface InputControllerProps {
@@ -30,7 +31,7 @@ export interface InputControllerProps {
 }
 
 export const createInputController = (props?: InputControllerProps): InputController => {
-  const controller = {
+  const controller: InputController = {
     inputRingBuffer: (props && props.inputRingBuffer) || createInputRingBuffer(RING_BUFFER_MAX),
     actionMaps: (props && props.actionMaps) || [],
     actionStates: new Map(),
@@ -38,7 +39,8 @@ export const createInputController = (props?: InputControllerProps): InputContro
     pathToDef: new Map(),
     idToPath: new Map(),
     raw: {},
-    history: [],
+    outbound: createHistorian(),
+    inbound: [],
   };
   for (const actionMap of controller.actionMaps) {
     for (const actionDef of actionMap.actionDefs) {

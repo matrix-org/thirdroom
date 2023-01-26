@@ -16,7 +16,7 @@ import {
   enableActionMap,
 } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
@@ -360,8 +360,8 @@ export const SpawnableSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const camera = getCamera(ctx, node);
-    const controller = getInputController(input, eid)!;
+    const camera = getCamera(ctx, node).parent!;
+    const controller = tryGetInputController(input, eid);
     updateSpawnables(ctx, spawnablesModule, controller, camera);
   }
 };

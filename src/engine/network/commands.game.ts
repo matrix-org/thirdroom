@@ -23,11 +23,11 @@ const MESSAGE_SIZE =
 
 const writeView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
 
-export const createCommandsMessage = (ctx: GameState, actions: [number, ArrayBuffer][]) => {
+export const createCommandsMessage = (ctx: GameState, actions: [number, number, ArrayBuffer][]) => {
   writeMetadata(NetworkAction.Command)([ctx, writeView]);
   writeUint8(writeView, actions.length);
   for (let i = 0; i < actions.length; i++) {
-    const [actionId, buffer] = actions[i];
+    const [, actionId, buffer] = actions[i];
     writeUint8(writeView, actionId);
     writeUint16(writeView, buffer.byteLength);
     writeArrayBuffer(writeView, buffer);
