@@ -1497,6 +1497,7 @@ const loadGLTFAudioSource = createCachedSubresourceLoader(
   "audio-source",
   (root) => root.extensions?.KHR_audio?.sources,
   async (resource, { name, gain, loop, autoPlay, audio: audioDataIndex }) => {
+    console.log({ name, autoPlay, loop });
     return new RemoteAudioSource(resource.manager, {
       name,
       gain,

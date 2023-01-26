@@ -468,7 +468,7 @@ describe("Network Tests", () => {
     });
   });
   describe("creates serialization", () => {
-    it.only("should #serializeCreates()", () => {
+    it("should #serializeCreates()", () => {
       const state = mockGameState();
       const writer = createCursorView();
 

@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addEntity, createWorld } from "bitecs";
+import { addEntity, createWorld, removeEntity } from "bitecs";
 
 import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
 import { GameState } from "../../src/engine/GameTypes";
@@ -7,7 +7,13 @@ import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
 import { ResourceModule } from "../../src/engine/resource/resource.game";
-import { RemoteNode, RemoteScene, RemoteWorld, RemoteEnvironment } from "../../src/engine/resource/RemoteResources";
+import {
+  RemoteNode,
+  RemoteScene,
+  RemoteWorld,
+  RemoteEnvironment,
+  createRemoteObject,
+} from "../../src/engine/resource/RemoteResources";
 import { copyToWriteBuffer, createTripleBuffer } from "../../src/engine/allocator/TripleBuffer";
 import {
   IRemoteResourceManager,
@@ -27,7 +33,7 @@ export function registerDefaultPrefabs(ctx: GameState) {
     name: "test-prefab",
     type: PrefabType.Object,
     create: () => {
-      return new RemoteNode(ctx.resourceManager);
+      return createRemoteObject(ctx, new RemoteNode(ctx.resourceManager));
     },
   });
 }
@@ -380,6 +386,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
 
     if (refCount <= 1) {
       this.removeResourceRefs(resourceId);
+      removeEntity(this.ctx.world, resourceId);
     } else {
       this.resourceRefs.set(resourceId, refCount - 1);
     }
