@@ -20,7 +20,6 @@ import { addChild } from "../../src/engine/component/transform";
 import { GLTFResource } from "../../src/engine/gltf/gltf.game";
 import { GameResourceManager } from "../../src/engine/resource/GameResourceManager";
 import { getModule } from "../../src/engine/module/module.common";
-import { createDeferred } from "../../src/engine/utils/Deferred";
 import { removeAllEntityComponents } from "../../src/engine/ecs/removeAllEntityComponents";
 
 export function registerDefaultPrefabs(ctx: GameState) {
@@ -251,7 +250,6 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     resourceModule.resourceInfos.set(resourceId, {
       resource,
       refCount: 0,
-      deferred: createDeferred(false),
     });
     this.resources.push(resource);
     this.resourcesById.set(resourceId, resource);
@@ -275,7 +273,7 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
 
     const resource = this.resources[index];
 
-    removeAllEntityComponents(this.ctx, resourceId);
+    removeAllEntityComponents(this.ctx.world, resourceId);
 
     const schema = resource.constructor.resourceDef.schema;
 

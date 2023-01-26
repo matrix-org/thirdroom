@@ -361,7 +361,7 @@ export const SpawnableSystem = (ctx: GameState) => {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const camera = getCamera(ctx, node);
-    const controller = getInputController(input, eid);
+    const controller = getInputController(input, eid)!;
     updateSpawnables(ctx, spawnablesModule, controller, camera);
   }
 };

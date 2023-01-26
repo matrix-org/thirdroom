@@ -25,10 +25,6 @@ export function createResourceRingBuffer(size = maxEntities): ResourceRingBuffer
     buffer,
     array,
     view,
-    item: {
-      eid: 0,
-      tick: 0,
-    },
   });
 }
 
