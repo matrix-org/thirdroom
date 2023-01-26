@@ -58,6 +58,7 @@ export function ShortcutUI() {
           )}
           {renderItem("Delete Object", <Kbd size="xs">X</Kbd>)}
           {renderItem("Fly Mode", <Kbd size="xs">B</Kbd>)}
+          {renderItem("Third Person Camera Toggle", <Kbd size="xs">\</Kbd>)}
           {renderItem(
             "Show Statistics",
             <>

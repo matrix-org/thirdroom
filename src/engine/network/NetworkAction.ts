@@ -12,4 +12,5 @@ export enum NetworkAction {
   Command,
   UpdateCamera,
   UpdateNetworkId,
+  ClientPosition,
 }

@@ -17,6 +17,7 @@ import { GameNetworkState, NetworkModule } from "../network/network.game";
 import { RigidBody } from "../physics/physics.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
+import { addHistory } from "../utils/Historian";
 import { InputModule } from "./input.game";
 import { InputController } from "./InputController";
 
@@ -201,33 +202,6 @@ export const ActionTypesToBindings = {
   }),
 };
 
-export function ActionMappingSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-  const input = getModule(ctx, InputModule);
-  for (const controller of input.controllers.values()) {
-    updateActionMaps(ctx, network, controller);
-  }
-
-  // add a copy of all the actionStates for the active controller to the input history for reconciliation later
-  const hosting = network.authoritative && isHost(network);
-  if (!hosting) {
-    const eid = ourPlayerQuery(ctx.world)[0];
-    const node = getRemoteResource<RemoteNode>(ctx, eid);
-    const body = RigidBody.store.get(eid);
-    if (!eid || !node || !body) {
-      return;
-    }
-
-    const vel = body.linvel();
-
-    input.activeController.history.push([
-      ctx.tick,
-      new Map(input.activeController.actionStates),
-      { position: vec3.clone(node.position), velocity: vec3.set(vec3.create(), vel.x, vel.y, vel.z) },
-    ]);
-  }
-}
-
 // Note not optimized at all
 function updateActionMaps(ctx: GameState, network: GameNetworkState, controller: InputController) {
   for (const actionMap of controller.actionMaps) {
@@ -245,12 +219,68 @@ function updateActionMaps(ctx: GameState, network: GameNetworkState, controller:
         const actionId = controller.pathToId.get(actionDef.path);
 
         if (actionId) {
-          network.commands.push([actionId, action.encode(actionState as any)]);
+          network.commands.push([ctx.tick, actionId, action.encode(actionState as any)]);
         }
       }
     }
   }
 }
+
+export function ActionMappingSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
+  for (const controller of input.controllers.values()) {
+    updateActionMaps(ctx, network, controller);
+  }
+}
+
+export function ActionMapHistorianSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
+
+  // add a copy of all the actionStates for the active controller to the input history for reconciliation later
+  const notHosting = network.authoritative && !isHost(network);
+  if (notHosting) {
+    const eid = ourPlayerQuery(ctx.world)[0];
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
+    const body = RigidBody.store.get(eid);
+    if (!eid || !node || !body) {
+      return;
+    }
+
+    const vel = body.linvel();
+
+    addHistory(input.activeController.outbound, ctx.tick, [
+      // TODO: new Map creates needless garbage, add pooling here
+      new Map(input.activeController.actionStates),
+      { position: vec3.clone(node.position), velocity: vec3.set(vec3.create(), vel.x, vel.y, vel.z) },
+    ]);
+  }
+}
+
+// export function DrainClientInputQueueSystem(ctx: GameState) {
+//   const input = getModule(ctx, InputModule);
+//   const network = getModule(ctx, NetworkModule);
+
+//   const hosting = network.authoritative && isHost(network);
+//   if (hosting) {
+//     // iterate all controllers
+//     const ents = inputControllerQuery(ctx.world);
+//     for (let i = 0; i < ents.length; i++) {
+//       const eid = ents[i];
+//       const controller = tryGetInputController(input, eid);
+//       // drain input for client for the latest tick recieved by them
+//       const [latestTick] = controller.inbound[0];
+//       controller.inbound.forEach(([tick, actionState], i) => {
+//         if (tick === latestTick) {
+//           // controller.actionStates.set
+
+//           controller.inbound.splice(i, 1);
+//         }
+//       });
+//     }
+//   }
+// }
 
 export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {
   controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());

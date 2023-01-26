@@ -1,3 +1,4 @@
+import { Quaternion, Vector3 } from "three";
 import { addComponent, pipe, removeComponent } from "bitecs";
 
 import {
@@ -66,7 +67,7 @@ import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 export type NetPipeData = [GameState, CursorView, string];
 
 // ad-hoc messages view
-const messageView = createCursorView(new ArrayBuffer(1000));
+const messageView = createCursorView(new ArrayBuffer(10000));
 
 export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   const [, v] = input;
@@ -122,11 +123,15 @@ export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
   writeFloat32(v, quaternion[2]);
   writeFloat32(v, quaternion[3]);
 
+  const skipLerp = node.skipLerp;
+  writeUint32(v, skipLerp);
+
   return v;
 };
 
-export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefined) => {
-  if (eid !== undefined) {
+export const deserializeTransformSnapshot = (v: CursorView, node: RemoteNode | undefined) => {
+  if (node !== undefined) {
+    const eid = node.eid;
     const position = Networked.position[eid];
     position[0] = readFloat32(v);
     position[1] = readFloat32(v);
@@ -142,8 +147,10 @@ export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefi
     quaternion[1] = readFloat32(v);
     quaternion[2] = readFloat32(v);
     quaternion[3] = readFloat32(v);
+
+    node.skipLerp = readUint32(v);
   } else {
-    scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 7);
+    scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 10 + Uint32Array.BYTES_PER_ELEMENT);
   }
 
   return v;
@@ -271,7 +278,7 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -345,7 +352,7 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
     }
 
-    deserializeTransformSnapshot(v, eid);
+    deserializeTransformSnapshot(v, node);
 
     if (node && node.skipLerp) {
       node.skipLerp = 10;
@@ -383,10 +390,17 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid) || NOOP;
+    let eid = network.networkIdToEntityId.get(nid) || NOOP;
 
     if (eid === NOOP) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
+    }
+
+    if (network.authoritative && !isHost(network)) {
+      // HACK: if this update is for our avatar, skip it until CSP is fixed
+      const peerId = network.entityIdToPeerId.get(eid);
+      // deserialize onto noop entity to move the cursor forward
+      if (peerId === network.peerId) eid = 0;
     }
 
     deserializeTransformChanged(ctx, v, eid);
@@ -677,3 +691,77 @@ export const deserializeFullChangedUpdate = pipe(deserializeCreates, deserialize
 //     return sliceCursorView(v);
 //   }
 // );
+
+export function createClientPositionMessage(ctx: GameState, eid: number) {
+  const data: NetPipeData = [ctx, messageView, ""];
+
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  const camera = getCamera(ctx, node).parent!;
+
+  writeMetadata(NetworkAction.ClientPosition)(data);
+
+  writeUint32(messageView, Networked.networkId[node.eid]);
+
+  // transform
+  writeFloat32(messageView, node.position[0]);
+  writeFloat32(messageView, node.position[1]);
+  writeFloat32(messageView, node.position[2]);
+
+  writeFloat32(messageView, node.quaternion[0]);
+  writeFloat32(messageView, node.quaternion[1]);
+  writeFloat32(messageView, node.quaternion[2]);
+  writeFloat32(messageView, node.quaternion[3]);
+
+  // physics
+  writeFloat32(messageView, RigidBody.velocity[eid][0]);
+  writeFloat32(messageView, RigidBody.velocity[eid][1]);
+  writeFloat32(messageView, RigidBody.velocity[eid][2]);
+
+  // camera
+  writeFloat32(messageView, camera.quaternion[0]);
+  writeFloat32(messageView, camera.quaternion[1]);
+  writeFloat32(messageView, camera.quaternion[2]);
+  writeFloat32(messageView, camera.quaternion[3]);
+
+  return sliceCursorView(messageView);
+}
+
+const _p = new Vector3();
+const _v = new Vector3();
+const _q = new Quaternion();
+export function deserializeClientPosition(data: NetPipeData) {
+  const [ctx, view] = data;
+
+  const network = getModule(ctx, NetworkModule);
+
+  const nid = readUint32(view);
+  const player = network.networkIdToEntityId.get(nid)!;
+  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
+  const camera = getCamera(ctx, node).parent!;
+
+  const body = RigidBody.store.get(node.eid);
+
+  _p.x = readFloat32(view);
+  _p.y = readFloat32(view);
+  _p.z = readFloat32(view);
+
+  _q.x = readFloat32(view);
+  _q.y = readFloat32(view);
+  _q.z = readFloat32(view);
+  _q.w = readFloat32(view);
+
+  _v.x = readFloat32(view);
+  _v.y = readFloat32(view);
+  _v.z = readFloat32(view);
+
+  camera.quaternion[0] = readFloat32(view);
+  camera.quaternion[1] = readFloat32(view);
+  camera.quaternion[2] = readFloat32(view);
+  camera.quaternion[3] = readFloat32(view);
+
+  body?.setTranslation(_p, true);
+  body?.setLinvel(_v, true);
+  body?.setRotation(_q, true);
+
+  return data;
+}

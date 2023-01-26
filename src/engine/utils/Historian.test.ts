@@ -1,7 +1,7 @@
 import { vec3 } from "gl-matrix";
 import { assert } from "vitest";
 
-import { addHistory, createHistorian, trimHistorian } from "./Historian";
+import { addHistory, createHistorian, trimHistory } from "./Historian";
 
 describe("Historian Tests", () => {
   it("should addHistory", () => {
@@ -28,7 +28,7 @@ describe("Historian Tests", () => {
     addHistory(h, t + 2, v2);
     addHistory(h, t + 3, v3);
 
-    trimHistorian(h, trim);
+    trimHistory(h, trim);
 
     assert.equal(h.timestamps.length, 1);
     assert.equal(h.timestamps.at(-1), t + 3);

@@ -141,7 +141,7 @@ describe("Network Tests", () => {
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformSnapshot(reader, eid);
+      deserializeTransformSnapshot(reader, node);
 
       strictEqual(Networked.position[eid][0], 1);
       strictEqual(Networked.position[eid][1], 2);

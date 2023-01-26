@@ -1,7 +1,7 @@
 import { removeEntity } from "bitecs";
 
 import { World } from "./GameTypes";
-import { addHistory, trimHistorian, Historian, createHistorian } from "./utils/Historian";
+import { addHistory, trimHistory, Historian, createHistorian } from "./utils/Historian";
 import { obtainFromPool, releaseToPool, Pool, createPool } from "./utils/Pool";
 
 export type RecycleBin = number[];
@@ -40,7 +40,7 @@ export function recycleBinReleaseEntities(
   lastProcessedTick: number,
   removeEntityFn: (world: World, eid: number) => void = removeEntity
 ) {
-  const trimmed = trimHistorian(recycleCtx.historian, lastProcessedTick);
+  const trimmed = trimHistory(recycleCtx.historian, lastProcessedTick);
 
   trimmed.forEach((bin) => {
     // give EIDs back to bitecs so they are made available for internal recycling

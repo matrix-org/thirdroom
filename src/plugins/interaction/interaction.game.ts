@@ -290,7 +290,7 @@ export function InteractionSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const camera = getCamera(ctx, rig);
+    const camera = getCamera(ctx, rig).parent!;
     const controller = tryGetInputController(input, eid);
 
     updateFocus(ctx, physics, rig, camera);
