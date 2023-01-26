@@ -1,3 +1,4 @@
+import { mat4 } from "gl-matrix";
 import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 
 import { updateNodeCamera } from "../camera/camera.render";
@@ -89,6 +90,10 @@ export function updateNodesFromXRPoses(
   const isPresenting = renderer.xr.isPresenting;
   const { cameraPose, leftControllerPose, rightControllerPose } = inputModule;
 
+  if (ctx.singleConsumerThreadSharedState) {
+    ctx.singleConsumerThreadSharedState.useXRViewerWorldMatrix = false;
+  }
+
   if (isPresenting) {
     if (!activeAvatarNode) {
       return;
@@ -107,6 +112,15 @@ export function updateNodesFromXRPoses(
 
       if (cameraPose) {
         updateTransformsFromXRPose(activeCameraNode, cameraPose, avatarWorldMatrix);
+
+        if (ctx.singleConsumerThreadSharedState) {
+          ctx.singleConsumerThreadSharedState.useXRViewerWorldMatrix = true;
+          mat4.multiply(
+            ctx.singleConsumerThreadSharedState.xrViewerWorldMatrix,
+            avatarWorldMatrix,
+            cameraPose.transform.matrix
+          );
+        }
       }
     }
 

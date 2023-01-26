@@ -134,7 +134,7 @@ function useEnterWorld() {
       const disposer = await createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
 
       const audio = getModule(mainThread, AudioModule);
-      audio.context.resume();
+      audio.context.resume().catch(() => console.error("Couldn't resume audio context"));
 
       const { muteSettings } = groupCall;
       // Mute after connecting based on user preference

@@ -1,6 +1,12 @@
 import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
-import { ConsumerThreadContext, Message, registerModules, Thread } from "./module/module.common";
+import {
+  ConsumerThreadContext,
+  Message,
+  registerModules,
+  SingleConsumerThreadSharedState,
+  Thread,
+} from "./module/module.common";
 import mainThreadConfig from "./config.main";
 import { MockMessagePort } from "./module/MockMessageChannel";
 import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
@@ -18,6 +24,8 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   initialRenderWorkerState: { [key: string]: any };
   worldResource: MainWorld;
   enableXR: boolean;
+  dt: number;
+  elapsed: number;
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
@@ -32,8 +40,16 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     enableXR = true;
   }
 
+  const singleConsumerThreadSharedState: SingleConsumerThreadSharedState | undefined = useOffscreenCanvas
+    ? undefined
+    : {
+        useXRViewerWorldMatrix: false,
+        xrViewerWorldMatrix: new Float32Array(16),
+        update: () => {},
+      };
+
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas);
+  const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas, singleConsumerThreadSharedState);
   const interWorkerMessageChannel = new MessageChannel();
 
   function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
@@ -65,7 +81,10 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     worldResource: undefined as any,
     enableXR,
     isStaleFrame: false,
+    dt: 0,
+    elapsed: 0,
     tick: 0,
+    singleConsumerThreadSharedState,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -127,17 +146,28 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   /* Update loop */
 
-  function update() {
+  const update = () => {
+    const now = performance.now();
+    ctx.dt = (now - ctx.elapsed) / 1000;
+    ctx.elapsed = now;
+
     for (let i = 0; i < ctx.systems.length; i++) {
       ctx.systems[i](ctx);
     }
+  };
 
-    ctx.animationFrameId = requestAnimationFrame(update);
+  function updateLoop() {
+    update();
+    ctx.animationFrameId = requestAnimationFrame(updateLoop);
   }
 
   console.log("MainThread initialized");
 
-  update();
+  if (singleConsumerThreadSharedState) {
+    singleConsumerThreadSharedState.update = update;
+  } else {
+    updateLoop();
+  }
 
   return {
     ctx,
@@ -165,7 +195,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 async function initRenderWorker(
   canvas: HTMLCanvasElement,
   gameWorker: Worker,
-  useOffscreenCanvas: boolean
+  useOffscreenCanvas: boolean,
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState
 ): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
@@ -174,6 +205,6 @@ async function initRenderWorker(
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
     const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
-    return initRenderWorkerOnMainThread(canvas, gameWorker);
+    return initRenderWorkerOnMainThread(canvas, gameWorker, singleConsumerThreadSharedState!);
   }
 }
