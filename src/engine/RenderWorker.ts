@@ -1,5 +1,5 @@
 import { InitializeRenderWorkerMessage, WorkerMessageType } from "./WorkerMessage";
-import { Message, registerModules, Thread } from "./module/module.common";
+import { Message, registerModules, SingleConsumerThreadSharedState, Thread } from "./module/module.common";
 import renderConfig from "./config.render";
 import { RenderThreadState, startRenderLoop } from "./renderer/renderer.render";
 import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
@@ -9,10 +9,19 @@ import { waitUntil } from "./utils/waitUntil";
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;
 
-export default function initRenderWorkerOnMainThread(canvas: HTMLCanvasElement, gameWorker: Worker) {
+export default function initRenderWorkerOnMainThread(
+  canvas: HTMLCanvasElement,
+  gameWorker: Worker,
+  singleConsumerThreadSharedState: SingleConsumerThreadSharedState
+) {
   const renderGameMessageChannel = new MockWorkerMessageChannel(gameWorker);
   const rendererMainMessageChannel = new MockMessageChannel();
-  startRenderWorker(rendererMainMessageChannel.port1, canvas, renderGameMessageChannel.port1);
+  startRenderWorker(
+    rendererMainMessageChannel.port1,
+    canvas,
+    renderGameMessageChannel.port1,
+    singleConsumerThreadSharedState
+  );
   rendererMainMessageChannel.port1.start();
   rendererMainMessageChannel.port2.start();
   return rendererMainMessageChannel.port2;
@@ -27,7 +36,8 @@ if (isWorker) {
 function startRenderWorker(
   workerScope: DedicatedWorkerGlobalScope | MessagePort,
   canvas?: HTMLCanvasElement,
-  mockGameWorkerPort?: MockMessagePort
+  mockGameWorkerPort?: MockMessagePort,
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState
 ) {
   const onInitMessage = (event: MessageEvent) => {
     if (typeof event.data !== "object") {
@@ -42,7 +52,7 @@ function startRenderWorker(
 
     if (message.type === WorkerMessageType.InitializeRenderWorker) {
       workerScope.removeEventListener("message", onInitMessage as any);
-      onInit(workerScope, message, canvas, mockGameWorkerPort).catch(console.error);
+      onInit(workerScope, message, canvas, mockGameWorkerPort, singleConsumerThreadSharedState).catch(console.error);
     }
   };
 
@@ -57,7 +67,8 @@ async function onInit(
     renderToGameTripleBufferFlags,
   }: InitializeRenderWorkerMessage,
   canvas?: HTMLCanvasElement,
-  mockGameWorkerPort?: MockMessagePort
+  mockGameWorkerPort?: MockMessagePort,
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState
 ) {
   const gameWorkerMessagePort = gameWorkerMessageTarget || mockGameWorkerPort;
 
@@ -84,6 +95,7 @@ async function onInit(
     worldResource: undefined as any,
     isStaleFrame: false,
     tick: 0,
+    singleConsumerThreadSharedState,
   };
 
   const onMessage = ({ data }: MessageEvent) => {

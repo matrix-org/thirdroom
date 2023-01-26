@@ -1,7 +1,14 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
+export interface SingleConsumerThreadSharedState {
+  useXRViewerWorldMatrix: boolean;
+  xrViewerWorldMatrix: Float32Array;
+  update: () => void;
+}
+
 export interface ConsumerThreadContext extends BaseThreadContext {
   isStaleFrame: boolean;
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState;
 }
 
 export interface BaseThreadContext {

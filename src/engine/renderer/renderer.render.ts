@@ -186,6 +186,10 @@ function onUpdate(ctx: RenderThreadState) {
   for (let i = 0; i < ctx.systems.length; i++) {
     ctx.systems[i](ctx);
   }
+
+  if (ctx.singleConsumerThreadSharedState) {
+    ctx.singleConsumerThreadSharedState.update();
+  }
 }
 
 function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {

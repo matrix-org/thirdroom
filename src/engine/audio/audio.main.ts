@@ -1,4 +1,4 @@
-import { vec3, mat4 } from "gl-matrix";
+import { vec3, mat4, quat } from "gl-matrix";
 import EventEmitter from "events";
 import { availableRead } from "@thirdroom/ringbuffer";
 
@@ -219,7 +219,10 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
     updateNodeAudioEmitter(ctx, audioModule, node);
 
     if (node === ctx.worldResource.activeCameraNode) {
-      setAudioListenerTransform(audioModule.context.listener, node.worldMatrix);
+      const cameraWorldMatrix = ctx.singleConsumerThreadSharedState?.useXRViewerWorldMatrix
+        ? ctx.singleConsumerThreadSharedState.xrViewerWorldMatrix
+        : node.worldMatrix;
+      setAudioListenerTransform(ctx, audioModule, cameraWorldMatrix);
     }
   }
 }
@@ -562,43 +565,38 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
 }
 
 const tempPosition = vec3.create();
+const tempRotation = quat.create();
+const tempOrientation = vec3.create();
+const up = vec3.fromValues(0, 1, 0);
 
-function setAudioListenerTransform(listener: AudioListener, worldMatrix: Float32Array) {
+function setAudioListenerTransform(ctx: IMainThreadContext, audioModule: MainAudioModule, worldMatrix: Float32Array) {
   mat4.getTranslation(tempPosition, worldMatrix);
 
   if (isNaN(tempPosition[0])) {
     return;
   }
 
-  if (listener.upX) {
-    // upX/Y/Z not supported in Firefox
-    listener.upX.value = 0;
-    listener.upY.value = 1;
-    listener.upZ.value = 0;
-  }
+  mat4.getRotation(tempRotation, worldMatrix);
+  vec3.set(tempOrientation, 0, 0, -1);
+  vec3.transformQuat(tempOrientation, tempOrientation, tempRotation);
+
+  const listener = audioModule.context.listener;
 
   if (listener.positionX) {
-    listener.positionX.value = tempPosition[0];
-    listener.positionY.value = tempPosition[1];
-    listener.positionZ.value = tempPosition[2];
+    const currentTime = audioModule.context.currentTime;
+    const time = currentTime + ctx.dt;
+    listener.positionX.linearRampToValueAtTime(tempPosition[0], time);
+    listener.positionY.linearRampToValueAtTime(tempPosition[1], time);
+    listener.positionZ.linearRampToValueAtTime(tempPosition[2], time);
+    listener.forwardX.linearRampToValueAtTime(tempOrientation[0], time);
+    listener.forwardY.linearRampToValueAtTime(tempOrientation[1], time);
+    listener.forwardZ.linearRampToValueAtTime(tempOrientation[2], time);
+    listener.upX.linearRampToValueAtTime(up[0], time);
+    listener.upY.linearRampToValueAtTime(up[1], time);
+    listener.upZ.linearRampToValueAtTime(up[2], time);
   } else {
-    // positionX/Y/Z not supported in Firefox
     listener.setPosition(tempPosition[0], tempPosition[1], tempPosition[2]);
-  }
-
-  tempPosition[0] = -worldMatrix[8];
-  tempPosition[1] = -worldMatrix[9];
-  tempPosition[2] = -worldMatrix[10];
-
-  vec3.normalize(tempPosition, tempPosition);
-
-  if (listener.forwardX) {
-    listener.forwardX.value = tempPosition[0];
-    listener.forwardY.value = tempPosition[1];
-    listener.forwardZ.value = tempPosition[2];
-  } else {
-    // forwardX/Y/Z not supported in Firefox
-    listener.setOrientation(tempPosition[0], tempPosition[1], tempPosition[2], 0, 1, 0);
+    listener.setOrientation(tempOrientation[0], tempOrientation[1], tempOrientation[2], up[0], up[1], up[2]);
   }
 }
 
@@ -642,29 +640,25 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
   const pannerNode = node.emitterPannerNode;
   const audioEmitter = node.audioEmitter;
 
-  const worldMatrix = node.worldMatrix;
-  const currentTime = audioModule.context.currentTime;
-
   mat4.getTranslation(tempPosition, node.worldMatrix);
 
   if (isNaN(tempPosition[0])) return;
 
-  pannerNode.positionX.setValueAtTime(tempPosition[0], currentTime);
-  pannerNode.positionY.setValueAtTime(tempPosition[1], currentTime);
-  pannerNode.positionZ.setValueAtTime(tempPosition[2], currentTime);
+  mat4.getRotation(tempRotation, node.worldMatrix);
+  vec3.set(tempOrientation, 0, 0, -1);
+  vec3.transformQuat(tempOrientation, tempOrientation, tempRotation);
 
-  tempPosition[0] = -worldMatrix[8];
-  tempPosition[1] = -worldMatrix[9];
-  tempPosition[2] = -worldMatrix[10];
-
-  vec3.normalize(tempPosition, tempPosition);
-
-  if (pannerNode.orientationX) {
-    pannerNode.orientationX.value = tempPosition[0];
-    pannerNode.orientationY.value = tempPosition[1];
-    pannerNode.orientationZ.value = tempPosition[2];
+  if (pannerNode.positionX) {
+    const time = audioModule.context.currentTime + ctx.dt;
+    pannerNode.positionX.linearRampToValueAtTime(tempPosition[0], time);
+    pannerNode.positionY.linearRampToValueAtTime(tempPosition[1], time);
+    pannerNode.positionZ.linearRampToValueAtTime(tempPosition[2], time);
+    pannerNode.orientationX.linearRampToValueAtTime(tempOrientation[0], time);
+    pannerNode.orientationY.linearRampToValueAtTime(tempOrientation[0], time);
+    pannerNode.orientationZ.linearRampToValueAtTime(tempOrientation[0], time);
   } else {
-    pannerNode.setOrientation(tempPosition[0], tempPosition[1], tempPosition[2]);
+    pannerNode.setPosition(tempPosition[0], tempPosition[1], tempPosition[2]);
+    pannerNode.setOrientation(tempOrientation[0], tempOrientation[1], tempOrientation[2]);
   }
 
   // set panner node properties from local positional emitter's shared data
