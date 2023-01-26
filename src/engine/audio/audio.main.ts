@@ -1,9 +1,11 @@
 import { vec3, mat4 } from "gl-matrix";
 import EventEmitter from "events";
+import { availableRead } from "@thirdroom/ringbuffer";
 
 import { IMainThreadContext } from "../MainThread";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import {
+  getLocalResource,
   getLocalResources,
   MainAudioData,
   MainAudioEmitter,
@@ -14,6 +16,15 @@ import {
 import { AudioEmitterDistanceModel, AudioEmitterOutput } from "../resource/schema";
 import { toArrayBuffer } from "../utils/arraybuffer";
 import { LoadStatus } from "../resource/resource.common";
+import {
+  createAudioPlaybackItem,
+  createAudioPlaybackRingBuffer,
+  dequeueAudioPlaybackRingBuffer,
+  AudioPlaybackItem,
+  AudioPlaybackRingBuffer,
+  AudioAction,
+} from "./AudioPlaybackRingBuffer";
+import { AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
 
 /*********
  * Types *
@@ -30,6 +41,9 @@ export interface MainAudioModule {
   mediaStreams: Map<string, MediaStream>;
   scenes: MainScene[];
   eventEmitter: EventEmitter;
+  audioPlaybackRingBuffer: AudioPlaybackRingBuffer;
+  audioPlaybackQueue: AudioPlaybackItem[];
+  oneShotCount: number;
 }
 
 /******************
@@ -55,7 +69,7 @@ export interface MainAudioModule {
 
 export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   name: "audio",
-  async create(ctx, { waitForMessage }) {
+  async create(ctx, { sendMessage }) {
     const audioContext = new AudioContext();
 
     const mainLimiter = new DynamicsCompressorNode(audioContext);
@@ -78,6 +92,12 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     const musicGain = new GainNode(audioContext);
     musicGain.connect(mainGain);
 
+    const audioPlaybackRingBuffer = createAudioPlaybackRingBuffer();
+
+    sendMessage<InitializeAudioStateMessage>(Thread.Game, AudioMessageType.InitializeAudioState, {
+      audioPlaybackRingBuffer,
+    });
+
     return {
       context: audioContext,
       mainLimiter,
@@ -88,6 +108,9 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       mediaStreams: new Map(),
       scenes: [],
       eventEmitter: new EventEmitter(),
+      audioPlaybackRingBuffer,
+      audioPlaybackQueue: [],
+      oneShotCount: 0,
     };
   },
   init(ctx) {
@@ -111,6 +134,7 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   const audioModule = getModule(ctx, AudioModule);
   updateAudioDatas(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
+  processAudioPlaybackRingBuffer(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
   updateNodeAudioEmitters(ctx, audioModule);
 }
@@ -194,7 +218,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
 
     updateNodeAudioEmitter(ctx, audioModule, node);
 
-    if (node === ctx.worldResource!.activeCameraNode) {
+    if (node === ctx.worldResource.activeCameraNode) {
       setAudioListenerTransform(audioModule.context.listener, node.worldMatrix);
     }
   }
@@ -235,9 +259,6 @@ function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule)
   }
 }
 
-const MAX_AUDIO_COUNT = 1000;
-let audioCount = 0;
-
 function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const localAudioSources = getLocalResources(ctx, MainAudioSource);
 
@@ -263,80 +284,228 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
 
     localAudioSource.activeAudioDataResourceId = nextAudioDataResourceId;
 
+    let gainNode = localAudioSource.gainNode;
+
+    if (!gainNode) {
+      gainNode = audioModule.context.createGain();
+      localAudioSource.gainNode = gainNode;
+    }
+
+    gainNode.gain.value = localAudioSource.gain;
+
     if (audioData instanceof MediaStream) {
       // Create a new MediaElementSourceNode
       if (!localAudioSource.sourceNode) {
         localAudioSource.sourceNode = audioModule.context.createMediaStreamSource(audioData);
-        localAudioSource.sourceNode.connect(localAudioSource.gainNode!);
+        localAudioSource.sourceNode.connect(gainNode);
+        localAudioSource.canAutoPlay = false;
       }
     } else if (audioData instanceof AudioBuffer) {
-      // One-shot audio buffer source
-      if (localAudioSource.play && !localAudioSource.loop && audioCount < MAX_AUDIO_COUNT) {
-        const sampleSource = audioModule.context.createBufferSource();
-        sampleSource.connect(localAudioSource.gainNode!);
-        sampleSource.buffer = audioData;
-        sampleSource.playbackRate.value = localAudioSource.playbackRate;
+      const sourceNode = localAudioSource.sourceNode as AudioBufferSourceNode | undefined;
 
-        sampleSource.onended = () => {
-          sampleSource.disconnect();
-          audioCount--;
-        };
-
-        sampleSource.start();
-        audioCount++;
-
-        // playing and looping
-      } else if (localAudioSource.play && localAudioSource.loop && !localAudioSource.sourceNode) {
-        const sampleSource = audioModule.context.createBufferSource();
-        sampleSource.connect(localAudioSource.gainNode!);
-        sampleSource.buffer = audioData;
-
-        localAudioSource.sourceNode = sampleSource;
-        sampleSource.playbackRate.value = localAudioSource.playbackRate;
-        sampleSource.loop = true;
-        sampleSource.start();
-      }
-
-      // Stop
-      if (!localAudioSource.playing && localAudioSource.sourceNode) {
-        (localAudioSource.sourceNode as AudioBufferSourceNode).stop();
-        localAudioSource.sourceNode = undefined;
-      }
-
-      // Stop looping
-      if (!localAudioSource.loop && localAudioSource.sourceNode) {
-        (localAudioSource.sourceNode as AudioBufferSourceNode).loop = false;
+      if (localAudioSource.autoPlay && localAudioSource.canAutoPlay) {
+        playAudio(audioModule, localAudioSource, gainNode, audioData, 0);
+      } else if (sourceNode) {
+        sourceNode.loop = localAudioSource.loop;
+        sourceNode.playbackRate.value = localAudioSource.playbackRate;
       }
     } else if (audioData instanceof HTMLAudioElement) {
       // Create a new MediaElementSourceNode
       if (!localAudioSource.sourceNode) {
         const el = audioData.cloneNode() as HTMLMediaElement;
         localAudioSource.sourceNode = audioModule.context.createMediaElementSource(el);
-        localAudioSource.sourceNode.connect(localAudioSource.gainNode!);
+        localAudioSource.sourceNode.connect(gainNode);
       }
 
       const mediaSourceNode = localAudioSource.sourceNode as MediaElementAudioSourceNode;
       const mediaEl = mediaSourceNode.mediaElement;
 
-      if (localAudioSource.play) {
+      if (mediaEl.playbackRate !== localAudioSource.playbackRate) {
         mediaEl.playbackRate = localAudioSource.playbackRate;
-        mediaEl.loop = !!localAudioSource.loop;
-        mediaEl.currentTime = localAudioSource.seek < 0 ? 0 : localAudioSource.seek;
-        mediaEl.play();
       }
 
-      if (!localAudioSource.playing && !mediaEl.paused) {
-        mediaEl.pause();
+      if (mediaEl.loop !== localAudioSource.loop) {
+        mediaEl.loop = localAudioSource.loop;
       }
 
-      // Seek will be -1 when not seeking this frame
-      if (localAudioSource.seek >= 0) {
-        mediaEl.currentTime = localAudioSource.seek;
+      if (localAudioSource.autoPlay && localAudioSource.canAutoPlay) {
+        playAudio(audioModule, localAudioSource, gainNode, audioData, 0);
       }
     }
-
-    localAudioSource.gainNode!.gain.value = localAudioSource.gain;
   }
+}
+
+function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+  const { audioPlaybackRingBuffer, audioPlaybackQueue } = audioModule;
+
+  while (availableRead(audioPlaybackRingBuffer)) {
+    const audioItem = createAudioPlaybackItem();
+    dequeueAudioPlaybackRingBuffer(audioPlaybackRingBuffer, audioItem);
+    audioPlaybackQueue.push(audioItem);
+  }
+
+  for (let i = 0; i < audioPlaybackQueue.length; i++) {
+    const item = audioPlaybackQueue[i];
+
+    if (item.tick <= ctx.tick) {
+      const audioSource = getLocalResource<MainAudioSource>(ctx, item.audioSourceId);
+      const audioSourceGainNode = audioSource?.gainNode;
+
+      if (!audioSource || !audioSourceGainNode) {
+        console.warn("One shot audio source not loaded yet.");
+        continue;
+      }
+
+      const audioData = audioSource.audio?.data;
+
+      if (!audioData) {
+        console.warn("Audio data not loaded yet.");
+        continue;
+      }
+
+      if (audioData instanceof MediaStream) {
+        console.warn("MediaStream audio sources cannot be controlled.");
+      } else {
+        switch (item.action) {
+          case AudioAction.Play:
+            playAudio(audioModule, audioSource, audioSourceGainNode, audioData, item.time);
+            break;
+          case AudioAction.PlayOneShot:
+            playOneShotAudio(audioModule, audioSourceGainNode, audioData, item.gain, item.playbackRate);
+            break;
+          case AudioAction.Pause:
+            pauseAudio(audioSource, audioData);
+            break;
+          case AudioAction.Seek:
+            seekAudio(audioSource, audioData, item.time);
+            break;
+          case AudioAction.Stop:
+            stopAudio(audioSource, audioData);
+            break;
+        }
+      }
+
+      audioPlaybackQueue.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+function playAudio(
+  audioModule: MainAudioModule,
+  audioSource: MainAudioSource,
+  audioSourceGainNode: GainNode,
+  audioData: HTMLAudioElement | AudioBuffer,
+  time: number
+) {
+  if (audioData instanceof AudioBuffer) {
+    let sourceNode = audioSource.sourceNode as AudioBufferSourceNode | undefined;
+
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+    }
+
+    sourceNode = audioModule.context.createBufferSource();
+    sourceNode.connect(audioSourceGainNode);
+    sourceNode.buffer = audioData;
+    sourceNode.loop = audioSource.loop;
+    sourceNode.playbackRate.value = audioSource.playbackRate;
+    sourceNode.start(0, time);
+    audioSource.sourceNode = sourceNode;
+  } else {
+    const sourceNode = audioSource.sourceNode as MediaElementAudioSourceNode;
+    const mediaEl = sourceNode.mediaElement;
+    audioData.currentTime = time;
+    mediaEl.play();
+  }
+
+  audioSource.canAutoPlay = false;
+}
+
+function playOneShotAudio(
+  audioModule: MainAudioModule,
+  audioSourceGainNode: GainNode,
+  audioData: HTMLAudioElement | AudioBuffer,
+  gain: number,
+  playbackRate: number
+) {
+  if (audioData instanceof AudioBuffer) {
+    const sampleSource = audioModule.context.createBufferSource();
+    sampleSource.buffer = audioData;
+    sampleSource.playbackRate.value = playbackRate;
+
+    let sampleGainNode: GainNode | undefined;
+
+    if (gain !== 1) {
+      sampleGainNode = audioModule.context.createGain();
+      sampleGainNode.gain.value = gain;
+      sampleSource.connect(sampleGainNode);
+      sampleGainNode.connect(audioSourceGainNode);
+    } else {
+      sampleSource.connect(audioSourceGainNode);
+    }
+
+    sampleSource.onended = () => {
+      sampleGainNode?.disconnect();
+      sampleSource.disconnect();
+      audioModule.oneShotCount--;
+    };
+
+    sampleSource.start();
+    audioModule.oneShotCount++;
+  } else {
+    console.warn("Invalid one shot audio source.");
+  }
+}
+
+function pauseAudio(audioSource: MainAudioSource, audioData: HTMLAudioElement | AudioBuffer) {
+  if (audioData instanceof AudioBuffer) {
+    const sourceNode = audioSource.sourceNode as AudioBufferSourceNode | undefined;
+
+    if (sourceNode) {
+      sourceNode.stop();
+    }
+  } else {
+    const sourceNode = audioSource.sourceNode as MediaElementAudioSourceNode;
+    const mediaEl = sourceNode.mediaElement;
+    mediaEl.pause();
+  }
+
+  audioSource.canAutoPlay = false;
+}
+
+function seekAudio(audioSource: MainAudioSource, audioData: HTMLAudioElement | AudioBuffer, time: number) {
+  if (audioData instanceof AudioBuffer) {
+    const sourceNode = audioSource.sourceNode as AudioBufferSourceNode | undefined;
+
+    if (sourceNode) {
+      sourceNode.start(0, time);
+    }
+  } else {
+    const sourceNode = audioSource.sourceNode as MediaElementAudioSourceNode;
+    const mediaEl = sourceNode.mediaElement;
+    mediaEl.currentTime = time;
+  }
+}
+
+function stopAudio(audioSource: MainAudioSource, audioData: HTMLAudioElement | AudioBuffer) {
+  if (audioData instanceof AudioBuffer) {
+    const sourceNode = audioSource.sourceNode as AudioBufferSourceNode | undefined;
+
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+      audioSource.sourceNode = undefined;
+    }
+  } else {
+    const sourceNode = audioSource.sourceNode as MediaElementAudioSourceNode;
+    const mediaEl = sourceNode.mediaElement;
+    mediaEl.currentTime = 0;
+    mediaEl.pause();
+  }
+
+  audioSource.canAutoPlay = false;
 }
 
 function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {

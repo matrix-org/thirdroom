@@ -83,6 +83,7 @@ async function onInit(
     // TODO: figure out how to create the main thread context such that this is initially set
     worldResource: undefined as any,
     isStaleFrame: false,
+    tick: 0,
   };
 
   const onMessage = ({ data }: MessageEvent) => {

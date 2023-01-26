@@ -1,5 +1,5 @@
 import { defineConfig } from "./module/module.common";
-import { GameAudioSystem, ResetAudioSourcesSystem } from "./audio/audio.game";
+import { AudioModule } from "./audio/audio.game";
 import { InputModule, ResetInputSystem } from "./input/input.game";
 import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
@@ -56,6 +56,7 @@ export default defineConfig<GameState>({
     ResourceModule,
     InputModule,
     PhysicsModule,
+    AudioModule,
     NetworkModule,
     StatsModule,
     EditorModule,
@@ -104,7 +105,6 @@ export default defineConfig<GameState>({
     NetworkedFirstPersonCameraSystem,
     OutboundNetworkSystem,
 
-    GameAudioSystem,
     RemoteCameraSystem,
     PrefabDisposalSystem,
     GLTFResourceDisposalSystem,
@@ -120,6 +120,5 @@ export default defineConfig<GameState>({
     ResourceLoaderSystem, // Drain entity creation queue. postMessage to other threads.
 
     SkipRenderLerpSystem, // Change node.skipLerp after commit
-    ResetAudioSourcesSystem, // Change audioSource.play/seek after commit
   ],
 });

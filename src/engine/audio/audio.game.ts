@@ -1,62 +1,74 @@
 import { GameState } from "../GameTypes";
-import { getRemoteResources } from "../resource/resource.game";
 import { RemoteAudioSource } from "../resource/RemoteResources";
+import { defineModule, getModule, Thread } from "../module/module.common";
+import { AudioAction, AudioPlaybackRingBuffer, enqueueAudioPlaybackRingBuffer } from "./AudioPlaybackRingBuffer";
+import { AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
 
 export interface PlayAudioOptions {
   gain?: number;
-  startTime?: number;
-  loop?: boolean;
   playbackRate?: number;
 }
 
-export function playAudio(audioSource: RemoteAudioSource, options?: PlayAudioOptions) {
-  audioSource.play = true;
-  audioSource.playing = true;
-  audioSource.playbackRate = 1;
+interface GameAudioModule {
+  audioPlaybackRingBuffer: AudioPlaybackRingBuffer;
+}
 
-  if (options) {
-    if (options.gain !== undefined) {
-      audioSource.gain = options.gain;
-    }
+export const AudioModule = defineModule<GameState, GameAudioModule>({
+  name: "audio",
+  async create(ctx, { waitForMessage }) {
+    const { audioPlaybackRingBuffer } = await waitForMessage<InitializeAudioStateMessage>(
+      Thread.Main,
+      AudioMessageType.InitializeAudioState
+    );
 
-    if (options.startTime !== undefined) {
-      audioSource.seek = options.startTime;
-    }
+    return {
+      audioPlaybackRingBuffer,
+    };
+  },
+  init() {},
+});
 
-    if (options.loop !== undefined) {
-      audioSource.loop = options.loop;
-    }
+function enqueueAudioPlaybackItem(
+  ctx: GameState,
+  action: AudioAction,
+  audioSource: RemoteAudioSource,
+  gain: number,
+  playbackRate: number,
+  time: number
+) {
+  const { audioPlaybackRingBuffer } = getModule(ctx, AudioModule);
 
-    if (options.playbackRate !== undefined) {
-      audioSource.playbackRate = options.playbackRate;
-    }
+  if (
+    !enqueueAudioPlaybackRingBuffer(
+      audioPlaybackRingBuffer,
+      action,
+      audioSource.eid,
+      ctx.tick,
+      gain,
+      playbackRate,
+      time
+    )
+  ) {
+    console.warn("Audio ring buffer full");
   }
 }
 
-/**
- * Systems
- */
-
-export function GameAudioSystem(ctx: GameState) {
-  const audioSources = getRemoteResources(ctx, RemoteAudioSource);
-
-  for (let i = 0; i < audioSources.length; i++) {
-    const audioSource = audioSources[i];
-
-    if (audioSource.autoPlay && !audioSource.playing) {
-      audioSource.play = true;
-      audioSource.playing = true;
-    }
-  }
+export function playAudio(ctx: GameState, audioSource: RemoteAudioSource, time?: number) {
+  enqueueAudioPlaybackItem(ctx, AudioAction.Play, audioSource, 1, 1, time || 0);
 }
 
-export function ResetAudioSourcesSystem(ctx: GameState) {
-  const audioSources = getRemoteResources(ctx, RemoteAudioSource);
+export function playOneShotAudio(ctx: GameState, audioSource: RemoteAudioSource, gain = 1, playbackRate = 1) {
+  enqueueAudioPlaybackItem(ctx, AudioAction.PlayOneShot, audioSource, gain, playbackRate, 0);
+}
 
-  for (let i = 0; i < audioSources.length; i++) {
-    const audioSource = audioSources[i];
+export function pauseAudio(ctx: GameState, audioSource: RemoteAudioSource) {
+  enqueueAudioPlaybackItem(ctx, AudioAction.Pause, audioSource, 1, 1, 0);
+}
 
-    audioSource.play = false;
-    audioSource.seek = -1;
-  }
+export function seekAudio(ctx: GameState, audioSource: RemoteAudioSource, time: number) {
+  enqueueAudioPlaybackItem(ctx, AudioAction.Seek, audioSource, 1, 1, time);
+}
+
+export function stopAudio(ctx: GameState, audioSource: RemoteAudioSource) {
+  enqueueAudioPlaybackItem(ctx, AudioAction.Stop, audioSource, 1, 1, 0);
 }

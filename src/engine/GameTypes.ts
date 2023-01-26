@@ -13,7 +13,6 @@ export interface GameState extends BaseThreadContext {
   gameToRenderTripleBufferFlags: Uint8Array;
   elapsed: number;
   dt: number;
-  tick: number;
   world: World;
   worldResource: RemoteWorld;
   resourceManager: GameResourceManager;

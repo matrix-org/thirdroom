@@ -269,7 +269,7 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
       createResourceMessages,
     } = resourceModule;
 
-    const currentTripleBufferTick = getReadObjectBufferView(fromGameState).tick[0];
+    ctx.tick = getReadObjectBufferView(fromGameState).tick[0];
 
     // First go through the items in the disposed resources queue
     // and add them to the pending resource disposals queue
@@ -293,9 +293,9 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
        */
 
       // Dispose resources only when the current triple buffer view expects them to be disposed.
-      if (item.tick <= currentTripleBufferTick && disposeResource(ctx, resourceModule, item.eid)) {
-        //console.log(`${ctx.thread} dispose ${item.eid} tick ${currentTripleBufferTick}`);
-        item.tick = currentTripleBufferTick;
+      if (item.tick <= ctx.tick && disposeResource(ctx, resourceModule, item.eid)) {
+        //console.log(`${ctx.thread} dispose ${item.eid} tick ${ctx.tick}`);
+        item.tick = ctx.tick;
         recycleResourcesQueue.push(item);
         pendingResourceDisposalsQueue.splice(i, 1);
         i--;
@@ -304,9 +304,9 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
 
         // Get rid of any create messages that are just going to be disposed
         if (createMessageIndex !== -1) {
-          //console.log(`${ctx.thread} dispose ${item.eid} create message tick ${currentTripleBufferTick}`);
+          //console.log(`${ctx.thread} dispose ${item.eid} create message tick ${ctx.tick}`);
           createResourceMessages.splice(createMessageIndex, 1);
-          item.tick = currentTripleBufferTick;
+          item.tick = ctx.tick;
           recycleResourcesQueue.push(item);
           pendingResourceDisposalsQueue.splice(i, 1);
           i--;
@@ -318,9 +318,9 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
       const message = createResourceMessages[i];
 
       // Only process the loadResource message if it is in the current triple buffers.
-      if (message.tick <= currentTripleBufferTick) {
+      if (message.tick <= ctx.tick) {
         loadResource(ctx, resourceModule, message);
-        //console.log(`${ctx.thread} create ${resourceInfo.resourceType} ${message.id} tick ${currentTripleBufferTick}`);
+        //console.log(`${ctx.thread} create ${resourceInfo.resourceType} ${message.id} tick ${ctx.tick}`);
         createResourceMessages.splice(i, 1);
         i--;
       }
@@ -328,12 +328,12 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
 
     while (recycleResourcesQueue.length) {
       const item = recycleResourcesQueue.shift()!;
-      //console.log(`${ctx.thread} recycle ${item.eid} tick ${currentTripleBufferTick}`);
+      //console.log(`${ctx.thread} recycle ${item.eid} tick ${ctx.tick}`);
       // The resource items returned back to the game thread
       enqueueResourceRingBuffer(recycleResources, item.eid, item.tick);
     }
 
-    resourceModule.lastProcessedTick = currentTripleBufferTick;
+    resourceModule.lastProcessedTick = ctx.tick;
   }
 
   // This system runs after the triple buffer is flipped. Ensuring that the tick

@@ -65,6 +65,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     worldResource: undefined as any,
     enableXR,
     isStaleFrame: false,
+    tick: 0,
   };
 
   function onWorkerMessage(event: MessageEvent) {

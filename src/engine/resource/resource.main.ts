@@ -94,12 +94,7 @@ export class MainAudioSource extends defineLocalResourceClass(AudioSourceResourc
   activeAudioDataResourceId: ResourceId = 0;
   sourceNode: MediaElementAudioSourceNode | AudioBufferSourceNode | MediaStreamAudioSourceNode | undefined;
   gainNode: GainNode | undefined;
-
-  load(ctx: IMainThreadContext) {
-    const audioModule = getModule(ctx, AudioModule);
-    const audioContext = audioModule.context;
-    this.gainNode = audioContext.createGain();
-  }
+  canAutoPlay = true;
 
   dispose() {
     if (this.gainNode) {

@@ -3,7 +3,7 @@ import { defineComponent, Types, removeComponent, addComponent, hasComponent, de
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
-import { playAudio } from "../../engine/audio/audio.game";
+import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
 import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
@@ -372,7 +372,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
       removeObjectFromWorld(ctx, focused);
-      playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
+      playOneShotAudio(ctx, interaction.clickEmitter?.sources[1] as RemoteAudioSource, 0.4);
     }
   }
 }
@@ -416,7 +416,7 @@ function updateGrabThrow(
       sendInteractionMessage(ctx, InteractableAction.Unfocus);
     }
 
-    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+    playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
     GrabComponent.heldOffset[rig.eid] = 0;
 
@@ -430,7 +430,7 @@ function updateGrabThrow(
       sendInteractionMessage(ctx, InteractableAction.Unfocus);
     }
 
-    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+    playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
     GrabComponent.heldOffset[rig.eid] = 0;
 
@@ -470,7 +470,7 @@ function updateGrabThrow(
         console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
       } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
         if (Interactable.type[node.eid] === InteractableType.Grabbable) {
-          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
 
           const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
           if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
@@ -494,7 +494,7 @@ function updateGrabThrow(
             }
           }
         } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
-          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
           const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
           const interactable = remoteNode?.interactable;

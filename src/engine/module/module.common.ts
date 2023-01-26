@@ -6,6 +6,7 @@ export interface ConsumerThreadContext extends BaseThreadContext {
 
 export interface BaseThreadContext {
   thread: Thread;
+  tick: number;
   systems: ThreadSystem<any>[];
   modules: Map<Module<any, any>, any>;
   sendMessage<M extends Message<any>>(

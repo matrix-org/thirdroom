@@ -3,7 +3,7 @@ import { addComponent } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
-import { playAudio } from "../../engine/audio/audio.game";
+import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
@@ -205,13 +205,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       const emitter1 = module.hitAudioEmitters.get(eid1!);
       if (emitter1) {
         const source = emitter1.sources[floor(random() * emitter1.sources.length)] as RemoteAudioSource;
-        playAudio(source, { playbackRate, gain });
+        playOneShotAudio(ctx, source, gain, playbackRate);
       }
 
       const emitter2 = module.hitAudioEmitters.get(eid2!);
       if (emitter2) {
         const source = emitter2.sources[floor(random() * emitter2.sources.length)] as RemoteAudioSource;
-        playAudio(source, { playbackRate, gain });
+        playOneShotAudio(ctx, source, gain, playbackRate);
       }
     });
 

@@ -22,7 +22,7 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { getCamera } from "../engine/camera/camera.game";
-import { playAudio } from "../engine/audio/audio.game";
+import { playOneShotAudio } from "../engine/audio/audio.game";
 import randomRange from "../engine/utils/randomRange";
 import { OurPlayer } from "../engine/component/Player";
 
@@ -170,7 +170,7 @@ function cameraHeadBob(ctx: GameState, rig: RemoteNode, speed: number, isGrounde
       const audioSources = rig.audioEmitter!.sources.filter((s) => s.audio?.uri.includes("footstep"));
       if (audioSources.length) {
         const i = Math.floor(randomRange(0, audioSources.length));
-        playAudio(audioSources[i], { playbackRate: randomRange(0.6, 0.9), gain: 0.2 });
+        playOneShotAudio(ctx, audioSources[i], 0.2, randomRange(0.6, 0.9));
       }
       lastFootstepFrame = ctx.tick;
     }
