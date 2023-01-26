@@ -8,13 +8,7 @@ import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
 import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
-import {
-  enableActionMap,
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-} from "../../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
 import { tryGetInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
@@ -57,6 +51,7 @@ import {
   SetObjectCapMessageType,
 } from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";

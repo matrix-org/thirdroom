@@ -4,14 +4,8 @@ import { Quaternion, Vector3 } from "three";
 import { vec3 } from "gl-matrix";
 
 import { GameState } from "../engine/GameTypes";
-import {
-  ActionMap,
-  ActionState,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-  enableActionMap,
-} from "../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../engine/input/ActionMappingSystem";
+import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
 import { tryGetInputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";

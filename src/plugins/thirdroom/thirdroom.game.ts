@@ -38,13 +38,7 @@ import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/ph
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
-import {
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-  enableActionMap,
-} from "../../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
 import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
@@ -97,6 +91,7 @@ import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 
 type ThirdRoomModuleState = {};
 

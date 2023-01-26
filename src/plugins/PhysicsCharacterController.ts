@@ -3,13 +3,8 @@ import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
 import { GameState } from "../engine/GameTypes";
-import {
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-  enableActionMap,
-} from "../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../engine/input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
 import { tryGetInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";

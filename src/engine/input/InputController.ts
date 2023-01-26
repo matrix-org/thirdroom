@@ -3,9 +3,10 @@ import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } f
 
 import { World } from "../GameTypes";
 import { createHistorian, Historian } from "../utils/Historian";
-import { ActionState, ActionMap, ActionDefinition, initializeActionMap } from "./ActionMappingSystem";
+import { initializeActionMap } from "./ActionMappingSystem";
 import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
+import { ActionDefinition, ActionMap, ActionState } from "./ActionMap";
 
 export interface InputController {
   inputRingBuffer: InputRingBuffer;

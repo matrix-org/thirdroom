@@ -8,13 +8,8 @@ import { getCamera } from "../../engine/camera/camera.game";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
-import {
-  ActionDefinition,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-  enableActionMap,
-} from "../../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../../engine/input/ActionMappingSystem";
+import { ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { InputModule } from "../../engine/input/input.game";
 import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
