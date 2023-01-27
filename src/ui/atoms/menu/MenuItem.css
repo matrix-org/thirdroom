@@ -1,0 +1,50 @@
+.MenuItem {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-xs) var(--sp-md);
+  cursor: pointer;
+  transition: background-color 100ms ease-in-out;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.MenuItem--surface {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.MenuItem--primary {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-primary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-primary-soft-active);
+  }
+}
+.MenuItem--secondary {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-secondary-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-secondary-soft-active);
+  }
+}
+.MenuItem--danger {
+  &:hover,
+  &:focus {
+    background-color: var(--bg-danger-soft-hover);
+  }
+  &:active {
+    background-color: var(--bg-danger-soft-active);
+  }
+}
