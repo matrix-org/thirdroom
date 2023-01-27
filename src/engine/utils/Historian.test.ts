@@ -30,10 +30,10 @@ describe("Historian Tests", () => {
 
     trimHistory(h, trim);
 
-    assert.equal(h.timestamps.length, 1);
+    assert.equal(h.timestamps.length, 2);
     assert.equal(h.timestamps.at(-1), t + 3);
 
-    assert.equal(h.history.length, 1);
+    assert.equal(h.history.length, 2);
     assert.equal(h.history.at(-1), v3);
   });
 });

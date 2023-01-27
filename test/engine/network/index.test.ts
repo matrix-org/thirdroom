@@ -338,6 +338,9 @@ describe("Network Tests", () => {
         strictEqual(quaternion[1], readFloat32(reader));
         strictEqual(quaternion[2], readFloat32(reader));
         strictEqual(quaternion[3], readFloat32(reader));
+
+        const skipLerp = node.skipLerp;
+        strictEqual(skipLerp, readUint32(reader));
       });
     });
     it("should #deserializeUpdatesSnapshot()", () => {
