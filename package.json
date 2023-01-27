@@ -50,6 +50,7 @@
     "@types/murmurhash-js": "^1.0.3",
     "bitecs": "^0.3.38",
     "classnames": "^2.3.1",
+    "downshift": "^7.2.0",
     "draco3dgltf": "^1.5.3",
     "events": "^3.3.0",
     "gl-matrix": "^3.4.3",
