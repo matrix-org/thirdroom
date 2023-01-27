@@ -34,38 +34,108 @@ import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
+import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 
 const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
-  actions: ActionDefinition[];
+  actionsDefs: ActionDefinition[];
   maxObjCap: number;
 };
 
 export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   name: "spawnables",
   create() {
-    const actions = Array(6)
-      .fill(null)
-      .map(
-        (_, i): ActionDefinition => ({
-          id: `${i + 1}`,
-          path: `${i + 1}`,
-          type: ActionType.Button,
-          bindings: [
-            {
-              type: BindingType.Button,
-              path: `Keyboard/Digit${i + 1}`,
-            },
-          ],
-          networked: true,
-        })
-      );
-
+    // id determines which prefab is spawned in the system
+    const actions: ActionDefinition[] = [
+      {
+        id: "black-mirror-ball",
+        path: "xr-spawnable",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `XRInputSource/primary/a-button`,
+          },
+        ],
+      },
+      {
+        id: "small-crate",
+        path: "1",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit1`,
+          },
+        ],
+        networked: true,
+      },
+      {
+        id: "medium-crate",
+        path: "2",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit2`,
+          },
+        ],
+        networked: true,
+      },
+      {
+        id: "large-crate",
+        path: "3",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit3`,
+          },
+        ],
+        networked: true,
+      },
+      {
+        id: "mirror-ball",
+        path: "4",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit4`,
+          },
+        ],
+        networked: true,
+      },
+      {
+        id: "black-mirror-ball",
+        path: "5",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit5`,
+          },
+        ],
+        networked: true,
+      },
+      {
+        id: "emissive-ball",
+        path: "6",
+        type: ActionType.Button,
+        bindings: [
+          {
+            type: BindingType.Button,
+            path: `Keyboard/Digit6`,
+          },
+        ],
+        networked: true,
+      },
+    ];
     return {
       hitAudioEmitters: new Map(),
-      actions,
+      actionsDefs: actions,
       maxObjCap: MAX_OBJECT_CAP,
     };
   },
@@ -210,22 +280,11 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       }
     });
 
-    // action mapping
-    const { actions } = module;
-
-    // id determines which prefab is spawned in the system
-    actions[0].id = "small-crate";
-    actions[1].id = "medium-crate";
-    actions[2].id = "large-crate";
-    actions[3].id = "mirror-ball";
-    actions[4].id = "black-mirror-ball";
-    actions[5].id = "emissive-ball";
-
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
     enableActionMap(controller, {
       id: "spawnables",
-      actionDefs: actions,
+      actionDefs: module.actionsDefs,
     });
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
@@ -339,7 +398,7 @@ const THROW_FORCE = 10;
 
 const _direction = vec3.create();
 const _impulse = new Vector3();
-const _cameraWorldQuat = quat.create();
+const _spawnWorldQuat = quat.create();
 
 export const SpawnableSystem = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
@@ -357,15 +416,23 @@ export const SpawnableSystem = (ctx: GameState) => {
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const camera = getCamera(ctx, node).parent!;
     const controller = tryGetInputController(input, eid);
-    updateSpawnables(ctx, spawnablesModule, controller, camera);
+
+    const xr = XRAvatarRig.get(eid);
+
+    if (xr && xr.rightControllerEid) {
+      const rightHandNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid);
+      updateSpawnables(ctx, spawnablesModule, controller, rightHandNode);
+    } else {
+      updateSpawnables(ctx, spawnablesModule, controller, camera);
+    }
   }
 };
 
 export const updateSpawnables = (
   ctx: GameState,
-  { actions, maxObjCap }: SpawnablesModuleState,
+  { actionsDefs: actions, maxObjCap }: SpawnablesModuleState,
   controller: InputController,
-  camera: RemoteNode
+  spawnFrom: RemoteNode
 ) => {
   const pressedActions = actions.filter((a) => (controller.actionStates.get(a.path) as ButtonActionState)?.pressed);
 
@@ -391,11 +458,11 @@ export const updateSpawnables = (
     // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
 
-    mat4.getTranslation(prefab.position, camera.worldMatrix);
+    mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
 
-    mat4.getRotation(_cameraWorldQuat, camera.worldMatrix);
+    mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _spawnWorldQuat);
 
     // place object at direction
     vec3.add(prefab.position, prefab.position, direction);
@@ -411,7 +478,7 @@ export const updateSpawnables = (
       continue;
     }
 
-    prefab.quaternion.set(_cameraWorldQuat);
+    prefab.quaternion.set(_spawnWorldQuat);
 
     body.applyImpulse(_impulse, true);
 

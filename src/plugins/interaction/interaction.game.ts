@@ -52,6 +52,7 @@ import {
 } from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -145,6 +146,30 @@ const InteractionActionMap: ActionMap = {
       networked: true,
     },
     {
+      id: "primaryGrab",
+      path: "primaryGrab",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/primary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "secondaryGrab",
+      path: "secondaryGrab",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/secondary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
       id: "throw",
       path: "Throw",
       type: ActionType.Button,
@@ -198,6 +223,7 @@ export const Interactable = defineComponent(
 const FocusComponent = defineComponent(
   {
     focusedEntity: Types.eid,
+    lastFocused: Types.eid,
   },
   maxEntities
 );
@@ -224,7 +250,7 @@ const _target = vec3.create();
 
 const _impulse = new Vector3();
 
-const _cameraWorldQuat = quat.create();
+const _worldQuat = quat.create();
 
 const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
@@ -285,10 +311,14 @@ export function InteractionSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const camera = getCamera(ctx, rig).parent!;
+    const xr = XRAvatarRig.get(eid);
+    const grabbingNode =
+      xr && xr.rightControllerEid
+        ? tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid)
+        : getCamera(ctx, rig).parent!;
     const controller = tryGetInputController(input, eid);
 
-    updateFocus(ctx, physics, rig, camera);
+    updateFocus(ctx, physics, rig, grabbingNode);
 
     const hosting = network.authoritative && isHost(network);
     const cspEnabled = network.authoritative && network.clientSidePrediction;
@@ -296,18 +326,18 @@ export function InteractionSystem(ctx: GameState) {
 
     if (hosting || cspEnabled || p2p) {
       updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrow(ctx, interaction, physics, network, controller, rig, camera);
+      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
     }
   }
 }
 
-function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, camera: RemoteNode) {
+function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
   // raycast outward from camera
-  const cameraMatrix = camera.worldMatrix;
-  mat4.getRotation(_cameraWorldQuat, cameraMatrix);
+  const cameraMatrix = focusingNode.worldMatrix;
+  mat4.getRotation(_worldQuat, cameraMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
-  vec3.transformQuat(target, target, _cameraWorldQuat);
+  vec3.transformQuat(target, target, _worldQuat);
   vec3.scale(target, target, MAX_FOCUS_DISTANCE);
 
   const source = mat4.getTranslation(_source, cameraMatrix);
@@ -329,7 +359,6 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   );
 
   let eid;
-
   if (hit !== null) {
     eid = physics.handleToEid.get(hit.collider.handle);
     if (!eid) {
@@ -340,14 +369,17 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     } else {
       // clear focus
       removeComponent(ctx.world, FocusComponent, rig.eid, true);
+      FocusComponent.focusedEntity[rig.eid] = 0;
     }
   } else {
     // clear focus
     removeComponent(ctx.world, FocusComponent, rig.eid, true);
+    FocusComponent.focusedEntity[rig.eid] = 0;
   }
 
   // only update UI if it's our player
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+
   if (ourPlayer) {
     // TODO: only send these messages when they change
     if (FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
@@ -379,15 +411,17 @@ function updateGrabThrow(
   network: GameNetworkState,
   controller: InputController,
   rig: RemoteNode,
-  camera: RemoteNode
+  grabbingNode: RemoteNode
 ) {
   let heldEntity = GrabComponent.grabbedEntity[rig.eid];
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+  const primaryGrab = controller.actionStates.get("primaryGrab") as ButtonActionState;
+  // const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed;
+  const grabPressed = grabBtn.pressed || primaryGrab.pressed;
   const grabReleased = grabBtn.released;
   const throwPressed = throwBtn.pressed;
 
@@ -397,9 +431,9 @@ function updateGrabThrow(
   if (heldEntity && throwPressed) {
     removeComponent(ctx.world, GrabComponent, rig.eid, true);
 
-    mat4.getRotation(_cameraWorldQuat, camera.worldMatrix);
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
 
     // fire!
@@ -432,11 +466,11 @@ function updateGrabThrow(
     // if grab is pressed
   } else if (grabPressed) {
     // raycast outward from camera
-    const cameraMatrix = camera.worldMatrix;
-    mat4.getRotation(_cameraWorldQuat, cameraMatrix);
+    const cameraMatrix = grabbingNode.worldMatrix;
+    mat4.getRotation(_worldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
-    vec3.transformQuat(target, target, _cameraWorldQuat);
+    vec3.transformQuat(target, target, _worldQuat);
     vec3.scale(target, target, GRAB_DISTANCE);
 
     const source = mat4.getTranslation(_source, cameraMatrix);
@@ -543,11 +577,11 @@ function updateGrabThrow(
     const heldPosition = heldNode.position;
 
     const target = _target;
-    mat4.getTranslation(target, camera.worldMatrix);
+    mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_cameraWorldQuat, camera.worldMatrix);
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
-    vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
 
     vec3.sub(target, target, direction);
@@ -560,7 +594,7 @@ function updateGrabThrow(
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
-      body.setRotation(_r.fromArray(_cameraWorldQuat), true);
+      body.setRotation(_r.fromArray(_worldQuat), true);
     }
   }
 }
