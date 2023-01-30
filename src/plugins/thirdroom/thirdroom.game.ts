@@ -270,7 +270,7 @@ const actionMap: ActionMap = {
       bindings: [
         {
           type: BindingType.Button,
-          path: "Keyboard/Backslash",
+          path: "Keyboard/KeyV",
         },
       ],
     },
