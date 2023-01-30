@@ -47,8 +47,10 @@ import { maxEntities } from "../config.common";
  ********/
 
 export interface GameNetworkState {
-  incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   commands: [number, number, ArrayBuffer][];
   hostId: string;
   peerId: string;
@@ -79,14 +81,21 @@ export interface GameNetworkState {
 export const NetworkModule = defineModule<GameState, GameNetworkState>({
   name: "network",
   create: async (ctx, { waitForMessage }): Promise<GameNetworkState> => {
-    const { incomingRingBuffer, outgoingRingBuffer, authoritative } =
-      await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
+    const {
+      incomingReliableRingBuffer,
+      incomingUnreliableRingBuffer,
+      outgoingReliableRingBuffer,
+      outgoingUnreliableRingBuffer,
+      authoritative,
+    } = await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
 
     if (authoritative) console.info("Authoritative networking activated");
 
     return {
-      incomingRingBuffer,
-      outgoingRingBuffer,
+      incomingReliableRingBuffer,
+      incomingUnreliableRingBuffer,
+      outgoingReliableRingBuffer,
+      outgoingUnreliableRingBuffer,
       commands: [],
       hostId: "",
       peerId: "",
@@ -147,7 +156,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  *******************/
 
 const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
-  console.log("onAddPeerId", message.peerId);
+  console.info("onAddPeerId", message.peerId);
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
 
@@ -215,8 +224,10 @@ const onExitWorld = (ctx: GameState, message: ExitWorldMessage) => {
   network.commands = [];
   // drain ring buffers
   const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-  while (availableRead(network.outgoingRingBuffer)) dequeueNetworkRingBuffer(network.outgoingRingBuffer, ringOut);
-  while (availableRead(network.incomingRingBuffer)) dequeueNetworkRingBuffer(network.incomingRingBuffer, ringOut);
+  while (availableRead(network.outgoingReliableRingBuffer))
+    dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
+  while (availableRead(network.incomingReliableRingBuffer))
+    dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
 };
 
 // Set local peer id
