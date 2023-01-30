@@ -624,7 +624,7 @@ export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pi
   serializeUpdatesSnapshot,
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -640,7 +640,7 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
   serializeUpdatesChanged,
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -654,7 +654,7 @@ export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Delete),
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -665,7 +665,7 @@ export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Create),
   serializeCreates,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -676,7 +676,7 @@ export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = p
   writeMetadata(NetworkAction.UpdateChanged),
   serializeUpdatesChanged,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -687,7 +687,7 @@ export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = 
   writeMetadata(NetworkAction.UpdateSnapshot),
   serializeUpdatesSnapshot,
   ([, v]) => {
-    if (v.cursor <= 1 + metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
