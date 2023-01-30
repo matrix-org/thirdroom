@@ -631,6 +631,7 @@ const loadGLTFScene = createInstancedSubresourceLoader(
         backgroundTexture: extensions?.MX_background?.backgroundTexture
           ? loadGLTFTexture(resource, extensions.MX_background.backgroundTexture.index, {
               mapping: SamplerMapping.EquirectangularReflectionMapping,
+              encoding: TextureEncoding.sRGB,
               flipY: true,
             })
           : undefined,
@@ -698,7 +699,7 @@ async function loadGLTFInstancedMesh(
 
 async function loadGLTFLightMap(resource: GLTFResource, extension: GLTFLightmap): Promise<RemoteLightMap> {
   const texture = await loadGLTFTexture(resource, extension.lightMapTexture.index, {
-    encoding: TextureEncoding.sRGB,
+    encoding: TextureEncoding.Linear,
   });
 
   return new RemoteLightMap(resource.manager, {
@@ -1231,6 +1232,15 @@ const loadGLTFMaterial = createCachedSubresourceLoader(
         thicknessTexture: thicknessTextureInfo ? loadGLTFTexture(resource, thicknessTextureInfo.index) : undefined,
       });
 
+      const baseColorTransform = pbrMetallicRoughness?.baseColorTexture?.extensions?.KHR_texture_transform;
+      const metallicRoughnessTransform =
+        pbrMetallicRoughness?.metallicRoughnessTexture?.extensions?.KHR_texture_transform;
+      const normalTransform = normalTexture?.extensions?.KHR_texture_transform;
+      const occlusionTransform = occlusionTexture?.extensions?.KHR_texture_transform;
+      const emissiveTransform = emissiveTexture?.extensions?.KHR_texture_transform;
+      const transmissionTransform = transmissionTextureInfo?.extensions?.KHR_texture_transform;
+      const thicknessTransform = thicknessTextureInfo?.extensions?.KHR_texture_transform;
+
       return new RemoteMaterial(resource.manager, {
         type: MaterialType.Standard,
         name,
@@ -1239,18 +1249,39 @@ const loadGLTFMaterial = createCachedSubresourceLoader(
         alphaCutoff,
         baseColorFactor: pbrMetallicRoughness?.baseColorFactor,
         baseColorTexture,
+        baseColorTextureOffset: baseColorTransform?.offset,
+        baseColorTextureRotation: baseColorTransform?.rotation,
+        baseColorTextureScale: baseColorTransform?.scale,
         metallicFactor: pbrMetallicRoughness?.metallicFactor,
         roughnessFactor: pbrMetallicRoughness?.roughnessFactor,
         metallicRoughnessTexture,
-        normalTextureScale: normalTexture?.scale,
+        metallicRoughnessTextureOffset: metallicRoughnessTransform?.offset,
+        metallicRoughnessTextureRotation: metallicRoughnessTransform?.rotation,
+        metallicRoughnessTextureScale: metallicRoughnessTransform?.scale,
         normalTexture: _normalTexture,
+        normalScale: normalTexture?.scale,
+        normalTextureOffset: normalTransform?.offset,
+        normalTextureRotation: normalTransform?.rotation,
+        normalTextureScale: normalTransform?.scale,
         occlusionTextureStrength: occlusionTexture?.strength,
         occlusionTexture: _occlusionTexture,
+        occlusionTextureOffset: occlusionTransform?.offset,
+        occlusionTextureRotation: occlusionTransform?.rotation,
+        occlusionTextureScale: occlusionTransform?.scale,
         emissiveFactor,
         emissiveStrength: extensions?.KHR_materials_emissive_strength?.emissiveStrength,
         emissiveTexture: _emissiveTexture,
+        emissiveTextureOffset: emissiveTransform?.offset,
+        emissiveTextureRotation: emissiveTransform?.rotation,
+        emissiveTextureScale: emissiveTransform?.scale,
         transmissionTexture,
+        transmissionTextureOffset: transmissionTransform?.offset,
+        transmissionTextureRotation: transmissionTransform?.rotation,
+        transmissionTextureScale: transmissionTransform?.scale,
         thicknessTexture,
+        thicknessTextureOffset: thicknessTransform?.offset,
+        thicknessTextureRotation: thicknessTransform?.rotation,
+        thicknessTextureScale: thicknessTransform?.scale,
         ior: extensions?.KHR_materials_ior?.ior,
         transmissionFactor: extensions?.KHR_materials_transmission?.transmissionFactor,
         thicknessFactor,

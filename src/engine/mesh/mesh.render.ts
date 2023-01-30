@@ -220,6 +220,7 @@ function createMeshPrimitiveObject(
     const lightMapTexture = lightMap?.texture?.texture;
 
     if (lightMapTexture) {
+      lightMapTexture.name = "Lightmap";
       lightMapTexture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
       lightMapTexture.type = FloatType;
       lightMapTexture.minFilter = LinearFilter;
