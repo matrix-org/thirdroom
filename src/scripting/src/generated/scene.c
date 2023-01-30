@@ -110,6 +110,31 @@ static JSValue js_scene_set_reflection_probe(JSContext *ctx, JSValueConst this_v
   }
 }
 
+
+static JSValue js_scene_get_bloom_strength(JSContext *ctx, JSValueConst this_val) {
+  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+
+  if (!scene) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)scene->bloom_strength);
+    return val;
+  }
+}
+
+
+static JSValue js_scene_set_bloom_strength(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
+
+  if (!scene) {
+    return JS_EXCEPTION;
+  } else {
+    if (JS_ToFloat32(ctx, &scene->bloom_strength, val)) return JS_EXCEPTION;
+    return JS_UNDEFINED;
+  }
+}
+
 static JSValue js_scene_audio_emitters(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   Scene *scene = JS_GetOpaque2(ctx, this_val, js_scene_class_id);
 
@@ -157,6 +182,7 @@ static const JSCFunctionListEntry js_scene_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_scene_get_name, js_scene_set_name),
   JS_CGETSET_DEF("backgroundTexture", js_scene_get_background_texture, js_scene_set_background_texture),
   JS_CGETSET_DEF("reflectionProbe", js_scene_get_reflection_probe, js_scene_set_reflection_probe),
+  JS_CGETSET_DEF("bloomStrength", js_scene_get_bloom_strength, js_scene_set_bloom_strength),
   JS_CFUNC_DEF("audioEmitters", 0, js_scene_audio_emitters),
   JS_CFUNC_DEF("addAudioEmitter", 1, js_scene_add_audio_emitter),
   JS_CFUNC_DEF("removeAudioEmitter", 1, js_scene_remove_audio_emitter),

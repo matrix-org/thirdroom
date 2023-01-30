@@ -3,8 +3,8 @@ materialButton.interactable = new WebSG.Interactable();
 let materialState = false;
 const leftCube = WebSG.getNodeByName("LeftCube");
 const rightCube = WebSG.getNodeByName("RightCube");
-const bricksTexture = WebSG.getTextureByName("Bricks");
-const planksTexture = WebSG.getTextureByName("Planks");
+const bricksTexture = WebSG.getMaterialByName("Bricks").baseColorTexture;
+const planksTexture = WebSG.getMaterialByName("Planks").baseColorTexture;
 
 const room1Switch = WebSG.getNodeByName("Room1Switch");
 room1Switch.interactable = new WebSG.Interactable();

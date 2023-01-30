@@ -3,7 +3,6 @@ import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
-import { removeRecursive } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { ourPlayerQuery, Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -18,9 +17,10 @@ import {
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
 import {
+  deserializeClientPosition,
   deserializeCreates,
   deserializeDeletes,
-  deserializeFullUpdate,
+  deserializeFullChangedUpdate,
   deserializeInformPlayerNetworkId,
   deserializeNewPeerSnapshot,
   deserializeSnapshot,
@@ -33,11 +33,14 @@ import {
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
-import { deserializeCommand } from "./commands.game";
+import { deserializeCommands } from "./commands.game";
 import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
+import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
+import { maxEntities } from "../config.common";
 
 /*********
  * Types *
@@ -46,7 +49,7 @@ import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/
 export interface GameNetworkState {
   incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  commands: ArrayBuffer[];
+  commands: [number, number, ArrayBuffer][];
   hostId: string;
   peerId: string;
   peers: string[];
@@ -62,6 +65,7 @@ export interface GameNetworkState {
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: NetPipeData) => void };
   cursorView: CursorView;
+  tickRate: number;
   // feature flags
   interpolate: boolean;
   clientSidePrediction: boolean;
@@ -95,13 +99,13 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       entityIdToPeerId: new Map(),
       indexToPeerId: new Map(),
       peerIdCount: 0,
-      localIdCount: 0,
+      localIdCount: 1,
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
-      interpolate: false,
-      // TODO: this causes desync atm
-      clientSidePrediction: false,
+      tickRate: 10,
+      interpolate: true,
+      clientSidePrediction: true,
       authoritative,
     };
   },
@@ -114,12 +118,13 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
     registerInboundMessageHandler(network, NetworkAction.Delete, deserializeDeletes);
     registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
-    registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullUpdate);
+    registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullChangedUpdate);
     registerInboundMessageHandler(network, NetworkAction.UpdateNetworkId, deserializeUpdateNetworkId);
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
-    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommand);
+    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommands);
+    registerInboundMessageHandler(network, NetworkAction.ClientPosition, deserializeClientPosition);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
@@ -142,6 +147,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  *******************/
 
 const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
+  console.log("onAddPeerId", message.peerId);
   const network = getModule(ctx, NetworkModule);
   const { peerId } = message;
 
@@ -169,22 +175,25 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     if (!network.authoritative) {
       for (let i = entities.length - 1; i >= 0; i--) {
         const eid = entities[i];
+        const node = getRemoteResource<RemoteNode>(ctx, eid);
 
         const networkId = Networked.networkId[eid];
 
         // if the entity's networkId contains the peerIndex it means that peer owns the entity
-        if (peerIndex === getPeerIndexFromNetworkId(networkId)) {
+        if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
           network.entityIdToPeerId.delete(eid);
-          removeRecursive(ctx.world, eid);
+          removeObjectFromWorld(ctx, node);
         }
       }
     }
 
     // remove this peer's avatar entity
     const eid = network.peerIdToEntityId.get(peerId);
-    if (eid) {
+    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
+
+    if (eid && node) {
       network.entityIdToPeerId.delete(eid);
-      removeRecursive(ctx.world, eid);
+      removeObjectFromWorld(ctx, node);
     }
 
     network.peers.splice(peerArrIndex, 1);
@@ -236,7 +245,8 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
     // if we are new host, take authority over our avatar entity
     const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
     if (amNewHost) {
-      embodyAvatar(ctx, physics, input, eid);
+      const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
+      embodyAvatar(ctx, physics, input, rig);
     }
 
     // if host was re-elected, transfer ownership of old host's networked entities to new host
@@ -261,10 +271,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
         if (amNewHost) {
           addComponent(ctx.world, Owned, eid);
         } else {
-          // TODO: re-send this from the host side either via explicit message or via creation message
-          // or deterministically set it here
-          // explicit message: NID -> NID
-          // Networked.networkId[eid] = setPeerIdIndexInNetworkId(nid, newHostPeerIndex);
+          // NOTE: if not new host, then the host sends networkId updates (outbound.game.ts#assignNetworkIds)
         }
       }
     }
@@ -320,17 +327,20 @@ export const associatePeerWithEntity = (network: GameNetworkState, peerId: strin
 
 /* Components */
 
-export const Networked = defineComponent({
-  // networkId contains both peerIdIndex (owner) and localNetworkId
-  networkId: Types.ui32,
-  // TODO: split net ID into 2 32bit ints
-  // ownerId: Types.ui32,
-  // localId: Types.ui32,
-  parent: Types.ui32,
-  position: [Types.f32, 3],
-  quaternion: [Types.f32, 4],
-  velocity: [Types.f32, 3],
-});
+export const Networked = defineComponent(
+  {
+    // networkId contains both peerIdIndex (owner) and localNetworkId
+    networkId: Types.ui32,
+    // TODO: split net ID into 2 32bit ints
+    // ownerId: Types.ui32,
+    // localId: Types.ui32,
+    parent: Types.ui32,
+    position: [Types.f32, 3],
+    quaternion: [Types.f32, 4],
+    velocity: [Types.f32, 3],
+  },
+  maxEntities
+);
 
 export const Owned = defineComponent();
 

@@ -12,6 +12,7 @@
 #include "../script-context.h"
 #include "websg.h"
 #include "mesh-primitive.h"
+#include "accessor.h"
 #include "material.h"
 
 /**
@@ -30,6 +31,58 @@ static JSValue js_mesh_primitive_constructor(JSContext *ctx, JSValueConst new_ta
   }
 
   return create_mesh_primitive_from_ptr(ctx, mesh_primitive);
+}
+
+static JSValue js_mesh_primitive_attributes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_NewRefMapIterator(ctx, (JSValue (*)(JSContext *ctx, void *res))&create_accessor_from_ptr, (void **)mesh_primitive->attributes, countof(mesh_primitive->attributes));
+  }
+}
+  
+static JSValue js_mesh_primitive_get_attribute(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_GetRefMapItem(ctx, (JSValue (*)(JSContext *ctx, void *res))&create_accessor_from_ptr, (void **)mesh_primitive->attributes, countof(mesh_primitive->attributes), argv[0]);
+  }
+}
+
+static JSValue js_mesh_primitive_set_attribute(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_SetRefMapItem(ctx, (void **)mesh_primitive->attributes, countof(mesh_primitive->attributes), argv[0], argv[1]);
+  }
+}
+
+static JSValue js_mesh_primitive_delete_attribute(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    return JS_DeleteRefMapItem(ctx, (void **)mesh_primitive->attributes, countof(mesh_primitive->attributes), argv[0]);
+  }
+}
+
+static JSValue js_mesh_primitive_get_indices(JSContext *ctx, JSValueConst this_val) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = create_accessor_from_ptr(ctx, mesh_primitive->indices);
+    return val;
+  }
 }
 
 
@@ -58,6 +111,19 @@ static JSValue js_mesh_primitive_set_material(JSContext *ctx, JSValueConst this_
 }
 
 
+static JSValue js_mesh_primitive_get_mode(JSContext *ctx, JSValueConst this_val) {
+  MeshPrimitive *mesh_primitive = JS_GetOpaque2(ctx, this_val, js_mesh_primitive_class_id);
+
+  if (!mesh_primitive) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, mesh_primitive->mode);
+    return val;
+  }
+}
+
+
 
 
 static JSValue js_mesh_primitive_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -72,7 +138,13 @@ static JSClassDef js_mesh_primitive_class = {
 };
 
 static const JSCFunctionListEntry js_mesh_primitive_proto_funcs[] = {
+  JS_CFUNC_DEF("attributes", 0, js_mesh_primitive_attributes),
+  JS_CFUNC_DEF("getAttribute", 1, js_mesh_primitive_get_attribute),
+  JS_CFUNC_DEF("setAttribute", 1, js_mesh_primitive_set_attribute),
+  JS_CFUNC_DEF("deleteAttribute", 1, js_mesh_primitive_delete_attribute),
+  JS_CGETSET_DEF("indices", js_mesh_primitive_get_indices, NULL),
   JS_CGETSET_DEF("material", js_mesh_primitive_get_material, js_mesh_primitive_set_material),
+  JS_CGETSET_DEF("mode", js_mesh_primitive_get_mode, NULL),
   JS_CFUNC_DEF("dispose", 0, js_mesh_primitive_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "MeshPrimitive", JS_PROP_CONFIGURABLE),
 };

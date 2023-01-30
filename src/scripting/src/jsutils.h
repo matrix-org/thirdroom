@@ -26,8 +26,8 @@ JSValue JS_AddRefArrayItem(JSContext *ctx, JSClassID class_id, void **arr, int s
 JSValue JS_RemoveRefArrayItem(JSContext *ctx, JSClassID class_id, void **arr, int size, JSValue item);
 void JS_DefineRefArrayIterator(JSContext *ctx);
 
-// JSValue JS_NewNodeIterator(JSContext *ctx, Node *first_node);
-// void JS_DefineNodeIterator(JSContext *ctx);
+JSValue JS_NewNodeIterator(JSContext *ctx, Node *first_node);
+void JS_DefineNodeIterator(JSContext *ctx);
 
 JSValue JS_NewRefMapIterator(
   JSContext *ctx,

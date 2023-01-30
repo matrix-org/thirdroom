@@ -4,19 +4,19 @@ import { IMainThreadContext, MainThread } from "../../engine/MainThread";
 import { useIsMounted } from "./useIsMounted";
 
 export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>) {
-  const [context, setContext] = useState<IMainThreadContext>();
+  const [ctx, setContext] = useState<IMainThreadContext>();
   const isMounted = useIsMounted();
 
   useEffect(() => {
     if (canvasRef.current) {
       let disposeFn: () => void | undefined;
 
-      MainThread(canvasRef.current).then(({ context, dispose }) => {
+      MainThread(canvasRef.current).then(({ ctx, dispose }) => {
         if (!isMounted()) {
           dispose();
         } else {
           disposeFn = dispose;
-          setContext(context);
+          setContext(ctx);
         }
       });
 
@@ -30,7 +30,7 @@ export function useInitMainThreadContext(canvasRef: RefObject<HTMLCanvasElement>
 
   // TODO: Implement engine APIs
 
-  return context;
+  return ctx;
 }
 
 const MainThreadUIContext = createContext<IMainThreadContext | undefined>(undefined);

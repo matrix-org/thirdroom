@@ -1,109 +1,105 @@
-import { Color, Scene } from "three";
+import { Color } from "three";
 
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
-import { LocalReflectionProbeResource, updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
+import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource, getResourceDisposed, waitForLocalResource } from "../resource/resource.render";
-import { RendererTextureResource } from "../texture/texture.render";
-import { promiseObject } from "../utils/promiseObject";
-import { RendererSceneTripleBuffer, RendererSharedSceneResource } from "./scene.common";
-
-export interface LocalSceneResource {
-  resourceId: ResourceId;
-  scene: Scene;
-  backgroundTexture?: RendererTextureResource;
-  reflectionProbe?: LocalReflectionProbeResource;
-  reflectionProbeNeedsUpdate: boolean;
-  rendererSceneTripleBuffer: RendererSceneTripleBuffer;
-}
-
-export async function onLoadLocalSceneResource(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { rendererSceneTripleBuffer }: RendererSharedSceneResource
-): Promise<LocalSceneResource> {
-  const rendererModule = getModule(ctx, RendererModule);
-
-  const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
-
-  await promiseObject({
-    backgroundTexture: sceneView.backgroundTexture[0]
-      ? waitForLocalResource<RendererTextureResource>(ctx, sceneView.backgroundTexture[0])
-      : undefined,
-  });
-
-  const scene = new Scene();
-
-  const localSceneResource = {
-    resourceId,
-    scene,
-    rendererSceneTripleBuffer,
-    reflectionProbeNeedsUpdate: false,
-  };
-
-  rendererModule.scenes.push(localSceneResource);
-
-  return localSceneResource;
-}
+import { LoadStatus } from "../resource/resource.common";
+import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
 
-export function updateLocalSceneResources(
-  ctx: RenderThreadState,
-  scenes: LocalSceneResource[],
-  activeSceneResourceId: number
-) {
-  for (let i = scenes.length - 1; i >= 0; i--) {
-    const sceneResource = scenes[i];
+export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: RenderScene | undefined) {
+  const rendererModule = getModule(ctx, RendererModule);
 
-    if (getResourceDisposed(ctx, sceneResource.resourceId)) {
-      scenes.splice(i, 1);
+  if (activeScene) {
+    rendererModule.scene.visible = true;
+
+    const currentBackgroundTextureResourceId = activeScene.currentBackgroundTextureResourceId;
+    const nextBackgroundTextureResourceId = activeScene.backgroundTexture?.eid || 0;
+
+    if (
+      nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId &&
+      activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded
+    ) {
+      if (activeScene.backgroundTexture) {
+        rendererModule.scene.background = activeScene.backgroundTexture.texture || null;
+      } else {
+        rendererModule.scene.background = null;
+      }
+
+      activeScene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
+    }
+
+    rendererModule.renderPipeline.bloomPass.strength = activeScene.bloomStrength;
+
+    updateSceneReflectionProbe(ctx, activeScene);
+
+    if (rendererModule.enableMatrixMaterial) {
+      rendererModule.scene.overrideMaterial = rendererModule.matrixMaterial;
+      rendererModule.scene.background = blackBackground;
+    } else {
+      rendererModule.scene.overrideMaterial = null;
+
+      if (activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded) {
+        rendererModule.scene.background = activeScene.backgroundTexture?.texture || null;
+      } else {
+        rendererModule.scene.background = null;
+      }
+    }
+  } else {
+    rendererModule.scene.visible = false;
+  }
+}
+
+export function updateWorldVisibility(ctx: RenderThreadState) {
+  const nodes = getLocalResources(ctx, RenderNode);
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
+    if (!node.isStatic) {
+      node.object3DVisible = false;
     }
   }
 
-  for (let i = 0; i < scenes.length; i++) {
-    const sceneResource = scenes[i];
-    const { scene, rendererSceneTripleBuffer, backgroundTexture, resourceId } = sceneResource;
+  const worldResource = ctx.worldResource;
 
-    const sceneView = getReadObjectBufferView(rendererSceneTripleBuffer);
+  if (worldResource.environment) {
+    updateSceneVisibility(worldResource.environment.privateScene);
+    updateSceneVisibility(worldResource.environment.publicScene);
+  }
 
-    const currentBackgroundTextureResourceId = backgroundTexture?.resourceId || 0;
+  let nextNode = worldResource.firstNode;
 
-    if (sceneView.backgroundTexture[0] !== currentBackgroundTextureResourceId) {
-      if (sceneView.backgroundTexture[0]) {
-        const nextBackgroundTexture = getLocalResource<RendererTextureResource>(
-          ctx,
-          sceneView.backgroundTexture[0]
-        )?.resource;
+  while (nextNode) {
+    updateNodeVisibility(nextNode, true);
+    nextNode = nextNode.nextSibling;
+  }
 
-        if (nextBackgroundTexture) {
-          scene.background = nextBackgroundTexture.texture;
-        }
+  updateSceneVisibility(worldResource.persistentScene);
+}
 
-        sceneResource.backgroundTexture = nextBackgroundTexture;
-      } else {
-        sceneResource.backgroundTexture = undefined;
-        scene.background = null;
-      }
-    }
+function updateSceneVisibility(scene: RenderScene) {
+  let curChild = scene.firstNode;
 
-    const rendererModule = getModule(ctx, RendererModule);
+  while (curChild) {
+    updateNodeVisibility(curChild, true);
+    curChild = curChild.nextSibling;
+  }
+}
 
-    if (resourceId === activeSceneResourceId) {
-      rendererModule.renderPipeline.bloomPass.strength = sceneView.bloomStrength[0];
-    }
+function updateNodeVisibility(node: RenderNode, parentVisibility: boolean) {
+  if (node.isStatic) {
+    return;
+  }
 
-    updateSceneReflectionProbe(ctx, sceneResource, sceneView);
+  node.object3DVisible = node.visible && parentVisibility;
 
-    if (rendererModule.enableMatrixMaterial) {
-      scene.overrideMaterial = rendererModule.matrixMaterial;
-      scene.background = blackBackground;
-    } else {
-      scene.overrideMaterial = null;
-      scene.background = sceneResource.backgroundTexture?.texture || null;
-    }
+  let curChild = node.firstChild;
+
+  while (curChild) {
+    updateNodeVisibility(curChild, node.object3DVisible);
+    curChild = curChild.nextSibling;
   }
 }

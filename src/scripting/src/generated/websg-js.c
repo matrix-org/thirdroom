@@ -7,7 +7,6 @@
 #include "buffer-view.h"
 #include "audio-data.h"
 #include "audio-source.h"
-#include "media-stream-source.h"
 #include "audio-emitter.h"
 #include "image.h"
 #include "texture.h"
@@ -25,7 +24,12 @@
 #include "skin.h"
 #include "interactable.h"
 #include "node.h"
+#include "animation-sampler.h"
+#include "animation-channel.h"
+#include "animation.h"
 #include "scene.h"
+#include "environment.h"
+#include "world.h"
 
 void js_define_websg_api(JSContext *ctx, JSValue *global) {
   JSValue jsSceneGraphNamespace = JS_NewObject(ctx);
@@ -35,7 +39,6 @@ void js_define_websg_api(JSContext *ctx, JSValue *global) {
   js_define_buffer_view_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_data_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_source_api(ctx, &jsSceneGraphNamespace);
-  js_define_media_stream_source_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_emitter_api(ctx, &jsSceneGraphNamespace);
   js_define_image_api(ctx, &jsSceneGraphNamespace);
   js_define_texture_api(ctx, &jsSceneGraphNamespace);
@@ -53,6 +56,11 @@ void js_define_websg_api(JSContext *ctx, JSValue *global) {
   js_define_skin_api(ctx, &jsSceneGraphNamespace);
   js_define_interactable_api(ctx, &jsSceneGraphNamespace);
   js_define_node_api(ctx, &jsSceneGraphNamespace);
+  js_define_animation_sampler_api(ctx, &jsSceneGraphNamespace);
+  js_define_animation_channel_api(ctx, &jsSceneGraphNamespace);
+  js_define_animation_api(ctx, &jsSceneGraphNamespace);
   js_define_scene_api(ctx, &jsSceneGraphNamespace);
+  js_define_environment_api(ctx, &jsSceneGraphNamespace);
+  js_define_world_api(ctx, &jsSceneGraphNamespace);
   JS_SetPropertyStr(ctx, *global, "WebSG", jsSceneGraphNamespace);
 }

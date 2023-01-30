@@ -20,12 +20,12 @@ function isOlderThanLocalHost(groupCall: GroupCall, member: Member): boolean {
   return groupCall.eventTimestamp! < member.eventTimestamp;
 }
 
-export function createMatrixNetworkInterface(
+export async function createMatrixNetworkInterface(
   ctx: IMainThreadContext,
   client: Client,
   powerLevels: PowerLevels,
   groupCall: GroupCall
-): () => void {
+): Promise<() => void> {
   if (!client.session) {
     throw new Error("You must initialize the client session before creating the network interface");
   }
@@ -38,9 +38,8 @@ export function createMatrixNetworkInterface(
 
   const userId = client.session.userId;
 
-  getInitialHost(userId)
-    .then((initialHostId) => joinWorld(userId, initialHostId === userId))
-    .catch(console.error);
+  const initialHostId = await getInitialHost(userId);
+  await joinWorld(userId, initialHostId === userId);
 
   function getInitialHost(userId: string): Promise<string> {
     // Of the all group call members find the one whose member event is oldest
@@ -136,10 +135,10 @@ export function createMatrixNetworkInterface(
     });
   }
 
-  function joinWorld(userId: string, isHost: boolean) {
+  async function joinWorld(userId: string, isHost: boolean) {
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
-    enterWorld(ctx);
+    await enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {

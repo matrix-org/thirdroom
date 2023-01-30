@@ -2,27 +2,44 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
+import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
+import { trimHistory } from "../utils/Historian";
+import { isHost } from "./network.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
 import { NetPipeData, readMetadata } from "./serialization.game";
 
-const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffer) => {
-  const network = getModule(state, NetworkModule);
+const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer) => {
+  const network = getModule(ctx, NetworkModule);
+  const input = getModule(ctx, InputModule);
+  const controller = input.activeController;
 
   const cursorView = createCursorView(msg);
-  const { type: messageType, elapsed } = readMetadata(cursorView);
 
-  const input: NetPipeData = [state, cursorView, peerId];
-  const { messageHandlers } = getModule(state, NetworkModule);
+  const { type: messageType, elapsed, inputTick } = readMetadata(cursorView);
+
+  // trim off all inputs since the most recent host-processed input tick
+  if (network.authoritative && !isHost(network) && inputTick) {
+    // trim history up to this last recieved input tick
+    trimHistory(controller.outbound, inputTick);
+    // trigger input prediction
+    (controller as any).needsUpdate = true;
+  }
 
   const historian = network.peerIdToHistorian.get(peerId);
+
   if (historian) {
-    historian.latestElapsed = elapsed;
-    historian.localElapsed = elapsed;
+    // this value is written onto outgoing packet headers
+    historian.latestTick = inputTick;
+    historian.latestTime = elapsed;
+    historian.localTime = elapsed;
     historian.needsUpdate = true;
   }
+
+  const data: NetPipeData = [ctx, cursorView, peerId];
+  const { messageHandlers } = getModule(ctx, NetworkModule);
 
   const handler = messageHandlers[messageType];
   if (!handler) {
@@ -33,7 +50,7 @@ const processNetworkMessage = (state: GameState, peerId: string, msg: ArrayBuffe
     return;
   }
 
-  handler(input);
+  handler(data);
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };

@@ -20,13 +20,6 @@ import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectio
 
 import { Layer } from "../node/node.common";
 
-// TODO: Add samples property to official three types package
-declare module "three" {
-  interface WebGLRenderTargetOptions {
-    samples: number;
-  }
-}
-
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
  * for various platforms. This implementation is only focused on desktops with integrated or dedicated GPUs.
@@ -75,19 +68,23 @@ export class RenderPipeline {
   }
 
   render(scene: Scene, camera: PerspectiveCamera | OrthographicCamera, dt: number) {
-    this.renderPass.scene = scene;
-    this.renderPass.camera = camera;
-    this.outlinePass.renderScene = scene;
-    this.outlinePass.renderCamera = camera;
+    if (this.renderer.xr.isPresenting) {
+      this.renderer.render(scene, camera);
+    } else {
+      this.renderPass.scene = scene;
+      this.renderPass.camera = camera;
+      this.outlinePass.renderScene = scene;
+      this.outlinePass.renderCamera = camera;
 
-    this.outlinePass.selectedObjects.length = 0;
+      this.outlinePass.selectedObjects.length = 0;
 
-    scene.traverse((child) => {
-      if (child.layers.test(this.outlineLayers)) {
-        this.outlinePass.selectedObjects.push(child);
-      }
-    });
+      scene.traverse((child) => {
+        if (child.layers.test(this.outlineLayers)) {
+          this.outlinePass.selectedObjects.push(child);
+        }
+      });
 
-    this.effectComposer.render(dt);
+      this.effectComposer.render(dt);
+    }
   }
 }
