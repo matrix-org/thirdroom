@@ -1504,7 +1504,7 @@ const loadGLTFReflectionProbe = createCachedSubresourceLoader(
     return new RemoteReflectionProbe(resource.manager, {
       reflectionProbeTexture: await loadGLTFTexture(resource, reflectionProbeTexture.index, {
         mapping: SamplerMapping.EquirectangularReflectionMapping,
-        flipY: false,
+        flipY: true,
       }),
       size,
     });
