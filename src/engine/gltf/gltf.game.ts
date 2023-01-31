@@ -640,7 +640,7 @@ const loadGLTFScene = createInstancedSubresourceLoader(
           : undefined,
       });
 
-      const bloomStrength = extensions?.MX_postprocessing?.bloom?.strength;
+      const bloom = extensions?.MX_postprocessing?.bloom;
 
       if (options?.existingScene) {
         remoteSceneOrNode = options?.existingScene;
@@ -648,15 +648,27 @@ const loadGLTFScene = createInstancedSubresourceLoader(
         remoteSceneOrNode.backgroundTexture = backgroundTexture;
         remoteSceneOrNode.reflectionProbe = reflectionProbe;
 
-        if (bloomStrength !== undefined) {
-          remoteSceneOrNode.bloomStrength = bloomStrength;
+        if (bloom !== undefined) {
+          if (bloom.strength !== undefined) {
+            remoteSceneOrNode.bloomStrength = bloom.strength;
+          }
+
+          if (bloom.radius !== undefined) {
+            remoteSceneOrNode.bloomRadius = bloom.radius;
+          }
+
+          if (bloom.threshold !== undefined) {
+            remoteSceneOrNode.bloomThreshold = bloom.threshold;
+          }
         }
       } else {
         remoteSceneOrNode = new RemoteScene(resource.manager, {
           audioEmitters,
           backgroundTexture,
           reflectionProbe,
-          bloomStrength,
+          bloomStrength: bloom?.strength,
+          bloomRadius: bloom?.radius,
+          bloomThreshold: bloom?.threshold,
         });
       }
     }

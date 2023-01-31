@@ -842,7 +842,9 @@ export interface GLTFRootReflectionProbesExtension extends GLTFProperty {
 }
 
 export interface GLTFBloomEffect extends GLTFProperty {
-  strength: number;
+  strength?: number;
+  radius?: number;
+  threshold?: number;
 }
 
 export interface GLTFPostprocessingExtension extends GLTFProperty {
