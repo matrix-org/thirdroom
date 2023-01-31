@@ -14,3 +14,10 @@ export enum NetworkAction {
   UpdateNetworkId,
   ClientPosition,
 }
+
+export const UnreliableNetworkActions = [
+  NetworkAction.UpdateChanged,
+  NetworkAction.UpdateSnapshot,
+  NetworkAction.UpdateCamera,
+  NetworkAction.ClientPosition,
+];

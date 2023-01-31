@@ -69,6 +69,9 @@ export type NetPipeData = [GameState, CursorView, string];
 // ad-hoc messages view
 const messageView = createCursorView(new ArrayBuffer(10000));
 
+const metadataTotalBytes =
+  Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT;
+
 export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   const [, v] = input;
   writeUint8(v, type);
@@ -83,7 +86,9 @@ export const writeElapsed = (input: NetPipeData) => {
 
 export const writeMetadata = (type: NetworkAction) =>
   pipe(
+    // ui8
     writeMessageType(type),
+    // f64
     writeElapsed,
     // HACK: leave space for the input tick
     (data) => {
@@ -619,7 +624,7 @@ export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pi
   serializeUpdatesSnapshot,
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -635,62 +640,59 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
   serializeUpdatesChanged,
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 3 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
   }
 );
+
+export const deserializeFullChangedUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
 
 // Deletion Update
 export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Delete),
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
   }
 );
 
-// deserialization
-export const deserializeFullChangedUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
+export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.Create),
+  serializeCreates,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
-// unused
+export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.UpdateChanged),
+  serializeUpdatesChanged,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
-// export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.Create),
-//   serializeCreates,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
-
-// export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.UpdateChanged),
-//   serializeUpdatesChanged,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
-
-// export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.UpdateSnapshot),
-//   serializeUpdatesSnapshot,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
+export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.UpdateSnapshot),
+  serializeUpdatesSnapshot,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
 export function createClientPositionMessage(ctx: GameState, eid: number) {
   const data: NetPipeData = [ctx, messageView, ""];

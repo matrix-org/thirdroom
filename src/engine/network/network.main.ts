@@ -10,6 +10,8 @@ import {
   enqueueNetworkRingBuffer,
   NetworkRingBuffer,
 } from "./RingBuffer";
+import { createCursorView, readUint8 } from "../allocator/CursorView";
+import { UnreliableNetworkActions } from "./NetworkAction";
 
 /*********
  * Types *
@@ -20,8 +22,10 @@ export interface MainNetworkState {
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
   incomingMessageHandlers: Map<string, ({ data }: { data: ArrayBuffer }) => void>;
-  incomingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   peerId?: string;
   hostId?: string;
 }
@@ -33,21 +37,27 @@ export interface MainNetworkState {
 export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>({
   name: "network",
   async create(ctx, { sendMessage }) {
-    const incomingRingBuffer = createNetworkRingBuffer(Uint8Array);
-    const outgoingRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const incomingReliableRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const incomingUnreliableRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const outgoingReliableRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const outgoingUnreliableRingBuffer = createNetworkRingBuffer(Uint8Array);
 
     const authoritative = localStorage.getItem("authoritativeNetworking") === "true";
 
     sendMessage<InitializeNetworkStateMessage>(Thread.Game, NetworkMessageType.InitializeNetworkState, {
       type: NetworkMessageType.InitializeNetworkState,
-      incomingRingBuffer,
-      outgoingRingBuffer,
+      incomingReliableRingBuffer,
+      incomingUnreliableRingBuffer,
+      outgoingReliableRingBuffer,
+      outgoingUnreliableRingBuffer,
       authoritative,
     });
 
     return {
-      incomingRingBuffer,
-      outgoingRingBuffer,
+      incomingReliableRingBuffer,
+      incomingUnreliableRingBuffer,
+      outgoingReliableRingBuffer,
+      outgoingUnreliableRingBuffer,
       reliableChannels: new Map(),
       unreliableChannels: new Map(),
       incomingMessageHandlers: new Map(),
@@ -60,11 +70,23 @@ export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>(
  * Message Handlers *
  *******************/
 
+function isPacketReliable(data: ArrayBuffer): boolean {
+  const v = createCursorView(data);
+  const msgType = readUint8(v);
+  return !UnreliableNetworkActions.includes(msgType);
+}
+
 const onIncomingMessage =
   (ctx: IMainThreadContext, network: MainNetworkState, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
-    if (!enqueueNetworkRingBuffer(network.incomingRingBuffer, peerId, data)) {
-      console.warn("incoming network ring buffer full");
+    const isReliable = isPacketReliable(data);
+    if (isReliable) {
+      if (!enqueueNetworkRingBuffer(network.incomingReliableRingBuffer, peerId, data)) {
+        // TODO: add a backing buffer in case this fills
+        throw new Error("incoming reliable network ring buffer full");
+      }
+    } else {
+      enqueueNetworkRingBuffer(network.incomingUnreliableRingBuffer, peerId, data);
     }
   };
 
@@ -260,8 +282,21 @@ const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
 export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
   const network = getModule(ctx, NetworkModule);
 
-  while (availableRead(network.outgoingRingBuffer)) {
-    dequeueNetworkRingBuffer(network.outgoingRingBuffer, ringOut);
+  while (availableRead(network.outgoingReliableRingBuffer)) {
+    dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
+    const peer = network.reliableChannels.get(ringOut.peerId);
+    if (peer) peer.send(ringOut.packet);
+    else if (ringOut.broadcast)
+      network.reliableChannels.forEach((peer) => {
+        if (peer.readyState === "open") {
+          peer.send(ringOut.packet);
+        }
+      });
+  }
+
+  while (availableRead(network.outgoingUnreliableRingBuffer)) {
+    dequeueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, ringOut);
+    // TODO: add unreliable channels
     const peer = network.reliableChannels.get(ringOut.peerId);
     if (peer) peer.send(ringOut.packet);
     else if (ringOut.broadcast)
