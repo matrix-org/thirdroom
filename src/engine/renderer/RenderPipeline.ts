@@ -1,5 +1,6 @@
 import {
   Camera,
+  FloatType,
   Layers,
   LinearFilter,
   OrthographicCamera,
@@ -42,7 +43,10 @@ export class RenderPipeline {
       format: RGBAFormat,
       encoding: sRGBEncoding,
       samples: 16,
+      type: FloatType,
     });
+
+    rendererSize.width / rendererSize.height;
 
     const scene = new Scene();
     const camera = new Camera();
@@ -50,7 +54,17 @@ export class RenderPipeline {
     this.effectComposer = new EffectComposer(renderer, target);
     this.renderPass = new RenderPass(scene, camera);
     this.outlinePass = new OutlinePass(rendererSize, scene, camera);
-    this.bloomPass = new UnrealBloomPass(rendererSize, 0.4, 0.4, 0.9);
+    this.bloomPass = new UnrealBloomPass(rendererSize, 0.1, 0.4, 0.9);
+    this.bloomPass.renderTargetBright.texture.type = FloatType;
+
+    for (const target of this.bloomPass.renderTargetsHorizontal) {
+      target.texture.type = FloatType;
+    }
+
+    for (const target of this.bloomPass.renderTargetsVertical) {
+      target.texture.type = FloatType;
+    }
+
     this.gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
 
     this.effectComposer.addPass(this.renderPass);

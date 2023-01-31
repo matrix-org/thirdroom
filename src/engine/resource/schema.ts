@@ -493,7 +493,7 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
   name: PropType.string({ default: "Scene", script: true }),
   backgroundTexture: PropType.ref(TextureResource, { script: true }),
   reflectionProbe: PropType.ref(ReflectionProbeResource, { script: true }),
-  bloomStrength: PropType.f32({ script: true, default: 0.4 }),
+  bloomStrength: PropType.f32({ script: true, default: 0.1 }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
 });

@@ -1,7 +1,6 @@
 import {
   Scene,
   ImageBitmapLoader,
-  LinearToneMapping,
   PCFSoftShadowMap,
   sRGBEncoding,
   WebGLRenderer,
@@ -9,6 +8,7 @@ import {
   PMREMGenerator,
   Texture,
   Object3D,
+  NoToneMapping,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -114,7 +114,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
-    renderer.toneMapping = LinearToneMapping;
+    renderer.toneMapping = NoToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
