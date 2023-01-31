@@ -381,7 +381,13 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 
     await loadEnvironment(ctx, message.url, message.scriptUrl, message.fileMap);
 
+    await waitForCurrentSceneToRender(ctx);
+
     loadPlayerRig(ctx, physics, input, network);
+
+    await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
+
+    await waitForCurrentSceneToRender(ctx, 10);
 
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
