@@ -47,6 +47,7 @@ import { maxEntities } from "../config.common";
  ********/
 
 export interface GameNetworkState {
+  onExitWorldQueue: any[];
   incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
   outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
@@ -92,6 +93,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     if (authoritative) console.info("Authoritative networking activated");
 
     return {
+      onExitWorldQueue: [],
       incomingReliableRingBuffer,
       incomingUnreliableRingBuffer,
       outgoingReliableRingBuffer,
@@ -213,22 +215,32 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
 
 const onExitWorld = (ctx: GameState, message: ExitWorldMessage) => {
   const network = getModule(ctx, NetworkModule);
-  network.hostId = "";
-  network.peers = [];
-  network.newPeers = [];
-  network.peerIdToEntityId.clear();
-  network.entityIdToPeerId.clear();
-  network.networkIdToEntityId.clear();
-  network.localIdCount = 0;
-  network.removedLocalIds = [];
-  network.commands = [];
-  // drain ring buffers
-  const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-  while (availableRead(network.outgoingReliableRingBuffer))
-    dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
-  while (availableRead(network.incomingReliableRingBuffer))
-    dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
+  network.onExitWorldQueue.push(message);
 };
+
+export function NetworkExitWorldQueueSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+
+  while (network.onExitWorldQueue.length) {
+    network.onExitWorldQueue.shift();
+
+    network.hostId = "";
+    network.peers = [];
+    network.newPeers = [];
+    network.peerIdToEntityId.clear();
+    network.entityIdToPeerId.clear();
+    network.networkIdToEntityId.clear();
+    network.localIdCount = 1;
+    network.removedLocalIds = [];
+    network.commands = [];
+    // drain ring buffers
+    const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+    while (availableRead(network.outgoingReliableRingBuffer))
+      dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
+    while (availableRead(network.incomingReliableRingBuffer))
+      dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
+  }
+}
 
 // Set local peer id
 const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
@@ -262,7 +274,7 @@ const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
 
     // if host was re-elected, transfer ownership of old host's networked entities to new host
     if (newHostElected) {
-      network.localIdCount = 0;
+      network.localIdCount = 1;
       network.removedLocalIds = [];
 
       const ents = remoteNetworkedQuery(ctx.world);
@@ -311,6 +323,7 @@ export const setPeerIdIndexInNetworkId = (nid: number, peerIdIndex: number) => {
 
 export const createNetworkId = (state: GameState) => {
   const network = getModule(state, NetworkModule);
+
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
   const peerIndex = network.peerIdToIndex.get(network.peerId);
 
@@ -325,10 +338,14 @@ export const createNetworkId = (state: GameState) => {
   return ((localId << 16) | peerIndex) >>> 0;
 };
 
-export const deleteNetworkId = (ctx: GameState, nid: number) => {
+export const removeNetworkId = (ctx: GameState, nid: number) => {
   const network = getModule(ctx, NetworkModule);
   const localId = getLocalIdFromNetworkId(nid);
-  network.removedLocalIds.push(localId);
+  if (network.removedLocalIds.includes(localId)) {
+    console.warn(`could not remove localId ${localId}, already removed`);
+  } else {
+    network.removedLocalIds.push(localId);
+  }
 };
 
 export const associatePeerWithEntity = (network: GameNetworkState, peerId: string, eid: number) => {

@@ -10,7 +10,7 @@ import {
   createNetworkId,
   Networked,
   exitedNetworkIdQuery,
-  deleteNetworkId,
+  removeNetworkId,
   exitedNetworkedQuery,
   ownedPlayerQuery,
   GameNetworkState,
@@ -73,12 +73,12 @@ const assignNetworkIds = (ctx: GameState) => {
   return ctx;
 };
 
-const deleteNetworkIds = (state: GameState) => {
+const unassignNetworkIds = (state: GameState) => {
   const exited = exitedNetworkIdQuery(state.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     console.info("networkId", Networked.networkId[eid], "deleted from eid", eid);
-    deleteNetworkId(state, Networked.networkId[eid]);
+    removeNetworkId(state, Networked.networkId[eid]);
     Networked.networkId[eid] = NOOP;
   }
   return state;
@@ -256,7 +256,7 @@ export function OutboundNetworkSystem(ctx: GameState) {
   }
 
   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
-  deleteNetworkIds(ctx);
+  unassignNetworkIds(ctx);
 
   disposeNetworkedEntities(ctx);
 
