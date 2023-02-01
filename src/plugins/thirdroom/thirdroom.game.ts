@@ -130,7 +130,7 @@ const createAvatarRig =
 
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
-    cameraAnchor.position[1] = AVATAR_HEIGHT;
+    cameraAnchor.position[1] = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
     addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {
@@ -270,7 +270,7 @@ const actionMap: ActionMap = {
       bindings: [
         {
           type: BindingType.Button,
-          path: "Keyboard/Backslash",
+          path: "Keyboard/KeyV",
         },
       ],
     },
@@ -641,11 +641,10 @@ function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: Remo
 const ThirdPersonComponent = defineComponent();
 
 function swapToThirdPerson(ctx: GameState, node: RemoteNode) {
-  console.log("swapping to third person");
   addComponent(ctx.world, ThirdPersonComponent, node.eid);
   const camera = getCamera(ctx, node);
   camera.position[2] = 2;
-  camera.parent!.position[0] = 0.2;
+  camera.parent!.position[0] = 0.8;
 
   const avatar = getAvatar(ctx, node);
   avatar.visible = true;
