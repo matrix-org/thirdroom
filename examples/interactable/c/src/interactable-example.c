@@ -2,7 +2,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "websg.h"
+#include "../../../../src/scripting/src/generated/websg.h"
+
+export void *websg_allocate(int size) {
+  return malloc(size);
+}
+
+export void websg_deallocate(void *ptr) {
+  free(ptr);
+}
 
 Node *material_button;
 Node *room1_switch;

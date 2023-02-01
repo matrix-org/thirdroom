@@ -1,7 +1,8 @@
-import { NOOP } from "../config.common";
+import { createCursorView, moveCursorView, writeUint32 } from "../allocator/CursorView";
+import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { createCommandMessage } from "./commands.game";
+import { createCommandsMessage } from "./commands.game";
 import { isHost } from "./network.common";
 import {
   NetworkModule,
@@ -9,7 +10,7 @@ import {
   createNetworkId,
   Networked,
   exitedNetworkIdQuery,
-  deleteNetworkId,
+  removeNetworkId,
   exitedNetworkedQuery,
   ownedPlayerQuery,
   GameNetworkState,
@@ -18,29 +19,39 @@ import { enqueueNetworkRingBuffer } from "./RingBuffer";
 import {
   NetPipeData,
   createNewPeerSnapshotMessage,
-  createFullChangedMessage,
   createInformPlayerNetworkIdMessage,
   createUpdateNetworkIdMessage,
+  createCreateMessage,
+  createDeleteMessage,
+  createUpdateChangedMessage,
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
-  if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, "", packet, true)) {
-    console.warn("outgoing network ring buffer full");
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const broadcastUnreliable = (state: GameState, packet: ArrayBuffer) => {
-  throw new Error("broadcastUnreliable not implemented");
+export const broadcastUnreliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
 };
 
 export const sendReliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
-  if (!enqueueNetworkRingBuffer(network.outgoingRingBuffer, peerId, packet)) {
-    console.warn("outgoing network ring buffer full");
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const sendUnreliable = (state: GameState, peerId: string, packet: ArrayBuffer) => {
-  throw new Error("sendUnreliable not implemented");
+export const sendUnreliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
 };
 
 const assignNetworkIds = (ctx: GameState) => {
@@ -62,12 +73,12 @@ const assignNetworkIds = (ctx: GameState) => {
   return ctx;
 };
 
-const deleteNetworkIds = (state: GameState) => {
+const unassignNetworkIds = (state: GameState) => {
   const exited = exitedNetworkIdQuery(state.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     console.info("networkId", Networked.networkId[eid], "deleted from eid", eid);
-    deleteNetworkId(state, Networked.networkId[eid]);
+    removeNetworkId(state, Networked.networkId[eid]);
     Networked.networkId[eid] = NOOP;
   }
   return state;
@@ -121,17 +132,47 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
           broadcastReliable(ctx, network, createInformPlayerNetworkIdMessage(ctx, theirPeerId));
         }
       }
-    } else {
-      // send state updates if hosting
-      const msg = createFullChangedMessage(data);
-      if (msg.byteLength) broadcastReliable(ctx, network, msg);
+    }
+
+    // send reliable creates/deletes
+    const createMsg = createCreateMessage(data);
+    broadcastReliable(ctx, network, createMsg);
+
+    // send reliable creates/deletes
+    const deleteMsg = createDeleteMessage(data);
+    broadcastReliable(ctx, network, deleteMsg);
+
+    // send unreliable updates
+    const updateMsg = createUpdateChangedMessage(data);
+    if (updateMsg.byteLength) {
+      network.peers.forEach((peerId) => {
+        // HACK: host adds last input tick processed from this peer to each packet
+        // TODO: should instead formalize a pipeline for serializing unique per-peer data
+        const { latestTick } = network.peerIdToHistorian.get(peerId)!;
+
+        const v = createCursorView(updateMsg);
+        // move cursor to input tick area
+        moveCursorView(v, Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT);
+        // write the input tick for this particular peer
+        writeUint32(v, latestTick);
+
+        sendReliable(ctx, network, peerId, updateMsg);
+      });
     }
   } else if (network.commands.length) {
     if (haveNewPeers) network.newPeers = [];
-
     // send commands to host if not hosting
-    const msg = createCommandMessage(ctx, network.commands);
-    if (msg.byteLength) sendReliable(ctx, network, network.hostId, msg);
+    const msg = createCommandsMessage(ctx, network.commands);
+    if (msg.byteLength) {
+      // HACK: add input tick from client side
+      const v = createCursorView(msg);
+      // move cursor to input tick area
+      moveCursorView(v, Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT);
+      // write the input tick for this particular peer
+      writeUint32(v, ctx.tick);
+
+      sendReliable(ctx, network, network.hostId, msg);
+    }
     network.commands.length = 0;
   }
 
@@ -166,17 +207,39 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
         }
       }
     } else {
-      // reliably send full messages for now
-      const msg = createFullChangedMessage(data);
-      if (msg.byteLength) broadcastReliable(ctx, network, msg);
+      // send reliable creates
+      const createMsg = createCreateMessage(data);
+      broadcastReliable(ctx, network, createMsg);
+
+      // send reliable deletes
+      const deleteMsg = createDeleteMessage(data);
+      broadcastReliable(ctx, network, deleteMsg);
+
+      // send unreliable updates
+      const updateMsg = createUpdateChangedMessage(data);
+      broadcastUnreliable(ctx, network, updateMsg);
     }
   }
 
   return ctx;
 };
 
+let then = performance.now();
+let delta = 0;
 export function OutboundNetworkSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
+
+  // throttle by network tickRate
+  if (network.authoritative && isHost(network) && network.tickRate !== tickRate) {
+    // if (network.tickRate !== tickRate) {
+    const target = 1000 / network.tickRate;
+    delta += performance.now() - then;
+    then = performance.now();
+    if (delta <= target) {
+      return ctx;
+    }
+    delta = delta % target;
+  }
 
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
   if (!hasPeerIdIndex) return ctx;
@@ -193,7 +256,7 @@ export function OutboundNetworkSystem(ctx: GameState) {
   }
 
   // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
-  deleteNetworkIds(ctx);
+  unassignNetworkIds(ctx);
 
   disposeNetworkedEntities(ctx);
 

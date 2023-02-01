@@ -1,74 +1,93 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { Thread } from "../module/module.common";
-import { defineRemoteResourceClass, IRemoteResourceClass } from "./RemoteResourceClass";
-import { ResourceId } from "./resource.common";
+import { GLTFResource } from "../gltf/gltf.game";
 import {
   addResourceRef,
   createArrayBufferResource,
-  createResource,
+  createRemoteResource,
   createStringResource,
-  disposeResource,
   getRemoteResource,
-  setRemoteResource,
+  removeResourceRef,
 } from "./resource.game";
-import { InitialResourceProps, IRemoteResourceManager, RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+  ResourceData,
+  ResourceManagerGLTFCacheEntry,
+} from "./ResourceDefinition";
 
-export class GameResourceManager implements IRemoteResourceManager {
-  private resourceConstructors = new Map<ResourceDefinition, IRemoteResourceClass<ResourceDefinition>>();
-  public resources: RemoteResource<ResourceDefinition>[] = [];
+export class GameResourceManager implements IRemoteResourceManager<GameState> {
+  public resources: RemoteResource<GameState>[] = [];
+  private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
 
   constructor(private ctx: GameState) {}
 
-  createResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    props: InitialResourceProps<Def>
-  ): RemoteResource<Def> {
-    let resourceConstructor = this.resourceConstructors.get(resourceDef) as IRemoteResourceClass<Def> | undefined;
+  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined {
+    const entry = this.gltfCache.get(uri);
 
-    if (!resourceConstructor) {
-      resourceConstructor = defineRemoteResourceClass<Def>(resourceDef);
-      this.resourceConstructors.set(
-        resourceDef,
-        resourceConstructor as unknown as IRemoteResourceClass<ResourceDefinition>
-      );
+    if (!entry) {
+      return undefined;
     }
 
+    entry.refCount++;
+
+    return entry.promise;
+  }
+
+  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void {
+    this.gltfCache.set(uri, {
+      promise,
+      refCount: 1,
+    });
+  }
+
+  removeGLTFRef(uri: string): boolean {
+    const entry = this.gltfCache.get(uri);
+
+    if (entry && --entry.refCount <= 0) {
+      this.gltfCache.delete(uri);
+      return true;
+    }
+
+    return false;
+  }
+
+  allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new ArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(this.ctx.gameToRenderTripleBufferFlags, resourceDef.byteLength);
-    const resource = new resourceConstructor(this, buffer, 0, tripleBuffer, props);
-    const resourceId = createResource(this.ctx, Thread.Shared, resourceDef.name, tripleBuffer);
-    resource.resourceId = resourceId;
-    setRemoteResource(this.ctx, resourceId, resource);
-    this.resources.push(resource as unknown as RemoteResource<ResourceDefinition>);
 
-    return resource;
+    return {
+      ptr: 0,
+      buffer,
+      tripleBuffer,
+    };
   }
 
-  getResource<Def extends ResourceDefinition>(
-    resourceDef: Def,
-    resourceId: ResourceId
-  ): RemoteResource<Def> | undefined {
-    return getRemoteResource<RemoteResource<Def>>(this.ctx, resourceId);
+  createResource(resource: RemoteResource<GameState>): number {
+    const resourceId = createRemoteResource(this.ctx, resource);
+    this.resources.push(resource);
+    return resourceId;
   }
 
-  disposeResource(resourceId: number): void {
-    const resource = getRemoteResource<RemoteResource<ResourceDefinition>>(this.ctx, resourceId);
+  removeResourceRefs(resourceId: number): boolean {
+    const index = this.resources.findIndex((resource) => resource.eid === resourceId);
 
-    if (!resource) {
-      return;
+    if (index === -1) {
+      return false;
     }
 
-    const index = this.resources.findIndex((resource) => resource.resourceId === resourceId);
-
-    if (index !== -1) {
-      this.resources.splice(index, 1);
-    }
+    const resource = this.resources[index];
+    this.resources.splice(index, 1);
 
     const schema = resource.constructor.resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
+
+      if (prop.backRef) {
+        continue;
+      }
 
       if (prop.type === "ref" || prop.type === "string" || prop.type === "refArray" || prop.type === "refMap") {
         const resourceIds = resource.__props[propName];
@@ -88,20 +107,30 @@ export class GameResourceManager implements IRemoteResourceManager {
         }
       }
     }
+
+    return true;
   }
 
   getString(store: Uint32Array): string {
-    return getRemoteResource<string>(this.ctx, store[0])!;
+    const resourceId = store[0];
+    return resourceId ? getRemoteResource<string>(this.ctx, store[0]) || "" : "";
   }
 
   setString(value: string, store: Uint32Array): void {
-    if (store[0]) {
-      disposeResource(this.ctx, store[0]);
-    }
+    const resourceId = store[0];
+    const curValue = resourceId ? getRemoteResource<string>(this.ctx, resourceId) || "" : "";
 
-    const resourceId = createStringResource(this.ctx, value);
-    addResourceRef(this.ctx, resourceId);
-    store[0] = resourceId;
+    if (curValue !== value) {
+      if (store[0]) {
+        this.removeRef(store[0]);
+      }
+
+      if (value) {
+        const resourceId = createStringResource(this.ctx, value);
+        this.addRef(resourceId);
+        store[0] = resourceId;
+      }
+    }
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
@@ -109,7 +138,8 @@ export class GameResourceManager implements IRemoteResourceManager {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    return getRemoteResource<SharedArrayBuffer>(this.ctx, store[1])!;
+    const resourceId = store[1];
+    return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId) as SharedArrayBuffer;
   }
 
   setArrayBuffer(value: SharedArrayBuffer, store: Uint32Array): void {
@@ -118,26 +148,76 @@ export class GameResourceManager implements IRemoteResourceManager {
     }
 
     const resourceId = createArrayBufferResource(this.ctx, value);
-    addResourceRef(this.ctx, resourceId);
+    this.addRef(resourceId);
     store[0] = value.byteLength;
     store[1] = resourceId;
   }
 
-  getRef<Def extends ResourceDefinition>(resourceDef: Def, store: Uint32Array): RemoteResource<Def> | undefined {
-    return getRemoteResource<RemoteResource<Def>>(this.ctx, store[0]);
+  getRef<T extends RemoteResource<GameState>>(store: Uint32Array): T | undefined {
+    const resourceId = store[0];
+    return resourceId ? getRemoteResource<T>(this.ctx, resourceId) : undefined;
   }
 
-  setRef(value: RemoteResource<ResourceDefinition> | undefined, store: Uint32Array): void {
-    if (store[0]) {
-      disposeResource(this.ctx, store[0]);
+  setRef(value: RemoteResource<GameState> | undefined, store: Uint32Array, backRef: boolean): void {
+    const curResourceId = store[0];
+    const nextResourceId = value?.eid || 0;
+
+    if (!backRef) {
+      if (nextResourceId && nextResourceId !== curResourceId) {
+        this.addRef(nextResourceId);
+      }
+
+      if (curResourceId && nextResourceId !== curResourceId) {
+        this.removeRef(curResourceId);
+      }
     }
 
-    if (value) {
-      store[0] = value.resourceId;
-      addResourceRef(this.ctx, store[0]);
-    } else {
-      store[0] = 0;
+    store[0] = nextResourceId;
+  }
+
+  setRefArray(value: RemoteResource<GameState>[], store: Uint32Array): void {
+    for (let i = 0; i < value.length; i++) {
+      this.addRef(value[i].eid);
     }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (let i = 0; i < value.length; i++) {
+      store[i] = value[i].eid || 0;
+    }
+  }
+
+  setRefMap(value: { [key: number]: RemoteResource<GameState> }, store: Uint32Array): void {
+    for (const key in value) {
+      this.addRef(value[key].eid);
+    }
+
+    for (let i = 0; i < store.length; i++) {
+      const resourceId = store[i];
+
+      if (resourceId) {
+        this.removeRef(resourceId);
+      }
+
+      store[i] = 0;
+    }
+
+    for (const key in value) {
+      store[key] = value[key].eid || 0;
+    }
+  }
+
+  getRefArrayItem<T extends RemoteResource<GameState>>(index: number, store: Uint32Array): T | undefined {
+    const resourceId = store[index];
+    return resourceId ? getRemoteResource<T>(this.ctx, resourceId) : undefined;
   }
 
   addRef(resourceId: number) {
@@ -145,7 +225,7 @@ export class GameResourceManager implements IRemoteResourceManager {
   }
 
   removeRef(resourceId: number) {
-    disposeResource(this.ctx, resourceId);
+    removeResourceRef(this.ctx, resourceId);
   }
 
   commitResources() {

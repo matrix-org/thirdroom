@@ -1,13 +1,20 @@
 import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
-import { BaseThreadContext, Message, registerModules, Thread } from "./module/module.common";
+import {
+  ConsumerThreadContext,
+  Message,
+  registerModules,
+  SingleConsumerThreadSharedState,
+  Thread,
+} from "./module/module.common";
 import mainThreadConfig from "./config.main";
-import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
 import { MockMessagePort } from "./module/MockMessageChannel";
+import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
+import { waitUntil } from "./utils/waitUntil";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
-export interface IMainThreadContext extends BaseThreadContext {
+export interface IMainThreadContext extends ConsumerThreadContext {
   useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
@@ -15,16 +22,34 @@ export interface IMainThreadContext extends BaseThreadContext {
   animationFrameId?: number;
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
+  worldResource: MainWorld;
+  enableXR: boolean;
+  dt: number;
+  elapsed: number;
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
   const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
-  const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
+  let useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
+  let enableXR = false;
+
+  if ("xr" in navigator && navigator.xr && (await navigator.xr.isSessionSupported("immersive-vr"))) {
+    useOffscreenCanvas = false;
+    enableXR = true;
+  }
+
+  const singleConsumerThreadSharedState: SingleConsumerThreadSharedState | undefined = useOffscreenCanvas
+    ? undefined
+    : {
+        useXRViewerWorldMatrix: false,
+        xrViewerWorldMatrix: new Float32Array(16),
+        update: () => {},
+      };
 
   const gameWorker = new GameWorker();
-  const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas);
+  const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas, singleConsumerThreadSharedState);
   const interWorkerMessageChannel = new MessageChannel();
 
   function mainThreadSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList?: Transferable[]) {
@@ -36,10 +61,12 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   }
 
   const mainToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
+  const renderToGameTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
-  const context: IMainThreadContext = {
+  const ctx: IMainThreadContext = {
+    thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
     systems: mainThreadConfig.systems,
@@ -50,6 +77,14 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     initialGameWorkerState: {},
     initialRenderWorkerState: {},
     sendMessage: mainThreadSendMessage,
+    // TODO: figure out how to create the main thread context such that this is initially set
+    worldResource: undefined as any,
+    enableXR,
+    isStaleFrame: false,
+    dt: 0,
+    elapsed: 0,
+    tick: 0,
+    singleConsumerThreadSharedState,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -59,11 +94,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       return;
     }
 
-    const handlers = context.messageHandlers.get(message.type);
+    const handlers = ctx.messageHandlers.get(message.type);
 
     if (handlers) {
       for (let i = 0; i < handlers.length; i++) {
-        handlers[i](context, message);
+        handlers[i](ctx, message);
       }
     }
   }
@@ -72,11 +107,11 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   renderWorker.addEventListener("message", onWorkerMessage as any);
 
   /* Register module loader event handlers before we send the message (sendMessage synchronous to RenderThread when RenderThread is running on MainThread)*/
-  const moduleLoaderPromise = registerModules(Thread.Main, context, mainThreadConfig.modules);
+  const moduleLoaderPromise = registerModules(Thread.Main, ctx, mainThreadConfig.modules);
 
   /* Initialize workers */
 
-  context.sendMessage(
+  ctx.sendMessage(
     Thread.Game,
     {
       type: WorkerMessageType.InitializeGameWorker,
@@ -84,16 +119,18 @@ export async function MainThread(canvas: HTMLCanvasElement) {
       mainToGameTripleBufferFlags,
       gameToMainTripleBufferFlags,
       gameToRenderTripleBufferFlags,
+      renderToGameTripleBufferFlags,
     } as InitializeGameWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port1] : undefined
   );
 
-  context.sendMessage(
+  ctx.sendMessage(
     Thread.Render,
     {
       type: WorkerMessageType.InitializeRenderWorker,
       gameWorkerMessageTarget: useOffscreenCanvas ? interWorkerMessageChannel.port2 : undefined,
       gameToRenderTripleBufferFlags,
+      renderToGameTripleBufferFlags,
     } as InitializeRenderWorkerMessage,
     useOffscreenCanvas ? [interWorkerMessageChannel.port2] : undefined
   );
@@ -102,39 +139,41 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   const disposeModules = await moduleLoaderPromise;
 
-  /* Start Workers */
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartRenderWorker,
-  });
-
-  context.sendMessage(Thread.Render, {
-    type: WorkerMessageType.StartGameWorker,
+  ctx.worldResource = await waitUntil(() => {
+    ResourceLoaderSystem(ctx);
+    return getLocalResources(ctx, MainWorld)[0];
   });
 
   /* Update loop */
 
-  function update() {
-    swapReadBufferFlags(context.gameToMainTripleBufferFlags);
+  const update = () => {
+    const now = performance.now();
+    ctx.dt = (now - ctx.elapsed) / 1000;
+    ctx.elapsed = now;
 
-    for (let i = 0; i < context.systems.length; i++) {
-      context.systems[i](context);
+    for (let i = 0; i < ctx.systems.length; i++) {
+      ctx.systems[i](ctx);
     }
+  };
 
-    swapWriteBufferFlags(context.mainToGameTripleBufferFlags);
-
-    context.animationFrameId = requestAnimationFrame(update);
+  function updateLoop() {
+    update();
+    ctx.animationFrameId = requestAnimationFrame(updateLoop);
   }
 
   console.log("MainThread initialized");
 
-  update();
+  if (singleConsumerThreadSharedState) {
+    singleConsumerThreadSharedState.update = update;
+  } else {
+    updateLoop();
+  }
 
   return {
-    context,
+    ctx,
     dispose() {
-      if (context.animationFrameId !== undefined) {
-        cancelAnimationFrame(context.animationFrameId);
+      if (ctx.animationFrameId !== undefined) {
+        cancelAnimationFrame(ctx.animationFrameId);
       }
 
       disposeModules();
@@ -156,7 +195,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 async function initRenderWorker(
   canvas: HTMLCanvasElement,
   gameWorker: Worker,
-  useOffscreenCanvas: boolean
+  useOffscreenCanvas: boolean,
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState
 ): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
@@ -165,6 +205,6 @@ async function initRenderWorker(
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
     const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
-    return initRenderWorkerOnMainThread(canvas, gameWorker);
+    return initRenderWorkerOnMainThread(canvas, gameWorker, singleConsumerThreadSharedState!);
   }
 }

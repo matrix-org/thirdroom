@@ -18,6 +18,7 @@ import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
+import XRIC from "../../../../../res/ic/xr.svg";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { useCallMute } from "../../../hooks/useCallMute";
@@ -59,6 +60,8 @@ import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { InteractableType } from "../../../../engine/resource/schema";
+import { useWebXRSession } from "../../../hooks/useWebXRSession";
+import { useMemoizedState } from "../../../hooks/useMemoizedState";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -168,13 +171,15 @@ export function WorldView({ world }: WorldViewProps) {
 
   const toggleShowActiveMembers = () => setShowActiveMembers((state) => !state);
   const toggleShortcutUI = () => setShortcutUI((state) => !state);
-
-  const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
+  const [activeEntity, setActiveEntity] = useMemoizedState<ActiveEntityState | undefined>();
   const [portalProcess, setPortalProcess] = useState<IPortalProcess>({});
   const mouseDown = useMouseDown(mainThread.canvas);
 
+  const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
+
   useEffect(() => {
     let unSubStatusObserver: () => void | undefined;
+
     const onInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
       const interactableType = message.interactableType;
 
@@ -207,7 +212,7 @@ export function WorldView({ world }: WorldViewProps) {
           try {
             setPortalProcess({});
             if (!message.uri) throw Error("Portal does not have valid matrix id/alias");
-            console.log(message.uri);
+
             const parsedUri = parseMatrixUri(message.uri);
             if (parsedUri instanceof URL) {
               window.location.href = parsedUri.href;
@@ -266,7 +271,7 @@ export function WorldView({ world }: WorldViewProps) {
       unSubStatusObserver?.();
       disposables();
     };
-  }, [activeCall, engine, showToast, enterWorld, selectWorld, isMounted, session]);
+  }, [activeCall, engine, showToast, enterWorld, selectWorld, isMounted, session, setActiveEntity]);
 
   useKeyDown(
     (e) => {
@@ -313,6 +318,9 @@ export function WorldView({ world }: WorldViewProps) {
       if (e.altKey && e.code === "KeyL") {
         exitWorld();
       }
+      if (e.altKey && e.code === "KeyX" && isWebXRSupported) {
+        enterXR();
+      }
       if (e.code === "KeyM" && muteBtnRef.current !== null) {
         muteBtnRef.current.click();
       }
@@ -346,6 +354,8 @@ export function WorldView({ world }: WorldViewProps) {
       closeWorldChat,
       openOverlay,
       closeOverlay,
+      enterXR,
+      isWebXRSupported,
     ]
   );
 
@@ -380,77 +390,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
-  const renderControl = () => (
-    <>
-      {!isChatOpen && (
-        <Hotbar>
-          {[
-            { imageSrc: "/image/small-crate-icon.png" },
-            { imageSrc: "/image/medium-crate-icon.png" },
-            { imageSrc: "/image/large-crate-icon.png" },
-            { imageSrc: "/image/mirror-ball-icon.png" },
-            { imageSrc: "/image/black-mirror-ball-icon.png" },
-            { imageSrc: "/image/emissive-ball-icon.png" },
-          ].map((slot, index) => (
-            <HotbarSlot key={index} imageSrc={slot.imageSrc} shortcutKey={index + 1} label="Spawn Object" />
-          ))}
-        </Hotbar>
-      )}
-      <div className="WorldView__controls flex">
-        <div className="flex flex-column items-center">
-          <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
-            <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
-          </Tooltip>
-          <Text variant="b3" color="world" weight="bold">
-            /
-          </Text>
-        </div>
-        <div className="flex flex-column items-center">
-          <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
-            <IconButton variant="world" label="activeMembers" iconSrc={PeopleIC} onClick={toggleShowActiveMembers} />
-          </Tooltip>
-          <Text variant="b3" color="world" weight="bold">
-            P
-          </Text>
-        </div>
-        <div className="flex flex-column items-center">
-          <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
-            <IconButton
-              variant="world"
-              label="Toggle Names"
-              iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
-              onClick={toggleShowNames}
-            />
-          </Tooltip>
-          <Text variant="b3" color="world" weight="bold">
-            N
-          </Text>
-        </div>
-        {activeCall && (
-          <div className="flex flex-column items-center">
-            <MuteButton
-              showToast={showToast}
-              activeCall={activeCall}
-              ref={(ref) => {
-                muteBtnRef.current = ref;
-              }}
-            />
-            <Text variant="b3" color="world" weight="bold">
-              M
-            </Text>
-          </div>
-        )}
-        <div className="flex flex-column items-center">
-          <Tooltip content="Disconnect">
-            <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={exitWorld} />
-          </Tooltip>
-          <Text variant="b3" color="world" weight="bold">
-            Alt + L
-          </Text>
-        </div>
-      </div>
-    </>
-  );
+  if (isPresenting) return null;
 
   return (
     <div className="WorldView">
@@ -459,7 +399,92 @@ export function WorldView({ world }: WorldViewProps) {
       <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": isChatOpen })}>
         {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
       </div>
-      {world && renderControl()}
+      {world && (
+        <>
+          {!isChatOpen && (
+            <Hotbar>
+              {[
+                { imageSrc: "/image/small-crate-icon.png" },
+                { imageSrc: "/image/medium-crate-icon.png" },
+                { imageSrc: "/image/large-crate-icon.png" },
+                { imageSrc: "/image/mirror-ball-icon.png" },
+                { imageSrc: "/image/black-mirror-ball-icon.png" },
+                { imageSrc: "/image/emissive-ball-icon.png" },
+              ].map((slot, index) => (
+                <HotbarSlot key={index} imageSrc={slot.imageSrc} shortcutKey={index + 1} label="Spawn Object" />
+              ))}
+            </Hotbar>
+          )}
+          <div className="WorldView__controls flex">
+            <div className="flex flex-column items-center">
+              <Tooltip content={shortcutUI ? "Hide Help" : "Show Help"}>
+                <IconButton variant="world" label="help" iconSrc={HelpIC} onClick={toggleShortcutUI} />
+              </Tooltip>
+              <Text variant="b3" color="world" weight="bold">
+                /
+              </Text>
+            </div>
+            {isWebXRSupported && (
+              <div className="flex flex-column items-center">
+                <Tooltip content="Enter XR">
+                  <IconButton variant="world" label="Enter XR" iconSrc={XRIC} onClick={enterXR} />
+                </Tooltip>
+                <Text variant="b3" color="world" weight="bold">
+                  Alt + X
+                </Text>
+              </div>
+            )}
+            <div className="flex flex-column items-center">
+              <Tooltip content={showActiveMembers ? "Hide Members" : "Show Members"}>
+                <IconButton
+                  variant="world"
+                  label="activeMembers"
+                  iconSrc={PeopleIC}
+                  onClick={toggleShowActiveMembers}
+                />
+              </Tooltip>
+              <Text variant="b3" color="world" weight="bold">
+                P
+              </Text>
+            </div>
+            <div className="flex flex-column items-center">
+              <Tooltip content={showNames ? "Hide Names" : "Show Names"}>
+                <IconButton
+                  variant="world"
+                  label="Toggle Names"
+                  iconSrc={showNames ? SubtitlesIC : SubtitlesOffIC}
+                  onClick={toggleShowNames}
+                />
+              </Tooltip>
+              <Text variant="b3" color="world" weight="bold">
+                N
+              </Text>
+            </div>
+            {activeCall && (
+              <div className="flex flex-column items-center">
+                <MuteButton
+                  showToast={showToast}
+                  activeCall={activeCall}
+                  ref={(ref) => {
+                    muteBtnRef.current = ref;
+                  }}
+                />
+                <Text variant="b3" color="world" weight="bold">
+                  M
+                </Text>
+              </div>
+            )}
+            <div className="flex flex-column items-center">
+              <Tooltip content="Disconnect">
+                <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={exitWorld} />
+              </Tooltip>
+              <Text variant="b3" color="world" weight="bold">
+                Alt + L
+              </Text>
+            </div>
+          </div>
+        </>
+      )}
       {world && editorEnabled && <EditorView />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !isOverlayOpen} />}
       {!("isBeingCreated" in world) && (

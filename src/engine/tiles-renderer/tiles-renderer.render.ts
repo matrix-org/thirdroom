@@ -1,58 +1,27 @@
 import { TilesRenderer } from "3d-tiles-renderer";
-import { Camera, Scene } from "three";
+import { Scene } from "three";
 
-import { ReadObjectTripleBufferView } from "../allocator/ObjectBufferView";
 import { getModule } from "../module/module.common";
-import { RendererNodeTripleBuffer } from "../node/node.common";
-import { LocalNode, updateTransformFromNode } from "../node/node.render";
+import { updateTransformFromNode } from "../node/node.render";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { ResourceId } from "../resource/resource.common";
-import { getLocalResource } from "../resource/resource.render";
-import { TilesRendererResoruceProps } from "./tiles-renderer.common";
+import { RenderNode } from "../resource/resource.render";
 
-export interface LocalTilesRendererResource {
-  resourceId: ResourceId;
-  tilesRenderer: TilesRenderer;
-  tilesetUrl: string;
-  camera?: Camera;
-}
+export function updateNodeTilesRenderer(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+  const { tileRendererNodes } = getModule(ctx, RendererModule);
 
-export async function onLoadTilesRenderer(
-  ctx: RenderThreadState,
-  resourceId: ResourceId,
-  { tilesetUrl }: TilesRendererResoruceProps
-): Promise<LocalTilesRendererResource> {
-  return {
-    resourceId,
-    tilesRenderer: new TilesRenderer(tilesetUrl),
-    tilesetUrl,
-  };
-}
+  const currentTilesRendererResourceId = node.currentTilesRendererResourceId;
+  const nextTilesRendererResourceId = node.tilesRenderer?.eid || 0;
 
-export function updateNodeTilesRenderer(
-  ctx: RenderThreadState,
-  scene: Scene,
-  cameraNode: LocalNode | undefined,
-  node: LocalNode,
-  nodeReadView: ReadObjectTripleBufferView<RendererNodeTripleBuffer>
-) {
-  const currentTilesRendererResourceId = node.tilesRenderer?.resourceId || 0;
-  const nextTilesRendererResourceId = nodeReadView.tilesRenderer[0];
+  if (currentTilesRendererResourceId !== nextTilesRendererResourceId && node.tilesRendererObject) {
+    scene.remove(node.tilesRendererObject.group);
+    node.tilesRendererObject.dispose();
+    node.tilesRendererObject = undefined;
+    node.currentTilesRendererResourceId = nextTilesRendererResourceId;
 
-  if (currentTilesRendererResourceId !== nextTilesRendererResourceId) {
-    if (node.tilesRenderer) {
-      scene.remove(node.tilesRenderer.tilesRenderer.group);
-      node.tilesRenderer.tilesRenderer.dispose();
-    }
+    const index = tileRendererNodes.indexOf(node);
 
-    if (nextTilesRendererResourceId) {
-      node.tilesRenderer = getLocalResource<LocalTilesRendererResource>(ctx, nextTilesRendererResourceId)?.resource;
-
-      if (node.tilesRenderer) {
-        scene.add(node.tilesRenderer.tilesRenderer.group);
-      }
-    } else {
-      node.tilesRenderer = undefined;
+    if (index !== -1) {
+      tileRendererNodes.splice(index, 1);
     }
   }
 
@@ -60,28 +29,42 @@ export function updateNodeTilesRenderer(
     return;
   }
 
-  const { needsResize, renderer } = getModule(ctx, RendererModule);
+  if (!node.tilesRendererObject) {
+    node.tilesRendererObject = new TilesRenderer(node.tilesRenderer.uri);
+    scene.add(node.tilesRendererObject.group);
+    tileRendererNodes.push(node);
+  }
 
-  const tilesRendererResource = node.tilesRenderer;
-  const tilesRenderer = tilesRendererResource.tilesRenderer;
+  updateTransformFromNode(ctx, node, node.tilesRendererObject.group);
+}
+
+export function updateTileRenderers(ctx: RenderThreadState, nodes: RenderNode[], cameraNode: RenderNode | undefined) {
+  const { needsResize, renderer } = getModule(ctx, RendererModule);
 
   if (!cameraNode?.cameraObject) {
     return;
   }
 
-  const camera = cameraNode.cameraObject;
+  for (const node of nodes) {
+    const tilesRenderer = node.tilesRendererObject;
 
-  if (tilesRendererResource.camera !== camera) {
-    tilesRenderer.setCamera(camera);
-    tilesRenderer.setResolutionFromRenderer(camera, renderer);
-    tilesRendererResource.camera = camera;
+    if (!tilesRenderer) {
+      continue;
+    }
+
+    const camera = cameraNode.cameraObject;
+
+    if (node.tilesRendererCamera !== camera) {
+      tilesRenderer.setCamera(camera);
+      tilesRenderer.setResolutionFromRenderer(camera, renderer);
+      node.tilesRendererCamera = camera;
+      updateTransformFromNode(ctx, node, tilesRenderer.group);
+    }
+
+    if (needsResize) {
+      tilesRenderer.setResolutionFromRenderer(camera, renderer);
+    }
+
+    tilesRenderer.update();
   }
-
-  if (needsResize) {
-    tilesRenderer.setResolutionFromRenderer(camera, renderer);
-  }
-
-  tilesRenderer.update();
-
-  updateTransformFromNode(ctx, nodeReadView, tilesRenderer.group);
 }

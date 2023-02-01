@@ -1,3 +1,4 @@
+import { Quaternion, Vector3 } from "three";
 import { addComponent, pipe, removeComponent } from "bitecs";
 
 import {
@@ -5,6 +6,7 @@ import {
   CursorView,
   moveCursorView,
   readFloat32,
+  readFloat64,
   readString,
   readUint16,
   readUint32,
@@ -12,28 +14,22 @@ import {
   rewindCursorView,
   scrollCursorView,
   skipFloat32,
-  skipUint8,
+  skipUint32,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
   spaceUint8,
   writeFloat32,
+  writeFloat64,
   writePropIfChanged,
   writeString,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import {
-  createRemotePositionalAudioEmitter,
-  createRemoteMediaStreamSource,
-  createRemoteMediaStream,
-} from "../audio/audio.game";
 import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
-import { addChild, skipRenderLerp, removeRecursive, Transform, Hidden } from "../component/transform";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { addRemoteNodeComponent } from "../node/node.game";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
@@ -49,18 +45,32 @@ import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { GameInputModule, InputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
-import { setActiveCamera } from "../camera/camera.game";
-import { createRemoteNametag } from "../nametag/nametag.game";
-import { getNametag, NametagComponent } from "../../plugins/nametags/nametags.game";
+import { getCamera } from "../camera/camera.game";
+import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
+import { AudioEmitterType } from "../resource/schema";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
+import {
+  addObjectToWorld,
+  RemoteAudioData,
+  RemoteAudioEmitter,
+  RemoteAudioSource,
+  RemoteNode,
+  removeObjectFromWorld,
+} from "../resource/RemoteResources";
+import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
+import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 
 export type NetPipeData = [GameState, CursorView, string];
 
 // ad-hoc messages view
-const messageView = createCursorView(new ArrayBuffer(1000));
+const messageView = createCursorView(new ArrayBuffer(10000));
+
+const metadataTotalBytes =
+  Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT;
 
 export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) => {
   const [, v] = input;
@@ -69,24 +79,40 @@ export const writeMessageType = (type: NetworkAction) => (input: NetPipeData) =>
 };
 
 export const writeElapsed = (input: NetPipeData) => {
-  const [ctx, v] = input;
-  writeFloat32(v, ctx.elapsed);
+  const [, v] = input;
+  writeFloat64(v, Date.now());
   return input;
 };
 
-export const writeMetadata = (type: NetworkAction) => pipe(writeMessageType(type), writeElapsed);
+export const writeMetadata = (type: NetworkAction) =>
+  pipe(
+    // ui8
+    writeMessageType(type),
+    // f64
+    writeElapsed,
+    // HACK: leave space for the input tick
+    (data) => {
+      const [, v] = data;
+      scrollCursorView(v, Uint32Array.BYTES_PER_ELEMENT);
+      return data;
+    }
+  );
 
-const _out: { type: number; elapsed: number } = { type: 0, elapsed: 0 };
+const _out: { type: number; elapsed: number; inputTick: number } = { type: 0, elapsed: 0, inputTick: 0 };
 export const readMetadata = (v: CursorView, out = _out) => {
   out.type = readUint8(v);
-  out.elapsed = readFloat32(v);
+  out.elapsed = readFloat64(v);
+  // HACK?: read input tick processed from this peer to each packet
+  out.inputTick = readUint32(v);
   return out;
 };
 
 /* Transform serialization */
 
-export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
-  const position = Transform.position[eid];
+export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
+  const eid = node.eid;
+
+  const position = node.position;
   writeFloat32(v, position[0]);
   writeFloat32(v, position[1]);
   writeFloat32(v, position[2]);
@@ -96,17 +122,21 @@ export const serializeTransformSnapshot = (v: CursorView, eid: number) => {
   writeFloat32(v, velocity[1]);
   writeFloat32(v, velocity[2]);
 
-  const quaternion = Transform.quaternion[eid];
+  const quaternion = node.quaternion;
   writeFloat32(v, quaternion[0]);
   writeFloat32(v, quaternion[1]);
   writeFloat32(v, quaternion[2]);
   writeFloat32(v, quaternion[3]);
 
+  const skipLerp = node.skipLerp;
+  writeUint32(v, skipLerp);
+
   return v;
 };
 
-export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefined) => {
-  if (eid !== undefined) {
+export const deserializeTransformSnapshot = (v: CursorView, node: RemoteNode | undefined) => {
+  if (node !== undefined) {
+    const eid = node.eid;
     const position = Networked.position[eid];
     position[0] = readFloat32(v);
     position[1] = readFloat32(v);
@@ -122,22 +152,24 @@ export const deserializeTransformSnapshot = (v: CursorView, eid: number | undefi
     quaternion[1] = readFloat32(v);
     quaternion[2] = readFloat32(v);
     quaternion[3] = readFloat32(v);
+
+    node.skipLerp = readUint32(v);
   } else {
-    scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 7);
+    scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 10 + Uint32Array.BYTES_PER_ELEMENT);
   }
 
   return v;
 };
 
-const defineChangedSerializer = (...fns: ((v: CursorView, eid: number) => boolean)[]) => {
+const defineChangedSerializer = (...fns: ((ctx: GameState, v: CursorView, eid: number) => boolean)[]) => {
   const spacer = fns.length <= 8 ? spaceUint8 : fns.length <= 16 ? spaceUint16 : spaceUint32;
-  return (v: CursorView, eid: number) => {
+  return (ctx: GameState, v: CursorView, eid: number) => {
     const writeChangeMask = spacer(v);
     let changeMask = 0;
     let b = 0;
     for (let i = 0; i < fns.length; i++) {
       const fn = fns[i];
-      changeMask |= fn(v, eid) ? 1 << b++ : b++ && 0;
+      changeMask |= fn(ctx, v, eid) ? 1 << b++ : b++ && 0;
     }
     writeChangeMask(changeMask);
     return changeMask > 0;
@@ -145,18 +177,18 @@ const defineChangedSerializer = (...fns: ((v: CursorView, eid: number) => boolea
 };
 
 export const serializeTransformChanged = defineChangedSerializer(
-  (v, eid) => writePropIfChanged(v, Transform.position[eid], 0),
-  (v, eid) => writePropIfChanged(v, Transform.position[eid], 1),
-  (v, eid) => writePropIfChanged(v, Transform.position[eid], 2),
-  (v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 0),
-  (v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 1),
-  (v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 2),
-  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 0),
-  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 1),
-  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 2),
-  (v, eid) => writePropIfChanged(v, Transform.quaternion[eid], 3),
-  // (v, eid) => writePropIfChanged(v, Networked.networkId, Transform.parent[eid]),
-  (v, eid) => writePropIfChanged(v, Transform.skipLerp, eid)
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).position, 0),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).position, 1),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).position, 2),
+  (ctx, v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 0),
+  (ctx, v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 1),
+  (ctx, v, eid) => writePropIfChanged(v, RigidBody.velocity[eid], 2),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 0),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 1),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 2),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 3),
+  // (ctx, v, eid) => writePropIfChanged(v, Networked.networkId, Transform.parent[eid]),
+  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).__props.skipLerp, 0)
 );
 
 // export const serializeTransformChanged = (v: CursorView, eid: number) => {
@@ -179,31 +211,33 @@ export const serializeTransformChanged = defineChangedSerializer(
 //   return changeMask > 0;
 // };
 
-export const defineChangedDeserializer = (...fns: ((v: CursorView, eid: number | undefined) => void)[]) => {
+// NOTE: if eid is NOOP the deserializer will write all data to the NOOP entity
+// this effectively nullifies the update, but still moves the view's cursor forward so the rest of the message is read properly
+export const defineChangedDeserializer = (...fns: ((ctx: GameState, v: CursorView, eid: number) => void)[]) => {
   const readChangeMask = fns.length <= 8 ? readUint8 : fns.length <= 16 ? readUint16 : readUint32;
-  return (v: CursorView, eid: number | undefined) => {
+  return (ctx: GameState, v: CursorView, eid: number) => {
     const changeMask = readChangeMask(v);
     let b = 0;
     for (let i = 0; i < fns.length; i++) {
       const fn = fns[i];
-      if (checkBitflag(changeMask, 1 << b++)) fn(v, eid);
+      if (checkBitflag(changeMask, 1 << b++)) fn(ctx, v, eid);
     }
   };
 };
 
 export const deserializeTransformChanged = defineChangedDeserializer(
-  (v, eid) => (eid ? (Networked.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.velocity[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
-  (v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
-  // (v, eid) => (eid ? (Networked.parent[eid] = readUint32(v)) : skipUint32(v)),
-  (v, eid) => (eid ? (Transform.skipLerp[eid] = readUint8(v)) : skipUint8(v))
+  (ctx, v, eid) => (eid ? (Networked.position[eid][0] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.position[eid][1] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.position[eid][2] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.velocity[eid][0] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.velocity[eid][1] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.velocity[eid][2] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.quaternion[eid][0] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.quaternion[eid][1] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.quaternion[eid][2] = readFloat32(v)) : skipFloat32(v)),
+  (ctx, v, eid) => (eid ? (Networked.quaternion[eid][3] = readFloat32(v)) : skipFloat32(v)),
+  // (ctx, v, eid) => (eid ? (Networked.parent[eid] = readUint32(v)) : skipUint32(v)),
+  (ctx, v, eid) => (eid ? (tryGetRemoteResource<RemoteNode>(ctx, eid).skipLerp = readUint32(v)) : skipUint32(v))
 );
 
 // export const deserializeTransformChanged = (v: CursorView, eid: number) => {
@@ -224,18 +258,21 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 // };
 
 /* Create */
-export function createRemoteNetworkedEntity(ctx: GameState, network: GameNetworkState, nid: number, prefab: string) {
-  const eid = createPrefabEntity(ctx, prefab, true);
+export function createRemoteNetworkedEntity(
+  ctx: GameState,
+  network: GameNetworkState,
+  nid: number,
+  prefab: string
+): RemoteNode {
+  const node = createPrefabEntity(ctx, prefab, { nametag: prefab === "avatar" });
 
   // assign networkId
-  addComponent(ctx.world, Networked, eid, true);
-  Networked.networkId[eid] = nid;
-  network.networkIdToEntityId.set(nid, eid);
+  addComponent(ctx.world, Networked, node.eid, true);
+  Networked.networkId[node.eid] = nid;
+  network.networkIdToEntityId.set(nid, node.eid);
+  addObjectToWorld(ctx, node);
 
-  // add to scene
-  addChild(ctx.activeScene, eid);
-
-  return eid;
+  return node;
 }
 
 export function serializeCreatesSnapshot(input: NetPipeData) {
@@ -246,7 +283,7 @@ export function serializeCreatesSnapshot(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
@@ -264,13 +301,13 @@ export function serializeCreates(input: NetPipeData) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
-    const prefabName = Prefab.get(eid) || "cube";
+    const prefabName = Prefab.get(eid);
     if (prefabName) {
       writeUint32(v, nid);
       writeString(v, prefabName);
       console.info("serializing creation for nid", nid, "eid", eid, "prefab", prefabName);
     } else {
-      throw new Error(`could not write entity prefab name, ${eid} does not exist in entityPrefabMap`);
+      throw new Error(`could not serialize creations, ${eid} has no prefab`);
     }
   }
   return input;
@@ -285,8 +322,8 @@ export function deserializeCreates(input: NetPipeData) {
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
-    const eid = createRemoteNetworkedEntity(state, network, nid, prefabName);
-    console.info("deserializing creation - nid", nid, "eid", eid, "prefab", prefabName);
+    const obj = createRemoteNetworkedEntity(state, network, nid, prefabName);
+    console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
   }
   return input;
 }
@@ -294,35 +331,36 @@ export function deserializeCreates(input: NetPipeData) {
 /* Updates - Snapshot */
 
 export function serializeUpdatesSnapshot(input: NetPipeData) {
-  const [state, v] = input;
-  const entities = ownedNetworkedQuery(state.world);
+  const [ctx, v] = input;
+  const entities = ownedNetworkedQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     writeUint32(v, nid);
-    serializeTransformSnapshot(v, eid);
+    serializeTransformSnapshot(v, node);
   }
   return input;
 }
 
 export function deserializeUpdatesSnapshot(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
+  const [ctx, v] = input;
+  const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid);
+    const eid = network.networkIdToEntityId.get(nid) || NOOP;
+    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
-    if (eid === undefined) {
+    if (node === undefined) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
     }
 
-    // if eid is undefined, this skips reading and moves the view cursor forward by the appropriate amount
-    deserializeTransformSnapshot(v, eid);
+    deserializeTransformSnapshot(v, node);
 
-    if (eid && Transform.skipLerp[eid]) {
-      skipRenderLerp(state, eid);
+    if (node && node.skipLerp) {
+      node.skipLerp = 10;
     }
   }
   return input;
@@ -331,8 +369,8 @@ export function deserializeUpdatesSnapshot(input: NetPipeData) {
 /* Updates - Changed */
 
 export function serializeUpdatesChanged(input: NetPipeData) {
-  const [state, v] = input;
-  const entities = ownedNetworkedQuery(state.world);
+  const [ctx, v] = input;
+  const entities = ownedNetworkedQuery(ctx.world);
   const writeCount = spaceUint32(v);
   let count = 0;
   for (let i = 0; i < entities.length; i++) {
@@ -340,7 +378,7 @@ export function serializeUpdatesChanged(input: NetPipeData) {
     const nid = Networked.networkId[eid];
     const rewind = rewindCursorView(v);
     const writeNid = spaceUint32(v);
-    const written = serializeTransformChanged(v, eid);
+    const written = serializeTransformChanged(ctx, v, eid);
     if (written) {
       writeNid(nid);
       count += 1;
@@ -352,18 +390,25 @@ export function serializeUpdatesChanged(input: NetPipeData) {
   return input;
 }
 export function deserializeUpdatesChanged(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
+  const [ctx, v] = input;
+  const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    const eid = network.networkIdToEntityId.get(nid);
-    if (!eid) {
+    let eid = network.networkIdToEntityId.get(nid) || NOOP;
+
+    if (eid === NOOP) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
-      // continue;
-      // createRemoteNetworkedEntity(state, nid);
     }
-    deserializeTransformChanged(v, eid);
+
+    if (network.authoritative && !isHost(network)) {
+      // HACK: if this update is for our avatar, skip it until CSP is fixed
+      const peerId = network.entityIdToPeerId.get(eid);
+      // deserialize onto noop entity to move the cursor forward
+      if (peerId === network.peerId) eid = 0;
+    }
+
+    deserializeTransformChanged(ctx, v, eid);
   }
   return input;
 }
@@ -371,8 +416,8 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
 /* Delete */
 
 export function serializeDeletes(input: NetPipeData) {
-  const [state, v] = input;
-  const entities = deletedOwnedNetworkedQuery(state.world);
+  const [ctx, v] = input;
+  const entities = deletedOwnedNetworkedQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
@@ -384,17 +429,18 @@ export function serializeDeletes(input: NetPipeData) {
 }
 
 export function deserializeDeletes(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
+  const [ctx, v] = input;
+  const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const eid = network.networkIdToEntityId.get(nid);
-    if (!eid) {
+    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
+    if (!node) {
       console.warn(`could not remove networkId ${nid}, no matching entity`);
     } else {
       console.info("deserialized deletion for nid", nid, "eid", eid);
-      removeRecursive(state.world, eid);
+      removeObjectFromWorld(ctx, node);
       network.networkIdToEntityId.delete(nid);
     }
   }
@@ -454,6 +500,7 @@ export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipe
 
   return data;
 };
+
 export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
@@ -472,40 +519,57 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
   associatePeerWithEntity(network, peerId, peid);
-
   addComponent(ctx.world, Player, peid);
+
+  const peerNode = getRemoteResource<RemoteNode>(ctx, peid)!;
+
+  peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, {
+          uri: `mediastream:${peerId}`,
+        }),
+        autoPlay: true,
+      }),
+    ],
+  });
+
+  peerNode.name = peerId;
+
+  // if not our own avatar, add nametag
+  if (peerId !== network.peerId) {
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, peerNode, peerId);
+  }
 
   // if our own avatar
   if (network.authoritative && !isHost(network) && peerId === network.peerId) {
     // unset our old avatar
+    // TODO: actually remove this entity. this leaks atm, but fixes a bug when removing the entire node
     const old = ourPlayerQuery(ctx.world)[0];
     removeComponent(ctx.world, OurPlayer, old);
     removeComponent(ctx.world, RigidBody, old);
     removeComponent(ctx.world, Networked, old);
 
     // embody new avatar
-    embodyAvatar(ctx, physics, input, peid);
-  }
-
-  if (peerId !== network.peerId) {
-    // if not our own avatar, add voip
-    addRemoteNodeComponent(ctx, peid, {
-      name: peerId,
-      audioEmitter: createRemotePositionalAudioEmitter(ctx, {
-        sources: [
-          createRemoteMediaStreamSource(ctx, {
-            stream: createRemoteMediaStream(ctx, { streamId: peerId }),
-          }),
-        ],
-      }),
-      nametag: createRemoteNametag(ctx, {
-        name: peerId,
-      }),
-    });
+    embodyAvatar(ctx, physics, input, peerNode);
   }
 
   return data;
 }
+
 export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
   const input: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.InformPlayerNetworkId)(input);
@@ -514,28 +578,31 @@ export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: strin
 }
 
 // TODO: move this to a plugin (along with InformPlayerNetworkId OR register another hook into InformPlayerNetworkId)
-export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, eid: number) {
+export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, node: RemoteNode) {
   // remove the nametag
   try {
-    const nametag = getNametag(ctx, eid);
-    removeComponent(ctx.world, NametagComponent, nametag);
+    const nametag = getNametag(ctx, node);
+    removeComponent(ctx.world, NametagAnchor, nametag.eid);
   } catch {}
 
   // hide our avatar
   try {
-    const avatar = getAvatar(ctx, eid);
-    addComponent(ctx.world, Hidden, avatar);
+    const avatar = getAvatar(ctx, node);
+    avatar.visible = false;
   } catch {}
 
   // mark entity as our player entity
-  addComponent(ctx.world, OurPlayer, eid);
+  addComponent(ctx.world, OurPlayer, node.eid);
 
   // disable the collision group so we are unable to focus our own rigidbody
-  removeInteractableComponent(ctx, physics, eid);
+  removeInteractableComponent(ctx, physics, node);
 
   // set the active camera & input controller to this entity's
-  setActiveCamera(ctx, eid);
-  setActiveInputController(input, eid);
+  ctx.worldResource.activeCameraNode = getCamera(ctx, node);
+  ctx.worldResource.activeAvatarNode = node;
+
+  addXRAvatarRig(ctx.world, node.eid);
+  setActiveInputController(input, node.eid);
 }
 
 /* Message Factories */
@@ -553,10 +620,11 @@ export const deserializeNewPeerSnapshot = pipe(deserializeCreates, deserializeUp
 // Full Snapshot Update
 export const createFullSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.FullSnapshot),
-  serializeCreatesSnapshot,
+  serializeCreates,
   serializeUpdatesSnapshot,
+  serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
@@ -572,59 +640,130 @@ export const createFullChangedMessage: (input: NetPipeData) => ArrayBuffer = pip
   serializeUpdatesChanged,
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 3 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT * 3) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
   }
 );
+
+export const deserializeFullChangedUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
 
 // Deletion Update
 export const createDeleteMessage: (input: NetPipeData) => ArrayBuffer = pipe(
   writeMetadata(NetworkAction.Delete),
   serializeDeletes,
   ([, v]) => {
-    if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
       moveCursorView(v, 0);
     }
     return sliceCursorView(v);
   }
 );
 
-// deserialization
-export const deserializeFullUpdate = pipe(deserializeCreates, deserializeUpdatesChanged, deserializeDeletes);
+export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.Create),
+  serializeCreates,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
-// unused
+export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.UpdateChanged),
+  serializeUpdatesChanged,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
-// export const createCreateMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.Create),
-//   serializeCreates,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
+export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
+  writeMetadata(NetworkAction.UpdateSnapshot),
+  serializeUpdatesSnapshot,
+  ([, v]) => {
+    if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
+      moveCursorView(v, 0);
+    }
+    return sliceCursorView(v);
+  }
+);
 
-// export const createUpdateChangedMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.UpdateChanged),
-//   serializeUpdatesChanged,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
+export function createClientPositionMessage(ctx: GameState, eid: number) {
+  const data: NetPipeData = [ctx, messageView, ""];
 
-// export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = pipe(
-//   writeMetadata(NetworkAction.UpdateSnapshot),
-//   serializeUpdatesSnapshot,
-//   ([, v]) => {
-//     if (v.cursor <= Uint8Array.BYTES_PER_ELEMENT + 1 * Uint32Array.BYTES_PER_ELEMENT) {
-//       moveCursorView(v, 0);
-//     }
-//     return sliceCursorView(v);
-//   }
-// );
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  const camera = getCamera(ctx, node).parent!;
+
+  writeMetadata(NetworkAction.ClientPosition)(data);
+
+  writeUint32(messageView, Networked.networkId[node.eid]);
+
+  // transform
+  writeFloat32(messageView, node.position[0]);
+  writeFloat32(messageView, node.position[1]);
+  writeFloat32(messageView, node.position[2]);
+
+  writeFloat32(messageView, node.quaternion[0]);
+  writeFloat32(messageView, node.quaternion[1]);
+  writeFloat32(messageView, node.quaternion[2]);
+  writeFloat32(messageView, node.quaternion[3]);
+
+  // physics
+  writeFloat32(messageView, RigidBody.velocity[eid][0]);
+  writeFloat32(messageView, RigidBody.velocity[eid][1]);
+  writeFloat32(messageView, RigidBody.velocity[eid][2]);
+
+  // camera
+  writeFloat32(messageView, camera.quaternion[0]);
+  writeFloat32(messageView, camera.quaternion[1]);
+  writeFloat32(messageView, camera.quaternion[2]);
+  writeFloat32(messageView, camera.quaternion[3]);
+
+  return sliceCursorView(messageView);
+}
+
+const _p = new Vector3();
+const _v = new Vector3();
+const _q = new Quaternion();
+export function deserializeClientPosition(data: NetPipeData) {
+  const [ctx, view] = data;
+
+  const network = getModule(ctx, NetworkModule);
+
+  const nid = readUint32(view);
+  const player = network.networkIdToEntityId.get(nid)!;
+  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
+  const camera = getCamera(ctx, node).parent!;
+
+  const body = RigidBody.store.get(node.eid);
+
+  _p.x = readFloat32(view);
+  _p.y = readFloat32(view);
+  _p.z = readFloat32(view);
+
+  _q.x = readFloat32(view);
+  _q.y = readFloat32(view);
+  _q.z = readFloat32(view);
+  _q.w = readFloat32(view);
+
+  _v.x = readFloat32(view);
+  _v.y = readFloat32(view);
+  _v.z = readFloat32(view);
+
+  camera.quaternion[0] = readFloat32(view);
+  camera.quaternion[1] = readFloat32(view);
+  camera.quaternion[2] = readFloat32(view);
+  camera.quaternion[3] = readFloat32(view);
+
+  body?.setTranslation(_p, true);
+  body?.setLinvel(_v, true);
+  body?.setRotation(_q, true);
+
+  return data;
+}

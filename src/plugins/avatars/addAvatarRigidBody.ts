@@ -1,38 +1,37 @@
 import RAPIER from "@dimforge/rapier3d-compat";
+import { addComponent } from "bitecs";
 
 import { GameState } from "../../engine/GameTypes";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { PhysicsModuleState, addRigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModuleState, addRigidBody, Kinematic } from "../../engine/physics/physics.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_RADIUS } from "./common";
 
 export function addAvatarRigidBody(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  container: number,
+  container: RemoteNode,
   options: AvatarOptions = {}
 ) {
   const {
     height = AVATAR_HEIGHT,
     radius = AVATAR_RADIUS,
-    kinematic = false,
+    kinematic = true,
     collisionGroup = playerCollisionGroups,
   } = options;
 
-  const rigidBodyDesc = kinematic
-    ? RAPIER.RigidBodyDesc.newKinematicPositionBased()
-    : RAPIER.RigidBodyDesc.newDynamic();
+  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
+
+  if (kinematic) addComponent(ctx.world, Kinematic, container.eid);
 
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
-  rigidBody.restrictRotations(false, false, false, true);
+  const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(collisionGroup)
+    .setTranslation(0, height / 2, 0);
 
-  const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius).setActiveEvents(
-    RAPIER.ActiveEvents.CONTACT_EVENTS
-  );
-
-  colliderDesc.setCollisionGroups(collisionGroup);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody.handle);
+  physicsWorld.createCollider(colliderDesc, rigidBody);
 
   addRigidBody(ctx, container, rigidBody);
 }

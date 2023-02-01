@@ -23,9 +23,14 @@ import { Button } from "../../../atoms/button/Button";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 
-function useWorldLoadingProgress(worldId?: string) {
+interface WorldLoadProgress {
+  loaded: number;
+  total: number;
+}
+
+function useWorldLoadingProgress(): [() => void, WorldLoadProgress] {
   const engine = useMainThreadContext();
-  const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
+  const [loadProgress, setLoadProgress] = useState<WorldLoadProgress>({ loaded: 0, total: 0 });
 
   useEffect(() => {
     const onFetchProgress = (ctx: IMainThreadContext, message: FetchProgressMessage) => {
@@ -34,11 +39,11 @@ function useWorldLoadingProgress(worldId?: string) {
     return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);
   }, [engine]);
 
-  useEffect(() => {
+  const reset = useCallback(() => {
     setLoadProgress({ loaded: 0, total: 0 });
-  }, [worldId]);
+  }, []);
 
-  return loadProgress;
+  return [reset, loadProgress];
 }
 
 function useLoadWorld() {
@@ -126,10 +131,10 @@ function useEnterWorld() {
       }
 
       const powerLevels = await world.observePowerLevels();
-      const disposer = createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
+      const disposer = await createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
 
       const audio = getModule(mainThread, AudioModule);
-      audio.context.resume();
+      audio.context.resume().catch(() => console.error("Couldn't resume audio context"));
 
       const { muteSettings } = groupCall;
       // Mute after connecting based on user preference
@@ -151,20 +156,22 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const selectWorld = useStore((state) => state.overlayWorld.selectWorld);
   const { session } = useHydrogen(true);
   const { enterWorld: enterWorldAction } = useWorldAction(session);
-  const loadProgress = useWorldLoadingProgress(worldId);
+  const [resetLoadProgress, loadProgress] = useWorldLoadingProgress();
   const isMounted = useIsMounted();
   const prevRoomId = usePreviousState(roomId);
   const [error, setError] = useState<Error>();
   const world = roomId ? session.rooms.get(roomId) : undefined;
   const [creator, setCreator] = useState<string>();
 
-  if (roomId && prevRoomId !== roomId) {
-    closeOverlay();
-  }
+  useEffect(() => {
+    if (roomId && prevRoomId !== roomId) {
+      closeOverlay();
+    }
 
-  if (!roomId && prevRoomId) {
-    openOverlay();
-  }
+    if (!roomId && prevRoomId) {
+      openOverlay();
+    }
+  }, [roomId, prevRoomId, openOverlay, closeOverlay]);
 
   const loadWorld = useLoadWorld();
   const enterWorld = useEnterWorld();
@@ -184,6 +191,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       if (!isMounted()) return;
 
       const handleLoad = (event: StateEvent | undefined) => {
+        resetLoadProgress();
         loadWorld(world.id, event)
           .then(() => {
             setWorld("");
@@ -205,7 +213,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       world.disposeNetworkInterface?.();
       world.closeWorld();
     };
-  }, [session, roomId, reloadId, loadWorld, isMounted, setWorld]);
+  }, [session, roomId, reloadId, loadWorld, isMounted, setWorld, resetLoadProgress]);
 
   useEffect(() => {
     const world = worldId ? session.rooms.get(worldId) : undefined;
@@ -249,7 +257,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
     );
   }
 
-  if (!roomId || entered || loadProgress.total === 0) return <></>;
+  if (!roomId || entered) return <></>;
 
   return (
     <div className="WorldLoading flex justify-center">

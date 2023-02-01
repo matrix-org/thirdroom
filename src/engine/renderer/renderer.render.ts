@@ -1,4 +1,5 @@
 import {
+  Scene,
   ImageBitmapLoader,
   LinearToneMapping,
   PCFSoftShadowMap,
@@ -6,81 +7,48 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
+  Texture,
+  Object3D,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
-import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { BaseThreadContext, defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getLocalResource, registerResourceLoader, registerResource } from "../resource/resource.render";
-import { SceneResourceType } from "../scene/scene.common";
-import { LocalSceneResource, onLoadLocalSceneResource, updateLocalSceneResources } from "../scene/scene.render";
-import { StatsModule } from "../stats/stats.render";
-import { RendererTextureResource } from "../texture/texture.render";
-import { createDisposables } from "../utils/createDisposables";
-import { RenderWorkerResizeMessage, WorkerMessageType } from "../WorkerMessage";
 import {
+  ConsumerThreadContext,
+  defineModule,
+  getModule,
+  registerMessageHandler,
+  Thread,
+} from "../module/module.common";
+import { RenderNode, RenderWorld } from "../resource/resource.render";
+import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
+import { createDisposables } from "../utils/createDisposables";
+import {
+  CanvasResizeMessage,
+  EnableMatrixMaterialMessage,
+  EnterXRMessage,
   InitializeCanvasMessage,
-  InitializeRendererTripleBuffersMessage,
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
-  RendererStateTripleBuffer,
 } from "./renderer.common";
-import { AccessorResourceType } from "../accessor/accessor.common";
-import { onLoadLocalAccessorResource } from "../accessor/accessor.render";
-import {
-  InstancedMeshResourceType,
-  MeshPrimitiveResourceType,
-  MeshResourceType,
-  SkinnedMeshResourceType,
-  LightMapResourceType,
-} from "../mesh/mesh.common";
-import {
-  LocalMeshPrimitive,
-  onLoadLocalMeshPrimitiveResource,
-  onLoadLocalMeshResource,
-  onLoadLocalInstancedMeshResource,
-  updateLocalMeshPrimitiveResources,
-  onLoadLocalSkinnedMeshResource,
-  onLoadLocalLightMapResource,
-} from "../mesh/mesh.render";
-import { LocalNode, onLoadLocalNode, updateLocalNodeResources } from "../node/node.render";
-import { NodeResourceType } from "../node/node.common";
+import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
-import { TilesRendererResourceType } from "../tiles-renderer/tiles-renderer.common";
-import { onLoadTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { RenderPipeline } from "./RenderPipeline";
 import patchShaderChunks from "../material/patchShaderChunks";
-import { ReflectionProbeResourceType } from "../reflection-probe/reflection-probe.common";
-import {
-  onLoadLocalReflectionProbeResource,
-  updateNodeReflections,
-  updateReflectionProbeTextureArray,
-} from "../reflection-probe/reflection-probe.render";
-import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import {
-  BufferResource,
-  BufferViewResource,
-  CameraResource,
-  CameraType,
-  LightResource,
-  SamplerResource,
-  NodeResource as ScriptNodeResource,
-  MeshResource as ScriptMeshResource,
-  MeshPrimitiveResource as ScriptMeshPrimitiveResource,
-  InteractableResource,
-} from "../resource/schema";
-import { RendererImageResource } from "../image/image.render";
-import { RendererMaterialResource } from "../material/material.render";
+import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
+import { CameraType } from "../resource/schema";
 import { MatrixMaterial } from "../material/MatrixMaterial";
+import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
+import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
+import { InputModule } from "../input/input.render";
 
-export interface RenderThreadState extends BaseThreadContext {
+export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
   gameToRenderTripleBufferFlags: Uint8Array;
+  renderToGameTripleBufferFlags: Uint8Array;
+  worldResource: RenderWorld;
 }
 
 export interface RendererModuleState {
@@ -89,31 +57,32 @@ export interface RendererModuleState {
   canvasHeight: number;
   renderer: WebGLRenderer;
   renderPipeline: RenderPipeline;
-  imageBitmapLoader: ImageBitmapLoader;
-  imageBitmapLoaderFlipY: ImageBitmapLoader;
   rgbeLoader: RGBELoader;
-  ktx2Loader: KTX2Loader;
-  rendererStateTripleBuffer: RendererStateTripleBuffer;
-  scenes: LocalSceneResource[]; // done
-  meshPrimitives: LocalMeshPrimitive[]; // mostly done, still need to figure out material disposal
-  nodes: LocalNode[]; // done
-  reflectionProbes: ReflectionProbe[];
+  ktx2Loader: ArrayBufferKTX2Loader;
   reflectionProbesMap: DataArrayTexture | null;
+  tileRendererNodes: RenderNode[];
   pmremGenerator: PMREMGenerator;
   prevCameraResource?: ResourceId;
   prevSceneResource?: ResourceId;
-  sceneRenderedRequests: { id: number; sceneResourceId: ResourceId }[];
+  sceneRenderedRequests: { id: number; sceneResourceId: ResourceId; frames: number }[];
   matrixMaterial: MatrixMaterial;
   enableMatrixMaterial: boolean;
+  scene: Scene;
+  xrAvatarRoot: Object3D;
+}
+
+// TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
+declare module "three" {
+  interface WebGLRendererParameters {
+    multiviewStereo: boolean;
+  }
 }
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth } = await waitForMessage<InitializeCanvasMessage>(
-      Thread.Main,
-      RendererMessageType.InitializeCanvas
-    );
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, enableXR } =
+      await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
 
@@ -141,6 +110,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
+      multiviewStereo: true,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
@@ -152,18 +122,27 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
 
-    const { rendererStateTripleBuffer } = await waitForMessage<InitializeRendererTripleBuffersMessage>(
-      Thread.Game,
-      RendererMessageType.InitializeRendererTripleBuffers
-    );
+    // Set the texture anisotropy which improves rendering at extreme angles.
+    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+    Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+
+    if (enableXR) {
+      renderer.xr.enabled = true;
+    }
 
     const pmremGenerator = new PMREMGenerator(renderer);
 
     pmremGenerator.compileEquirectangularShader();
 
     const imageBitmapLoader = new ImageBitmapLoader();
-
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
+
+    const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+
+    const scene = new Scene();
+    const xrAvatarRoot = new Object3D();
+    scene.add(xrAvatarRoot);
 
     return {
       needsResize: true,
@@ -171,55 +150,25 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       renderPipeline: new RenderPipeline(renderer),
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
-      rendererStateTripleBuffer,
       scenes: [],
-      directionalLights: [],
-      pointLights: [],
-      spotLights: [],
-      imageBitmapLoader,
-      imageBitmapLoaderFlipY: new ImageBitmapLoader().setOptions({
-        imageOrientation: "flipY",
-      }),
       rgbeLoader: new RGBELoader(),
-      ktx2Loader: new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer),
-      meshPrimitives: [],
-      nodes: [],
-      reflectionProbes: [],
+      ktx2Loader,
       reflectionProbesMap: null,
+      tileRendererNodes: [],
       pmremGenerator,
-      tilesRenderers: [],
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
+      scene,
+      xrAvatarRoot,
     };
   },
   init(ctx) {
     return createDisposables([
-      registerMessageHandler(ctx, WorkerMessageType.RenderWorkerResize, onResize),
+      registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
-      registerResource(ctx, SamplerResource),
-      registerResourceLoader(ctx, SceneResourceType, onLoadLocalSceneResource),
-      registerResource(ctx, RendererTextureResource),
-      registerResource(ctx, RendererMaterialResource),
-      registerResource(ctx, LightResource),
-      registerResourceLoader(ctx, ReflectionProbeResourceType, onLoadLocalReflectionProbeResource),
-      registerResource(ctx, CameraResource),
-      registerResource(ctx, BufferResource),
-      registerResource(ctx, BufferViewResource),
-      registerResource(ctx, RendererImageResource),
-      registerResource(ctx, ScriptMeshResource),
-      registerResource(ctx, ScriptMeshPrimitiveResource),
-      registerResource(ctx, ScriptNodeResource),
-      registerResource(ctx, InteractableResource),
-      registerResourceLoader(ctx, AccessorResourceType, onLoadLocalAccessorResource),
-      registerResourceLoader(ctx, MeshResourceType, onLoadLocalMeshResource),
-      registerResourceLoader(ctx, MeshPrimitiveResourceType, onLoadLocalMeshPrimitiveResource),
-      registerResourceLoader(ctx, InstancedMeshResourceType, onLoadLocalInstancedMeshResource),
-      registerResourceLoader(ctx, LightMapResourceType, onLoadLocalLightMapResource),
-      registerResourceLoader(ctx, SkinnedMeshResourceType, onLoadLocalSkinnedMeshResource),
-      registerResourceLoader(ctx, NodeResourceType, onLoadLocalNode),
-      registerResourceLoader(ctx, TilesRendererResourceType, onLoadTilesRenderer),
-      registerMessageHandler(ctx, "enable-matrix-material", onEnableMatrixMaterial),
+      registerMessageHandler(ctx, RendererMessageType.EnableMatrixMaterial, onEnableMatrixMaterial),
+      registerMessageHandler(ctx, RendererMessageType.EnterXR, onEnterXR),
     ]);
   },
 });
@@ -229,54 +178,47 @@ export function startRenderLoop(state: RenderThreadState) {
   renderer.setAnimationLoop(() => onUpdate(state));
 }
 
-function onUpdate(state: RenderThreadState) {
-  const bufferSwapped = swapReadBufferFlags(state.gameToRenderTripleBufferFlags);
-
+function onUpdate(ctx: RenderThreadState) {
   const now = performance.now();
-  state.dt = (now - state.elapsed) / 1000;
-  state.elapsed = now;
+  ctx.dt = (now - ctx.elapsed) / 1000;
+  ctx.elapsed = now;
 
-  for (let i = 0; i < state.systems.length; i++) {
-    state.systems[i](state);
+  for (let i = 0; i < ctx.systems.length; i++) {
+    ctx.systems[i](ctx);
   }
 
-  const stats = getModule(state, StatsModule);
-
-  if (bufferSwapped) {
-    if (stats.staleTripleBufferCounter > 1) {
-      stats.staleFrameCounter++;
-    }
-
-    stats.staleTripleBufferCounter = 0;
-  } else {
-    stats.staleTripleBufferCounter++;
+  if (ctx.singleConsumerThreadSharedState) {
+    ctx.singleConsumerThreadSharedState.update();
   }
 }
 
-function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: RenderWorkerResizeMessage) {
+function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }
 
-function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId }: NotifySceneRendererMessage) {
+function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
-  renderer.sceneRenderedRequests.push({ id, sceneResourceId });
+  renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
+}
+
+function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
+  const { renderer } = getModule(ctx, RendererModule);
+  renderer.xr.setSession(session as unknown as any);
 }
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline } = rendererModule;
+  const inputModule = getModule(ctx, InputModule);
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
 
-  const rendererStateView = getReadObjectBufferView(rendererModule.rendererStateTripleBuffer);
-  const activeSceneResourceId = rendererStateView.activeSceneResourceId[0];
-  const activeCameraResourceId = rendererStateView.activeCameraResourceId[0];
+  const activeScene = ctx.worldResource.environment?.publicScene;
+  const activeCameraNode = ctx.worldResource.activeCameraNode;
 
-  const activeSceneResource = getLocalResource<LocalSceneResource>(ctx, activeSceneResourceId)?.resource;
-  const activeCameraNode = getLocalResource<LocalNode>(ctx, activeCameraResourceId)?.resource;
-
-  if (activeSceneResourceId !== rendererModule.prevSceneResource) {
+  // TODO: Remove this
+  if (activeScene?.eid !== rendererModule.prevSceneResource) {
     rendererModule.enableMatrixMaterial = false;
   }
 
@@ -284,7 +226,7 @@ export function RendererSystem(ctx: RenderThreadState) {
     activeCameraNode &&
     activeCameraNode.cameraObject &&
     activeCameraNode.camera &&
-    (needsResize || rendererModule.prevCameraResource !== activeCameraResourceId)
+    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.eid)
   ) {
     if (
       "isPerspectiveCamera" in activeCameraNode.cameraObject &&
@@ -299,28 +241,31 @@ export function RendererSystem(ctx: RenderThreadState) {
 
     renderPipeline.setSize(canvasWidth, canvasHeight);
     rendererModule.needsResize = false;
-    rendererModule.prevCameraResource = activeCameraResourceId;
-    rendererModule.prevSceneResource = activeSceneResourceId;
+    rendererModule.prevCameraResource = activeCameraNode.eid;
+    rendererModule.prevSceneResource = activeScene?.eid;
   }
 
-  updateLocalSceneResources(ctx, rendererModule.scenes, activeSceneResourceId);
-  updateLocalMeshPrimitiveResources(ctx, rendererModule.meshPrimitives);
-  updateLocalNodeResources(ctx, rendererModule, rendererModule.nodes, activeSceneResource, activeCameraNode);
+  updateImageResources(ctx);
+  updateTextureResources(ctx);
+  updateWorldVisibility(ctx);
+  updateActiveSceneResource(ctx, activeScene);
+  updateLocalNodeResources(ctx, rendererModule);
+  updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
+  updateReflectionProbeTextureArray(ctx, activeScene);
+  updateNodeReflections(ctx, activeScene);
+  updateNodesFromXRPoses(ctx, rendererModule, inputModule);
 
-  updateReflectionProbeTextureArray(ctx, activeSceneResource);
-  updateNodeReflections(ctx, activeSceneResource, rendererModule.nodes);
-
-  if (activeSceneResource && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(activeSceneResource.scene, activeCameraNode.cameraObject, ctx.dt);
+  if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
+    renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
   }
 
   for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
-    const { id, sceneResourceId } = rendererModule.sceneRenderedRequests[i];
+    const request = rendererModule.sceneRenderedRequests[i];
 
-    if (activeSceneResource && activeSceneResource.resourceId === sceneResourceId) {
+    if (activeScene && activeScene.eid === request.sceneResourceId && --request.frames <= 0) {
       ctx.sendMessage(Thread.Game, {
         type: RendererMessageType.SceneRenderedNotification,
-        id,
+        id: request.id,
       });
 
       rendererModule.sceneRenderedRequests.splice(i, 1);
@@ -328,7 +273,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 }
 
-function onEnableMatrixMaterial(ctx: RenderThreadState, message: any) {
+function onEnableMatrixMaterial(ctx: RenderThreadState, message: EnableMatrixMaterialMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.enableMatrixMaterial = message.enabled;
 }

@@ -5,8 +5,8 @@ import {
   getWriteBufferIndex,
   TripleBuffer,
 } from "./TripleBuffer";
-import { TypedArrayConstructor } from "./types";
-import { roundUpToMultiple4, roundUpToMultiple8 } from "./util";
+import { TypedArrayConstructor } from "../utils/typedarray";
+import { roundUpToMultiple4, roundUpToMultiple8 } from "../utils/byte-alignment";
 
 export type ObjectBufferViewSchema = {
   [key: string]: [TypedArrayConstructor, number] | [TypedArrayConstructor, number, number];

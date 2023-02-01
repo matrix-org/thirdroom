@@ -9,8 +9,9 @@ function useWorld(): [string | undefined, string | undefined, string | undefined
   const worldMatch = useMatch({ path: "world/:worldId/*" });
   const [alias, hashSearch] = location.hash.split("?");
   const reloadId = new URLSearchParams(location.search || hashSearch).get("reload") ?? undefined;
+
   const worldId = worldMatch?.params["worldId"] ?? undefined;
-  return [worldId, alias, reloadId];
+  return [worldId, alias.match(/^(#|!)\S+:\S+/) ? alias : undefined, reloadId];
 }
 
 export function useWorldPath(): [string | undefined, string | undefined] {

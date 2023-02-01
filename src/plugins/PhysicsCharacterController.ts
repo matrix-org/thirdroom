@@ -2,22 +2,18 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { Transform } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
-import {
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-  enableActionMap,
-} from "../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../engine/input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
-import { getInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
+import { tryGetInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { GameNetworkState } from "../engine/network/network.game";
+import { isHost } from "../engine/network/network.common";
 import { NetworkModule } from "../engine/network/network.game";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
+import { tryGetRemoteResource } from "../engine/resource/resource.game";
+import { RemoteNode } from "../engine/resource/RemoteResources";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -32,7 +28,7 @@ export const PhysicsCharacterControllerActions = {
 
 export const PhysicsCharacterControllerActionMap: ActionMap = {
   id: "physics-character-controller",
-  actions: [
+  actionDefs: [
     {
       id: "move",
       path: PhysicsCharacterControllerActions.Move,
@@ -46,6 +42,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
+      networked: true,
     },
     {
       id: "jump",
@@ -57,6 +54,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/Space",
         },
       ],
+      networked: true,
     },
     {
       id: "crouch",
@@ -68,6 +66,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/KeyC",
         },
       ],
+      networked: true,
     },
     {
       id: "sprint",
@@ -79,6 +78,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
+      networked: true,
     },
   ],
 };
@@ -103,12 +103,12 @@ export const enteredPhysicsControlsQuery = enterQuery(physicsControlsQuery);
 
 const obj = new Object3D();
 
-const walkSpeed = 60;
+const walkSpeed = 70;
 const drag = 30;
 const maxWalkSpeed = 100;
 const maxSprintSpeed = 100;
-const sprintModifier = 3;
-const jumpForce = 10;
+const sprintModifier = 2.5;
+const jumpForce = 7;
 const inAirModifier = 0.5;
 const inAirDrag = 8;
 const crouchModifier = 0.7;
@@ -139,23 +139,22 @@ export function addPhysicsControls(ctx: GameState, eid: number) {
 function updatePhysicsControls(
   ctx: GameState,
   { physicsWorld }: PhysicsModuleState,
-  network: GameNetworkState,
   controller: InputController,
-  rig: number
+  rig: RemoteNode
 ) {
-  const body = RigidBody.store.get(rig);
+  const body = RigidBody.store.get(rig.eid);
   if (!body) {
     return;
   }
 
-  obj.quaternion.fromArray(Transform.quaternion[rig]);
+  obj.quaternion.fromArray(rig.quaternion);
   body.setRotation(obj.quaternion, true);
 
   // Handle Input
-  const moveVec = controller.actions.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-  const jump = controller.actions.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-  const crouch = controller.actions.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-  const sprint = controller.actions.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+  const moveVec = controller.actionStates.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+  const jump = controller.actionStates.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+  const crouch = controller.actionStates.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+  const sprint = controller.actionStates.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
   linearVelocity.copy(body.linvel() as Vector3);
 
@@ -169,6 +168,8 @@ function updatePhysicsControls(
     physicsWorld.gravity,
     colliderShape,
     ctx.dt * 6,
+    true,
+    0,
     playerShapeCastCollisionGroups
   );
 
@@ -229,7 +230,6 @@ function updatePhysicsControls(
   }
 
   body.applyImpulse(moveForce, true);
-  body.applyForce(physicsWorld.gravity as Vector3, true);
 }
 
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
@@ -237,10 +237,15 @@ export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
+  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+    return;
+  }
+
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const controller = getInputController(input, eid);
-    updatePhysicsControls(ctx, physics, network, controller, eid);
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const controller = tryGetInputController(input, eid);
+    updatePhysicsControls(ctx, physics, controller, node);
   }
 };

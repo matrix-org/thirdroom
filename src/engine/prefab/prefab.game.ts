@@ -2,6 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import { GameState, World } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
+import { RemoteNode } from "../resource/RemoteResources";
 
 interface PrefabModuleState {
   prefabTemplateMap: Map<string, PrefabTemplate>;
@@ -19,9 +20,15 @@ export const PrefabModule = defineModule<GameState, PrefabModuleState>({
 
 /* Prefab Functions */
 
+export enum PrefabType {
+  Object,
+  Avatar,
+}
+
 export interface PrefabTemplate {
   name: string;
-  create: (ctx: GameState, remote?: boolean) => number;
+  type: PrefabType;
+  create: (ctx: GameState, options?: any) => RemoteNode;
   delete?: (ctx: GameState) => number;
   serialize?: (ctx: GameState) => number;
   deserialize?: (ctx: GameState) => number;
@@ -37,10 +44,10 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = (ctx: GameState, remote = false) => {
-    const eid = create(ctx, remote);
-    addPrefabComponent(state.world, eid, template.name);
-    return eid;
+  template.create = (ctx: GameState, options = {}) => {
+    const node = create(ctx, options);
+    addPrefabComponent(state.world, node.eid, template.name);
+    return node;
   };
 }
 
@@ -65,7 +72,7 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return template;
 }
 
-export const createPrefabEntity = (state: GameState, prefab: string, remote = false) => {
+export const createPrefabEntity = (state: GameState, prefab: string, options = {}): RemoteNode => {
   const prefabModule = getModule(state, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
 
@@ -73,7 +80,7 @@ export const createPrefabEntity = (state: GameState, prefab: string, remote = fa
     throw new Error(`Could not find prefab "${prefab}"`);
   }
 
-  return create(state, remote);
+  return create(state, options);
 };
 
 export const addPrefabComponent = (world: World, eid: number, prefab: string) => {
