@@ -20,7 +20,7 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { TypedArrayConstructor } from "../allocator/types";
+import { TypedArrayConstructor } from "../utils/typedarray";
 
 export interface NetworkRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
   buffer: ArrayBuffer;
@@ -68,6 +68,7 @@ export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
 
   moveCursorView(view, 0);
 
+  // TODO: write peerIndex instead
   writePeerId(view, peerId);
 
   writeUint8(view, broadcast ? 1 : 0);

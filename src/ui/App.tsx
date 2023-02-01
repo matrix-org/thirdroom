@@ -109,6 +109,14 @@ export function App() {
               }
             />
           </Route>
+          <Route
+            path="/scene-preview"
+            element={
+              <Suspense fallback={<></>}>
+                <GLTFViewer />
+              </Suspense>
+            }
+          />
         </Route>
         <Route
           path="/viewer"

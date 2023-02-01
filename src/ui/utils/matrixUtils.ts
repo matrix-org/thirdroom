@@ -1,14 +1,14 @@
 import {
   Room,
   ObservableMap,
-  AttachmentUpload,
-  Platform,
-  IBlobHandle,
   HomeServerApi,
   RoomBeingCreated,
   Session,
   GroupCall,
   BaseObservableMap,
+  StateEvent,
+  IHomeServerRequest,
+  IBlobHandle,
 } from "@thirdroom/hydrogen-view-sdk";
 
 export const MX_PATH_PREFIX = "/_matrix/client/r0";
@@ -102,6 +102,10 @@ export async function isValidUserId(hsApi: HomeServerApi, userId: string) {
   }
 }
 
+export function isValidRoomId(roomId: string) {
+  return roomId.match(/^!\S+:\S+$/) !== null;
+}
+
 export async function waitToCreateRoom(
   session: Session,
   roomBeingCreated: RoomBeingCreated
@@ -118,21 +122,23 @@ export async function waitToCreateRoom(
 
 export async function uploadAttachment(
   hsApi: HomeServerApi,
-  platform: Platform,
   blob: IBlobHandle,
-  onAttachmentCreate?: (attachment: AttachmentUpload) => void,
+  onRequest?: (request: IHomeServerRequest) => void,
   onProgress?: (sentBytes: number, totalBytes: number) => void
-) {
-  const attachment = new AttachmentUpload({ filename: blob.nativeBlob.name, blob, platform });
-  onAttachmentCreate?.(attachment);
-
-  await attachment.upload(hsApi, () => {
-    onProgress?.(attachment.sentBytes, attachment.size);
+): Promise<string> {
+  const uploadRequest = await hsApi.uploadAttachment(blob, blob.nativeBlob.name, {
+    uploadProgress: (sentBytes) => {
+      console.log(sentBytes, blob.size);
+      onProgress?.(sentBytes, blob.size);
+    },
   });
+  onRequest?.(uploadRequest);
 
-  const content = {} as { url?: string };
-  attachment.applyToContent("url", content);
-  return content.url;
+  const { content_uri: url, errcode, error } = await uploadRequest.response();
+  if (errcode) {
+    throw new Error(error ?? "Error Uploading file.");
+  }
+  return url;
 }
 
 export interface ParsedMatrixURI {
@@ -215,4 +221,19 @@ export function getRoomCall(calls: Map<string, GroupCall> | BaseObservableMap<st
   if (!roomId) return undefined;
   const roomCalls = Array.from(calls).flatMap(([_callId, call]) => (call.roomId === roomId ? call : []));
   return roomCalls.length ? roomCalls[0] : undefined;
+}
+
+export function eventByOrderKey(ev1: StateEvent, ev2: StateEvent) {
+  const o1 = ev1.content.order;
+  const o2 = ev2.content.order;
+  if (o1 === undefined && o2 === undefined) {
+    const ts1 = ev1.origin_server_ts;
+    const ts2 = ev2.origin_server_ts;
+
+    if (ts1 === ts2) return 0;
+    return ts1 > ts2 ? -1 : 1;
+  }
+  if (o1 === undefined) return 1;
+  if (o2 === undefined) return -1;
+  return o1 < o2 ? -1 : 1;
 }

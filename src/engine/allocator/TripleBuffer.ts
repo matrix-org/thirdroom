@@ -48,6 +48,7 @@ const swapWriteWithTempAndMarkChanged = (flags: number) => {
   return 0x40 | ((flags & 0xc) << 2) | ((flags & 0x30) >> 2) | (flags & 0x3);
 };
 
+export const getReadBufferIndexFromFlags = (flags: Uint8Array) => Atomics.load(flags, 0) & 0x3;
 export const getReadBufferIndex = (tb: TripleBuffer) => Atomics.load(tb.flags, 0) & 0x3;
 export const getReadBuffer = (tb: TripleBuffer) => tb.buffers[getReadBufferIndex(tb)];
 export const getReadView = (tb: TripleBuffer) => tb.byteViews[getReadBufferIndex(tb)];

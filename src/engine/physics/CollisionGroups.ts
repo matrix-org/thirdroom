@@ -6,7 +6,7 @@ export enum CollisionGroup {
   All = 65535,
 }
 
-let nextCollisionGroupIndex = Object.keys(CollisionGroup).length - 1;
+let nextCollisionGroupIndex = Object.entries(CollisionGroup).filter(([k, v]) => typeof v === "number").length - 1;
 
 /**
  * Register a new, user space, collision group.

@@ -1,6 +1,7 @@
 .Content {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .Content__top,

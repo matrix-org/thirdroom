@@ -1,14 +1,21 @@
 import { defineConfig } from "./module/module.common";
-import { GameAudioModule, GameAudioSystem } from "./audio/audio.game";
-import { ApplyInputSystem, InputModule, ResetInputSystem } from "./input/input.game";
+import { AudioModule } from "./audio/audio.game";
+import { InputModule, ResetInputSystem } from "./input/input.game";
+import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkModule } from "./network/network.game";
-import { ActionMappingSystem } from "./input/ActionMappingSystem";
-import { FirstPersonCameraModule, FirstPersonCameraSystem } from "../plugins/FirstPersonCamera";
+import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
+import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
-  PhysicsCharacterControllerModule,
-  PhysicsCharacterControllerSystem,
-} from "../plugins/PhysicsCharacterController";
+  FirstPersonCameraModule,
+  FirstPersonCameraSystem,
+  NetworkedFirstPersonCameraSystem,
+} from "../plugins/FirstPersonCamera";
+import {
+  KinematicCharacterControllerModule,
+  KinematicCharacterControllerSystem,
+  SendClientPosition,
+  UpdateClientPosition,
+} from "../plugins/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
   EditorModule,
@@ -16,18 +23,21 @@ import {
   EditorStateSystem,
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
-import { RenderableSystem, RendererModule } from "./renderer/renderer.game";
+import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
-import { ResourceLoaderSystem, ResourceModule } from "./resource/resource.game";
+import {
+  RecycleResourcesSystem,
+  ResourceDisposalSystem,
+  ResourceLoaderSystem,
+  ResourceModule,
+  ResourceTickSystem,
+} from "./resource/resource.game";
 import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
-import { RemoteNodeSystem } from "./node/node.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
-import { RemoteSceneSystem } from "./scene/scene.game";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
-import { NameSystem } from "./component/Name";
 import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
@@ -35,47 +45,63 @@ import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
 import { InboundNetworkSystem } from "./network/inbound.game";
 import { OutboundNetworkSystem } from "./network/outbound.game";
+import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
+import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSystem";
+import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
+import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
+import { WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
 
 export default defineConfig<GameState>({
   modules: [
     PrefabModule,
     ResourceModule,
-    GameAudioModule,
     InputModule,
     PhysicsModule,
+    AudioModule,
     NetworkModule,
     StatsModule,
     EditorModule,
     RendererModule,
     ThirdRoomModule,
     FirstPersonCameraModule,
-    PhysicsCharacterControllerModule,
+    KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,
     SpawnablesModule,
     NametagModule,
   ],
   systems: [
+    IncomingTripleBufferSystem,
+
     ApplyInputSystem,
+    WebXRAvatarRigSystem,
+    ActionMappingSystem,
 
     InboundNetworkSystem,
 
-    ActionMappingSystem,
-
-    NetworkInterpolationSystem,
-
     FirstPersonCameraSystem,
-    PhysicsCharacterControllerSystem,
+    KinematicCharacterControllerSystem,
+    // ClientSidePredictionSystem,
     FlyControllerSystem,
-    PhysicsSystem,
-    AnimationSystem,
     InteractionSystem,
     SpawnableSystem,
     ThirdroomSystem,
 
-    // Copy Transform to RemoteNode
+    // update client position
+    UpdateClientPosition,
+
+    // step physics forward and copy rigidbody data to transform component
+    PhysicsSystem,
+
+    // send client position to host
+    SendClientPosition,
+
+    // interpolate towards authoritative state
+    NetworkInterpolationSystem,
+
     ScriptingSystem,
-    // Copy RemoteNode to Transform
+
+    AnimationSystem,
 
     UpdateMatrixWorldSystem,
 
@@ -83,19 +109,25 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
+    NetworkedFirstPersonCameraSystem,
     OutboundNetworkSystem,
+    NetworkExitWorldQueueSystem,
 
-    GameAudioSystem,
-    RenderableSystem,
     RemoteCameraSystem,
-    RemoteNodeSystem,
-    RemoteSceneSystem,
-    GameResourceSystem,
-    ResourceLoaderSystem,
     PrefabDisposalSystem,
-    NameSystem,
+    GLTFResourceDisposalSystem,
 
+    ActionMapHistorianSystem, // Store this frame's player input and the state it resulted in
     ResetInputSystem,
     GameWorkerStatsSystem,
+
+    GameResourceSystem, // Commit Resources to TripleBuffer
+    ResourceTickSystem,
+    OutgoingTripleBufferSystem, // Swap write triplebuffers
+    RecycleResourcesSystem, // Drain entity recycle queues. Call removeEntity if released by other threads.
+    ResourceDisposalSystem, // Drain entity disposal queues. Enqueue into shared ringbuffers.
+    ResourceLoaderSystem, // Drain entity creation queue. postMessage to other threads.
+
+    SkipRenderLerpSystem, // Change node.skipLerp after commit
   ],
 });

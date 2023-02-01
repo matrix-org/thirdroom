@@ -23,6 +23,7 @@ import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
 import { uploadAttachment } from "../../../utils/matrixUtils";
 import { Switch } from "../../../atoms/button/Switch";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -33,6 +34,7 @@ export function UserProfileOverview() {
   const [authoritativeNetworking, setAuthNetworking] = useState(
     localStorage.getItem("authoritativeNetworking") === "true"
   );
+  const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
 
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
@@ -70,7 +72,7 @@ export function UserProfileOverview() {
     if (isAvatarChanged) {
       let mxc = "";
       if (typeof avatarData.blob === "object") {
-        mxc = (await uploadAttachment(session.hsApi, platform, avatarData.blob)) ?? "";
+        mxc = (await uploadAttachment(session.hsApi, avatarData.blob)) ?? "";
       }
       session.hsApi.setProfileAvatarUrl(session.userId, mxc);
     }
@@ -109,6 +111,12 @@ export function UserProfileOverview() {
                       onCheckedChange={onAuthoritativeNetworkingChange}
                       defaultChecked={authoritativeNetworking}
                     />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile className="grow basis-0" label={<Label>Discover Page (REQUIRES REFRESH)</Label>}>
+                    <Switch checked={discoverPage} onCheckedChange={setDiscoverPage} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

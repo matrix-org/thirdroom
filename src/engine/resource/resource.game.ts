@@ -1,213 +1,334 @@
+import { addComponent, addEntity, defineComponent, removeEntity } from "bitecs";
+import { availableRead } from "@thirdroom/ringbuffer";
+
+import {
+  createObjectTripleBuffer,
+  getReadObjectBufferView,
+  getWriteObjectBufferView,
+} from "../allocator/ObjectBufferView";
+import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { createDeferred, Deferred } from "../utils/Deferred";
+import { defineModule, getModule, Thread } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
+import { createMessageQueueProducer } from "./MessageQueue";
+import {
+  RemoteNode,
+  RemoteAudioData,
+  RemoteAudioSource,
+  RemoteAudioEmitter,
+  RemoteNametag,
+  RemoteLight,
+  RemoteSampler,
+  RemoteCamera,
+  RemoteBuffer,
+  RemoteBufferView,
+  RemoteImage,
+  RemoteMaterial,
+  RemoteTexture,
+  RemoteMesh,
+  RemoteScene,
+  RemoteMeshPrimitive,
+  RemoteInteractable,
+  RemoteAccessor,
+  RemoteSparseAccessor,
+  RemoteSkin,
+  RemoteInstancedMesh,
+  RemoteLightMap,
+  RemoteReflectionProbe,
+  RemoteTilesRenderer,
+  RemoteAnimationChannel,
+  RemoteAnimationSampler,
+  RemoteAnimation,
+  RemoteEnvironment,
+  RemoteWorld,
+} from "./RemoteResources";
 import {
   ArrayBufferResourceType,
-  LoadResourcesMessage,
-  ResourceDisposedError,
-  ResourceDisposedMessage,
+  CreateResourceMessage,
+  fromGameResourceModuleStateSchema,
+  FromGameResourceModuleStateTripleBuffer,
+  InitGameResourceModuleMessage,
+  InitRemoteResourceModuleMessage,
   ResourceId,
-  ResourceLoadedMessage,
   ResourceMessageType,
-  ResourceStatus,
+  ResourceProps,
   StringResourceType,
+  ToGameResourceModuleStateTripleBuffer,
 } from "./resource.common";
-import { RemoteResource, ResourceDefinition } from "./ResourceDefinition";
+import {
+  InitialRemoteResourceProps,
+  IRemoteResourceClass,
+  IRemoteResourceManager,
+  RemoteResource,
+  ResourceDefinition,
+} from "./ResourceDefinition";
+import { ResourceType } from "./schema";
+import {
+  createResourceRingBuffer,
+  ResourceRingBuffer,
+  enqueueResourceRingBuffer,
+  dequeueResourceRingBuffer,
+  ResourceRingBufferItem,
+} from "./ResourceRingBuffer";
 
-interface RemoteResourceInfo {
-  id: ResourceId;
-  name: string;
-  thread: Thread;
-  resourceType: string;
-  props: any;
-  loaded: boolean;
-  error?: string;
-  statusView: Uint8Array;
-  cacheKey?: string;
+const ResourceComponent = defineComponent();
+
+export interface ResourceTransformData {
+  writeView: Uint8Array;
+  refView: Uint32Array;
+  refOffsets: number[];
+  refIsString: boolean[];
+  refIsBackRef: boolean[];
+}
+
+export interface ResourceModuleState {
+  resourceInfos: Map<ResourceId, ResourceInfo>;
+  resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
+  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
+  resourceTransformData: Map<number, ResourceTransformData>;
+  resourceDefByType: Map<number, ResourceDefinition>;
+  fromGameState: FromGameResourceModuleStateTripleBuffer;
+  mainToGameState: ToGameResourceModuleStateTripleBuffer;
+  renderToGameState: ToGameResourceModuleStateTripleBuffer;
+  mainDisposedResources: ResourceRingBuffer;
+  renderDisposedResources: ResourceRingBuffer;
+  mainRecycleResources: ResourceRingBuffer;
+  renderRecycleResources: ResourceRingBuffer;
+  disposedResourcesQueue: number[];
+  disposeRefCounts: Map<number, number>;
+  deferredRemovals: ResourceRingBufferItem[];
+}
+
+type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
+
+interface ResourceInfo {
+  resource: RemoteResourceTypes;
   refCount: number;
   dispose?: () => void;
 }
 
-interface ResourceModuleState {
-  resourceIdCounter: number;
-  resources: Map<ResourceId, any>;
-  resourcesByType: Map<ResourceDefinition, RemoteResource<any>[]>;
-  resourceInfos: Map<ResourceId, RemoteResourceInfo>;
-  resourceIdMap: Map<string, Map<any, ResourceId>>;
-  deferredResources: Map<ResourceId, Deferred<undefined>>;
-  mainThreadMessageQueue: any[];
-  renderThreadMessageQueue: any[];
-  mainThreadTransferList: Transferable[];
-  renderThreadTransferList: Transferable[];
-}
+const [queueResourceMessage, sendResourceMessages] = createMessageQueueProducer<GameState, CreateResourceMessage>(
+  ResourceMessageType.LoadResources
+);
 
 export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   name: "resource",
-  create() {
+  async create(ctx: GameState, { sendMessage, waitForMessage }) {
+    const fromGameState = createObjectTripleBuffer(
+      fromGameResourceModuleStateSchema,
+      ctx.gameToRenderTripleBufferFlags
+    );
+
+    const mainDisposedResources = createResourceRingBuffer();
+    const renderDisposedResources = createResourceRingBuffer();
+    const mainRecycleResources = createResourceRingBuffer();
+    const renderRecycleResources = createResourceRingBuffer();
+
+    sendMessage<InitGameResourceModuleMessage>(Thread.Main, ResourceMessageType.InitGameResourceModule, {
+      fromGameState,
+      toGameStateTripleBufferFlags: ctx.mainToGameTripleBufferFlags,
+      // All resource use gameToRenderTripleBufferFlags. Unsure if this could cause a race since there is
+      // synchronization between render/main with requestAnimationFrame
+      fromGameStateTripleBufferFlags: ctx.gameToRenderTripleBufferFlags,
+      disposedResources: mainDisposedResources,
+      recycleResources: mainRecycleResources,
+    });
+
+    sendMessage<InitGameResourceModuleMessage>(Thread.Render, ResourceMessageType.InitGameResourceModule, {
+      fromGameState,
+      toGameStateTripleBufferFlags: ctx.renderToGameTripleBufferFlags,
+      fromGameStateTripleBufferFlags: ctx.gameToRenderTripleBufferFlags,
+      disposedResources: renderDisposedResources,
+      recycleResources: renderRecycleResources,
+    });
+
+    const { toGameState: mainToGameState } = await waitForMessage<InitRemoteResourceModuleMessage>(
+      Thread.Main,
+      ResourceMessageType.InitRemoteResourceModule
+    );
+
+    const { toGameState: renderToGameState } = await waitForMessage<InitRemoteResourceModuleMessage>(
+      Thread.Render,
+      ResourceMessageType.InitRemoteResourceModule
+    );
+
     return {
-      resourceIdCounter: 1,
-      resources: new Map(),
-      resourcesByType: new Map(),
+      resourceConstructors: new Map(),
+      resourceTransformData: new Map(),
+      resourceDefByType: new Map(),
       resourceInfos: new Map(),
-      resourceIdMap: new Map(),
-      deferredResources: new Map(),
-      mainThreadMessageQueue: [],
-      renderThreadMessageQueue: [],
-      mainThreadTransferList: [],
-      renderThreadTransferList: [],
+      resourcesByType: new Map(),
+      fromGameState,
+      mainToGameState,
+      renderToGameState,
+      mainDisposedResources,
+      renderDisposedResources,
+      mainRecycleResources,
+      renderRecycleResources,
+      disposedResourcesQueue: [],
+      disposeRefCounts: new Map(),
+      deferredRemovals: [],
     };
   },
   init(ctx) {
-    return registerMessageHandler(ctx, ResourceMessageType.ResourceLoaded, onResourceLoaded);
+    const dispose = createDisposables([
+      registerResource(ctx, RemoteNode),
+      registerResource(ctx, RemoteAudioData),
+      registerResource(ctx, RemoteAudioSource),
+      registerResource(ctx, RemoteAudioEmitter),
+      registerResource(ctx, RemoteNametag),
+      registerResource(ctx, RemoteLight),
+      registerResource(ctx, RemoteSampler),
+      registerResource(ctx, RemoteCamera),
+      registerResource(ctx, RemoteBuffer),
+      registerResource(ctx, RemoteBufferView),
+      registerResource(ctx, RemoteImage),
+      registerResource(ctx, RemoteMaterial),
+      registerResource(ctx, RemoteTexture),
+      registerResource(ctx, RemoteMesh),
+      registerResource(ctx, RemoteScene),
+      registerResource(ctx, RemoteMeshPrimitive),
+      registerResource(ctx, RemoteInteractable),
+      registerResource(ctx, RemoteAccessor),
+      registerResource(ctx, RemoteSparseAccessor),
+      registerResource(ctx, RemoteSkin),
+      registerResource(ctx, RemoteInstancedMesh),
+      registerResource(ctx, RemoteLightMap),
+      registerResource(ctx, RemoteReflectionProbe),
+      registerResource(ctx, RemoteTilesRenderer),
+      registerResource(ctx, RemoteAnimationChannel),
+      registerResource(ctx, RemoteAnimationSampler),
+      registerResource(ctx, RemoteAnimation),
+      registerResource(ctx, RemoteEnvironment),
+      registerResource(ctx, RemoteWorld),
+    ]);
+
+    ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
+      persistentScene: new RemoteScene(ctx.resourceManager, {
+        name: "Persistent Scene",
+      }),
+    });
+
+    return dispose;
   },
 });
 
-function onResourceLoaded(ctx: GameState, { id, loaded, error }: ResourceLoadedMessage) {
+function registerResource<Def extends ResourceDefinition>(
+  ctx: GameState,
+  resourceDefOrClass: IRemoteResourceClass<Def>
+) {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  const resourceInfo = resourceModule.resourceInfos.get(id);
+  const RemoteResourceClass = resourceDefOrClass;
 
-  if (!resourceInfo) {
-    return;
+  const resourceDef = RemoteResourceClass.resourceDef;
+
+  resourceModule.resourceConstructors.set(
+    resourceDef,
+    RemoteResourceClass as unknown as IRemoteResourceClass<ResourceDefinition>
+  );
+
+  resourceModule.resourceDefByType.set(resourceDef.resourceType, resourceDef);
+
+  const buffer = new ArrayBuffer(resourceDef.byteLength);
+  const writeView = new Uint8Array(buffer);
+  const refView = new Uint32Array(buffer);
+  const refOffsets: number[] = [];
+  const refIsString: boolean[] = [];
+  const refIsBackRef: boolean[] = [];
+
+  const schema = resourceDef.schema;
+
+  for (const propName in schema) {
+    const prop = schema[propName];
+
+    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
+      for (let i = 0; i < prop.size; i++) {
+        const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
+        refOffsets.push(refOffset);
+        refIsString.push(prop.type === "string");
+        refIsBackRef.push(prop.backRef);
+      }
+    } else if (prop.type === "arrayBuffer") {
+      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+      refIsString.push(false);
+      refIsBackRef.push(prop.backRef);
+    }
   }
 
-  const deferred = resourceModule.deferredResources.get(id);
+  resourceModule.resourceTransformData.set(resourceDef.resourceType, {
+    writeView,
+    refView,
+    refOffsets,
+    refIsString,
+    refIsBackRef,
+  });
 
-  if (!deferred) {
-    return;
-  }
-
-  resourceInfo.loaded = loaded;
-  resourceInfo.error = error;
-
-  if (error) {
-    deferred.reject(error);
-  } else {
-    deferred.resolve(undefined);
-  }
+  return () => {
+    resourceModule.resourceConstructors.delete(RemoteResourceClass.resourceDef);
+  };
 }
 
-interface ResourceOptions {
-  name?: string;
-  transferList?: Transferable[];
-  cacheKey?: any;
-  dispose?: () => void;
-}
-
-const UNKNOWN_RESOURCE_NAME = "Unknown Resource";
-
-export function createResource<Props>(
+function createResource(
   ctx: GameState,
-  thread: Thread,
   resourceType: string,
-  props: Props,
-  options?: ResourceOptions
+  props: ResourceProps,
+  resource: RemoteResourceTypes,
+  dispose?: () => void
 ): number {
   const resourceModule = getModule(ctx, ResourceModule);
-
-  let resourceCache = resourceModule.resourceIdMap.get(resourceType);
-
-  if (resourceCache) {
-    if (options?.cacheKey !== undefined) {
-      const existingResourceId = resourceCache.get(options.cacheKey);
-
-      if (existingResourceId !== undefined) {
-        return existingResourceId;
-      }
-    }
-  } else {
-    resourceCache = new Map();
-    resourceModule.resourceIdMap.set(resourceType, resourceCache);
-  }
-
-  const id = resourceModule.resourceIdCounter++;
-
-  // First byte loading flag, second byte is dispose flag
-  const statusBuffer = new SharedArrayBuffer(2);
-  const statusView = new Uint8Array(statusBuffer);
-  statusView[0] = ResourceStatus.Loading;
-
-  const name = options?.name || UNKNOWN_RESOURCE_NAME;
+  const id = addEntity(ctx.world);
+  addComponent(ctx.world, ResourceComponent, id);
 
   resourceModule.resourceInfos.set(id, {
-    id,
-    name,
-    thread,
-    resourceType,
-    props,
-    loaded: false,
-    statusView,
-    cacheKey: options?.cacheKey,
+    resource,
     refCount: 0,
-    dispose: options?.dispose,
+    dispose,
   });
 
-  if (options?.cacheKey !== undefined) {
-    resourceCache.set(options.cacheKey, id);
-  }
-
-  const deferred = createDeferred<undefined>();
-
-  deferred.promise.catch((error) => {
-    if (error instanceof ResourceDisposedError) {
-      return;
-    }
-
-    console.error(error);
-  });
-
-  resourceModule.deferredResources.set(id, deferred);
-
-  const message = {
+  queueResourceMessage({
     resourceType,
     id,
-    name,
+    tick: ctx.tick,
     props,
-    statusView,
-  };
-
-  if (thread === Thread.Game) {
-    throw new Error("Invalid resource thread target");
-  }
-
-  if (thread === Thread.Shared && options?.transferList) {
-    throw new Error("Cannot transfer resources to multiple threads");
-  }
-
-  if (thread === Thread.Main || thread === Thread.Shared) {
-    resourceModule.mainThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.mainThreadTransferList.push(...options.transferList);
-    }
-  }
-
-  if (thread === Thread.Render || thread === Thread.Shared) {
-    resourceModule.renderThreadMessageQueue.push(message);
-
-    if (options?.transferList) {
-      resourceModule.renderThreadTransferList.push(...options.transferList);
-    }
-  }
+  });
 
   return id;
 }
 
-export function createStringResource(ctx: GameState, value: string): ResourceId {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceId = createResource(ctx, Thread.Shared, StringResourceType, value);
-  resourceModule.resources.set(resourceId, value);
+export function createRemoteResource(ctx: GameState, resource: RemoteResource<GameState>): number {
+  const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
+
+  addComponent(ctx.world, resource.constructor, resourceId);
+
+  const { resourcesByType } = getModule(ctx, ResourceModule);
+
+  const resourceType = resource.resourceType;
+  let resourceArr = resourcesByType.get(resourceType);
+
+  if (!resourceArr) {
+    resourceArr = [];
+    resourcesByType.set(resourceType, resourceArr);
+  }
+
+  resourceArr.push(resource as unknown as RemoteResource<GameState>);
+
+  return resourceId;
+}
+
+export function createStringResource(ctx: GameState, value: string, dispose?: () => void): ResourceId {
+  const resourceId = createResource(ctx, StringResourceType, value, value, dispose);
+  addComponent(ctx.world, StringResourceType, resourceId);
   return resourceId;
 }
 
 export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceId = createResource(ctx, Thread.Shared, ArrayBufferResourceType, value);
-  resourceModule.resources.set(resourceId, value);
+  const resourceId = createResource(ctx, ArrayBufferResourceType, value, value);
+  addComponent(ctx.world, ArrayBufferResourceType, resourceId);
   return resourceId;
 }
 
-export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean {
+export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boolean {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resourceInfo = resourceModule.resourceInfos.get(resourceId);
@@ -216,42 +337,28 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
     return false;
   }
 
-  resourceInfo.refCount--;
+  const refCount = --resourceInfo.refCount;
 
-  if (resourceInfo.refCount > 0) {
+  if (refCount > 0) {
     return false;
   }
+
+  // removal all components from the entity so that all relevant exit queries are hit
+  removeAllEntityComponents(ctx.world, resourceId);
 
   if (resourceInfo.dispose) {
     resourceInfo.dispose();
   }
 
-  if (resourceInfo.cacheKey) {
-    const resourceTypeCache = resourceModule.resourceIdMap.get(resourceInfo.resourceType);
-
-    if (resourceTypeCache) {
-      resourceTypeCache.delete(resourceInfo.cacheKey);
-    }
-  }
-
-  const deferred = resourceModule.deferredResources.get(resourceId);
-
-  if (deferred) {
-    deferred.reject(new ResourceDisposedError("Resource disposed"));
-    resourceModule.deferredResources.delete(resourceId);
-  }
-
-  // Set dispose flag
-  resourceInfo.statusView[1] = 1;
+  resourceModule.disposedResourcesQueue.push(resourceId);
 
   resourceModule.resourceInfos.delete(resourceId);
 
-  const resource = resourceModule.resources.get(resourceId);
+  const resource = resourceInfo.resource;
 
-  const resourceDef = resource?.constructor?.resourceDef;
-
-  if (resourceDef) {
-    const resourceArr = resourceModule.resourcesByType.get(resourceDef);
+  if (typeof resource !== "string" && "resourceType" in resource) {
+    const resourceType = resource.resourceType;
+    const resourceArr = resourceModule.resourcesByType.get(resourceType);
 
     if (resourceArr) {
       const index = resourceArr.indexOf(resource);
@@ -259,27 +366,9 @@ export function disposeResource(ctx: GameState, resourceId: ResourceId): boolean
       if (index !== -1) {
         resourceArr.splice(index, 1);
       }
+
+      resource.manager.removeResourceRefs(resourceId);
     }
-
-    if (resource.dispose) {
-      resource.dispose();
-    }
-  }
-
-  resourceModule.resources.delete(resourceId);
-
-  if (resourceInfo.thread === Thread.Main || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Main, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
-  }
-
-  if (resourceInfo.thread === Thread.Render || resourceInfo.thread === Thread.Shared) {
-    ctx.sendMessage<ResourceDisposedMessage>(Thread.Render, {
-      type: ResourceMessageType.ResourceDisposed,
-      id: resourceId,
-    });
   }
 
   return true;
@@ -295,88 +384,120 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
   }
 }
 
-export function waitForRemoteResource(ctx: GameState, resourceId: ResourceId): Promise<undefined> {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const deferred = resourceModule.deferredResources.get(resourceId);
+export function tryGetRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res {
+  const resource = getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource;
 
-  if (deferred) {
-    return deferred.promise;
+  if (!resource) {
+    throw new Error(`Resource ${resourceId} not found`);
   }
 
-  return Promise.reject(new Error(`Resource ${resourceId} not found.`));
-}
-
-export function getResourceStatus(ctx: GameState, resourceId: ResourceId): ResourceStatus {
-  const resourceModule = getModule(ctx, ResourceModule);
-  const resourceInfo = resourceModule.resourceInfos.get(resourceId);
-  return resourceInfo ? resourceInfo.statusView[0] : ResourceStatus.None;
-}
-
-export function setRemoteResource<Res extends RemoteResource<any>>(
-  ctx: GameState,
-  resourceId: ResourceId,
-  resource: Res
-): void {
-  const { resources, resourcesByType } = getModule(ctx, ResourceModule);
-
-  resources.set(resourceId, resource);
-
-  const resourceDef = resource.constructor.resourceDef;
-  let resourceArr = resourcesByType.get(resourceDef);
-
-  if (!resourceArr) {
-    resourceArr = [];
-    resourcesByType.set(resourceDef, resourceArr);
-  }
-
-  resourceArr.push(resource);
+  return resource as Res;
 }
 
 export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
-  return getModule(ctx, ResourceModule).resources.get(resourceId) as Res | undefined;
+  return getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource as Res | undefined;
 }
 
-export function getRemoteResources<Def extends ResourceDefinition>(
+export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource<GameState>>(
   ctx: GameState,
-  resourceDef: Def
-): RemoteResource<Def>[] {
-  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceDef) || []) as unknown as RemoteResource<Def>[];
+  resourceClass: {
+    new (manager: IRemoteResourceManager<GameState>, props?: InitialRemoteResourceProps<GameState, Def>): T;
+    resourceDef: Def;
+  }
+): T[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
+}
+
+export function ResourceTickSystem(ctx: GameState) {
+  const { fromGameState } = getModule(ctx, ResourceModule);
+  const { tick } = getWriteObjectBufferView(fromGameState);
+  // Tell Main/Render threads what the game thread's tick is
+  tick[0] = ctx.tick;
 }
 
 export function ResourceLoaderSystem(ctx: GameState) {
-  const resourceModule = getModule(ctx, ResourceModule);
+  sendResourceMessages(ctx);
+}
 
-  if (resourceModule.mainThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Main,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.mainThreadMessageQueue,
-      },
-      resourceModule.mainThreadTransferList.length > 0 ? resourceModule.mainThreadTransferList : undefined
-    );
+export function ResourceDisposalSystem(ctx: GameState) {
+  const { disposedResourcesQueue, mainDisposedResources, renderDisposedResources, disposeRefCounts } = getModule(
+    ctx,
+    ResourceModule
+  );
 
-    resourceModule.mainThreadMessageQueue = [];
+  while (disposedResourcesQueue.length) {
+    const eid = disposedResourcesQueue.shift()!;
 
-    if (resourceModule.mainThreadTransferList.length > 0) {
-      resourceModule.mainThreadTransferList = [];
+    if (disposeRefCounts.has(eid)) {
+      throw new Error("Disposed resource already has ref counts");
+    }
+
+    disposeRefCounts.set(eid, 2);
+
+    //console.log(`${ctx.thread} enqueue disposal ${eid} tick ${ctx.tick}`);
+
+    enqueueResourceRingBuffer(mainDisposedResources, eid, ctx.tick);
+    enqueueResourceRingBuffer(renderDisposedResources, eid, ctx.tick);
+  }
+}
+
+function processResourceRingBuffer(
+  resourceRingBuffer: ResourceRingBuffer,
+  disposeRefCounts: Map<number, number>,
+  deferredRemovals: ResourceRingBufferItem[]
+) {
+  while (availableRead(resourceRingBuffer)) {
+    const item = dequeueResourceRingBuffer(resourceRingBuffer, { eid: 0, tick: 0 });
+
+    let refCount = disposeRefCounts.get(item.eid);
+
+    if (refCount === undefined) {
+      throw new Error("Tried to dispose entity which has no dispose ref counts");
+    }
+
+    if (--refCount === 0) {
+      deferredRemovals.push(item);
+    } else {
+      disposeRefCounts.set(item.eid, refCount);
     }
   }
+}
 
-  if (resourceModule.renderThreadMessageQueue.length !== 0) {
-    ctx.sendMessage<LoadResourcesMessage>(
-      Thread.Render,
-      {
-        type: ResourceMessageType.LoadResources,
-        resources: resourceModule.renderThreadMessageQueue,
-      },
-      resourceModule.renderThreadTransferList.length > 0 ? resourceModule.renderThreadTransferList : undefined
-    );
+export function RecycleResourcesSystem(ctx: GameState) {
+  const {
+    mainRecycleResources,
+    renderRecycleResources,
+    disposeRefCounts,
+    deferredRemovals,
+    mainToGameState,
+    renderToGameState,
+  } = getModule(ctx, ResourceModule);
 
-    resourceModule.renderThreadMessageQueue = [];
+  const { lastProcessedTick: lastProcessedTickMain } = getReadObjectBufferView(mainToGameState);
+  const { lastProcessedTick: lastProcessedTickRender } = getReadObjectBufferView(renderToGameState);
 
-    if (resourceModule.renderThreadTransferList.length > 0) {
-      resourceModule.renderThreadTransferList = [];
+  // What is the last fully processed tick for both the main and render thread?
+  const lastProcessedTick = Math.min(lastProcessedTickMain[0], lastProcessedTickRender[0]);
+
+  // Dequeue items representing resources being disposed on a specified tick on each of the following threads
+  // Decrement a ref count for a particular resource from 2 to 0 representing how many threads it is waiting on
+  // to be removed.
+  // If the ref count reaches 0 then we know that the resource has been properly disposed on both threads.
+  processResourceRingBuffer(mainRecycleResources, disposeRefCounts, deferredRemovals);
+  processResourceRingBuffer(renderRecycleResources, disposeRefCounts, deferredRemovals);
+
+  for (let i = 0; i < deferredRemovals.length; i++) {
+    const item = deferredRemovals[i];
+
+    if (item.tick <= lastProcessedTick && ctx.tick > lastProcessedTick) {
+      //console.log(`${ctx.thread} dispose ${item.eid} tick ${ctx.tick}`);
+      disposeRefCounts.delete(item.eid);
+      removeEntity(ctx.world, item.eid);
+      deferredRemovals.splice(i, 1);
+      i--;
     }
+    // } else {
+    //   console.log(`eid ${item.eid} tick is greater than the last processed tick. Deferring.`);
+    // }
   }
 }

@@ -1,4 +1,4 @@
-import { TypedArray } from "./types";
+import { TypedArray } from "../utils/typedarray";
 
 export type CursorView = DataView & { cursor: number; shadowMap: Map<TypedArray, TypedArray> } & {
   [K: string]: Function;

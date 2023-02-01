@@ -1,6 +1,19 @@
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
+export interface SingleConsumerThreadSharedState {
+  useXRViewerWorldMatrix: boolean;
+  xrViewerWorldMatrix: Float32Array;
+  update: () => void;
+}
+
+export interface ConsumerThreadContext extends BaseThreadContext {
+  isStaleFrame: boolean;
+  singleConsumerThreadSharedState?: SingleConsumerThreadSharedState;
+}
+
 export interface BaseThreadContext {
+  thread: Thread;
+  tick: number;
   systems: ThreadSystem<any>[];
   modules: Map<Module<any, any>, any>;
   sendMessage<M extends Message<any>>(
@@ -309,7 +322,7 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
             `timeout reached while waiting on message ${key} from thread ${fromThread} on thread ${localThread}`
           )
         );
-      }, 5000);
+      }, 30000);
       const msg = { fromThread, key, resolve, reject, timeoutId };
       deferredMessages.push(msg);
     });

@@ -1,30 +1,22 @@
-import {
-  defineComponent,
-  defineQuery,
-  addComponent,
-  removeComponent,
-  enterQuery,
-  hasComponent,
-  exitQuery,
-  Types,
-} from "bitecs";
+import { defineComponent, defineQuery, addComponent, removeComponent, enterQuery, exitQuery, Types } from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
 import { GameState, World } from "../GameTypes";
-import { setQuaternionFromEuler, Transform } from "../component/transform";
 import { defineMapComponent } from "../ecs/MapComponent";
-import { Networked, Owned } from "../network/network.game";
 import { defineModule, getModule } from "../module/module.common";
-import { ResourceId } from "../resource/resource.common";
-import { addResourceRef, disposeResource } from "../resource/resource.game";
+import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
+import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
+import { maxEntities } from "../config.common";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
-  drainContactEvents: (callback: (eid1: number, eid2: number) => void) => void;
-  collisionHandlers: ((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => void)[];
+  characterCollision: RAPIER.CharacterCollision;
+  collisionHandlers: ((eid1: number, eid2: number, handle1: number, handle2: number) => void)[];
+  characterController: RAPIER.KinematicCharacterController;
+  eidTocharacterController: Map<number, RAPIER.KinematicCharacterController>;
 }
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
@@ -37,62 +29,59 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleToEid = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
-    const drainContactEvents = (callback: (eid1: number, eid2: number, handle1: number, handle2: number) => void) => {
-      eventQueue.drainContactEvents((handle1, handle2) => {
-        const eid1 = handleToEid.get(handle1);
-        if (eid1 === undefined) {
-          console.warn(`Contact with unregistered physics handle ${handle1}`);
-          // return;
-        }
-        const eid2 = handleToEid.get(handle2);
-        if (eid2 === undefined) {
-          console.warn(`Contact with unregistered physics handle ${handle2}`);
-          // return;
-        }
-        callback(eid1!, eid2!, handle1, handle2);
-      });
-    };
+    const characterController = physicsWorld.createCharacterController(0.1);
+    characterController.enableAutostep(0.25, 0.25, true);
+    characterController.enableSnapToGround(0.5);
+    characterController.setApplyImpulsesToDynamicBodies(true);
 
     return {
       physicsWorld,
       eventQueue,
       handleToEid,
-      drainContactEvents,
       collisionHandlers: [],
+      characterCollision: new RAPIER.CharacterCollision(),
+      characterController,
+      eidTocharacterController: new Map<number, RAPIER.KinematicCharacterController>(),
     };
   },
   init(ctx) {},
 });
 
-const RigidBodySoA = defineComponent({
-  velocity: [Types.f32, 3],
-  meshResourceId: Types.ui32,
-  primitiveResourceId: Types.ui32,
-});
+const RigidBodySoA = defineComponent(
+  {
+    velocity: [Types.f32, 3],
+    meshResourceId: Types.ui32,
+    primitiveResourceId: Types.ui32,
+  },
+  maxEntities
+);
+
+// data flows from rigidbody->transform
 export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
 
-export const physicsQuery = defineQuery([RigidBody]);
-export const enteredPhysicsQuery = enterQuery(physicsQuery);
-export const exitedPhysicsQuery = exitQuery(physicsQuery);
+export const rigidBodyQuery = defineQuery([RigidBody]);
+export const enteredRigidBodyQuery = enterQuery(rigidBodyQuery);
+export const exitedRigidBodyQuery = exitQuery(rigidBodyQuery);
+
+// data flows from transform->rigidbody
+export const Kinematic = defineComponent();
 
 const _v = new Vector3();
 const _q = new Quaternion();
-export const applyTransformToRigidBody = (body: RapierRigidBody, eid: number) => {
-  const position = Transform.position[eid];
-  const quaternion = Transform.quaternion[eid];
-  body.setTranslation(_v.fromArray(position), true);
-  body.setRotation(_q.fromArray(quaternion), true);
+export const applyTransformToRigidBody = (body: RapierRigidBody, node: RemoteNode) => {
+  body.setTranslation(_v.fromArray(node.position), true);
+  body.setRotation(_q.fromArray(node.quaternion), true);
 };
 
-const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
-  if (body.isStatic()) {
+const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
+  if (body.bodyType() === RAPIER.RigidBodyType.Fixed) {
     return;
   }
 
   const rigidPos = body.translation();
   const rigidRot = body.rotation();
-  const position = Transform.position[eid];
-  const quaternion = Transform.quaternion[eid];
+  const position = node.position;
+  const quaternion = node.quaternion;
 
   position[0] = rigidPos.x;
   position[1] = rigidPos.y;
@@ -104,23 +93,21 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, eid: number) => {
   quaternion[3] = rigidRot.w;
 };
 
-export const PhysicsSystem = (state: GameState) => {
-  const { world, dt } = state;
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(state, PhysicsModule);
+export function PhysicsSystem(ctx: GameState) {
+  const { world, dt } = ctx;
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(ctx, PhysicsModule);
 
   // apply transform to rigidbody for new physics entities
-  const entered = enteredPhysicsQuery(world);
+  const entered = enteredRigidBodyQuery(world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
 
     const body = RigidBody.store.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
 
-    if (body) {
-      if (!body.isStatic()) {
-        const rotation = Transform.rotation[eid];
-        const quaternion = Transform.quaternion[eid];
-        setQuaternionFromEuler(quaternion, rotation);
-        applyTransformToRigidBody(body, eid);
+    if (body && node) {
+      if (body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
+        applyTransformToRigidBody(body, node);
       }
 
       handleToEid.set(body.handle, eid);
@@ -128,7 +115,7 @@ export const PhysicsSystem = (state: GameState) => {
   }
 
   // remove rigidbody from physics world
-  const exited = exitedPhysicsQuery(world);
+  const exited = exitedRigidBodyQuery(world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     const body = RigidBody.store.get(eid);
@@ -138,34 +125,11 @@ export const PhysicsSystem = (state: GameState) => {
       RigidBody.store.delete(eid);
 
       if (RigidBody.meshResourceId[eid]) {
-        disposeResource(state, RigidBody.meshResourceId[eid]);
+        removeResourceRef(ctx, RigidBody.meshResourceId[eid]);
       }
 
       if (RigidBody.primitiveResourceId[eid]) {
-        disposeResource(state, RigidBody.primitiveResourceId[eid]);
-      }
-    }
-  }
-
-  // apply rigidbody to transform for regular physics entities
-  const physicsEntities = physicsQuery(world);
-  for (let i = 0; i < physicsEntities.length; i++) {
-    const eid = physicsEntities[i];
-    const body = RigidBody.store.get(eid);
-
-    if (body && !body.isStatic()) {
-      // sync velocity
-      const linvel = body.linvel();
-      const velocity = RigidBody.velocity[eid];
-      velocity[0] = linvel.x;
-      velocity[1] = linvel.y;
-      velocity[2] = linvel.z;
-
-      // skip remote networked physics bodies
-      if (hasComponent(world, Networked, eid) && !hasComponent(world, Owned, eid)) {
-        continue;
-      } else {
-        applyRigidBodyToTransform(body, eid);
+        removeResourceRef(ctx, RigidBody.primitiveResourceId[eid]);
       }
     }
   }
@@ -173,35 +137,58 @@ export const PhysicsSystem = (state: GameState) => {
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
 
-  eventQueue.drainContactEvents((handle1, handle2) => {
+  eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
     const eid1 = handleToEid.get(handle1);
     const eid2 = handleToEid.get(handle2);
+
+    if (eid1 === undefined || eid2 === undefined) {
+      return;
+    }
+
     for (const collisionHandler of collisionHandlers) {
       collisionHandler(eid1, eid2, handle1, handle2);
     }
   });
-};
+
+  // apply rigidbody to transform for regular physics entities
+  const physicsEntities = rigidBodyQuery(world);
+  for (let i = 0; i < physicsEntities.length; i++) {
+    const eid = physicsEntities[i];
+    const body = RigidBody.store.get(eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
+
+    if (node && body && body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
+      // sync velocity
+      const linvel = body.linvel();
+      const velocity = RigidBody.velocity[eid];
+      velocity[0] = linvel.x;
+      velocity[1] = linvel.y;
+      velocity[2] = linvel.z;
+
+      applyRigidBodyToTransform(body, node);
+    }
+  }
+}
 
 export function addRigidBody(
   ctx: GameState,
-  eid: number,
+  node: RemoteNode,
   rigidBody: RapierRigidBody,
-  meshResourceId?: ResourceId,
-  primitiveResourceId?: ResourceId
+  meshResource?: RemoteMesh,
+  primitiveResource?: RemoteMeshPrimitive
 ) {
-  addComponent(ctx.world, RigidBody, eid);
-  RigidBody.store.set(eid, rigidBody);
+  addComponent(ctx.world, RigidBody, node.eid);
+  RigidBody.store.set(node.eid, rigidBody);
 
-  if (meshResourceId) {
-    addResourceRef(ctx, meshResourceId);
+  if (meshResource) {
+    addResourceRef(ctx, meshResource.eid);
+    RigidBody.meshResourceId[node.eid] = meshResource.eid;
   }
 
-  if (primitiveResourceId) {
-    addResourceRef(ctx, primitiveResourceId);
+  if (primitiveResource) {
+    addResourceRef(ctx, primitiveResource.eid);
+    RigidBody.primitiveResourceId[node.eid] = primitiveResource.eid;
   }
-
-  RigidBody.meshResourceId[eid] = meshResourceId || 0;
-  RigidBody.primitiveResourceId[eid] = primitiveResourceId || 0;
 }
 
 export function removeRigidBody(world: World, eid: number, rigidBody: RapierRigidBody) {

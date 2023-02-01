@@ -3,40 +3,26 @@ import { defineComponent, Types, removeComponent, addComponent, hasComponent, de
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
-import {
-  createRemoteAudioData,
-  createRemoteAudioSource,
-  createRemoteGlobalAudioEmitter,
-  playAudio,
-  RemoteAudioSource,
-  RemoteGlobalAudioEmitter,
-} from "../../engine/audio/audio.game";
+import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { getCamera } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
-import { removeRecursive, Transform } from "../../engine/component/transform";
-import { MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
+import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
-import {
-  enableActionMap,
-  ActionMap,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-} from "../../engine/input/ActionMappingSystem";
+import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
-import { getInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { tryGetInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
   Networked,
+  networkedQuery,
   NetworkModule,
   Owned,
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
 import { takeOwnership } from "../../engine/network/ownership.game";
-import { RemoteNodeComponent } from "../../engine/node/node.game";
 import {
   addCollisionGroupMembership,
   FocusCollisionGroup,
@@ -47,9 +33,15 @@ import {
 } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
-import { addResourceRef } from "../../engine/resource/resource.game";
-import { InteractableType } from "../../engine/resource/schema";
-import { RemoteSceneComponent } from "../../engine/scene/scene.game";
+import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import {
+  RemoteAudioData,
+  RemoteAudioEmitter,
+  RemoteAudioSource,
+  RemoteNode,
+  removeObjectFromWorld,
+} from "../../engine/resource/RemoteResources";
+import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
@@ -59,12 +51,14 @@ import {
   SetObjectCapMessageType,
 } from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
 
 type InteractionModuleState = {
-  clickEmitter?: RemoteGlobalAudioEmitter;
+  clickEmitter?: RemoteAudioEmitter;
   // HACK: add duplicate obj cap config to interaction module until import issue is resolved
   maxObjCap: number;
 };
@@ -79,37 +73,49 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
 
-    const clickAudio1 = createRemoteAudioData(ctx, { name: "Click1 Audio Data", uri: "/audio/click1.wav" });
-    addResourceRef(ctx, clickAudio1.resourceId);
+    const clickAudio1 = new RemoteAudioData(ctx.resourceManager, {
+      name: "Click1 Audio Data",
+      uri: "/audio/click1.wav",
+    });
+    addResourceRef(ctx, clickAudio1.eid);
 
-    const clickAudio2 = createRemoteAudioData(ctx, { name: "Click2 Audio Data", uri: "/audio/click2.wav" });
-    addResourceRef(ctx, clickAudio2.resourceId);
+    const clickAudio2 = new RemoteAudioData(ctx.resourceManager, {
+      name: "Click2 Audio Data",
+      uri: "/audio/click2.wav",
+    });
+    addResourceRef(ctx, clickAudio2.eid);
 
-    const clickAudioSource1 = createRemoteAudioSource(ctx, {
+    const clickAudioSource1 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio1,
       loop: false,
       autoPlay: false,
       gain: 0.2,
     });
-    addResourceRef(ctx, clickAudioSource1.resourceId);
+    addResourceRef(ctx, clickAudioSource1.eid);
 
-    const clickAudioSource2 = createRemoteAudioSource(ctx, {
+    const clickAudioSource2 = new RemoteAudioSource(ctx.resourceManager, {
       audio: clickAudio2,
       loop: false,
       autoPlay: false,
       gain: 0.2,
     });
-    addResourceRef(ctx, clickAudioSource2.resourceId);
+    addResourceRef(ctx, clickAudioSource2.eid);
 
-    module.clickEmitter = createRemoteGlobalAudioEmitter(ctx, {
+    module.clickEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+      type: AudioEmitterType.Global,
       sources: [clickAudioSource1, clickAudioSource2],
     });
 
-    addResourceRef(ctx, module.clickEmitter.resourceId);
+    addResourceRef(ctx, module.clickEmitter.eid);
 
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
     enableActionMap(controller, InteractionActionMap);
+
+    ctx.worldResource.persistentScene.audioEmitters = [
+      ...ctx.worldResource.persistentScene.audioEmitters,
+      module.clickEmitter,
+    ];
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
@@ -122,7 +128,7 @@ function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
 
 const InteractionActionMap: ActionMap = {
   id: "interaction",
-  actions: [
+  actionDefs: [
     {
       id: "grab",
       path: "Grab",
@@ -132,18 +138,36 @@ const InteractionActionMap: ActionMap = {
           type: BindingType.Button,
           path: "Mouse/Left",
         },
-      ],
-    },
-    {
-      id: "grab2",
-      path: "Grab2",
-      type: ActionType.Button,
-      bindings: [
         {
           type: BindingType.Button,
           path: "Keyboard/KeyE",
         },
       ],
+      networked: true,
+    },
+    {
+      id: "primaryGrab",
+      path: "primaryGrab",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/primary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "secondaryGrab",
+      path: "secondaryGrab",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/secondary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
     },
     {
       id: "throw",
@@ -154,18 +178,12 @@ const InteractionActionMap: ActionMap = {
           type: BindingType.Button,
           path: "Mouse/Right",
         },
-      ],
-    },
-    {
-      id: "throw2",
-      path: "Throw2",
-      type: ActionType.Button,
-      bindings: [
         {
           type: BindingType.Button,
           path: "Mouse/Left",
         },
       ],
+      networked: true,
     },
     {
       id: "delete",
@@ -177,6 +195,7 @@ const InteractionActionMap: ActionMap = {
           path: "Keyboard/KeyX",
         },
       ],
+      networked: true,
     },
     {
       id: "scroll",
@@ -188,23 +207,35 @@ const InteractionActionMap: ActionMap = {
           y: "Mouse/Scroll",
         },
       ],
+      networked: true,
     },
   ],
 };
 
-export const Interactable = defineComponent({
-  type: Types.ui8,
-  interactionDistance: Types.f32,
-});
+export const Interactable = defineComponent(
+  {
+    type: Types.ui8,
+    interactionDistance: Types.f32,
+  },
+  maxEntities
+);
 
-const FocusComponent = defineComponent({
-  focusedEntity: Types.eid,
-});
+const FocusComponent = defineComponent(
+  {
+    focusedEntity: Types.eid,
+    lastFocused: Types.eid,
+  },
+  maxEntities
+);
 
-export const GrabComponent = defineComponent({
-  grabbedEntity: Types.eid,
-  joint: [Types.f32, 3],
-});
+export const GrabComponent = defineComponent(
+  {
+    grabbedEntity: Types.eid,
+    heldOffset: Types.f32,
+    joint: [Types.f32, 3],
+  },
+  maxEntities
+);
 
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
@@ -219,7 +250,7 @@ const _target = vec3.create();
 
 const _impulse = new Vector3();
 
-const _cameraWorldQuat = quat.create();
+const _worldQuat = quat.create();
 
 const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
@@ -233,11 +264,7 @@ const _r = new Vector4();
 
 const zero = new Vector3();
 
-let lastActiveScene = 0;
-
-let heldOffset = 0;
-
-const remoteNodeQuery = defineQuery([RemoteNodeComponent]);
+const remoteNodeQuery = defineQuery([RemoteNode]);
 const interactableQuery = defineQuery([Interactable]);
 
 export function InteractionSystem(ctx: GameState) {
@@ -246,27 +273,18 @@ export function InteractionSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
 
-  // HACK: add click emitter to current scene (scene is replaced when loading a world, global audio emitters are wiped along with it)
-  if (lastActiveScene !== ctx.activeScene) {
-    const remoteScene = RemoteSceneComponent.get(ctx.activeScene);
-    if (remoteScene && interaction.clickEmitter && !remoteScene.audioEmitters.includes(interaction.clickEmitter)) {
-      remoteScene.audioEmitters = [...remoteScene.audioEmitters, interaction.clickEmitter];
-    }
-    lastActiveScene = ctx.activeScene;
-  }
-
   const remoteNodeEntities = remoteNodeQuery(ctx.world);
 
   for (let i = 0; i < remoteNodeEntities.length; i++) {
     const eid = remoteNodeEntities[i];
-    const remoteNode = RemoteNodeComponent.get(eid);
-    const interactable = remoteNode?.scriptNode?.interactable;
+    const remoteNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const interactable = remoteNode.interactable;
     const hasInteractable = hasComponent(ctx.world, Interactable, eid);
 
     if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
-      addInteractableComponent(ctx, physics, eid, interactable.type);
+      addInteractableComponent(ctx, physics, remoteNode, interactable.type);
     } else if (!interactable && hasInteractable && Interactable.type[eid] === InteractableType.Interactable) {
-      removeInteractableComponent(ctx, physics, eid);
+      removeInteractableComponent(ctx, physics, remoteNode);
     }
   }
 
@@ -279,8 +297,8 @@ export function InteractionSystem(ctx: GameState) {
       continue;
     }
 
-    const remoteNode = RemoteNodeComponent.get(eid);
-    const interactable = remoteNode?.scriptNode?.interactable;
+    const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
+    const interactable = remoteNode?.interactable;
 
     if (interactable) {
       interactable.pressed = false;
@@ -292,27 +310,34 @@ export function InteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const camera = getCamera(ctx, eid);
-    const controller = getInputController(input, eid);
+    const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const xr = XRAvatarRig.get(eid);
+    const grabbingNode =
+      xr && xr.rightControllerEid
+        ? tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid)
+        : getCamera(ctx, rig).parent!;
+    const controller = tryGetInputController(input, eid);
 
-    updateFocus(ctx, physics, eid, camera);
+    updateFocus(ctx, physics, rig, grabbingNode);
 
-    const authoritativeAndHosting = network.authoritative && isHost(network);
+    const hosting = network.authoritative && isHost(network);
+    const cspEnabled = network.authoritative && network.clientSidePrediction;
+    const p2p = !network.authoritative;
 
-    if (authoritativeAndHosting || !network.authoritative) {
+    if (hosting || cspEnabled || p2p) {
       updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrow(ctx, interaction, physics, network, controller, eid, camera);
+      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
     }
   }
 }
 
-function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, camera: number) {
+function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
   // raycast outward from camera
-  const cameraMatrix = Transform.worldMatrix[camera];
-  mat4.getRotation(_cameraWorldQuat, cameraMatrix);
+  const cameraMatrix = focusingNode.worldMatrix;
+  mat4.getRotation(_worldQuat, cameraMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
-  vec3.transformQuat(target, target, _cameraWorldQuat);
+  vec3.transformQuat(target, target, _worldQuat);
   vec3.scale(target, target, MAX_FOCUS_DISTANCE);
 
   const source = mat4.getTranslation(_source, cameraMatrix);
@@ -328,45 +353,53 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: number, c
     t,
     colliderShape,
     10.0,
+    true,
+    0,
     focusShapeCastCollisionGroups
   );
 
   let eid;
-
   if (hit !== null) {
-    eid = physics.handleToEid.get(hit.colliderHandle);
+    eid = physics.handleToEid.get(hit.collider.handle);
     if (!eid) {
-      console.warn(`Could not find entity for physics handle ${hit.colliderHandle}`);
+      console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
     } else if (hit.toi <= Interactable.interactionDistance[eid]) {
-      addComponent(ctx.world, FocusComponent, rig);
-      FocusComponent.focusedEntity[rig] = eid;
+      addComponent(ctx.world, FocusComponent, rig.eid);
+      FocusComponent.focusedEntity[rig.eid] = eid;
+    } else {
+      // clear focus
+      removeComponent(ctx.world, FocusComponent, rig.eid, true);
+      FocusComponent.focusedEntity[rig.eid] = 0;
     }
   } else {
     // clear focus
-    removeComponent(ctx.world, FocusComponent, rig, true);
+    removeComponent(ctx.world, FocusComponent, rig.eid, true);
+    FocusComponent.focusedEntity[rig.eid] = 0;
   }
 
   // only update UI if it's our player
-  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+
   if (ourPlayer) {
     // TODO: only send these messages when they change
-    if (FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
-    if (!FocusComponent.focusedEntity[rig]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    if (FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
+    if (!FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
   }
 }
 
 function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
-  const deleteBtn = controller.actions.get("Delete") as ButtonActionState;
+  const deleteBtn = controller.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
-    const focused = FocusComponent.focusedEntity[rig];
+    const focusedEid = FocusComponent.focusedEntity[rig];
+    const focused = getRemoteResource<RemoteNode>(ctx, focusedEid);
     // TODO: For now we only delete owned objects
     if (
       focused &&
-      hasComponent(ctx.world, Owned, focused) &&
-      Interactable.type[focused] === InteractableType.Grabbable
+      hasComponent(ctx.world, Owned, focused.eid) &&
+      Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeRecursive(ctx.world, focused);
-      playAudio(interaction.clickEmitter?.sources[1] as RemoteAudioSource, { gain: 0.4 });
+      removeObjectFromWorld(ctx, focused);
+      playOneShotAudio(ctx, interaction.clickEmitter?.sources[1] as RemoteAudioSource, 0.4);
     }
   }
 }
@@ -377,29 +410,30 @@ function updateGrabThrow(
   physics: PhysicsModuleState,
   network: GameNetworkState,
   controller: InputController,
-  rig: number,
-  camera: number
+  rig: RemoteNode,
+  grabbingNode: RemoteNode
 ) {
-  let heldEntity = GrabComponent.grabbedEntity[rig];
+  let heldEntity = GrabComponent.grabbedEntity[rig.eid];
+  let heldOffset = GrabComponent.heldOffset[rig.eid];
 
-  const grabBtn = controller.actions.get("Grab") as ButtonActionState;
-  const grabBtn2 = controller.actions.get("Grab2") as ButtonActionState;
-  const throwBtn = controller.actions.get("Throw") as ButtonActionState;
-  const throwBtn2 = controller.actions.get("Throw2") as ButtonActionState;
+  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+  const primaryGrab = controller.actionStates.get("primaryGrab") as ButtonActionState;
+  // const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
+  const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed || grabBtn2.pressed;
-  const grabReleased = grabBtn.released || grabBtn2.released;
-  const throwPressed = throwBtn.pressed || throwBtn2.pressed;
+  const grabPressed = grabBtn.pressed || primaryGrab.pressed;
+  const grabReleased = grabBtn.released;
+  const throwPressed = throwBtn.pressed;
 
-  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig);
+  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
   // if holding and entity and throw is pressed
   if (heldEntity && throwPressed) {
-    removeComponent(ctx.world, GrabComponent, rig, true);
+    removeComponent(ctx.world, GrabComponent, rig.eid, true);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
 
     // fire!
@@ -411,32 +445,32 @@ function updateGrabThrow(
       sendInteractionMessage(ctx, InteractableAction.Unfocus);
     }
 
-    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+    playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
-    heldOffset = 0;
+    GrabComponent.heldOffset[rig.eid] = 0;
 
     // if holding an entity and grab is pressed again
   } else if (grabPressed && heldEntity) {
     // release
-    removeComponent(ctx.world, GrabComponent, rig, true);
+    removeComponent(ctx.world, GrabComponent, rig.eid, true);
 
     if (ourPlayer) {
       sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
       sendInteractionMessage(ctx, InteractableAction.Unfocus);
     }
 
-    playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 0.6 });
+    playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
-    heldOffset = 0;
+    GrabComponent.heldOffset[rig.eid] = 0;
 
     // if grab is pressed
   } else if (grabPressed) {
     // raycast outward from camera
-    const cameraMatrix = Transform.worldMatrix[camera];
-    mat4.getRotation(_cameraWorldQuat, cameraMatrix);
+    const cameraMatrix = grabbingNode.worldMatrix;
+    mat4.getRotation(_worldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
-    vec3.transformQuat(target, target, _cameraWorldQuat);
+    vec3.transformQuat(target, target, _worldQuat);
     vec3.scale(target, target, GRAB_DISTANCE);
 
     const source = mat4.getTranslation(_source, cameraMatrix);
@@ -452,44 +486,47 @@ function updateGrabThrow(
       t,
       colliderShape,
       10.0,
+      true,
+      0,
       grabShapeCastCollisionGroups
     );
 
     if (shapecastHit !== null) {
-      const eid = physics.handleToEid.get(shapecastHit.colliderHandle);
+      const eid = physics.handleToEid.get(shapecastHit.collider.handle);
+      const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
-      if (!eid) {
-        console.warn(`Could not find entity for physics handle ${shapecastHit.colliderHandle}`);
-      } else if (shapecastHit.toi <= Interactable.interactionDistance[eid]) {
-        if (Interactable.type[eid] === InteractableType.Grabbable) {
-          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+      if (!node || !eid) {
+        console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
+      } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
+        if (Interactable.type[node.eid] === InteractableType.Grabbable) {
+          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
 
-          const ownedEnts = ownedNetworkedQuery(ctx.world);
-          if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, eid)) {
+          const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+          if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
             // do nothing if we hit the max obj cap
             ctx.sendMessage(Thread.Main, {
               type: ObjectCapReachedMessageType,
             });
           } else {
             // otherwise attempt to take ownership
-            const newEid = takeOwnership(ctx, network, eid);
+            const newEid = takeOwnership(ctx, network, node);
 
             if (newEid !== NOOP) {
-              addComponent(ctx.world, GrabComponent, rig);
-              GrabComponent.grabbedEntity[rig] = newEid;
+              addComponent(ctx.world, GrabComponent, rig.eid);
+              GrabComponent.grabbedEntity[rig.eid] = newEid;
               heldEntity = newEid;
               if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
             } else {
-              addComponent(ctx.world, GrabComponent, rig);
-              GrabComponent.grabbedEntity[rig] = eid;
+              addComponent(ctx.world, GrabComponent, rig.eid);
+              GrabComponent.grabbedEntity[rig.eid] = eid;
               if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
             }
           }
-        } else if (Interactable.type[eid] === InteractableType.Interactable) {
-          playAudio(interaction.clickEmitter?.sources[0] as RemoteAudioSource, { playbackRate: 1 });
+        } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
+          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const remoteNode = RemoteNodeComponent.get(eid);
-          const interactable = remoteNode?.scriptNode?.interactable;
+          const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
+          const interactable = remoteNode?.interactable;
 
           if (interactable) {
             interactable.pressed = true;
@@ -513,8 +550,8 @@ function updateGrabThrow(
         continue;
       }
 
-      const remoteNode = RemoteNodeComponent.get(eid);
-      const interactable = remoteNode?.scriptNode?.interactable;
+      const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
+      const interactable = remoteNode?.interactable;
 
       if (interactable) {
         interactable.pressed = false;
@@ -525,24 +562,26 @@ function updateGrabThrow(
   }
 
   // if still holding entity, move towards the held point
-  heldEntity = GrabComponent.grabbedEntity[rig];
+  heldEntity = GrabComponent.grabbedEntity[rig.eid];
 
-  if (heldEntity) {
+  const heldNode = getRemoteResource<RemoteNode>(ctx, heldEntity);
+
+  if (heldNode) {
     // move held point upon scrolling
-    const [, scrollY] = controller.actions.get("Scroll") as vec2;
+    const [, scrollY] = controller.actionStates.get("Scroll") as vec2;
     if (scrollY !== 0) {
-      heldOffset += scrollY / 1000;
+      heldOffset -= scrollY / 1000;
     }
-    heldOffset = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
+    GrabComponent.heldOffset[rig.eid] = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
 
-    const heldPosition = Transform.position[heldEntity];
+    const heldPosition = heldNode.position;
 
     const target = _target;
-    mat4.getTranslation(target, Transform.worldMatrix[camera]);
+    mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_cameraWorldQuat, Transform.worldMatrix[camera]);
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
-    vec3.transformQuat(direction, direction, _cameraWorldQuat);
+    vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
 
     vec3.sub(target, target, direction);
@@ -555,7 +594,7 @@ function updateGrabThrow(
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
-      body.setRotation(_r.fromArray(_cameraWorldQuat), true);
+      body.setRotation(_r.fromArray(_worldQuat), true);
     }
   }
 }
@@ -596,7 +635,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,
       interactableType,
-      name: Prefab.get(eid) || RemoteNodeComponent.get(eid)?.name,
+      name: Prefab.get(eid) || getRemoteResource<RemoteNode>(ctx, eid)?.name,
       held: hasComponent(ctx.world, GrabComponent, eid),
       action,
       peerId,
@@ -609,14 +648,13 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
 export function addInteractableComponent(
   ctx: GameState,
   physics: PhysicsModuleState,
-  eid: number,
+  node: RemoteNode,
   interactableType: InteractableType
 ) {
+  const eid = node.eid;
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
   Interactable.interactionDistance[eid] = interactableType === InteractableType.Interactable ? 10 : 1;
-
-  const { physicsWorld } = physics;
 
   const rigidBody = RigidBody.store.get(eid);
   if (!rigidBody) {
@@ -627,35 +665,31 @@ export function addInteractableComponent(
   }
 
   for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const colliderHandle = rigidBody.collider(i);
-    const collider = physicsWorld.getCollider(colliderHandle);
+    const collider = rigidBody.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 
     collisionGroups = addCollisionGroupMembership(collisionGroups, FocusCollisionGroup);
     collisionGroups = addCollisionGroupMembership(collisionGroups, GrabCollisionGroup);
 
-    collider.setActiveEvents(RAPIER.ActiveEvents.CONTACT_EVENTS);
+    collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
     collider.setCollisionGroups(collisionGroups);
   }
 }
 
-export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, eid: number) {
-  removeComponent(ctx.world, Interactable, eid);
+export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+  removeComponent(ctx.world, Interactable, node.eid);
 
-  const { physicsWorld } = physics;
-
-  const rigidBody = RigidBody.store.get(eid);
+  const rigidBody = RigidBody.store.get(node.eid);
   if (!rigidBody) {
     console.warn(
-      `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
+      `Adding interactable component to entity "${node.name}" without a RigidBody component. This entity will not be interactable.`
     );
     return;
   }
 
   for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const colliderHandle = rigidBody.collider(i);
-    const collider = physicsWorld.getCollider(colliderHandle);
+    const collider = rigidBody.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 

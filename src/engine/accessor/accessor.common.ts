@@ -1,5 +1,8 @@
-import { ResourceId } from "../resource/resource.common";
-import { AccessorComponentType, AccessorType } from "../resource/schema";
+import { mat4 } from "gl-matrix";
+
+import { BaseThreadContext } from "../module/module.common";
+import { LocalResourceInstance, RemoteResourceInstance } from "../resource/ResourceDefinition";
+import { AccessorComponentType, AccessorResource, AccessorType } from "../resource/schema";
 
 export const AccessorResourceType = "accessor";
 
@@ -42,7 +45,7 @@ export const AccessorComponentTypeToTypedArray: {
   [AccessorComponentType.Float32]: Float32Array,
 };
 
-export const AccessorTypeToItemSize: {
+export const AccessorTypeToElementSize: {
   [key: string]: number;
 } = {
   [AccessorType.SCALAR]: 1,
@@ -54,35 +57,110 @@ export const AccessorTypeToItemSize: {
   [AccessorType.MAT4]: 16,
 };
 
-export type TypedArrayFromAccessor<C extends AccessorComponentType> = InstanceType<
-  typeof AccessorComponentTypeToTypedArray[C]
->;
+export function getAccessorArrayView(
+  accessor:
+    | RemoteResourceInstance<typeof AccessorResource, BaseThreadContext>
+    | LocalResourceInstance<typeof AccessorResource, BaseThreadContext>,
+  deinterleave = true
+): AccessorTypedArray {
+  const elementCount = accessor.count;
+  const elementSize = AccessorTypeToElementSize[accessor.type];
+  const arrConstructor = AccessorComponentTypeToTypedArray[accessor.componentType];
+  const componentByteLength = arrConstructor.BYTES_PER_ELEMENT;
+  const elementByteLength = componentByteLength * elementSize;
+  let componentCount = elementSize;
 
-interface AccessorSparseIndicesResourceProps {
-  bufferView: ResourceId;
-  byteOffset: number;
-  componentType: AccessorSparseIndicesComponentType;
+  let arrayView: AccessorTypedArray;
+
+  if (accessor.bufferView !== undefined) {
+    const buffer = accessor.bufferView.buffer.data;
+    const byteOffset = accessor.byteOffset + accessor.bufferView.byteOffset;
+    const byteStride = accessor.bufferView.byteStride;
+
+    if (byteStride && byteStride !== elementByteLength) {
+      arrayView = new arrConstructor(buffer, byteOffset, (elementCount * byteStride) / componentByteLength);
+
+      if (deinterleave) {
+        const interleavedArrayView = arrayView;
+        const totalComponents = elementCount * elementSize;
+        arrayView = new arrConstructor(totalComponents);
+        componentCount = byteStride / componentByteLength;
+
+        for (let i = 0; i < totalComponents; i++) {
+          const index = Math.floor(i / elementSize) * componentCount + (i % elementSize);
+          arrayView[i] = interleavedArrayView[index];
+        }
+      }
+    } else {
+      arrayView = new arrConstructor(buffer, byteOffset, elementCount * elementSize);
+    }
+  } else {
+    arrayView = new arrConstructor(elementCount * elementSize);
+  }
+
+  const sparse = accessor.sparse;
+
+  if (sparse) {
+    arrayView = arrayView.slice();
+
+    const { count, indicesBufferView, indicesByteOffset, indicesComponentType, valuesBufferView, valuesByteOffset } =
+      sparse;
+
+    const indicesBuffer = indicesBufferView.buffer.data;
+    const indicesArrConstructor = AccessorComponentTypeToTypedArray[indicesComponentType];
+    const indicesComponentByteLength = indicesArrConstructor.BYTES_PER_ELEMENT;
+    const indicesComponentCount = indicesBufferView.byteStride
+      ? indicesBufferView.byteStride / indicesComponentByteLength
+      : 1;
+    const indicesView = new indicesArrConstructor(
+      indicesBuffer,
+      indicesByteOffset + indicesBufferView.byteOffset,
+      count * indicesComponentCount
+    );
+
+    const valuesBuffer = valuesBufferView.buffer.data;
+    const valuesComponentCount = valuesBufferView.byteStride
+      ? valuesBufferView.byteStride / componentByteLength
+      : elementSize;
+    const valuesView = new arrConstructor(
+      valuesBuffer,
+      valuesByteOffset + valuesBufferView.byteOffset,
+      count * valuesComponentCount
+    );
+
+    for (let i = 0; i < count * elementSize; i++) {
+      const elementIndex = Math.floor(i / elementSize);
+      const componentIndex = i % elementSize;
+      const indicesIndex = elementIndex * valuesComponentCount + componentIndex;
+      const valuesIndex = elementIndex * indicesComponentCount + componentIndex;
+      const baseIndex =
+        Math.floor(indicesView[indicesIndex] / elementSize) * componentCount +
+        (indicesView[indicesIndex] % elementSize);
+      arrayView[baseIndex] = valuesView[valuesIndex];
+    }
+  }
+
+  return arrayView;
 }
 
-interface AccessorSparseValuesResourceProps {
-  bufferView: ResourceId;
-  byteOffset: number;
-}
+// Modified version of gl-matrix's .transformMat4 for arrays of vec3s
+// https://glmatrix.net/docs/module-vec3.html#.transformMat4
+export function vec3ArrayTransformMat4(out: Float32Array, array: Float32Array, matrix: mat4): Float32Array {
+  const count = array.length / 3;
 
-interface AccessorSparseResourceProps {
-  count: number;
-  indices: AccessorSparseIndicesResourceProps;
-  values: AccessorSparseValuesResourceProps;
-}
+  for (let i = 0; i < count; i++) {
+    const x = array[i * 3];
+    const y = array[i * 3 + 1];
+    const z = array[i * 3 + 2];
 
-export interface AccessorResourceProps {
-  type: AccessorType;
-  componentType: AccessorComponentType;
-  bufferView?: ResourceId;
-  count: number;
-  byteOffset: number;
-  normalized: boolean;
-  min?: number[];
-  max?: number[];
-  sparse?: AccessorSparseResourceProps;
+    let w = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
+
+    w = w || 1.0;
+
+    out[i * 3] = (matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) / w;
+    out[i * 3 + 1] = (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) / w;
+    out[i * 3 + 2] = (matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]) / w;
+  }
+
+  return out;
 }
