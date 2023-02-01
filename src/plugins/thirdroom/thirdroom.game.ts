@@ -3,7 +3,7 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild } from "../../engine/component/transform";
+import { addChild, traverse } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -451,7 +451,6 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
-    isStatic: true,
   })) as RemoteScene;
 
   if (script) {
@@ -485,6 +484,10 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   ctx.worldResource.environment = new RemoteEnvironment(ctx.resourceManager, {
     publicScene: environmentScene,
     privateScene: transientScene,
+  });
+
+  traverse(environmentScene, (node) => {
+    node.isStatic = false;
   });
 
   const spawnPoints = getSpawnPoints(ctx);

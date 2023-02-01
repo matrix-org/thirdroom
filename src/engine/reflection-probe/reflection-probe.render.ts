@@ -169,7 +169,7 @@ export function updateNodeReflections(ctx: RenderThreadState, scene: RenderScene
         continue;
       }
 
-      if (node.isStatic) {
+      if (node.isStatic && !node.needsUpdate) {
         primitive.userData.reflectionsNeedUpdate = false;
       }
 

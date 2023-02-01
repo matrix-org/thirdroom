@@ -66,7 +66,9 @@ export function updateLocalNodeResources(ctx: RenderThreadState, rendererModule:
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
 
-    if (node.isStatic && !node.needsUpdate) {
+    const needsUpdate = node.needsUpdate;
+
+    if (!needsUpdate) {
       continue;
     }
 
@@ -76,7 +78,7 @@ export function updateLocalNodeResources(ctx: RenderThreadState, rendererModule:
     updateNodeMesh(ctx, node);
     updateNodeTilesRenderer(ctx, scene, node);
 
-    node.needsUpdate = false;
+    node.needsUpdate = node.isStatic ? false : needsUpdate;
   }
 }
 
