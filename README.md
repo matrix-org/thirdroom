@@ -277,3 +277,5 @@ as well. Every PR will be built and deployed as a preview deploy and every commi
 your Netlify site.
 
 When deploying to thirdroom.io, the [testing procedure](./docs/testing-procedure.md) should be completed before deploying.
+
+To setup OIDC login client configs needs to be added in `config.json`. Client configs includes `client_id` and `uris` issued by OIDC Provider.
