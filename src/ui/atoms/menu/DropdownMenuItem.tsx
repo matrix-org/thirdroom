@@ -3,7 +3,7 @@ import classNames from "classnames";
 import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
 
 import { Text } from "../text/Text";
-import "./DropdownMenuItem.css";
+import "./MenuItem.css";
 interface DropdownMenuItemProps {
   className?: string;
   variant?: "surface" | "primary" | "secondary" | "danger";
@@ -22,7 +22,7 @@ export function DropdownMenuItem({
   return (
     <RadixDropdownMenu.Item
       onSelect={onSelect}
-      className={classNames("DropdownMenuItem", `DropdownMenuItem--${variant}`, className)}
+      className={classNames("MenuItem", `MenuItem--${variant}`, className)}
       disabled={disabled}
     >
       {typeof children === "string" ? (
