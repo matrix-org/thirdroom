@@ -9,6 +9,7 @@ import { MXPortalExtension } from "./extensions/MXPortalExtension";
 import { MXPostprocessingExtension } from "./extensions/MXPostprocessing";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
+import { MXTextureRGBMExtension } from "./extensions/MXTextureRGBM";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
 import { OMILinkExtension } from "./extensions/OMILinkExtension";
 import { compressTextures } from "./functions/compressTextures";
@@ -26,6 +27,7 @@ export function registerExtensions(io: PlatformIO) {
     MXSpawnPointExtension,
     MXPostprocessingExtension,
     MXPortalExtension,
+    MXTextureRGBMExtension,
     OMILinkExtension,
     OMIColliderExtension,
   ]);

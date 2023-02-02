@@ -685,12 +685,15 @@ export interface GLTFTexture extends GLTFChildOfRootProperty {
   source?: GLTFId;
   extensions?: GLTFExtensions & {
     KHR_texture_basisu?: GLTFTextureBasisU;
+    MX_texture_rgbm?: GLTFTextureRGBM;
   };
 }
 
 export interface GLTFTextureBasisU extends GLTFProperty {
   source?: GLTFId;
 }
+
+export type GLTFTextureRGBM = GLTFProperty;
 
 /**
  * The root object for a glTF asset.

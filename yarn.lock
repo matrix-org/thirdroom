@@ -5364,10 +5364,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-"three@npm:@thirdroom/three@^0.148.1":
-  version "0.148.1"
-  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.1.tgz#6f771757fd6d4b62238a103df3288329343b0bc4"
-  integrity sha512-HVUPlU10TnFw4GhYtAqjViNkFJ3VhbqMT0gpFD8NXqpYnW6YuYbB2DdQi6OcWLdbowQ1B5G8ejOKTj4ThOVwLQ==
+"three@npm:@thirdroom/three@^0.148.2":
+  version "0.148.2"
+  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.2.tgz#059f99490c07f6ea9d82097a1b3da800f60a972a"
+  integrity sha512-cZMkrmLOmcqcN6iXTsYC94uBuhZzRCUJvFsfYR7xvRzxexTNi/mMrf+ZMhDNYw8soGZbMF92tXMOSBjiRQmWKA==
 
 through@^2.3.4:
   version "2.3.8"

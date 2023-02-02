@@ -168,6 +168,7 @@ export const TextureResource = defineResource("texture", ResourceType.Texture, {
   name: PropType.string({ default: "Texture", script: true }),
   sampler: PropType.ref(SamplerResource, { script: true, mutable: false }),
   source: PropType.ref(ImageResource, { script: true, mutable: false, required: true }),
+  rgbm: PropType.bool({ script: true, mutable: false }),
   encoding: PropType.enum(TextureEncoding, { default: TextureEncoding.Linear, script: true, mutable: false }),
   format: PropType.enum(TextureFormat, { default: TextureFormat.Unknown, script: true, mutable: false }),
   depth: PropType.u32({ default: 1, mutable: false }),

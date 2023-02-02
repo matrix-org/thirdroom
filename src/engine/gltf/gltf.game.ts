@@ -1147,9 +1147,12 @@ const loadGLTFTexture = createCachedSubresourceLoader(
       throw new Error(`No image source found for texture[${index}]`);
     }
 
+    const rgbm = !!texture.extensions?.MX_texture_rgbm;
+
     return new RemoteTexture(resource.manager, {
       name: texture.name,
       source,
+      rgbm,
       encoding: options?.encoding,
       sampler,
       format: basisSourceIndex !== undefined ? TextureFormat.Basis : TextureFormat.Unknown,

@@ -280,7 +280,6 @@ const actionMap: ActionMap = {
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
     await loadEnvironment(ctx, message.url, message.scriptUrl);
-    await waitForCurrentSceneToRender(ctx);
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
@@ -380,8 +379,6 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
     const input = getModule(ctx, InputModule);
 
     await loadEnvironment(ctx, message.url, message.scriptUrl, message.fileMap);
-
-    await waitForCurrentSceneToRender(ctx);
 
     loadPlayerRig(ctx, physics, input, network);
 
@@ -486,9 +483,13 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     privateScene: transientScene,
   });
 
-  traverse(environmentScene, (node) => {
-    node.isStatic = false;
-  });
+  await waitForCurrentSceneToRender(ctx);
+
+  if (ctx.worldResource.environment) {
+    traverse(ctx.worldResource.environment.publicScene, (node) => {
+      node.isStatic = true;
+    });
+  }
 
   const spawnPoints = getSpawnPoints(ctx);
 
