@@ -36,6 +36,7 @@ interface Job {
   size: vec2;
   isSRGB: boolean;
   isNormal: boolean;
+  flipY: boolean;
   useOptiPng: boolean;
   data: Uint8Array | Uint8ClampedArray;
   mimeType: string;
@@ -58,7 +59,7 @@ async function processJob() {
 
   processingJob = true;
 
-  const { jobId, name, slots, size, useOptiPng, isSRGB, isNormal, data, mimeType } = job;
+  const { jobId, name, slots, size, useOptiPng, isSRGB, isNormal, flipY, data, mimeType } = job;
 
   console.log(
     `Compressing texture "${name}" with ${useOptiPng ? "OptiPNG" : isSRGB ? "ETC1S" : "UASTC"} compression.
@@ -97,6 +98,7 @@ async function processJob() {
     basisEncoder.setCreateKTX2File(true);
     basisEncoder.setKTX2UASTCSupercompression(true);
     basisEncoder.setKTX2SRGBTransferFunc(isSRGB);
+    basisEncoder.setYFlip(flipY);
 
     if (isSRGB) {
       basisEncoder.setUASTC(false);
