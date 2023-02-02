@@ -1,0 +1,22 @@
+.ComboInput {
+  position: relative;
+}
+
+.ComboInput__menu {
+  list-style: none;
+  width: 100%;
+  margin: var(--sp-xxs) 0 0 0;
+  padding: var(--sp-xxs) 0;
+  background-color: var(--bg-surface);
+  border-radius: var(--br-xs);
+  box-shadow: var(--bs-dropdown);
+  overflow: hidden;
+  z-index: var(--z-dropdown);
+
+  &:empty {
+    display: none;
+  }
+  &:not(:empty) {
+    position: absolute;
+  }
+}

@@ -130,7 +130,7 @@ const createAvatarRig =
 
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
-    cameraAnchor.position[1] = AVATAR_HEIGHT;
+    cameraAnchor.position[1] = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
     addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {
