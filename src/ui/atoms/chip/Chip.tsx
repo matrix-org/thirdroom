@@ -5,12 +5,13 @@ import "./Chip.css";
 
 interface ChipProps {
   className?: string;
+  size?: "md" | "sm";
   children: ReactNode;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function Chip({ className, children, onClick }: ChipProps) {
-  const classes = classNames("Chip", { "Chip--clickable": onClick }, className);
+export function Chip({ className, size, children, onClick }: ChipProps) {
+  const classes = classNames("Chip", `Chip--${size}`, { "Chip--clickable": onClick }, className);
 
   if (onClick)
     return (

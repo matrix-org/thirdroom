@@ -3,10 +3,16 @@
   justify-content: center;
   align-items: center;
 
-  padding: var(--sp-xxs);
   background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
   box-shadow: var(--bs-surface-border);
+}
+
+.Chip--md {
+  padding: var(--sp-xxs);
+}
+.Chip--sm {
+  padding: 2px var(--sp-xxs);
 }
 
 .Chip > .Text {
