@@ -204,6 +204,7 @@ export function updateNodeReflections(ctx: RenderThreadState, scene: RenderScene
           // computeBoundingBox will set geometry.boundingBox
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           boundingBox.copy(primitive.geometry.boundingBox!);
+          boundingBox.expandByScalar(0.01);
 
           // Apply the instance's transform to the bounding box
           boundingBox.applyMatrix4(instanceWorldMatrix);
@@ -223,6 +224,7 @@ export function updateNodeReflections(ctx: RenderThreadState, scene: RenderScene
         instanceReflectionProbeParamsAttribute.needsUpdate = true;
       } else {
         boundingBox.setFromObject(primitive);
+        boundingBox.expandByScalar(0.01);
         const reflectionProbeParams = primitive.userData.reflectionProbeParams as Vector3;
         setReflectionProbeParams(boundingBox, scene, reflectionProbes, reflectionProbeParams);
       }
