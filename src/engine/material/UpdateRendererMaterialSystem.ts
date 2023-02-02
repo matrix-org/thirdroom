@@ -12,13 +12,22 @@ type TextureKeys<Mat extends PrimitiveMaterial> = {
 function updateMaterialTexture<Mat extends PrimitiveMaterial>(
   material: Mat,
   key: TextureKeys<Mat>,
-  value: RenderTexture | undefined
+  value: RenderTexture | undefined,
+  offset: Float32Array,
+  rotation: number,
+  scale: Float32Array
 ) {
   if (!!material[key] !== !!value) {
     material.needsUpdate = true;
   }
 
-  (material[key] as Texture | null) = value?.texture || null;
+  const texture = ((material[key] as Texture | null) = value?.texture || null);
+
+  if (texture) {
+    texture.offset.fromArray(offset);
+    texture.rotation = rotation;
+    texture.repeat.fromArray(scale);
+  }
 }
 
 export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
@@ -42,24 +51,66 @@ export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
       material.alphaTest = localMaterial.alphaMode === MaterialAlphaMode.MASK ? localMaterial.alphaCutoff : 0;
 
       if ("map" in material) {
-        updateMaterialTexture(material, "map", localMaterial.baseColorTexture);
+        updateMaterialTexture(
+          material,
+          "map",
+          localMaterial.baseColorTexture,
+          localMaterial.baseColorTextureOffset,
+          localMaterial.baseColorTextureRotation,
+          localMaterial.baseColorTextureScale
+        );
       }
 
       if ("isMeshStandardMaterial" in material) {
         material.metalness = localMaterial.metallicFactor; // 🤘
-        updateMaterialTexture(material, "metalnessMap", localMaterial.metallicRoughnessTexture);
-        material.roughness = localMaterial.roughnessFactor;
-        updateMaterialTexture(material, "roughnessMap", localMaterial.metallicRoughnessTexture);
-        material.normalScale.set(
-          localMaterial.normalTextureScale,
-          useDerivativeTangents ? -localMaterial.normalTextureScale : localMaterial.normalTextureScale
+        updateMaterialTexture(
+          material,
+          "metalnessMap",
+          localMaterial.metallicRoughnessTexture,
+          localMaterial.metallicRoughnessTextureOffset,
+          localMaterial.metallicRoughnessTextureRotation,
+          localMaterial.metallicRoughnessTextureScale
         );
-        updateMaterialTexture(material, "normalMap", localMaterial.normalTexture);
+        material.roughness = localMaterial.roughnessFactor;
+        updateMaterialTexture(
+          material,
+          "roughnessMap",
+          localMaterial.metallicRoughnessTexture,
+          localMaterial.metallicRoughnessTextureOffset,
+          localMaterial.metallicRoughnessTextureRotation,
+          localMaterial.metallicRoughnessTextureScale
+        );
+        material.normalScale.set(
+          localMaterial.normalScale,
+          useDerivativeTangents ? -localMaterial.normalScale : localMaterial.normalScale
+        );
+        updateMaterialTexture(
+          material,
+          "normalMap",
+          localMaterial.normalTexture,
+          localMaterial.normalTextureOffset,
+          localMaterial.normalTextureRotation,
+          localMaterial.normalTextureScale
+        );
         material.aoMapIntensity = localMaterial.occlusionTextureStrength;
-        updateMaterialTexture(material, "aoMap", localMaterial.occlusionTexture);
+        updateMaterialTexture(
+          material,
+          "aoMap",
+          localMaterial.occlusionTexture,
+          localMaterial.occlusionTextureOffset,
+          localMaterial.occlusionTextureRotation,
+          localMaterial.occlusionTextureScale
+        );
         material.emissive.fromArray(localMaterial.emissiveFactor);
         material.emissiveIntensity = localMaterial.emissiveStrength;
-        updateMaterialTexture(material, "emissiveMap", localMaterial.emissiveTexture);
+        updateMaterialTexture(
+          material,
+          "emissiveMap",
+          localMaterial.emissiveTexture,
+          localMaterial.emissiveTextureOffset,
+          localMaterial.emissiveTextureRotation,
+          localMaterial.emissiveTextureScale
+        );
       }
 
       if ("isMeshPhysicalMaterial" in material) {
@@ -70,8 +121,22 @@ export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
         physicalMaterial.attenuationDistance = localMaterial.attenuationDistance;
         physicalMaterial.attenuationColor.fromArray(localMaterial.attenuationColor);
         physicalMaterial.transmission = localMaterial.transmissionFactor;
-        updateMaterialTexture(physicalMaterial, "transmissionMap", localMaterial.transmissionTexture);
-        updateMaterialTexture(physicalMaterial, "thicknessMap", localMaterial.thicknessTexture);
+        updateMaterialTexture(
+          physicalMaterial,
+          "transmissionMap",
+          localMaterial.transmissionTexture,
+          localMaterial.transmissionTextureOffset,
+          localMaterial.transmissionTextureRotation,
+          localMaterial.transmissionTextureScale
+        );
+        updateMaterialTexture(
+          physicalMaterial,
+          "thicknessMap",
+          localMaterial.thicknessTexture,
+          localMaterial.thicknessTextureOffset,
+          localMaterial.thicknessTextureRotation,
+          localMaterial.thicknessTextureScale
+        );
       }
     }
   }

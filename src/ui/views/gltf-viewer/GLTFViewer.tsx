@@ -128,7 +128,7 @@ export default function GLTFViewer() {
           } else if (file.name.match(/\.(js|wasm)$/)) {
             scriptUrl = fileUrl;
           } else {
-            fileMap.set(file.name, fileUrl);
+            fileMap.set(encodeURIComponent(file.name), fileUrl);
           }
         }
       }
