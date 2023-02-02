@@ -426,7 +426,7 @@ export const SpawnableSystem = (ctx: GameState) => {
     const xr = XRAvatarRig.get(eid);
 
     if (xr && xr.rightRayEid && xr.leftRayEid) {
-      const leftRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
+      // const leftRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
       const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
       // const leftCtrl = controller.actionStates.get("xr-left") as ButtonActionState;
       const rightCtrl = controller.actionStates.get("xr-right") as ButtonActionState;
