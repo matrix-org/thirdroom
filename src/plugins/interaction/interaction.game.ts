@@ -53,7 +53,6 @@ import {
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
-import { traverse } from "../../engine/component/transform";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -315,26 +314,19 @@ export function InteractionSystem(ctx: GameState) {
     const controller = tryGetInputController(input, eid);
     const xr = XRAvatarRig.get(eid);
 
-    if (xr) {
-      let leftRay: RemoteNode;
-      let rightRay: RemoteNode;
-      traverse(rig, (child) => {
-        if (child.name === `rightRay`) {
-          rightRay = child;
-        }
-        if (child.name === `leftRay`) {
-          leftRay = child;
-        }
-      });
+    if (xr && xr.leftRayEid && xr.rightRayEid) {
+      const leftRay = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
+      const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
       const hosting = network.authoritative && isHost(network);
       const cspEnabled = network.authoritative && network.clientSidePrediction;
       const p2p = !network.authoritative;
 
       if (hosting || cspEnabled || p2p) {
+        // TODO: deletion
         // updateDeletion(ctx, interaction, controller, eid);
-        if (leftRay!) updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay!, "left");
-        if (rightRay!) updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay!, "right");
+        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
+        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
       }
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
@@ -632,8 +624,6 @@ function updateGrabThrowXR(
   grabbingNode: RemoteNode,
   hand: XRHandedness
 ) {
-  let focusedEntity;
-
   // raycast outward from node
   const nodeMatrix = grabbingNode.worldMatrix;
   mat4.getRotation(_worldQuat, nodeMatrix);
@@ -660,10 +650,11 @@ function updateGrabThrowXR(
     grabShapeCastCollisionGroups
   );
 
-  if (shapecastHit !== null) {
-    const eid = physics.handleToEid.get(shapecastHit.collider.handle);
-    focusedEntity = eid;
+  if (shapecastHit === null) {
+    return;
   }
+
+  let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
 
   // if (focusedEntity) {
   //   grabbingNode.firstChild!.visible = true;
@@ -678,6 +669,47 @@ function updateGrabThrowXR(
   const grabHeld = grabState.held;
 
   if (focusedEntity && grabHeld) {
+    const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
+    const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+
+    if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
+      if (Interactable.type[node.eid] === InteractableType.Grabbable) {
+        const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+          // do nothing if we hit the max obj cap
+          // ctx.sendMessage(Thread.Main, {
+          //   type: ObjectCapReachedMessageType,
+          // });
+        } else {
+          // otherwise attempt to take ownership
+          const newEid = takeOwnership(ctx, network, node);
+
+          if (newEid !== NOOP) {
+            addComponent(ctx.world, GrabComponent, rig.eid);
+            GrabComponent.grabbedEntity[rig.eid] = newEid;
+            focusedEntity = newEid;
+            // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+          } else {
+            addComponent(ctx.world, GrabComponent, rig.eid);
+            GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
+            // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+          }
+        }
+      } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
+        const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
+        const interactable = remoteNode?.interactable;
+
+        if (interactable) {
+          interactable.pressed = true;
+          interactable.released = false;
+          interactable.held = true;
+        }
+      } else {
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+      }
+    }
+
     grabbingNode.visible = false;
 
     const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;

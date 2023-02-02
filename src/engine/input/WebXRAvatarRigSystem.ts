@@ -16,8 +16,10 @@ import { InputModule } from "./input.game";
 
 export interface XRAvatarRig {
   leftControllerEid?: number;
+  leftRayEid?: number;
   prevLeftAssetPath?: string;
   rightControllerEid?: number;
+  rightRayEid?: number;
   prevRightAssetPath?: string;
 }
 
@@ -146,6 +148,9 @@ function updateXRController(
       rayNode.name = `${hand}Ray`;
       addChild(rigNode, rayNode);
       addXRRaycaster(ctx, rayNode.eid, hand);
+
+      if (hand === "left") rig.leftRayEid = rayNode.eid;
+      if (hand === "right") rig.rightRayEid = rayNode.eid;
     }
 
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);
