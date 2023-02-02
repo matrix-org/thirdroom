@@ -146,8 +146,32 @@ const InteractionActionMap: ActionMap = {
       networked: true,
     },
     {
-      id: "primaryGrab",
-      path: "primaryGrab",
+      id: "primaryTrigger",
+      path: "primaryTrigger",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/primary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "secondaryTrigger",
+      path: "secondaryTrigger",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/secondary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "primarySqueeze",
+      path: "primarySqueeze",
       type: ActionType.Button,
       bindings: [
         {
@@ -158,8 +182,8 @@ const InteractionActionMap: ActionMap = {
       networked: true,
     },
     {
-      id: "secondaryGrab",
-      path: "secondaryGrab",
+      id: "secondarySqueeze",
+      path: "secondarySqueeze",
       type: ActionType.Button,
       bindings: [
         {
@@ -431,12 +455,12 @@ function updateGrabThrow(
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
-  const primaryGrab = controller.actionStates.get("primaryGrab") as ButtonActionState;
-  const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
+  const primaryTrigger = controller.actionStates.get("primaryTrigger") as ButtonActionState;
+  const secondaryTrigger = controller.actionStates.get("secondaryTrigger") as ButtonActionState;
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed || primaryGrab.held || secondaryGrab.held;
-  const grabReleased = grabBtn.released || !primaryGrab.held || !secondaryGrab.held;
+  const grabPressed = grabBtn.pressed || primaryTrigger.held || secondaryTrigger.held;
+  const grabReleased = grabBtn.released || !primaryTrigger.held || !secondaryTrigger.held;
   const throwPressed = throwBtn.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
@@ -656,6 +680,10 @@ function updateGrabThrowXR(
 
   let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
 
+  if (!focusedEntity) {
+    return;
+  }
+
   // if (focusedEntity) {
   //   grabbingNode.firstChild!.visible = true;
   // } else {
@@ -663,17 +691,20 @@ function updateGrabThrowXR(
   // }
 
   // TODO: use dominant hand
-  const grabState = controller.actionStates.get(
-    hand === "right" ? "primaryGrab" : "secondaryGrab"
+  const triggerState = controller.actionStates.get(
+    hand === "right" ? "primaryTrigger" : "secondaryTrigger"
   ) as ButtonActionState;
-  const grabHeld = grabState.held;
 
-  if (focusedEntity && grabHeld) {
+  const squeezeState = controller.actionStates.get(
+    hand === "right" ? "primarySqueeze" : "secondarySqueeze"
+  ) as ButtonActionState;
+
+  if (focusedEntity && (triggerState.held || squeezeState.held)) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
     if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
-      if (Interactable.type[node.eid] === InteractableType.Grabbable) {
+      if (squeezeState.held && Interactable.type[node.eid] === InteractableType.Grabbable) {
         const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
         if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
           // do nothing if we hit the max obj cap
@@ -685,17 +716,17 @@ function updateGrabThrowXR(
           const newEid = takeOwnership(ctx, network, node);
 
           if (newEid !== NOOP) {
-            addComponent(ctx.world, GrabComponent, rig.eid);
-            GrabComponent.grabbedEntity[rig.eid] = newEid;
+            // addComponent(ctx.world, GrabComponent, rig.eid);
+            // GrabComponent.grabbedEntity[rig.eid] = newEid;
             focusedEntity = newEid;
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
           } else {
-            addComponent(ctx.world, GrabComponent, rig.eid);
-            GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
+            // addComponent(ctx.world, GrabComponent, rig.eid);
+            // GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
           }
         }
-      } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
+      } else if (triggerState.held && Interactable.type[node.eid] === InteractableType.Interactable) {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
         const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
         const interactable = remoteNode?.interactable;
@@ -708,6 +739,10 @@ function updateGrabThrowXR(
       } else {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
+    }
+
+    if (!squeezeState.held) {
+      return;
     }
 
     grabbingNode.visible = false;

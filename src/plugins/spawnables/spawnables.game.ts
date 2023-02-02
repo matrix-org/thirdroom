@@ -56,18 +56,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
         bindings: [
           {
             type: BindingType.Button,
-            path: `XRInputSource/primary/xr-standard-trigger`,
-          },
-        ],
-      },
-      {
-        id: "small-crate",
-        path: "xr-left",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `XRInputSource/secondary/xr-standard-trigger`,
+            path: `XRInputSource/primary/a-button`,
           },
         ],
       },
@@ -439,9 +428,9 @@ export const SpawnableSystem = (ctx: GameState) => {
     if (xr && xr.rightRayEid && xr.leftRayEid) {
       const leftRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
       const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
-      const leftCtrl = controller.actionStates.get("xr-left") as ButtonActionState;
+      // const leftCtrl = controller.actionStates.get("xr-left") as ButtonActionState;
       const rightCtrl = controller.actionStates.get("xr-right") as ButtonActionState;
-      if (leftCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, leftRayNode, "left");
+      // if (leftCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, leftRayNode, "left");
       if (rightCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, rightRayNode, "right");
     } else {
       const camera = getCamera(ctx, node).parent!;
@@ -475,9 +464,7 @@ export const updateSpawnables = (
     const prefab = createPrefabEntity(ctx, action.id);
     const eid = prefab.eid;
 
-    // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, eid);
-    // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
 
     mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
@@ -530,15 +517,13 @@ export const updateSpawnablesXR = (
     // TODO: add two configs: max objects per client and max objects per room
     return;
   }
-  const a = actionsDefs.sort(() => (Math.random() > 0.5 ? 1 : -1))[0];
 
-  // const prefab = createPrefabEntity(ctx, a.id);
-  const prefab = createPrefabEntity(ctx, hand === "left" ? a.id : "small-ball");
+  // pick random item for now
+  const a = actionsDefs.sort(() => (Math.random() > 0.5 ? 1 : -1))[0];
+  const prefab = createPrefabEntity(ctx, a.id);
   const eid = prefab.eid;
 
-  // caveat: must add owned before networked (should maybe change Owned to Remote)
   addComponent(ctx.world, Owned, eid);
-  // Networked component isn't reset when removed so reset on add
   addComponent(ctx.world, Networked, eid, true);
 
   mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
