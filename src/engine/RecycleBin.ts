@@ -1,19 +1,16 @@
-import { removeEntity } from "bitecs";
-
-import { World } from "./GameTypes";
 import { addHistory, trimHistory, Historian, createHistorian } from "./utils/Historian";
 import { obtainFromPool, releaseToPool, Pool, createPool } from "./utils/Pool";
 
-export type RecycleBin = number[];
+export type RecycleBin<T> = T[];
 
-export interface RecycleBinContext {
-  active: RecycleBin;
-  pool: Pool<RecycleBin>;
-  historian: Historian<RecycleBin>;
+export interface RecycleBinContext<T> {
+  active: RecycleBin<T>;
+  pool: Pool<RecycleBin<T>>;
+  historian: Historian<RecycleBin<T>>;
 }
 
-export function createRecycleBinContext(): RecycleBinContext {
-  const pool = createPool<RecycleBin>(
+export function createRecycleBinContext<T>(): RecycleBinContext<T> {
+  const pool = createPool<RecycleBin<T>>(
     () => [],
     (item) => (item.length = 0)
   );
@@ -21,33 +18,28 @@ export function createRecycleBinContext(): RecycleBinContext {
   return {
     active: obtainFromPool(pool),
     pool,
-    historian: createHistorian<RecycleBin>(),
+    historian: createHistorian<RecycleBin<T>>(),
   };
 }
 
-export function recycleEntity(recycleCtx: RecycleBinContext, eid: number) {
-  recycleCtx.active.push(eid);
+export function addToRecycleBin<T>(recycleCtx: RecycleBinContext<T>, item: T) {
+  recycleCtx.active.push(item);
 }
 
-export function recycleBinNextTick(recycleCtx: RecycleBinContext, tick: number) {
-  addHistory(recycleCtx.historian, tick, recycleCtx.active);
+export function recycleBinNext<T>(recycleCtx: RecycleBinContext<T>, time: number) {
+  addHistory(recycleCtx.historian, time, recycleCtx.active);
   recycleCtx.active = obtainFromPool(recycleCtx.pool);
 }
 
-export function recycleBinReleaseEntities(
-  recycleCtx: RecycleBinContext,
-  world: World,
-  lastProcessedTick: number,
-  removeEntityFn: (world: World, eid: number) => void = removeEntity
+export function recycleBinRelease<T>(
+  recycleCtx: RecycleBinContext<T>,
+  lastProcessedTime: number,
+  cb: (bin: RecycleBin<T>) => void
 ) {
-  const trimmed = trimHistory(recycleCtx.historian, lastProcessedTick);
+  const trimmed = trimHistory(recycleCtx.historian, lastProcessedTime);
 
   trimmed.forEach((bin) => {
-    // give EIDs back to bitecs so they are made available for internal recycling
-    for (let i = 0; i < bin.length; i++) {
-      const eid = bin[i];
-      removeEntityFn(world, eid);
-    }
+    if (cb) cb(bin);
     releaseToPool(recycleCtx.pool, bin);
   });
 }

@@ -3,7 +3,7 @@ import { AudioModule } from "./audio/audio.game";
 import { InputModule, ResetInputSystem } from "./input/input.game";
 import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkModule } from "./network/network.game";
+import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
 import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   FirstPersonCameraModule,
@@ -111,6 +111,7 @@ export default defineConfig<GameState>({
 
     NetworkedFirstPersonCameraSystem,
     OutboundNetworkSystem,
+    NetworkExitWorldQueueSystem,
 
     RemoteCameraSystem,
     PrefabDisposalSystem,

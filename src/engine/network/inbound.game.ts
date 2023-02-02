@@ -59,10 +59,17 @@ const processNetworkMessages = (state: GameState) => {
   try {
     const network = getModule(state, NetworkModule);
 
-    while (availableRead(network.incomingRingBuffer)) {
-      dequeueNetworkRingBuffer(network.incomingRingBuffer, ringOut);
+    while (availableRead(network.incomingReliableRingBuffer)) {
+      dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
       if (ringOut.peerId && ringOut.packet) {
         // arr.unshift([ringOut.peerId, ringOut.packet]);
+        processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+      }
+    }
+
+    while (availableRead(network.incomingUnreliableRingBuffer)) {
+      dequeueNetworkRingBuffer(network.incomingUnreliableRingBuffer, ringOut);
+      if (ringOut.peerId && ringOut.packet) {
         processNetworkMessage(state, ringOut.peerId, ringOut.packet);
       }
     }
