@@ -128,7 +128,6 @@ export async function uploadAttachment(
 ): Promise<string> {
   const uploadRequest = await hsApi.uploadAttachment(blob, blob.nativeBlob.name, {
     uploadProgress: (sentBytes) => {
-      console.log(sentBytes, blob.size);
       onProgress?.(sentBytes, blob.size);
     },
   });
