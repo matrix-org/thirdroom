@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
+import { BufferGeometry, BoxGeometry, SphereGeometry, TubeGeometry, Curve, Vector3 } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { GameState } from "../GameTypes";
@@ -102,6 +102,22 @@ export const createCubeMesh = (ctx: GameState, size: number, material?: RemoteMa
 
 export const createSphereMesh = (ctx: GameState, radius: number, material?: RemoteMaterial) => {
   const geometry = new SphereGeometry(radius / 2);
+  return createMesh(ctx, geometry, material);
+};
+
+class StraightLine extends Curve<Vector3> {
+  scale;
+  constructor(scale = 1) {
+    super();
+    this.scale = scale;
+  }
+
+  getPoint(t: number, optionalTarget = new Vector3()) {
+    return optionalTarget.set(0, 0, t).multiplyScalar(this.scale);
+  }
+}
+export const createLineMesh = (ctx: GameState, length: number, thickness = 0.01, material?: RemoteMaterial) => {
+  const geometry = new TubeGeometry(new StraightLine(-length), 1, thickness, 3);
   return createMesh(ctx, geometry, material);
 };
 

@@ -50,6 +50,7 @@ import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSyste
 import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
 import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
 import { WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
+import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem";
 
 export default defineConfig<GameState>({
   modules: [
@@ -84,6 +85,7 @@ export default defineConfig<GameState>({
     // ClientSidePredictionSystem,
     FlyControllerSystem,
     InteractionSystem,
+    XRInteractionSystem,
     SpawnableSystem,
     ThirdroomSystem,
 
