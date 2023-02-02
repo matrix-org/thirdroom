@@ -155,6 +155,8 @@ export default function patchShaderChunks() {
     #else
       vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );
     #endif
+
+    envMapColor = max(envMapColor, 0.0);
     `
   );
 }

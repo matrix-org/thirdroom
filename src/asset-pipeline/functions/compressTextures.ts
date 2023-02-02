@@ -76,6 +76,7 @@ export function compressTextures(onProgress?: GLTFTransformProgressCallback): Tr
       const slots = listTextureSlots(doc, texture);
       const isSRGB = slots.some((slotName) => slotName === "baseColorTexture" || slotName === "emissiveTexture");
       const isNormal = slots.some((slotName) => slotName === "normalTexture");
+      const flipY = slots.some((slotName) => slotName === "backgroundTexture");
 
       const workerIndex = jobs.size % workers.length;
       const worker = workers[workerIndex];
@@ -123,6 +124,7 @@ export function compressTextures(onProgress?: GLTFTransformProgressCallback): Tr
           size,
           data: imageData,
           mimeType,
+          flipY,
         },
         [imageData.buffer]
       );

@@ -50,8 +50,8 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     // id determines which prefab is spawned in the system
     const actions: ActionDefinition[] = [
       {
-        id: "black-mirror-ball",
-        path: "xr-spawnable",
+        id: "small-crate",
+        path: "xr-right",
         type: ActionType.Button,
         bindings: [
           {
@@ -221,6 +221,14 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       roughnessFactor: 0,
     });
     blackMirrorMaterial.addRef();
+
+    registerPrefab(ctx, {
+      name: "small-ball",
+      type: PrefabType.Object,
+      create: (ctx, { kinematic }) => {
+        return createBall(ctx, module, physics, 0.25, emissiveMaterial, ballAudioData, kinematic);
+      },
+    });
 
     registerPrefab(ctx, {
       name: "mirror-ball",
@@ -414,15 +422,18 @@ export const SpawnableSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const camera = getCamera(ctx, node).parent!;
     const controller = tryGetInputController(input, eid);
-
     const xr = XRAvatarRig.get(eid);
 
-    if (xr && xr.rightControllerEid) {
-      const rightHandNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid);
-      updateSpawnables(ctx, spawnablesModule, controller, rightHandNode);
+    if (xr && xr.rightRayEid && xr.leftRayEid) {
+      // const leftRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
+      const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
+      // const leftCtrl = controller.actionStates.get("xr-left") as ButtonActionState;
+      const rightCtrl = controller.actionStates.get("xr-right") as ButtonActionState;
+      // if (leftCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, leftRayNode, "left");
+      if (rightCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, rightRayNode, "right");
     } else {
+      const camera = getCamera(ctx, node).parent!;
       updateSpawnables(ctx, spawnablesModule, controller, camera);
     }
   }
@@ -453,9 +464,7 @@ export const updateSpawnables = (
     const prefab = createPrefabEntity(ctx, action.id);
     const eid = prefab.eid;
 
-    // caveat: must add owned before networked (should maybe change Owned to Remote)
     addComponent(ctx.world, Owned, eid);
-    // Networked component isn't reset when removed so reset on add
     addComponent(ctx.world, Networked, eid, true);
 
     mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
@@ -490,4 +499,62 @@ export const updateSpawnables = (
 
     addObjectToWorld(ctx, prefab);
   }
+};
+
+export const updateSpawnablesXR = (
+  ctx: GameState,
+  { maxObjCap, actionsDefs }: SpawnablesModuleState,
+  spawnFrom: RemoteNode,
+  hand: XRHandedness
+) => {
+  // bounce out of the system if we hit the max object cap
+  const ownedEnts = ownedNetworkedQuery(ctx.world);
+  if (ownedEnts.length > maxObjCap) {
+    ctx.sendMessage(Thread.Main, {
+      type: ObjectCapReachedMessageType,
+    });
+    // TODO: send this message to the other clients
+    // TODO: add two configs: max objects per client and max objects per room
+    return;
+  }
+
+  // pick random item for now
+  const a = actionsDefs.sort(() => (Math.random() > 0.5 ? 1 : -1))[0];
+  const prefab = createPrefabEntity(ctx, a.id);
+  const eid = prefab.eid;
+
+  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Networked, eid, true);
+
+  mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
+
+  mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
+  const direction = vec3.set(_direction, 0, 0, -1);
+  vec3.transformQuat(direction, direction, _spawnWorldQuat);
+
+  // place object at direction
+  vec3.add(prefab.position, prefab.position, direction);
+
+  vec3.scale(direction, direction, THROW_FORCE / 33);
+
+  _impulse.fromArray(direction);
+
+  const body = RigidBody.store.get(eid);
+
+  if (!body) {
+    console.warn("could not find RigidBody for spawned entity " + eid);
+    return;
+  }
+
+  prefab.quaternion.set(_spawnWorldQuat);
+
+  body.applyImpulse(_impulse, true);
+
+  const privateScene = ctx.worldResource.environment?.privateScene;
+
+  if (!privateScene) {
+    throw new Error("private scene not found on environment");
+  }
+
+  addObjectToWorld(ctx, prefab);
 };

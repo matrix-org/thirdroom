@@ -1,19 +1,25 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
+import { GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
+import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix } from "../component/transform";
 import { GameState, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
+import { createLineMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
-import { RemoteNode } from "../resource/RemoteResources";
+import { createRemoteObject, RemoteMaterial, RemoteNode } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
+import { MaterialAlphaMode, MaterialType } from "../resource/schema";
 import { SharedXRInputSource } from "./input.common";
 import { InputModule } from "./input.game";
 
 export interface XRAvatarRig {
   leftControllerEid?: number;
+  leftRayEid?: number;
   prevLeftAssetPath?: string;
   rightControllerEid?: number;
+  rightRayEid?: number;
   prevRightAssetPath?: string;
 }
 
@@ -68,6 +74,25 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
   }
 }
 
+function createRay(ctx: GameState, color = [0, 0.3, 1, 0.3], length = GRAB_DISTANCE) {
+  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+    name: "Ray Material",
+    type: MaterialType.Standard,
+    baseColorFactor: color,
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 0,
+    alphaMode: MaterialAlphaMode.BLEND,
+  });
+  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh,
+  });
+  node.position[2] = 0.1;
+  const obj = createRemoteObject(ctx, node);
+  return obj;
+}
+
 function updateXRController(
   ctx: GameState,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
@@ -97,6 +122,8 @@ function updateXRController(
       }
     }
 
+    const controllerPoses = getReadObjectBufferView(inputSource.controllerPoses);
+
     if (!controllerNode) {
       controllerNode = createNodeFromGLTFURI(ctx, assetPath);
       addChild(rigNode, controllerNode);
@@ -112,9 +139,20 @@ function updateXRController(
         rig.prevRightAssetPath = assetPath;
         worldResource.activeRightControllerNode = controllerNode;
       }
+
+      const rayNode = createRay(ctx);
+      // const rayNode2 = createRay(ctx, [0, 1, 0, 0.5]);
+      // addChild(rayNode, rayNode2);
+      // // rayNode2.visible = false;
+
+      rayNode.name = `${hand}Ray`;
+      addChild(rigNode, rayNode);
+      addXRRaycaster(ctx, rayNode.eid, hand);
+
+      if (hand === "left") rig.leftRayEid = rayNode.eid;
+      if (hand === "right") rig.rightRayEid = rayNode.eid;
     }
 
-    const controllerPoses = getReadObjectBufferView(inputSource.controllerPoses);
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);
   } else if (eid) {
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
