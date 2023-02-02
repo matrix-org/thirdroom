@@ -1,0 +1,20 @@
+.FileInput {
+  width: 100%;
+  padding: 0 var(--sp-xs);
+  height: 30px;
+  border: 1px solid var(--bg-surface-border);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+  cursor: pointer;
+  border-radius: var(--br-xxs);
+
+  &:hover {
+    background-color: var(--bg-surface-hover);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

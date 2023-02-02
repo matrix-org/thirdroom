@@ -1,4 +1,4 @@
-import { forwardRef, MouseEventHandler } from "react";
+import { ButtonHTMLAttributes, forwardRef } from "react";
 import classNames from "classnames";
 
 import { Icon } from "../icon/Icon";
@@ -21,39 +21,18 @@ interface IIconButton {
   size?: "xl" | "lg" | "md" | "sm";
   iconSrc: string;
   label: string;
-  type?: "button" | "submit" | "reset";
-  onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
-  tabIndex?: number;
 }
 
-export const IconButton = forwardRef<HTMLButtonElement, IIconButton>(
+export const IconButton = forwardRef<HTMLButtonElement, IIconButton & ButtonHTMLAttributes<HTMLButtonElement>>(
   (
-    {
-      className,
-      variant = "surface",
-      size = "md",
-      iconSrc,
-      label,
-      type = "button",
-      onClick,
-      disabled = false,
-      tabIndex,
-    },
+    { className, variant = "surface", size = "md", iconSrc, label, type = "button", disabled = false, ...props },
     ref
   ) => {
     const btnClass = classNames(`IconButton IconButton--${variant}`, className);
 
     return (
-      <button
-        ref={ref}
-        className={btnClass}
-        type={type}
-        onClick={onClick}
-        disabled={disabled}
-        aria-label={label}
-        tabIndex={tabIndex}
-      >
+      <button ref={ref} className={btnClass} type={type} disabled={disabled} aria-label={label} {...props}>
         <Icon color={variant} size={size} src={iconSrc} />
       </button>
     );
