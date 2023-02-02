@@ -141,17 +141,11 @@ function initHydrogen() {
     return [`${protocol}//${hostname}${port ? `:${port}` : ""}`];
   })();
 
-  const config = {
-    ...configData,
-    oidc: {
-      clientConfigs: {
-        "https://id.thirdroom.io/realms/thirdroom/": {
-          client_id: oidcClientId,
-          uris: oidcUris,
-          guestKeycloakIdpHint: "guest",
-        },
-      },
-    },
+  const config = { ...configData };
+  config.oidc.clientConfigs["https://id.thirdroom.io/realms/thirdroom/"] = {
+    client_id: oidcClientId,
+    uris: oidcUris,
+    guestKeycloakIdpHint: "guest",
   };
 
   const options = {

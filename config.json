@@ -2,5 +2,14 @@
   "defaultHomeServer": "thirdroom.io",
   "homeserverList": ["thirdroom.io", "matrix.org"],
   "onboardingVersion": 1,
-  "repositoryRoomIdOrAlias": "#repository-room:thirdroom.io"
+  "repositoryRoomIdOrAlias": "#repository-room:thirdroom.io",
+  "oidc": {
+    "clientConfigs": {
+      "https://id.thirdroom.io/realms/thirdroom/": {
+        "client_id": "thirdroom",
+        "uris": ["http://localhost:3000", "https://thirdroom.io"],
+        "guestKeycloakIdpHint": "guest"
+      }
+    }
+  }
 }
