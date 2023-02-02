@@ -151,10 +151,14 @@ void main() {
   vec3 norm = normalize(abs(vNormal));
   vec3 blendWeight = vec3(pow(norm.x, SHARPNESS), pow(norm.y, SHARPNESS), pow(norm.z, SHARPNESS));
   blendWeight /= (blendWeight.x + blendWeight.y + blendWeight.z);
-  gl_FragColor.rgb =
+  // Clamp to avoid bloom artifacts
+  gl_FragColor.rgb = clamp(
     colorFront * blendWeight.z +
     colorSide * blendWeight.x +
-    colorTop * blendWeight.y;
+    colorTop * blendWeight.y,
+    0.0,
+    2.0
+  );
   gl_FragColor.a = 0.5;
 }
 `;

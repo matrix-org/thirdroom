@@ -17,6 +17,7 @@ export function spawnEntity(
   spawnPosition[1] += 1;
   const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
   isolateQuaternionAxis(spawnQuaternion, Axes.Y);
+  quat.rotateY(spawnQuaternion, spawnQuaternion, -Math.PI / 2);
 
   teleportEntity(node, spawnPosition, spawnQuaternion);
 }

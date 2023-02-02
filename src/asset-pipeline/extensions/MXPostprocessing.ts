@@ -11,7 +11,9 @@ import {
 const EXTENSION_NAME = "MX_postprocessing";
 
 interface BloomEffectDef {
-  strength: number;
+  strength?: number;
+  radius?: number;
+  threshold?: number;
 }
 
 interface PostProcessingExtensionDef {
@@ -44,7 +46,9 @@ export class MXPostprocessingExtension extends Extension {
       if (postprocessingDef.bloom) {
         const bloomDef = postprocessingDef.bloom;
         const bloom = this.createBloomEffect();
-        bloom.setStrength(bloomDef.strength);
+        if (bloomDef.strength !== undefined) bloom.setStrength(bloomDef.strength);
+        if (bloomDef.radius !== undefined) bloom.setRadius(bloomDef.radius);
+        if (bloomDef.threshold !== undefined) bloom.setThreshold(bloomDef.threshold);
         postprocessing.setBloom(bloom);
       }
 
@@ -77,6 +81,8 @@ export class MXPostprocessingExtension extends Extension {
           if (bloom) {
             extensionDef.bloom = {
               strength: bloom.getStrength(),
+              radius: bloom.getRadius(),
+              threshold: bloom.getThreshold(),
             };
           }
 
@@ -93,6 +99,8 @@ const BLOOM_EFFECT_PROPERTY_TYPE = "BloomEffect";
 
 interface IMXBloomEffect extends IProperty {
   strength: number;
+  radius: number;
+  threshold: number;
 }
 
 export class MXBloomEffect extends ExtensionProperty<IMXBloomEffect> {
@@ -110,6 +118,8 @@ export class MXBloomEffect extends ExtensionProperty<IMXBloomEffect> {
   protected getDefaults(): Nullable<IMXBloomEffect> {
     return Object.assign(super.getDefaults() as IProperty, {
       strength: 0.4,
+      radius: 0.4,
+      threshold: 0.9,
     });
   }
 
@@ -119,6 +129,22 @@ export class MXBloomEffect extends ExtensionProperty<IMXBloomEffect> {
 
   public setStrength(strength: number): this {
     return this.set("strength", strength);
+  }
+
+  public getRadius(): number {
+    return this.get("radius");
+  }
+
+  public setRadius(radius: number): this {
+    return this.set("radius", radius);
+  }
+
+  public getThreshold(): number {
+    return this.get("threshold");
+  }
+
+  public setThreshold(threshold: number): this {
+    return this.set("threshold", threshold);
   }
 }
 

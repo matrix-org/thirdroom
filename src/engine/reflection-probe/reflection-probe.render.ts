@@ -1,4 +1,4 @@
-import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event } from "three";
+import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
 
 import { getModule } from "../module/module.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
@@ -83,6 +83,7 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
 
   // Only update reflection probe texture array if the reflection probes changed
   if (needsUpdate) {
+    let useRGBM = false;
     const reflectionProbeTextures: Texture[] = [];
 
     // Add the scene reflection probe to the texture array
@@ -90,6 +91,10 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
       scene.reflectionProbe?.reflectionProbeTexture?.loadStatus === LoadStatus.Loaded &&
       scene.reflectionProbe.reflectionProbeTexture.texture
     ) {
+      if (scene.reflectionProbe.reflectionProbeTexture.rgbm) {
+        useRGBM = true;
+      }
+
       scene.reflectionProbe.textureArrayIndex = reflectionProbeTextures.length;
       scene.reflectionProbeNeedsUpdate = false;
       reflectionProbeTextures.push(scene.reflectionProbe.reflectionProbeTexture.texture);
@@ -107,6 +112,10 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
         reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
         reflectionProbe.needsUpdate = false;
         reflectionProbeTextures.push(reflectionProbeTexture.texture);
+
+        if (reflectionProbeTexture.rgbm) {
+          useRGBM = true;
+        }
       }
     }
 
@@ -116,7 +125,12 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
     }
 
     if (reflectionProbeTextures.length > 0) {
-      const renderTarget = (rendererModule.pmremGenerator as any).fromEquirectangularArray(reflectionProbeTextures);
+      const hdrDecodeParams = useRGBM ? new Vector2(34.49, 2.2) : null;
+
+      const renderTarget = (rendererModule.pmremGenerator as any).fromEquirectangularArray(
+        reflectionProbeTextures,
+        hdrDecodeParams
+      );
       reflectionProbeMapRenderTargets.set(renderTarget.texture, renderTarget);
       rendererModule.reflectionProbesMap = renderTarget.texture;
 
@@ -169,7 +183,7 @@ export function updateNodeReflections(ctx: RenderThreadState, scene: RenderScene
         continue;
       }
 
-      if (node.isStatic) {
+      if (node.isStatic && !node.needsUpdate) {
         primitive.userData.reflectionsNeedUpdate = false;
       }
 
