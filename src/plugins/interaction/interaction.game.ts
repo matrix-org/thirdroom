@@ -152,7 +152,7 @@ const InteractionActionMap: ActionMap = {
       bindings: [
         {
           type: BindingType.Button,
-          path: "XRInputSource/primary/xr-standard-trigger",
+          path: "XRInputSource/primary/xr-standard-squeeze",
         },
       ],
       networked: true,
@@ -164,7 +164,7 @@ const InteractionActionMap: ActionMap = {
       bindings: [
         {
           type: BindingType.Button,
-          path: "XRInputSource/secondary/xr-standard-trigger",
+          path: "XRInputSource/secondary/xr-standard-squeeze",
         },
       ],
       networked: true,
