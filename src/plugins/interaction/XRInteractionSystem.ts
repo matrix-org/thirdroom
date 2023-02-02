@@ -1,12 +1,14 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { defineQuery } from "bitecs";
+import { addComponent, defineQuery, removeComponent } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
+import { ourPlayerQuery } from "../../engine/component/Player";
 import { GameState } from "../../engine/GameTypes";
 import { InputModule } from "../../engine/input/input.game";
 import { getModule } from "../../engine/module/module.common";
-import { PhysicsModule } from "../../engine/physics/physics.game";
+import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 
@@ -94,4 +96,23 @@ export function XRInteractionSystem(ctx: GameState) {
       raycaster.hitToi = undefined;
     }
   }
+}
+
+export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) {
+  addComponent(ctx.world, XRRaycaster, eid);
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  XRRaycaster.set(eid, {
+    hand,
+    maxToi: 10,
+    solid: true,
+    action: "",
+    ray: new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0)),
+    filterGroups: playerCollisionGroups,
+    filterExcludeRigidBody: RigidBody.store.get(ourPlayer),
+  });
+}
+
+export function removeXRRaycaster(ctx: GameState, eid: number) {
+  removeComponent(ctx.world, XRRaycaster, eid);
+  XRRaycaster.delete(eid);
 }

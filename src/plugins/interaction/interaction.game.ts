@@ -53,6 +53,7 @@ import {
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
+import { traverse } from "../../engine/component/transform";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -240,7 +241,7 @@ export const GrabComponent = defineComponent(
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
 const MAX_HELD_DISTANCE = 8;
-const GRAB_DISTANCE = 3.3;
+export const GRAB_DISTANCE = 3.3;
 const HELD_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
 
@@ -311,22 +312,43 @@ export function InteractionSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const xr = XRAvatarRig.get(eid);
-    const grabbingNode =
-      xr && xr.rightControllerEid
-        ? tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid)
-        : getCamera(ctx, rig).parent!;
     const controller = tryGetInputController(input, eid);
+    const xr = XRAvatarRig.get(eid);
 
-    updateFocus(ctx, physics, rig, grabbingNode);
+    if (xr) {
+      let leftRay: RemoteNode;
+      let rightRay: RemoteNode;
+      traverse(rig, (child) => {
+        if (child.name === `rightRay`) {
+          rightRay = child;
+        }
+        if (child.name === `leftRay`) {
+          leftRay = child;
+        }
+      });
 
-    const hosting = network.authoritative && isHost(network);
-    const cspEnabled = network.authoritative && network.clientSidePrediction;
-    const p2p = !network.authoritative;
+      const hosting = network.authoritative && isHost(network);
+      const cspEnabled = network.authoritative && network.clientSidePrediction;
+      const p2p = !network.authoritative;
 
-    if (hosting || cspEnabled || p2p) {
-      updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
+      if (hosting || cspEnabled || p2p) {
+        // updateDeletion(ctx, interaction, controller, eid);
+        if (leftRay!) updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay!, "left");
+        if (rightRay!) updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay!, "right");
+      }
+    } else {
+      const grabbingNode = getCamera(ctx, rig).parent!;
+
+      updateFocus(ctx, physics, rig, grabbingNode);
+
+      const hosting = network.authoritative && isHost(network);
+      const cspEnabled = network.authoritative && network.clientSidePrediction;
+      const p2p = !network.authoritative;
+
+      if (hosting || cspEnabled || p2p) {
+        updateDeletion(ctx, interaction, controller, eid);
+        updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
+      }
     }
   }
 }
@@ -418,11 +440,11 @@ function updateGrabThrow(
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
   const primaryGrab = controller.actionStates.get("primaryGrab") as ButtonActionState;
-  // const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
+  const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed || primaryGrab.pressed;
-  const grabReleased = grabBtn.released;
+  const grabPressed = grabBtn.pressed || primaryGrab.held || secondaryGrab.held;
+  const grabReleased = grabBtn.released || !primaryGrab.held || !secondaryGrab.held;
   const throwPressed = throwBtn.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
@@ -582,6 +604,7 @@ function updateGrabThrow(
     mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
+
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
 
     vec3.sub(target, target, direction);
@@ -596,6 +619,93 @@ function updateGrabThrow(
       body.setAngvel(zero, true);
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
+  }
+}
+
+function updateGrabThrowXR(
+  ctx: GameState,
+  interaction: InteractionModuleState,
+  physics: PhysicsModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  rig: RemoteNode,
+  grabbingNode: RemoteNode,
+  hand: XRHandedness
+) {
+  let focusedEntity;
+
+  // raycast outward from node
+  const nodeMatrix = grabbingNode.worldMatrix;
+  mat4.getRotation(_worldQuat, nodeMatrix);
+
+  const target = vec3.set(_target, 0, 0, -1);
+  vec3.transformQuat(target, target, _worldQuat);
+  vec3.scale(target, target, GRAB_DISTANCE);
+
+  const source = mat4.getTranslation(_source, nodeMatrix);
+
+  const s: Vector3 = _s.fromArray(source);
+  const t: Vector3 = _t.fromArray(target);
+
+  shapeCastPosition.copy(s);
+
+  const shapecastHit = physics.physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    t,
+    colliderShape,
+    1.0,
+    true,
+    0,
+    grabShapeCastCollisionGroups
+  );
+
+  if (shapecastHit !== null) {
+    const eid = physics.handleToEid.get(shapecastHit.collider.handle);
+    focusedEntity = eid;
+  }
+
+  // if (focusedEntity) {
+  //   grabbingNode.firstChild!.visible = true;
+  // } else {
+  //   grabbingNode.firstChild!.visible = false;
+  // }
+
+  // TODO: use dominant hand
+  const grabState = controller.actionStates.get(
+    hand === "right" ? "primaryGrab" : "secondaryGrab"
+  ) as ButtonActionState;
+  const grabHeld = grabState.held;
+
+  if (focusedEntity && grabHeld) {
+    grabbingNode.visible = false;
+
+    const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
+
+    const focusedPosition = focusedNode.position;
+
+    const target = _target;
+    mat4.getTranslation(target, grabbingNode.worldMatrix);
+
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    const direction = vec3.set(_direction, 0, 0, 1);
+    vec3.transformQuat(direction, direction, _worldQuat);
+    vec3.scale(direction, direction, 0.5);
+
+    vec3.sub(target, target, direction);
+
+    vec3.sub(target, target, focusedPosition);
+
+    vec3.scale(target, target, HELD_MOVE_SPEED * 2);
+
+    const body = RigidBody.store.get(focusedEntity);
+    if (body) {
+      body.setLinvel(_impulse.fromArray(target), true);
+      body.setAngvel(zero, true);
+      body.setRotation(_r.fromArray(_worldQuat), true);
+    }
+  } else {
+    grabbingNode.visible = true;
   }
 }
 
