@@ -4,10 +4,11 @@ import { mat4, quat, vec3 } from "gl-matrix";
 
 import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
 import { ourPlayerQuery } from "../../engine/component/Player";
+import { setFromLocalMatrix } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { InputModule } from "../../engine/input/input.game";
 import { getModule } from "../../engine/module/module.common";
-import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
+import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
@@ -49,10 +50,10 @@ export function XRInteractionSystem(ctx: GameState) {
 
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const rayNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const raycaster = XRRaycaster.get(eid);
 
-    if (!node || !raycaster) {
+    if (!rayNode || !raycaster) {
       continue;
     }
 
@@ -63,6 +64,9 @@ export function XRInteractionSystem(ctx: GameState) {
     }
 
     const controllerPoses = getReadObjectBufferView(inputSource.controllerPoses);
+
+    setFromLocalMatrix(rayNode, controllerPoses.rayPose);
+
     mat4.getTranslation(_rayPosePosition, controllerPoses.rayPose);
     const origin = raycaster.ray.origin;
     origin.x = _rayPosePosition[0];
@@ -107,7 +111,7 @@ export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) 
     solid: true,
     action: "",
     ray: new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0)),
-    filterGroups: playerCollisionGroups,
+    filterGroups: grabShapeCastCollisionGroups,
     filterExcludeRigidBody: RigidBody.store.get(ourPlayer),
   });
 }
