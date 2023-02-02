@@ -3,9 +3,9 @@ import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { FileUploadCard, FileUploadErrorCard } from "./file-upload-card/FileUploadCard";
 import { useAttachmentUpload } from "../../hooks/useAttachmentUpload";
-import { useDebounce } from "../../hooks/useDebounce";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import { useFilePicker } from "../../hooks/useFilePicker";
+import { useThrottle } from "../../hooks/useThrottle";
 
 export interface AutoUploadInfo {
   mxc?: string;
@@ -24,10 +24,8 @@ export function AutoFileUpload({ renderButton, mimeType, onUploadInfo }: AutoFil
 
   const { fileData, pickFile, dropFile } = useFilePicker(platform, mimeType);
   const [progress, setProgress] = useState(0);
-  const { mxc, error, upload, cancel } = useAttachmentUpload(
-    session.hsApi,
-    useDebounce(setProgress, { wait: 200, immediate: true })
-  );
+  const throttledSetProgress = useThrottle(setProgress, 16);
+  const { mxc, error, upload, cancel } = useAttachmentUpload(session.hsApi, throttledSetProgress);
   useEffect(() => {
     if (fileData.blob) upload(fileData.blob);
     else {
