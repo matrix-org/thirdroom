@@ -1,4 +1,4 @@
-.DropdownMenuItem {
+.MenuItem {
   display: flex;
   align-items: center;
   padding: var(--sp-xs) var(--sp-md);
@@ -11,7 +11,7 @@
   }
 }
 
-.DropdownMenuItem--surface {
+.MenuItem--surface {
   &:hover,
   &:focus {
     background-color: var(--bg-surface-hover);
@@ -21,7 +21,7 @@
   }
 }
 
-.DropdownMenuItem--primary {
+.MenuItem--primary {
   &:hover,
   &:focus {
     background-color: var(--bg-primary-soft-hover);
@@ -30,7 +30,7 @@
     background-color: var(--bg-primary-soft-active);
   }
 }
-.DropdownMenuItem--secondary {
+.MenuItem--secondary {
   &:hover,
   &:focus {
     background-color: var(--bg-secondary-soft-hover);
@@ -39,7 +39,7 @@
     background-color: var(--bg-secondary-soft-active);
   }
 }
-.DropdownMenuItem--danger {
+.MenuItem--danger {
   &:hover,
   &:focus {
     background-color: var(--bg-danger-soft-hover);
