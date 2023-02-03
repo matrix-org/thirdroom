@@ -11,7 +11,7 @@ audio routing docs
       │
  ┌────┴────┐
  │main     │
- │gain     │
+ |limiter  │
  └────▲────┘
       │
  ┌────┴────┐
