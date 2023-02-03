@@ -23,7 +23,9 @@ export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecution
   U8Heap: Uint8Array;
   source?: string;
   ready: boolean;
+  entered: boolean;
   loadedCalled: boolean;
+  enteredCalled: boolean;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
@@ -31,6 +33,7 @@ interface ScriptExports extends WebAssembly.Exports {
   websg_deallocate(ptr: number): void;
   websg_initialize(): void;
   websg_loaded(): void;
+  websg_entered(): void;
   websg_update(dt: number): void;
 }
 
@@ -78,6 +81,12 @@ export function ScriptingSystem(ctx: GameState) {
 
       if ("websg_update" in script.instance.exports) {
         script.instance.exports.websg_update(ctx.dt);
+      }
+
+      if (script.entered && !script.enteredCalled) {
+        if ("websg_entered" in script.instance.exports) {
+          script.instance.exports.websg_entered();
+        }
       }
     }
   }
@@ -138,6 +147,8 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     resourceManager,
     ready: false,
     loadedCalled: false,
+    entered: false,
+    enteredCalled: false,
     U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
 

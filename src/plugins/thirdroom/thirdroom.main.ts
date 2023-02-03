@@ -56,7 +56,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   },
 });
 
-export function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl: string) {
+export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 

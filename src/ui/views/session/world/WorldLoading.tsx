@@ -22,6 +22,7 @@ import { usePreviousState } from "../../../hooks/usePreviousState";
 import { Button } from "../../../atoms/button/Button";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
+import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../../../engine/matrix/matrix.main";
 
 interface WorldLoadProgress {
   loaded: number;
@@ -71,6 +72,7 @@ function useLoadWorld() {
 
       try {
         await loadWorld(mainThread, sceneUrl, scriptUrl);
+        await setActiveMatrixRoom(mainThread, session, roomId);
 
         // set max obj cap
         if (maxObjectCap !== undefined)
@@ -82,7 +84,7 @@ function useLoadWorld() {
         throw new Error(err?.message ?? "Unknown error loading world.");
       }
     },
-    [mainThread, session.mediaRepository]
+    [mainThread, session]
   );
 
   return loadWorldCallback;
@@ -162,6 +164,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const [error, setError] = useState<Error>();
   const world = roomId ? session.rooms.get(roomId) : undefined;
   const [creator, setCreator] = useState<string>();
+  const mainThread = useMainThreadContext();
 
   useEffect(() => {
     if (roomId && prevRoomId !== roomId) {
@@ -212,8 +215,9 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       const world = useStore.getState().world;
       world.disposeNetworkInterface?.();
       world.closeWorld();
+      disposeActiveMatrixRoom(mainThread);
     };
-  }, [session, roomId, reloadId, loadWorld, isMounted, setWorld, resetLoadProgress]);
+  }, [session, roomId, reloadId, loadWorld, isMounted, setWorld, resetLoadProgress, mainThread]);
 
   useEffect(() => {
     const world = worldId ? session.rooms.get(worldId) : undefined;

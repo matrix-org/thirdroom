@@ -12,6 +12,7 @@ import {
   IncomingMainThreadTripleBufferSystem,
   OutgoingMainThreadTripleBufferSystem,
 } from "./MainThreadTripleBufferSystems";
+import { MatrixModule } from "./matrix/matrix.main";
 
 export default defineConfig<IMainThreadContext>({
   modules: [
@@ -23,6 +24,7 @@ export default defineConfig<IMainThreadContext>({
     StatsModule,
     RendererModule,
     ThirdroomModule,
+    MatrixModule,
   ],
   systems: [
     IncomingMainThreadTripleBufferSystem,

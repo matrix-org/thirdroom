@@ -755,6 +755,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     loadAtTop(amount: number): boolean;
     getByEventId(eventId: string): EventEntry;
     get entries(): ConcatList<EventEntry | PendingEventEntry | FragmentBoundaryEntry>;
+    dispose(): void;
   }
 
   export class RoomMember {

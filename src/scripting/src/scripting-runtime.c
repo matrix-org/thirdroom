@@ -11,6 +11,7 @@
 #include "./jsutils.h"
 #include "./console.h"
 #include "./thirdroom.h"
+#include "./matrix-api.h"
 #include "./generated/websg.h"
 #include "./generated/websg-js.h"
 
@@ -46,6 +47,7 @@ export void websg_initialize() {
   js_define_console_api(ctx, &global);
   js_define_websg_api(ctx, &global);
   js_define_thirdroom_api(ctx, &global);
+  js_define_matrix_api(ctx, &global);
 }
 
 export void *websg_allocate(int size) {

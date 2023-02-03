@@ -85,6 +85,19 @@ static JSValue js_texture_get_source(JSContext *ctx, JSValueConst this_val) {
 }
 
 
+static JSValue js_texture_get_rgbm(JSContext *ctx, JSValueConst this_val) {
+  Texture *texture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
+
+  if (!texture) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewBool(ctx, texture->rgbm);
+    return val;
+  }
+}
+
+
 static JSValue js_texture_get_encoding(JSContext *ctx, JSValueConst this_val) {
   Texture *texture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
 
@@ -93,6 +106,19 @@ static JSValue js_texture_get_encoding(JSContext *ctx, JSValueConst this_val) {
   } else {
     JSValue val;
     val = JS_NewUint32(ctx, texture->encoding);
+    return val;
+  }
+}
+
+
+static JSValue js_texture_get_format(JSContext *ctx, JSValueConst this_val) {
+  Texture *texture = JS_GetOpaque2(ctx, this_val, js_texture_class_id);
+
+  if (!texture) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, texture->format);
     return val;
   }
 }
@@ -115,7 +141,9 @@ static const JSCFunctionListEntry js_texture_proto_funcs[] = {
   JS_CGETSET_DEF("name", js_texture_get_name, js_texture_set_name),
   JS_CGETSET_DEF("sampler", js_texture_get_sampler, NULL),
   JS_CGETSET_DEF("source", js_texture_get_source, NULL),
+  JS_CGETSET_DEF("rgbm", js_texture_get_rgbm, NULL),
   JS_CGETSET_DEF("encoding", js_texture_get_encoding, NULL),
+  JS_CGETSET_DEF("format", js_texture_get_format, NULL),
   JS_CFUNC_DEF("dispose", 0, js_texture_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Texture", JS_PROP_CONFIGURABLE),
 };
