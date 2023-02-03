@@ -57,6 +57,7 @@ import {
   loadJSScript,
   loadWASMScript,
   Script,
+  ScriptComponent,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
 import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
@@ -568,6 +569,16 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   }
 
   embodyAvatar(ctx, physics, input, rig);
+
+  const gltfScene = ctx.worldResource.environment?.publicScene;
+
+  if (gltfScene && hasComponent(ctx.world, ScriptComponent, gltfScene.eid)) {
+    const script = ScriptComponent.get(gltfScene.eid);
+
+    if (script) {
+      script.entered = true;
+    }
+  }
 
   return eid;
 }

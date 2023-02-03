@@ -1,6 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
+import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
@@ -373,6 +374,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
           });
         },
       },
+      matrix: createMatrixWASMModule(this.ctx, this),
       websg: {
         get_resource_by_name: (resourceType: number, namePtr: number) => {
           const resources = this.resources;

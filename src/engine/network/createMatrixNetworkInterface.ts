@@ -2,7 +2,6 @@ import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thi
 
 import { enterWorld, exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { IMainThreadContext } from "../MainThread";
-import { onEnterWorld, onExitWorld } from "../matrix/matrix.main";
 import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId } from "./network.main";
 
 function memberComparator(a: Member, b: Member): number {
@@ -140,7 +139,6 @@ export async function createMatrixNetworkInterface(
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
     await enterWorld(ctx);
-    await onEnterWorld(ctx, client.session!, groupCall.roomId);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
@@ -198,7 +196,6 @@ export async function createMatrixNetworkInterface(
     disconnect(ctx);
 
     exitWorld(ctx);
-    onExitWorld(ctx);
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();

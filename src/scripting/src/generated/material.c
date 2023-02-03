@@ -258,31 +258,6 @@ static JSValue js_material_set_metallic_roughness_texture(JSContext *ctx, JSValu
 }
 
 
-static JSValue js_material_get_normal_texture_scale(JSContext *ctx, JSValueConst this_val) {
-  Material *material = JS_GetOpaque2(ctx, this_val, js_material_class_id);
-
-  if (!material) {
-    return JS_EXCEPTION;
-  } else {
-    JSValue val;
-    val = JS_NewFloat64(ctx, (double)material->normal_texture_scale);
-    return val;
-  }
-}
-
-
-static JSValue js_material_set_normal_texture_scale(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  Material *material = JS_GetOpaque2(ctx, this_val, js_material_class_id);
-
-  if (!material) {
-    return JS_EXCEPTION;
-  } else {
-    if (JS_ToFloat32(ctx, &material->normal_texture_scale, val)) return JS_EXCEPTION;
-    return JS_UNDEFINED;
-  }
-}
-
-
 static JSValue js_material_get_normal_texture(JSContext *ctx, JSValueConst this_val) {
   Material *material = JS_GetOpaque2(ctx, this_val, js_material_class_id);
 
@@ -303,6 +278,31 @@ static JSValue js_material_set_normal_texture(JSContext *ctx, JSValueConst this_
     return JS_EXCEPTION;
   } else {
     material->normal_texture = JS_GetOpaque(val, js_texture_class_id);
+    return JS_UNDEFINED;
+  }
+}
+
+
+static JSValue js_material_get_normal_scale(JSContext *ctx, JSValueConst this_val) {
+  Material *material = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!material) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewFloat64(ctx, (double)material->normal_scale);
+    return val;
+  }
+}
+
+
+static JSValue js_material_set_normal_scale(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Material *material = JS_GetOpaque2(ctx, this_val, js_material_class_id);
+
+  if (!material) {
+    return JS_EXCEPTION;
+  } else {
+    if (JS_ToFloat32(ctx, &material->normal_scale, val)) return JS_EXCEPTION;
     return JS_UNDEFINED;
   }
 }
@@ -581,8 +581,8 @@ static const JSCFunctionListEntry js_material_proto_funcs[] = {
   JS_CGETSET_DEF("metallicFactor", js_material_get_metallic_factor, js_material_set_metallic_factor),
   JS_CGETSET_DEF("roughnessFactor", js_material_get_roughness_factor, js_material_set_roughness_factor),
   JS_CGETSET_DEF("metallicRoughnessTexture", js_material_get_metallic_roughness_texture, js_material_set_metallic_roughness_texture),
-  JS_CGETSET_DEF("normalTextureScale", js_material_get_normal_texture_scale, js_material_set_normal_texture_scale),
   JS_CGETSET_DEF("normalTexture", js_material_get_normal_texture, js_material_set_normal_texture),
+  JS_CGETSET_DEF("normalScale", js_material_get_normal_scale, js_material_set_normal_scale),
   JS_CGETSET_DEF("occlusionTextureStrength", js_material_get_occlusion_texture_strength, js_material_set_occlusion_texture_strength),
   JS_CGETSET_DEF("occlusionTexture", js_material_get_occlusion_texture, js_material_set_occlusion_texture),
   JS_CGETSET_DEF("emissiveStrength", js_material_get_emissive_strength, js_material_set_emissive_strength),
@@ -634,7 +634,21 @@ JSValue create_material_from_ptr(JSContext *ctx, Material *material) {
   if (JS_IsUndefined(val)) {
     val = JS_NewObjectClass(ctx, js_material_class_id);
     JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "baseColorFactor", material->base_color_factor, 4);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "baseColorTextureOffset", material->base_color_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "baseColorTextureScale", material->base_color_texture_scale, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "metallicRoughnessTextureOffset", material->metallic_roughness_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "metallicRoughnessTextureScale", material->metallic_roughness_texture_scale, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "normalTextureOffset", material->normal_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "normalTextureScale", material->normal_texture_scale, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "occlusionTextureOffset", material->occlusion_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "occlusionTextureScale", material->occlusion_texture_scale, 2);
 JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "emissiveFactor", material->emissive_factor, 3);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "emissiveTextureOffset", material->emissive_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "emissiveTextureScale", material->emissive_texture_scale, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "transmissionTextureOffset", material->transmission_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "transmissionTextureScale", material->transmission_texture_scale, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "thicknessTextureOffset", material->thickness_texture_offset, 2);
+JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "thicknessTextureScale", material->thickness_texture_scale, 2);
 JS_DefineReadOnlyFloat32ArrayProperty(ctx, val, "attenuationColor", material->attenuation_color, 3);
     JS_SetOpaque(val, material);
     set_js_val_from_ptr(ctx, material, val);
