@@ -35,30 +35,6 @@ static JSValue js_world_constructor(JSContext *ctx, JSValueConst new_target, int
 }
 
 
-static JSValue js_world_get_active_camera_node(JSContext *ctx, JSValueConst this_val) {
-  World *world = JS_GetOpaque2(ctx, this_val, js_world_class_id);
-
-  if (!world) {
-    return JS_EXCEPTION;
-  } else {
-    JSValue val;
-    val = create_node_from_ptr(ctx, world->active_camera_node);
-    return val;
-  }
-}
-
-
-static JSValue js_world_set_active_camera_node(JSContext *ctx, JSValueConst this_val, JSValue val) {
-  World *world = JS_GetOpaque2(ctx, this_val, js_world_class_id);
-
-  if (!world) {
-    return JS_EXCEPTION;
-  } else {
-    world->active_camera_node = JS_GetOpaque(val, js_node_class_id);
-    return JS_UNDEFINED;
-  }
-}
-
 
 
 
@@ -74,7 +50,7 @@ static JSClassDef js_world_class = {
 };
 
 static const JSCFunctionListEntry js_world_proto_funcs[] = {
-  JS_CGETSET_DEF("activeCameraNode", js_world_get_active_camera_node, js_world_set_active_camera_node),
+
   JS_CFUNC_DEF("dispose", 0, js_world_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };

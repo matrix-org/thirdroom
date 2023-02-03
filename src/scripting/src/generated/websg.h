@@ -130,9 +130,6 @@ typedef struct AudioSource {
   AudioData *audio;
   float_t gain;
   unsigned int auto_play;
-  float_t seek;
-  unsigned int play;
-  unsigned int playing;
   unsigned int loop;
   float_t playback_rate;
 } AudioSource;
@@ -182,11 +179,19 @@ typedef enum TextureEncoding {
   TextureEncoding_sRGB = 3001,
 } TextureEncoding;
 
+typedef enum TextureFormat {
+  TextureFormat_Unknown = 0,
+  TextureFormat_Basis = 1,
+} TextureFormat;
+
 typedef struct Texture {
   const char *name;
   Sampler *sampler;
   Image *source;
+  unsigned int rgbm;
   TextureEncoding encoding;
+  TextureFormat format;
+  unsigned int depth;
 } Texture;
 
 typedef struct ReflectionProbe {
@@ -214,21 +219,42 @@ typedef struct Material {
   MaterialAlphaMode alpha_mode;
   float_t base_color_factor[4];
   Texture *base_color_texture;
+  float_t base_color_texture_offset[2];
+  float_t base_color_texture_rotation;
+  float_t base_color_texture_scale[2];
   float_t metallic_factor;
   float_t roughness_factor;
   Texture *metallic_roughness_texture;
-  float_t normal_texture_scale;
+  float_t metallic_roughness_texture_offset[2];
+  float_t metallic_roughness_texture_rotation;
+  float_t metallic_roughness_texture_scale[2];
   Texture *normal_texture;
+  float_t normal_scale;
+  float_t normal_texture_offset[2];
+  float_t normal_texture_rotation;
+  float_t normal_texture_scale[2];
   float_t occlusion_texture_strength;
   Texture *occlusion_texture;
+  float_t occlusion_texture_offset[2];
+  float_t occlusion_texture_rotation;
+  float_t occlusion_texture_scale[2];
   float_t emissive_strength;
   float_t emissive_factor[3];
   Texture *emissive_texture;
+  float_t emissive_texture_offset[2];
+  float_t emissive_texture_rotation;
+  float_t emissive_texture_scale[2];
   float_t ior;
   float_t transmission_factor;
   Texture *transmission_texture;
+  float_t transmission_texture_offset[2];
+  float_t transmission_texture_rotation;
+  float_t transmission_texture_scale[2];
   float_t thickness_factor;
   Texture *thickness_texture;
+  float_t thickness_texture_offset[2];
+  float_t thickness_texture_rotation;
+  float_t thickness_texture_scale[2];
   float_t attenuation_distance;
   float_t attenuation_color[3];
 } Material;
@@ -455,6 +481,8 @@ typedef struct _Scene {
   Texture *background_texture;
   ReflectionProbe *reflection_probe;
   float_t bloom_strength;
+  float_t bloom_threshold;
+  float_t bloom_radius;
   AudioEmitter *audio_emitters[16];
   Node *first_node;
 } Scene;
@@ -469,6 +497,9 @@ typedef struct World {
   Node *first_node;
   Scene *persistent_scene;
   Node *active_camera_node;
+  Node *active_avatar_node;
+  Node *active_left_controller_node;
+  Node *active_right_controller_node;
 } World;
 
 import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);

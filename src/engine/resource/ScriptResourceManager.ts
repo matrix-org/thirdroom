@@ -1,6 +1,7 @@
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
+import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
@@ -169,11 +170,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
       }
 
       if (value) {
-        const arr = this.textEncoder.encode(value);
-        const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-        nullTerminatedArr.set(arr);
-        const ptr = this.allocate(nullTerminatedArr.byteLength);
-        this.U8Heap.set(nullTerminatedArr, ptr);
+        const ptr = this.writeString(value);
         store[0] = ptr;
         const resourceId = createStringResource(this.ctx, value, () => {
           this.deallocate(ptr);
@@ -182,6 +179,15 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
         this.ptrToResourceId.set(ptr, resourceId);
       }
     }
+  }
+
+  writeString(value: string): number {
+    const arr = this.textEncoder.encode(value);
+    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+    nullTerminatedArr.set(arr);
+    const ptr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, ptr);
+    return ptr;
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
@@ -368,6 +374,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
           });
         },
       },
+      matrix: createMatrixWASMModule(this.ctx, this),
       websg: {
         get_resource_by_name: (resourceType: number, namePtr: number) => {
           const resources = this.resources;
