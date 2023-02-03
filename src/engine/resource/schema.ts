@@ -314,6 +314,8 @@ export const AccessorResource = defineResource("accessor", ResourceType.Accessor
   max: PropType.mat4({ default: new Float32Array(16), script: true }),
   min: PropType.mat4({ default: new Float32Array(16), script: true }),
   sparse: PropType.ref(SparseAccessorResource, { mutable: false, script: true }),
+  dynamic: PropType.bool({ script: true, mutable: false }),
+  version: PropType.u32({ script: true }),
 });
 
 export enum MeshPrimitiveMode {

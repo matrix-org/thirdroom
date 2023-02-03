@@ -100,7 +100,7 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
           }
         }
       } else if (prop.type === "arrayBuffer") {
-        const resourceId = resource.__props[propName][1];
+        const resourceId = resource.__props[propName][2];
 
         if (resourceId) {
           this.removeRef(resourceId);
@@ -134,23 +134,28 @@ export class GameResourceManager implements IRemoteResourceManager<GameState> {
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
-    if (!store[1]) {
+    if (!store[2]) {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    const resourceId = store[1];
+    const resourceId = store[2];
     return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId) as SharedArrayBuffer;
   }
 
   setArrayBuffer(value: SharedArrayBuffer, store: Uint32Array): void {
-    if (store[1]) {
+    if (store[2]) {
       throw new Error("You cannot mutate an existing arrayBuffer field.");
     }
 
     const resourceId = createArrayBufferResource(this.ctx, value);
     this.addRef(resourceId);
     store[0] = value.byteLength;
-    store[1] = resourceId;
+    store[1] = 0; // Immutable
+    store[2] = resourceId;
+  }
+
+  initArrayBuffer(store: Uint32Array): void {
+    throw new Error("Undefined behavior");
   }
 
   getRef<T extends RemoteResource<GameState>>(store: Uint32Array): T | undefined {

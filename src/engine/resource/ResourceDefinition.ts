@@ -304,7 +304,7 @@ function createArrayBufferPropDef<O extends { script?: boolean }>(options?: O) {
   return createPropDef(
     {
       type: "arrayBuffer",
-      size: 2,
+      size: 3,
       arrayType: Uint32Array,
       mutable: false,
       required: true,
@@ -712,6 +712,7 @@ export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext>
   setString(value: string | undefined, store: Uint32Array): void;
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
   setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
+  initArrayBuffer(store: Uint32Array): void;
   allocateResource(resourceDef: ResourceDefinition): ResourceData;
   createResource(resource: RemoteResource<ThreadContext>): number;
   removeResourceRefs(resourceId: number): boolean;

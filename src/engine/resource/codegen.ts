@@ -118,7 +118,8 @@ function generateWebSGHeader() {
 
 typedef struct ArrayBuffer {
   unsigned int size;
-  unsigned char *buf;
+  unsigned int mutable;
+  void *data;
 } ArrayBuffer;`);
 
   const predefinedStructs = new Set<string>();
@@ -167,6 +168,7 @@ ${Object.entries(value)
 import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);
 import_websg(create_resource) int websg_create_resource(ResourceType type, void *resource);
 import_websg(dispose_resource) int websg_dispose_resource(void *resource);
+import_websg(get_active_scene) Scene *websg_get_active_scene();
 
 #endif`);
 

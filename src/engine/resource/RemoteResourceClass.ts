@@ -80,6 +80,8 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       } else if (prop.type === "arrayBuffer") {
         if (initialValue) {
           this.manager.setArrayBuffer(initialValue as SharedArrayBuffer, store as Uint32Array);
+        } else if (!initialProps) {
+          this.manager.initArrayBuffer(store as Uint32Array);
         }
 
         this.__props[propName] = store;
