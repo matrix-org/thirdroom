@@ -131,9 +131,15 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
     if (!isValidScene(sceneEvent)) return;
 
     featuredScenes.sort(eventByOrderKey);
-    const firstEvent = featuredScenes[0];
-    const firstOrder = firstEvent.content.order;
-    const prevOrder = order.getPrevStr(firstOrder);
+
+    let prevOrder;
+
+    if (featuredScenes.length > 0) {
+      const firstEvent = featuredScenes[0];
+      const firstOrder = firstEvent.content.order;
+      prevOrder = order.getPrevStr(firstOrder);
+    }
+
     session.hsApi.sendState(room.id, RepositoryEvents.FeaturedScene, sceneEvent.event_id, {
       scene: sceneEvent.content.scene,
       order: prevOrder ?? undefined,
