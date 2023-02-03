@@ -169,11 +169,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
       }
 
       if (value) {
-        const arr = this.textEncoder.encode(value);
-        const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-        nullTerminatedArr.set(arr);
-        const ptr = this.allocate(nullTerminatedArr.byteLength);
-        this.U8Heap.set(nullTerminatedArr, ptr);
+        const ptr = this.writeString(value);
         store[0] = ptr;
         const resourceId = createStringResource(this.ctx, value, () => {
           this.deallocate(ptr);
@@ -182,6 +178,15 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
         this.ptrToResourceId.set(ptr, resourceId);
       }
     }
+  }
+
+  writeString(value: string): number {
+    const arr = this.textEncoder.encode(value);
+    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+    nullTerminatedArr.set(arr);
+    const ptr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, ptr);
+    return ptr;
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {

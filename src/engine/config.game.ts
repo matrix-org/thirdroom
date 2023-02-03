@@ -51,6 +51,7 @@ import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSyste
 import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
 import { WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
 import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem";
+import { MatrixModule } from "./matrix/matrix.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -64,6 +65,7 @@ export default defineConfig<GameState>({
     EditorModule,
     RendererModule,
     ThirdRoomModule,
+    MatrixModule,
     FirstPersonCameraModule,
     KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
