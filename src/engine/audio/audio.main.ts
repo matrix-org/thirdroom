@@ -120,7 +120,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 
     const analyser = new AnalyserNode(audioContext);
     // fft size must be a power of 2, min 2^5 max 2^15
-    analyser.fftSize = FFT_BIN_SIZE; // 1024
+    analyser.fftSize = FFT_BIN_SIZE;
 
     const analyserTripleBuffer = createObjectTripleBuffer(AudioAnalyserSchema, ctx.mainToGameTripleBufferFlags);
 

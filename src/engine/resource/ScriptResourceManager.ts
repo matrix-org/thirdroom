@@ -369,10 +369,15 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             enabled: !!enabled,
           });
         },
-        get_audio_data: (audioDataPtr: number) => {
+        get_audio_frequency_data: (audioDataPtr: number) => {
           const audio = getModule(this.ctx, AudioModule);
           const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
           this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
+        },
+        get_audio_time_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.timeData, audioDataPtr);
         },
       },
       websg: {
