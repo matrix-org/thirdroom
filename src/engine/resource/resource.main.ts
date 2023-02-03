@@ -1,3 +1,5 @@
+import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { AudioAnalyserSchema, AudioAnalyserTripleBuffer, FFT_BIN_SIZE } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -113,22 +115,31 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
+  analyser: AnalyserNode | undefined;
+  analyserTripleBuffer: AudioAnalyserTripleBuffer | undefined;
 
   load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
-    this.inputGain = audioContext.createGain();
+    this.analyserTripleBuffer = createObjectTripleBuffer(AudioAnalyserSchema, ctx.mainToGameTripleBufferFlags);
+    this.analyser = audioContext.createAnalyser();
+    this.analyser.fftSize = FFT_BIN_SIZE;
+
     // input gain connected by node update
+    this.inputGain = audioContext.createGain();
 
     this.outputGain = audioContext.createGain();
+
     const destination =
       this.output === AudioEmitterOutput.Voice
         ? audioModule.voiceGain
         : this.output === AudioEmitterOutput.Music
         ? audioModule.musicGain
         : audioModule.environmentGain;
+
     this.outputGain.connect(destination);
+    this.outputGain.connect(this.analyser);
     this.destination = destination;
 
     if (this.type === AudioEmitterType.Global) {

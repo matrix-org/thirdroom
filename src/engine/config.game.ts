@@ -32,7 +32,7 @@ import {
   ResourceModule,
   ResourceTickSystem,
 } from "./resource/resource.game";
-import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
+import { AudioAnalyserSystem, ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
@@ -73,6 +73,8 @@ export default defineConfig<GameState>({
   ],
   systems: [
     IncomingTripleBufferSystem,
+
+    AudioAnalyserSystem,
 
     ApplyInputSystem,
     WebXRAvatarRigSystem,

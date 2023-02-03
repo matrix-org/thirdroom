@@ -1,4 +1,6 @@
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
+import { AudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
 import { getModule, Thread } from "../module/module.common";
@@ -366,6 +368,11 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             type: RendererMessageType.EnableMatrixMaterial,
             enabled: !!enabled,
           });
+        },
+        get_audio_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
         },
       },
       websg: {

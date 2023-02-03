@@ -1,3 +1,56 @@
+/*
+
+audio routing docs
+
+ ┌─────────┐ ┌─────────┐
+ │out      │ │main     │
+ │         │ │analyser │
+ └────▲────┘ └────▲────┘
+      │           │
+      ├───────────┘
+      │
+ ┌────┴────┐
+ │main     │
+ │gain     │
+ └────▲────┘
+      │
+ ┌────┴────┐
+ │main     │
+ │gain     │
+ └────▲────┘
+      │
+      ├────────────┬────────────┐
+      │            │            │
+ ┌────┴────┐  ┌────┴────┐  ┌────┴────┐
+ │environmt│  │music    │  │voice    │
+ │gain     │  │gain     │  │gain     │
+ └────▲────┘  └────▲────┘  └────▲────┘
+      │            │            │
+      *            *            *
+ ─────────────────────────────────────
+      *
+      ▲
+      │
+ ┌────┴────┐  ┌─────────┐
+ │audio    │  │emitter  │
+ │emitter  ├──►analyser │
+ └────▲────┘  └─────────┘
+      │
+      ├────────────┐
+      │            │
+ ┌────┴────┐  ┌────┴────┐
+ │audio    │  │audio    │
+ │source   │  │source   │
+ └────▲────┘  └────▲────┘
+      │            │
+ ┌────┴────┐  ┌────┴────┐
+ │audio    │  │audio    │
+ │data     │  │data     │
+ └─────────┘  └─────────┘
+
+
+*/
+
 import { vec3, mat4, quat } from "gl-matrix";
 import EventEmitter from "events";
 import { availableRead } from "@thirdroom/ringbuffer";
@@ -24,7 +77,15 @@ import {
   AudioPlaybackRingBuffer,
   AudioAction,
 } from "./AudioPlaybackRingBuffer";
-import { AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
+import {
+  AudioAnalyserSchema,
+  AudioAnalyserTripleBuffer,
+  AudioMessageType,
+  FFT_BIN_SIZE,
+  FREQ_BIN_COUNT,
+  InitializeAudioStateMessage,
+} from "./audio.common";
+import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
 
 /*********
  * Types *
@@ -33,6 +94,8 @@ import { AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
 export interface MainAudioModule {
   context: AudioContext;
   // todo: MixerTrack/MixerInsert interface
+  analyser: AnalyserNode;
+  analyserTripleBuffer: AudioAnalyserTripleBuffer;
   mainLimiter: DynamicsCompressorNode;
   mainGain: GainNode;
   environmentGain: GainNode;
@@ -50,35 +113,27 @@ export interface MainAudioModule {
  * Initialization *
  *****************/
 
-/*
-┌────────┐
-│  out   │ audio context destination
-│        │
-└─L────R─┘
-  ▲    ▲
-┌────────┐
-│ main   │ main channel volume
-│ gain   │ todo: connect to reverb send track
-└─L────R─┘
-  ▲    ▲
-┌────────┐
-│ sample │ sample channel volume
-│ gain   │
-└─L────R─┘
- */
-
 export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
   name: "audio",
   async create(ctx, { sendMessage }) {
     const audioContext = new AudioContext();
 
+    const analyser = new AnalyserNode(audioContext);
+    // fft size must be a power of 2, min 2^5 max 2^15
+    analyser.fftSize = FFT_BIN_SIZE; // 1024
+
+    const analyserTripleBuffer = createObjectTripleBuffer(AudioAnalyserSchema, ctx.mainToGameTripleBufferFlags);
+
+    // this compressor node acts as a limiter which adds a small amount of headroom to avoid peaking/clipping which can cause distortion
     const mainLimiter = new DynamicsCompressorNode(audioContext);
-    mainLimiter.threshold.value = -0.01;
+    mainLimiter.threshold.value = -0.2; // this leaves 0.2db of headroom to prevent clipping
     mainLimiter.knee.value = 0;
+    // max ratio and extremely fast attack/release values are what make this act as a limiter
     mainLimiter.ratio.value = 20;
-    mainLimiter.attack.value = 0.007;
-    mainLimiter.release.value = 0.02;
+    mainLimiter.attack.value = 0.0005; // 0.5ms attack
+    mainLimiter.release.value = 0.02; // 10ms release
     mainLimiter.connect(audioContext.destination);
+    mainLimiter.connect(analyser);
 
     const mainGain = new GainNode(audioContext);
     mainGain.connect(mainLimiter);
@@ -96,10 +151,13 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
 
     sendMessage<InitializeAudioStateMessage>(Thread.Game, AudioMessageType.InitializeAudioState, {
       audioPlaybackRingBuffer,
+      analyserTripleBuffer,
     });
 
     return {
       context: audioContext,
+      analyser,
+      analyserTripleBuffer,
       mainLimiter,
       mainGain,
       environmentGain,
@@ -137,6 +195,19 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
   processAudioPlaybackRingBuffer(ctx, audioModule);
   updateAudioEmitters(ctx, audioModule);
   updateNodeAudioEmitters(ctx, audioModule);
+  updateAudioAnalyser(ctx, audioModule);
+}
+
+const _frequencyData = new Uint8Array(FREQ_BIN_COUNT);
+const _timeData = new Uint8Array(FREQ_BIN_COUNT);
+function updateAudioAnalyser(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+  const audioAnalyser = getWriteObjectBufferView(audioModule.analyserTripleBuffer);
+
+  audioModule.analyser.getByteFrequencyData(_frequencyData);
+  audioModule.analyser.getByteTimeDomainData(_timeData);
+
+  audioAnalyser.frequencyData.set(_frequencyData);
+  audioAnalyser.timeData.set(_timeData);
 }
 
 const MAX_AUDIO_BYTES = 640_000;
@@ -626,6 +697,18 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
   if (!node.audioEmitter) {
     return;
+  }
+
+  if (node.audioEmitter.analyser && node.audioEmitter.analyserTripleBuffer) {
+    const analyserData = getWriteObjectBufferView(node.audioEmitter.analyserTripleBuffer);
+
+    // analyser -> _tmp
+    node.audioEmitter.analyser.getByteFrequencyData(_frequencyData);
+    node.audioEmitter.analyser.getByteTimeDomainData(_timeData);
+
+    // _tmp -> triplebuffer
+    analyserData.frequencyData.set(_frequencyData);
+    analyserData.timeData.set(_timeData);
   }
 
   if (!node.emitterPannerNode) {
