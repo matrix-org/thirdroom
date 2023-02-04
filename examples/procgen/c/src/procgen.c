@@ -223,6 +223,7 @@ SphereData *generate_sphere_primitive(
 
 fnl_state noise_state;
 SphereData *sphere;
+Material *beam_material;
 
 export void websg_loaded() {
   Material *material = malloc(sizeof(Material));
@@ -232,8 +233,8 @@ export void websg_loaded() {
   material->base_color_factor[1] = 0;
   material->base_color_factor[2] = 0;
   material->base_color_factor[3] = 1;
-  material->metallic_factor = 1;
-  material->roughness_factor = 0.01;
+  material->metallic_factor = 0.5;
+  material->roughness_factor = 0.7;
   websg_create_resource(ResourceType_Material, material);
 
   MeshPrimitive *mesh_primitive = malloc(sizeof(MeshPrimitive));
@@ -270,11 +271,16 @@ export void websg_loaded() {
 
   noise_state = fnlCreateState();
   noise_state.noise_type = FNL_NOISE_OPENSIMPLEX2;
-  noise_state.frequency = 0.05;
+  noise_state.frequency = 0.01;
   noise_state.fractal_type = FNL_FRACTAL_PINGPONG;
+
+  Mesh *beam_mesh = websg_get_resource_by_name(ResourceType_Mesh, "Tube_Light_01");
+  MeshPrimitive *beam_primitive = beam_mesh->primitives[0];
+  beam_material = beam_primitive->material;
 }
 
 float_t elapsed = 0;
+float_t acc_noise = 0;
 
 export void websg_update(float_t dt) {
   elapsed += dt;
@@ -290,11 +296,15 @@ export void websg_update(float_t dt) {
     y = y * n;
     z = z * n;
 
-    float_t noise = 1 + 0.5 * fnlGetNoise3D(&noise_state, x * 50 + elapsed, y * 50, z * 50);
+    float_t noise = 1 + 0.5 * fnlGetNoise3D(&noise_state, x * 5 + elapsed, y * 5 + elapsed, z * 5 + elapsed);
     sphere->positions[i * 3] = x * noise;
     sphere->positions[i * 3 + 1] = y * noise;
     sphere->positions[i * 3 + 2] = z * noise;
+
+    acc_noise += noise;
   }
+
+  beam_material->emissive_strength = 2.67 + ((sinf(acc_noise) + 1) / 2) * ((sinf(elapsed) + 1) / 2);
 
   sphere->mesh_primitive->attributes[MeshPrimitiveAttributeIndex_POSITION]->version++;
 }

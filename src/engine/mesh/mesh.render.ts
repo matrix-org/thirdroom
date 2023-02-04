@@ -380,8 +380,8 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
       }
 
       if (meshPrimitive.autoUpdateNormals) {
-        // TODO: Enabling this causes flickering
-        //primitiveObject.geometry.computeVertexNormals();
+        // TODO: This causes flickering when used.
+        primitiveObject.geometry.computeVertexNormals();
       }
 
       updateTransformFromNode(ctx, node, primitiveObject);
