@@ -202,11 +202,11 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   }
 
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
-    if (!store[1]) {
+    if (!store[2]) {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    const resourceId = this.ptrToResourceId.get(store[1]) as number;
+    const resourceId = this.ptrToResourceId.get(store[2]) as number;
     return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId) as SharedArrayBuffer;
   }
 
@@ -419,7 +419,6 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
         get_audio_frequency_data: (audioDataPtr: number) => {
           const audio = getModule(this.ctx, AudioModule);
           const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
-          console.log(audioAnalyser.frequencyData);
           this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
         },
         get_audio_time_data: (audioDataPtr: number) => {
