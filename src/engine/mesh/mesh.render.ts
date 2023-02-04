@@ -379,6 +379,11 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
         primitiveObject.material = meshPrimitive.materialObj;
       }
 
+      if (meshPrimitive.autoUpdateNormals) {
+        // TODO: Enabling this causes flickering
+        //primitiveObject.geometry.computeVertexNormals();
+      }
+
       updateTransformFromNode(ctx, node, primitiveObject);
 
       if (node.skin) {

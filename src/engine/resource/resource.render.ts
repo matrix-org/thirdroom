@@ -552,6 +552,7 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
 
   geometryObj: BufferGeometry = defaultGeometry;
   materialObj: PrimitiveMaterial = defaultMaterial;
+  autoUpdateNormals = false;
 
   load(ctx: RenderThreadState) {
     let geometryObj = new BufferGeometry();
@@ -566,8 +567,6 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
 
     for (let i = 0; i < this.attributes.length; i++) {
       const accessor = this.attributes[i];
-
-      console.log(this, this.attributes);
 
       if (accessor) {
         geometryObj.setAttribute(MeshPrimitiveAttributeToThreeAttribute[i], accessor.attribute);
@@ -586,6 +585,10 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
       this.materialObj = getDefaultMaterialForMeshPrimitive(ctx, this);
     } else {
       this.materialObj = this.material.getMaterialForMeshPrimitive(ctx, this);
+    }
+
+    if (this.attributes[MeshPrimitiveAttributeIndex.POSITION]?.dynamic) {
+      this.autoUpdateNormals = true;
     }
   }
 
