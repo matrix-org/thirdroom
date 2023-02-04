@@ -683,13 +683,25 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
   const nextAudioEmitterResourceId = node.audioEmitter?.eid || 0;
 
   // If emitter changed
-  if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId && node.emitterInputNode && node.emitterPannerNode) {
-    try {
-      node.emitterInputNode.disconnect(node.emitterPannerNode);
-    } catch {}
-    node.emitterPannerNode.disconnect();
-    node.emitterInputNode = undefined;
-    node.emitterPannerNode = undefined;
+  if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId) {
+    // teardown analyser node
+    if (node.audioEmitter?.analyserNode || node.audioEmitter?.analyserTripleBuffer) {
+      try {
+        node.audioEmitter.analyserNode?.disconnect();
+      } catch {}
+      node.audioEmitter.analyserTripleBuffer = undefined;
+      node.audioEmitter.analyserNode = undefined;
+    }
+
+    // teardown panner node
+    if (node.emitterInputNode && node.emitterPannerNode) {
+      try {
+        node.emitterInputNode.disconnect(node.emitterPannerNode);
+      } catch {}
+      node.emitterPannerNode.disconnect();
+      node.emitterInputNode = undefined;
+      node.emitterPannerNode = undefined;
+    }
   }
 
   node.currentAudioEmitterResourceId = nextAudioEmitterResourceId;
@@ -698,18 +710,29 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
     return;
   }
 
-  if (node.audioEmitter.analyserNode && node.audioEmitter.analyserTripleBuffer) {
-    const analyserData = getWriteObjectBufferView(node.audioEmitter.analyserTripleBuffer);
+  // setup analyser node
+  if (!node.audioEmitter.analyserNode && !node.audioEmitter.analyserTripleBuffer) {
+    node.audioEmitter.analyserTripleBuffer = createObjectTripleBuffer(
+      AudioAnalyserSchema,
+      ctx.mainToGameTripleBufferFlags
+    );
+    node.audioEmitter.analyserNode = audioModule.context.createAnalyser();
+    node.audioEmitter.analyserNode.fftSize = FFT_BIN_SIZE;
+    node.audioEmitter.outputGain!.connect(node.audioEmitter.analyserNode);
 
-    // analyser -> _tmp
-    node.audioEmitter.analyserNode.getByteFrequencyData(_frequencyData);
-    node.audioEmitter.analyserNode.getByteTimeDomainData(_timeData);
-
-    // _tmp -> triplebuffer
-    analyserData.frequencyData.set(_frequencyData);
-    analyserData.timeData.set(_timeData);
+    // TODO: send triplebuffer to game thread? or should game thread send it?
   }
 
+  // update analyser node
+  const analyserData = getWriteObjectBufferView(node.audioEmitter.analyserTripleBuffer!);
+  // analyser -> _tmp
+  node.audioEmitter.analyserNode!.getByteFrequencyData(_frequencyData);
+  node.audioEmitter.analyserNode!.getByteTimeDomainData(_timeData);
+  // _tmp -> triplebuffer
+  analyserData.frequencyData.set(_frequencyData);
+  analyserData.timeData.set(_timeData);
+
+  // setup panner node
   if (!node.emitterPannerNode) {
     node.emitterPannerNode = audioModule.context.createPanner();
     node.emitterPannerNode.panningModel = "HRTF";
@@ -719,6 +742,7 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
     node.emitterInputNode = node.audioEmitter.inputGain;
   }
 
+  // update panner node
   const pannerNode = node.emitterPannerNode;
   const audioEmitter = node.audioEmitter;
 

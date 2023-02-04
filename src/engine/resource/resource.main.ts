@@ -1,5 +1,4 @@
-import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
-import { AudioAnalyserSchema, AudioAnalyserTripleBuffer, FFT_BIN_SIZE } from "../audio/audio.common";
+import { AudioAnalyserTripleBuffer } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -122,10 +121,6 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
-    this.analyserTripleBuffer = createObjectTripleBuffer(AudioAnalyserSchema, ctx.mainToGameTripleBufferFlags);
-    this.analyserNode = audioContext.createAnalyser();
-    this.analyserNode.fftSize = FFT_BIN_SIZE;
-
     // input gain connected by node update
     this.inputGain = audioContext.createGain();
 
@@ -139,7 +134,6 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
         : audioModule.environmentGain;
 
     this.outputGain.connect(destination);
-    this.outputGain.connect(this.analyserNode);
     this.destination = destination;
 
     if (this.type === AudioEmitterType.Global) {
