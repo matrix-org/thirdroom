@@ -3,7 +3,7 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, traverse } from "../../engine/component/transform";
+import { addChild, getChildren, traverse } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
@@ -84,6 +84,7 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
+  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -93,6 +94,9 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
+import { AudioModule } from "../../engine/audio/audio.game";
+import { createLineMesh } from "../../engine/mesh/mesh.game";
 
 type ThirdRoomModuleState = {};
 
@@ -321,6 +325,13 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
     await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
 
     await waitForCurrentSceneToRender(ctx, 10);
+
+    const audio = getModule(ctx, AudioModule);
+    const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+    if (!audio.spectrumAnalyser) {
+      audio.spectrumAnalyser = createSpectrumAnalyser(ctx, audioAnalyser.frequencyData.length);
+      console.log("audio.spectrumAnalyser", audio.spectrumAnalyser);
+    }
 
     ctx.sendMessage<EnteredWorldMessage>(Thread.Main, {
       type: ThirdRoomMessageType.EnteredWorld,
@@ -708,6 +719,53 @@ function updateThirdroom(
       swapToFirstPerson(ctx, player);
     } else {
       swapToThirdPerson(ctx, player);
+    }
+  }
+}
+
+function createLine(ctx: GameState, length = 10, thickness = 0.2) {
+  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+    type: Schema.MaterialType.Standard,
+    baseColorFactor: [0, 1, 0.2, 1],
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 0,
+    alphaMode: Schema.MaterialAlphaMode.BLEND,
+  });
+  const mesh = createLineMesh(ctx, length, thickness, rayMaterial);
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh,
+  });
+  const obj = createRemoteObject(ctx, node);
+  return obj;
+}
+
+export function createSpectrumAnalyser(ctx: GameState, bands: number) {
+  const node = new RemoteNode(ctx.resourceManager);
+  const obj = createRemoteObject(ctx, node);
+
+  for (let i = 0; i < bands; i++) {
+    const line = createLine(ctx);
+    line.position[0] = i * 0.4;
+    addChild(node, line);
+  }
+
+  addObjectToWorld(ctx, obj);
+
+  return node;
+}
+
+export function AudioAnalyserSystem(ctx: GameState) {
+  const audio = getModule(ctx, AudioModule);
+  const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+  // console.log("audioAnalyser.frequencyData", audioAnalyser.frequencyData);
+  // console.log("audioAnalyser.timeData", audioAnalyser.timeData);
+
+  if (audio.spectrumAnalyser) {
+    let i = 0;
+    for (const child of getChildren(audio.spectrumAnalyser)) {
+      child.scale[2] = audioAnalyser.frequencyData[i] / 256;
+      i++;
     }
   }
 }

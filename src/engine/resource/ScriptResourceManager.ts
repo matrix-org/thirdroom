@@ -1,4 +1,6 @@
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
+import { AudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
 import { createMatrixWASMModule } from "../matrix/matrix.game";
@@ -413,6 +415,16 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             type: RendererMessageType.EnableMatrixMaterial,
             enabled: !!enabled,
           });
+        },
+        get_audio_frequency_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
+        },
+        get_audio_time_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.timeData, audioDataPtr);
         },
       },
       matrix: createMatrixWASMModule(this.ctx, this),

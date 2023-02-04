@@ -32,6 +32,7 @@ export enum ResourceType {
   World,
   Avatar,
   Environment,
+  AudioAnalyser,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -92,6 +93,7 @@ export enum BufferViewTarget {
   ArrayBuffer = 34962,
   ElementArrayBuffer = 34963,
 }
+
 export const BufferViewResource = defineResource("buffer-view", ResourceType.BufferView, {
   name: PropType.string({ default: "BufferView", script: true }),
   buffer: PropType.ref(BufferResource, { mutable: false, required: true, script: true }),
@@ -115,6 +117,12 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
   autoPlay: PropType.bool({ default: false, script: true, mutable: false }),
   loop: PropType.bool({ default: false, script: true }),
   playbackRate: PropType.f32({ default: 1 }),
+});
+
+export const AudioAnalyserResource = defineResource("audio-analyser", ResourceType.AudioAnalyser, {
+  name: PropType.string({ default: "AudioAnalyser", script: true }),
+  frequencyData: PropType.arrayBuffer({ script: true, mutable: false }),
+  timeData: PropType.arrayBuffer({ script: true, mutable: false }),
 });
 
 export enum AudioEmitterType {
@@ -144,6 +152,7 @@ export const AudioEmitterResource = defineResource("audio-emitter", ResourceType
   refDistance: PropType.f32({ default: 1, min: 0, script: true }),
   rolloffFactor: PropType.f32({ default: 1, min: 0, script: true }),
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
+  analyser: PropType.ref(AudioAnalyserResource, { script: true }),
 });
 
 export const ImageResource = defineResource("image", ResourceType.Image, {

@@ -13,6 +13,7 @@
 #include "websg.h"
 #include "audio-emitter.h"
 #include "audio-source.h"
+#include "audio-analyser.h"
 
 /**
  * WebSG.AudioEmitter
@@ -287,6 +288,31 @@ static JSValue js_audio_emitter_set_rolloff_factor(JSContext *ctx, JSValueConst 
 }
 
 
+static JSValue js_audio_emitter_get_analyser(JSContext *ctx, JSValueConst this_val) {
+  AudioEmitter *audio_emitter = JS_GetOpaque2(ctx, this_val, js_audio_emitter_class_id);
+
+  if (!audio_emitter) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = create_audio_analyser_from_ptr(ctx, audio_emitter->analyser);
+    return val;
+  }
+}
+
+
+static JSValue js_audio_emitter_set_analyser(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  AudioEmitter *audio_emitter = JS_GetOpaque2(ctx, this_val, js_audio_emitter_class_id);
+
+  if (!audio_emitter) {
+    return JS_EXCEPTION;
+  } else {
+    audio_emitter->analyser = JS_GetOpaque(val, js_audio_analyser_class_id);
+    return JS_UNDEFINED;
+  }
+}
+
+
 
 
 static JSValue js_audio_emitter_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -313,6 +339,7 @@ static const JSCFunctionListEntry js_audio_emitter_proto_funcs[] = {
   JS_CGETSET_DEF("maxDistance", js_audio_emitter_get_max_distance, js_audio_emitter_set_max_distance),
   JS_CGETSET_DEF("refDistance", js_audio_emitter_get_ref_distance, js_audio_emitter_set_ref_distance),
   JS_CGETSET_DEF("rolloffFactor", js_audio_emitter_get_rolloff_factor, js_audio_emitter_set_rolloff_factor),
+  JS_CGETSET_DEF("analyser", js_audio_emitter_get_analyser, js_audio_emitter_set_analyser),
   JS_CFUNC_DEF("dispose", 0, js_audio_emitter_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioEmitter", JS_PROP_CONFIGURABLE),
 };

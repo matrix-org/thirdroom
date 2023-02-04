@@ -9,6 +9,11 @@ static JSValue js_enable_matrix_material(JSContext *ctx, JSValueConst this_val, 
   return JS_UNDEFINED;
 }
 
+// static JSValue js_get_audio_data(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+//   thirdroom_get_audio_data(JS_To?(ctx, argv[0]));
+//   return JS_UNDEFINED;
+// }
+
 void js_define_thirdroom_api(JSContext *ctx, JSValue *target) {
   JSValue thirdroom = JS_NewObject(ctx);
   JS_SetPropertyStr(

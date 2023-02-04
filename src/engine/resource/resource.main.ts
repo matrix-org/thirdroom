@@ -1,3 +1,4 @@
+import { AudioAnalyserTripleBuffer } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -113,21 +114,25 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
+  analyserNode: AnalyserNode | undefined;
+  analyserTripleBuffer: AudioAnalyserTripleBuffer | undefined;
 
   load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
-    this.inputGain = audioContext.createGain();
     // input gain connected by node update
+    this.inputGain = audioContext.createGain();
 
     this.outputGain = audioContext.createGain();
+
     const destination =
       this.output === AudioEmitterOutput.Voice
         ? audioModule.voiceGain
         : this.output === AudioEmitterOutput.Music
         ? audioModule.musicGain
         : audioModule.environmentGain;
+
     this.outputGain.connect(destination);
     this.destination = destination;
 
