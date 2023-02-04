@@ -53,6 +53,8 @@ export const ActionTypesToBindings = {
      */
     create: () => ({ pressed: false, released: false, held: false }),
     reduce: (controller: InputController, bindings: ActionBindingTypes[], state: ButtonActionState) => {
+      // TODO: In WebXR the pressed/release state doesn't work correctly.
+      // It changes back and forth between pressed and released.
       let down = false;
 
       for (const binding of bindings) {

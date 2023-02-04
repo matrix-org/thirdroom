@@ -460,7 +460,7 @@ function updateGrabThrow(
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || primaryTrigger.held || secondaryTrigger.held;
-  const grabReleased = grabBtn.released || !primaryTrigger.held || !secondaryTrigger.held;
+  const grabReleased = grabBtn.released || primaryTrigger.released || secondaryTrigger.released;
   const throwPressed = throwBtn.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
