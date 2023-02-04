@@ -118,16 +118,18 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
-    this.inputGain = audioContext.createGain();
     // input gain connected by node update
+    this.inputGain = audioContext.createGain();
 
     this.outputGain = audioContext.createGain();
+
     const destination =
       this.output === AudioEmitterOutput.Voice
         ? audioModule.voiceGain
         : this.output === AudioEmitterOutput.Music
         ? audioModule.musicGain
         : audioModule.environmentGain;
+
     this.outputGain.connect(destination);
     this.destination = destination;
 

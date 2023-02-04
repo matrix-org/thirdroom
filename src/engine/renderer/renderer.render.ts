@@ -19,7 +19,7 @@ import {
   registerMessageHandler,
   Thread,
 } from "../module/module.common";
-import { RenderNode, RenderWorld } from "../resource/resource.render";
+import { RenderAccessor, RenderNode, RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -41,6 +41,7 @@ import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 import { InputModule } from "../input/input.render";
+import { updateDynamicAccessors } from "../accessor/accessor.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -69,6 +70,7 @@ export interface RendererModuleState {
   enableMatrixMaterial: boolean;
   scene: Scene;
   xrAvatarRoot: Object3D;
+  dynamicAccessors: RenderAccessor[];
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -161,6 +163,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       enableMatrixMaterial: false,
       scene,
       xrAvatarRoot,
+      dynamicAccessors: [],
     };
   },
   init(ctx) {
@@ -212,7 +215,8 @@ function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
   const inputModule = getModule(ctx, InputModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, dynamicAccessors } =
+    rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
@@ -247,6 +251,7 @@ export function RendererSystem(ctx: RenderThreadState) {
 
   updateImageResources(ctx);
   updateTextureResources(ctx);
+  updateDynamicAccessors(dynamicAccessors);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
   updateLocalNodeResources(ctx, rendererModule);

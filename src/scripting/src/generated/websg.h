@@ -8,7 +8,8 @@
 
 typedef struct ArrayBuffer {
   unsigned int size;
-  unsigned char *buf;
+  unsigned int mutable;
+  void *data;
 } ArrayBuffer;
 
 typedef struct _Skin Skin;
@@ -333,6 +334,8 @@ typedef struct Accessor {
   float_t max[16];
   float_t min[16];
   SparseAccessor *sparse;
+  unsigned int dynamic;
+  unsigned int version;
 } Accessor;
 
 typedef enum MeshPrimitiveMode {
@@ -505,5 +508,6 @@ typedef struct World {
 import_websg(get_resource_by_name) void *websg_get_resource_by_name(ResourceType type, const char *name);
 import_websg(create_resource) int websg_create_resource(ResourceType type, void *resource);
 import_websg(dispose_resource) int websg_dispose_resource(void *resource);
+import_websg(get_active_scene) Scene *websg_get_active_scene();
 
 #endif

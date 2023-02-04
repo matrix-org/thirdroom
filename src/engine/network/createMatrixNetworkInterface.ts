@@ -1,6 +1,7 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 
 import { enterWorld, exitWorld } from "../../plugins/thirdroom/thirdroom.main";
+import { setLocalMediaStream } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId } from "./network.main";
 
@@ -138,6 +139,7 @@ export async function createMatrixNetworkInterface(
   async function joinWorld(userId: string, isHost: boolean) {
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
+    setLocalMediaStream(ctx, groupCall.localMedia?.userMedia);
     await enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
@@ -196,6 +198,7 @@ export async function createMatrixNetworkInterface(
     disconnect(ctx);
 
     exitWorld(ctx);
+    setLocalMediaStream(ctx, undefined);
 
     if (unsubscibeMembersObservable) {
       unsubscibeMembersObservable();

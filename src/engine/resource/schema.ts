@@ -92,6 +92,7 @@ export enum BufferViewTarget {
   ArrayBuffer = 34962,
   ElementArrayBuffer = 34963,
 }
+
 export const BufferViewResource = defineResource("buffer-view", ResourceType.BufferView, {
   name: PropType.string({ default: "BufferView", script: true }),
   buffer: PropType.ref(BufferResource, { mutable: false, required: true, script: true }),
@@ -314,6 +315,8 @@ export const AccessorResource = defineResource("accessor", ResourceType.Accessor
   max: PropType.mat4({ default: new Float32Array(16), script: true }),
   min: PropType.mat4({ default: new Float32Array(16), script: true }),
   sparse: PropType.ref(SparseAccessorResource, { mutable: false, script: true }),
+  dynamic: PropType.bool({ script: true, mutable: false }),
+  version: PropType.u32({ script: true }),
 });
 
 export enum MeshPrimitiveMode {

@@ -106,6 +106,9 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
   reliableChannels.delete(peerId);
   unreliableChannels.delete(peerId);
 
+  const audio = getModule(mainThread, AudioModule);
+  setPeerMediaStream(audio, peerId, undefined);
+
   mainThread.sendMessage(Thread.Game, {
     type: NetworkMessageType.RemovePeerId,
     peerId,

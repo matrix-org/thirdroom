@@ -60,13 +60,24 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
           prop.type !== "arrayBuffer" &&
           prop.type !== "ref" &&
           prop.type !== "refArray" &&
-          prop.type !== "refMap" &&
-          !store[0]
+          prop.type !== "refMap"
         ) {
           if (prop.size === 1) {
-            store[0] = prop.default as number;
+            if (store[0] === 0) {
+              store[0] = prop.default as number;
+            }
           } else {
-            store.set(prop.default as ArrayLike<number>);
+            let isUninitialized = true;
+
+            for (let i = 0; i < prop.size; i++) {
+              if (store[i] !== 0) {
+                isUninitialized = false;
+              }
+            }
+
+            if (isUninitialized) {
+              store.set(prop.default as ArrayLike<number>);
+            }
           }
         }
       }
@@ -80,6 +91,8 @@ export function defineRemoteResourceClass<T extends number, S extends Schema, De
       } else if (prop.type === "arrayBuffer") {
         if (initialValue) {
           this.manager.setArrayBuffer(initialValue as SharedArrayBuffer, store as Uint32Array);
+        } else if (!initialProps) {
+          this.manager.initArrayBuffer(store as Uint32Array);
         }
 
         this.__props[propName] = store;

@@ -201,7 +201,7 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
           dependencyNames.push(propName);
         }
       } else if (prop.type === "arrayBuffer") {
-        dependencyByteOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+        dependencyByteOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT * 2);
         dependencyNames.push(propName);
       }
     }

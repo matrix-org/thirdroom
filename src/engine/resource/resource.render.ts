@@ -6,6 +6,7 @@ import {
   Camera,
   Color,
   DoubleSide,
+  DynamicDrawUsage,
   FrontSide,
   InstancedMesh,
   InterleavedBuffer,
@@ -491,6 +492,7 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
   declare sparse: RenderSparseAccessor | undefined;
 
   attribute: BufferAttribute | InterleavedBufferAttribute = defaultAttribute;
+  prevVersion = 0;
 
   load(ctx: RenderThreadState) {
     const elementSize = AccessorTypeToElementSize[this.type];
@@ -507,6 +509,27 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
       this.attribute = new InterleavedBufferAttribute(interleavedBuffer, elementSize, 0, this.normalized);
     } else {
       this.attribute = new BufferAttribute(getAccessorArrayView(this), elementSize, this.normalized);
+
+      if (this.dynamic) {
+        this.attribute.setUsage(DynamicDrawUsage);
+      }
+    }
+
+    this.prevVersion = this.version;
+
+    if (this.dynamic) {
+      const { dynamicAccessors } = getModule(ctx, RendererModule);
+      dynamicAccessors.push(this);
+    }
+  }
+
+  dispose(ctx: RenderThreadState): void {
+    const { dynamicAccessors } = getModule(ctx, RendererModule);
+
+    const index = dynamicAccessors.indexOf(this);
+
+    if (index !== -1) {
+      dynamicAccessors.splice(index, 1);
     }
   }
 }
@@ -529,6 +552,7 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
 
   geometryObj: BufferGeometry = defaultGeometry;
   materialObj: PrimitiveMaterial = defaultMaterial;
+  autoUpdateNormals = false;
 
   load(ctx: RenderThreadState) {
     let geometryObj = new BufferGeometry();
@@ -561,6 +585,10 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
       this.materialObj = getDefaultMaterialForMeshPrimitive(ctx, this);
     } else {
       this.materialObj = this.material.getMaterialForMeshPrimitive(ctx, this);
+    }
+
+    if (this.attributes[MeshPrimitiveAttributeIndex.POSITION]?.dynamic) {
+      this.autoUpdateNormals = true;
     }
   }
 

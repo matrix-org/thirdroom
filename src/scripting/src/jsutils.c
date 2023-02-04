@@ -27,7 +27,7 @@ JSValue JS_CreateFloat32Array(JSContext *ctx, float_t *target, int size) {
 }
 
 JSValue JS_CreateArrayBuffer(JSContext *ctx, ArrayBuffer array_buffer) {
-  return JS_NewArrayBuffer(ctx, array_buffer.buf, array_buffer.size, NULL, NULL, false);;
+  return JS_NewArrayBuffer(ctx, array_buffer.data, array_buffer.size, NULL, NULL, false);;
 }
 
 int JS_ToFloat32(JSContext *ctx, float_t *pres, JSValueConst val) {

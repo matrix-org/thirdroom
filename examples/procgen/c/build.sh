@@ -12,5 +12,5 @@ emcc \
   -s INITIAL_MEMORY=67108864 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -Wl,--import-memory \
-  -o ./build/widget-example.wasm \
+  -o ./build/procgen.wasm \
   src/*.c \

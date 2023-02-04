@@ -150,6 +150,44 @@ static JSValue js_accessor_get_sparse(JSContext *ctx, JSValueConst this_val) {
 }
 
 
+static JSValue js_accessor_get_dynamic(JSContext *ctx, JSValueConst this_val) {
+  Accessor *accessor = JS_GetOpaque2(ctx, this_val, js_accessor_class_id);
+
+  if (!accessor) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewBool(ctx, accessor->dynamic);
+    return val;
+  }
+}
+
+
+static JSValue js_accessor_get_version(JSContext *ctx, JSValueConst this_val) {
+  Accessor *accessor = JS_GetOpaque2(ctx, this_val, js_accessor_class_id);
+
+  if (!accessor) {
+    return JS_EXCEPTION;
+  } else {
+    JSValue val;
+    val = JS_NewUint32(ctx, accessor->version);
+    return val;
+  }
+}
+
+
+static JSValue js_accessor_set_version(JSContext *ctx, JSValueConst this_val, JSValue val) {
+  Accessor *accessor = JS_GetOpaque2(ctx, this_val, js_accessor_class_id);
+
+  if (!accessor) {
+    return JS_EXCEPTION;
+  } else {
+    if (JS_ToUint32(ctx, &accessor->version, val)) return JS_EXCEPTION;
+    return JS_UNDEFINED;
+  }
+}
+
+
 
 
 static JSValue js_accessor_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -172,6 +210,8 @@ static const JSCFunctionListEntry js_accessor_proto_funcs[] = {
   JS_CGETSET_DEF("count", js_accessor_get_count, NULL),
   JS_CGETSET_DEF("type", js_accessor_get_type, NULL),
   JS_CGETSET_DEF("sparse", js_accessor_get_sparse, NULL),
+  JS_CGETSET_DEF("dynamic", js_accessor_get_dynamic, NULL),
+  JS_CGETSET_DEF("version", js_accessor_get_version, js_accessor_set_version),
   JS_CFUNC_DEF("dispose", 0, js_accessor_dispose),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Accessor", JS_PROP_CONFIGURABLE),
 };
