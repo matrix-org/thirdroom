@@ -48,7 +48,6 @@ audio routing docs
  │data     │  │data     │
  └─────────┘  └─────────┘
 
-
 */
 
 import { vec3, mat4, quat } from "gl-matrix";
@@ -699,12 +698,12 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
     return;
   }
 
-  if (node.audioEmitter.analyser && node.audioEmitter.analyserTripleBuffer) {
+  if (node.audioEmitter.analyserNode && node.audioEmitter.analyserTripleBuffer) {
     const analyserData = getWriteObjectBufferView(node.audioEmitter.analyserTripleBuffer);
 
     // analyser -> _tmp
-    node.audioEmitter.analyser.getByteFrequencyData(_frequencyData);
-    node.audioEmitter.analyser.getByteTimeDomainData(_timeData);
+    node.audioEmitter.analyserNode.getByteFrequencyData(_frequencyData);
+    node.audioEmitter.analyserNode.getByteTimeDomainData(_timeData);
 
     // _tmp -> triplebuffer
     analyserData.frequencyData.set(_frequencyData);
