@@ -121,8 +121,8 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
 
 export const AudioAnalyserResource = defineResource("audio-analyser", ResourceType.AudioAnalyser, {
   name: PropType.string({ default: "AudioAnalyser", script: true }),
-  frequencyData: PropType.ref(BufferViewResource, { script: true, mutable: false }),
-  timeData: PropType.ref(BufferViewResource, { script: true, mutable: false }),
+  frequencyData: PropType.arrayBuffer({ script: true, mutable: false }),
+  timeData: PropType.arrayBuffer({ script: true, mutable: false }),
 });
 
 export enum AudioEmitterType {

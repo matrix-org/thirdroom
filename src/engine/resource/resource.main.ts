@@ -115,7 +115,7 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
-  analyser: AnalyserNode | undefined;
+  analyserNode: AnalyserNode | undefined;
   analyserTripleBuffer: AudioAnalyserTripleBuffer | undefined;
 
   load(ctx: IMainThreadContext) {
@@ -123,8 +123,8 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
     const audioContext = audioModule.context;
 
     this.analyserTripleBuffer = createObjectTripleBuffer(AudioAnalyserSchema, ctx.mainToGameTripleBufferFlags);
-    this.analyser = audioContext.createAnalyser();
-    this.analyser.fftSize = FFT_BIN_SIZE;
+    this.analyserNode = audioContext.createAnalyser();
+    this.analyserNode.fftSize = FFT_BIN_SIZE;
 
     // input gain connected by node update
     this.inputGain = audioContext.createGain();
@@ -139,7 +139,7 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
         : audioModule.environmentGain;
 
     this.outputGain.connect(destination);
-    this.outputGain.connect(this.analyser);
+    this.outputGain.connect(this.analyserNode);
     this.destination = destination;
 
     if (this.type === AudioEmitterType.Global) {
