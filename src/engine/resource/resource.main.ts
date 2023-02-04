@@ -1,4 +1,3 @@
-import { AudioAnalyserTripleBuffer } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -114,8 +113,6 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   inputGain: GainNode | undefined;
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
-  analyserNode: AnalyserNode | undefined;
-  analyserTripleBuffer: AudioAnalyserTripleBuffer | undefined;
 
   load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);

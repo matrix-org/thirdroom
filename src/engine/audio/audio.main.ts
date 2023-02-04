@@ -7,12 +7,12 @@ audio routing docs
  │         │ │analyser │
  └────▲────┘ └────▲────┘
       │           │
-      ├───────────┘
-      │
- ┌────┴────┐
- │main     │
- |limiter  │
- └────▲────┘
+      │           │
+      │           │
+ ┌────┴────┐ ┌────┴────┐
+ │main     │ │local    │
+ |limiter  │ │media    │
+ └────▲────┘ └─────────┘
       │
  ┌────┴────┐
  │main     │
@@ -31,10 +31,10 @@ audio routing docs
       *
       ▲
       │
- ┌────┴────┐  ┌─────────┐
- │audio    │  │emitter  │
- │emitter  ├──►analyser │
- └────▲────┘  └─────────┘
+ ┌────┴────┐
+ │audio    │
+ │emitter  │
+ └────▲────┘
       │
       ├────────────┐
       │            │
@@ -101,6 +101,8 @@ export interface MainAudioModule {
   voiceGain: GainNode;
   musicGain: GainNode;
   mediaStreams: Map<string, MediaStream>;
+  localMediaStream?: MediaStream;
+  localMediaStreamSource?: MediaStreamAudioSourceNode;
   scenes: MainScene[];
   eventEmitter: EventEmitter;
   audioPlaybackRingBuffer: AudioPlaybackRingBuffer;
@@ -132,7 +134,6 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
     mainLimiter.attack.value = 0.0005; // 0.5ms attack
     mainLimiter.release.value = 0.02; // 10ms release
     mainLimiter.connect(audioContext.destination);
-    mainLimiter.connect(analyser);
 
     const mainGain = new GainNode(audioContext);
     mainGain.connect(mainLimiter);
@@ -163,6 +164,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
       voiceGain,
       musicGain,
       mediaStreams: new Map(),
+      localMediaStream: undefined,
       scenes: [],
       eventEmitter: new EventEmitter(),
       audioPlaybackRingBuffer,
@@ -684,15 +686,6 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
   // If emitter changed
   if (currentAudioEmitterResourceId !== nextAudioEmitterResourceId) {
-    // teardown analyser node
-    if (node.audioEmitter?.analyserNode || node.audioEmitter?.analyserTripleBuffer) {
-      try {
-        node.audioEmitter.analyserNode?.disconnect();
-      } catch {}
-      node.audioEmitter.analyserTripleBuffer = undefined;
-      node.audioEmitter.analyserNode = undefined;
-    }
-
     // teardown panner node
     if (node.emitterInputNode && node.emitterPannerNode) {
       try {
@@ -709,28 +702,6 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
   if (!node.audioEmitter) {
     return;
   }
-
-  // setup analyser node
-  if (!node.audioEmitter.analyserNode && !node.audioEmitter.analyserTripleBuffer) {
-    node.audioEmitter.analyserTripleBuffer = createObjectTripleBuffer(
-      AudioAnalyserSchema,
-      ctx.mainToGameTripleBufferFlags
-    );
-    node.audioEmitter.analyserNode = audioModule.context.createAnalyser();
-    node.audioEmitter.analyserNode.fftSize = FFT_BIN_SIZE;
-    node.audioEmitter.outputGain!.connect(node.audioEmitter.analyserNode);
-
-    // TODO: send triplebuffer to game thread? or should game thread send it?
-  }
-
-  // update analyser node
-  const analyserData = getWriteObjectBufferView(node.audioEmitter.analyserTripleBuffer!);
-  // analyser -> _tmp
-  node.audioEmitter.analyserNode!.getByteFrequencyData(_frequencyData);
-  node.audioEmitter.analyserNode!.getByteTimeDomainData(_timeData);
-  // _tmp -> triplebuffer
-  analyserData.frequencyData.set(_frequencyData);
-  analyserData.timeData.set(_timeData);
 
   // setup panner node
   if (!node.emitterPannerNode) {
@@ -783,7 +754,16 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
 const isChrome = /Chrome/.test(navigator.userAgent);
 
-export const setPeerMediaStream = (audioState: MainAudioModule, peerId: string, mediaStream: MediaStream) => {
+export const setPeerMediaStream = (
+  audioState: MainAudioModule,
+  peerId: string,
+  mediaStream: MediaStream | undefined
+) => {
+  if (!mediaStream) {
+    audioState.mediaStreams.delete(peerId);
+    return;
+  }
+
   // https://bugs.chromium.org/p/chromium/issues/detail?id=933677
   if (isChrome) {
     const audioEl = new Audio();
@@ -794,3 +774,19 @@ export const setPeerMediaStream = (audioState: MainAudioModule, peerId: string, 
   console.log("adding mediastream for peer", peerId);
   audioState.mediaStreams.set(peerId, mediaStream);
 };
+
+export function setLocalMediaStream(ctx: IMainThreadContext, mediaStream: MediaStream | undefined) {
+  const audioModule = getModule(ctx, AudioModule);
+
+  if (mediaStream) {
+    if (audioModule.localMediaStreamSource) {
+      throw new Error("Local media stream source already connected.");
+    }
+
+    audioModule.localMediaStreamSource = audioModule.context.createMediaStreamSource(mediaStream);
+    audioModule.localMediaStreamSource.connect(audioModule.analyser);
+  } else if (audioModule.localMediaStreamSource) {
+    audioModule.localMediaStreamSource.disconnect(audioModule.analyser);
+    audioModule.localMediaStreamSource = undefined;
+  }
+}

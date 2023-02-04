@@ -32,7 +32,6 @@ export enum ResourceType {
   World,
   Avatar,
   Environment,
-  AudioAnalyser,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -119,12 +118,6 @@ export const AudioSourceResource = defineResource("audio-source", ResourceType.A
   playbackRate: PropType.f32({ default: 1 }),
 });
 
-export const AudioAnalyserResource = defineResource("audio-analyser", ResourceType.AudioAnalyser, {
-  name: PropType.string({ default: "AudioAnalyser", script: true }),
-  frequencyData: PropType.arrayBuffer({ script: true, mutable: false }),
-  timeData: PropType.arrayBuffer({ script: true, mutable: false }),
-});
-
 export enum AudioEmitterType {
   Positional,
   Global,
@@ -152,7 +145,6 @@ export const AudioEmitterResource = defineResource("audio-emitter", ResourceType
   refDistance: PropType.f32({ default: 1, min: 0, script: true }),
   rolloffFactor: PropType.f32({ default: 1, min: 0, script: true }),
   output: PropType.enum(AudioEmitterOutput, { default: AudioEmitterOutput.Environment }),
-  analyser: PropType.ref(AudioAnalyserResource, { script: true }),
 });
 
 export const ImageResource = defineResource("image", ResourceType.Image, {

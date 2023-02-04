@@ -3,9 +3,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <emscripten/console.h>
 #define FNL_IMPL
 #include "./FastNoiseLite.h"
 #include "../../../../src/scripting/src/generated/websg.h"
+#include "../../../../src/scripting/src/thirdroom.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -222,8 +224,11 @@ SphereData *generate_sphere_primitive(
 }
 
 fnl_state noise_state;
-SphereData *sphere;
+SphereData *sphere_data;
+Node *sphere_node;
 Material *beam_material;
+unsigned char *audio_data;
+
 
 export void websg_loaded() {
   Material *material = malloc(sizeof(Material));
@@ -238,7 +243,7 @@ export void websg_loaded() {
   websg_create_resource(ResourceType_Material, material);
 
   MeshPrimitive *mesh_primitive = malloc(sizeof(MeshPrimitive));
-  sphere = generate_sphere_primitive(mesh_primitive, 1, 32, 16, M_PI, 0, M_PI * 2, 0);
+  sphere_data = generate_sphere_primitive(mesh_primitive, 1, 32, 16, M_PI, 0, M_PI * 2, 0);
   mesh_primitive->material = material;
   websg_create_resource(ResourceType_MeshPrimitive, mesh_primitive);
 
@@ -264,6 +269,7 @@ export void websg_loaded() {
   node->scale[1] = 3;
   node->scale[2] = 3;
   websg_create_resource(ResourceType_Node, node);
+  sphere_node = node;
 
 
   Scene *scene = websg_get_active_scene();
@@ -277,6 +283,8 @@ export void websg_loaded() {
   Mesh *beam_mesh = websg_get_resource_by_name(ResourceType_Mesh, "Tube_Light_01");
   MeshPrimitive *beam_primitive = beam_mesh->primitives[0];
   beam_material = beam_primitive->material;
+
+  audio_data = malloc(sizeof(unsigned char[256]));
 }
 
 float_t elapsed = 0;
@@ -285,10 +293,20 @@ float_t acc_noise = 0;
 export void websg_update(float_t dt) {
   elapsed += dt;
 
-  for (int i = 0; i < sphere->vertex_count; i++) {
-    float_t x = sphere->positions[i * 3];
-    float_t y = sphere->positions[i * 3 + 1];
-    float_t z = sphere->positions[i * 3 + 2];
+  thirdroom_get_audio_frequency_data(audio_data);
+
+  float_t low_freq_avg;
+
+  for (int i = 0; i < 128; i++) {
+    low_freq_avg += audio_data[i];
+  }
+
+  low_freq_avg =  ((float)low_freq_avg / 128) / 255;
+
+  for (int i = 0; i < sphere_data->vertex_count; i++) {
+    float_t x = sphere_data->positions[i * 3];
+    float_t y = sphere_data->positions[i * 3 + 1];
+    float_t z = sphere_data->positions[i * 3 + 2];
 
     float_t length = sqrtf(x * x + y * y + z * z);
     float_t n = 1 / length;
@@ -297,14 +315,22 @@ export void websg_update(float_t dt) {
     z = z * n;
 
     float_t noise = 1 + 0.5 * fnlGetNoise3D(&noise_state, x * 5 + elapsed, y * 5 + elapsed, z * 5 + elapsed);
-    sphere->positions[i * 3] = x * noise;
-    sphere->positions[i * 3 + 1] = y * noise;
-    sphere->positions[i * 3 + 2] = z * noise;
+    sphere_data->positions[i * 3] = x * noise;
+    sphere_data->positions[i * 3 + 1] = y * noise;
+    sphere_data->positions[i * 3 + 2] = z * noise;
 
     acc_noise += noise;
   }
 
-  beam_material->emissive_strength = 2.67 + ((sinf(acc_noise) + 1) / 2) * ((sinf(elapsed) + 1) / 2);
+  float_t scale = 3 * (1 + low_freq_avg);
 
-  sphere->mesh_primitive->attributes[MeshPrimitiveAttributeIndex_POSITION]->version++;
+  sphere_node->scale[0] = scale;
+  sphere_node->scale[1] = scale;
+  sphere_node->scale[2] = scale;
+
+  beam_material->emissive_factor[0] = 1;
+  beam_material->emissive_factor[1] = 1 - low_freq_avg;
+  beam_material->emissive_factor[2] = 1 - low_freq_avg;
+
+  sphere_data->mesh_primitive->attributes[MeshPrimitiveAttributeIndex_POSITION]->version++;
 }

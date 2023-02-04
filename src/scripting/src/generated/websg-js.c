@@ -7,7 +7,6 @@
 #include "buffer-view.h"
 #include "audio-data.h"
 #include "audio-source.h"
-#include "audio-analyser.h"
 #include "audio-emitter.h"
 #include "image.h"
 #include "texture.h"
@@ -40,7 +39,6 @@ void js_define_websg_api(JSContext *ctx, JSValue *global) {
   js_define_buffer_view_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_data_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_source_api(ctx, &jsSceneGraphNamespace);
-  js_define_audio_analyser_api(ctx, &jsSceneGraphNamespace);
   js_define_audio_emitter_api(ctx, &jsSceneGraphNamespace);
   js_define_image_api(ctx, &jsSceneGraphNamespace);
   js_define_texture_api(ctx, &jsSceneGraphNamespace);

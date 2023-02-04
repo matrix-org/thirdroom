@@ -1,5 +1,5 @@
 import { GameState } from "../GameTypes";
-import { RemoteAudioSource, RemoteNode } from "../resource/RemoteResources";
+import { RemoteAudioSource } from "../resource/RemoteResources";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioAction, AudioPlaybackRingBuffer, enqueueAudioPlaybackRingBuffer } from "./AudioPlaybackRingBuffer";
 import { AudioAnalyserTripleBuffer, AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
@@ -12,7 +12,6 @@ export interface PlayAudioOptions {
 interface GameAudioModule {
   audioPlaybackRingBuffer: AudioPlaybackRingBuffer;
   analyserTripleBuffer: AudioAnalyserTripleBuffer;
-  spectrumAnalyser?: RemoteNode;
 }
 
 export const AudioModule = defineModule<GameState, GameAudioModule>({

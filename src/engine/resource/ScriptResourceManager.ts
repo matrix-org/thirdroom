@@ -419,6 +419,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
         get_audio_frequency_data: (audioDataPtr: number) => {
           const audio = getModule(this.ctx, AudioModule);
           const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          console.log(audioAnalyser.frequencyData);
           this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
         },
         get_audio_time_data: (audioDataPtr: number) => {

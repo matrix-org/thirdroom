@@ -50,7 +50,6 @@ typedef enum ResourceType {
   ResourceType_World = 28,
   ResourceType_Avatar = 29,
   ResourceType_Environment = 30,
-  ResourceType_AudioAnalyser = 31,
 } ResourceType;
 
 typedef struct Nametag {
@@ -136,12 +135,6 @@ typedef struct AudioSource {
   float_t playback_rate;
 } AudioSource;
 
-typedef struct AudioAnalyser {
-  const char *name;
-  ArrayBuffer frequency_data;
-  ArrayBuffer time_data;
-} AudioAnalyser;
-
 typedef enum AudioEmitterType {
   AudioEmitterType_Positional = 0,
   AudioEmitterType_Global = 1,
@@ -172,7 +165,6 @@ typedef struct AudioEmitter {
   float_t ref_distance;
   float_t rolloff_factor;
   AudioEmitterOutput output;
-  AudioAnalyser *analyser;
 } AudioEmitter;
 
 typedef struct Image {
