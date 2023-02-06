@@ -15,13 +15,16 @@ type ColorPreviewProps = {
     a?: number;
   };
   onClick?: () => void;
+  disabled?: boolean;
 };
 
-export const ColorPreview = forwardRef<HTMLButtonElement, ColorPreviewProps>(({ label, color, onClick }, ref) => (
-  <button aria-label={label} className="ColorPreview" onClick={onClick} ref={ref}>
-    <span style={{ backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a ?? 1})` }} />
-  </button>
-));
+export const ColorPreview = forwardRef<HTMLButtonElement, ColorPreviewProps>(
+  ({ label, color, onClick, disabled }, ref) => (
+    <button aria-label={label} className="ColorPreview" onClick={onClick} ref={ref} disabled={disabled}>
+      <span style={{ backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a ?? 1})` }} />
+    </button>
+  )
+);
 
 type ColorType = "rgb" | "rgba";
 type ColorInputProps<T extends ColorType> = T extends "rgb"
@@ -64,7 +67,8 @@ export function ColorInput<T extends ColorType>({
   type,
   onChange,
   picker,
-}: ColorInputProps<T> & { picker: ReactNode }) {
+  disabled,
+}: ColorInputProps<T> & { picker: ReactNode; disabled?: boolean }) {
   return (
     <div className=" ColorInput flex items-center grow">
       {picker}
@@ -82,6 +86,7 @@ export function ColorInput<T extends ColorType>({
         inputSize="sm"
         onChange={(r) => onChange({ ...value, r } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
         outlined
+        disabled
       />
 
       <NumericInput
@@ -98,6 +103,7 @@ export function ColorInput<T extends ColorType>({
         inputSize="sm"
         onChange={(g) => onChange({ ...value, g } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
         outlined
+        disabled
       />
 
       <NumericInput
@@ -114,6 +120,7 @@ export function ColorInput<T extends ColorType>({
         inputSize="sm"
         onChange={(b) => onChange({ ...value, b } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
         outlined
+        disabled
       />
       {type === "rgba" && (
         <>
@@ -133,6 +140,7 @@ export function ColorInput<T extends ColorType>({
             inputSize="sm"
             onChange={(a) => onChange({ ...value, a })}
             outlined
+            disabled
           />
         </>
       )}
