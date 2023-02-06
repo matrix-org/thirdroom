@@ -1,7 +1,16 @@
 .PropertiesPanel {
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  position: relative;
   background-color: var(--bg-surface);
-  padding: var(--sp-md);
   border-radius: var(--br-xs);
+  overflow: hidden;
+}
+
+.PropertyContainer {
+  padding: var(--sp-xs);
+}
+.PropertyContainer__children {
+  width: 220px;
 }

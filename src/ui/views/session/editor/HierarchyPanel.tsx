@@ -22,7 +22,7 @@ import TreeIC from "../../../../../res/ic/tree.svg";
 import FormattedListIC from "../../../../../res/ic/formatted-list.svg";
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
-import { HierarchyHeader, HierarchyHeaderTab } from "./HierarchyHeader";
+import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/EditorHeader";
 
 enum DnDItemTypes {
   Node = "node",
@@ -282,20 +282,20 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
 
   return (
     <div className="HierarchyPanel flex flex-column">
-      <HierarchyHeader className="shrink-0">
-        <HierarchyHeaderTab active={tab === HierarchyTab.Scenes} onClick={() => setTab(HierarchyTab.Scenes)}>
+      <EditorHeader className="shrink-0">
+        <EditorHeaderTab active={tab === HierarchyTab.Scenes} onClick={() => setTab(HierarchyTab.Scenes)}>
           <Icon color={tab === HierarchyTab.Scenes ? "primary" : "surface"} size="sm" src={TreeIC} />
           <Text color={tab === HierarchyTab.Scenes ? "primary" : "surface"} variant="b2" weight="semi-bold">
             Scenes
           </Text>
-        </HierarchyHeaderTab>
-        <HierarchyHeaderTab active={tab === HierarchyTab.Resources} onClick={() => setTab(HierarchyTab.Resources)}>
+        </EditorHeaderTab>
+        <EditorHeaderTab active={tab === HierarchyTab.Resources} onClick={() => setTab(HierarchyTab.Resources)}>
           <Icon color={tab === HierarchyTab.Resources ? "primary" : "surface"} size="sm" src={FormattedListIC} />
           <Text color={tab === HierarchyTab.Resources ? "primary" : "surface"} variant="b2" weight="semi-bold">
             Resources
           </Text>
-        </HierarchyHeaderTab>
-      </HierarchyHeader>
+        </EditorHeaderTab>
+      </EditorHeader>
       <div className="grow">
         {tab === HierarchyTab.Scenes && (
           <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
