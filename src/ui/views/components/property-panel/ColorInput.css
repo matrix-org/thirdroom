@@ -40,3 +40,23 @@
   border-radius: var(--br-md);
   box-shadow: var(--bs-dropdown);
 }
+
+.ColorInput {
+  & > * {
+    border-radius: 0;
+    border: 1px solid var(--bg-surface-border);
+    height: 30px;
+    box-shadow: none;
+
+    &:not(:last-child) {
+      border-right-width: 0;
+    }
+
+    &:first-child {
+      border-radius: var(--br-xxs) 0 0 var(--br-xxs);
+    }
+    &:last-child {
+      border-radius: 0 var(--br-xxs) var(--br-xxs) 0;
+    }
+  }
+}

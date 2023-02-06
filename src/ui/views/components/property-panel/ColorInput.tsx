@@ -66,7 +66,8 @@ export function ColorInput<T extends ColorType>({
   picker,
 }: ColorInputProps<T> & { picker: ReactNode }) {
   return (
-    <div className="flex items-center grow gap-xs">
+    <div className=" ColorInput flex items-center grow">
+      {picker}
       <NumericInput
         before={
           <Label color="surface-low" className="shrink-0">
@@ -80,6 +81,7 @@ export function ColorInput<T extends ColorType>({
         value={value.r}
         inputSize="sm"
         onChange={(r) => onChange({ ...value, r } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        outlined
       />
 
       <NumericInput
@@ -95,6 +97,7 @@ export function ColorInput<T extends ColorType>({
         value={value.g}
         inputSize="sm"
         onChange={(g) => onChange({ ...value, g } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        outlined
       />
 
       <NumericInput
@@ -110,6 +113,7 @@ export function ColorInput<T extends ColorType>({
         value={value.b}
         inputSize="sm"
         onChange={(b) => onChange({ ...value, b } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        outlined
       />
       {type === "rgba" && (
         <>
@@ -128,10 +132,10 @@ export function ColorInput<T extends ColorType>({
             value={value.a}
             inputSize="sm"
             onChange={(a) => onChange({ ...value, a })}
+            outlined
           />
         </>
       )}
-      {picker}
     </div>
   );
 }
