@@ -24,12 +24,13 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             X
           </Label>
         }
-        className="flex grow"
+        className="flex grow basis-0"
         type="f32"
         value={x}
         displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(value, y, z)}
+        outlined
       />
       <NumericInput
         before={
@@ -37,12 +38,13 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             Y
           </Label>
         }
-        className="flex grow"
+        className="flex grow basis-0"
         type="f32"
         value={y}
         displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(x, value, z)}
+        outlined
       />
       {type === "vec3" && (
         <>
@@ -52,12 +54,13 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
                 Z
               </Label>
             }
-            className="flex grow"
+            className="flex grow basis-0"
             type="f32"
             value={z}
             displayPrecision={3}
             inputSize="sm"
             onChange={(value) => handleChange(x, y, value)}
+            outlined
           />
         </>
       )}
