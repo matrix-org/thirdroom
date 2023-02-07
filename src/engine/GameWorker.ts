@@ -9,6 +9,8 @@ import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
+const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+
 async function onInitMessage({ data }: MessageEvent) {
   if (typeof data !== "object") {
     return;
@@ -139,10 +141,18 @@ async function onInit({
     return interval;
   };
 
-  gameLoop();
+  if (isFirefox) {
+    update(ctx);
+  } else {
+    gameLoop();
+  }
 }
 
 function update(ctx: GameState) {
+  if (isFirefox) {
+    setTimeout(() => update(ctx), 1000 / tickRate);
+  }
+
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
