@@ -9,7 +9,7 @@ import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
-const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+const isFirefox = navigator.userAgent.toLowerCase().includes("gecko/");
 
 async function onInitMessage({ data }: MessageEvent) {
   if (typeof data !== "object") {
@@ -115,7 +115,7 @@ async function onInit({
 
   let interval: any;
 
-  const gameLoop = () => {
+  const intervalGameLoop = () => {
     interval = setInterval(() => {
       const then = performance.now();
       try {
@@ -135,24 +135,25 @@ async function onInit({
           clearInterval(interval);
           throw error;
         }
-        interval = gameLoop();
+        interval = intervalGameLoop();
       }
     }, 1000 / tickRate);
     return interval;
   };
 
   if (isFirefox) {
-    update(ctx);
+    timeoutGameLoop(ctx);
   } else {
-    gameLoop();
+    intervalGameLoop();
   }
 }
 
-function update(ctx: GameState) {
-  if (isFirefox) {
-    setTimeout(() => update(ctx), 1000 / tickRate);
-  }
+function timeoutGameLoop(ctx: GameState) {
+  setTimeout(() => timeoutGameLoop(ctx), 1000 / tickRate);
+  update(ctx);
+}
 
+function update(ctx: GameState) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
