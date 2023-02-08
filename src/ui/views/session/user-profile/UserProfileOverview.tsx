@@ -35,6 +35,7 @@ export function UserProfileOverview() {
     localStorage.getItem("authoritativeNetworking") === "true"
   );
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
+  const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
 
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
@@ -117,6 +118,15 @@ export function UserProfileOverview() {
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Discover Page (REQUIRES REFRESH)</Label>}>
                     <Switch checked={discoverPage} onCheckedChange={setDiscoverPage} />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile
+                    className="grow basis-0"
+                    label={<Label>Immersive AR (EXPERIMENTAL, REQUIRES REFRESH)</Label>}
+                  >
+                    <Switch checked={immersiveAR} onCheckedChange={setImmersiveAR} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

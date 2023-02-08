@@ -27,7 +27,7 @@ export interface InputRingBuffer extends RingBuffer<Float32ArrayConstructor> {
 
 const numElements = 6;
 
-export const RING_BUFFER_MAX = 512 * numElements;
+export const RING_BUFFER_MAX = 1024 * numElements;
 
 const BYTE_LENGTH = numElements * Float32Array.BYTES_PER_ELEMENT;
 

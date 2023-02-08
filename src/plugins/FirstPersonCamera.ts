@@ -10,7 +10,7 @@ import {
   writeUint32,
 } from "../engine/allocator/CursorView";
 import { getCamera } from "../engine/camera/camera.game";
-import { Axes } from "../engine/component/transform";
+import { Axes } from "../engine/component/math";
 import { ourPlayerQuery } from "../engine/component/Player";
 import { GameState, World } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
@@ -20,7 +20,8 @@ import { tryGetInputController, InputController } from "../engine/input/InputCon
 import { defineModule, getModule } from "../engine/module/module.common";
 import { registerInboundMessageHandler } from "../engine/network/inbound.game";
 import { isHost } from "../engine/network/network.common";
-import { Networked, NetworkModule } from "../engine/network/network.game";
+import { NetworkModule } from "../engine/network/network.game";
+import { Networked } from "../engine/network/NetworkComponents";
 import { NetworkAction } from "../engine/network/NetworkAction";
 import { sendReliable } from "../engine/network/outbound.game";
 import { NetPipeData, writeMetadata } from "../engine/network/serialization.game";

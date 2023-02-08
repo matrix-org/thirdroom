@@ -7,7 +7,7 @@ type MainRendererModuleState = {};
 
 export const RendererModule = defineModule<IMainThreadContext, MainRendererModuleState>({
   name: rendererModuleName,
-  async create({ canvas, useOffscreenCanvas, enableXR }, { sendMessage }) {
+  async create({ canvas, useOffscreenCanvas, supportedXRSessionModes }, { sendMessage }) {
     const canvasTarget = useOffscreenCanvas ? canvas.transferControlToOffscreen() : canvas;
 
     sendMessage(
@@ -17,7 +17,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
         canvasTarget: useOffscreenCanvas ? canvasTarget : undefined,
         initialCanvasWidth: canvas.clientWidth,
         initialCanvasHeight: canvas.clientHeight,
-        enableXR,
+        supportedXRSessionModes,
       },
       useOffscreenCanvas ? [canvasTarget as OffscreenCanvas] : undefined
     );

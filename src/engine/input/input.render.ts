@@ -1,11 +1,14 @@
+import { quat, vec3 } from "gl-matrix";
+
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   HandJointNameToIndex,
   InitializeInputStateMessage,
   InputComponentState,
   InputMessageType,
   InputSourceId,
+  SetXRReferenceSpaceMessage,
   SharedXRInputSource,
   UpdateXRInputSourcesMessage,
   XRControllerPosesSchema,
@@ -22,6 +25,8 @@ import {
   XRInputLayout,
   XRInputProfileManager,
 } from "./WebXRInputProfiles";
+import { createDisposables } from "../utils/createDisposables";
+import { domPointToQuat, domPointToVec3, getYaw, quatToDOMPoint, RAD2DEG, vec3ToDOMPoint } from "../component/math";
 
 /*********
  * Types *
@@ -42,6 +47,8 @@ export interface RenderInputModule {
   cameraPose?: XRViewerPose;
   leftControllerPose?: XRPose;
   rightControllerPose?: XRPose;
+  updateReferenceSpaceHand?: XRHandedness;
+  originalReferenceSpace?: XRReferenceSpace;
 }
 
 /******************
@@ -154,17 +161,29 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
       });
 
       inputSourceItems.length = 0;
+
+      input.originalReferenceSpace = undefined;
     }
 
     renderer.xr.addEventListener("sessionstart", onXRSessionStart);
     renderer.xr.addEventListener("sessionend", onXRSessionEnd);
 
-    return () => {
+    const disposeSessionHandlers = () => {
       renderer.xr.removeEventListener("sessionstart", onXRSessionStart);
       renderer.xr.removeEventListener("sessionend", onXRSessionEnd);
     };
+
+    return createDisposables([
+      registerMessageHandler(ctx, InputMessageType.SetXRReferenceSpace, onSetXRReferenceSpace),
+      disposeSessionHandlers,
+    ]);
   },
 });
+
+function onSetXRReferenceSpace(ctx: RenderThreadState, message: SetXRReferenceSpaceMessage) {
+  const inputModule = getModule(ctx, InputModule);
+  inputModule.updateReferenceSpaceHand = message.hand;
+}
 
 async function createXRInputSourceItem(
   ctx: RenderThreadState,
@@ -218,10 +237,41 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
 
   const frame = renderer.xr.getFrame();
 
-  const referenceSpace = renderer.xr.getReferenceSpace();
+  let referenceSpace = renderer.xr.getReferenceSpace();
 
   if (!referenceSpace) {
     return;
+  }
+
+  if (!inputModule.originalReferenceSpace) {
+    inputModule.originalReferenceSpace = referenceSpace;
+  }
+
+  if (inputModule.updateReferenceSpaceHand) {
+    const inputSourceItem = inputSourceItems.find(
+      (item) => item.inputSource.handedness === inputModule.updateReferenceSpaceHand
+    );
+
+    const raySpace = inputSourceItem?.inputSource.targetRaySpace;
+
+    if (raySpace) {
+      const rayPose = frame.getPose(raySpace, inputModule.originalReferenceSpace);
+
+      if (rayPose) {
+        const position = domPointToVec3(vec3.create(), rayPose.transform.position);
+        vec3.add(position, position, vec3.fromValues(0, 0, 0.05));
+
+        const orientation = domPointToQuat(quat.create(), rayPose.transform.orientation);
+        const yRotation = getYaw(orientation);
+        const yOrientation = quat.fromEuler(quat.create(), 0, yRotation * RAD2DEG, 0);
+
+        const offsetTransform = new XRRigidTransform(vec3ToDOMPoint(position), quatToDOMPoint(yOrientation));
+        referenceSpace = inputModule.originalReferenceSpace.getOffsetReferenceSpace(offsetTransform);
+        renderer.xr.setReferenceSpace(referenceSpace);
+      }
+    }
+
+    inputModule.updateReferenceSpaceHand = undefined;
   }
 
   inputModule.cameraPose = frame.getViewerPose(referenceSpace);

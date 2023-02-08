@@ -8,11 +8,10 @@ import {
   getPeerIndexFromNetworkId,
   getLocalIdFromNetworkId,
   remoteNetworkedQuery,
-  Owned,
-  Networked,
   ownedNetworkedQuery,
   NetworkModule,
 } from "../../../src/engine/network/network.game";
+import { Owned, Networked } from "../../../src/engine/network/NetworkComponents";
 import {
   createCursorView,
   readFloat32,

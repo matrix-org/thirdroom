@@ -638,6 +638,7 @@ export interface GLTFScene extends GLTFChildOfRootProperty {
     KHR_audio?: GLTFSceneAudioRefs;
     MX_background?: GLTFBackground;
     MX_character_controller?: GLTFCharacterController;
+    MX_scene_ar?: GLTFSceneAR;
   };
 }
 
@@ -652,6 +653,8 @@ export interface GLTFBackground extends GLTFProperty {
 export interface GLTFCharacterController extends GLTFProperty {
   type: "first-person" | "fly";
 }
+
+export type GLTFSceneAR = {};
 
 /**
  * Joints and matrices defining a skin.

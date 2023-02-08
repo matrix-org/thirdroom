@@ -30,6 +30,8 @@ import {
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
+  XRMode,
+  XRSessionModeToXRMode,
 } from "./renderer.common";
 import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
@@ -71,6 +73,7 @@ export interface RendererModuleState {
   scene: Scene;
   xrAvatarRoot: Object3D;
   dynamicAccessors: RenderAccessor[];
+  xrMode: Uint8Array;
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -82,8 +85,8 @@ declare module "three" {
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
-  async create(ctx, { waitForMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, enableXR } =
+  async create(ctx, { waitForMessage, sendMessage }) {
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes } =
       await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
@@ -107,12 +110,18 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       console.log("Chrome OpenGL backend on M1 Mac detected, logarithmicDepthBuffer enabled");
     }
 
+    const immersiveAR =
+      supportedXRSessionModes &&
+      supportedXRSessionModes.some((mode) => mode === "immersive-ar") &&
+      localStorage.getItem("feature_immersiveAR") === "true";
+
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
       multiviewStereo: true,
+      alpha: immersiveAR,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
@@ -129,9 +138,19 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
     Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
-    if (enableXR) {
+    if (supportedXRSessionModes) {
       renderer.xr.enabled = true;
     }
+
+    const onSessionEnd = () => {
+      onExitXR(ctx);
+    };
+
+    renderer.xr.addEventListener("sessionend", onSessionEnd);
+
+    const xrMode = new Uint8Array(new SharedArrayBuffer(1));
+
+    sendMessage(Thread.Game, RendererMessageType.InitializeGameRendererTripleBuffer, xrMode);
 
     const pmremGenerator = new PMREMGenerator(renderer);
 
@@ -164,6 +183,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       scene,
       xrAvatarRoot,
       dynamicAccessors: [],
+      xrMode,
     };
   },
   init(ctx) {
@@ -207,9 +227,15 @@ function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, fr
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
-function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
-  const { renderer } = getModule(ctx, RendererModule);
+function onEnterXR(ctx: RenderThreadState, { session, mode }: EnterXRMessage) {
+  const { renderer, xrMode } = getModule(ctx, RendererModule);
   renderer.xr.setSession(session as unknown as any);
+  Atomics.store(xrMode, 0, XRSessionModeToXRMode[mode] || XRMode.None);
+}
+
+function onExitXR(ctx: RenderThreadState) {
+  const { xrMode } = getModule(ctx, RendererModule);
+  Atomics.store(xrMode, 0, XRMode.None);
 }
 
 export function RendererSystem(ctx: RenderThreadState) {

@@ -2,7 +2,7 @@ import { mat4 } from "gl-matrix";
 import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 
 import { updateNodeCamera } from "../camera/camera.render";
-import { clamp } from "../component/transform";
+import { clamp } from "../component/math";
 import { tickRate } from "../config.common";
 import { RenderInputModule } from "../input/input.render";
 import { updateNodeLight } from "../light/light.render";

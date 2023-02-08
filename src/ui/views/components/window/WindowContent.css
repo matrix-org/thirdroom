@@ -1,5 +1,6 @@
 .WindowContent {
   height: 100%;
+  overflow: hidden;
 }
 .WindowContent__aside {
   max-width: 43%;

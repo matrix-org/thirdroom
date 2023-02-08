@@ -2,7 +2,7 @@ import { getEntityComponents, removeComponent } from "bitecs";
 
 import { RigidBody } from "../physics/physics.game";
 import { World } from "../GameTypes";
-import { Networked } from "../network/network.game";
+import { Networked } from "../network/NetworkComponents";
 
 export function removeAllEntityComponents(world: World, eid: number) {
   const components = getEntityComponents(world, eid);
