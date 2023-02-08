@@ -668,6 +668,7 @@ const loadGLTFScene = createInstancedSubresourceLoader(
           bloomStrength: bloom?.strength,
           bloomRadius: bloom?.radius,
           bloomThreshold: bloom?.threshold,
+          supportsAR: !!extensions?.MX_scene_ar,
         });
       }
     }

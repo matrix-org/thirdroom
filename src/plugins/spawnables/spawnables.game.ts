@@ -15,7 +15,8 @@ import { InputController, inputControllerQuery, tryGetInputController } from "..
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
-import { Networked, NetworkModule, Owned, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { NetworkModule, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";

@@ -16,12 +16,11 @@ import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
-  Networked,
   networkedQuery,
   NetworkModule,
-  Owned,
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
+import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { takeOwnership } from "../../engine/network/ownership.game";
 import {
   addCollisionGroupMembership,

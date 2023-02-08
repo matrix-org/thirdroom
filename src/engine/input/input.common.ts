@@ -5,10 +5,16 @@ import { XRInputComponentId, XRInputLayout } from "./WebXRInputProfiles";
 export enum InputMessageType {
   InitializeInputState = "initialize-input-state",
   UpdateXRInputSources = "update-xr-input-sources",
+  SetXRReferenceSpace = "set-xr-reference-space",
 }
 
 export interface InitializeInputStateMessage {
   inputRingBuffer: InputRingBuffer;
+}
+
+export interface SetXRReferenceSpaceMessage {
+  type: InputMessageType.SetXRReferenceSpace;
+  hand: XRHandedness;
 }
 
 export const XRControllerPosesSchema = defineObjectBufferSchema({

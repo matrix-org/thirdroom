@@ -6,13 +6,8 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, traverse } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import {
-  associatePeerWithEntity,
-  GameNetworkState,
-  Networked,
-  NetworkModule,
-  Owned,
-} from "../../engine/network/network.game";
+import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";
+import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,

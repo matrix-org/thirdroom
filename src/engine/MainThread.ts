@@ -23,22 +23,43 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   initialGameWorkerState: { [key: string]: any };
   initialRenderWorkerState: { [key: string]: any };
   worldResource: MainWorld;
-  enableXR: boolean;
+  supportedXRSessionModes: XRSessionMode[] | false;
   dt: number;
   elapsed: number;
+}
+
+async function getSupportedXRSessionModes(): Promise<false | XRSessionMode[]> {
+  let supportedXRSessionModes: XRSessionMode[] | false = false;
+
+  if ("xr" in navigator && navigator.xr) {
+    supportedXRSessionModes = [];
+
+    if (await navigator.xr.isSessionSupported("immersive-ar")) {
+      supportedXRSessionModes.push("immersive-ar");
+    }
+
+    if (await navigator.xr.isSessionSupported("immersive-vr")) {
+      supportedXRSessionModes.push("immersive-vr");
+    }
+
+    if (supportedXRSessionModes.length === 0) {
+      return false;
+    }
+
+    return supportedXRSessionModes;
+  }
+
+  return false;
 }
 
 export async function MainThread(canvas: HTMLCanvasElement) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
   const renderMain = new URLSearchParams(window.location.search || hashSearch).get("renderMain");
-  let useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null;
-  let enableXR = false;
 
-  if ("xr" in navigator && navigator.xr && (await navigator.xr.isSessionSupported("immersive-vr"))) {
-    useOffscreenCanvas = false;
-    enableXR = true;
-  }
+  const supportedXRSessionModes = await getSupportedXRSessionModes();
+
+  const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null && !supportedXRSessionModes;
 
   const singleConsumerThreadSharedState: SingleConsumerThreadSharedState | undefined = useOffscreenCanvas
     ? undefined
@@ -79,7 +100,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     sendMessage: mainThreadSendMessage,
     // TODO: figure out how to create the main thread context such that this is initially set
     worldResource: undefined as any,
-    enableXR,
+    supportedXRSessionModes,
     isStaleFrame: false,
     dt: 0,
     elapsed: 0,

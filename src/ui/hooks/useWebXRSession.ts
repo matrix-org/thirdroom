@@ -2,25 +2,17 @@ import { useEffect, useState } from "react";
 
 import { Thread } from "../../engine/module/module.common";
 import { EnterXRMessage, RendererMessageType } from "../../engine/renderer/renderer.common";
-import { useAsync } from "./useAsync";
 import { useAsyncCallback } from "./useAsyncCallback";
+import { useLocalStorage } from "./useLocalStorage";
 import { useMainThreadContext } from "./useMainThread";
 
 const DefaultXRInit = { optionalFeatures: ["local-floor", "bounded-floor", "hand-tracking", "layers"] };
 
-export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionInit: XRSessionInit = DefaultXRInit) {
+export function useWebXRSession() {
   const ctx = useMainThreadContext();
+  const [immersiveAR] = useLocalStorage("feature_immersiveAR", false);
 
   const [isPresenting, setIsPresenting] = useState(false);
-
-  const {
-    loading: checkingWebXRSupport,
-    value: isWebXRSupported,
-    error: webXRSupportError,
-  } = useAsync(
-    async () => "xr" in navigator && navigator.xr !== undefined && (await navigator.xr.isSessionSupported(mode)),
-    [mode]
-  );
 
   const {
     callback: enterXR,
@@ -28,23 +20,29 @@ export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionI
     value: session,
     error: webXRSessionError,
   } = useAsyncCallback<() => Promise<XRSession | undefined>, XRSession | undefined>(async () => {
-    if ("xr" in navigator && navigator.xr) {
+    if ("xr" in navigator && navigator.xr && ctx.supportedXRSessionModes) {
       if (isPresenting) {
         return;
       }
 
-      const session = await navigator.xr.requestSession(mode, xrSessionInit);
+      const mode =
+        immersiveAR && ctx.supportedXRSessionModes.includes("immersive-ar") ? "immersive-ar" : "immersive-vr";
+
+      console.log(immersiveAR, ctx.supportedXRSessionModes);
+
+      const session = await navigator.xr.requestSession(mode, DefaultXRInit);
 
       ctx.sendMessage<EnterXRMessage>(Thread.Render, {
         type: RendererMessageType.EnterXR,
         session,
+        mode,
       });
 
       return session;
     }
 
     return undefined;
-  }, [ctx, mode, xrSessionInit, isPresenting]);
+  }, [ctx, isPresenting, immersiveAR]);
 
   useEffect(() => {
     if (session) {
@@ -62,10 +60,9 @@ export function useWebXRSession(mode: XRSessionMode = "immersive-vr", xrSessionI
 
   return {
     enteringXR,
-    checkingWebXRSupport,
     isPresenting,
-    isWebXRSupported,
-    error: webXRSupportError || webXRSessionError,
+    isWebXRSupported: !!ctx.supportedXRSessionModes,
+    error: webXRSessionError,
     enterXR,
   };
 }

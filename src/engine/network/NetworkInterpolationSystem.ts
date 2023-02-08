@@ -5,14 +5,8 @@ import { quat, vec3 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
-import {
-  GameNetworkState,
-  getPeerIndexFromNetworkId,
-  Networked,
-  NetworkModule,
-  Owned,
-  ownedPlayerQuery,
-} from "./network.game";
+import { GameNetworkState, getPeerIndexFromNetworkId, NetworkModule, ownedPlayerQuery } from "./network.game";
+import { Networked, Owned } from "./NetworkComponents";
 import { getModule } from "../module/module.common";
 import {
   INTERP_BUFFER_MS,

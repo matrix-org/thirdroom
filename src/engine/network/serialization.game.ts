@@ -34,13 +34,13 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
-  Networked,
   ownedNetworkedQuery,
   createdOwnedNetworkedQuery,
   GameNetworkState,
   deletedOwnedNetworkedQuery,
   associatePeerWithEntity,
 } from "./network.game";
+import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { GameInputModule, InputModule } from "../input/input.game";

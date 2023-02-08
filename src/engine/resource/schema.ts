@@ -502,6 +502,7 @@ export const SceneResource = defineResource("scene", ResourceType.Scene, {
   bloomRadius: PropType.f32({ script: true, default: 0.4 }),
   audioEmitters: PropType.refArray(AudioEmitterResource, { size: 16, script: true }),
   firstNode: PropType.ref(NodeResource, { script: false }),
+  supportsAR: PropType.bool({ script: true, mutable: false }),
 });
 
 export const EnvironmentResource = defineResource("environment", ResourceType.Environment, {

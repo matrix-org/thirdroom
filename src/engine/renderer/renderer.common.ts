@@ -8,10 +8,11 @@ export enum RendererMessageType {
   CanvasResize = "canvas-resize",
   EnableMatrixMaterial = "enable-matrix-material",
   EnterXR = "enter-xr",
+  InitializeGameRendererTripleBuffer = "initialize-game-renderer-triple-buffer",
 }
 
 export interface InitializeCanvasMessage {
-  enableXR: boolean;
+  supportedXRSessionModes: XRSessionMode[] | false;
   canvasTarget?: OffscreenCanvas;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
@@ -43,4 +44,16 @@ export interface EnableMatrixMaterialMessage {
 export interface EnterXRMessage {
   type: RendererMessageType.EnterXR;
   session: XRSession;
+  mode: XRSessionMode;
 }
+
+export enum XRMode {
+  None,
+  ImmersiveVR,
+  ImmersiveAR,
+}
+
+export const XRSessionModeToXRMode: { [key: string]: XRMode } = {
+  "immersive-vr": XRMode.ImmersiveVR,
+  "immersive-ar": XRMode.ImmersiveAR,
+};
