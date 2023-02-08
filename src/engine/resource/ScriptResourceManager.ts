@@ -5,6 +5,7 @@ import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
 import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { getModule, Thread } from "../module/module.common";
+import { createWebSGNetworkModule } from "../network/scripting.game";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
 import { RemoteScene } from "./RemoteResources";
@@ -44,6 +45,8 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   private instance?: ScriptWebAssemblyInstance;
   private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
   public activeScene?: RemoteScene;
+  // for networking
+  public id?: number;
 
   // When allocating resource, allocate space in WASM memory and a triplebuffer
   // At end of frame copy each resource to triple buffer using ptr and byteLength
@@ -428,6 +431,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
         },
       },
       matrix: createMatrixWASMModule(this.ctx, this),
+      websg_network: createWebSGNetworkModule(this.ctx, this),
       websg: {
         get_active_scene: () => {
           return this.activeScene?.ptr || 0;

@@ -1,6 +1,7 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
+import murmurHash from "murmurhash-js";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, traverse } from "../../engine/component/transform";
@@ -88,6 +89,8 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
+import { WebSGNetworkModule } from "../../engine/network/scripting.game";
 
 type ThirdRoomModuleState = {};
 
@@ -440,6 +443,13 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   }
 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
+
+  if (script && scriptUrl) {
+    const id = murmurHash(scriptUrl);
+    (resourceManager as ScriptResourceManager).id = id;
+    const webSgNet = getModule(ctx, WebSGNetworkModule);
+    webSgNet.scriptToInbound.set(id, []);
+  }
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {

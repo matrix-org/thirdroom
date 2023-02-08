@@ -13,6 +13,7 @@ export enum NetworkAction {
   UpdateCamera,
   UpdateNetworkId,
   ClientPosition,
+  ScriptMessage,
 }
 
 export const UnreliableNetworkActions = [

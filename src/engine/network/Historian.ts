@@ -6,9 +6,9 @@ export const INTERP_BUFFER_MS = INTERP_AMOUNT_MS * 5;
 
 export interface Historian {
   entities: Map<number, InterpolationBuffer>;
-  // latest tick recieved from the peer
+  // latest tick received from the peer
   latestTick: number;
-  // latest timestamp value continuously set by packets recieved from the peer
+  // latest timestamp value continuously set by packets received from the peer
   latestTime: number;
   // incremented each frame with our local delta time
   localTime: number;
