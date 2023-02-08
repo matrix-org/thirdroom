@@ -22,7 +22,7 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
 
   // trim off all inputs since the most recent host-processed input tick
   if (network.authoritative && !isHost(network) && inputTick) {
-    // trim history up to this last recieved input tick
+    // trim history up to this last received input tick
     trimHistory(controller.outbound, inputTick);
     // trigger input prediction
     (controller as any).needsUpdate = true;
