@@ -8,7 +8,7 @@
 import_websg_network(network_broadcast) int websg_network_broadcast(unsigned char *packet, int length);
 
 // Fills the provided write buffer with the next available network packet, errors if packet larger than buffer size
-// Returns 1 if message received, 0 if no message received, and -1 if there was an error.
+// Returns bytes available to be read, or -1 if there was an error.
 import_websg_network(network_receive) int websg_network_receive(unsigned char *writeBuffer, int max);
 
 #endif

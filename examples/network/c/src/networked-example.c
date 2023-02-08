@@ -66,7 +66,7 @@ export void websg_loaded() {
 export void websg_update(float_t dt) {
 
   // consume net packets
-  while (websg_network_receive(inbound_network_packet, PACKET_BYTES) == 1) {
+  while (websg_network_receive(inbound_network_packet, PACKET_BYTES) > 0) {
     // material_button
     material_button_state = inbound_network_packet[0];
 

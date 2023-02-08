@@ -62,7 +62,7 @@ export function createWebSGNetworkModule(ctx: GameState, resourceManager: Script
 
       try {
         U8Heap.set(new Uint8Array(packet), writeBufPtr);
-        return 1;
+        return packet.byteLength;
       } catch (e) {
         console.error("Error writing packet to write buffer:", e);
         return -1;
