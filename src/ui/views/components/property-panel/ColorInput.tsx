@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode } from "react";
+import { forwardRef, ReactNode, useCallback, useMemo } from "react";
 import { RgbColor, RgbaColor, RgbColorPicker, RgbaColorPicker } from "react-colorful";
 import * as Popover from "@radix-ui/react-popover";
 
@@ -8,12 +8,7 @@ import "./ColorInput.css";
 
 type ColorPreviewProps = {
   label: string;
-  color: {
-    r: number;
-    g: number;
-    b: number;
-    a?: number;
-  };
+  color: Float32Array;
   onClick?: () => void;
   disabled?: boolean;
 };
@@ -21,29 +16,38 @@ type ColorPreviewProps = {
 export const ColorPreview = forwardRef<HTMLButtonElement, ColorPreviewProps>(
   ({ label, color, onClick, disabled }, ref) => (
     <button aria-label={label} className="ColorPreview" onClick={onClick} ref={ref} disabled={disabled}>
-      <span style={{ backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a ?? 1})` }} />
+      <span style={{ backgroundColor: `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] ?? 1})` }} />
     </button>
   )
 );
 
 type ColorType = "rgb" | "rgba";
-type ColorInputProps<T extends ColorType> = T extends "rgb"
-  ? {
-      type: T;
-      value: RgbColor;
-      onChange: (value: RgbColor) => void;
-    }
-  : {
-      type: T;
-      value: RgbaColor;
-      onChange: (value: RgbaColor) => void;
-    };
+type ColorInputProps<T extends ColorType> = {
+  type: T;
+  value: Float32Array;
+  onChange: (value: Float32Array) => void;
+};
 
 type ColorPickerProps<T extends ColorType> = ColorInputProps<T> & {
   children: ReactNode;
 };
 
 export function ColorPicker<T extends ColorType>({ type, value, onChange, children }: ColorPickerProps<T>) {
+  const color = useMemo(() => ({ r: value[0], g: value[1], b: value[2], a: value[3] }), [value]);
+
+  const setColor = useCallback(
+    (value: RgbColor | RgbaColor) => {
+      if (type === "rgb") {
+        const rgb = value as RgbColor;
+        onChange(new Float32Array([rgb.r, rgb.g, rgb.b]));
+      } else {
+        const rgba = value as RgbaColor;
+        onChange(new Float32Array([rgba.r, rgba.g, rgba.b, rgba.a]));
+      }
+    },
+    [type, onChange]
+  );
+
   return (
     <Popover.Root>
       <Popover.Trigger asChild>{children}</Popover.Trigger>
@@ -51,9 +55,9 @@ export function ColorPicker<T extends ColorType>({ type, value, onChange, childr
         <Popover.Content sideOffset={5}>
           <div className="ColorPicker">
             {type === "rgb" ? (
-              <RgbColorPicker color={value} onChange={onChange} />
+              <RgbColorPicker color={color} onChange={setColor} />
             ) : (
-              <RgbaColorPicker color={value} onChange={onChange} />
+              <RgbaColorPicker color={color} onChange={setColor} />
             )}
           </div>
         </Popover.Content>
@@ -66,12 +70,23 @@ export function ColorInput<T extends ColorType>({
   value,
   type,
   onChange,
-  picker,
   disabled,
-}: ColorInputProps<T> & { picker: ReactNode; disabled?: boolean }) {
+}: ColorInputProps<T> & { disabled?: boolean }) {
+  const setColor = useCallback(
+    (index: number, element: number, value: Float32Array) => {
+      const color = [...value];
+      color[index] = element;
+
+      onChange(new Float32Array(color));
+    },
+    [onChange]
+  );
+
   return (
     <div className=" ColorInput flex items-center grow">
-      {picker}
+      <ColorPicker type="rgba" value={value} onChange={onChange}>
+        <ColorPreview label="Pick Color" color={value} disabled={disabled} />
+      </ColorPicker>
       <NumericInput
         before={
           <Label color="surface-low" className="shrink-0">
@@ -82,11 +97,11 @@ export function ColorInput<T extends ColorType>({
         type="u32"
         min={0}
         max={255}
-        value={value.r}
+        value={value[0]}
         inputSize="sm"
-        onChange={(r) => onChange({ ...value, r } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        onChange={(r) => setColor(0, r, value)}
         outlined
-        disabled
+        disabled={disabled}
       />
 
       <NumericInput
@@ -99,11 +114,11 @@ export function ColorInput<T extends ColorType>({
         type="u32"
         min={0}
         max={255}
-        value={value.g}
+        value={value[1]}
         inputSize="sm"
-        onChange={(g) => onChange({ ...value, g } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        onChange={(g) => setColor(0, g, value)}
         outlined
-        disabled
+        disabled={disabled}
       />
 
       <NumericInput
@@ -116,11 +131,11 @@ export function ColorInput<T extends ColorType>({
         type="u32"
         min={0}
         max={255}
-        value={value.b}
+        value={value[2]}
         inputSize="sm"
-        onChange={(b) => onChange({ ...value, b } as typeof type extends "rgb" ? RgbColor : RgbaColor)}
+        onChange={(b) => setColor(0, b, value)}
         outlined
-        disabled
+        disabled={disabled}
       />
       {type === "rgba" && (
         <>
@@ -136,11 +151,11 @@ export function ColorInput<T extends ColorType>({
             max={1}
             displayPrecision={3}
             mdStep={0.1}
-            value={value.a}
+            value={value[3]}
             inputSize="sm"
-            onChange={(a) => onChange({ ...value, a })}
+            onChange={(a) => setColor(0, a, value)}
             outlined
-            disabled
+            disabled={disabled}
           />
         </>
       )}
