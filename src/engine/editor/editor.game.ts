@@ -24,6 +24,7 @@ import {
   SelectionChangedMessage,
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
+  SetPropertyMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -34,7 +35,7 @@ import {
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
-import { getRemoteResource } from "../resource/resource.game";
+import { getRemoteResource, RemoteResourceTypes } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 
 /*********
@@ -81,6 +82,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.FocusEntity, onFocusEntity),
       registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
       registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
+      registerMessageHandler(ctx, EditorMessageType.SetProperty, onSetProperty),
     ]);
   },
 });
@@ -170,6 +172,18 @@ export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
 }
 
 export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
+
+function onSetProperty(ctx: GameState, message: SetPropertyMessage<unknown>) {
+  const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
+
+  const propName = message.propName;
+
+  if (!resource || typeof resource !== "object" || !("resourceType" in resource) || !(propName in resource)) {
+    return;
+  }
+
+  (resource as any)[message.propName] = message.value;
+}
 
 /***********
  * Systems *

@@ -99,7 +99,7 @@ export interface ResourceModuleState {
   deferredRemovals: ResourceRingBufferItem[];
 }
 
-type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
+export type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
 
 interface ResourceInfo {
   resource: RemoteResourceTypes;

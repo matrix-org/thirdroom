@@ -16,6 +16,7 @@ import {
   SelectionChangedMessage,
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
+  SetPropertyMessage,
 } from "./editor.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -173,6 +174,15 @@ export function setSelectedEntity(ctx: IMainThreadContext, eid: number) {
   ctx.sendMessage<SetSelectedEntityMessage>(Thread.Game, {
     type: EditorMessageType.SetSelectedEntity,
     eid,
+  });
+}
+
+export function setProperty<T>(ctx: IMainThreadContext, eid: number, propName: string, value: T) {
+  ctx.sendMessage<SetPropertyMessage<T>>(Thread.Game, {
+    type: EditorMessageType.SetProperty,
+    eid,
+    propName,
+    value,
   });
 }
 
