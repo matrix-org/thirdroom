@@ -84,7 +84,7 @@ export function ColorInput<T extends ColorType>({
 
   return (
     <div className=" ColorInput flex items-center grow">
-      <ColorPicker type="rgba" value={value} onChange={onChange}>
+      <ColorPicker type={type} value={value} onChange={onChange}>
         <ColorPreview label="Pick Color" color={value} disabled={disabled} />
       </ColorPicker>
       <NumericInput
@@ -116,7 +116,7 @@ export function ColorInput<T extends ColorType>({
         max={255}
         value={value[1]}
         inputSize="sm"
-        onChange={(g) => setColor(0, g, value)}
+        onChange={(g) => setColor(1, g, value)}
         outlined
         disabled={disabled}
       />
@@ -133,7 +133,7 @@ export function ColorInput<T extends ColorType>({
         max={255}
         value={value[2]}
         inputSize="sm"
-        onChange={(b) => setColor(0, b, value)}
+        onChange={(b) => setColor(2, b, value)}
         outlined
         disabled={disabled}
       />
@@ -153,7 +153,7 @@ export function ColorInput<T extends ColorType>({
             mdStep={0.1}
             value={value[3]}
             inputSize="sm"
-            onChange={(a) => setColor(0, a, value)}
+            onChange={(a) => setColor(3, a, value)}
             outlined
             disabled={disabled}
           />
