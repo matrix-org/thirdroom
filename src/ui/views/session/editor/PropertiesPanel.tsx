@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import classNames from "classnames";
 
 import "./PropertiesPanel.css";
@@ -6,9 +6,14 @@ import "./PropertiesPanel.css";
 import { Text } from "../../../atoms/text/Text";
 import { VectorInput } from "../../components/property-panel/VectorInput";
 import { EditorHeader } from "../../components/editor-header/EditorHeader";
-import { LocalResourceTypes } from "../../../../engine/resource/ResourceDefinition";
-import { ColorInput, ColorPicker, ColorPreview } from "../../components/property-panel/ColorInput";
+import { ColorInput } from "../../components/property-panel/ColorInput";
 import { Checkbox } from "../../../atoms/checkbox/Checkbox";
+import { MainNode } from "../../../../engine/resource/resource.main";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { setProperty } from "../../../../engine/editor/editor.main";
+import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/transform";
+import { Icon } from "../../../atoms/icon/Icon";
+import CircleIC from "../../../../../res/ic/circle.svg";
 
 interface PropertyContainerProps {
   className?: string;
@@ -28,58 +33,78 @@ export function PropertyContainer({ className, name, children }: PropertyContain
   );
 }
 
-interface PropertiesPanelProps<Resource extends LocalResourceTypes> {
+interface PropertiesPanelProps {
   className?: string;
-  resource: Resource;
+  resource: MainNode;
 }
 
-export function PropertiesPanel<R extends LocalResourceTypes>({ className, resource }: PropertiesPanelProps<R>) {
-  const [v3, setV3] = useState(new Float32Array(3));
-  const [rgba, setRGBA] = useState({ r: 0, g: 0, b: 0, a: 1 });
+export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
+  const ctx = useMainThreadContext();
+  const rotation = new Float32Array(3);
+  setEulerFromQuaternion(rotation, resource.quaternion);
 
   return (
     <div className={classNames("PropertiesPanel flex flex-column", className)}>
-      <EditorHeader className="shrink-0 flex items-center" style={{ padding: "0 var(--sp-xs)" }}>
+      <EditorHeader className="shrink-0 flex items-center gap-xxs" style={{ padding: "0 var(--sp-xs)" }}>
+        <Icon color="surface" size="sm" src={CircleIC} />
         <Text variant="b2" weight="semi-bold">
-          Node
+          {resource.name ?? "Node"}
         </Text>
       </EditorHeader>
       <div className="grow">
         <PropertyContainer name="Translation">
-          <VectorInput value={resource.position} type="vec3" onChange={() => false} disabled />
-        </PropertyContainer>
-
-        <PropertyContainer name="Rotation">
-          <VectorInput value={v3} type="vec3" onChange={setV3} disabled />
-        </PropertyContainer>
-
-        <PropertyContainer name="Scale">
-          <VectorInput value={resource.scale} type="vec3" onChange={() => false} disabled />
-        </PropertyContainer>
-
-        <PropertyContainer name="Color">
-          <ColorInput
-            value={rgba}
-            type="rgba"
-            onChange={setRGBA}
-            picker={
-              <ColorPicker type="rgba" value={rgba} onChange={setRGBA}>
-                <ColorPreview label="Pick Color" color={rgba} disabled />
-              </ColorPicker>
-            }
+          <VectorInput
+            value={resource.position}
+            type="vec3"
+            onChange={(value) => setProperty(ctx, resource.eid, "position", value)}
           />
         </PropertyContainer>
 
+        <PropertyContainer name="Rotation">
+          <VectorInput
+            value={rotation}
+            type="vec3"
+            onChange={(value) => {
+              const quat = new Float32Array(4);
+              setQuaternionFromEuler(quat, value);
+              setProperty(ctx, resource.eid, "quaternion", quat);
+            }}
+          />
+        </PropertyContainer>
+
+        <PropertyContainer name="Scale">
+          <VectorInput
+            value={resource.scale}
+            type="vec3"
+            onChange={(value) => setProperty(ctx, resource.eid, "scale", value)}
+          />
+        </PropertyContainer>
+
+        {"color" in resource && (
+          <PropertyContainer name="Color">
+            <ColorInput type="rgba" value={new Float32Array(4)} onChange={() => false} disabled={true} />
+          </PropertyContainer>
+        )}
+
         <PropertyContainer name="Visible">
-          <Checkbox disabled />
+          <Checkbox
+            checked={resource.visible}
+            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "visible", checked)}
+          />
         </PropertyContainer>
 
         <PropertyContainer name="Enable">
-          <Checkbox disabled />
+          <Checkbox
+            checked={resource.enabled}
+            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "enabled", checked)}
+          />
         </PropertyContainer>
 
         <PropertyContainer name="Static">
-          <Checkbox disabled />
+          <Checkbox
+            checked={resource.isStatic}
+            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "isStatic", checked)}
+          />
         </PropertyContainer>
       </div>
     </div>
