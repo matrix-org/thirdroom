@@ -9,6 +9,8 @@ import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
+const isFirefox = navigator.userAgent.toLowerCase().includes("gecko/");
+
 async function onInitMessage({ data }: MessageEvent) {
   if (typeof data !== "object") {
     return;
@@ -113,7 +115,7 @@ async function onInit({
 
   let interval: any;
 
-  const gameLoop = () => {
+  const intervalGameLoop = () => {
     interval = setInterval(() => {
       const then = performance.now();
       try {
@@ -133,13 +135,25 @@ async function onInit({
           clearInterval(interval);
           throw error;
         }
-        interval = gameLoop();
+        interval = intervalGameLoop();
       }
     }, 1000 / tickRate);
     return interval;
   };
 
-  gameLoop();
+  if (isFirefox) {
+    // there is some kind of issue with firefox's setInterval
+    // it causes extreme jitter when sending data to other peers
+    timeoutGameLoop(ctx);
+  } else {
+    intervalGameLoop();
+  }
+}
+
+function timeoutGameLoop(ctx: GameState) {
+  // need to call setTimeout immediately, otherwise network jitter ensues
+  setTimeout(() => timeoutGameLoop(ctx), 1000 / tickRate);
+  update(ctx);
 }
 
 function update(ctx: GameState) {
