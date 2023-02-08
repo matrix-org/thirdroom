@@ -1,6 +1,7 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
+import murmurHash from "murmurhash-js";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, traverse } from "../../engine/component/transform";
@@ -84,6 +85,7 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
+  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -93,6 +95,10 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
+import { WebSGNetworkModule } from "../../engine/network/scripting.game";
+import { XRInputHandedness } from "../../engine/input/WebXRInputProfiles";
+import { createSphereMesh } from "../../engine/mesh/mesh.game";
 
 type ThirdRoomModuleState = {};
 
@@ -150,6 +156,23 @@ const createAvatarRig =
     return obj;
   };
 
+const createHand =
+  (input: GameInputModule, physics: PhysicsModuleState, hand: XRInputHandedness) => (ctx: GameState, options?: any) => {
+    const handMaterial = new RemoteMaterial(ctx.resourceManager, {
+      name: "Emissive Material",
+      type: Schema.MaterialType.Standard,
+      baseColorFactor: [hand === XRInputHandedness.Left ? 1 : 0, 0.3, 0, 1],
+      emissiveFactor: [0.7, 0.7, 0.7],
+      metallicFactor: 0,
+      roughnessFactor: 1,
+    });
+    const node = new RemoteNode(ctx.resourceManager, {
+      mesh: createSphereMesh(ctx, 0.3, handMaterial),
+    });
+    const obj = createRemoteObject(ctx, node);
+    return obj;
+  };
+
 const tempSpawnPoints: RemoteNode[] = [];
 
 function getSpawnPoints(ctx: GameState): RemoteNode[] {
@@ -194,6 +217,18 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       name: "avatar",
       type: PrefabType.Avatar,
       create: createAvatarRig(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "left-hand",
+      type: PrefabType.Avatar,
+      create: createHand(input, physics, XRInputHandedness.Left),
+    });
+
+    registerPrefab(ctx, {
+      name: "right-hand",
+      type: PrefabType.Avatar,
+      create: createHand(input, physics, XRInputHandedness.Right),
     });
 
     // create out of bounds floor check
@@ -445,6 +480,13 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   }
 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
+
+  if (script && scriptUrl) {
+    const id = murmurHash(scriptUrl);
+    (resourceManager as ScriptResourceManager).id = id;
+    const webSgNet = getModule(ctx, WebSGNetworkModule);
+    webSgNet.scriptToInbound.set(id, []);
+  }
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
