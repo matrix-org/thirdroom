@@ -142,6 +142,8 @@ async function onInit({
   };
 
   if (isFirefox) {
+    // there is some kind of issue with firefox's setInterval
+    // it causes extreme jitter when sending data to other peers
     timeoutGameLoop(ctx);
   } else {
     intervalGameLoop();
@@ -149,6 +151,7 @@ async function onInit({
 }
 
 function timeoutGameLoop(ctx: GameState) {
+  // need to call setTimeout immediately, otherwise network jitter ensues
   setTimeout(() => timeoutGameLoop(ctx), 1000 / tickRate);
   update(ctx);
 }
