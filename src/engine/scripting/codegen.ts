@@ -7,8 +7,8 @@ import { TypedArrayConstructor32 } from "../utils/typedarray";
 import camelToSnakeCase from "../utils/camelToSnakeCase";
 import kebabToPascalCase from "../utils/kebabToPascalCase";
 import kebabToSnakeCase from "../utils/kebabToSnakeCase";
-import { ResourceDefinition, ResourcePropDef } from "./ResourceDefinition";
-import * as SchemaModule from "./schema";
+import { ResourceDefinition, ResourcePropDef } from "../resource/ResourceDefinition";
+import * as SchemaModule from "../resource/schema";
 import camelToPascalCase from "../utils/camelToPascalCase";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -845,7 +845,7 @@ void js_define_websg_api(JSContext *ctx, JSValue *global);
 }
 
 async function main() {
-  const outDir = path.resolve(__dirname, "../../scripting/src/generated");
+  const outDir = path.resolve(__dirname, "./emscripten/src/generated");
 
   if (existsSync(outDir)) {
     await rm(outDir, { recursive: true });

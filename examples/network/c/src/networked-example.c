@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../../../src/scripting/src/generated/websg.h"
-#include "../../../../src/scripting/src/network.h"
+#include "../../../../src/engine/scripting/emscripten/src/generated/websg.h"
+#include "../../../../src/engine/scripting/emscripten/src/network.h"
 
 int PACKET_BYTES = 3;
 

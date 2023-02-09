@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../../../src/scripting/src/generated/websg.h"
-#include "../../../../src/scripting/src/matrix.h"
+#include "../../../../src/engine/scripting/emscripten/src/generated/websg.h"
+#include "../../../../src/engine/scripting/emscripten/src/matrix.h"
 
 export void *websg_allocate(int size) {
   return malloc(size);

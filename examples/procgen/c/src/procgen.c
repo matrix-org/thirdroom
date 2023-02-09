@@ -6,8 +6,8 @@
 #include <emscripten/console.h>
 #define FNL_IMPL
 #include "./FastNoiseLite.h"
-#include "../../../../src/scripting/src/generated/websg.h"
-#include "../../../../src/scripting/src/thirdroom.h"
+#include "../../../../src/engine/scripting/emscripten/src/generated/websg.h"
+#include "../../../../src/engine/scripting/emscripten/src/thirdroom.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
