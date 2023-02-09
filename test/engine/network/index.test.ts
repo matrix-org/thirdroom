@@ -1,6 +1,6 @@
 // import { describe, it } from "vitest";
 import { ok, strictEqual } from "assert";
-import { addComponent, entityExists, removeComponent } from "bitecs";
+import { addComponent, entityExists, getEntityComponents, removeComponent } from "bitecs";
 
 import { GameState } from "../../../src/engine/GameTypes";
 import {
@@ -639,7 +639,7 @@ describe("Network Tests", () => {
       deserializeDeletes([state, reader2, ""]);
 
       remoteEntities.forEach((eid) => {
-        ok(!entityExists(state.world, eid));
+        ok(getEntityComponents(state.world, eid).length === 0);
       });
     });
   });

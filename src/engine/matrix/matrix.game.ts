@@ -1,7 +1,6 @@
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { ScriptResourceManager } from "../resource/ScriptResourceManager";
-import { decodeString } from "../resource/strings";
+import { readString, WASMModuleContext, writeString } from "../scripting/WASMModuleContext";
 import { createDisposables } from "../utils/createDisposables";
 import {
   MatrixMessageType,
@@ -32,15 +31,14 @@ function onWidgetMessage(ctx: GameState, message: WidgetMessage) {
   inboundWidgetMessages.push(message.message);
 }
 
-export function createMatrixWASMModule(ctx: GameState, resourceManager: ScriptResourceManager) {
+export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const { inboundWidgetMessages } = getModule(ctx, MatrixModule);
-  const { U8Heap } = resourceManager;
 
   return {
-    send_widget_message: (requestPtr: number) => {
-      const messageStr = decodeString(requestPtr, U8Heap);
-
+    send_widget_message: (requestPtr: number, byteLength: number) => {
       try {
+        const messageStr = readString(wasmCtx, requestPtr, byteLength);
+
         const message = JSON.parse(messageStr);
 
         ctx.sendMessage<WidgetMessage>(Thread.Main, {
@@ -54,16 +52,21 @@ export function createMatrixWASMModule(ctx: GameState, resourceManager: ScriptRe
         return -1;
       }
     },
-    receive_widget_message: () => {
-      const message = inboundWidgetMessages.pop();
+    receive_widget_message: (writeBufPtr: number, maxBufLength: number) => {
+      try {
+        const message = inboundWidgetMessages.pop();
 
-      if (!message) {
-        return 0;
+        if (!message) {
+          return 0;
+        }
+
+        const messageStr = JSON.stringify(message);
+        const writeByteLength = writeString(wasmCtx, writeBufPtr, messageStr, maxBufLength);
+        return writeByteLength;
+      } catch (error) {
+        console.error("Error receiving script packet: ", error);
+        return -1;
       }
-
-      const messageStr = JSON.stringify(message);
-
-      return resourceManager.writeString(messageStr);
     },
   };
 }

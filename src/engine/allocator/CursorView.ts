@@ -1,6 +1,10 @@
-import { TypedArray } from "../utils/typedarray";
+import { TypedArray, TypedArrayConstructor32 } from "../utils/typedarray";
 
-export type CursorView = DataView & { cursor: number; shadowMap: Map<TypedArray, TypedArray>; byteView: Uint8Array } & {
+export type CursorView = DataView & {
+  cursor: number;
+  shadowMap: Map<TypedArray | string, TypedArray>;
+  byteView: Uint8Array;
+} & {
   [K: string]: Function;
 };
 
@@ -85,6 +89,29 @@ export const writePropIfChanged = (v: CursorView, prop: TypedArray, entity: numb
   }
 
   writeProp(v, prop, entity);
+
+  return true;
+};
+
+export const writeScalarPropIfChanged = (
+  v: CursorView,
+  propName: string,
+  arrayType: TypedArrayConstructor32,
+  prop: number
+) => {
+  const { shadowMap } = v;
+
+  const shadow = shadowMap.get(propName) || (shadowMap.set(propName, new arrayType(1)) && shadowMap.get(propName)!);
+
+  const changed = shadow[0] !== prop; // || shadowInit
+
+  shadow[0] = prop;
+
+  if (!changed) {
+    return false;
+  }
+
+  writeProp(v, shadow, 0);
 
   return true;
 };

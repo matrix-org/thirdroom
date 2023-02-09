@@ -1,23 +1,23 @@
 import { createCursorView, readArrayBuffer, sliceCursorView, writeArrayBuffer } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
-import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
 import { NetPipeData, writeMetadata } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
+import { WASMModuleContext } from "../scripting/WASMModuleContext";
 
 interface WebSGNetworkModuleState {
-  scriptToInbound: Map<number, ArrayBuffer[]>;
+  inbound: ArrayBuffer[];
 }
 
 export const WebSGNetworkModule = defineModule<GameState, WebSGNetworkModuleState>({
   name: "WebSGNetwork",
   create: () => {
     return {
-      scriptToInbound: new Map(),
+      inbound: [],
     };
   },
   init(ctx: GameState) {
@@ -26,17 +26,16 @@ export const WebSGNetworkModule = defineModule<GameState, WebSGNetworkModuleStat
   },
 });
 
-export function createWebSGNetworkModule(ctx: GameState, resourceManager: ScriptResourceManager) {
+export function createWebSGNetworkModule(ctx: GameState, { U8Heap }: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
-  const { scriptToInbound } = getModule(ctx, WebSGNetworkModule);
-  const { U8Heap } = resourceManager;
+  const { inbound } = getModule(ctx, WebSGNetworkModule);
 
   return {
     network_broadcast: (packetPtr: number, byteLength: number) => {
       try {
         const scriptPacket = U8Heap.subarray(packetPtr, packetPtr + byteLength);
 
-        const msg = createScriptMessage(ctx, resourceManager.id!, scriptPacket);
+        const msg = createScriptMessage(ctx, scriptPacket);
 
         broadcastReliable(ctx, network, msg);
 
@@ -48,8 +47,7 @@ export function createWebSGNetworkModule(ctx: GameState, resourceManager: Script
     },
     // call until 0 return
     network_receive: (writeBufPtr: number, maxBufLength: number) => {
-      const inbound = scriptToInbound.get(resourceManager.id!);
-      const packet = inbound!.pop();
+      const packet = inbound.pop();
 
       if (!packet) {
         return 0;
@@ -73,28 +71,24 @@ export function createWebSGNetworkModule(ctx: GameState, resourceManager: Script
 
 const messageView = createCursorView(new ArrayBuffer(10000));
 
-function createScriptMessage(ctx: GameState, scriptId: number, packet: ArrayBuffer) {
+function createScriptMessage(ctx: GameState, packet: ArrayBuffer) {
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.ScriptMessage)(data);
-  serializeScriptMessage(data, scriptId, packet);
+  serializeScriptMessage(data, packet);
   return sliceCursorView(messageView);
 }
-function serializeScriptMessage(data: NetPipeData, scriptId: number, packet: ArrayBuffer) {
+
+function serializeScriptMessage(data: NetPipeData, packet: ArrayBuffer) {
   const [, v] = data;
-  writeUint32(v, scriptId);
   writeUint32(v, packet.byteLength);
   writeArrayBuffer(v, packet);
   return data;
 }
+
 function deserializeScriptMessage(data: NetPipeData) {
   const [ctx, v] = data;
   const webSgNet = getModule(ctx, WebSGNetworkModule);
-  const id = readUint32(v);
   const len = readUint32(v);
   const packet = readArrayBuffer(v, len);
-  const queue = webSgNet.scriptToInbound.get(id);
-  if (!queue) {
-    throw new Error("could not find script to forward network message to: " + id);
-  }
-  queue.push(packet);
+  webSgNet.inbound.push(packet);
 }

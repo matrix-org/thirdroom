@@ -1,10 +1,10 @@
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
+import { RemoteResource } from "./RemoteResourceClass";
 import { ResourceModule } from "./resource.game";
-import { RemoteResource } from "./ResourceDefinition";
 
 interface ResourceRef {
-  resource: RemoteResource<GameState>;
+  resource: RemoteResource;
   resourceName: string;
   propName: string;
   index: number;
@@ -22,21 +22,25 @@ export function findResourceRetainers(ctx: GameState, resourceId: number) {
     };
   }
 
-  const { resource, refCount } = resourceInfo;
+  const resource = resourceModule.resourceMap.get(resourceId)!;
+
+  const { refCount } = resourceInfo;
 
   const refs: ResourceRef[] = [];
 
   for (const [resourceType, resourceDef] of resourceModule.resourceDefByType) {
-    const refProps: { propName: string; size: number }[] = [];
+    const refProps: { propName: string; offset: number; size: number }[] = [];
 
     const schema = resourceDef.schema;
 
     for (const propName in schema) {
       const prop = schema[propName];
+      const offset = prop.byteOffset / 4;
 
       if (typeof resource === "string") {
         if (prop.type === "string") {
           refProps.push({
+            offset,
             propName,
             size: 1,
           });
@@ -44,6 +48,7 @@ export function findResourceRetainers(ctx: GameState, resourceId: number) {
       } else if (resource instanceof ArrayBuffer) {
         if (prop.type === "arrayBuffer") {
           refProps.push({
+            offset: offset + 2,
             propName,
             size: prop.size,
           });
@@ -51,6 +56,7 @@ export function findResourceRetainers(ctx: GameState, resourceId: number) {
       } else {
         if (prop.resourceDef && !prop.backRef && prop.resourceDef === resource.resourceDef) {
           refProps.push({
+            offset,
             propName,
             size: prop.size,
           });
@@ -62,9 +68,9 @@ export function findResourceRetainers(ctx: GameState, resourceId: number) {
 
     if (resources) {
       for (const resource of resources) {
-        for (const { propName, size } of refProps) {
+        for (const { propName, size, offset } of refProps) {
           for (let index = 0; index < size; index++) {
-            if (resource.__props[propName][index] === resourceId) {
+            if (resource.u32View[offset + index] === resourceId) {
               refs.push({
                 resource,
                 resourceName: resource.resourceDef.name,
