@@ -16,12 +16,11 @@ import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
-  Networked,
   networkedQuery,
   NetworkModule,
-  Owned,
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
+import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { takeOwnership } from "../../engine/network/ownership.game";
 import {
   addCollisionGroupMembership,
@@ -146,8 +145,8 @@ const InteractionActionMap: ActionMap = {
       networked: true,
     },
     {
-      id: "primaryGrab",
-      path: "primaryGrab",
+      id: "primaryTrigger",
+      path: "primaryTrigger",
       type: ActionType.Button,
       bindings: [
         {
@@ -158,13 +157,37 @@ const InteractionActionMap: ActionMap = {
       networked: true,
     },
     {
-      id: "secondaryGrab",
-      path: "secondaryGrab",
+      id: "secondaryTrigger",
+      path: "secondaryTrigger",
       type: ActionType.Button,
       bindings: [
         {
           type: BindingType.Button,
           path: "XRInputSource/secondary/xr-standard-trigger",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "primarySqueeze",
+      path: "primarySqueeze",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/primary/xr-standard-squeeze",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "secondarySqueeze",
+      path: "secondarySqueeze",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "XRInputSource/secondary/xr-standard-squeeze",
         },
       ],
       networked: true,
@@ -240,7 +263,7 @@ export const GrabComponent = defineComponent(
 const MAX_FOCUS_DISTANCE = 3.3;
 const MIN_HELD_DISTANCE = 1.5;
 const MAX_HELD_DISTANCE = 8;
-const GRAB_DISTANCE = 3.3;
+export const GRAB_DISTANCE = 3.3;
 const HELD_MOVE_SPEED = 10;
 const THROW_FORCE = 10;
 
@@ -311,22 +334,36 @@ export function InteractionSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const xr = XRAvatarRig.get(eid);
-    const grabbingNode =
-      xr && xr.rightControllerEid
-        ? tryGetRemoteResource<RemoteNode>(ctx, xr.rightControllerEid)
-        : getCamera(ctx, rig).parent!;
     const controller = tryGetInputController(input, eid);
+    const xr = XRAvatarRig.get(eid);
 
-    updateFocus(ctx, physics, rig, grabbingNode);
+    if (xr && xr.leftRayEid && xr.rightRayEid) {
+      const leftRay = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
+      const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
-    const hosting = network.authoritative && isHost(network);
-    const cspEnabled = network.authoritative && network.clientSidePrediction;
-    const p2p = !network.authoritative;
+      const hosting = network.authoritative && isHost(network);
+      const cspEnabled = network.authoritative && network.clientSidePrediction;
+      const p2p = !network.authoritative;
 
-    if (hosting || cspEnabled || p2p) {
-      updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
+      if (hosting || cspEnabled || p2p) {
+        // TODO: deletion
+        // updateDeletion(ctx, interaction, controller, eid);
+        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
+        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
+      }
+    } else {
+      const grabbingNode = getCamera(ctx, rig).parent!;
+
+      updateFocus(ctx, physics, rig, grabbingNode);
+
+      const hosting = network.authoritative && isHost(network);
+      const cspEnabled = network.authoritative && network.clientSidePrediction;
+      const p2p = !network.authoritative;
+
+      if (hosting || cspEnabled || p2p) {
+        updateDeletion(ctx, interaction, controller, eid);
+        updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
+      }
     }
   }
 }
@@ -417,12 +454,12 @@ function updateGrabThrow(
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
   const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
-  const primaryGrab = controller.actionStates.get("primaryGrab") as ButtonActionState;
-  // const secondaryGrab = controller.actionStates.get("secondaryGrab") as ButtonActionState;
+  const primaryTrigger = controller.actionStates.get("primaryTrigger") as ButtonActionState;
+  const secondaryTrigger = controller.actionStates.get("secondaryTrigger") as ButtonActionState;
   const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
 
-  const grabPressed = grabBtn.pressed || primaryGrab.pressed;
-  const grabReleased = grabBtn.released;
+  const grabPressed = grabBtn.pressed || primaryTrigger.held || secondaryTrigger.held;
+  const grabReleased = grabBtn.released || primaryTrigger.released || secondaryTrigger.released;
   const throwPressed = throwBtn.pressed;
 
   const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
@@ -582,6 +619,7 @@ function updateGrabThrow(
     mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
+
     vec3.scale(direction, direction, MIN_HELD_DISTANCE + heldOffset);
 
     vec3.sub(target, target, direction);
@@ -596,6 +634,144 @@ function updateGrabThrow(
       body.setAngvel(zero, true);
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
+  }
+}
+
+function updateGrabThrowXR(
+  ctx: GameState,
+  interaction: InteractionModuleState,
+  physics: PhysicsModuleState,
+  network: GameNetworkState,
+  controller: InputController,
+  rig: RemoteNode,
+  grabbingNode: RemoteNode,
+  hand: XRHandedness
+) {
+  // raycast outward from node
+  const nodeMatrix = grabbingNode.worldMatrix;
+  mat4.getRotation(_worldQuat, nodeMatrix);
+
+  const target = vec3.set(_target, 0, 0, -1);
+  vec3.transformQuat(target, target, _worldQuat);
+  vec3.scale(target, target, GRAB_DISTANCE);
+
+  const source = mat4.getTranslation(_source, nodeMatrix);
+
+  const s: Vector3 = _s.fromArray(source);
+  const t: Vector3 = _t.fromArray(target);
+
+  shapeCastPosition.copy(s);
+
+  const shapecastHit = physics.physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    t,
+    colliderShape,
+    1.0,
+    true,
+    0,
+    grabShapeCastCollisionGroups
+  );
+
+  if (shapecastHit === null) {
+    return;
+  }
+
+  let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
+
+  if (!focusedEntity) {
+    return;
+  }
+
+  // if (focusedEntity) {
+  //   grabbingNode.firstChild!.visible = true;
+  // } else {
+  //   grabbingNode.firstChild!.visible = false;
+  // }
+
+  // TODO: use dominant hand
+  const triggerState = controller.actionStates.get(
+    hand === "right" ? "primaryTrigger" : "secondaryTrigger"
+  ) as ButtonActionState;
+
+  const squeezeState = controller.actionStates.get(
+    hand === "right" ? "primarySqueeze" : "secondarySqueeze"
+  ) as ButtonActionState;
+
+  if (focusedEntity && (triggerState.held || squeezeState.held)) {
+    const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
+    const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+
+    if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
+      if (squeezeState.held && Interactable.type[node.eid] === InteractableType.Grabbable) {
+        const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+          // do nothing if we hit the max obj cap
+          // ctx.sendMessage(Thread.Main, {
+          //   type: ObjectCapReachedMessageType,
+          // });
+        } else {
+          // otherwise attempt to take ownership
+          const newEid = takeOwnership(ctx, network, node);
+
+          if (newEid !== NOOP) {
+            // addComponent(ctx.world, GrabComponent, rig.eid);
+            // GrabComponent.grabbedEntity[rig.eid] = newEid;
+            focusedEntity = newEid;
+            // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+          } else {
+            // addComponent(ctx.world, GrabComponent, rig.eid);
+            // GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
+            // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+          }
+        }
+      } else if (triggerState.held && Interactable.type[node.eid] === InteractableType.Interactable) {
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
+        const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
+        const interactable = remoteNode?.interactable;
+
+        if (interactable) {
+          interactable.pressed = true;
+          interactable.released = false;
+          interactable.held = true;
+        }
+      } else {
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+      }
+    }
+
+    if (!squeezeState.held) {
+      return;
+    }
+
+    grabbingNode.visible = false;
+
+    const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
+
+    const focusedPosition = focusedNode.position;
+
+    const target = _target;
+    mat4.getTranslation(target, grabbingNode.worldMatrix);
+
+    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    const direction = vec3.set(_direction, 0, 0, 1);
+    vec3.transformQuat(direction, direction, _worldQuat);
+    vec3.scale(direction, direction, 0.5);
+
+    vec3.sub(target, target, direction);
+
+    vec3.sub(target, target, focusedPosition);
+
+    vec3.scale(target, target, HELD_MOVE_SPEED * 2);
+
+    const body = RigidBody.store.get(focusedEntity);
+    if (body) {
+      body.setLinvel(_impulse.fromArray(target), true);
+      body.setAngvel(zero, true);
+      body.setRotation(_r.fromArray(_worldQuat), true);
+    }
+  } else {
+    grabbingNode.visible = true;
   }
 }
 

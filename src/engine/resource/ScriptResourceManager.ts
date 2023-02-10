@@ -1,9 +1,14 @@
+import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { copyToWriteBuffer, createTripleBuffer } from "../allocator/TripleBuffer";
+import { AudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { GLTFResource } from "../gltf/gltf.game";
+import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { getModule, Thread } from "../module/module.common";
+import { createWebSGNetworkModule } from "../network/scripting.game";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
 import { ScriptWebAssemblyInstance } from "../scripting/scripting.game";
+import { RemoteScene } from "./RemoteResources";
 import {
   addResourceRef,
   createArrayBufferResource,
@@ -24,6 +29,12 @@ import {
 } from "./ResourceDefinition";
 import { decodeString } from "./strings";
 
+interface MutableArrayBuffer {
+  resourceId: number;
+  writeView: Uint8Array;
+  readView: Uint8Array;
+}
+
 export class ScriptResourceManager implements IRemoteResourceManager<GameState> {
   public memory: WebAssembly.Memory;
   public buffer: ArrayBuffer | SharedArrayBuffer;
@@ -33,6 +44,9 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   private textEncoder = new TextEncoder();
   private instance?: ScriptWebAssemblyInstance;
   private gltfCache: Map<string, ResourceManagerGLTFCacheEntry> = new Map();
+  public activeScene?: RemoteScene;
+  // for networking
+  public id?: number;
 
   // When allocating resource, allocate space in WASM memory and a triplebuffer
   // At end of frame copy each resource to triple buffer using ptr and byteLength
@@ -48,6 +62,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
   private ctx: GameState;
   private ptrToResourceId: Map<number, number> = new Map();
   public resources: RemoteResource<GameState>[] = [];
+  private mutableArrayBuffers: MutableArrayBuffer[] = [];
 
   constructor(ctx: GameState, allowedResources: ResourceDefinition[]) {
     this.ctx = ctx;
@@ -169,11 +184,7 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
       }
 
       if (value) {
-        const arr = this.textEncoder.encode(value);
-        const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
-        nullTerminatedArr.set(arr);
-        const ptr = this.allocate(nullTerminatedArr.byteLength);
-        this.U8Heap.set(nullTerminatedArr, ptr);
+        const ptr = this.writeString(value);
         store[0] = ptr;
         const resourceId = createStringResource(this.ctx, value, () => {
           this.deallocate(ptr);
@@ -184,12 +195,21 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     }
   }
 
+  writeString(value: string): number {
+    const arr = this.textEncoder.encode(value);
+    const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
+    nullTerminatedArr.set(arr);
+    const ptr = this.allocate(nullTerminatedArr.byteLength);
+    this.U8Heap.set(nullTerminatedArr, ptr);
+    return ptr;
+  }
+
   getArrayBuffer(store: Uint32Array): SharedArrayBuffer {
-    if (!store[1]) {
+    if (!store[2]) {
       throw new Error("arrayBuffer field not initialized.");
     }
 
-    const resourceId = this.ptrToResourceId.get(store[1]) as number;
+    const resourceId = this.ptrToResourceId.get(store[2]) as number;
     return getRemoteResource<SharedArrayBuffer>(this.ctx, resourceId) as SharedArrayBuffer;
   }
 
@@ -201,14 +221,41 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     // TODO: Add a function to actually get a range of buffer data in script context
     // We shouldn't allocate all the buffer data on the script heap because if you aren't using it,
     // it's a waste of memory.
-    store[0] = value.byteLength;
-    const ptr = this.allocate(value.byteLength);
+
+    const dataPtr = this.allocate(value.byteLength);
     const bufView = new Uint8Array(value);
-    this.U8Heap.set(bufView, ptr);
-    store[1] = ptr;
+    this.U8Heap.set(bufView, dataPtr);
+
+    const ptr = this.allocate(Uint32Array.BYTES_PER_ELEMENT * 3);
+
+    this.U32Heap[ptr / Uint32Array.BYTES_PER_ELEMENT] = value.byteLength;
+    this.U32Heap[ptr / Uint32Array.BYTES_PER_ELEMENT + 1] = 0; // Immutable
+    this.U32Heap[ptr / Uint32Array.BYTES_PER_ELEMENT + 2] = dataPtr;
+
+    store[0] = value.byteLength;
+    store[1] = 0; // Immutable
+    store[2] = ptr;
+
     const resourceId = createArrayBufferResource(this.ctx, value);
     this.addRef(resourceId);
     this.ptrToResourceId.set(ptr, resourceId);
+  }
+
+  initArrayBuffer(store: Uint32Array) {
+    const size = store[0];
+    const mutable = store[1];
+    const dataPtr = store[2];
+    const readView = new Uint8Array(this.buffer, dataPtr, size);
+    const buffer = new SharedArrayBuffer(size);
+    const writeView = new Uint8Array(buffer);
+    writeView.set(readView);
+
+    const resourceId = createArrayBufferResource(this.ctx, buffer);
+    this.ptrToResourceId.set(dataPtr, resourceId);
+
+    if (mutable) {
+      this.mutableArrayBuffers.push({ resourceId, writeView, readView });
+    }
   }
 
   getRef<T extends RemoteResource<GameState>>(store: Uint32Array): T | undefined {
@@ -296,6 +343,11 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
     const resourceModule = getModule(this.ctx, ResourceModule);
     const resources = this.resources;
 
+    for (let i = 0; i < this.mutableArrayBuffers.length; i++) {
+      const { writeView, readView } = this.mutableArrayBuffers[i];
+      writeView.set(readView);
+    }
+
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
       const { writeView, refView, refOffsets, refIsString } = resourceModule.resourceTransformData.get(
@@ -367,8 +419,23 @@ export class ScriptResourceManager implements IRemoteResourceManager<GameState> 
             enabled: !!enabled,
           });
         },
+        get_audio_frequency_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
+        },
+        get_audio_time_data: (audioDataPtr: number) => {
+          const audio = getModule(this.ctx, AudioModule);
+          const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
+          this.U8Heap.set(audioAnalyser.timeData, audioDataPtr);
+        },
       },
+      matrix: createMatrixWASMModule(this.ctx, this),
+      websg_network: createWebSGNetworkModule(this.ctx, this),
       websg: {
+        get_active_scene: () => {
+          return this.activeScene?.ptr || 0;
+        },
         get_resource_by_name: (resourceType: number, namePtr: number) => {
           const resources = this.resources;
           const name = decodeString(namePtr, this.U8Heap);

@@ -1,6 +1,7 @@
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
+import { enableActionMap } from "./ActionMappingSystem";
 import {
   InitializeInputStateMessage,
   InputMessageType,
@@ -8,6 +9,7 @@ import {
   UpdateXRInputSourcesMessage,
 } from "./input.common";
 import { InputController, createInputController, InputControllerComponent } from "./InputController";
+import { ARActionMap } from "./WebXRAvatarRigSystem";
 
 /*********
  * Types *
@@ -46,6 +48,11 @@ export const InputModule = defineModule<GameState, GameInputModule>({
     };
   },
   init(ctx) {
+    // TODO: we should enable / disable this depending on whether or not you're in XR
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, ARActionMap);
+
     return createDisposables([
       registerMessageHandler(ctx, InputMessageType.UpdateXRInputSources, onUpdateXRInputSources),
     ]);

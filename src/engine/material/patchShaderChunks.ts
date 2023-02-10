@@ -138,7 +138,6 @@ export default function patchShaderChunks() {
   ShaderChunk.envmap_physical_pars_fragment = ShaderChunk.envmap_physical_pars_fragment.replace(
     "vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );",
     `
-    reflectVec = -reflectVec;
     #ifdef USE_REFLECTION_PROBES
       #ifdef USE_INSTANCING
         vec4 envMapColor = mix(
@@ -156,6 +155,8 @@ export default function patchShaderChunks() {
     #else
       vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );
     #endif
+
+    envMapColor = max(envMapColor, 0.0);
     `
   );
 }

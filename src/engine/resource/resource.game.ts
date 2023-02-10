@@ -250,7 +250,7 @@ function registerResource<Def extends ResourceDefinition>(
         refIsBackRef.push(prop.backRef);
       }
     } else if (prop.type === "arrayBuffer") {
-      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT);
+      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT * 2);
       refIsString.push(false);
       refIsBackRef.push(prop.backRef);
     }

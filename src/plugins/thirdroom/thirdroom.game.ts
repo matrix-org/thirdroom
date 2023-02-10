@@ -1,18 +1,14 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
+import murmurHash from "murmurhash-js";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild } from "../../engine/component/transform";
+import { addChild, traverse } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import {
-  associatePeerWithEntity,
-  GameNetworkState,
-  Networked,
-  NetworkModule,
-  Owned,
-} from "../../engine/network/network.game";
+import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";
+import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -57,6 +53,7 @@ import {
   loadJSScript,
   loadWASMScript,
   Script,
+  ScriptComponent,
   ScriptExecutionEnvironment,
 } from "../../engine/scripting/scripting.game";
 import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
@@ -92,6 +89,8 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
+import { WebSGNetworkModule } from "../../engine/network/scripting.game";
 
 type ThirdRoomModuleState = {};
 
@@ -280,7 +279,6 @@ const actionMap: ActionMap = {
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
     await loadEnvironment(ctx, message.url, message.scriptUrl);
-    await waitForCurrentSceneToRender(ctx);
 
     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.WorldLoaded,
@@ -383,6 +381,10 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 
     loadPlayerRig(ctx, physics, input, network);
 
+    await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
+
+    await waitForCurrentSceneToRender(ctx, 10);
+
     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
       type: ThirdRoomMessageType.GLTFViewerLoaded,
       url: message.url,
@@ -442,6 +444,13 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const resourceManager = script?.resourceManager || ctx.resourceManager;
 
+  if (script && scriptUrl) {
+    const id = murmurHash(scriptUrl);
+    (resourceManager as ScriptResourceManager).id = id;
+    const webSgNet = getModule(ctx, WebSGNetworkModule);
+    webSgNet.scriptToInbound.set(id, []);
+  }
+
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
@@ -480,6 +489,14 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     publicScene: environmentScene,
     privateScene: transientScene,
   });
+
+  await waitForCurrentSceneToRender(ctx);
+
+  if (ctx.worldResource.environment) {
+    traverse(ctx.worldResource.environment.publicScene, (node) => {
+      node.isStatic = true;
+    });
+  }
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -558,6 +575,16 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   }
 
   embodyAvatar(ctx, physics, input, rig);
+
+  const gltfScene = ctx.worldResource.environment?.publicScene;
+
+  if (gltfScene && hasComponent(ctx.world, ScriptComponent, gltfScene.eid)) {
+    const script = ScriptComponent.get(gltfScene.eid);
+
+    if (script) {
+      script.entered = true;
+    }
+  }
 
   return eid;
 }

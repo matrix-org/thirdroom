@@ -8,13 +8,13 @@ import {
   NetworkModule,
   enteredNetworkIdQuery,
   createNetworkId,
-  Networked,
   exitedNetworkIdQuery,
   removeNetworkId,
   exitedNetworkedQuery,
   ownedPlayerQuery,
   GameNetworkState,
 } from "./network.game";
+import { Networked } from "./NetworkComponents";
 import { enqueueNetworkRingBuffer } from "./RingBuffer";
 import {
   NetPipeData,

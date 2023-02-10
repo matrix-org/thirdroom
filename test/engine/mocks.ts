@@ -239,6 +239,10 @@ export class MockResourceManager implements IRemoteResourceManager<GameState> {
     store[1] = resourceId;
   }
 
+  initArrayBuffer(store: Uint32Array): void {
+    throw new Error("Undefined behavior");
+  }
+
   allocateResource(resourceDef: ResourceDefinition): ResourceData {
     const buffer = new SharedArrayBuffer(resourceDef.byteLength);
     const tripleBuffer = createTripleBuffer(new Uint8Array([0x6]), resourceDef.byteLength);

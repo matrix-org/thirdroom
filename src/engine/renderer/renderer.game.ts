@@ -6,6 +6,7 @@ import {
   RendererMessageType,
   rendererModuleName,
   SceneRenderedNotificationMessage,
+  XRMode,
 } from "./renderer.common";
 import { createDeferred, Deferred } from "../utils/Deferred";
 import { createDisposables } from "../utils/createDisposables";
@@ -15,16 +16,23 @@ export interface GameRendererModuleState {
   canvasHeight: number;
   sceneRenderedNotificationId: number;
   sceneRenderedNotificationHandlers: Map<number, Deferred<void>>;
+  xrMode: Uint8Array;
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
   name: rendererModuleName,
-  async create() {
+  async create(ctx, { waitForMessage }) {
+    const xrMode = await waitForMessage<Uint8Array>(
+      Thread.Render,
+      RendererMessageType.InitializeGameRendererTripleBuffer
+    );
+
     return {
       canvasWidth: 0,
       canvasHeight: 0,
       sceneRenderedNotificationId: 0,
       sceneRenderedNotificationHandlers: new Map(),
+      xrMode,
     };
   },
   async init(ctx) {
@@ -71,4 +79,9 @@ export function waitForCurrentSceneToRender(ctx: GameState, frames = 1): Promise
   });
 
   return deferred.promise;
+}
+
+export function getXRMode(ctx: GameState): XRMode {
+  const rendererModule = getModule(ctx, RendererModule);
+  return rendererModule.xrMode[0];
 }

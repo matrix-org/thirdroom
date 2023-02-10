@@ -2,7 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
 import { GameState } from "../GameTypes";
-import { RemoteNode, RemoteScene } from "../resource/RemoteResources";
+import { RemoteScene } from "../resource/RemoteResources";
 import { ResourceDefinition } from "../resource/ResourceDefinition";
 import { ScriptResourceManager } from "../resource/ScriptResourceManager";
 
@@ -23,7 +23,9 @@ export interface Script<Env extends ScriptExecutionEnvironment = ScriptExecution
   U8Heap: Uint8Array;
   source?: string;
   ready: boolean;
+  entered: boolean;
   loadedCalled: boolean;
+  enteredCalled: boolean;
 }
 
 interface ScriptExports extends WebAssembly.Exports {
@@ -31,6 +33,7 @@ interface ScriptExports extends WebAssembly.Exports {
   websg_deallocate(ptr: number): void;
   websg_initialize(): void;
   websg_loaded(): void;
+  websg_entered(): void;
   websg_update(dt: number): void;
 }
 
@@ -43,9 +46,10 @@ export const ScriptComponent = new Map<number, Script>();
 export const scriptQuery = defineQuery([ScriptComponent]);
 const scriptExitQuery = exitQuery(scriptQuery);
 
-export function addScriptComponent(ctx: GameState, sceneOrNode: RemoteScene | RemoteNode, script: Script) {
-  const eid = sceneOrNode.eid;
+export function addScriptComponent(ctx: GameState, scene: RemoteScene, script: Script) {
+  const eid = scene.eid;
   addComponent(ctx.world, ScriptComponent, eid);
+  script.resourceManager.activeScene = scene;
   ScriptComponent.set(eid, script);
 }
 
@@ -78,6 +82,12 @@ export function ScriptingSystem(ctx: GameState) {
 
       if ("websg_update" in script.instance.exports) {
         script.instance.exports.websg_update(ctx.dt);
+      }
+
+      if (script.entered && !script.enteredCalled) {
+        if ("websg_entered" in script.instance.exports) {
+          script.instance.exports.websg_entered();
+        }
       }
     }
   }
@@ -138,6 +148,8 @@ async function loadScript<Env extends ScriptExecutionEnvironment>(
     resourceManager,
     ready: false,
     loadedCalled: false,
+    entered: false,
+    enteredCalled: false,
     U8Heap: new Uint8Array(resourceManager.memory.buffer),
   };
 

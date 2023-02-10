@@ -6,6 +6,7 @@ import {
   Camera,
   Color,
   DoubleSide,
+  DynamicDrawUsage,
   FrontSide,
   InstancedMesh,
   InterleavedBuffer,
@@ -212,6 +213,14 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             toneMapped: false,
           })
         );
+
+        const map = material.map;
+        if (map) {
+          map.offset.fromArray(this.baseColorTextureOffset);
+          map.rotation = this.baseColorTextureRotation;
+          map.repeat.fromArray(this.baseColorTextureScale);
+          rendererModule.renderer.initTexture(map);
+        }
       } else if (
         mode === MeshPrimitiveMode.LINES ||
         mode === MeshPrimitiveMode.LINE_STRIP ||
@@ -227,6 +236,14 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             toneMapped: false,
           })
         );
+
+        const map = material.map;
+        if (map) {
+          map.offset.fromArray(this.baseColorTextureOffset);
+          map.rotation = this.baseColorTextureRotation;
+          map.repeat.fromArray(this.baseColorTextureScale);
+          rendererModule.renderer.initTexture(map);
+        }
       } else {
         throw new Error(`Unsupported mesh mode ${mode}`);
       }
@@ -263,42 +280,68 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             })
           );
 
-          if (physicalMaterial.map) {
-            rendererModule.renderer.initTexture(physicalMaterial.map);
+          console.log("physical material", physicalMaterial);
+
+          const map = physicalMaterial.map;
+          if (map) {
+            map.offset.fromArray(this.baseColorTextureOffset);
+            map.rotation = this.baseColorTextureRotation;
+            map.repeat.fromArray(this.baseColorTextureScale);
+            rendererModule.renderer.initTexture(map);
           }
 
-          if (physicalMaterial.metalnessMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.metalnessMap);
+          const metalnessMap = physicalMaterial.metalnessMap;
+          if (metalnessMap) {
+            metalnessMap.offset.fromArray(this.metallicRoughnessTextureOffset);
+            metalnessMap.rotation = this.metallicRoughnessTextureRotation;
+            metalnessMap.repeat.fromArray(this.metallicRoughnessTextureScale);
+            rendererModule.renderer.initTexture(metalnessMap);
           }
 
-          if (physicalMaterial.aoMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.aoMap);
+          const aoMap = physicalMaterial.aoMap;
+          if (aoMap) {
+            aoMap.offset.fromArray(this.occlusionTextureOffset);
+            aoMap.rotation = this.occlusionTextureRotation;
+            aoMap.repeat.fromArray(this.occlusionTextureScale);
+            rendererModule.renderer.initTexture(aoMap);
           }
 
-          if (physicalMaterial.emissiveMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.emissiveMap);
+          const emissiveMap = physicalMaterial.emissiveMap;
+          if (emissiveMap) {
+            emissiveMap.offset.fromArray(this.emissiveTextureOffset);
+            emissiveMap.rotation = this.emissiveTextureRotation;
+            emissiveMap.repeat.fromArray(this.emissiveTextureScale);
+            rendererModule.renderer.initTexture(emissiveMap);
           }
 
-          if (physicalMaterial.normalMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.normalMap);
-          }
-
-          if (physicalMaterial.normalMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.normalMap);
-          }
-
-          if (physicalMaterial.thicknessMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.thicknessMap);
-          }
-
-          if (physicalMaterial.transmissionMap) {
-            rendererModule.renderer.initTexture(physicalMaterial.transmissionMap);
+          const normalMap = physicalMaterial.normalMap;
+          if (normalMap) {
+            normalMap.offset.fromArray(this.normalTextureOffset);
+            normalMap.rotation = this.normalTextureRotation;
+            normalMap.repeat.fromArray(this.normalTextureScale);
+            rendererModule.renderer.initTexture(normalMap);
           }
 
           physicalMaterial.normalScale.set(
-            this.normalTextureScale,
-            useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
+            this.normalScale,
+            useDerivativeTangents ? -this.normalScale : this.normalScale
           );
+
+          const thicknessMap = physicalMaterial.thicknessMap;
+          if (thicknessMap) {
+            thicknessMap.offset.fromArray(this.thicknessTextureOffset);
+            thicknessMap.rotation = this.thicknessTextureRotation;
+            thicknessMap.repeat.fromArray(this.thicknessTextureScale);
+            rendererModule.renderer.initTexture(thicknessMap);
+          }
+
+          const transmissionMap = physicalMaterial.transmissionMap;
+          if (transmissionMap) {
+            transmissionMap.offset.fromArray(this.transmissionTextureOffset);
+            transmissionMap.rotation = this.transmissionTextureRotation;
+            transmissionMap.repeat.fromArray(this.transmissionTextureScale);
+            rendererModule.renderer.initTexture(transmissionMap);
+          }
 
           material = physicalMaterial;
         } else {
@@ -321,30 +364,47 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
             })
           );
 
-          material.normalScale.set(
-            this.normalTextureScale,
-            useDerivativeTangents ? -this.normalTextureScale : this.normalTextureScale
-          );
-
-          if (material.map) {
-            rendererModule.renderer.initTexture(material.map);
+          const map = material.map;
+          if (map) {
+            map.offset.fromArray(this.baseColorTextureOffset);
+            map.rotation = this.baseColorTextureRotation;
+            map.repeat.fromArray(this.baseColorTextureScale);
+            rendererModule.renderer.initTexture(map);
           }
 
-          if (material.metalnessMap) {
-            rendererModule.renderer.initTexture(material.metalnessMap);
+          const metalnessMap = material.metalnessMap;
+          if (metalnessMap) {
+            metalnessMap.offset.fromArray(this.metallicRoughnessTextureOffset);
+            metalnessMap.rotation = this.metallicRoughnessTextureRotation;
+            metalnessMap.repeat.fromArray(this.metallicRoughnessTextureScale);
+            rendererModule.renderer.initTexture(metalnessMap);
           }
 
-          if (material.aoMap) {
-            rendererModule.renderer.initTexture(material.aoMap);
+          const aoMap = material.aoMap;
+          if (aoMap) {
+            aoMap.offset.fromArray(this.occlusionTextureOffset);
+            aoMap.rotation = this.occlusionTextureRotation;
+            aoMap.repeat.fromArray(this.occlusionTextureScale);
+            rendererModule.renderer.initTexture(aoMap);
           }
 
-          if (material.emissiveMap) {
-            rendererModule.renderer.initTexture(material.emissiveMap);
+          const emissiveMap = material.emissiveMap;
+          if (emissiveMap) {
+            emissiveMap.offset.fromArray(this.emissiveTextureOffset);
+            emissiveMap.rotation = this.emissiveTextureRotation;
+            emissiveMap.repeat.fromArray(this.emissiveTextureScale);
+            rendererModule.renderer.initTexture(emissiveMap);
           }
 
-          if (material.normalMap) {
-            rendererModule.renderer.initTexture(material.normalMap);
+          const normalMap = material.normalMap;
+          if (normalMap) {
+            normalMap.offset.fromArray(this.normalTextureOffset);
+            normalMap.rotation = this.normalTextureRotation;
+            normalMap.repeat.fromArray(this.normalTextureScale);
+            rendererModule.renderer.initTexture(normalMap);
           }
+
+          material.normalScale.set(this.normalScale, useDerivativeTangents ? -this.normalScale : this.normalScale);
         }
 
         patchMaterial(ctx, material);
@@ -364,8 +424,12 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
           })
         );
 
-        if (material.map) {
-          rendererModule.renderer.initTexture(material.map);
+        const map = material.map;
+        if (map) {
+          map.offset.fromArray(this.baseColorTextureOffset);
+          map.rotation = this.baseColorTextureRotation;
+          map.repeat.fromArray(this.baseColorTextureScale);
+          rendererModule.renderer.initTexture(map);
         }
       } else {
         throw new Error(`Unsupported mesh mode ${mode}`);
@@ -428,6 +492,7 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
   declare sparse: RenderSparseAccessor | undefined;
 
   attribute: BufferAttribute | InterleavedBufferAttribute = defaultAttribute;
+  prevVersion = 0;
 
   load(ctx: RenderThreadState) {
     const elementSize = AccessorTypeToElementSize[this.type];
@@ -444,6 +509,27 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
       this.attribute = new InterleavedBufferAttribute(interleavedBuffer, elementSize, 0, this.normalized);
     } else {
       this.attribute = new BufferAttribute(getAccessorArrayView(this), elementSize, this.normalized);
+
+      if (this.dynamic) {
+        this.attribute.setUsage(DynamicDrawUsage);
+      }
+    }
+
+    this.prevVersion = this.version;
+
+    if (this.dynamic) {
+      const { dynamicAccessors } = getModule(ctx, RendererModule);
+      dynamicAccessors.push(this);
+    }
+  }
+
+  dispose(ctx: RenderThreadState): void {
+    const { dynamicAccessors } = getModule(ctx, RendererModule);
+
+    const index = dynamicAccessors.indexOf(this);
+
+    if (index !== -1) {
+      dynamicAccessors.splice(index, 1);
     }
   }
 }
@@ -466,6 +552,7 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
 
   geometryObj: BufferGeometry = defaultGeometry;
   materialObj: PrimitiveMaterial = defaultMaterial;
+  autoUpdateNormals = false;
 
   load(ctx: RenderThreadState) {
     let geometryObj = new BufferGeometry();
@@ -498,6 +585,10 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
       this.materialObj = getDefaultMaterialForMeshPrimitive(ctx, this);
     } else {
       this.materialObj = this.material.getMaterialForMeshPrimitive(ctx, this);
+    }
+
+    if (this.attributes[MeshPrimitiveAttributeIndex.POSITION]?.dynamic) {
+      this.autoUpdateNormals = true;
     }
   }
 

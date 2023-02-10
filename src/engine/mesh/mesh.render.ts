@@ -220,6 +220,7 @@ function createMeshPrimitiveObject(
     const lightMapTexture = lightMap?.texture?.texture;
 
     if (lightMapTexture) {
+      lightMapTexture.name = "Lightmap";
       lightMapTexture.encoding = LinearEncoding; // Cant't use hardware sRGB conversion when using FloatType
       lightMapTexture.type = FloatType;
       lightMapTexture.minFilter = LinearFilter;
@@ -376,6 +377,11 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
 
       if (meshPrimitive && !node.skin && primitiveObject.material !== meshPrimitive.materialObj) {
         primitiveObject.material = meshPrimitive.materialObj;
+      }
+
+      if (meshPrimitive.autoUpdateNormals) {
+        // TODO: This causes flickering when used.
+        primitiveObject.geometry.computeVertexNormals();
       }
 
       updateTransformFromNode(ctx, node, primitiveObject);

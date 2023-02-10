@@ -319,6 +319,17 @@ export interface GLTFTextureInfo extends GLTFProperty {
    * The set index of texture's TEXCOORD attribute used for texture coordinate mapping.
    */
   texCoord?: number;
+
+  extensions?: {
+    KHR_texture_transform?: GLTFTextureTransform;
+  };
+}
+
+export interface GLTFTextureTransform extends GLTFProperty {
+  offset?: number[];
+  rotation?: number;
+  scale?: number[];
+  texCoord?: number;
 }
 
 /**
@@ -347,18 +358,14 @@ export interface GLTFMaterialPbrMetallicRoughness extends GLTFProperty {
   metallicRoughnessTexture?: GLTFTextureInfo;
 }
 
-export interface GLTFMaterialNormalTextureInfo extends GLTFProperty {
-  index?: GLTFId;
-  texCoord?: number;
+export interface GLTFMaterialNormalTextureInfo extends GLTFTextureInfo {
   /**
    * The scalar parameter applied to each normal vector of the normal texture.
    */
   scale?: number;
 }
 
-export interface GLTFMaterialOcclusionTextureInfo extends GLTFProperty {
-  index?: GLTFId;
-  texCoord?: number;
+export interface GLTFMaterialOcclusionTextureInfo extends GLTFTextureInfo {
   /**
    * A scalar multiplier controlling the amount of occlusion applied.
    */
@@ -631,6 +638,7 @@ export interface GLTFScene extends GLTFChildOfRootProperty {
     KHR_audio?: GLTFSceneAudioRefs;
     MX_background?: GLTFBackground;
     MX_character_controller?: GLTFCharacterController;
+    MX_scene_ar?: GLTFSceneAR;
   };
 }
 
@@ -645,6 +653,8 @@ export interface GLTFBackground extends GLTFProperty {
 export interface GLTFCharacterController extends GLTFProperty {
   type: "first-person" | "fly";
 }
+
+export type GLTFSceneAR = {};
 
 /**
  * Joints and matrices defining a skin.
@@ -678,12 +688,15 @@ export interface GLTFTexture extends GLTFChildOfRootProperty {
   source?: GLTFId;
   extensions?: GLTFExtensions & {
     KHR_texture_basisu?: GLTFTextureBasisU;
+    MX_texture_rgbm?: GLTFTextureRGBM;
   };
 }
 
 export interface GLTFTextureBasisU extends GLTFProperty {
   source?: GLTFId;
 }
+
+export type GLTFTextureRGBM = GLTFProperty;
 
 /**
  * The root object for a glTF asset.
@@ -835,7 +848,9 @@ export interface GLTFRootReflectionProbesExtension extends GLTFProperty {
 }
 
 export interface GLTFBloomEffect extends GLTFProperty {
-  strength: number;
+  strength?: number;
+  radius?: number;
+  threshold?: number;
 }
 
 export interface GLTFPostprocessingExtension extends GLTFProperty {

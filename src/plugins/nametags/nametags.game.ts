@@ -2,7 +2,8 @@ import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { addChild, findChild, getForwardVector, getPitch, getRoll } from "../../engine/component/transform";
+import { addChild, findChild } from "../../engine/component/transform";
+import { getForwardVector, getPitch, getYaw } from "../../engine/component/math";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
@@ -66,7 +67,7 @@ export function NametagSystem(ctx: GameState) {
 
       const quaternion = ourPlayerNode.quaternion;
       const pitch = getPitch(quaternion);
-      const roll = getRoll(quaternion);
+      const roll = getYaw(quaternion);
       const forward = getForwardVector(_forward, pitch, roll);
 
       const target = vec3.sub(_t, nametagWorldPosition, ourWorldPosition);

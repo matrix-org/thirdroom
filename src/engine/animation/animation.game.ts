@@ -4,11 +4,11 @@ import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRightVector, getRoll } from "../component/transform";
+import { getForwardVector, getPitch, getRightVector, getYaw } from "../component/math";
 import { maxEntities } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { Networked, Owned } from "../network/network.game";
+import { Networked, Owned } from "../network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteAnimation, RemoteNode } from "../resource/RemoteResources";
@@ -193,7 +193,7 @@ function getClipActionsUsingVelocity(
   const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
 
   const pitch = getPitch(quaternion);
-  const roll = getRoll(quaternion);
+  const roll = getYaw(quaternion);
   const forward = getForwardVector(_forward, pitch, roll);
   const right = getRightVector(_right, roll);
 

@@ -1,6 +1,6 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { Axes, isolateQuaternionAxis } from "../component/transform";
+import { getYaw, RAD2DEG } from "../component/math";
 import { RemoteNode } from "../resource/RemoteResources";
 import { teleportEntity } from "./teleportEntity";
 
@@ -16,7 +16,7 @@ export function spawnEntity(
   const spawnPosition = mat4.getTranslation(_p, spawnWorldMatrix);
   spawnPosition[1] += 1;
   const spawnQuaternion = mat4.getRotation(_q, spawnWorldMatrix);
-  isolateQuaternionAxis(spawnQuaternion, Axes.Y);
-
+  const yRotation = getYaw(spawnQuaternion);
+  quat.fromEuler(spawnQuaternion, 0, (yRotation + Math.PI) * RAD2DEG, 0);
   teleportEntity(node, spawnPosition, spawnQuaternion);
 }

@@ -8,7 +8,9 @@ import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
 import { MXPortalExtension } from "./extensions/MXPortalExtension";
 import { MXPostprocessingExtension } from "./extensions/MXPostprocessing";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
+import { MXSceneARExtension } from "./extensions/MXSceneAR";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
+import { MXTextureRGBMExtension } from "./extensions/MXTextureRGBM";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
 import { OMILinkExtension } from "./extensions/OMILinkExtension";
 import { compressTextures } from "./functions/compressTextures";
@@ -23,9 +25,11 @@ export function registerExtensions(io: PlatformIO) {
     MXLightmapExtension,
     MXReflectionProbesExtension,
     MXBackgroundExtension,
+    MXSceneARExtension,
     MXSpawnPointExtension,
     MXPostprocessingExtension,
     MXPortalExtension,
+    MXTextureRGBMExtension,
     OMILinkExtension,
     OMIColliderExtension,
   ]);

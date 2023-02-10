@@ -1,4 +1,4 @@
-import { defineQuery, enterQuery, exitQuery, Not, defineComponent, Types, addComponent } from "bitecs";
+import { defineQuery, enterQuery, exitQuery, Not, addComponent } from "bitecs";
 import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
@@ -40,7 +40,7 @@ import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
-import { maxEntities } from "../config.common";
+import { Networked, Owned } from "./NetworkComponents";
 
 /*********
  * Types *
@@ -352,25 +352,6 @@ export const associatePeerWithEntity = (network: GameNetworkState, peerId: strin
   network.peerIdToEntityId.set(peerId, eid);
   network.entityIdToPeerId.set(eid, peerId);
 };
-
-/* Components */
-
-export const Networked = defineComponent(
-  {
-    // networkId contains both peerIdIndex (owner) and localNetworkId
-    networkId: Types.ui32,
-    // TODO: split net ID into 2 32bit ints
-    // ownerId: Types.ui32,
-    // localId: Types.ui32,
-    parent: Types.ui32,
-    position: [Types.f32, 3],
-    quaternion: [Types.f32, 4],
-    velocity: [Types.f32, 3],
-  },
-  maxEntities
-);
-
-export const Owned = defineComponent();
 
 /* Queries */
 

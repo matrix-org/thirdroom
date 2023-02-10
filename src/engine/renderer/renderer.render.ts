@@ -1,7 +1,6 @@
 import {
   Scene,
   ImageBitmapLoader,
-  LinearToneMapping,
   PCFSoftShadowMap,
   sRGBEncoding,
   WebGLRenderer,
@@ -9,6 +8,7 @@ import {
   PMREMGenerator,
   Texture,
   Object3D,
+  NoToneMapping,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -19,7 +19,7 @@ import {
   registerMessageHandler,
   Thread,
 } from "../module/module.common";
-import { RenderNode, RenderWorld } from "../resource/resource.render";
+import { RenderAccessor, RenderNode, RenderWorld } from "../resource/resource.render";
 import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -30,6 +30,8 @@ import {
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
+  XRMode,
+  XRSessionModeToXRMode,
 } from "./renderer.common";
 import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
@@ -41,6 +43,7 @@ import { MatrixMaterial } from "../material/MatrixMaterial";
 import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
 import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 import { InputModule } from "../input/input.render";
+import { updateDynamicAccessors } from "../accessor/accessor.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -69,6 +72,8 @@ export interface RendererModuleState {
   enableMatrixMaterial: boolean;
   scene: Scene;
   xrAvatarRoot: Object3D;
+  dynamicAccessors: RenderAccessor[];
+  xrMode: Uint8Array;
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -80,8 +85,8 @@ declare module "three" {
 
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
-  async create(ctx, { waitForMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, enableXR } =
+  async create(ctx, { waitForMessage, sendMessage }) {
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes } =
       await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
@@ -105,16 +110,22 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       console.log("Chrome OpenGL backend on M1 Mac detected, logarithmicDepthBuffer enabled");
     }
 
+    const immersiveAR =
+      supportedXRSessionModes &&
+      supportedXRSessionModes.some((mode) => mode === "immersive-ar") &&
+      localStorage.getItem("feature_immersiveAR") === "true";
+
     const renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       canvas: canvasTarget || ctx.canvas,
       context: gl,
       logarithmicDepthBuffer,
       multiviewStereo: true,
+      alpha: immersiveAR,
     });
     renderer.debug.checkShaderErrors = true;
     renderer.outputEncoding = sRGBEncoding;
-    renderer.toneMapping = LinearToneMapping;
+    renderer.toneMapping = NoToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
     renderer.shadowMap.enabled = true;
@@ -127,9 +138,19 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
     Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
-    if (enableXR) {
+    if (supportedXRSessionModes) {
       renderer.xr.enabled = true;
     }
+
+    const onSessionEnd = () => {
+      onExitXR(ctx);
+    };
+
+    renderer.xr.addEventListener("sessionend", onSessionEnd);
+
+    const xrMode = new Uint8Array(new SharedArrayBuffer(1));
+
+    sendMessage(Thread.Game, RendererMessageType.InitializeGameRendererTripleBuffer, xrMode);
 
     const pmremGenerator = new PMREMGenerator(renderer);
 
@@ -161,6 +182,8 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       enableMatrixMaterial: false,
       scene,
       xrAvatarRoot,
+      dynamicAccessors: [],
+      xrMode,
     };
   },
   init(ctx) {
@@ -204,15 +227,22 @@ function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, fr
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
-function onEnterXR(ctx: RenderThreadState, { session }: EnterXRMessage) {
-  const { renderer } = getModule(ctx, RendererModule);
+function onEnterXR(ctx: RenderThreadState, { session, mode }: EnterXRMessage) {
+  const { renderer, xrMode } = getModule(ctx, RendererModule);
   renderer.xr.setSession(session as unknown as any);
+  Atomics.store(xrMode, 0, XRSessionModeToXRMode[mode] || XRMode.None);
+}
+
+function onExitXR(ctx: RenderThreadState) {
+  const { xrMode } = getModule(ctx, RendererModule);
+  Atomics.store(xrMode, 0, XRMode.None);
 }
 
 export function RendererSystem(ctx: RenderThreadState) {
   const rendererModule = getModule(ctx, RendererModule);
   const inputModule = getModule(ctx, InputModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes } = rendererModule;
+  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, dynamicAccessors } =
+    rendererModule;
 
   const activeScene = ctx.worldResource.environment?.publicScene;
   const activeCameraNode = ctx.worldResource.activeCameraNode;
@@ -247,6 +277,7 @@ export function RendererSystem(ctx: RenderThreadState) {
 
   updateImageResources(ctx);
   updateTextureResources(ctx);
+  updateDynamicAccessors(dynamicAccessors);
   updateWorldVisibility(ctx);
   updateActiveSceneResource(ctx, activeScene);
   updateLocalNodeResources(ctx, rendererModule);

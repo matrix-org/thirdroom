@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { BufferGeometry, BoxGeometry, SphereGeometry } from "three";
+import { BufferGeometry, BoxGeometry, SphereGeometry, TubeGeometry, Curve, Vector3 } from "three";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { GameState } from "../GameTypes";
@@ -21,6 +21,7 @@ import {
   MaterialType,
   InteractableType,
   MeshPrimitiveAttributeIndex,
+  MaterialAlphaMode,
 } from "../resource/schema";
 
 export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
@@ -104,6 +105,38 @@ export const createSphereMesh = (ctx: GameState, radius: number, material?: Remo
   const geometry = new SphereGeometry(radius / 2);
   return createMesh(ctx, geometry, material);
 };
+
+class StraightLine extends Curve<Vector3> {
+  scale;
+  constructor(scale = 1) {
+    super();
+    this.scale = scale;
+  }
+
+  getPoint(t: number, optionalTarget = new Vector3()) {
+    return optionalTarget.set(0, 0, t).multiplyScalar(this.scale);
+  }
+}
+export const createLineMesh = (ctx: GameState, length: number, thickness = 0.01, material?: RemoteMaterial) => {
+  const geometry = new TubeGeometry(new StraightLine(-length), 1, thickness, 3);
+  return createMesh(ctx, geometry, material);
+};
+
+export function createLine(ctx: GameState, length = 10, thickness = 0.2) {
+  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+    type: MaterialType.Standard,
+    baseColorFactor: [0, 1, 0.2, 1],
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 0,
+    alphaMode: MaterialAlphaMode.BLEND,
+  });
+  const mesh = createLineMesh(ctx, length, thickness, rayMaterial);
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh,
+  });
+  return node;
+}
 
 export const createPhysicsCube = (
   ctx: GameState,

@@ -49,7 +49,10 @@ import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
 import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSystem";
 import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
 import { SkipRenderLerpSystem } from "./component/SkipRenderLerpSystem";
-import { WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
+import { SetWebXRReferenceSpaceSystem, WebXRAvatarRigSystem } from "./input/WebXRAvatarRigSystem";
+import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem";
+import { MatrixModule } from "./matrix/matrix.game";
+import { WebSGNetworkModule } from "./network/scripting.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -63,12 +66,14 @@ export default defineConfig<GameState>({
     EditorModule,
     RendererModule,
     ThirdRoomModule,
+    MatrixModule,
     FirstPersonCameraModule,
     KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,
     SpawnablesModule,
     NametagModule,
+    WebSGNetworkModule,
   ],
   systems: [
     IncomingTripleBufferSystem,
@@ -83,7 +88,9 @@ export default defineConfig<GameState>({
     KinematicCharacterControllerSystem,
     // ClientSidePredictionSystem,
     FlyControllerSystem,
+    SetWebXRReferenceSpaceSystem,
     InteractionSystem,
+    XRInteractionSystem,
     SpawnableSystem,
     ThirdroomSystem,
 

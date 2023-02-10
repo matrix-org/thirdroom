@@ -31,7 +31,7 @@ function defineProp<S extends Schema>(
     Object.defineProperty(LocalResourceClass.prototype, propName, {
       get(this: LocalResource) {
         const index = this.manager.readBufferIndex;
-        const resourceId = this.u32Views[index][offset + 1];
+        const resourceId = this.u32Views[index][offset + 2];
         return this.manager.resources.get(resourceId);
       },
     });

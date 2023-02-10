@@ -2,7 +2,7 @@ import { GameState } from "../GameTypes";
 import { RemoteAudioSource } from "../resource/RemoteResources";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { AudioAction, AudioPlaybackRingBuffer, enqueueAudioPlaybackRingBuffer } from "./AudioPlaybackRingBuffer";
-import { AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
+import { AudioAnalyserTripleBuffer, AudioMessageType, InitializeAudioStateMessage } from "./audio.common";
 
 export interface PlayAudioOptions {
   gain?: number;
@@ -11,17 +11,19 @@ export interface PlayAudioOptions {
 
 interface GameAudioModule {
   audioPlaybackRingBuffer: AudioPlaybackRingBuffer;
+  analyserTripleBuffer: AudioAnalyserTripleBuffer;
 }
 
 export const AudioModule = defineModule<GameState, GameAudioModule>({
   name: "audio",
   async create(ctx, { waitForMessage }) {
-    const { audioPlaybackRingBuffer } = await waitForMessage<InitializeAudioStateMessage>(
+    const { audioPlaybackRingBuffer, analyserTripleBuffer } = await waitForMessage<InitializeAudioStateMessage>(
       Thread.Main,
       AudioMessageType.InitializeAudioState
     );
 
     return {
+      analyserTripleBuffer,
       audioPlaybackRingBuffer,
     };
   },

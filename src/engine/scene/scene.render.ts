@@ -22,16 +22,12 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
       nextBackgroundTextureResourceId !== currentBackgroundTextureResourceId &&
       activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded
     ) {
-      if (activeScene.backgroundTexture) {
-        rendererModule.scene.background = activeScene.backgroundTexture.texture || null;
-      } else {
-        rendererModule.scene.background = null;
-      }
-
       activeScene.currentBackgroundTextureResourceId = nextBackgroundTextureResourceId;
     }
 
     rendererModule.renderPipeline.bloomPass.strength = activeScene.bloomStrength;
+    rendererModule.renderPipeline.bloomPass.threshold = activeScene.bloomThreshold;
+    rendererModule.renderPipeline.bloomPass.radius = activeScene.bloomRadius;
 
     updateSceneReflectionProbe(ctx, activeScene);
 
@@ -41,7 +37,15 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
     } else {
       rendererModule.scene.overrideMaterial = null;
 
-      if (activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded) {
+      const xrSession = rendererModule.renderer.xr.getSession();
+
+      let showBackground = true;
+
+      if (xrSession && activeScene.supportsAR) {
+        showBackground = xrSession.environmentBlendMode === "opaque";
+      }
+
+      if (activeScene.backgroundTexture?.loadStatus === LoadStatus.Loaded && showBackground) {
         rendererModule.scene.background = activeScene.backgroundTexture?.texture || null;
       } else {
         rendererModule.scene.background = null;
