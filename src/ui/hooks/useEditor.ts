@@ -19,6 +19,7 @@ interface EditorUIState {
   activeEntity: number;
   selectedEntities: number[];
   scene?: EditorNode;
+  resources?: EditorNode;
 }
 
 export function useEditor(): EditorUIState {
@@ -40,13 +41,14 @@ export function useEditor(): EditorUIState {
       }));
     }
 
-    function onHierarchyChanged({ activeEntity, selectedEntities, scene }: HierarchyChangedEvent) {
+    function onHierarchyChanged({ activeEntity, selectedEntities, scene, resources }: HierarchyChangedEvent) {
       setState((state) => ({
         ...state,
         loading: false,
         activeEntity,
         selectedEntities,
         scene,
+        resources,
       }));
     }
 
