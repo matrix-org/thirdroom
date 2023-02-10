@@ -313,13 +313,13 @@ export const readInt16 = (v: CursorView, littleEndian = false) => {
   return val;
 };
 
-export const readUint8 = (v: CursorView, littleEndian = false) => {
+export const readUint8 = (v: CursorView) => {
   const val = v.getUint8(v.cursor);
   v.cursor += Uint8Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readInt8 = (v: CursorView, littleEndian = false) => {
+export const readInt8 = (v: CursorView) => {
   const val = v.getInt8(v.cursor);
   v.cursor += Int8Array.BYTES_PER_ELEMENT;
   return val;
