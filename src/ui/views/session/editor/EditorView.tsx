@@ -23,7 +23,7 @@ export function EditorView() {
               resources={resources}
             />
           </div>
-          {resource && (
+          {typeof resource === "object" && (
             <div className="EditorView__rightPanel">
               <PropertiesPanel resource={resource} />
             </div>

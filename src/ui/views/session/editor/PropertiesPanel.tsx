@@ -41,71 +41,88 @@ interface PropertiesPanelProps {
 export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
   const ctx = useMainThreadContext();
   const rotation = new Float32Array(3);
-  setEulerFromQuaternion(rotation, resource.quaternion);
+  if (resource.quaternion) setEulerFromQuaternion(rotation, resource.quaternion);
 
   return (
     <div className={classNames("PropertiesPanel flex flex-column", className)}>
       <EditorHeader className="shrink-0 flex items-center gap-xxs" style={{ padding: "0 var(--sp-xs)" }}>
         <Icon color="surface" size="sm" src={CircleIC} />
         <Text variant="b2" weight="semi-bold">
-          {resource.name ?? "Node"}
+          {resource.name ?? "Unnamed"}
         </Text>
       </EditorHeader>
       <div className="grow">
-        <PropertyContainer name="Translation">
-          <VectorInput
-            value={resource.position}
-            type="vec3"
-            onChange={(value) => setProperty(ctx, resource.eid, "position", value)}
-          />
-        </PropertyContainer>
-
-        <PropertyContainer name="Rotation">
-          <VectorInput
-            value={rotation}
-            type="vec3"
-            onChange={(value) => {
-              const quat = new Float32Array(4);
-              setQuaternionFromEuler(quat, value);
-              setProperty(ctx, resource.eid, "quaternion", quat);
-            }}
-          />
-        </PropertyContainer>
-
-        <PropertyContainer name="Scale">
-          <VectorInput
-            value={resource.scale}
-            type="vec3"
-            onChange={(value) => setProperty(ctx, resource.eid, "scale", value)}
-          />
-        </PropertyContainer>
-
-        {"color" in resource && (
-          <PropertyContainer name="Color">
-            <ColorInput type="rgba" value={new Float32Array(4)} onChange={() => false} disabled={true} />
+        {resource.position && (
+          <PropertyContainer name="Translation">
+            <VectorInput
+              value={resource.position}
+              type="vec3"
+              onChange={(value) => setProperty(ctx, resource.eid, "position", value)}
+            />
           </PropertyContainer>
         )}
 
-        <PropertyContainer name="Visible">
-          <Checkbox
-            checked={resource.visible}
-            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "visible", checked)}
-          />
-        </PropertyContainer>
+        {resource.quaternion && (
+          <PropertyContainer name="Rotation">
+            <VectorInput
+              value={rotation}
+              type="vec3"
+              onChange={(value) => {
+                const quat = new Float32Array(4);
+                setQuaternionFromEuler(quat, value);
+                setProperty(ctx, resource.eid, "quaternion", quat);
+              }}
+            />
+          </PropertyContainer>
+        )}
 
-        <PropertyContainer name="Enable">
-          <Checkbox
-            checked={resource.enabled}
-            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "enabled", checked)}
-          />
-        </PropertyContainer>
+        {resource.scale && (
+          <PropertyContainer name="Scale">
+            <VectorInput
+              value={resource.scale}
+              type="vec3"
+              onChange={(value) => setProperty(ctx, resource.eid, "scale", value)}
+            />
+          </PropertyContainer>
+        )}
 
-        <PropertyContainer name="Static">
-          <Checkbox
-            checked={resource.isStatic}
-            onCheckedChange={(checked) => setProperty(ctx, resource.eid, "isStatic", checked)}
-          />
-        </PropertyContainer>
+        {"color" in resource && (
+          <PropertyContainer name="Color">
+            <ColorInput
+              type="rgb"
+              value={resource.color as Float32Array}
+              onChange={(value) => setProperty(ctx, resource.eid, "color", value)}
+              disabled={true}
+            />
+          </PropertyContainer>
+        )}
+
+        {typeof resource.visible === "boolean" && (
+          <PropertyContainer name="Visible">
+            <Checkbox
+              checked={resource.visible}
+              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "visible", checked)}
+            />
+          </PropertyContainer>
+        )}
+
+        {typeof resource.enabled === "boolean" && (
+          <PropertyContainer name="Enable">
+            <Checkbox
+              checked={resource.enabled}
+              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "enabled", checked)}
+            />
+          </PropertyContainer>
+        )}
+
+        {typeof resource.isStatic === "boolean" && (
+          <PropertyContainer name="Static">
+            <Checkbox
+              checked={resource.isStatic}
+              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "isStatic", checked)}
+            />
+          </PropertyContainer>
+        )}
       </div>
     </div>
   );
