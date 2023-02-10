@@ -11,7 +11,7 @@ import { Checkbox } from "../../../atoms/checkbox/Checkbox";
 import { MainNode } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { setProperty } from "../../../../engine/editor/editor.main";
-import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/transform";
+import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
 
@@ -92,7 +92,6 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
               type="rgb"
               value={resource.color as Float32Array}
               onChange={(value) => setProperty(ctx, resource.eid, "color", value)}
-              disabled={true}
             />
           </PropertyContainer>
         )}
