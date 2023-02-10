@@ -6,17 +6,22 @@ import { getLocalResource, MainNode } from "../../../../engine/resource/resource
 import { PropertiesPanel } from "./PropertiesPanel";
 
 export function EditorView() {
-  const { loading, scene, activeEntity, selectedEntities } = useEditor();
+  const { loading, scene, resources, activeEntity, selectedEntities } = useEditor();
 
   const mainThread = useMainThreadContext();
   const resource = getLocalResource<MainNode>(mainThread, activeEntity);
 
   return (
     <>
-      {loading || !scene ? null : (
+      {loading || !resources || !scene ? null : (
         <>
           <div className="EditorView__leftPanel">
-            <HierarchyPanel activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
+            <HierarchyPanel
+              activeEntity={activeEntity}
+              selectedEntities={selectedEntities}
+              scene={scene}
+              resources={resources}
+            />
           </div>
           {resource && (
             <div className="EditorView__rightPanel">

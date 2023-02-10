@@ -277,7 +277,14 @@ enum HierarchyTab {
   Resources = "Resources",
 }
 
-export function HierarchyPanel({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+export function HierarchyPanel({
+  activeEntity,
+  selectedEntities,
+  scene,
+  resources,
+}: HierarchyPanelProps & {
+  resources: EditorNode;
+}) {
   const [tab, setTab] = useState(HierarchyTab.Scenes);
 
   return (
@@ -299,6 +306,9 @@ export function HierarchyPanel({ activeEntity, selectedEntities, scene }: Hierar
       <div className="grow">
         {tab === HierarchyTab.Scenes && (
           <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
+        )}
+        {tab === HierarchyTab.Resources && (
+          <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={resources} />
         )}
       </div>
     </div>
