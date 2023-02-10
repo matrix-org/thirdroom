@@ -97,6 +97,9 @@ export async function loadScript(
   }
 
   const imports: WebAssembly.Imports = {
+    env: {
+      memory,
+    },
     wasi_snapshot_preview1: createWASIModule(wasmCtx),
     matrix: createMatrixWASMModule(ctx, wasmCtx),
     websg: createWebSGModule(ctx, wasmCtx),

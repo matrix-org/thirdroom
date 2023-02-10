@@ -17,21 +17,23 @@ export function writeString(wasmCtx: WASMModuleContext, ptr: number, value: stri
     throw new Error("Exceeded maximum byte length");
   }
 
+  return writeEncodedString(wasmCtx, ptr, arr);
+}
+
+export function writeEncodedString(wasmCtx: WASMModuleContext, ptr: number, arr: Uint8Array) {
   const nullTerminatedArr = new Uint8Array(arr.byteLength + 1);
   nullTerminatedArr.set(arr);
   wasmCtx.U8Heap.set(nullTerminatedArr, ptr);
-
+  // Don't include null character in byte length
   return arr.byteLength;
 }
 
-const MAX_C_STRING_BYTE_LENGTH = 1024;
-
-export function readString(wasmCtx: WASMModuleContext, ptr: number, maxByteLength = MAX_C_STRING_BYTE_LENGTH) {
+export function readString(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
   if (!ptr) {
     return "";
   }
 
-  const maxPtr = ptr + maxByteLength;
+  const maxPtr = ptr + byteLength;
   let end = ptr;
 
   // Find the end of the null-terminated C string on the heap
@@ -41,4 +43,35 @@ export function readString(wasmCtx: WASMModuleContext, ptr: number, maxByteLengt
 
   // create a new subarray to store the string so that this always works with SharedArrayBuffer
   return wasmCtx.textDecoder.decode(wasmCtx.U8Heap.slice(ptr, end));
+}
+
+export function readJSON(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  const jsonString = readString(wasmCtx, ptr, byteLength);
+  return JSON.parse(jsonString);
+}
+
+export function writeUint8Array(wasmCtx: WASMModuleContext, ptr: number, array: Uint8Array) {
+  wasmCtx.U8Heap.set(array, ptr);
+  return array.byteLength;
+}
+
+export function readUint8Array(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  return wasmCtx.U8Heap.subarray(ptr, ptr + byteLength);
+}
+
+export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array: Uint8Array) {
+  wasmCtx.U32Heap.set(array, ptr);
+  return array.byteLength;
+}
+
+export function readUint32Array(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  return wasmCtx.U32Heap.subarray(ptr / 4, (ptr + byteLength) / 4);
+}
+
+export function writeArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, array: ArrayBuffer) {
+  return writeUint8Array(wasmCtx, ptr, new Uint8Array(array));
+}
+
+export function readArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  return wasmCtx.memory.buffer.slice(ptr, ptr + byteLength);
 }

@@ -15,6 +15,8 @@ import {
   createRemoteObject,
 } from "../../src/engine/resource/RemoteResources";
 import { addChild } from "../../src/engine/component/transform";
+import { MatrixModule } from "../../src/engine/matrix/matrix.game";
+import { WebSGNetworkModule } from "../../src/engine/network/scripting.game";
 
 export function registerDefaultPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
@@ -86,6 +88,14 @@ export const mockResourceModule = () => ({
   deferredRemovals: [],
 });
 
+export const mockMatrixModule = () => ({
+  inboundWidgetMessages: [],
+});
+
+export const mockWebSGNetworkModule = () => ({
+  inbound: [],
+});
+
 export const mockPrefabState = () => ({
   prefabTemplateMap: new Map(),
 });
@@ -109,6 +119,8 @@ export const mockGameState = () => {
   ctx.modules.set(RendererModule, mockRenderState());
   ctx.modules.set(ResourceModule, mockResourceModule());
   ctx.modules.set(PrefabModule, mockPrefabState());
+  ctx.modules.set(MatrixModule, mockMatrixModule());
+  ctx.modules.set(WebSGNetworkModule, mockWebSGNetworkModule());
 
   // NOOP Entity
   addEntity(ctx.world);

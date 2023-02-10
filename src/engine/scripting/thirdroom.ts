@@ -4,26 +4,25 @@ import { AudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
-import { WASMModuleContext } from "./WASMModuleContext";
+import { WASMModuleContext, writeEncodedString, writeUint8Array } from "./WASMModuleContext";
 
-export function createThirdroomModule(ctx: GameState, { U8Heap, textEncoder, encodedJSSource }: WASMModuleContext) {
+export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   return {
     get_js_source_size() {
-      return encodedJSSource ? encodedJSSource.byteLength : 0;
+      return wasmCtx.encodedJSSource ? wasmCtx.encodedJSSource.byteLength : 0;
     },
     get_js_source(destPtr: number) {
-      if (!encodedJSSource) {
-        return -1;
-      }
-
       try {
-        U8Heap.set(encodedJSSource, destPtr);
+        if (!wasmCtx.encodedJSSource) {
+          console.error("Thirdroom: No JS source set.");
+          return -1;
+        }
+
+        return writeEncodedString(wasmCtx, destPtr, wasmCtx.encodedJSSource);
       } catch (error) {
-        console.error("Error getting JS source:", error);
+        console.error("Thirdroom: Error getting JS source:", error);
         return -1;
       }
-
-      return encodedJSSource.byteLength;
     },
     enable_matrix_material(enabled: number) {
       ctx.sendMessage<EnableMatrixMaterialMessage>(Thread.Render, {
@@ -36,13 +35,13 @@ export function createThirdroomModule(ctx: GameState, { U8Heap, textEncoder, enc
     },
     get_audio_frequency_data(audioDataPtr: number) {
       const audio = getModule(ctx, AudioModule);
-      const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
-      U8Heap.set(audioAnalyser.frequencyData, audioDataPtr);
+      const { frequencyData } = getReadObjectBufferView(audio.analyserTripleBuffer);
+      return writeUint8Array(wasmCtx, audioDataPtr, frequencyData);
     },
     get_audio_time_data(audioDataPtr: number) {
       const audio = getModule(ctx, AudioModule);
-      const audioAnalyser = getReadObjectBufferView(audio.analyserTripleBuffer);
-      U8Heap.set(audioAnalyser.timeData, audioDataPtr);
+      const { timeData } = getReadObjectBufferView(audio.analyserTripleBuffer);
+      return writeUint8Array(wasmCtx, audioDataPtr, timeData);
     },
   };
 }

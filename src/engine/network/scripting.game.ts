@@ -1,4 +1,9 @@
-import { createCursorView, readArrayBuffer, sliceCursorView, writeArrayBuffer } from "../allocator/CursorView";
+import {
+  createCursorView,
+  readArrayBuffer,
+  sliceCursorView,
+  writeArrayBuffer as cursorWriteArrayBuffer,
+} from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
 import { NetworkModule } from "./network.game";
@@ -7,9 +12,10 @@ import { broadcastReliable } from "./outbound.game";
 import { NetPipeData, writeMetadata } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
-import { WASMModuleContext } from "../scripting/WASMModuleContext";
+import { readUint8Array, WASMModuleContext, writeArrayBuffer } from "../scripting/WASMModuleContext";
 
 interface WebSGNetworkModuleState {
+  listening: boolean;
   inbound: ArrayBuffer[];
 }
 
@@ -17,23 +23,48 @@ export const WebSGNetworkModule = defineModule<GameState, WebSGNetworkModuleStat
   name: "WebSGNetwork",
   create: () => {
     return {
+      listening: false,
       inbound: [],
     };
   },
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
-    registerInboundMessageHandler(network, NetworkAction.ScriptMessage, deserializeScriptMessage);
+    const websgNetwork = getModule(ctx, WebSGNetworkModule);
+    registerInboundMessageHandler(network, NetworkAction.ScriptMessage, (data) => {
+      if (websgNetwork.listening) {
+        deserializeScriptMessage(data);
+      }
+    });
   },
 });
 
-export function createWebSGNetworkModule(ctx: GameState, { U8Heap }: WASMModuleContext) {
+export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
-  const { inbound } = getModule(ctx, WebSGNetworkModule);
+  const websgNetwork = getModule(ctx, WebSGNetworkModule);
 
   return {
-    network_broadcast: (packetPtr: number, byteLength: number) => {
+    listen() {
+      if (websgNetwork.listening) {
+        console.error("WebSGNetworking: Cannot listen for events, already in a listening state.");
+        return -1;
+      }
+
+      websgNetwork.listening = true;
+      return 0;
+    },
+    close() {
+      if (!websgNetwork.listening) {
+        console.error("WebSGNetworking: Cannot close event listener, already in a closed state.");
+        return -1;
+      }
+
+      websgNetwork.inbound.length = 0;
+      websgNetwork.listening = false;
+      return 0;
+    },
+    broadcast: (packetPtr: number, byteLength: number) => {
       try {
-        const scriptPacket = U8Heap.subarray(packetPtr, packetPtr + byteLength);
+        const scriptPacket = readUint8Array(wasmCtx, packetPtr, byteLength);
 
         const msg = createScriptMessage(ctx, scriptPacket);
 
@@ -41,26 +72,33 @@ export function createWebSGNetworkModule(ctx: GameState, { U8Heap }: WASMModuleC
 
         return 0;
       } catch (error) {
-        console.error("Error broadcasting packet:", error);
+        console.error("WebSGNetworking: Error broadcasting packet:", error);
         return -1;
       }
     },
-    // call until 0 return
-    network_receive: (writeBufPtr: number, maxBufLength: number) => {
-      const packet = inbound.pop();
-
-      if (!packet) {
-        return 0;
-      }
-
-      if (packet.byteLength > maxBufLength) {
-        console.error("Failed to receive script packet, packet length exceeded buffer length");
-        return -1;
-      }
-
+    get_packet_size() {
+      const packets = websgNetwork.inbound;
+      return packets.length === 0 ? 0 : packets[0].byteLength;
+    },
+    receive: (packetPtr: number, maxBufLength: number) => {
       try {
-        U8Heap.set(new Uint8Array(packet), writeBufPtr);
-        return packet.byteLength;
+        if (!websgNetwork.listening) {
+          console.error("WebSGNetworking: Cannot receive packets in a closed state.");
+          return -1;
+        }
+
+        const packet = websgNetwork.inbound.pop();
+
+        if (!packet) {
+          return 0;
+        }
+
+        if (packet.byteLength > maxBufLength) {
+          console.error("Failed to receive script packet, packet length exceeded buffer length");
+          return -1;
+        }
+
+        return writeArrayBuffer(wasmCtx, packetPtr, packet);
       } catch (e) {
         console.error("Error writing packet to write buffer:", e);
         return -1;
@@ -81,7 +119,7 @@ function createScriptMessage(ctx: GameState, packet: ArrayBuffer) {
 function serializeScriptMessage(data: NetPipeData, packet: ArrayBuffer) {
   const [, v] = data;
   writeUint32(v, packet.byteLength);
-  writeArrayBuffer(v, packet);
+  cursorWriteArrayBuffer(v, packet);
   return data;
 }
 
