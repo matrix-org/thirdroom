@@ -67,6 +67,7 @@ export async function loadScript(
     memory,
     U8Heap: new Uint8Array(memory.buffer),
     U32Heap: new Uint32Array(memory.buffer),
+    F32Heap: new Float32Array(memory.buffer),
     textDecoder: new TextDecoder(),
     textEncoder: new TextEncoder(),
   };

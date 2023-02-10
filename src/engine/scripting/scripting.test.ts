@@ -49,6 +49,7 @@ describe("JS Scripting API", () => {
       memory,
       U32Heap: new Uint32Array(memory.buffer),
       U8Heap: new Uint8Array(memory.buffer),
+      F32Heap: new Float32Array(memory.buffer),
       textDecoder: new TextDecoder(),
       textEncoder: new TextEncoder(),
       resourceManager: ctx.resourceManager,

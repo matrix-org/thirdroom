@@ -1,8 +1,304 @@
 #ifndef __websg_h
 #define __websg_h
+#include <stdint.h>
+#include <math.h>
 
 #define import_websg(NAME) __attribute__((import_module("websg"),import_name(#NAME)))
 
 #define export __attribute__((used))
+
+typedef uint32_t scene_id_t;
+typedef uint32_t node_id_t;
+typedef uint32_t mesh_id_t;
+typedef uint32_t mesh_primitive_id_t;
+typedef uint32_t accessor_id_t;
+typedef uint32_t buffer_view_id_t;
+typedef uint32_t buffer_id_t;
+typedef uint32_t material_id_t;
+typedef uint32_t light_id_t;
+
+// Environment
+
+// Returns the scene id or 0 if not found
+import_websg(get_environment_scene) scene_id_t websg_get_environment_scene();
+// Returns 0 if successful or -1 if error
+import_websg(set_environment_scene) int32_t websg_set_environment_scene(scene_id_t scene_id);
+
+/*******
+ * Scene
+ *******/
+
+// Returns scene id or 0 if error
+import_websg(create_scene) scene_id_t websg_create_scene();
+// Returns scene id or 0 if not found
+import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(char *name);
+
+// Scene Hierarchy
+
+// Returns 0 if successful or -1 if error
+import_websg(scene_add_node) int32_t websg_scene_add_node(scene_id_t scene_id, node_id_t node_id);
+// Returns 0 if successful or -1 if error
+import_websg(scene_remove_node) int32_t websg_scene_remove_node(scene_id_t scene_id, node_id_t node_id);
+// Returns the number of child nodes or -1 if error
+import_websg(scene_node_count) int32_t websg_scene_node_count(scene_id_t scene_id);
+// Returns the number of node ids written to the array or -1 if error
+import_websg(scene_get_nodes) int32_t websg_scene_get_nodes(
+  scene_id_t scene_id,
+  node_id_t *nodes,
+  uint32_t max_count
+);
+// Returns the node id or 0 if not found
+import_websg(scene_get_node) node_id_t websg_scene_get_node(
+  scene_id_t scene_id,
+  uint32_t index
+);
+
+/**
+ * Node
+ **/
+
+// Returns node id or 0 if error
+import_websg(create_node) node_id_t websg_create_node();
+// Returns node id or 0 if not found
+import_websg(node_find_by_name) node_id_t websg_node_find_by_name(char *name);
+
+// Node Hierarchy
+
+// Returns 0 if successful or -1 if error
+import_websg(node_add_child) int32_t websg_node_add_child(node_id_t node_id, node_id_t child_id);
+// Returns 0 if successful or -1 if error
+import_websg(node_remove_child) int32_t websg_node_remove_child(node_id_t node_id, node_id_t child_id);
+// Returns the number of child nodes or -1 if error
+import_websg(node_child_count) int32_t websg_node_child_count(node_id_t node_id);
+// Returns the number of node ids written to the array or -1 if error
+import_websg(node_get_children) int32_t websg_node_get_children(
+  node_id_t node_id,
+  node_id_t *children,
+  uint32_t max_count
+);
+// Returns the node id or 0 if not found
+import_websg(node_get_child) node_id_t websg_node_get_child(node_id_t node_id, uint32_t index);
+// Returns the node id or 0 if not found
+import_websg(node_get_parent) node_id_t websg_node_get_parent(node_id_t node_id);
+// Returns the scene id or 0 if not found
+import_websg(node_get_parent_scene) scene_id_t websg_node_get_parent_scene(node_id_t node_id);
+
+// Node Transform
+
+// Returns 0 if successful or -1 if error
+import_websg(node_get_position) int32_t websg_node_get_position(node_id_t node_id, float_t *position);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_position) int32_t websg_node_set_position(node_id_t node_id, float_t *position);
+// Returns 0 if successful or -1 if error
+import_websg(node_get_quaternion) int32_t websg_node_get_quaternion(node_id_t node_id, float_t *quaternion);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_quaternion) int32_t websg_node_set_quaternion(node_id_t node_id, float_t *quaternion);
+// Returns 0 if successful or -1 if error
+import_websg(node_get_scale) int32_t websg_node_get_scale(node_id_t node_id, float_t *scale);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_scale) int32_t websg_node_set_scale(node_id_t node_id, float_t *scale);
+// Returns 0 if successful or -1 if error
+import_websg(node_get_local_matrix) int32_t websg_node_get_local_matrix(node_id_t node_id, float_t *local_matrix);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_local_matrix) int32_t websg_node_set_local_matrix(node_id_t node_id, float_t *local_matrix);
+// Returns 0 if successful or -1 if error
+import_websg(node_get_world_matrix) int32_t websg_node_get_world_matrix(node_id_t node_id, float_t *world_matrix);
+
+// Node Props
+
+// Returns 0 if false 1 if true
+import_websg(node_get_visible) u_int32_t websg_node_get_visible(node_id_t node_id);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id, u_int32_t visible);
+// Returns 0 if false 1 if true
+import_websg(node_get_is_static) u_int32_t websg_node_get_is_static(node_id_t node_id);
+// Returns 0 if successful or -1 if error
+import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, u_int32_t is_static);
+
+// Node Refs
+
+import_websg(node_get_mesh) mesh_id_t websg_node_get_mesh(node_id_t node_id);
+import_websg(node_set_mesh) int32_t websg_node_set_mesh(node_id_t node_id, mesh_id_t mesh_id);
+
+import_websg(node_get_light) light_id_t websg_node_get_light(node_id_t node_id);
+import_websg(node_set_light) int32_t websg_node_set_light(node_id_t node_id, light_id_t light_id);
+
+/**
+ * Mesh
+ **/
+
+typedef enum MeshPrimitiveMode {
+  MeshPrimitiveMode_POINTS,
+  MeshPrimitiveMode_LINES,
+  MeshPrimitiveMode_LINE_LOOP,
+  MeshPrimitiveMode_LINE_STRIP,
+  MeshPrimitiveMode_TRIANGLES,
+  MeshPrimitiveMode_TRIANGLE_STRIP,
+  MeshPrimitiveMode_TRIANGLE_FAN,
+} MeshPrimitiveMode;
+
+typedef enum MeshPrimitiveAttribute {
+  MeshPrimitiveAttribute_POSITION,
+  MeshPrimitiveAttribute_NORMAL,
+  MeshPrimitiveAttribute_TANGENT,
+  MeshPrimitiveAttribute_TEXCOORD_0,
+  MeshPrimitiveAttribute_TEXCOORD_1,
+  MeshPrimitiveAttribute_COLOR_0,
+  MeshPrimitiveAttribute_JOINTS_0,
+  MeshPrimitiveAttribute_WEIGHTS_0,
+} MeshPrimitiveAttribute;
+
+typedef struct MeshPrimitiveAttributeItem {
+  MeshPrimitiveAttribute key;
+  accessor_id_t accessor_id;
+} MeshPrimitiveAttributeItem;
+
+typedef struct MeshPrimitiveProps {
+  uint32_t attribute_count;
+  MeshPrimitiveAttributeItem *attributes;
+  accessor_id_t indices;
+  material_id_t material;
+  MeshPrimitiveMode mode;
+} MeshPrimitiveProps;
+
+import_websg(create_mesh) mesh_id_t websg_create_mesh(MeshPrimitiveProps *primitives, uint32_t count);
+import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(char *name);
+import_websg(mesh_primitive_count) int32_t websg_mesh_primitive_count(mesh_id_t mesh_id);
+import_websg(mesh_get_primitive) mesh_primitive_id_t websg_mesh_get_primitive(mesh_id_t mesh_id, uint32_t index);
+import_websg(mesh_primitive_get_attribute) accessor_id_t websg_mesh_primitive_get_attribute(
+  mesh_primitive_id_t primitive_id,
+  MeshPrimitiveAttribute attribute
+);
+import_websg(mesh_primitive_get_indices) accessor_id_t websg_mesh_primitive_get_indices(
+  mesh_primitive_id_t primitive_id
+);
+import_websg(mesh_primitive_get_material) material_id_t websg_mesh_primitive_get_material(
+  mesh_primitive_id_t primitive_id
+);
+import_websg(mesh_primitive_set_material) mesh_id_t websg_mesh_primitive_set_material(
+  mesh_primitive_id_t primitive_id,
+  material_id_t material_id
+);
+import_websg(mesh_primitive_get_mode) MeshPrimitiveMode websg_mesh_primitive_get_mode(
+  mesh_primitive_id_t primitive_id
+);
+
+/**
+ * Accessor
+ **/
+
+typedef enum AccessorType {
+  AccessorType_SCALAR,
+  AccessorType_VEC2,
+  AccessorType_VEC3,
+  AccessorType_VEC4,
+  AccessorType_MAT2,
+  AccessorType_MAT3,
+  AccessorType_MAT4,
+} AccessorType;
+
+typedef enum AccessorComponentType {
+  AccessorComponentType_Int8 = 5120,
+  AccessorComponentType_Uint8 = 5121,
+  AccessorComponentType_Int16 = 5122,
+  AccessorComponentType_Uint16 = 5123,
+  AccessorComponentType_Uint32 = 5125,
+  AccessorComponentType_Float32 = 5126,
+} AccessorComponentType;
+
+typedef struct SparseAccessorProps {
+  uint32_t count;
+  buffer_view_id_t indices_buffer_view;
+  uint32_t indices_byte_offset;
+  AccessorComponentType indices_component_type;
+  buffer_view_id_t values_buffer_view;
+  uint32_t values_byte_offset;
+} SparseAccessorProps;
+
+typedef struct AccessorProps {
+  buffer_view_id_t buffer_view;
+  uint32_t byte_offset;
+  AccessorComponentType component_type;
+  uint32_t normalized;
+  uint32_t count;
+  AccessorType type;
+  float_t max[16];
+  float_t min[16];
+  SparseAccessorProps *sparse;
+  uint32_t dynamic;
+} AccessorProps;
+
+import_websg(create_accessor) accessor_id_t websg_create_accessor(AccessorProps *props);
+import_websg(create_accessor_with) accessor_id_t websg_create_accessor_with(
+  AccessorProps *props,
+  u_int32_t byte_length,
+  void *data
+);
+import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(char *name);
+import_websg(update_accessor_with) int32_t websg_update_accessor_with(accessor_id_t accessor_id, void *data);
+
+/**
+ * BufferView
+ */
+
+typedef enum BufferViewTarget {
+  None = 0,
+  ArrayBuffer = 34962,
+  ElementArrayBuffer = 34963,
+} BufferViewTarget;
+
+typedef struct BufferViewProps {
+  buffer_id_t buffer;
+  uint32_t byte_offset;
+  uint32_t byte_length;
+  uint32_t byte_stride;
+  BufferViewTarget target;
+} BufferViewProps;
+
+import_websg(create_buffer_view) buffer_view_id_t websg_create_buffer_view(BufferViewProps *props);
+
+/**
+ * Buffer
+ */
+
+import_websg(create_buffer) buffer_id_t websg_create_buffer_with(void *data, u_int32_t byte_length);
+
+/**
+ * Light
+ **/
+
+typedef enum LightType {
+  LightType_Directional,
+  LightType_Point,
+  LightType_Spot,
+} LightType;
+
+import_websg(create_light) light_id_t websg_create_light(LightType type);
+import_websg(light_find_by_name) light_id_t websg_light_find_by_name(char *name);
+
+import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
+import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
+import_websg(light_get_intensity) float_t websg_light_get_intensity(light_id_t light_id);
+import_websg(light_set_intensity) int32_t websg_light_set_intensity(light_id_t light_id, float_t intensity);
+
+/**
+ * Interactable
+ **/
+
+typedef enum InteractableType {
+  InteractableType_Interactable,
+} InteractableType;
+
+typedef struct Interactable {
+  InteractableType type;
+  uint32_t pressed;
+  uint32_t held;
+  uint32_t released;
+} Interactable;
+
+import_websg(add_interactable) int32_t websg_add_interactable(node_id_t node_id, InteractableType type);
+import_websg(remove_interactable) int32_t websg_remove_interactable(node_id_t node_id);
+import_websg(has_interactable) int32_t websg_has_interactable(node_id_t node_id);
+import_websg(get_interactable) int32_t websg_get_interactable(node_id_t node_id, Interactable *interactable);
 
 #endif

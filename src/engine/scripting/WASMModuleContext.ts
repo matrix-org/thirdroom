@@ -4,6 +4,7 @@ export interface WASMModuleContext {
   memory: WebAssembly.Memory;
   U8Heap: Uint8Array;
   U32Heap: Uint32Array;
+  F32Heap: Float32Array;
   textEncoder: TextEncoder;
   textDecoder: TextDecoder;
   encodedJSSource?: Uint8Array;
@@ -66,6 +67,26 @@ export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array:
 
 export function readUint32Array(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
   return wasmCtx.U32Heap.subarray(ptr / 4, (ptr + byteLength) / 4);
+}
+
+export function writeFloat32Array(wasmCtx: WASMModuleContext, ptr: number, array: Float32Array) {
+  wasmCtx.F32Heap.set(array, ptr);
+  return array.byteLength;
+}
+
+export function readFloat32Array(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  return wasmCtx.F32Heap.subarray(ptr / 4, (ptr + byteLength) / 4);
+}
+
+export function readFloat32ArrayInto(wasmCtx: WASMModuleContext, ptr: number, target: Float32Array) {
+  const F32Heap = wasmCtx.F32Heap;
+  const offset = ptr / 4;
+
+  for (let i = 0; i < target.length; i++) {
+    target[i] = F32Heap[offset + i];
+  }
+
+  return target;
 }
 
 export function writeArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, array: ArrayBuffer) {

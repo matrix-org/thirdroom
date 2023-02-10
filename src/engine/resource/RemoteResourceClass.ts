@@ -143,6 +143,11 @@ export interface IRemoteResourceClass<Def extends ResourceDefinition = ResourceD
   resourceDef: Def;
 }
 
+export interface RemoteResourceConstructor {
+  new (manager: RemoteResourceManager, props: any): RemoteResource;
+  resourceDef: ResourceDefinition;
+}
+
 export interface RemoteResource extends Resource {
   constructor: { name: string; resourceDef: ResourceDefinition };
   resourceDef: ResourceDefinition;
