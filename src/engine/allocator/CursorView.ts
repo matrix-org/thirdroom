@@ -292,50 +292,50 @@ export const readProp = (v: CursorView, prop: TypedArray) => {
   return val;
 };
 
-export const readFloat64 = (v: CursorView) => {
-  const val = v.getFloat64(v.cursor);
+export const readFloat64 = (v: CursorView, littleEndian = false) => {
+  const val = v.getFloat64(v.cursor, littleEndian);
   v.cursor += Float64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readFloat32 = (v: CursorView) => {
-  const val = v.getFloat32(v.cursor);
+export const readFloat32 = (v: CursorView, littleEndian = false) => {
+  const val = v.getFloat32(v.cursor, littleEndian);
   v.cursor += Float32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readUint64 = (v: CursorView) => {
-  const val = v.getBigUint64(v.cursor);
+export const readUint64 = (v: CursorView, littleEndian = false) => {
+  const val = v.getBigUint64(v.cursor, littleEndian);
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readInt64 = (v: CursorView) => {
-  const val = v.getBigUint64(v.cursor);
+export const readInt64 = (v: CursorView, littleEndian = false) => {
+  const val = v.getBigUint64(v.cursor, littleEndian);
   v.cursor += BigInt64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readUint32 = (v: CursorView) => {
-  const val = v.getUint32(v.cursor);
+export const readUint32 = (v: CursorView, littleEndian = false) => {
+  const val = v.getUint32(v.cursor, littleEndian);
   v.cursor += Uint32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readInt32 = (v: CursorView) => {
-  const val = v.getInt32(v.cursor);
+export const readInt32 = (v: CursorView, littleEndian = false) => {
+  const val = v.getInt32(v.cursor, littleEndian);
   v.cursor += Int32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readUint16 = (v: CursorView) => {
-  const val = v.getUint16(v.cursor);
+export const readUint16 = (v: CursorView, littleEndian = false) => {
+  const val = v.getUint16(v.cursor, littleEndian);
   v.cursor += Uint16Array.BYTES_PER_ELEMENT;
   return val;
 };
 
-export const readInt16 = (v: CursorView) => {
-  const val = v.getInt16(v.cursor);
+export const readInt16 = (v: CursorView, littleEndian = false) => {
+  const val = v.getInt16(v.cursor, littleEndian);
   v.cursor += Int16Array.BYTES_PER_ELEMENT;
   return val;
 };
