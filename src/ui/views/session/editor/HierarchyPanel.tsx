@@ -239,7 +239,7 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
                     {...toggleProps}
                   />
                 )}
-                <div className="flex items-center gap-xs">
+                <div className="flex items-center gap-xs grow">
                   {isRenaming ? (
                     <div>
                       <input {...nameInputProps} />
@@ -247,11 +247,17 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
                   ) : (
                     <>
                       <Icon
+                        className="shrink-0"
                         color={isSelected ? "primary" : "surface"}
                         size="sm"
                         src={depth > 0 ? CircleIC : LanguageIC}
                       />
-                      <Text color={isSelected ? "primary" : "surface"} variant="b2" weight="medium">
+                      <Text
+                        className="truncate"
+                        color={isSelected ? "primary" : "surface"}
+                        variant="b2"
+                        weight="medium"
+                      >
                         {name}
                       </Text>
                     </>
