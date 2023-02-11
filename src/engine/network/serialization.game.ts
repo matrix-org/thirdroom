@@ -591,7 +591,7 @@ export const deserializeInformXRMode = (data: NetPipeData) => {
   // guard
   const eid = network.networkIdToEntityId.get(nid);
   if (!eid) {
-    console.warn("could not deserialize InformXRMode message, eid not found for peerId", peerId);
+    console.warn("could not deserialize InformXRMode message, eid not found for nid", nid);
     return data;
   }
 
