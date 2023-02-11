@@ -221,13 +221,6 @@ export function setFromLocalMatrix(node: RemoteNode, localMatrix: mat4) {
   mat4.getScaling(node.scale, localMatrix);
 }
 
-export function setLocalFromWorldMatrix(node: RemoteNode, worldMatrix: mat4) {
-  node.localMatrix.set(worldMatrix);
-  mat4.getTranslation(node.position, worldMatrix);
-  mat4.getRotation(node.quaternion, worldMatrix);
-  mat4.getScaling(node.scale, worldMatrix);
-}
-
 export function traverse(node: RemoteNode | RemoteScene, callback: (child: RemoteNode) => unknown | false) {
   let curChild;
 

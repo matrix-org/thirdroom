@@ -6,7 +6,7 @@ import { GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { KinematicControls } from "../../plugins/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { addChild, removeChild, setFromLocalMatrix, setLocalFromWorldMatrix } from "../component/transform";
+import { addChild, removeChild, setFromLocalMatrix } from "../component/transform";
 import { GameState, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { createLineMesh } from "../mesh/mesh.game";
@@ -285,11 +285,11 @@ function updateXRController(
     // take controller node world matrices and copy to networked ents
     if (rig.leftNetworkedEid && hand === XRInputHandedness.Left) {
       const node = getRemoteResource<RemoteNode>(ctx, rig.leftNetworkedEid)!;
-      setLocalFromWorldMatrix(node, controllerNode.worldMatrix);
+      setFromLocalMatrix(node, controllerNode.worldMatrix);
     }
     if (rig.rightNetworkedEid && hand === XRInputHandedness.Right) {
       const node = getRemoteResource<RemoteNode>(ctx, rig.rightNetworkedEid)!;
-      setLocalFromWorldMatrix(node, controllerNode.worldMatrix);
+      setFromLocalMatrix(node, controllerNode.worldMatrix);
     }
   } else if (eid) {
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
