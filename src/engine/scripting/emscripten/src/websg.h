@@ -10,7 +10,6 @@
 typedef uint32_t scene_id_t;
 typedef uint32_t node_id_t;
 typedef uint32_t mesh_id_t;
-typedef uint32_t mesh_primitive_id_t;
 typedef uint32_t accessor_id_t;
 typedef uint32_t buffer_view_id_t;
 typedef uint32_t buffer_id_t;
@@ -31,7 +30,7 @@ import_websg(set_environment_scene) int32_t websg_set_environment_scene(scene_id
 // Returns scene id or 0 if error
 import_websg(create_scene) scene_id_t websg_create_scene();
 // Returns scene id or 0 if not found
-import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(char *name);
+import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(char *name, uint32_t length);
 
 // Scene Hierarchy
 
@@ -60,7 +59,7 @@ import_websg(scene_get_node) node_id_t websg_scene_get_node(
 // Returns node id or 0 if error
 import_websg(create_node) node_id_t websg_create_node();
 // Returns node id or 0 if not found
-import_websg(node_find_by_name) node_id_t websg_node_find_by_name(char *name);
+import_websg(node_find_by_name) node_id_t websg_node_find_by_name(char *name, uint32_t length);
 
 // Node Hierarchy
 
@@ -154,33 +153,41 @@ typedef struct MeshPrimitiveAttributeItem {
 } MeshPrimitiveAttributeItem;
 
 typedef struct MeshPrimitiveProps {
-  uint32_t attribute_count;
-  MeshPrimitiveAttributeItem *attributes;
+  MeshPrimitiveMode mode;
   accessor_id_t indices;
   material_id_t material;
-  MeshPrimitiveMode mode;
+  uint32_t attribute_count;
+  MeshPrimitiveAttributeItem *attributes;
 } MeshPrimitiveProps;
 
 import_websg(create_mesh) mesh_id_t websg_create_mesh(MeshPrimitiveProps *primitives, uint32_t count);
-import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(char *name);
-import_websg(mesh_primitive_count) int32_t websg_mesh_primitive_count(mesh_id_t mesh_id);
-import_websg(mesh_get_primitive) mesh_primitive_id_t websg_mesh_get_primitive(mesh_id_t mesh_id, uint32_t index);
-import_websg(mesh_primitive_get_attribute) accessor_id_t websg_mesh_primitive_get_attribute(
-  mesh_primitive_id_t primitive_id,
+import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(char *name, uint32_t length);
+// Returns the number of mesh primitives or -1 if error
+import_websg(mesh_get_primitive_count) int32_t websg_mesh_get_primitive_count(mesh_id_t mesh_id);
+// Returns the accessor id or 0 if not found
+import_websg(mesh_get_primitive_attribute) accessor_id_t websg_mesh_get_primitive_attribute(
+  mesh_id_t mesh_id,
+  uint32_t index,
   MeshPrimitiveAttribute attribute
 );
-import_websg(mesh_primitive_get_indices) accessor_id_t websg_mesh_primitive_get_indices(
-  mesh_primitive_id_t primitive_id
+// Returns the accessor id or 0 if not found
+import_websg(mesh_get_primitive_indices) accessor_id_t websg_mesh_get_primitive_indices(
+  mesh_id_t mesh_id,
+  uint32_t index
 );
-import_websg(mesh_primitive_get_material) material_id_t websg_mesh_primitive_get_material(
-  mesh_primitive_id_t primitive_id
+// Returns the material id or 0 if not found
+import_websg(mesh_get_primitive_material) material_id_t websg_mesh_get_primitive_material(
+  mesh_id_t mesh_id,
+  uint32_t index
 );
-import_websg(mesh_primitive_set_material) mesh_id_t websg_mesh_primitive_set_material(
-  mesh_primitive_id_t primitive_id,
+import_websg(mesh_set_primitive_material) mesh_id_t websg_mesh_set_primitive_material(
+  mesh_id_t mesh_id,
+  uint32_t index,
   material_id_t material_id
 );
-import_websg(mesh_primitive_get_mode) MeshPrimitiveMode websg_mesh_primitive_get_mode(
-  mesh_primitive_id_t primitive_id
+import_websg(mesh_get_primitive_mode) MeshPrimitiveMode websg_mesh_get_primitive_mode(
+  mesh_id_t mesh_id,
+  uint32_t index
 );
 
 /**
@@ -206,62 +213,28 @@ typedef enum AccessorComponentType {
   AccessorComponentType_Float32 = 5126,
 } AccessorComponentType;
 
-typedef struct SparseAccessorProps {
-  uint32_t count;
-  buffer_view_id_t indices_buffer_view;
-  uint32_t indices_byte_offset;
-  AccessorComponentType indices_component_type;
-  buffer_view_id_t values_buffer_view;
-  uint32_t values_byte_offset;
-} SparseAccessorProps;
-
 typedef struct AccessorProps {
-  buffer_view_id_t buffer_view;
-  uint32_t byte_offset;
-  AccessorComponentType component_type;
-  uint32_t normalized;
-  uint32_t count;
   AccessorType type;
-  float_t max[16];
-  float_t min[16];
-  SparseAccessorProps *sparse;
+  AccessorComponentType component_type;
+  uint32_t count;
+  uint32_t normalized;
   uint32_t dynamic;
+  float_t min[16]; // Currently unused and optional but see spec for use.
+  float_t max[16]; // Currently unused and optional but see spec for use.
 } AccessorProps;
 
-import_websg(create_accessor) accessor_id_t websg_create_accessor(AccessorProps *props);
-import_websg(create_accessor_with) accessor_id_t websg_create_accessor_with(
-  AccessorProps *props,
+// TODO: Add standard websg_create_accessor method that takes buffer views and support sparse accessors
+import_websg(create_accessor_with) accessor_id_t websg_create_accessor_from(
+  void *data,
   u_int32_t byte_length,
-  void *data
+  AccessorProps *props
 );
-import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(char *name);
-import_websg(update_accessor_with) int32_t websg_update_accessor_with(accessor_id_t accessor_id, void *data);
-
-/**
- * BufferView
- */
-
-typedef enum BufferViewTarget {
-  None = 0,
-  ArrayBuffer = 34962,
-  ElementArrayBuffer = 34963,
-} BufferViewTarget;
-
-typedef struct BufferViewProps {
-  buffer_id_t buffer;
-  uint32_t byte_offset;
-  uint32_t byte_length;
-  uint32_t byte_stride;
-  BufferViewTarget target;
-} BufferViewProps;
-
-import_websg(create_buffer_view) buffer_view_id_t websg_create_buffer_view(BufferViewProps *props);
-
-/**
- * Buffer
- */
-
-import_websg(create_buffer) buffer_id_t websg_create_buffer_with(void *data, u_int32_t byte_length);
+import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(char *name, uint32_t length);
+import_websg(accessor_update_with) int32_t websg_accessor_update_with(
+  accessor_id_t accessor_id,
+  void *data,
+  uint32_t length
+);
 
 /**
  * Light
@@ -274,7 +247,7 @@ typedef enum LightType {
 } LightType;
 
 import_websg(create_light) light_id_t websg_create_light(LightType type);
-import_websg(light_find_by_name) light_id_t websg_light_find_by_name(char *name);
+import_websg(light_find_by_name) light_id_t websg_light_find_by_name(char *name, uint32_t length);
 
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);

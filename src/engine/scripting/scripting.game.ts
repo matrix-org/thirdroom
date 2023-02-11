@@ -1,6 +1,7 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
+import { createCursorView } from "../allocator/CursorView";
 import { GameState, RemoteResourceManager } from "../GameTypes";
 import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { createWebSGNetworkModule } from "../network/scripting.game";
@@ -68,6 +69,7 @@ export async function loadScript(
     U8Heap: new Uint8Array(memory.buffer),
     U32Heap: new Uint32Array(memory.buffer),
     F32Heap: new Float32Array(memory.buffer),
+    cursorView: createCursorView(memory.buffer, true),
     textDecoder: new TextDecoder(),
     textEncoder: new TextEncoder(),
   };

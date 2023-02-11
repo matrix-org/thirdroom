@@ -1,4 +1,6 @@
+import { CursorView } from "../allocator/CursorView";
 import { RemoteResourceManager } from "../GameTypes";
+import { toSharedArrayBuffer } from "../utils/arraybuffer";
 
 export interface WASMModuleContext {
   memory: WebAssembly.Memory;
@@ -7,6 +9,7 @@ export interface WASMModuleContext {
   F32Heap: Float32Array;
   textEncoder: TextEncoder;
   textDecoder: TextDecoder;
+  cursorView: CursorView;
   encodedJSSource?: Uint8Array;
   resourceManager: RemoteResourceManager;
 }
@@ -95,4 +98,8 @@ export function writeArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, array:
 
 export function readArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
   return wasmCtx.memory.buffer.slice(ptr, ptr + byteLength);
+}
+
+export function readSharedArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
+  return toSharedArrayBuffer(wasmCtx.memory.buffer, ptr, byteLength);
 }

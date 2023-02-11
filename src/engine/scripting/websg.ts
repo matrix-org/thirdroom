@@ -1,10 +1,38 @@
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
 import { getRemoteResources } from "../resource/resource.game";
-import { readFloat32ArrayInto, readString, WASMModuleContext, writeFloat32Array } from "./WASMModuleContext";
-import { RemoteLight, RemoteMesh, RemoteNode, RemoteScene } from "../resource/RemoteResources";
+import {
+  readFloat32ArrayInto,
+  readSharedArrayBuffer,
+  readString,
+  readUint8Array,
+  WASMModuleContext,
+  writeFloat32Array,
+} from "./WASMModuleContext";
+import {
+  RemoteAccessor,
+  RemoteBuffer,
+  RemoteBufferView,
+  RemoteInteractable,
+  RemoteLight,
+  RemoteMaterial,
+  RemoteMesh,
+  RemoteMeshPrimitive,
+  RemoteNode,
+  RemoteScene,
+} from "../resource/RemoteResources";
 import { addChild, removeChild } from "../component/transform";
-import { ResourceType } from "../resource/schema";
+import {
+  AccessorComponentType,
+  AccessorType,
+  InteractableType,
+  LightType,
+  MeshPrimitiveAttributeIndex,
+  MeshPrimitiveMode,
+  ResourceType,
+} from "../resource/schema";
+import { moveCursorView, readUint32, writeUint32 } from "../allocator/CursorView";
+import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
 
 function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -151,10 +179,18 @@ function scriptGetChildAt(wasmCtx: WASMModuleContext, parent: RemoteNode | Remot
   return 0;
 }
 
+interface MeshPrimitiveProps {
+  attributes: { [key: number]: RemoteAccessor };
+  indices?: RemoteAccessor;
+  material?: RemoteMaterial;
+  mode: MeshPrimitiveMode;
+}
+
 // TODO: ResourceManager should have a resourceMap that corresponds to just its owned resources
 // TODO: ResourceManager should have a resourceByType that corresponds to just its owned resources
 // TODO: Force disposal of all entities belonging to the wasmCtx when environment unloads
 // TODO: When do we update local / world matrices?
+// TODO: the mesh.primitives array is allocated whenever we request it but it's now immutable
 
 export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   return {
@@ -461,12 +497,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
     node_get_visible(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
-
-      if (!node) {
-        return 0; // This function returns a u32 so errors returned as 0
-      }
-
-      return node.visible ? 1 : 0;
+      return node && node.visible ? 1 : 0;
     },
     node_set_visible(nodeId: number, visible: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
@@ -481,12 +512,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
     node_get_is_static(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
-
-      if (!node) {
-        return 0; // This function returns a u32 so errors returned as 0
-      }
-
-      return node.isStatic ? 1 : 0;
+      return node && node.isStatic ? 1 : 0;
     },
     node_set_is_static(nodeId: number, isStatic: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
@@ -551,8 +577,321 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_mesh(primitivesPtr: number, count: number) {},
+    create_mesh(primitivesPtr: number, primitiveCount: number) {
+      try {
+        const primitiveProps: MeshPrimitiveProps[] = [];
+
+        for (let primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
+          moveCursorView(wasmCtx.cursorView, primitivesPtr + primitiveIndex * Uint32Array.BYTES_PER_ELEMENT);
+          const primitivePtr = readUint32(wasmCtx.cursorView);
+          moveCursorView(wasmCtx.cursorView, primitivePtr);
+
+          const mode = readUint32(wasmCtx.cursorView);
+
+          if (MeshPrimitiveMode[mode] === undefined) {
+            console.error(`WebSG: invalid mesh primitive mode: ${mode}`);
+            return -1;
+          }
+
+          const indicesAccessorId = readUint32(wasmCtx.cursorView);
+
+          let indices: RemoteAccessor | undefined;
+
+          if (indicesAccessorId) {
+            indices = getScriptResource(wasmCtx, RemoteAccessor, indicesAccessorId);
+
+            if (!indices) {
+              return -1;
+            }
+          }
+
+          const materialId = readUint32(wasmCtx.cursorView);
+
+          let material: RemoteMaterial | undefined;
+
+          if (materialId) {
+            material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+            if (!material) {
+              return -1;
+            }
+          }
+
+          const attributeCount = readUint32(wasmCtx.cursorView);
+
+          const attributes: { [key: number]: RemoteAccessor } = {};
+
+          for (let attributeIndex = 0; attributeIndex < attributeCount; attributeIndex++) {
+            const attributeKey = readUint32(wasmCtx.cursorView);
+
+            if (MeshPrimitiveAttributeIndex[attributeKey] === undefined) {
+              console.error(`WebSG: invalid mesh primitive key: ${attributeKey}`);
+              return -1;
+            }
+
+            const attributeAccessorId = readUint32(wasmCtx.cursorView);
+
+            const accessor = getScriptResource(wasmCtx, RemoteAccessor, attributeAccessorId);
+
+            if (accessor === undefined) {
+              return -1;
+            }
+
+            attributes[attributeKey] = accessor;
+          }
+
+          primitiveProps.push({
+            mode,
+            indices,
+            material,
+            attributes,
+          });
+        }
+
+        const primitives: RemoteMeshPrimitive[] = [];
+
+        // Create all the resources after parsing props to try to avoid leaking resources on error.
+
+        for (let i = 0; i < primitiveProps.length; i++) {
+          const props = primitiveProps[i];
+          primitives.push(new RemoteMeshPrimitive(wasmCtx.resourceManager, props));
+        }
+
+        const mesh = new RemoteMesh(wasmCtx.resourceManager, { primitives });
+
+        return mesh.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating mesh:`, error);
+        return 0;
+      }
+    },
+    mesh_find_by_name(namePtr: number, byteLength: number) {
+      const mesh = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMesh, namePtr, byteLength);
+      return mesh ? mesh.eid : 0;
+    },
+    mesh_get_primitive_count(meshId: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      return mesh ? mesh.primitives.length : -1;
+    },
+    mesh_get_primitive_attribute(meshId: number, index: number, attribute: MeshPrimitiveAttributeIndex) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      return mesh?.primitives[index]?.attributes[attribute]?.eid || 0;
+    },
+    mesh_get_primitive_indices(meshId: number, index: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      return mesh?.primitives[index]?.indices?.eid || 0;
+    },
+    mesh_get_primitive_material(meshId: number, index: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      return mesh?.primitives[index]?.material?.eid || 0;
+    },
+    mesh_get_primitive_mode(meshId: number, index: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      return mesh?.primitives[index]?.mode || 0;
+    },
+    create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
+      try {
+        const data = readSharedArrayBuffer(wasmCtx, dataPtr, byteLength);
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const type = readUint32(wasmCtx.cursorView);
+
+        if (AccessorType[type] === undefined) {
+          console.error(`WebSG: invalid accessor type: ${type}`);
+          return 0;
+        }
+
+        const componentType = readUint32(wasmCtx.cursorView);
+
+        if (AccessorComponentType[type] === undefined) {
+          console.error(`WebSG: invalid accessor component type: ${componentType}`);
+          return 0;
+        }
+
+        const count = readUint32(wasmCtx.cursorView);
+        const normalized = !!readUint32(wasmCtx.cursorView);
+        const dynamic = !!readUint32(wasmCtx.cursorView);
+        // TODO: read min/max props
+
+        const buffer = new RemoteBuffer(ctx.resourceManager, { data });
+        const bufferView = new RemoteBufferView(ctx.resourceManager, { buffer, byteLength });
+        const accessor = new RemoteAccessor(ctx.resourceManager, {
+          bufferView,
+          type,
+          componentType,
+          count,
+          normalized,
+          dynamic,
+        });
+
+        return accessor.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating accessor:`, error);
+        return 0;
+      }
+    },
+    accessor_find_by_name(namePtr: number, byteLength: number) {
+      const accessor = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteAccessor, namePtr, byteLength);
+      return accessor ? accessor.eid : 0;
+    },
+    accessor_update_with(accessorId: number, dataPtr: number, byteLength: number) {
+      const accessor = getScriptResource(wasmCtx, RemoteAccessor, accessorId);
+
+      if (!accessor) {
+        return -1;
+      }
+
+      if (!accessor.dynamic) {
+        console.error("WebSG: cannot update non-dynamic accessor.");
+        return -1;
+      }
+
+      if (accessor.sparse) {
+        console.error("WebSG: cannot update sparse accessor.");
+        return -1;
+      }
+
+      const bufferView = accessor.bufferView;
+
+      if (!bufferView) {
+        console.error("WebSG: cannot update accessor without bufferView.");
+        return -1;
+      }
+
+      try {
+        const elementCount = accessor.count;
+        const elementSize = AccessorTypeToElementSize[accessor.type];
+        const arrConstructor = AccessorComponentTypeToTypedArray[accessor.componentType];
+        const componentByteLength = arrConstructor.BYTES_PER_ELEMENT;
+        const elementByteLength = componentByteLength * elementSize;
+        const buffer = bufferView.buffer.data;
+        const byteOffset = accessor.byteOffset + bufferView.byteOffset;
+        const byteStride = bufferView.byteStride;
+
+        if (byteStride && byteStride !== elementByteLength) {
+          console.error("WebSG: cannot update accessor with byteStride.");
+          return -1;
+        }
+
+        // TODO: This creates garbage. See if we can keep around read/write views for dynamic accessors.
+        const readView = readUint8Array(wasmCtx, dataPtr, byteLength);
+        const writeView = new Uint8Array(buffer, byteOffset, elementCount * elementByteLength);
+        writeView.set(readView);
+        accessor.version++;
+
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: error updating accessor:`, error);
+        return -1;
+      }
+    },
+    create_light(type: number) {
+      if (LightType[type] === undefined) {
+        console.error("WebSG: Invalid light type.");
+        return -1;
+      }
+
+      const light = new RemoteLight(wasmCtx.resourceManager, { type });
+
+      return light.eid;
+    },
+    light_get_color(lightId: number, colorPtr: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, light.color);
+
+      return 0;
+    },
+    light_set_color(lightId: number, colorPtr: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, light.color);
+
+      return 0;
+    },
+    light_get_intensity(lightId: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+      return light?.intensity || 0;
+    },
+    light_set_intensity(lightId: number, intensity: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      light.intensity = intensity;
+
+      return 0;
+    },
+    add_interactable(nodeId: number, type: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      if (node.interactable) {
+        console.error("WebSG: node is already interactable.");
+        return -1;
+      }
+
+      if (type !== InteractableType.Interactable) {
+        console.error("WebSG: Invalid interactable type.");
+        return -1;
+      }
+
+      node.interactable = new RemoteInteractable(wasmCtx.resourceManager, { type });
+
+      return 0;
+    },
+    remove_interactable(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      if (!node.interactable) {
+        console.error("WebSG: node is not interactable.");
+        return -1;
+      }
+
+      node.interactable = undefined;
+
+      return 0;
+    },
+    has_interactable(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      return node?.interactable ? 1 : 0;
+    },
+    get_interactable(nodeId: number, interactablePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      const interactable = node.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, interactablePtr);
+      writeUint32(wasmCtx.cursorView, interactable.type); // Note we might be exposing other interactable types here
+      writeUint32(wasmCtx.cursorView, interactable.pressed ? 1 : 0);
+      writeUint32(wasmCtx.cursorView, interactable.held ? 1 : 0);
+      writeUint32(wasmCtx.cursorView, interactable.released ? 1 : 0);
+
+      return 0;
+    },
   };
 }
-
-RemoteLight;
