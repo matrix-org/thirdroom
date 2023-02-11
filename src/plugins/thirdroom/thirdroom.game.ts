@@ -80,7 +80,6 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
-  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -92,8 +91,6 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
 import { WebSGNetworkModule } from "../../engine/network/scripting.game";
-import { XRInputHandedness } from "../../engine/input/WebXRInputProfiles";
-import { createSphereMesh } from "../../engine/mesh/mesh.game";
 
 type ThirdRoomModuleState = {};
 
@@ -108,6 +105,8 @@ const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number
 
 const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
+    const { supportsAR } = ctx.worldResource.environment!.publicScene;
+
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
@@ -116,7 +115,8 @@ const createAvatarRig =
     addComponent(ctx.world, AvatarComponent, rig.eid);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.position.set([0, AVATAR_OFFSET, 0]);
-    rig.scale.set([1.3, 1.3, 1.3]);
+    const s = ctx.worldResource.environment?.publicScene.supportsAR ? 1 : 1.3;
+    rig.scale.set([s, s, s]);
 
     // on container
     const characterControllerType = SceneCharacterControllerComponent.get(
@@ -132,7 +132,8 @@ const createAvatarRig =
 
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
-    cameraAnchor.position[1] = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
+    const h = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
+    cameraAnchor.position[1] = supportsAR ? h / 3.333 : h;
     addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {
@@ -152,33 +153,19 @@ const createAvatarRig =
   };
 
 const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const handMaterial = new RemoteMaterial(ctx.resourceManager, {
-    name: "Head Material",
-    type: Schema.MaterialType.Standard,
-    baseColorFactor: [0, 0, 0, 1],
-    emissiveFactor: [0, 0, 0],
-    metallicFactor: 0,
-    roughnessFactor: 1,
-  });
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh: createSphereMesh(ctx, 0.38, handMaterial),
-  });
+  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-head.glb`);
   const obj = createRemoteObject(ctx, node);
   return obj;
 };
 
-const createXRHand = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const handMaterial = new RemoteMaterial(ctx.resourceManager, {
-    name: "Hand Material",
-    type: Schema.MaterialType.Standard,
-    baseColorFactor: options.hand === XRInputHandedness.Left ? [1, 0, 0, 1] : [0, 0, 1, 1],
-    emissiveFactor: [0.7, 0.7, 0.7],
-    metallicFactor: 0,
-    roughnessFactor: 1,
-  });
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh: createSphereMesh(ctx, 0.24, handMaterial),
-  });
+const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-left-hand.glb`);
+  const obj = createRemoteObject(ctx, node);
+  return obj;
+};
+
+const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-right-hand.glb`);
   const obj = createRemoteObject(ctx, node);
   return obj;
 };
@@ -236,9 +223,15 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     });
 
     registerPrefab(ctx, {
-      name: "xr-hand",
+      name: "xr-hand-left",
       type: PrefabType.Avatar,
-      create: createXRHand(input, physics),
+      create: createXRHandLeft(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-hand-right",
+      type: PrefabType.Avatar,
+      create: createXRHandRight(input, physics),
     });
 
     // create out of bounds floor check

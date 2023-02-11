@@ -191,7 +191,6 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
   // - peerIdIndex has been assigned
   // - player rig has spawned
   const haveConnectedPeers = network.peers.length > 0;
-  const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
 
   if (haveConnectedPeers && spawnedPlayerRig) {
@@ -209,9 +208,10 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
           // inform new peer of our avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
-          // if XR, inform other clients to hide our avatar entity
+          // inform other clients to hide our avatar entity
+          const ourPlayer = ourPlayerQuery(ctx.world)[0];
           const xrRig = XRAvatarRig.get(ourPlayer);
-          if (xrRig?.cameraEid) sendReliable(ctx, network, theirPeerId, createInformXRMode(ctx, ourPlayer));
+          if (xrRig?.cameraEid) broadcastReliable(ctx, network, createInformXRMode(ctx, ourPlayer));
         }
       }
     } else {

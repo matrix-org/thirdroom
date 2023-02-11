@@ -23,6 +23,10 @@ import { InputMessageType, SharedXRInputSource, SetXRReferenceSpaceMessage } fro
 import { InputModule } from "./input.game";
 import { XRInputHandedness } from "./WebXRInputProfiles";
 import { Networked, Owned } from "../network/NetworkComponents";
+import { broadcastReliable } from "../network/outbound.game";
+import { createInformXRMode } from "../network/serialization.game";
+import { NetworkModule } from "../network/network.game";
+import { ourPlayerQuery } from "../component/Player";
 
 export interface XRAvatarRig {
   leftControllerEid?: number;
@@ -255,7 +259,7 @@ function updateXRController(
       addXRRaycaster(ctx, rayNode.eid, hand);
 
       // node
-      const networkedEntity = createPrefabEntity(ctx, `xr-hand`, { assetPath });
+      const networkedEntity = createPrefabEntity(ctx, `xr-hand-${hand}`);
       addComponent(ctx.world, Owned, networkedEntity.eid);
       addComponent(ctx.world, Networked, networkedEntity.eid);
 
@@ -323,6 +327,11 @@ function updateXRCamera(
     cameraNode.visible = false;
     addObjectToWorld(ctx, cameraNode);
     xrRig.cameraEid = cameraNode.eid;
+
+    // inform other clients to hide our avatar entity
+    const ourPlayer = ourPlayerQuery(ctx.world)[0];
+    const network = getModule(ctx, NetworkModule);
+    broadcastReliable(ctx, network, createInformXRMode(ctx, ourPlayer));
   }
 
   const childWorldMatrix = _m;
