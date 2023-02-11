@@ -22,6 +22,7 @@ import {
   deserializeDeletes,
   deserializeFullChangedUpdate,
   deserializeInformPlayerNetworkId,
+  deserializeInformXRMode,
   deserializeNewPeerSnapshot,
   deserializeSnapshot,
   deserializeUpdateNetworkId,
@@ -115,7 +116,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       messageHandlers: {},
       cursorView: createCursorView(),
       tickRate: 10,
-      interpolate: true,
+      interpolate: false,
       clientSidePrediction: true,
       authoritative,
     };
@@ -136,6 +137,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
     registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommands);
     registerInboundMessageHandler(network, NetworkAction.ClientPosition, deserializeClientPosition);
+    registerInboundMessageHandler(network, NetworkAction.InformXRMode, deserializeInformXRMode);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),

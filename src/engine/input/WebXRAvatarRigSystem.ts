@@ -1,32 +1,38 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
-import { quat, vec3 } from "gl-matrix";
+import { mat4, quat, vec3 } from "gl-matrix";
 
 import { FlyControls } from "../../plugins/FlyCharacterController";
 import { GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { KinematicControls } from "../../plugins/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { addChild, removeChild, setFromLocalMatrix } from "../component/transform";
+import { addChild, removeChild, setFromLocalMatrix, setLocalFromWorldMatrix } from "../component/transform";
 import { GameState, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { createLineMesh } from "../mesh/mesh.game";
-import { getModule, Thread } from "../module/module.common";
 import { XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
-import { createRemoteObject, RemoteMaterial, RemoteNode } from "../resource/RemoteResources";
-import { tryGetRemoteResource } from "../resource/resource.game";
+import { getModule, Thread } from "../module/module.common";
+import { createPrefabEntity } from "../prefab/prefab.game";
+import { addObjectToWorld, createRemoteObject, RemoteMaterial, RemoteNode } from "../resource/RemoteResources";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { MaterialAlphaMode, MaterialType } from "../resource/schema";
 import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
 import { InputMessageType, SharedXRInputSource, SetXRReferenceSpaceMessage } from "./input.common";
 import { InputModule } from "./input.game";
+import { XRInputHandedness } from "./WebXRInputProfiles";
+import { Networked, Owned } from "../network/NetworkComponents";
 
 export interface XRAvatarRig {
   leftControllerEid?: number;
   leftRayEid?: number;
+  leftNetworkedEid?: number;
   prevLeftAssetPath?: string;
   rightControllerEid?: number;
   rightRayEid?: number;
+  rightNetworkedEid?: number;
+  cameraEid?: number;
   prevRightAssetPath?: string;
   arPrevCharController?: "kinematic" | "fly";
 }
@@ -57,37 +63,38 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const rigNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const rig = XRAvatarRig.get(eid);
+    const xrRig = XRAvatarRig.get(eid);
 
-    if (!rig) {
+    if (!xrRig) {
       continue;
     }
 
-    updateXRController(ctx, xrInputSourcesByHand, rigNode, rig, "left");
-    updateXRController(ctx, xrInputSourcesByHand, rigNode, rig, "right");
+    updateXRCamera(ctx, rigNode, xrRig, xrInputSourcesByHand);
+    updateXRController(ctx, xrInputSourcesByHand, rigNode, xrRig, "left");
+    updateXRController(ctx, xrInputSourcesByHand, rigNode, xrRig, "right");
 
     if (xrMode === XRMode.ImmersiveAR && sceneSupportsAR) {
-      if (!rig.arPrevCharController) {
+      if (!xrRig.arPrevCharController) {
         if (hasComponent(ctx.world, KinematicControls, eid)) {
-          rig.arPrevCharController = "kinematic";
+          xrRig.arPrevCharController = "kinematic";
           removeComponent(ctx.world, KinematicControls, eid);
         }
 
         if (hasComponent(ctx.world, FlyControls, eid)) {
-          rig.arPrevCharController = "fly";
+          xrRig.arPrevCharController = "fly";
           removeComponent(ctx.world, FlyControls, eid);
         }
 
         teleportEntity(rigNode, _v, _q);
       }
-    } else if (rig.arPrevCharController) {
-      if (rig.arPrevCharController === "kinematic") {
+    } else if (xrRig.arPrevCharController) {
+      if (xrRig.arPrevCharController === "kinematic") {
         addComponent(ctx.world, KinematicControls, eid);
       } else {
         addComponent(ctx.world, FlyControls, eid);
       }
 
-      rig.arPrevCharController = undefined;
+      xrRig.arPrevCharController = undefined;
     }
   }
 
@@ -236,37 +243,93 @@ function updateXRController(
     const controllerPoses = getReadObjectBufferView(inputSource.controllerPoses);
 
     if (!controllerNode) {
+      // controller
       controllerNode = createNodeFromGLTFURI(ctx, assetPath);
       addChild(rigNode, controllerNode);
 
-      const worldResource = ctx.worldResource;
-
-      if (hand === "left") {
-        rig.leftControllerEid = controllerNode.eid;
-        rig.prevLeftAssetPath = assetPath;
-        worldResource.activeLeftControllerNode = controllerNode;
-      } else if (hand === "right") {
-        rig.rightControllerEid = controllerNode.eid;
-        rig.prevRightAssetPath = assetPath;
-        worldResource.activeRightControllerNode = controllerNode;
-      }
-
+      // TODO: refactor ray + networked entities out of here
+      // ray
       const rayNode = createRay(ctx);
-      // const rayNode2 = createRay(ctx, [0, 1, 0, 0.5]);
-      // addChild(rayNode, rayNode2);
-      // // rayNode2.visible = false;
-
       rayNode.name = `${hand}Ray`;
       addChild(rigNode, rayNode);
       addXRRaycaster(ctx, rayNode.eid, hand);
 
-      if (hand === "left") rig.leftRayEid = rayNode.eid;
-      if (hand === "right") rig.rightRayEid = rayNode.eid;
+      // node
+      const networkedEntity = createPrefabEntity(ctx, `xr-hand`, { assetPath });
+      addComponent(ctx.world, Owned, networkedEntity.eid);
+      addComponent(ctx.world, Networked, networkedEntity.eid);
+
+      networkedEntity.visible = false;
+
+      addObjectToWorld(ctx, networkedEntity);
+
+      if (hand === XRInputHandedness.Left) {
+        rig.leftControllerEid = controllerNode.eid;
+        rig.prevLeftAssetPath = assetPath;
+        ctx.worldResource.activeLeftControllerNode = controllerNode;
+
+        rig.leftNetworkedEid = networkedEntity.eid;
+        rig.leftRayEid = rayNode.eid;
+      } else if (hand === XRInputHandedness.Right) {
+        rig.rightControllerEid = controllerNode.eid;
+        rig.prevRightAssetPath = assetPath;
+        ctx.worldResource.activeRightControllerNode = controllerNode;
+
+        rig.rightNetworkedEid = networkedEntity.eid;
+        rig.rightRayEid = rayNode.eid;
+      }
     }
 
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);
+
+    // take controller node world matrices and copy to networked ents
+    if (rig.leftNetworkedEid && hand === XRInputHandedness.Left) {
+      const node = getRemoteResource<RemoteNode>(ctx, rig.leftNetworkedEid)!;
+      setLocalFromWorldMatrix(node, controllerNode.worldMatrix);
+    }
+    if (rig.rightNetworkedEid && hand === XRInputHandedness.Right) {
+      const node = getRemoteResource<RemoteNode>(ctx, rig.rightNetworkedEid)!;
+      setLocalFromWorldMatrix(node, controllerNode.worldMatrix);
+    }
   } else if (eid) {
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     controllerNode.visible = false;
   }
+}
+
+const _m = mat4.create();
+
+function updateXRCamera(
+  ctx: GameState,
+  rigNode: RemoteNode,
+  xrRig: XRAvatarRig,
+  xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>
+) {
+  const inputSource = xrInputSourcesByHand.get("left");
+
+  if (!inputSource) {
+    return;
+  }
+
+  const cameraPoseTb = inputSource.cameraPose;
+  const cameraPose = getReadObjectBufferView(cameraPoseTb);
+
+  let cameraNode = getRemoteResource<RemoteNode>(ctx, xrRig.cameraEid || 0);
+
+  if (!cameraNode || !xrRig.cameraEid) {
+    cameraNode = createPrefabEntity(ctx, "xr-head");
+    addComponent(ctx.world, Owned, cameraNode.eid);
+    addComponent(ctx.world, Networked, cameraNode.eid);
+    cameraNode.visible = false;
+    addObjectToWorld(ctx, cameraNode);
+    xrRig.cameraEid = cameraNode.eid;
+  }
+
+  const childWorldMatrix = _m;
+  const childLocalMatrix = cameraPose.matrix;
+  const parentWorldMatrix = rigNode.worldMatrix;
+
+  mat4.multiply(childWorldMatrix, parentWorldMatrix, childLocalMatrix);
+
+  setFromLocalMatrix(cameraNode, childWorldMatrix);
 }

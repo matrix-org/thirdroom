@@ -80,6 +80,7 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
+  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -91,6 +92,8 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
 import { WebSGNetworkModule } from "../../engine/network/scripting.game";
+import { XRInputHandedness } from "../../engine/input/WebXRInputProfiles";
+import { createSphereMesh } from "../../engine/mesh/mesh.game";
 
 type ThirdRoomModuleState = {};
 
@@ -148,6 +151,38 @@ const createAvatarRig =
     return obj;
   };
 
+const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const handMaterial = new RemoteMaterial(ctx.resourceManager, {
+    name: "Head Material",
+    type: Schema.MaterialType.Standard,
+    baseColorFactor: [0, 0, 0, 1],
+    emissiveFactor: [0, 0, 0],
+    metallicFactor: 0,
+    roughnessFactor: 1,
+  });
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh: createSphereMesh(ctx, 0.38, handMaterial),
+  });
+  const obj = createRemoteObject(ctx, node);
+  return obj;
+};
+
+const createXRHand = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const handMaterial = new RemoteMaterial(ctx.resourceManager, {
+    name: "Hand Material",
+    type: Schema.MaterialType.Standard,
+    baseColorFactor: options.hand === XRInputHandedness.Left ? [1, 0, 0, 1] : [0, 0, 1, 1],
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 1,
+  });
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh: createSphereMesh(ctx, 0.24, handMaterial),
+  });
+  const obj = createRemoteObject(ctx, node);
+  return obj;
+};
+
 const tempSpawnPoints: RemoteNode[] = [];
 
 function getSpawnPoints(ctx: GameState): RemoteNode[] {
@@ -192,6 +227,18 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       name: "avatar",
       type: PrefabType.Avatar,
       create: createAvatarRig(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-head",
+      type: PrefabType.Avatar,
+      create: createXRHead(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-hand",
+      type: PrefabType.Avatar,
+      create: createXRHand(input, physics),
     });
 
     // create out of bounds floor check

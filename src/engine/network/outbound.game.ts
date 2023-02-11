@@ -1,6 +1,8 @@
 import { createCursorView, moveCursorView, writeUint32 } from "../allocator/CursorView";
+import { ourPlayerQuery } from "../component/Player";
 import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
+import { XRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { getModule } from "../module/module.common";
 import { createCommandsMessage } from "./commands.game";
 import { isHost } from "./network.common";
@@ -24,6 +26,7 @@ import {
   createCreateMessage,
   createDeleteMessage,
   createUpdateChangedMessage,
+  createInformXRMode,
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
@@ -188,6 +191,7 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
   // - peerIdIndex has been assigned
   // - player rig has spawned
   const haveConnectedPeers = network.peers.length > 0;
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
 
   if (haveConnectedPeers && spawnedPlayerRig) {
@@ -204,6 +208,10 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
 
           // inform new peer of our avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
+
+          // if XR, inform other clients to hide our avatar entity
+          const xrRig = XRAvatarRig.get(ourPlayer);
+          if (xrRig?.cameraEid) sendReliable(ctx, network, theirPeerId, createInformXRMode(ctx, ourPlayer));
         }
       }
     } else {

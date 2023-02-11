@@ -570,6 +570,38 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   return data;
 }
 
+export function createInformXRMode(ctx: GameState, eid: number) {
+  const data: NetPipeData = [ctx, messageView, ""];
+  writeMetadata(NetworkAction.InformXRMode)(data);
+  serializeInformXRMode(data, eid);
+  return sliceCursorView(messageView);
+}
+export const serializeInformXRMode = (data: NetPipeData, eid: number) => {
+  const [, v] = data;
+  writeUint32(v, Networked.networkId[eid]);
+  return data;
+};
+export const deserializeInformXRMode = (data: NetPipeData) => {
+  const [ctx, v] = data;
+  const network = getModule(ctx, NetworkModule);
+
+  // read
+  const nid = readUint32(v);
+
+  // guard
+  const eid = network.networkIdToEntityId.get(nid);
+  if (!eid) {
+    console.warn("could not deserialize InformXRMode message, eid not found for peerId", peerId);
+    return data;
+  }
+
+  // effect
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  node.visible = false;
+
+  return data;
+};
+
 export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
   const input: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.InformPlayerNetworkId)(input);

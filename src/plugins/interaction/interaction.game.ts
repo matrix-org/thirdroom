@@ -698,7 +698,7 @@ function updateGrabThrowXR(
     hand === "right" ? "primarySqueeze" : "secondarySqueeze"
   ) as ButtonActionState;
 
-  if (focusedEntity && (triggerState.held || squeezeState.held)) {
+  if (focusedEntity && (triggerState.pressed || squeezeState.held)) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
@@ -725,7 +725,7 @@ function updateGrabThrowXR(
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
           }
         }
-      } else if (triggerState.held && Interactable.type[node.eid] === InteractableType.Interactable) {
+      } else if (triggerState.pressed && Interactable.type[node.eid] === InteractableType.Interactable) {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
         const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
         const interactable = remoteNode?.interactable;
