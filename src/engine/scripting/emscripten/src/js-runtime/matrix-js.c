@@ -83,5 +83,5 @@ void js_define_matrix_api(JSContext *ctx, JSValue *target) {
   JS_SetPropertyStr(ctx, matrix, "close", JS_NewCFunction(ctx, js_close, "close", 0));
   JS_SetPropertyStr(ctx, matrix, "receive", JS_NewCFunction(ctx, js_receive, "receive", 0));
   JS_SetPropertyStr(ctx, matrix, "send", JS_NewCFunction(ctx, js_send, "send", 1));
-  JS_SetPropertyStr(ctx, *target, "matrix", matrix);
+  JS_SetPropertyStr(ctx, *target, "Matrix", matrix);
 }

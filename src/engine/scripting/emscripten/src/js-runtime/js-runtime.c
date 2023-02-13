@@ -15,7 +15,6 @@
 #include "./matrix-js.h"
 #include "./thirdroom-js.h"
 #include "./websg-js.h"
-#include "./websg-network-js.h"
 
 /**
  * Global State
@@ -43,12 +42,11 @@ export int32_t websg_initialize() {
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
   js_define_websg_api(ctx, &global);
-  js_define_websg_network_api(ctx, &global);
   js_define_thirdroom_api(ctx, &global);
   js_define_matrix_api(ctx, &global);
 
   int32_t source_len = thirdroom_get_js_source_size();
-  char *source = malloc(source_len);
+  char *source = js_malloc(ctx, source_len); // TODO: can we free this after JS_Eval?
   int32_t read_source_len = thirdroom_get_js_source(source);
 
   JSValue result = JS_Eval(ctx, source, read_source_len, "<test>", JS_EVAL_TYPE_GLOBAL);

@@ -39,7 +39,7 @@ import_websg(scene_add_node) int32_t websg_scene_add_node(scene_id_t scene_id, n
 // Returns 0 if successful or -1 if error
 import_websg(scene_remove_node) int32_t websg_scene_remove_node(scene_id_t scene_id, node_id_t node_id);
 // Returns the number of child nodes or -1 if error
-import_websg(scene_node_count) int32_t websg_scene_node_count(scene_id_t scene_id);
+import_websg(scene_get_node_count) int32_t websg_scene_get_node_count(scene_id_t scene_id);
 // Returns the number of node ids written to the array or -1 if error
 import_websg(scene_get_nodes) int32_t websg_scene_get_nodes(
   scene_id_t scene_id,

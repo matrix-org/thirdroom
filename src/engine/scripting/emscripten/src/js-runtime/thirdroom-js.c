@@ -81,5 +81,5 @@ void js_define_thirdroom_api(JSContext *ctx, JSValue *target) {
     JS_NewCFunction(ctx, js_get_audio_frequency_data, "getAudioFrequencyData", 1)
   );
 
-  JS_SetPropertyStr(ctx, *target, "thirdroom", thirdroom);
+  JS_SetPropertyStr(ctx, *target, "ThirdRoom", thirdroom);
 }

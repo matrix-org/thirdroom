@@ -107,5 +107,5 @@ void js_define_websg_network_api(JSContext *ctx, JSValue *target) {
   JS_SetPropertyStr(ctx, matrix, "receive", JS_NewCFunction(ctx, js_receive, "receive", 0));
   JS_SetPropertyStr(ctx, matrix, "receiveInto", JS_NewCFunction(ctx, js_receive_into, "receiveInto", 1));
   JS_SetPropertyStr(ctx, matrix, "broadcast", JS_NewCFunction(ctx, js_broadcast, "broadcast", 1));
-  JS_SetPropertyStr(ctx, *target, "network", matrix);
+  JS_SetPropertyStr(ctx, *target, "Network", matrix);
 }

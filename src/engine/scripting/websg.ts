@@ -258,7 +258,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    scene_node_count(sceneId: number) {
+    scene_get_node_count(sceneId: number) {
       const scene = getScriptResource(wasmCtx, RemoteScene, sceneId);
 
       if (!scene) {
