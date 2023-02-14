@@ -18,6 +18,7 @@ import { createWebSGModule } from "./websg";
 import { createWebSGNetworkModule } from "../network/scripting.game";
 import { createThirdroomModule } from "./thirdroom";
 import { mockGameState } from "../../../test/engine/mocks";
+import { createCursorView } from "../allocator/CursorView";
 
 interface TestContext {
   imports: any;
@@ -47,6 +48,7 @@ describe("JS Scripting API", () => {
 
     const wasmCtx: WASMModuleContext = {
       memory,
+      cursorView: createCursorView(memory.buffer, true),
       U32Heap: new Uint32Array(memory.buffer),
       U8Heap: new Uint8Array(memory.buffer),
       F32Heap: new Float32Array(memory.buffer),
