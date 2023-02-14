@@ -4,14 +4,6 @@
 #include <string.h>
 #include "../../../../src/engine/scripting/emscripten/src/websg.h"
 
-export void *websg_allocate(int size) {
-  return malloc(size);
-}
-
-export void websg_deallocate(void *ptr) {
-  free(ptr);
-}
-
 node_id_t material_button;
 node_id_t room1_switch;
 node_id_t room2_switch;
@@ -30,7 +22,7 @@ bool material_button_state = true;
 bool room1_switch_state = true;
 bool room2_switch_state = true;
 
-export void websg_loaded() {
+export void websg_load() {
   const char *material_button_name = "MaterialButton";
   material_button = websg_node_find_by_name(material_button_name, strlen(material_button_name));
   const char *left_cube_name = "LeftCube";

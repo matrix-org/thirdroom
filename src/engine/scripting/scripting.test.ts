@@ -82,7 +82,7 @@ describe("JS Scripting API", () => {
     context.wasmCtx = wasmCtx;
     context.evalJS = (source: string): any => {
       const sourceArr = wasmCtx.textEncoder.encode(source);
-      const sourcePtr = wasmExports.test_alloc(sourceArr.byteLength);
+      const sourcePtr = wasmExports.test_alloc(sourceArr.byteLength + 1);
       writeEncodedString(wasmCtx, sourcePtr, sourceArr);
       const resultPtr = wasmExports.test_eval_js(sourcePtr);
 
@@ -109,11 +109,11 @@ describe("JS Scripting API", () => {
   describe("thirdroom", () => {
     describe(".enableMatrixMaterial()", () => {
       it<TestContext>("should be called with a boolean", ({ evalJS, imports }) => {
-        const result1 = evalJS(/*js*/ `thirdroom.enableMatrixMaterial(true);`);
+        const result1 = evalJS(/*js*/ `ThirdRoom.enableMatrixMaterial(true);`);
         expect(imports.thirdroom.enable_matrix_material).toHaveBeenCalledWith(1);
         expect(result1).toEqual(undefined);
 
-        const result2 = evalJS(/*js*/ `thirdroom.enableMatrixMaterial(false);`);
+        const result2 = evalJS(/*js*/ `ThirdRoom.enableMatrixMaterial(false);`);
         expect(imports.thirdroom.enable_matrix_material).toHaveBeenCalledWith(0);
         expect(result2).toEqual(undefined);
       });
@@ -122,7 +122,7 @@ describe("JS Scripting API", () => {
     describe(".getAudioDataSize()", () => {
       it<TestContext>("should return the audio data size", ({ evalJS, imports }) => {
         imports.thirdroom.get_audio_data_size.mockImplementationOnce(() => 123);
-        const result = evalJS(/*js*/ `thirdroom.getAudioDataSize();`);
+        const result = evalJS(/*js*/ `ThirdRoom.getAudioDataSize();`);
         expect(imports.thirdroom.get_audio_data_size).toHaveBeenCalled();
         expect(result).toEqual(123);
       });
@@ -141,8 +141,8 @@ describe("JS Scripting API", () => {
           return writeUint8Array(wasmCtx, ptr, arr);
         });
         const result = evalJS(/*js*/ `
-          const arr = new Uint8Array(thirdroom.getAudioDataSize());
-          const bytesWritten = thirdroom.getAudioTimeData(arr);
+          const arr = new Uint8Array(ThirdRoom.getAudioDataSize());
+          const bytesWritten = ThirdRoom.getAudioTimeData(arr);
           [bytesWritten, arr[127]];
         `);
         expect(imports.thirdroom.get_audio_data_size).toBeCalledTimes(2);
@@ -164,8 +164,8 @@ describe("JS Scripting API", () => {
           return writeUint8Array(wasmCtx, ptr, arr);
         });
         const result = evalJS(/*js*/ `
-          const arr = new Uint8Array(thirdroom.getAudioDataSize());
-          const bytesWritten = thirdroom.getAudioFrequencyData(arr);
+          const arr = new Uint8Array(ThirdRoom.getAudioDataSize());
+          const bytesWritten = ThirdRoom.getAudioFrequencyData(arr);
           [bytesWritten, arr[10]];
         `);
         expect(imports.thirdroom.get_audio_data_size).toBeCalledTimes(2);
@@ -179,14 +179,14 @@ describe("JS Scripting API", () => {
     describe(".listen()", () => {
       it<TestContext>("should return undefined when successful", ({ evalJS, imports }) => {
         imports.matrix.listen.mockImplementation(() => 0);
-        const result = evalJS(/*js*/ `matrix.listen();`);
+        const result = evalJS(/*js*/ `Matrix.listen();`);
         expect(imports.matrix.listen).toBeCalled();
         expect(result).toEqual(undefined);
       });
 
       it<TestContext>("should throw an error when unsuccessful", ({ evalJS, imports }) => {
         imports.matrix.listen.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `matrix.listen();`)).toThrowError("error listening for messages");
+        expect(() => evalJS(/*js*/ `Matrix.listen();`)).toThrowError("error listening for messages");
         expect(imports.matrix.listen).toBeCalled();
       });
     });
@@ -194,14 +194,14 @@ describe("JS Scripting API", () => {
     describe(".close()", () => {
       it<TestContext>("should return undefined when successful", ({ evalJS, imports }) => {
         imports.matrix.close.mockImplementation(() => 0);
-        const result = evalJS(/*js*/ `matrix.close();`);
+        const result = evalJS(/*js*/ `Matrix.close();`);
         expect(imports.matrix.close).toBeCalled();
         expect(result).toEqual(undefined);
       });
 
       it<TestContext>("should throw an error when unsuccessful", ({ evalJS, imports }) => {
         imports.matrix.close.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `matrix.close();`)).toThrowError("error closing listener");
+        expect(() => evalJS(/*js*/ `Matrix.close();`)).toThrowError("error closing listener");
         expect(imports.matrix.close).toBeCalled();
       });
     });
@@ -210,7 +210,7 @@ describe("JS Scripting API", () => {
       it<TestContext>("should return undefined when implementation is successful", ({ evalJS, imports, wasmCtx }) => {
         imports.matrix.send.mockImplementationOnce(() => 0);
 
-        const result = evalJS(/*js*/ `matrix.send({ test: "Hello World!" });`);
+        const result = evalJS(/*js*/ `Matrix.send({ test: "Hello World!" });`);
         expect(result).toEqual(undefined);
 
         expect(imports.matrix.send).toBeCalled();
@@ -221,7 +221,7 @@ describe("JS Scripting API", () => {
 
       it<TestContext>("should throw an error when send implementation is unsuccessful", ({ evalJS, imports }) => {
         imports.matrix.send.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `matrix.send({ test: "this should fail" });`)).toThrowError("error sending event");
+        expect(() => evalJS(/*js*/ `Matrix.send({ test: "this should fail" });`)).toThrowError("error sending event");
         expect(imports.matrix.send).toBeCalled();
       });
 
@@ -231,7 +231,7 @@ describe("JS Scripting API", () => {
           evalJS(/*js*/ `
           const obj = {};
           obj.circular = obj;
-          matrix.send(obj);
+          Matrix.send(obj);
         `)
         ).toThrowError("circular reference");
       });
@@ -256,12 +256,12 @@ describe("JS Scripting API", () => {
           .mockImplementationOnce(() => 0);
 
         const result = evalJS(/*js*/ `
-          matrix.listen();
+          Matrix.listen();
 
           const events = [];
 
           while (true) {
-            const event = matrix.receive();
+            const event = Matrix.receive();
 
             if (event === undefined) {
               break;
@@ -282,7 +282,7 @@ describe("JS Scripting API", () => {
         imports.matrix.get_event_size.mockImplementationOnce(() => 8);
         imports.matrix.receive.mockImplementationOnce(() => -1);
 
-        expect(() => evalJS(/*js*/ `matrix.receive();`)).toThrowError("error receiving event");
+        expect(() => evalJS(/*js*/ `Matrix.receive();`)).toThrowError("error receiving event");
         expect(imports.matrix.receive).toBeCalled();
       });
 
@@ -298,13 +298,13 @@ describe("JS Scripting API", () => {
 
         expect(() =>
           evalJS(/*js*/ `
-          matrix.listen();
+          Matrix.listen();
 
           const events = [];
 
           let event;
 
-          while (event = matrix.receive()) {
+          while (event = Matrix.receive()) {
             events.push(event);
           }
 
@@ -322,14 +322,14 @@ describe("JS Scripting API", () => {
     describe(".listen()", () => {
       it<TestContext>("should return undefined when successful", ({ evalJS, imports }) => {
         imports.websg_network.listen.mockImplementation(() => 0);
-        const result = evalJS(/*js*/ `network.listen();`);
+        const result = evalJS(/*js*/ `WebSG.Network.listen();`);
         expect(imports.websg_network.listen).toBeCalled();
         expect(result).toEqual(undefined);
       });
 
       it<TestContext>("should throw an error when unsuccessful", ({ evalJS, imports }) => {
         imports.websg_network.listen.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `network.listen();`)).toThrowError("error listening for packets");
+        expect(() => evalJS(/*js*/ `WebSG.Network.listen();`)).toThrowError("error listening for packets");
         expect(imports.websg_network.listen).toBeCalled();
       });
     });
@@ -337,14 +337,14 @@ describe("JS Scripting API", () => {
     describe(".close()", () => {
       it<TestContext>("should return undefined when successful", ({ evalJS, imports }) => {
         imports.websg_network.close.mockImplementation(() => 0);
-        const result = evalJS(/*js*/ `network.close();`);
+        const result = evalJS(/*js*/ `WebSG.Network.close();`);
         expect(imports.websg_network.close).toBeCalled();
         expect(result).toEqual(undefined);
       });
 
       it<TestContext>("should throw an error when unsuccessful", ({ evalJS, imports }) => {
         imports.websg_network.close.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `network.close();`)).toThrowError("error closing listener");
+        expect(() => evalJS(/*js*/ `WebSG.Network.close();`)).toThrowError("error closing listener");
         expect(imports.websg_network.close).toBeCalled();
       });
     });
@@ -356,7 +356,7 @@ describe("JS Scripting API", () => {
         const result = evalJS(/*js*/ `
           const buffer = new ArrayBuffer(8);
           new Uint32Array(buffer).set([1, 7]);
-          const result = network.broadcast(buffer);
+          const result = WebSG.Network.broadcast(buffer);
           result;
         `);
         expect(result).toEqual(undefined);
@@ -369,13 +369,15 @@ describe("JS Scripting API", () => {
 
       it<TestContext>("should throw an error when broadcast implementation is unsuccessful", ({ evalJS, imports }) => {
         imports.websg_network.broadcast.mockImplementation(() => -1);
-        expect(() => evalJS(/*js*/ `network.broadcast(new ArrayBuffer(1));`)).toThrowError("error broadcasting event");
+        expect(() => evalJS(/*js*/ `WebSG.Network.broadcast(new ArrayBuffer(1));`)).toThrowError(
+          "error broadcasting event"
+        );
         expect(imports.websg_network.broadcast).toBeCalled();
       });
 
       it<TestContext>("should throw an error when the message is not an array buffer", ({ evalJS, imports }) => {
         imports.websg_network.broadcast.mockImplementation(() => 0);
-        expect(() => evalJS(/*js*/ `network.broadcast("error");`)).toThrowError("ArrayBuffer object expected");
+        expect(() => evalJS(/*js*/ `WebSG.Network.broadcast("error");`)).toThrowError("ArrayBuffer object expected");
       });
     });
 
@@ -395,13 +397,13 @@ describe("JS Scripting API", () => {
           .mockImplementationOnce(() => 0);
 
         const result = evalJS(/*js*/ `
-          network.listen();
+          WebSG.Network.listen();
 
           const values = [];
 
           let packet;
 
-          while (packet = network.receive()) {
+          while (packet = WebSG.Network.receive()) {
             values.push(Array.from(new Uint32Array(packet)));
           }
 
@@ -417,7 +419,7 @@ describe("JS Scripting API", () => {
         imports.websg_network.get_packet_size.mockImplementationOnce(() => 8);
         imports.websg_network.receive.mockImplementationOnce(() => -1);
 
-        expect(() => evalJS(/*js*/ `network.receive();`)).toThrowError("error receiving packet");
+        expect(() => evalJS(/*js*/ `WebSG.Network.receive();`)).toThrowError("error receiving packet");
         expect(imports.websg_network.receive).toBeCalled();
       });
     });
@@ -438,14 +440,14 @@ describe("JS Scripting API", () => {
           .mockImplementationOnce(() => 0);
 
         const result = evalJS(/*js*/ `
-          network.listen();
+          WebSG.Network.listen();
     
           const values = [];
     
           const target = new ArrayBuffer(8);
           let bytesRead = 0;
     
-          while (bytesRead = network.receiveInto(target)) {
+          while (bytesRead = WebSG.Network.receiveInto(target)) {
             values.push(Array.from(new Uint32Array(target)));
           }
     
@@ -464,7 +466,9 @@ describe("JS Scripting API", () => {
         imports.websg_network.get_packet_size.mockImplementationOnce(() => 8);
         imports.websg_network.receive.mockImplementationOnce(() => -1);
 
-        expect(() => evalJS(/*js*/ `network.receiveInto(new ArrayBuffer(8));`)).toThrowError("error receiving packet");
+        expect(() => evalJS(/*js*/ `WebSG.Network.receiveInto(new ArrayBuffer(8));`)).toThrowError(
+          "error receiving packet"
+        );
         expect(imports.websg_network.receive).toBeCalled();
       });
 
@@ -472,7 +476,7 @@ describe("JS Scripting API", () => {
         imports.websg_network.get_packet_size.mockImplementationOnce(() => 8);
         imports.websg_network.receive.mockImplementationOnce(() => 0);
 
-        expect(() => evalJS(/*js*/ `network.receiveInto(new ArrayBuffer(4));`)).toThrowError(
+        expect(() => evalJS(/*js*/ `WebSG.Network.receiveInto(new ArrayBuffer(4));`)).toThrowError(
           "packet is too large for target array buffer"
         );
       });

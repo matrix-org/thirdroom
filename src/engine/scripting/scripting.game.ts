@@ -16,6 +16,7 @@ export enum ScriptState {
   Initialized,
   Loaded,
   Entered,
+  Error,
 }
 
 export interface Script {
@@ -120,11 +121,9 @@ export async function loadScript(
   const websgInitialize =
     exports.websg_initialize && typeof exports.websg_initialize === "function" ? exports.websg_initialize : undefined;
 
-  const websgLoaded =
-    exports.websg_loaded && typeof exports.websg_loaded === "function" ? exports.websg_loaded : undefined;
+  const websgLoad = exports.websg_load && typeof exports.websg_load === "function" ? exports.websg_load : undefined;
 
-  const websgEntered =
-    exports.websg_entered && typeof exports.websg_entered === "function" ? exports.websg_entered : undefined;
+  const websgEnter = exports.websg_enter && typeof exports.websg_enter === "function" ? exports.websg_enter : undefined;
 
   const websgUpdate =
     exports.websg_update && typeof exports.websg_update === "function" ? exports.websg_update : undefined;
@@ -133,6 +132,10 @@ export async function loadScript(
     state: ScriptState.Uninitialized,
     wasmCtx,
     initialize() {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
       if (this.state !== ScriptState.Uninitialized) {
         throw new Error("initialize() can only be called from the Uninitialized state");
       }
@@ -142,37 +145,72 @@ export async function loadScript(
       }
 
       if (websgInitialize) {
-        websgInitialize();
+        const result = websgInitialize();
+        if (result < 0) {
+          console.error(`Script initialize callback failed with code: ${result}`);
+          this.state = ScriptState.Error;
+          return;
+        }
       }
 
       this.state = ScriptState.Initialized;
     },
     loaded() {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
       if (this.state !== ScriptState.Initialized) {
         throw new Error("initialize() can only be called from the Initialized state");
       }
 
-      if (websgLoaded) {
-        websgLoaded();
+      if (websgLoad) {
+        const result = websgLoad();
+
+        if (result < 0) {
+          console.error(`Script load callback failed with code: ${result}`);
+          this.state = ScriptState.Error;
+          return;
+        }
       }
 
       this.state = ScriptState.Loaded;
     },
     entered() {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
       if (this.state !== ScriptState.Loaded) {
         throw new Error("initialize() can only be called from the Loaded state");
       }
 
-      if (websgEntered) {
-        websgEntered();
+      if (websgEnter) {
+        const result = websgEnter();
+
+        if (result < 0) {
+          console.error(`Script enter callback failed with code: ${result}`);
+          this.state = ScriptState.Error;
+          return;
+        }
       }
 
       this.state = ScriptState.Entered;
     },
     update(dt: number) {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
       if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
         if (websgUpdate) {
-          websgUpdate(dt);
+          const result = websgUpdate(dt);
+
+          if (result < 0) {
+            console.error(`Script update callback failed with code: ${result}`);
+            this.state = ScriptState.Error;
+            return;
+          }
         }
       } else {
         throw new Error("update() can only be called from the Loaded or Entered state");

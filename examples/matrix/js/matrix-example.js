@@ -1,11 +1,14 @@
-const tv = WebSG.getNodeByName("TV");
-tv.interactable = new WebSG.Interactable();
-
+let tv;
 let tvState = false;
 
+onload = () => {
+  tv = WebSG.nodeFindByName("TV");
+  WebSG.addInteractable(tv);
+};
+
 onupdate = (dt) => {
-  if (tv.interactable.pressed) {
+  if (WebSG.getInteractablePressed(tv)) {
     tvState = !tvState;
-    thirdroom.enableMatrixMaterial(tvState);
+    ThirdRoom.enableMatrixMaterial(tvState);
   }
 };

@@ -582,11 +582,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     create_mesh(primitivesPtr: number, primitiveCount: number) {
       try {
         const primitiveProps: MeshPrimitiveProps[] = [];
+        const MESH_PRIMITIVE_PROPS_BYTE_LENGTH = 20;
 
         for (let primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
-          moveCursorView(wasmCtx.cursorView, primitivesPtr + primitiveIndex * Uint32Array.BYTES_PER_ELEMENT);
-          const primitivePtr = readUint32(wasmCtx.cursorView);
-          moveCursorView(wasmCtx.cursorView, primitivePtr);
+          moveCursorView(wasmCtx.cursorView, primitivesPtr + primitiveIndex * MESH_PRIMITIVE_PROPS_BYTE_LENGTH);
 
           const mode = readUint32(wasmCtx.cursorView);
 
@@ -620,10 +619,13 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           }
 
           const attributeCount = readUint32(wasmCtx.cursorView);
+          const attributesPtr = readUint32(wasmCtx.cursorView);
+          const MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH = 8;
 
           const attributes: { [key: number]: RemoteAccessor } = {};
 
           for (let attributeIndex = 0; attributeIndex < attributeCount; attributeIndex++) {
+            moveCursorView(wasmCtx.cursorView, attributesPtr + attributeIndex * MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH);
             const attributeKey = readUint32(wasmCtx.cursorView);
 
             if (MeshPrimitiveAttributeIndex[attributeKey] === undefined) {
@@ -687,6 +689,25 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
       return mesh?.primitives[index]?.material?.eid || 0;
     },
+    mesh_set_primitive_material(meshId: number, index: number, materialId: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+
+      const primitive = mesh?.primitives[index];
+
+      if (!primitive) {
+        return -1;
+      }
+
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      primitive.material = material;
+
+      return 0;
+    },
     mesh_get_primitive_mode(meshId: number, index: number) {
       const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
       return mesh?.primitives[index]?.mode || 0;
@@ -704,7 +725,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
         const componentType = readUint32(wasmCtx.cursorView);
 
-        if (AccessorComponentType[type] === undefined) {
+        if (AccessorComponentType[componentType] === undefined) {
           console.error(`WebSG: invalid accessor component type: ${componentType}`);
           return 0;
         }
@@ -714,9 +735,9 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         const dynamic = !!readUint32(wasmCtx.cursorView);
         // TODO: read min/max props
 
-        const buffer = new RemoteBuffer(ctx.resourceManager, { data });
-        const bufferView = new RemoteBufferView(ctx.resourceManager, { buffer, byteLength });
-        const accessor = new RemoteAccessor(ctx.resourceManager, {
+        const buffer = new RemoteBuffer(wasmCtx.resourceManager, { data });
+        const bufferView = new RemoteBufferView(wasmCtx.resourceManager, { buffer, byteLength });
+        const accessor = new RemoteAccessor(wasmCtx.resourceManager, {
           bufferView,
           type,
           componentType,

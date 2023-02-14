@@ -13,7 +13,7 @@ let room2Light;
 let room2Switch;
 let room2LightState = true;
 
-onloaded = () => {
+onload = () => {
   materialButton = WebSG.nodeFindByName("MaterialButton");
   WebSG.addInteractable(materialButton);
 

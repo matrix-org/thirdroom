@@ -28,7 +28,8 @@ JSContext *ctx;
  **/
 
 JSAtom onUpdateAtom;
-JSAtom onLoadedAtom;
+JSAtom onLoadAtom;
+JSAtom onEnterAtom;
 
 /*********************
  * Exported Functions
@@ -39,7 +40,8 @@ export int32_t websg_initialize() {
   ctx = JS_NewContext(rt);
 
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
-  onLoadedAtom = JS_NewAtom(ctx, "onloaded");
+  onLoadAtom = JS_NewAtom(ctx, "onload");
+  onEnterAtom = JS_NewAtom(ctx, "onenter");
 
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
@@ -64,26 +66,59 @@ export int32_t websg_initialize() {
   return 0;
 }
 
-export int32_t websg_loaded() {
+export int32_t websg_load() {
   JSValue global = JS_GetGlobalObject(ctx);
 
-  JSValue loadedFn = JS_GetProperty(ctx, global, onLoadedAtom);
+  JSValue loadFn = JS_GetProperty(ctx, global, onLoadAtom);
 
-  if (JS_IsException(loadedFn)) {
+  if (JS_IsException(loadFn)) {
     JSValue error = JS_GetException(ctx);
     js_log_error(ctx, &error);
     JS_FreeValue(ctx, error);
-    JS_FreeValue(ctx, loadedFn);
+    JS_FreeValue(ctx, loadFn);
     return -1;
-  } else if (JS_IsUndefined(loadedFn)) {
+  } else if (JS_IsUndefined(loadFn)) {
     return 0;
   }
 
   JSValueConst args[] = {};
-  JSValue val = JS_Call(ctx, loadedFn, JS_UNDEFINED, 0, args);
-  JS_FreeValue(ctx, loadedFn);
+  JSValue val = JS_Call(ctx, loadFn, JS_UNDEFINED, 0, args);
+  JS_FreeValue(ctx, loadFn);
 
-  int32_t ret;
+  int32_t ret = 0;
+
+  if (JS_IsException(val)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    ret = -1;
+  }
+
+  JS_FreeValue(ctx, val);
+
+  return ret;
+}
+
+export int32_t websg_enter() {
+  JSValue global = JS_GetGlobalObject(ctx);
+
+  JSValue enterFn = JS_GetProperty(ctx, global, onEnterAtom);
+
+  if (JS_IsException(enterFn)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    JS_FreeValue(ctx, enterFn);
+    return -1;
+  } else if (JS_IsUndefined(enterFn)) {
+    return 0;
+  }
+
+  JSValueConst args[] = {};
+  JSValue val = JS_Call(ctx, enterFn, JS_UNDEFINED, 0, args);
+  JS_FreeValue(ctx, enterFn);
+
+  int32_t ret = 0;
 
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
@@ -127,7 +162,7 @@ export int32_t websg_update(float_t dt) {
 
   JS_FreeValue(ctx, updateFn);
 
-  int32_t ret;
+  int32_t ret = 0;
 
   if (JS_IsException(val)) {
     JSValue error = JS_GetException(ctx);
