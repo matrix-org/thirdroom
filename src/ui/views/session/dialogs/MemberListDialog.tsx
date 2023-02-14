@@ -33,6 +33,7 @@ import { useRoomCall } from "../../../hooks/useRoomCall";
 import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
 import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 import { useAnimationFrame } from "../nametags/Nametags";
+import { setPowerLevel } from "../../../utils/matrixUtils";
 
 interface MemberListDialogProps {
   room: Room;
@@ -85,6 +86,9 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const kick = (roomId: string, userId: string) => session.hsApi.kick(roomId, userId);
   const ban = (roomId: string, userId: string) => session.hsApi.ban(roomId, userId);
   const unban = (roomId: string, userId: string) => session.hsApi.unban(roomId, userId);
+  const makeMember = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 0);
+  const makeMod = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 50);
+  const makeAdmin = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 100);
 
   const engine = useMainThreadContext();
   const toggleMute = (userId: string) => toggleMutePeer(engine, userId);
@@ -133,6 +137,23 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
               Ban
             </DropdownMenuItem>
           );
+        if (myPL === 100) {
+          menuItems.push(
+            <DropdownMenuItem key="make-member" disabled={userPL === 0} onSelect={() => makeMember(room.id, userId)}>
+              Make Member
+            </DropdownMenuItem>
+          );
+          menuItems.push(
+            <DropdownMenuItem key="make-mod" disabled={userPL === 50} onSelect={() => makeMod(room.id, userId)}>
+              Make Moderator
+            </DropdownMenuItem>
+          );
+          menuItems.push(
+            <DropdownMenuItem key="make-admin" disabled={userPL === 100} onSelect={() => makeAdmin(room.id, userId)}>
+              Make Admin
+            </DropdownMenuItem>
+          );
+        }
         break;
       case "ban":
         if (canKick && myPL > userPL)

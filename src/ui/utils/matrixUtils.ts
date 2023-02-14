@@ -236,3 +236,16 @@ export function eventByOrderKey(ev1: StateEvent, ev2: StateEvent) {
   if (o2 === undefined) return -1;
   return o1 < o2 ? -1 : 1;
 }
+
+export async function setPowerLevel(session: Session, roomId: string, userId: string, powerLevel: number) {
+  const content = await session.hsApi.state(roomId, "m.room.power_levels", "").response();
+  await session.hsApi
+    .sendState(roomId, "m.room.power_levels", "", {
+      ...content,
+      users: {
+        ...content.users,
+        [userId]: powerLevel,
+      },
+    })
+    .response();
+}
