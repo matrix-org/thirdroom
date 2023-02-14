@@ -893,5 +893,50 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    get_interactable_pressed(nodeId: number, interactablePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      const interactable = node.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.pressed ? 1 : 0;
+    },
+    get_interactable_held(nodeId: number, interactablePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      const interactable = node.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.held ? 1 : 0;
+    },
+    get_interactable_released(nodeId: number, interactablePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      const interactable = node.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.released ? 1 : 0;
+    },
   };
 }

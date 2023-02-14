@@ -224,7 +224,7 @@ typedef struct AccessorProps {
 } AccessorProps;
 
 // TODO: Add standard websg_create_accessor method that takes buffer views and support sparse accessors
-import_websg(create_accessor_with) accessor_id_t websg_create_accessor_from(
+import_websg(create_accessor_from) accessor_id_t websg_create_accessor_from(
   void *data,
   u_int32_t byte_length,
   AccessorProps *props
@@ -247,8 +247,6 @@ typedef enum LightType {
 } LightType;
 
 import_websg(create_light) light_id_t websg_create_light(LightType type);
-import_websg(light_find_by_name) light_id_t websg_light_find_by_name(char *name, uint32_t length);
-
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
 import_websg(light_get_intensity) float_t websg_light_get_intensity(light_id_t light_id);
@@ -273,5 +271,8 @@ import_websg(add_interactable) int32_t websg_add_interactable(node_id_t node_id,
 import_websg(remove_interactable) int32_t websg_remove_interactable(node_id_t node_id);
 import_websg(has_interactable) int32_t websg_has_interactable(node_id_t node_id);
 import_websg(get_interactable) int32_t websg_get_interactable(node_id_t node_id, Interactable *interactable);
+import_websg(get_interactable_pressed) int32_t websg_get_interactable_pressed(node_id_t node_id);
+import_websg(get_interactable_held) int32_t websg_get_interactable_held(node_id_t node_id);
+import_websg(get_interactable_released) int32_t websg_get_interactable_released(node_id_t node_id);
 
 #endif
