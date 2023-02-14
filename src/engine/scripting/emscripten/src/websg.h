@@ -14,6 +14,7 @@ typedef uint32_t accessor_id_t;
 typedef uint32_t buffer_view_id_t;
 typedef uint32_t buffer_id_t;
 typedef uint32_t material_id_t;
+typedef uint32_t texture_id_t;
 typedef uint32_t light_id_t;
 
 // Environment
@@ -30,7 +31,7 @@ import_websg(set_environment_scene) int32_t websg_set_environment_scene(scene_id
 // Returns scene id or 0 if error
 import_websg(create_scene) scene_id_t websg_create_scene();
 // Returns scene id or 0 if not found
-import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(char *name, uint32_t length);
+import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(const char *name, uint32_t length);
 
 // Scene Hierarchy
 
@@ -59,7 +60,7 @@ import_websg(scene_get_node) node_id_t websg_scene_get_node(
 // Returns node id or 0 if error
 import_websg(create_node) node_id_t websg_create_node();
 // Returns node id or 0 if not found
-import_websg(node_find_by_name) node_id_t websg_node_find_by_name(char *name, uint32_t length);
+import_websg(node_find_by_name) node_id_t websg_node_find_by_name(const char *name, uint32_t length);
 
 // Node Hierarchy
 
@@ -68,7 +69,7 @@ import_websg(node_add_child) int32_t websg_node_add_child(node_id_t node_id, nod
 // Returns 0 if successful or -1 if error
 import_websg(node_remove_child) int32_t websg_node_remove_child(node_id_t node_id, node_id_t child_id);
 // Returns the number of child nodes or -1 if error
-import_websg(node_child_count) int32_t websg_node_child_count(node_id_t node_id);
+import_websg(node_get_child_count) int32_t websg_node_get_child_count(node_id_t node_id);
 // Returns the number of node ids written to the array or -1 if error
 import_websg(node_get_children) int32_t websg_node_get_children(
   node_id_t node_id,
@@ -106,13 +107,13 @@ import_websg(node_get_world_matrix) int32_t websg_node_get_world_matrix(node_id_
 // Node Props
 
 // Returns 0 if false 1 if true
-import_websg(node_get_visible) u_int32_t websg_node_get_visible(node_id_t node_id);
+import_websg(node_get_visible) uint32_t websg_node_get_visible(node_id_t node_id);
 // Returns 0 if successful or -1 if error
-import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id, u_int32_t visible);
+import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id, uint32_t visible);
 // Returns 0 if false 1 if true
-import_websg(node_get_is_static) u_int32_t websg_node_get_is_static(node_id_t node_id);
+import_websg(node_get_is_static) uint32_t websg_node_get_is_static(node_id_t node_id);
 // Returns 0 if successful or -1 if error
-import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, u_int32_t is_static);
+import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, uint32_t is_static);
 
 // Node Refs
 
@@ -161,7 +162,7 @@ typedef struct MeshPrimitiveProps {
 } MeshPrimitiveProps;
 
 import_websg(create_mesh) mesh_id_t websg_create_mesh(MeshPrimitiveProps *primitives, uint32_t count);
-import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(char *name, uint32_t length);
+import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(const char *name, uint32_t length);
 // Returns the number of mesh primitives or -1 if error
 import_websg(mesh_get_primitive_count) int32_t websg_mesh_get_primitive_count(mesh_id_t mesh_id);
 // Returns the accessor id or 0 if not found
@@ -226,14 +227,59 @@ typedef struct AccessorProps {
 // TODO: Add standard websg_create_accessor method that takes buffer views and support sparse accessors
 import_websg(create_accessor_from) accessor_id_t websg_create_accessor_from(
   void *data,
-  u_int32_t byte_length,
+  uint32_t byte_length,
   AccessorProps *props
 );
-import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(char *name, uint32_t length);
+import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(const char *name, uint32_t length);
 import_websg(accessor_update_with) int32_t websg_accessor_update_with(
   accessor_id_t accessor_id,
   void *data,
   uint32_t length
+);
+
+/**
+ * Material
+ **/
+
+typedef enum MaterialType {
+  MaterialType_Standard,
+  MaterialType_Unlit,
+} MaterialType;
+
+import_websg(create_material) material_id_t websg_create_material(MaterialType type);
+import_websg(material_find_by_name) material_id_t websg_material_find_by_name(const char *name, uint32_t length);
+import_websg(material_get_base_color_factor) int32_t websg_material_get_base_color_factor(
+  material_id_t material_id,
+  float_t *base_color_factor
+);
+import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor(
+  material_id_t material_id,
+  float_t *base_color_factor
+);
+import_websg(material_get_metallic_factor) float_t websg_material_get_metallic_factor(material_id_t material_id);
+import_websg(material_set_metallic_factor) int32_t websg_material_set_metallic_factor(
+  material_id_t material_id,
+  float_t metallic_factor
+);
+import_websg(material_get_roughness_factor) float_t websg_material_get_roughness_factor(material_id_t material_id);
+import_websg(material_set_roughness_factor) int32_t websg_material_set_roughness_factor(
+  material_id_t material_id,
+  float_t roughness_factor
+);
+import_websg(material_get_emissive_factor) int32_t websg_material_get_emissive_factor(
+  material_id_t material_id,
+  float_t *emissive_factor
+);
+import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor(
+  material_id_t material_id,
+  float_t *emissive_factor
+);
+import_websg(material_get_base_color_texture) texture_id_t websg_material_get_base_color_texture(
+  material_id_t material_id
+);
+import_websg(material_set_base_color_texture) int32_t websg_material_set_base_color_texture(
+  material_id_t material_id,
+  texture_id_t texture_id
 );
 
 /**
@@ -257,7 +303,7 @@ import_websg(light_set_intensity) int32_t websg_light_set_intensity(light_id_t l
  **/
 
 typedef enum InteractableType {
-  InteractableType_Interactable,
+  InteractableType_Interactable = 1,
 } InteractableType;
 
 typedef struct Interactable {

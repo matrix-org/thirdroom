@@ -9,7 +9,7 @@ import { WASMModuleContext, writeEncodedString, writeUint8Array } from "./WASMMo
 export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   return {
     get_js_source_size() {
-      return wasmCtx.encodedJSSource ? wasmCtx.encodedJSSource.byteLength : 0;
+      return wasmCtx.encodedJSSource ? wasmCtx.encodedJSSource.byteLength + 1 : 0;
     },
     get_js_source(destPtr: number) {
       try {

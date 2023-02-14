@@ -142,7 +142,7 @@ static JSValue js_scene_get_node(JSContext *ctx, JSValueConst this_val, int argc
     return JS_EXCEPTION;
   }
 
-  u_int32_t index;
+  uint32_t index;
 
   if (JS_ToUint32(ctx, &index, argv[1]) == -1) {
     return JS_EXCEPTION;
@@ -244,7 +244,7 @@ static JSValue js_node_get_children(JSContext *ctx, JSValueConst this_val, int a
 
   node_id_t *children = js_malloc(ctx, sizeof(node_id_t) * count);
 
-  if (websg_scene_get_children(node_id, children, count) == -1) {
+  if (websg_node_get_children(node_id, children, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting node children.");
     return JS_EXCEPTION;
   }
@@ -267,7 +267,7 @@ static JSValue js_node_get_child(JSContext *ctx, JSValueConst this_val, int argc
     return JS_EXCEPTION;
   }
 
-  u_int32_t index;
+  uint32_t index;
 
   if (JS_ToUint32(ctx, &index, argv[1]) == -1) {
     return JS_EXCEPTION;
@@ -343,7 +343,7 @@ static JSValue js_node_get_position(JSContext *ctx, JSValueConst this_val, int a
   int32_t result = websg_node_get_position(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting position.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting position.");
     return JS_EXCEPTION;
   }
 
@@ -379,7 +379,7 @@ static JSValue js_node_set_position(JSContext *ctx, JSValueConst this_val, int a
   int32_t result = websg_node_set_position(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting position.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting position.");
     return JS_EXCEPTION;
   }
 
@@ -415,7 +415,7 @@ static JSValue js_node_get_quaternion(JSContext *ctx, JSValueConst this_val, int
   int32_t result = websg_node_get_quaternion(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting quaternion.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting quaternion.");
     return JS_EXCEPTION;
   }
 
@@ -451,7 +451,7 @@ static JSValue js_node_set_quaternion(JSContext *ctx, JSValueConst this_val, int
   int32_t result = websg_node_set_quaternion(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting quaternion.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting quaternion.");
     return JS_EXCEPTION;
   }
 
@@ -487,7 +487,7 @@ static JSValue js_node_get_scale(JSContext *ctx, JSValueConst this_val, int argc
   int32_t result = websg_node_get_scale(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting scale.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting scale.");
     return JS_EXCEPTION;
   }
 
@@ -523,7 +523,7 @@ static JSValue js_node_set_scale(JSContext *ctx, JSValueConst this_val, int argc
   int32_t result = websg_node_set_scale(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting scale.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting scale.");
     return JS_EXCEPTION;
   }
 
@@ -559,7 +559,7 @@ static JSValue js_node_get_local_matrix(JSContext *ctx, JSValueConst this_val, i
   int32_t result = websg_node_get_local_matrix(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting localMatrix.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting localMatrix.");
     return JS_EXCEPTION;
   }
 
@@ -595,7 +595,7 @@ static JSValue js_node_set_local_matrix(JSContext *ctx, JSValueConst this_val, i
   int32_t result = websg_node_set_local_matrix(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting localMatrix.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting localMatrix.");
     return JS_EXCEPTION;
   }
 
@@ -631,7 +631,7 @@ static JSValue js_node_get_world_matrix(JSContext *ctx, JSValueConst this_val, i
   int32_t result = websg_node_get_world_matrix(node_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting worldMatrix.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting worldMatrix.");
     return JS_EXCEPTION;
   }
 
@@ -662,7 +662,7 @@ static JSValue js_node_set_visible(JSContext *ctx, JSValueConst this_val, int ar
   int32_t result = websg_node_set_visible(node_id, value);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting visible.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting visible.");
     return JS_EXCEPTION;
   }
 
@@ -693,7 +693,7 @@ static JSValue js_node_set_is_static(JSContext *ctx, JSValueConst this_val, int 
   int32_t result = websg_node_set_is_static(node_id, value);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting isStatic.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting isStatic.");
     return JS_EXCEPTION;
   }
 
@@ -732,7 +732,7 @@ static JSValue js_node_set_mesh(JSContext *ctx, JSValueConst this_val, int argc,
   int32_t result = websg_node_set_mesh(node_id, mesh_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting mesh.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting mesh.");
     return JS_EXCEPTION;
   }
 
@@ -771,7 +771,7 @@ static JSValue js_node_set_light(JSContext *ctx, JSValueConst this_val, int argc
   int32_t result = websg_node_set_light(node_id, light_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting light.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting light.");
     return JS_EXCEPTION;
   }
 
@@ -833,7 +833,7 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
     JSValue modeVal = JS_GetPropertyStr(ctx, primitive_obj, "mode");
 
     if (!JS_IsUndefined(modeVal)) {
-      if (JS_ToUint32(ctx, (u_int32_t *)&props.mode, modeVal) == -1) {
+      if (JS_ToUint32(ctx, (uint32_t *)&props.mode, modeVal) == -1) {
         return JS_EXCEPTION;
       }
     } else {
@@ -956,7 +956,7 @@ static JSValue js_mesh_get_primitive_attribute(JSContext *ctx, JSValueConst this
 
   JSAtom attribute_atom = JS_ValueToAtom(ctx, argv[2]);
 
-  if (attribute_atom == NULL) {
+  if (attribute_atom == JS_ATOM_NULL) {
     JS_ThrowTypeError(ctx, "WebSG: invalid attribute type.");
     return JS_EXCEPTION;
   }
@@ -1186,14 +1186,322 @@ static JSValue js_accessor_update_with(JSContext *ctx, JSValueConst this_val, in
     return JS_EXCEPTION;
   }
 
-  accessor_id_t accessor_id = websg_accessor_update_with(accessor_id, data, buffer_byte_length);
+  int32_t result = websg_accessor_update_with(accessor_id, data, buffer_byte_length);
 
-  if (accessor_id == 0) {
+  if (result == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't update accessor.");
     return JS_EXCEPTION;
   }
 
-  return JS_NewUint32(ctx, accessor_id);
+  return JS_UNDEFINED;
+}
+
+JSAtom standard;
+JSAtom unlit;
+
+MaterialType get_material_type_from_atom(JSAtom atom) {
+  if (atom == standard) {
+    return MaterialType_Standard;
+  } else if (atom == unlit) {
+    return MaterialType_Unlit;
+  } else {
+    return -1;
+  }
+}
+
+static JSValue js_create_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  MaterialType material_type;
+  
+  if (JS_IsUndefined(argv[0])) {
+    material_type = MaterialType_Standard;
+  } else {
+    material_type = get_material_type_from_atom(JS_ValueToAtom(ctx, argv[0]));
+  }
+
+  if (material_type == -1) {
+    JS_ThrowTypeError(ctx, "WebSG: Unknown material type.");
+    return JS_EXCEPTION;
+  }
+
+  material_id_t material_id = websg_create_material(material_type);
+
+  if (material_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create material.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewUint32(ctx, material_id);
+}
+
+static JSValue js_material_find_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+
+  size_t length;
+  const char* name = JS_ToCStringLen(ctx, &length, argv[0]);
+
+  if (name == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  material_id_t material_id = websg_material_find_by_name(name, length);
+
+  if (material_id == 0) {
+    return JS_UNDEFINED;
+  }
+
+  return JS_NewUint32(ctx, material_id);
+}
+
+static JSValue js_material_get_base_color_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  size_t view_byte_offset;
+  size_t view_byte_length;
+  size_t view_bytes_per_element;
+
+  JSValue buffer = JS_GetTypedArrayBuffer(ctx, argv[1], &view_byte_offset, &view_byte_length, &view_bytes_per_element);
+
+  if (JS_IsException(buffer)) {
+    return JS_EXCEPTION;
+  }
+
+  if (view_byte_length < (sizeof(float_t) * 4)) {
+    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
+    return JS_EXCEPTION;
+  }
+
+  size_t buffer_byte_length;
+  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
+  data += view_byte_offset;
+
+  int32_t result = websg_material_get_base_color_factor(material_id, (float_t *)data);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error getting baseColorFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return argv[1];
+}
+
+static JSValue js_material_set_base_color_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  size_t view_byte_offset;
+  size_t view_byte_length;
+  size_t view_bytes_per_element;
+
+  JSValue buffer = JS_GetTypedArrayBuffer(ctx, argv[1], &view_byte_offset, &view_byte_length, &view_bytes_per_element);
+
+  if (JS_IsException(buffer)) {
+    return JS_EXCEPTION;
+  }
+
+  if (view_byte_length < (sizeof(float_t) * 4)) {
+    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
+    return JS_EXCEPTION;
+  }
+
+  size_t buffer_byte_length;
+  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
+  data += view_byte_offset;
+
+  int32_t result = websg_material_set_base_color_factor(material_id, (float_t *)data);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting baseColorFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return argv[1];
+}
+
+static JSValue js_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  float_t result = websg_material_get_metallic_factor(material_id);
+
+  return JS_NewFloat64(ctx, result);
+}
+
+static JSValue js_material_set_metallic_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  double_t value;
+
+  if (JS_ToFloat64(ctx, &value, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_material_set_metallic_factor(material_id, (float_t)value);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting metallicFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_material_get_roughness_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  float_t result = websg_material_get_roughness_factor(material_id);
+
+  return JS_NewFloat64(ctx, result);
+}
+
+static JSValue js_material_set_roughness_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  double_t value;
+
+  if (JS_ToFloat64(ctx, &value, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_material_set_roughness_factor(material_id, (float_t)value);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting roughnessFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_material_get_emissive_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  size_t view_byte_offset;
+  size_t view_byte_length;
+  size_t view_bytes_per_element;
+
+  JSValue buffer = JS_GetTypedArrayBuffer(ctx, argv[1], &view_byte_offset, &view_byte_length, &view_bytes_per_element);
+
+  if (JS_IsException(buffer)) {
+    return JS_EXCEPTION;
+  }
+
+  if (view_byte_length < (sizeof(float_t) * 3)) {
+    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
+    return JS_EXCEPTION;
+  }
+
+  size_t buffer_byte_length;
+  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
+  data += view_byte_offset;
+
+  int32_t result = websg_material_get_emissive_factor(material_id, (float_t *)data);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error getting emissiveFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return argv[1];
+}
+
+static JSValue js_material_set_emissive_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  size_t view_byte_offset;
+  size_t view_byte_length;
+  size_t view_bytes_per_element;
+
+  JSValue buffer = JS_GetTypedArrayBuffer(ctx, argv[1], &view_byte_offset, &view_byte_length, &view_bytes_per_element);
+
+  if (JS_IsException(buffer)) {
+    return JS_EXCEPTION;
+  }
+
+  if (view_byte_length < (sizeof(float_t) * 3)) {
+    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
+    return JS_EXCEPTION;
+  }
+
+  size_t buffer_byte_length;
+  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
+  data += view_byte_offset;
+
+  int32_t result = websg_material_set_emissive_factor(material_id, (float_t *)data);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting emissiveFactor.");
+    return JS_EXCEPTION;
+  }
+
+  return argv[1];
+}
+
+static JSValue js_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  texture_id_t texture_id = websg_material_get_base_color_texture(material_id);
+
+  if (texture_id == 0) {
+    return JS_UNDEFINED;
+  }
+
+  return JS_NewUint32(ctx, texture_id);
+}
+
+static JSValue js_material_set_base_color_texture(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  material_id_t material_id;
+
+  if (JS_ToUint32(ctx, &material_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  texture_id_t texture_id;
+
+  if (JS_ToUint32(ctx, &texture_id, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_material_set_base_color_texture(material_id, texture_id);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting texture.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
 }
 
 JSAtom directional;
@@ -1259,7 +1567,7 @@ static JSValue js_light_get_color(JSContext *ctx, JSValueConst this_val, int arg
   int32_t result = websg_light_get_color(light_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting color.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting color.");
     return JS_EXCEPTION;
   }
 
@@ -1295,7 +1603,7 @@ static JSValue js_light_set_color(JSContext *ctx, JSValueConst this_val, int arg
   int32_t result = websg_light_set_color(light_id, (float_t *)data);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting color.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting color.");
     return JS_EXCEPTION;
   }
 
@@ -1321,16 +1629,16 @@ static JSValue js_light_set_intensity(JSContext *ctx, JSValueConst this_val, int
     return JS_EXCEPTION;
   }
 
-  float_t value;
+  double_t value;
 
-  if (JS_ToFloat64(ctx, (float_t *)&value, argv[1]) == -1) {
+  if (JS_ToFloat64(ctx, &value, argv[1]) == -1) {
     return JS_EXCEPTION;
   }
 
-  int32_t result = websg_light_set_intensity(light_id, value);
+  int32_t result = websg_light_set_intensity(light_id, (float_t)value);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error setting intensity.");
+    JS_ThrowInternalError(ctx, "WebSG: Error setting intensity.");
     return JS_EXCEPTION;
   }
 
@@ -1348,7 +1656,7 @@ static JSValue js_add_interactable(JSContext *ctx, JSValueConst this_val, int ar
   int32_t result = websg_add_interactable(node_id, InteractableType_Interactable);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error adding interactable.");
+    JS_ThrowInternalError(ctx, "WebSG: Error adding interactable.");
     return JS_EXCEPTION;
   }
 
@@ -1365,7 +1673,7 @@ static JSValue js_remove_interactable(JSContext *ctx, JSValueConst this_val, int
   int32_t result = websg_remove_interactable(node_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error removing interactable.");
+    JS_ThrowInternalError(ctx, "WebSG: Error removing interactable.");
     return JS_EXCEPTION;
   }
 
@@ -1382,7 +1690,7 @@ static JSValue js_has_interactable(JSContext *ctx, JSValueConst this_val, int ar
   int32_t result = websg_has_interactable(node_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error checking for interactable.");
+    JS_ThrowInternalError(ctx, "WebSG: Error checking for interactable.");
     return JS_EXCEPTION;
   }
 
@@ -1399,7 +1707,7 @@ static JSValue js_get_interactable_pressed(JSContext *ctx, JSValueConst this_val
   int32_t result = websg_get_interactable_pressed(node_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting interactable pressed state.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting interactable pressed state.");
     return JS_EXCEPTION;
   }
 
@@ -1416,7 +1724,7 @@ static JSValue js_get_interactable_held(JSContext *ctx, JSValueConst this_val, i
   int32_t result = websg_get_interactable_held(node_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting interactable held state.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting interactable held state.");
     return JS_EXCEPTION;
   }
 
@@ -1433,7 +1741,7 @@ static JSValue js_get_interactable_released(JSContext *ctx, JSValueConst this_va
   int32_t result = websg_get_interactable_released(node_id);
 
   if (result == -1) {
-    JS_ThrowError(ctx, "WebSG: Error getting interactable released state.");
+    JS_ThrowInternalError(ctx, "WebSG: Error getting interactable released state.");
     return JS_EXCEPTION;
   }
 
@@ -1769,6 +2077,84 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     JS_NewCFunction(ctx, js_accessor_update_with, "accessorUpdateWith", 2)
   );
 
+  // Material
+
+  standard = JS_NewAtom(ctx, "standard");
+  unlit = JS_NewAtom(ctx, "unlit");
+
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "createMaterial",
+    JS_NewCFunction(ctx, js_create_material, "createMaterial", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialFindByName",
+    JS_NewCFunction(ctx, js_material_find_by_name, "materialFindByName", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialGetBaseColorFactor",
+    JS_NewCFunction(ctx, js_material_get_base_color_factor, "materialGetBaseColorFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialSetBaseColorFactor",
+    JS_NewCFunction(ctx, js_material_set_base_color_factor, "materialSetBaseColorFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialGetMetallicFactor",
+    JS_NewCFunction(ctx, js_material_get_metallic_factor, "materialGetMetallicFactor", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialSetMetallicFactor",
+    JS_NewCFunction(ctx, js_material_set_metallic_factor, "materialSetMetallicFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialGetRoughnessFactor",
+    JS_NewCFunction(ctx, js_material_get_roughness_factor, "materialGetRoughnessFactor", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialSetRoughnessFactor",
+    JS_NewCFunction(ctx, js_material_set_roughness_factor, "materialSetRoughnessFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialGetEmissiveFactor",
+    JS_NewCFunction(ctx, js_material_get_emissive_factor, "materialGetEmissiveFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialSetEmissiveFactor",
+    JS_NewCFunction(ctx, js_material_set_emissive_factor, "materialSetEmissiveFactor", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialGetBaseColorTexture",
+    JS_NewCFunction(ctx, js_material_get_base_color_texture, "materialGetBaseColorTexture", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "materialSetBaseColorTexture",
+    JS_NewCFunction(ctx, js_material_set_base_color_texture, "materialSetBaseColorTexture", 2)
+  );
+
   // Light
 
   directional = JS_NewAtom(ctx, "directional");
@@ -1781,7 +2167,6 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     "createLight",
     JS_NewCFunction(ctx, js_create_light, "createLight", 1)
   );
-
   JS_SetPropertyStr(
     ctx,
     websg,

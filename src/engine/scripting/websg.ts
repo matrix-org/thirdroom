@@ -20,6 +20,7 @@ import {
   RemoteMeshPrimitive,
   RemoteNode,
   RemoteScene,
+  RemoteTexture,
 } from "../resource/RemoteResources";
 import { addChild, removeChild } from "../component/transform";
 import {
@@ -27,6 +28,7 @@ import {
   AccessorType,
   InteractableType,
   LightType,
+  MaterialType,
   MeshPrimitiveAttributeIndex,
   MeshPrimitiveMode,
   ResourceType,
@@ -331,7 +333,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    node_child_count(nodeId: number) {
+    node_get_child_count(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -783,6 +785,120 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         console.error(`WebSG: error updating accessor:`, error);
         return -1;
       }
+    },
+    create_material(type: number) {
+      if (MaterialType[type] === undefined) {
+        console.error("WebSG: Invalid material type.");
+        return -1;
+      }
+
+      const material = new RemoteMaterial(wasmCtx.resourceManager, { type });
+
+      return material.eid;
+    },
+    material_find_by_name(namePtr: number, byteLength: number) {
+      const material = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMaterial, namePtr, byteLength);
+      return material ? material.eid : 0;
+    },
+    material_get_base_color_factor(materialId: number, colorPtr: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, material.baseColorFactor);
+
+      return 0;
+    },
+    material_set_base_color_factor(materialId: number, colorPtr: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, material.baseColorFactor);
+
+      return 0;
+    },
+    material_get_metallic_factor(materialId: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+      return material?.metallicFactor || 0;
+    },
+    material_set_metallic_factor(materialId: number, metallicFactor: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.metallicFactor = metallicFactor;
+
+      return 0;
+    },
+    material_get_roughness_factor(materialId: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+      return material?.roughnessFactor || 0;
+    },
+    material_set_roughness_factor(materialId: number, roughnessFactor: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.roughnessFactor = roughnessFactor;
+
+      return 0;
+    },
+    material_get_emissive_factor(materialId: number, colorPtr: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, material.emissiveFactor);
+
+      return 0;
+    },
+    material_set_emissive_factor(materialId: number, colorPtr: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, material.emissiveFactor);
+
+      return 0;
+    },
+    material_get_base_color_texture(materialId: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return 0; // This function returns a u32 so errors returned as 0
+      }
+
+      return getScriptResourceRef(wasmCtx, RemoteTexture, material.baseColorTexture);
+    },
+    material_set_base_color_texture(materialId: number, textureId: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      const baseColorTexture = getScriptResource(wasmCtx, RemoteTexture, textureId);
+
+      if (!baseColorTexture) {
+        return -1;
+      }
+
+      material.baseColorTexture = baseColorTexture;
+
+      return 0;
     },
     create_light(type: number) {
       if (LightType[type] === undefined) {

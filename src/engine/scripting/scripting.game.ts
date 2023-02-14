@@ -1,6 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
-import scriptingRuntimeWASMUrl from "../../scripting/build/scripting-runtime.wasm?url";
+import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
 import { GameState, RemoteResourceManager } from "../GameTypes";
 import { createMatrixWASMModule } from "../matrix/matrix.game";

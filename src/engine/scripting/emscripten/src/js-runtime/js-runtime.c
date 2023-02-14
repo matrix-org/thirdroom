@@ -28,6 +28,7 @@ JSContext *ctx;
  **/
 
 JSAtom onUpdateAtom;
+JSAtom onLoadedAtom;
 
 /*********************
  * Exported Functions
@@ -38,6 +39,7 @@ export int32_t websg_initialize() {
   ctx = JS_NewContext(rt);
 
   onUpdateAtom = JS_NewAtom(ctx, "onupdate");
+  onLoadedAtom = JS_NewAtom(ctx, "onloaded");
 
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
@@ -49,7 +51,7 @@ export int32_t websg_initialize() {
   char *source = js_malloc(ctx, source_len); // TODO: can we free this after JS_Eval?
   int32_t read_source_len = thirdroom_get_js_source(source);
 
-  JSValue result = JS_Eval(ctx, source, read_source_len, "<test>", JS_EVAL_TYPE_GLOBAL);
+  JSValue result = JS_Eval(ctx, source, read_source_len, "<environment-script>", JS_EVAL_TYPE_GLOBAL);
 
   if (JS_IsException(result)) {
     JSValue error = JS_GetException(ctx);
@@ -60,6 +62,39 @@ export int32_t websg_initialize() {
   }
 
   return 0;
+}
+
+export int32_t websg_loaded() {
+  JSValue global = JS_GetGlobalObject(ctx);
+
+  JSValue loadedFn = JS_GetProperty(ctx, global, onLoadedAtom);
+
+  if (JS_IsException(loadedFn)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    JS_FreeValue(ctx, loadedFn);
+    return -1;
+  } else if (JS_IsUndefined(loadedFn)) {
+    return 0;
+  }
+
+  JSValueConst args[] = {};
+  JSValue val = JS_Call(ctx, loadedFn, JS_UNDEFINED, 0, args);
+  JS_FreeValue(ctx, loadedFn);
+
+  int32_t ret;
+
+  if (JS_IsException(val)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    ret = -1;
+  }
+
+  JS_FreeValue(ctx, val);
+
+  return ret;
 }
 
 export int32_t websg_update(float_t dt) {
