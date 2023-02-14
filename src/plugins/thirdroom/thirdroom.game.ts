@@ -31,7 +31,7 @@ import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/ca
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
-import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
+import { getXRMode, waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
@@ -91,8 +91,12 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
 import { WebSGNetworkModule } from "../../engine/network/scripting.game";
+import { XRMode } from "../../engine/renderer/renderer.common";
 
 type ThirdRoomModuleState = {};
+
+const shouldUseAR = (ctx: GameState) =>
+  ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR;
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -105,7 +109,7 @@ const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number
 
 const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
-    const { supportsAR } = ctx.worldResource.environment!.publicScene;
+    const useAR = shouldUseAR(ctx);
 
     const spawnPoints = spawnPointQuery(ctx.world);
 
@@ -115,7 +119,7 @@ const createAvatarRig =
     addComponent(ctx.world, AvatarComponent, rig.eid);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.position.set([0, AVATAR_OFFSET, 0]);
-    const s = ctx.worldResource.environment?.publicScene.supportsAR ? 1 : 1.3;
+    const s = useAR ? 1 : 1.3;
     rig.scale.set([s, s, s]);
 
     // on container
@@ -133,7 +137,7 @@ const createAvatarRig =
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
     const h = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
-    cameraAnchor.position[1] = supportsAR ? h / 3.333 : h;
+    cameraAnchor.position[1] = useAR ? h / 3.333 : h;
     addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {

@@ -63,6 +63,8 @@ import {
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
+import { getXRMode } from "../renderer/renderer.game";
+import { XRMode } from "../renderer/renderer.common";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -257,6 +259,10 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 //   return v;
 // };
 
+// hide xr objects if scene supports AR and we are in AR
+const shouldUseAR = (ctx: GameState) =>
+  ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR;
+
 /* Create */
 export function createRemoteNetworkedEntity(
   ctx: GameState,
@@ -264,7 +270,7 @@ export function createRemoteNetworkedEntity(
   nid: number,
   prefab: string
 ): RemoteNode {
-  const node = createPrefabEntity(ctx, prefab, { nametag: prefab === "avatar" });
+  const node = createPrefabEntity(ctx, prefab);
 
   // assign networkId
   addComponent(ctx.world, Networked, node.eid, true);
@@ -314,16 +320,26 @@ export function serializeCreates(input: NetPipeData) {
 }
 
 export function deserializeCreates(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
+  const [ctx, v] = input;
+  const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
-    const obj = createRemoteNetworkedEntity(state, network, nid, prefabName);
+
+    const obj = createRemoteNetworkedEntity(ctx, network, nid, prefabName);
     console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
+
+    // TODO: refactor this - ideally use something like defineQuery([Networked, Not(Owned), XRHand])
+    if (
+      (shouldUseAR(ctx) && prefabName === "xr-head") ||
+      prefabName === "xr-hand-left" ||
+      prefabName === "xr-hand-right"
+    ) {
+      obj.visible = false;
+    }
   }
   return input;
 }
