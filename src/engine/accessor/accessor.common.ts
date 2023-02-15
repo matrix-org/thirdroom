@@ -1,8 +1,6 @@
 import { mat4 } from "gl-matrix";
 
-import { BaseThreadContext } from "../module/module.common";
-import { LocalResourceInstance, RemoteResourceInstance } from "../resource/ResourceDefinition";
-import { AccessorComponentType, AccessorResource, AccessorType } from "../resource/schema";
+import { AccessorComponentType, AccessorType } from "../resource/schema";
 
 export const AccessorResourceType = "accessor";
 
@@ -57,12 +55,27 @@ export const AccessorTypeToElementSize: {
   [AccessorType.MAT4]: 16,
 };
 
-export function getAccessorArrayView(
-  accessor:
-    | RemoteResourceInstance<typeof AccessorResource, BaseThreadContext>
-    | LocalResourceInstance<typeof AccessorResource, BaseThreadContext>,
-  deinterleave = true
-): AccessorTypedArray {
+type BufferViewLike = { buffer: { data: SharedArrayBuffer }; byteOffset: number; byteStride: number };
+
+type AccessorSparseLike = {
+  count: number;
+  indicesBufferView: BufferViewLike;
+  indicesByteOffset: number;
+  indicesComponentType: AccessorComponentType;
+  valuesBufferView: BufferViewLike;
+  valuesByteOffset: number;
+};
+
+type AccessorLike = {
+  count: number;
+  type: AccessorType;
+  componentType: AccessorComponentType;
+  bufferView?: BufferViewLike;
+  byteOffset: number;
+  sparse?: AccessorSparseLike;
+};
+
+export function getAccessorArrayView(accessor: AccessorLike, deinterleave = true): AccessorTypedArray {
   const elementCount = accessor.count;
   const elementSize = AccessorTypeToElementSize[accessor.type];
   const arrConstructor = AccessorComponentTypeToTypedArray[accessor.componentType];

@@ -1,12 +1,11 @@
 import { mat4, vec3, glMatrix } from "gl-matrix";
 
 import { findChild } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { GameState, RemoteResourceManager } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RendererModule } from "../renderer/renderer.game";
 import { getRemoteResources } from "../resource/resource.game";
 import { RemoteCamera, RemoteNode } from "../resource/RemoteResources";
-import { IRemoteResourceManager } from "../resource/ResourceDefinition";
 import { CameraType } from "../resource/schema";
 
 export function RemoteCameraSystem(ctx: GameState) {
@@ -20,7 +19,7 @@ export function RemoteCameraSystem(ctx: GameState) {
 
 export function createRemotePerspectiveCamera(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager<GameState> = ctx.resourceManager
+  resourceManager: RemoteResourceManager = ctx.resourceManager
 ) {
   return new RemoteCamera(resourceManager, {
     type: CameraType.Perspective,

@@ -5,7 +5,6 @@ import { InitializeGameWorkerMessage, WorkerMessageType } from "./WorkerMessage"
 import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
 import { GameState, World } from "./GameTypes";
-import { GameResourceManager } from "./resource/GameResourceManager";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -70,8 +69,6 @@ async function onInit({
     resourceManager: undefined as any,
     worldResource: undefined as any,
   };
-
-  ctx.resourceManager = new GameResourceManager(ctx);
 
   const onMessage = ({ data }: MessageEvent) => {
     if (typeof data !== "object") {

@@ -1,5 +1,5 @@
 src/asset-pipeline/vendor
 src/logviewer
-src/scripting
+src/engine/scripting/emscripten
 public/
 examples/

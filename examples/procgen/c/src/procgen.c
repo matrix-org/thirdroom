@@ -6,53 +6,24 @@
 #include <emscripten/console.h>
 #define FNL_IMPL
 #include "./FastNoiseLite.h"
-#include "../../../../src/scripting/src/generated/websg.h"
-#include "../../../../src/scripting/src/thirdroom.h"
+#include "../../../../src/engine/scripting/emscripten/src/websg.h"
+#include "../../../../src/engine/scripting/emscripten/src/thirdroom.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define F_EPSILON 0.00000005f
 #define F_EQ(x,y) (((x)*(x) - (y)*(y) <= F_EPSILON) ? 1 : 0)
 
-export void *websg_allocate(int size) {
-  return malloc(size);
-}
-
-export void websg_deallocate(void *ptr) {
-  free(ptr);
-}
-
-void add_node_to_scene(Scene *scene, Node *node) {
-  if (scene->first_node == NULL) {
-    node->parent_scene = scene;
-    scene->first_node = node;
-  } else {
-    Node *cur = scene->first_node;
-    Node *last;
-
-    while (cur != NULL) {
-      last = cur;
-      cur = cur->next_sibling;
-    }
-
-    last->next_sibling = node;
-    node->prev_sibling = last;
-    node->parent_scene = scene;
-  }
-}
-
 struct SphereData {
   int vertex_count;
-  uint16_t *indices;
+  accessor_id_t positions_accessor;
   float_t *positions;
-  float_t *normals;
-  float_t *uvs;
-  MeshPrimitive *mesh_primitive;
+  size_t positions_byte_length;
+  mesh_id_t mesh_id;
 } typedef SphereData;
 
 // Adapted from https://github.com/dmnsgn/primitive-geometry/blob/main/src/ellipsoid.js
-SphereData *generate_sphere_primitive(
-  MeshPrimitive *mesh_primitive,
+SphereData *generate_sphere_mesh(
   float_t radius,
   int widthSegments,
   int heightSegments,
@@ -67,30 +38,19 @@ SphereData *generate_sphere_primitive(
 
   int indices_count = widthSegments * heightSegments * 6;
   size_t indices_byte_length = sizeof(uint16_t) * indices_count;
-  size_t indices_byte_offset = byte_length;
-  byte_length += indices_byte_length;
+  uint16_t *indices = malloc(indices_byte_length);
 
   int positions_count = size;
   size_t positions_byte_length = sizeof(float_t) * positions_count * 3;
-  size_t positions_byte_offset = byte_length;
-  byte_length += positions_byte_length;
+  float_t *positions = malloc(positions_byte_length);
 
   int normals_count = size;
   size_t normals_byte_length = sizeof(float_t) * normals_count * 3;
-  size_t normals_byte_offset = byte_length;
-  byte_length += normals_byte_length;
+  float_t *normals = malloc(normals_byte_length);
 
   int uvs_count = size;
   size_t uvs_byte_length = sizeof(float_t) * uvs_count * 2;
-  size_t uvs_byte_offset = byte_length;
-  byte_length += uvs_byte_length;
-
-  void *buffer_data = malloc(byte_length);
-
-  uint16_t *indices = buffer_data + indices_byte_offset;
-  float_t *positions = buffer_data + positions_byte_offset;
-  float_t *normals = buffer_data + normals_byte_offset;
-  float_t *uvs = buffer_data + uvs_byte_offset;
+  float_t *uvs = malloc(uvs_byte_length);
 
   float_t temp[3];
   int vertexIndex = 0;
@@ -149,148 +109,121 @@ SphereData *generate_sphere_primitive(
     }
   }
 
-  Buffer *buffer = malloc(sizeof(Buffer));
-  buffer->data.size = byte_length;
-  buffer->data.mutable = true;
-  buffer->data.data = buffer_data;
-  websg_create_resource(ResourceType_Buffer, buffer);
+  AccessorProps *indices_props = malloc(sizeof(AccessorProps));
+  indices_props->component_type = AccessorComponentType_Uint16;
+  indices_props->count = indices_count;
+  indices_props->type = AccessorType_SCALAR;
+  accessor_id_t indices_accessor = websg_create_accessor_from(indices, indices_byte_length, indices_props);
 
-  BufferView *geometry_buffer_view = malloc(sizeof(BufferView));
-  geometry_buffer_view->buffer = buffer;
-  geometry_buffer_view->byte_length = byte_length;
-  geometry_buffer_view->byte_offset = 0;
-  geometry_buffer_view->byte_stride = 0;
-  websg_create_resource(ResourceType_BufferView, geometry_buffer_view);
+  AccessorProps *positions_props = malloc(sizeof(AccessorProps));
+  positions_props->component_type = AccessorComponentType_Float32;
+  positions_props->count = positions_count;
+  positions_props->type = AccessorType_VEC3;
+  positions_props->dynamic = true;
+  accessor_id_t positions_accessor = websg_create_accessor_from(positions, positions_byte_length, positions_props);
 
-  Accessor *indices_accessor = malloc(sizeof(Accessor));
-  indices_accessor->buffer_view = geometry_buffer_view;
-  indices_accessor->component_type = AccessorComponentType_Uint16;
-  indices_accessor->byte_offset = indices_byte_offset;
-  indices_accessor->count = indices_count;
-  indices_accessor->type = AccessorType_SCALAR;
-  indices_accessor->normalized = false;
-  indices_accessor->dynamic = false;
-  indices_accessor->version = 0;
-  websg_create_resource(ResourceType_Accessor, indices_accessor);
+  AccessorProps *normals_props = malloc(sizeof(AccessorProps));
+  normals_props->component_type = AccessorComponentType_Float32;
+  normals_props->count = normals_count;
+  normals_props->type = AccessorType_VEC3;
+  normals_props->normalized = true;
+  normals_props->dynamic = true;
+  accessor_id_t normals_accessor = websg_create_accessor_from(normals, normals_byte_length, normals_props);
 
-  Accessor *positions_accessor = malloc(sizeof(Accessor));
-  positions_accessor->buffer_view = geometry_buffer_view;
-  positions_accessor->component_type = AccessorComponentType_Float32;
-  positions_accessor->byte_offset = positions_byte_offset;
-  positions_accessor->count = positions_count;
-  positions_accessor->type = AccessorType_VEC3;
-  positions_accessor->normalized = false;
-  positions_accessor->dynamic = true;
-  positions_accessor->version = 0;
-  websg_create_resource(ResourceType_Accessor, positions_accessor);
+  AccessorProps *uvs_props = malloc(sizeof(AccessorProps));
+  uvs_props->component_type = AccessorComponentType_Float32;
+  uvs_props->count = uvs_count;
+  uvs_props->type = AccessorType_VEC2;
+  accessor_id_t uvs_accessor = websg_create_accessor_from(uvs, uvs_byte_length, uvs_props);
 
-  Accessor *normals_accessor = malloc(sizeof(Accessor));
-  normals_accessor->buffer_view = geometry_buffer_view;
-  normals_accessor->component_type = AccessorComponentType_Float32;
-  normals_accessor->byte_offset = normals_byte_offset;
-  normals_accessor->count = normals_count;
-  normals_accessor->type = AccessorType_VEC3;
-  normals_accessor->normalized = true;
-  normals_accessor->dynamic = true;
-  normals_accessor->version = 0;
-  websg_create_resource(ResourceType_Accessor, normals_accessor);
+  MeshPrimitiveProps *primitive_props = malloc(sizeof(MeshPrimitiveProps));
+  
+  primitive_props->mode = MeshPrimitiveMode_TRIANGLES;
+  primitive_props->indices = indices_accessor;
 
-  Accessor *uvs_accessor = malloc(sizeof(Accessor));
-  uvs_accessor->buffer_view = geometry_buffer_view;
-  uvs_accessor->component_type = AccessorComponentType_Float32;
-  uvs_accessor->byte_offset = uvs_byte_offset;
-  uvs_accessor->count = uvs_count;
-  uvs_accessor->type = AccessorType_VEC2;
-  uvs_accessor->normalized = false;
-  uvs_accessor->dynamic = false;
-  uvs_accessor->version = 0;
-  websg_create_resource(ResourceType_Accessor, uvs_accessor);
+  int attribute_count = 3;
+  MeshPrimitiveAttributeItem *attributes = malloc(sizeof(MeshPrimitiveAttributeItem) * attribute_count);
+  attributes[0].key = MeshPrimitiveAttribute_POSITION;
+  attributes[0].accessor_id = positions_accessor;
+  attributes[1].key = MeshPrimitiveAttribute_NORMAL;
+  attributes[1].accessor_id = normals_accessor;
+  attributes[2].key = MeshPrimitiveAttribute_TEXCOORD_0;
+  attributes[2].accessor_id = uvs_accessor;
+  primitive_props->attribute_count = attribute_count;
+  primitive_props->attributes = attributes;
 
-  mesh_primitive->mode = MeshPrimitiveMode_TRIANGLES;
-  mesh_primitive->indices = indices_accessor;
-  mesh_primitive->attributes[MeshPrimitiveAttributeIndex_POSITION] = positions_accessor;
-  mesh_primitive->attributes[MeshPrimitiveAttributeIndex_NORMAL] = normals_accessor;
-  mesh_primitive->attributes[MeshPrimitiveAttributeIndex_TEXCOORD_0] = uvs_accessor;
+  mesh_id_t mesh_id = websg_create_mesh(primitive_props, 1);
 
   SphereData *sphere_data = malloc(sizeof(SphereData));
   sphere_data->vertex_count = vertexIndex;
-  sphere_data->indices = indices;
   sphere_data->positions = positions;
-  sphere_data->normals = normals;
-  sphere_data->uvs = uvs;
-  sphere_data->mesh_primitive = mesh_primitive;
+  sphere_data->positions_accessor = positions_accessor;
+  sphere_data->positions_byte_length = positions_byte_length;
+  sphere_data->mesh_id = mesh_id;
 
   return sphere_data;
 }
 
 fnl_state noise_state;
 SphereData *sphere_data;
-Node *sphere_node;
-Material *beam_material;
+node_id_t sphere_node;
+float_t *sphere_scale;
+material_id_t beam_material;
+float_t *beam_emissive_factor;
 unsigned char *audio_data;
 
+export int32_t websg_load() {
+  material_id_t mesh_material = websg_create_material(MaterialType_Standard);
+  float_t *base_color_factor = malloc(sizeof(float_t) * 4);
+  base_color_factor[0] = 0;
+  base_color_factor[1] = 0;
+  base_color_factor[2] = 0;
+  base_color_factor[3] = 1;
+  websg_material_set_base_color_factor(mesh_material, base_color_factor);
+  websg_material_set_metallic_factor(mesh_material, 0.5f);
+  websg_material_set_roughness_factor(mesh_material, 0.7f);
 
-export void websg_loaded() {
-  Material *material = malloc(sizeof(Material));
-  material->type = MaterialType_Standard;
-  material->alpha_mode = MaterialAlphaMode_OPAQUE;
-  material->base_color_factor[0] = 0;
-  material->base_color_factor[1] = 0;
-  material->base_color_factor[2] = 0;
-  material->base_color_factor[3] = 1;
-  material->metallic_factor = 0.5;
-  material->roughness_factor = 0.7;
-  websg_create_resource(ResourceType_Material, material);
+  sphere_data = generate_sphere_mesh(1, 32, 16, M_PI, 0, M_PI * 2, 0);
+  websg_mesh_set_primitive_material(sphere_data->mesh_id, 0, mesh_material);
 
-  MeshPrimitive *mesh_primitive = malloc(sizeof(MeshPrimitive));
-  sphere_data = generate_sphere_primitive(mesh_primitive, 1, 32, 16, M_PI, 0, M_PI * 2, 0);
-  mesh_primitive->material = material;
-  websg_create_resource(ResourceType_MeshPrimitive, mesh_primitive);
+  sphere_node = websg_create_node();
+  float_t *position = malloc(sizeof(float_t) * 3);
+  position[0] = 7;
+  position[1] = 8;
+  position[2] = -17;
+  websg_node_set_position(sphere_node, position);
+  sphere_scale = malloc(sizeof(float_t) * 3);
+  sphere_scale[0] = 3;
+  sphere_scale[1] = 3;
+  sphere_scale[2] = 3;
+  websg_node_set_scale(sphere_node, sphere_scale);
+  websg_node_set_mesh(sphere_node, sphere_data->mesh_id);
 
-  Mesh *mesh = malloc(sizeof(Mesh));
-  mesh->primitives[0] = mesh_primitive;
-  websg_create_resource(ResourceType_Mesh, mesh);
+  scene_id_t scene = websg_get_environment_scene();
+  websg_scene_add_node(scene, sphere_node);
 
-  Node *node = malloc(sizeof(Node));
-  node->enabled = true;
-  node->is_static = false;
-  node->visible = true;
-  node->layers = 1;
-  node->world_matrix_needs_update = true;
-  node->mesh = mesh;
-  node->position[0] = 7;
-  node->position[1] = 8;
-  node->position[2] = -17;
-  node->quaternion[0] = 0;
-  node->quaternion[1] = 0;
-  node->quaternion[2] = 0;
-  node->quaternion[3] = 1;
-  node->scale[0] = 3;
-  node->scale[1] = 3;
-  node->scale[2] = 3;
-  websg_create_resource(ResourceType_Node, node);
-  sphere_node = node;
+  const char *beam_name = "Tube_Light_01";
+  mesh_id_t beam_mesh = websg_mesh_find_by_name(beam_name, strlen(beam_name));
+  beam_material = websg_mesh_get_primitive_material(beam_mesh, 0);
+  beam_emissive_factor = malloc(sizeof(float_t) * 3);
+  beam_emissive_factor[0] = 1;
+  beam_emissive_factor[1] = 1;
+  beam_emissive_factor[2] = 1;
 
-
-  Scene *scene = websg_get_active_scene();
-  add_node_to_scene(scene, node);
-
+  uint32_t audio_data_size = thirdroom_get_audio_data_size();
+  audio_data = malloc(audio_data_size);
   noise_state = fnlCreateState();
   noise_state.noise_type = FNL_NOISE_OPENSIMPLEX2;
   noise_state.frequency = 0.01;
   noise_state.fractal_type = FNL_FRACTAL_PINGPONG;
 
-  Mesh *beam_mesh = websg_get_resource_by_name(ResourceType_Mesh, "Tube_Light_01");
-  MeshPrimitive *beam_primitive = beam_mesh->primitives[0];
-  beam_material = beam_primitive->material;
-
-  audio_data = malloc(sizeof(unsigned char[256]));
+  return 0;
 }
 
 float_t elapsed = 0;
 float_t acc_noise = 0;
 
-export void websg_update(float_t dt) {
+export int32_t websg_update(float_t dt) {
   elapsed += dt;
 
   thirdroom_get_audio_frequency_data(audio_data);
@@ -323,14 +256,21 @@ export void websg_update(float_t dt) {
   }
 
   float_t scale = 3 * (1 + low_freq_avg);
+  sphere_scale[0] = scale;
+  sphere_scale[1] = scale;
+  sphere_scale[2] = scale;
+  websg_node_set_scale(sphere_node, sphere_scale);
 
-  sphere_node->scale[0] = scale;
-  sphere_node->scale[1] = scale;
-  sphere_node->scale[2] = scale;
+  beam_emissive_factor[0] = 1;
+  beam_emissive_factor[1] = 1 - low_freq_avg;
+  beam_emissive_factor[2] = 1 - low_freq_avg;
+  websg_material_set_emissive_factor(beam_material, beam_emissive_factor);
 
-  beam_material->emissive_factor[0] = 1;
-  beam_material->emissive_factor[1] = 1 - low_freq_avg;
-  beam_material->emissive_factor[2] = 1 - low_freq_avg;
+  websg_accessor_update_with(
+    sphere_data->positions_accessor,
+    sphere_data->positions,
+    sphere_data->positions_byte_length
+  );
 
-  sphere_data->mesh_primitive->attributes[MeshPrimitiveAttributeIndex_POSITION]->version++;
+  return 0;
 }

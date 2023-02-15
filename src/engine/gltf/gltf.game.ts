@@ -5,7 +5,7 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, 
 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState, World } from "../GameTypes";
+import { GameState, RemoteResourceManager, World } from "../GameTypes";
 import { promiseObject } from "../utils/promiseObject";
 import resolveURL from "../utils/resolveURL";
 import {
@@ -43,7 +43,6 @@ import {
   AnimationSamplerInterpolation,
   TextureFormat,
 } from "../resource/schema";
-import { IRemoteResourceManager, RemoteResource } from "../resource/ResourceDefinition";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
 import {
   RemoteAccessor,
@@ -80,6 +79,7 @@ import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../plugins/CharacterController";
 import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
+import { RemoteResource } from "../resource/RemoteResourceClass";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -116,14 +116,14 @@ export interface GLTFResource {
    * ResourceManager used when creating subresources for this GLTFResource.
    * Can be the global GameResourceManager or per-script ScriptResourceManager.
    */
-  manager: IRemoteResourceManager<GameState>;
+  manager: RemoteResourceManager;
 }
 
 export interface LoadGLTFOptions {
   /**
    * ResourceManager to use when loading glTF. Defaults to global GameResourceManager
    */
-  resourceManager?: IRemoteResourceManager<GameState>;
+  resourceManager?: RemoteResourceManager;
   /**
    * Map from blob to uris used in glTF
    **/
@@ -138,15 +138,19 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
 
   const resourceManager = options?.resourceManager || ctx.resourceManager;
 
-  let promise = resourceManager.getCachedGLTF(url.href);
+  const entry = resourceManager.gltfCache.get(url.href);
 
-  if (promise) {
-    return promise;
+  if (entry) {
+    entry.refCount++;
+    return entry.promise;
   }
 
-  promise = loadGLTFResource(ctx, resourceManager, url.href, options?.fileMap);
+  const promise = loadGLTFResource(ctx, resourceManager, url.href, options?.fileMap);
 
-  resourceManager.cacheGLTF(url.href, promise);
+  resourceManager.gltfCache.set(url.href, {
+    promise,
+    refCount: 1,
+  });
 
   return promise;
 }
@@ -158,7 +162,13 @@ export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOp
  * resources will have their references removed.
  */
 function removeGLTFResourceRef(resource: GLTFResource): boolean {
-  if (resource.manager.removeGLTFRef(resource.url)) {
+  const cacheKey = resource.url;
+  const gltfCache = resource.manager.gltfCache;
+  const entry = gltfCache.get(cacheKey);
+
+  if (entry && --entry.refCount <= 0) {
+    gltfCache.delete(cacheKey);
+
     for (const cache of resource.caches.values()) {
       for (const entry of cache.values()) {
         entry.value?.removeRef();
@@ -230,7 +240,7 @@ const GLB_MAGIC = 0x46546c67; // "glTF" in ASCII
 
 async function loadGLTFResource(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager<GameState>,
+  resourceManager: RemoteResourceManager,
   url: string,
   fileMap?: Map<string, string>
 ) {
@@ -265,7 +275,7 @@ const CHUNK_HEADER_BYTE_LENGTH = 8;
 
 async function loadGLTFBinary(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager<GameState>,
+  resourceManager: RemoteResourceManager,
   buffer: ArrayBuffer,
   url: string,
   fileMap?: Map<string, string>
@@ -307,7 +317,7 @@ async function loadGLTFBinary(
 
 async function loadGLTFJSON(
   ctx: GameState,
-  resourceManager: IRemoteResourceManager<GameState>,
+  resourceManager: RemoteResourceManager,
   json: unknown,
   url: string,
   binaryChunk?: SharedArrayBuffer,
@@ -387,8 +397,8 @@ const createGLTFLoaderContext = (
  * Cache entry used internally to store the current and pending subresource.
  */
 interface GLTFSubresourceCacheEntry {
-  value?: RemoteResource<GameState>;
-  promise: Promise<RemoteResource<GameState>>;
+  value?: RemoteResource;
+  promise: Promise<RemoteResource>;
 }
 
 /**
@@ -399,14 +409,14 @@ type GLTFSubresourceCache = Map<number, GLTFSubresourceCacheEntry>;
 type GLTFSubresourceLoader<
   LoaderContext extends GLTFResource | GLTFLoaderContext,
   Prop extends GLTFChildOfRootProperty,
-  Subresource extends RemoteResource<GameState>,
+  Subresource extends RemoteResource,
   Options
 > = (loaderCtx: LoaderContext, property: Prop, index: number, options?: Options) => Promise<Subresource>;
 
 function loadSubresource<
   LoaderContext extends GLTFResource | GLTFLoaderContext,
   Prop extends GLTFChildOfRootProperty,
-  Subresource extends RemoteResource<GameState>,
+  Subresource extends RemoteResource,
   Options
 >(
   loaderCtx: LoaderContext,
@@ -474,7 +484,7 @@ function loadSubresource<
  * the requested scene/node subresource.
  */
 const createInstancedSubresourceLoader =
-  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource<GameState>, Options = undefined>(
+  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource, Options = undefined>(
     key: string,
     selector: (root: GLTFRoot) => Prop[] | undefined,
     loader: GLTFSubresourceLoader<GLTFLoaderContext, Prop, Subresource, Options>
@@ -487,7 +497,7 @@ const createInstancedSubresourceLoader =
  * holds references to the loaded subresource and can only be disposed when the GLTFResource is disposed.
  */
 const createCachedSubresourceLoader =
-  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource<GameState>, Options = undefined>(
+  <Prop extends GLTFChildOfRootProperty, Subresource extends RemoteResource, Options = undefined>(
     key: string,
     selector: (root: GLTFRoot) => Prop[] | undefined,
     loader: GLTFSubresourceLoader<GLTFResource, Prop, Subresource, Options>
