@@ -63,8 +63,9 @@ import {
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
-import { getXRMode } from "../renderer/renderer.game";
+
 import { XRMode } from "../renderer/renderer.common";
+import { AvatarComponent } from "../../plugins/avatars/components";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -259,10 +260,6 @@ export const deserializeTransformChanged = defineChangedDeserializer(
 //   return v;
 // };
 
-// hide xr objects if scene supports AR and we are in AR
-const shouldUseAR = (ctx: GameState) =>
-  ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR;
-
 /* Create */
 export function createRemoteNetworkedEntity(
   ctx: GameState,
@@ -331,15 +328,6 @@ export function deserializeCreates(input: NetPipeData) {
 
     const obj = createRemoteNetworkedEntity(ctx, network, nid, prefabName);
     console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
-
-    // TODO: refactor this - ideally use something like defineQuery([Networked, Not(Owned), XRHand])
-    if (
-      (shouldUseAR(ctx) && prefabName === "xr-head") ||
-      prefabName === "xr-hand-left" ||
-      prefabName === "xr-hand-right"
-    ) {
-      obj.visible = false;
-    }
   }
   return input;
 }
@@ -586,34 +574,30 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   return data;
 }
 
-export function createInformXRMode(ctx: GameState, eid: number) {
+export function createInformXRMode(ctx: GameState, xrMode: XRMode) {
   const data: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.InformXRMode)(data);
-  serializeInformXRMode(data, eid);
+
+  serializeInformXRMode(data, xrMode);
+
   return sliceCursorView(messageView);
 }
-export const serializeInformXRMode = (data: NetPipeData, eid: number) => {
+export const serializeInformXRMode = (data: NetPipeData, xrMode: XRMode) => {
   const [, v] = data;
-  writeUint32(v, Networked.networkId[eid]);
+  writeUint8(v, xrMode);
   return data;
 };
 export const deserializeInformXRMode = (data: NetPipeData) => {
-  const [ctx, v] = data;
+  const [ctx, v, peerId] = data;
   const network = getModule(ctx, NetworkModule);
 
   // read
-  const nid = readUint32(v);
+  const xrMode = readUint8(v);
 
-  // guard
-  const eid = network.networkIdToEntityId.get(nid);
-  if (!eid) {
-    console.warn("could not deserialize InformXRMode message, eid not found for nid", nid);
-    return data;
-  }
+  console.log(`deserializeInformXRMode - peerId: ${peerId}; xrMode: ${xrMode}`);
 
   // effect
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-  node.visible = false;
+  network.peerIdToXRMode.set(peerId, xrMode);
 
   return data;
 };
@@ -635,7 +619,8 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
 
   // hide our avatar
   try {
-    const avatar = getAvatar(ctx, node);
+    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
     avatar.visible = false;
   } catch {}
 

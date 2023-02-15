@@ -46,7 +46,7 @@ import {
   inputControllerQuery,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
-import { addInteractableComponent, removeInteractableComponent } from "../interaction/interaction.game";
+import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import {
   addScriptComponent,
@@ -80,6 +80,7 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
+  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -92,6 +93,7 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../eng
 import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
 import { WebSGNetworkModule } from "../../engine/network/scripting.game";
 import { XRMode } from "../../engine/renderer/renderer.common";
+import { createLineMesh } from "../../engine/mesh/mesh.game";
 
 type ThirdRoomModuleState = {};
 
@@ -116,7 +118,6 @@ const createAvatarRig =
     const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
     const obj = createRemoteObject(ctx, rig);
 
-    addComponent(ctx.world, AvatarComponent, rig.eid);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.position.set([0, AVATAR_OFFSET, 0]);
     const s = useAR ? 1 : 1.3;
@@ -153,24 +154,71 @@ const createAvatarRig =
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
 
+    addComponent(ctx.world, AvatarComponent, obj.eid);
+    AvatarComponent.eid[obj.eid] = rig.eid;
+
     return obj;
   };
 
+export const XRControllerComponent = defineComponent();
+export const XRHeadComponent = defineComponent();
+export const XRRayComponent = defineComponent();
+
 const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-head.glb`);
+  const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
+
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.2, 1.2, 1.2]);
+
   const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRHeadComponent, obj.eid);
+
   return obj;
 };
 
-const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-left-hand.glb`);
+export function createXRRay(ctx: GameState, options: any) {
+  const color = options.color || [0, 0.3, 1, 0.3];
+  const length = options.length || GRAB_DISTANCE;
+  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+    name: "Ray Material",
+    type: Schema.MaterialType.Standard,
+    baseColorFactor: color,
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 0,
+    alphaMode: Schema.MaterialAlphaMode.BLEND,
+  });
+  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh,
+  });
+  node.position[2] = 0.1;
+
   const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRRayComponent, obj.eid);
+
+  return obj;
+}
+
+const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.5, 1.5, 1.5]);
+
+  const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRControllerComponent, obj.eid);
+
   return obj;
 };
 
 const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/mixamo-y-xr-right-hand.glb`);
+  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.5, 1.5, 1.5]);
+
   const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRControllerComponent, obj.eid);
+
   return obj;
 };
 
@@ -236,6 +284,12 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       name: "xr-hand-right",
       type: PrefabType.Avatar,
       create: createXRHandRight(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-ray",
+      type: PrefabType.Avatar,
+      create: createXRRay,
     });
 
     // create out of bounds floor check

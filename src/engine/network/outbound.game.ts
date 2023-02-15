@@ -4,6 +4,7 @@ import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
 import { XRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { getModule } from "../module/module.common";
+import { getXRMode } from "../renderer/renderer.game";
 import { createCommandsMessage } from "./commands.game";
 import { isHost } from "./network.common";
 import {
@@ -208,10 +209,8 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
           // inform new peer of our avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
-          // inform other clients to hide our avatar entity
-          const ourPlayer = ourPlayerQuery(ctx.world)[0];
-          const xrRig = XRAvatarRig.get(ourPlayer);
-          if (xrRig?.cameraEid) broadcastReliable(ctx, network, createInformXRMode(ctx, ourPlayer));
+          // inform other clients of our XRMode
+          broadcastReliable(ctx, network, createInformXRMode(ctx, getXRMode(ctx)));
         }
       }
     } else {

@@ -1,22 +1,19 @@
-import { addComponent, defineQuery, exitQuery, hasComponent, removeComponent } from "bitecs";
+import { addComponent, defineQuery, exitQuery, hasComponent, Not, removeComponent } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { FlyControls } from "../../plugins/FlyCharacterController";
-import { GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { KinematicControls } from "../../plugins/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
-import { addChild, removeChild, setFromLocalMatrix } from "../component/transform";
+import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
-import { createLineMesh } from "../mesh/mesh.game";
 import { XRMode } from "../renderer/renderer.common";
-import { getXRMode } from "../renderer/renderer.game";
+import { getXRMode, RendererModule } from "../renderer/renderer.game";
 import { getModule, Thread } from "../module/module.common";
 import { createPrefabEntity } from "../prefab/prefab.game";
-import { addObjectToWorld, createRemoteObject, RemoteMaterial, RemoteNode } from "../resource/RemoteResources";
+import { addObjectToWorld, RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
-import { MaterialAlphaMode, MaterialType } from "../resource/schema";
 import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
 import { InputMessageType, SharedXRInputSource, SetXRReferenceSpaceMessage } from "./input.common";
@@ -26,18 +23,23 @@ import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRMode } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
-import { ourPlayerQuery } from "../component/Player";
+import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
+import { AvatarComponent } from "../../plugins/avatars/components";
 
 export interface XRAvatarRig {
+  prevLeftAssetPath?: string;
   leftControllerEid?: number;
   leftRayEid?: number;
   leftNetworkedEid?: number;
-  prevLeftAssetPath?: string;
+  leftRayNetworkedEid?: number;
+
+  prevRightAssetPath?: string;
   rightControllerEid?: number;
   rightRayEid?: number;
   rightNetworkedEid?: number;
+  rightRayNetworkedEid?: number;
+
   cameraEid?: number;
-  prevRightAssetPath?: string;
   arPrevCharController?: "kinematic" | "fly";
 }
 
@@ -54,15 +56,31 @@ export function addXRAvatarRig(world: World, eid: number) {
 const xrAvatarRigQuery = defineQuery([XRAvatarRig]);
 const xrAvatarRigExitQuery = exitQuery(xrAvatarRigQuery);
 
+const remoteXRControllerQuery = defineQuery([Networked, Not(Owned), XRControllerComponent]);
+const remoteXRHeadQuery = defineQuery([Networked, Not(Owned), XRHeadComponent]);
+const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarComponent]);
+
+// const ownedXRControllerQuery = defineQuery([Networked, Owned, XRControllerComponent]);
+// const ownedXRHeadQuery = defineQuery([Networked, Owned, XRHeadComponent]);
+// const ownedAvatarQuery = defineQuery([Networked, Owned, AvatarComponent]);
+
 const _v = vec3.create();
 const _q = quat.create();
 
 export function WebXRAvatarRigSystem(ctx: GameState) {
+  const rendererModule = getModule(ctx, RendererModule);
   const { xrInputSourcesByHand } = getModule(ctx, InputModule);
-  const xrMode = getXRMode(ctx);
+  const network = getModule(ctx, NetworkModule);
+  const ourXRMode = getXRMode(ctx);
+  const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
   const rigs = xrAvatarRigQuery(ctx.world);
 
-  const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
+  if (ourXRMode !== rendererModule.prevXRMode) {
+    rendererModule.prevXRMode = ourXRMode;
+
+    // inform other clients of our XRMode
+    broadcastReliable(ctx, network, createInformXRMode(ctx, ourXRMode));
+  }
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
@@ -77,7 +95,7 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
     updateXRController(ctx, xrInputSourcesByHand, rigNode, xrRig, "left");
     updateXRController(ctx, xrInputSourcesByHand, rigNode, xrRig, "right");
 
-    if (xrMode === XRMode.ImmersiveAR && sceneSupportsAR) {
+    if (ourXRMode === XRMode.ImmersiveAR && sceneSupportsAR) {
       if (!xrRig.arPrevCharController) {
         if (hasComponent(ctx.world, KinematicControls, eid)) {
           xrRig.arPrevCharController = "kinematic";
@@ -123,6 +141,49 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
     }
 
     XRAvatarRig.delete(eid);
+  }
+
+  // determine visibility of XR objects depending on XR modes of the clients who own those objects
+
+  const remoteXRControllers = remoteXRControllerQuery(ctx.world);
+  for (let i = 0; i < remoteXRControllers.length; i++) {
+    const eid = remoteXRControllers[i];
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const peerId = network.entityIdToPeerId.get(eid)!;
+    const theirXRMode = network.peerIdToXRMode.get(peerId)!;
+
+    // hands are hidden for AR participants
+    node.visible = !(sceneSupportsAR && ourXRMode === XRMode.ImmersiveAR && theirXRMode === XRMode.ImmersiveAR);
+  }
+
+  const remoteXRHeads = remoteXRHeadQuery(ctx.world);
+  for (let i = 0; i < remoteXRHeads.length; i++) {
+    const eid = remoteXRHeads[i];
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const peerId = network.entityIdToPeerId.get(eid)!;
+    const theirXRMode = network.peerIdToXRMode.get(peerId)!;
+
+    // heads are hidden for AR participants
+    node.visible = !(sceneSupportsAR && ourXRMode === XRMode.ImmersiveAR && theirXRMode === XRMode.ImmersiveAR);
+  }
+
+  const remoteAvatars = remoteAvatarQuery(ctx.world);
+  for (let i = 0; i < remoteAvatars.length; i++) {
+    const eid = remoteAvatars[i];
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const peerId = network.entityIdToPeerId.get(eid)!;
+    const theirXRMode = network.peerIdToXRMode.get(peerId)!;
+
+    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
+
+    // regular avatar is hidden for XR participants
+    avatar.visible = !(theirXRMode === XRMode.ImmersiveAR || theirXRMode === XRMode.ImmersiveVR);
+
+    // re-scale if the remote avatar is visible and we are AR
+    if (avatar.visible && ourXRMode === XRMode.ImmersiveAR) {
+      node.scale.set([1, 1, 1]);
+    }
   }
 }
 
@@ -196,25 +257,6 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
   }
 }
 
-function createRay(ctx: GameState, color = [0, 0.3, 1, 0.3], length = GRAB_DISTANCE) {
-  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
-    name: "Ray Material",
-    type: MaterialType.Standard,
-    baseColorFactor: color,
-    emissiveFactor: [0.7, 0.7, 0.7],
-    metallicFactor: 0,
-    roughnessFactor: 0,
-    alphaMode: MaterialAlphaMode.BLEND,
-  });
-  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh,
-  });
-  node.position[2] = 0.1;
-  const obj = createRemoteObject(ctx, node);
-  return obj;
-}
-
 function updateXRController(
   ctx: GameState,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
@@ -240,7 +282,11 @@ function updateXRController(
         removeChild(rigNode, controllerNode);
         controllerNode = undefined;
       } else {
-        controllerNode.visible = true;
+        if (ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR) {
+          controllerNode.visible = false;
+        } else {
+          controllerNode.visible = true;
+        }
       }
     }
 
@@ -251,36 +297,44 @@ function updateXRController(
       controllerNode = createNodeFromGLTFURI(ctx, assetPath);
       addChild(rigNode, controllerNode);
 
-      // TODO: refactor ray + networked entities out of here
-      // ray
-      const rayNode = createRay(ctx);
-      rayNode.name = `${hand}Ray`;
+      // local ray
+      const rayNode = createPrefabEntity(ctx, "xr-ray");
       addChild(rigNode, rayNode);
       addXRRaycaster(ctx, rayNode.eid, hand);
 
-      // node
-      const networkedEntity = createPrefabEntity(ctx, `xr-hand-${hand}`);
-      addComponent(ctx.world, Owned, networkedEntity.eid);
-      addComponent(ctx.world, Networked, networkedEntity.eid);
+      // networked ray
+      const networkedRayNode = createPrefabEntity(ctx, "xr-ray");
+      addComponent(ctx.world, Owned, networkedRayNode.eid);
+      addComponent(ctx.world, Networked, networkedRayNode.eid);
+      addObjectToWorld(ctx, networkedRayNode);
 
-      networkedEntity.visible = false;
+      networkedRayNode.visible = false;
 
-      addObjectToWorld(ctx, networkedEntity);
+      // networked hand
+      const networkedController = createPrefabEntity(ctx, `xr-hand-${hand}`);
+      addComponent(ctx.world, Owned, networkedController.eid);
+      addComponent(ctx.world, Networked, networkedController.eid);
+
+      networkedController.visible = false;
+
+      addObjectToWorld(ctx, networkedController);
 
       if (hand === XRInputHandedness.Left) {
         rig.leftControllerEid = controllerNode.eid;
         rig.prevLeftAssetPath = assetPath;
         ctx.worldResource.activeLeftControllerNode = controllerNode;
 
-        rig.leftNetworkedEid = networkedEntity.eid;
+        rig.leftNetworkedEid = networkedController.eid;
         rig.leftRayEid = rayNode.eid;
+        rig.leftRayNetworkedEid = networkedRayNode.eid;
       } else if (hand === XRInputHandedness.Right) {
         rig.rightControllerEid = controllerNode.eid;
         rig.prevRightAssetPath = assetPath;
         ctx.worldResource.activeRightControllerNode = controllerNode;
 
-        rig.rightNetworkedEid = networkedEntity.eid;
+        rig.rightNetworkedEid = networkedController.eid;
         rig.rightRayEid = rayNode.eid;
+        rig.rightRayNetworkedEid = networkedRayNode.eid;
       }
     }
 
@@ -288,16 +342,30 @@ function updateXRController(
 
     // take controller node world matrices and copy to networked ents
     if (rig.leftNetworkedEid && hand === XRInputHandedness.Left) {
-      const node = getRemoteResource<RemoteNode>(ctx, rig.leftNetworkedEid)!;
+      const node = tryGetRemoteResource<RemoteNode>(ctx, rig.leftNetworkedEid);
+      updateMatrixWorld(node);
       setFromLocalMatrix(node, controllerNode.worldMatrix);
+
+      const ray = tryGetRemoteResource<RemoteNode>(ctx, rig.leftRayEid!);
+      const networkedRay = tryGetRemoteResource<RemoteNode>(ctx, rig.leftRayNetworkedEid!);
+      setFromLocalMatrix(networkedRay, ray.worldMatrix);
     }
     if (rig.rightNetworkedEid && hand === XRInputHandedness.Right) {
-      const node = getRemoteResource<RemoteNode>(ctx, rig.rightNetworkedEid)!;
+      const node = tryGetRemoteResource<RemoteNode>(ctx, rig.rightNetworkedEid);
+      updateMatrixWorld(node);
       setFromLocalMatrix(node, controllerNode.worldMatrix);
+
+      const ray = tryGetRemoteResource<RemoteNode>(ctx, rig.rightRayEid!);
+      const networkedRay = tryGetRemoteResource<RemoteNode>(ctx, rig.rightRayNetworkedEid!);
+      setFromLocalMatrix(networkedRay, ray.worldMatrix);
     }
   } else if (eid) {
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    controllerNode.visible = false;
+    if (ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR) {
+      controllerNode.visible = false;
+    } else {
+      controllerNode.visible = true;
+    }
   }
 }
 
@@ -327,11 +395,6 @@ function updateXRCamera(
     cameraNode.visible = false;
     addObjectToWorld(ctx, cameraNode);
     xrRig.cameraEid = cameraNode.eid;
-
-    // inform other clients to hide our avatar entity
-    const ourPlayer = ourPlayerQuery(ctx.world)[0];
-    const network = getModule(ctx, NetworkModule);
-    broadcastReliable(ctx, network, createInformXRMode(ctx, ourPlayer));
   }
 
   const childWorldMatrix = _m;

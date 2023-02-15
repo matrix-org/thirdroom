@@ -683,12 +683,6 @@ function updateGrabThrowXR(
     return;
   }
 
-  // if (focusedEntity) {
-  //   grabbingNode.firstChild!.visible = true;
-  // } else {
-  //   grabbingNode.firstChild!.visible = false;
-  // }
-
   // TODO: use dominant hand
   const triggerState = controller.actionStates.get(
     hand === "right" ? "primaryTrigger" : "secondaryTrigger"
@@ -744,7 +738,7 @@ function updateGrabThrowXR(
       return;
     }
 
-    grabbingNode.visible = false;
+    // grabbingNode.visible = false;
 
     const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
 
@@ -771,7 +765,7 @@ function updateGrabThrowXR(
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
   } else {
-    grabbingNode.visible = true;
+    // grabbingNode.visible = true;
   }
 }
 
