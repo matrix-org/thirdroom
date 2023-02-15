@@ -22,6 +22,7 @@ import {
   writeFloat32,
   writeFloat64,
   writePropIfChanged,
+  writeScalarPropIfChanged,
   writeString,
   writeUint32,
   writeUint8,
@@ -188,7 +189,8 @@ export const serializeTransformChanged = defineChangedSerializer(
   (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 2),
   (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 3),
   // (ctx, v, eid) => writePropIfChanged(v, Networked.networkId, Transform.parent[eid]),
-  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).__props.skipLerp, 0)
+  (ctx, v, eid) =>
+    writeScalarPropIfChanged(v, "skipLerp", Uint32Array, tryGetRemoteResource<RemoteNode>(ctx, eid).skipLerp)
 );
 
 // export const serializeTransformChanged = (v: CursorView, eid: number) => {

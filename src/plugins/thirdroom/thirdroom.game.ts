@@ -1,7 +1,6 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
-import murmurHash from "murmurhash-js";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, traverse } from "../../engine/component/transform";
@@ -48,21 +47,17 @@ import {
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
-import {
-  addScriptComponent,
-  loadJSScript,
-  loadWASMScript,
-  Script,
-  ScriptComponent,
-  ScriptExecutionEnvironment,
-} from "../../engine/scripting/scripting.game";
+import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
 import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
-import * as Schema from "../../engine/resource/schema";
-import { RemoteResource, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_OFFSET } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
-import { ResourceModule, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import {
+  ResourceModule,
+  getRemoteResource,
+  tryGetRemoteResource,
+  createRemoteResourceManager,
+} from "../../engine/resource/resource.game";
 import {
   RemoteAudioData,
   RemoteAudioEmitter,
@@ -94,6 +89,7 @@ import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManag
 import { WebSGNetworkModule } from "../../engine/network/scripting.game";
 import { XRMode } from "../../engine/renderer/renderer.common";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
+import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 
 type ThirdRoomModuleState = {};
 
@@ -445,7 +441,7 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 }
 
 function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
-  const resourceMap: { [key: string]: RemoteResource<GameState>[] } = {};
+  const resourceMap: { [key: string]: RemoteResource[] } = {};
 
   const { resourcesByType, resourceDefByType } = getModule(ctx, ResourceModule);
 
@@ -517,46 +513,18 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     name: "Transient Scene",
   });
 
-  let script: Script<ScriptExecutionEnvironment> | undefined;
+  const resourceManager = createRemoteResourceManager(ctx);
+
+  let script: Script | undefined;
 
   if (scriptUrl) {
-    const allowedResources = Object.values(Schema).filter((val) => "schema" in val) as ResourceDefinition[];
-    const response = await fetch(scriptUrl);
-
-    const contentType = response.headers.get("content-type");
-
-    if (contentType) {
-      if (
-        contentType === "application/javascript" ||
-        contentType === "application/x-javascript" ||
-        contentType.startsWith("text/javascript")
-      ) {
-        const scriptSource = await response.text();
-        script = await loadJSScript(ctx, scriptSource, allowedResources);
-      } else if (contentType === "application/wasm") {
-        const scriptBuffer = await response.arrayBuffer();
-        script = await loadWASMScript(ctx, scriptBuffer, allowedResources);
-      }
-    }
-  }
-
-  const resourceManager = script?.resourceManager || ctx.resourceManager;
-
-  if (script && scriptUrl) {
-    const id = murmurHash(scriptUrl);
-    (resourceManager as ScriptResourceManager).id = id;
-    const webSgNet = getModule(ctx, WebSGNetworkModule);
-    webSgNet.scriptToInbound.set(id, []);
+    script = await loadScript(ctx, resourceManager, scriptUrl);
   }
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
   })) as RemoteScene;
-
-  if (script) {
-    addScriptComponent(ctx, environmentScene, script);
-  }
 
   if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
     const defaultEnvironmentMapTexture = new RemoteTexture(resourceManager, {
@@ -615,7 +583,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   }
 
   if (script) {
-    script.ready = true;
+    addScriptComponent(ctx, environmentScene, script);
   }
 }
 
@@ -679,7 +647,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
     const script = ScriptComponent.get(gltfScene.eid);
 
     if (script) {
-      script.entered = true;
+      script.entered();
     }
   }
 
@@ -778,20 +746,19 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
 export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
-  const network = getModule(ctx, NetworkModule);
 
   const rigs = inputControllerQuery(ctx.world);
+
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const playerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = tryGetInputController(input, eid);
-    updateThirdroom(ctx, network, physics, controller, node);
+    updateCharacterController(ctx, physics, controller, playerNode);
   }
 }
 
-function updateThirdroom(
+function updateCharacterController(
   ctx: GameState,
-  network: GameNetworkState,
   physics: PhysicsModuleState,
   controller: InputController,
   player: RemoteNode

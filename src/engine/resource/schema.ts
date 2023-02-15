@@ -374,7 +374,7 @@ export const InstancedMeshResource = defineResource("instanced-mesh", ResourceTy
 export const MeshResource = defineResource("mesh", ResourceType.Mesh, {
   name: PropType.string({ default: "Mesh", script: true }),
   // Note our implementation uses a fixed size array of primitives so you can have at most 16 primitives per mesh
-  primitives: PropType.refArray(MeshPrimitiveResource, { size: 16, script: true }),
+  primitives: PropType.refArray(MeshPrimitiveResource, { size: 16, script: true, mutable: false }),
   // TODO: weights
 });
 
@@ -405,7 +405,6 @@ export enum InteractableType {
 }
 
 export const InteractableResource = defineResource("interactable", ResourceType.Interactable, {
-  name: PropType.string({ default: "Interactable", script: true }),
   type: PropType.enum(InteractableType, {
     required: true,
     mutable: false,

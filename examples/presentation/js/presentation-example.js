@@ -1,35 +1,41 @@
-const presentationScreen = WebSG.getNodeByName("PresentationScreen");
-const prevButton = WebSG.getNodeByName("PrevButton");
-prevButton.interactable = new WebSG.Interactable();
-const nextButton = WebSG.getNodeByName("NextButton");
-nextButton.interactable = new WebSG.Interactable();
+let screenMaterial;
+let prevButton;
+let nextButton;
 
 let currentSlide = 0;
-
 const slides = [];
 
-for (let i = 0; i < 7; i++) {
-  slides.push(WebSG.getMaterialByName(`Slide${i + 1}`).baseColorTexture);
-}
+onload = () => {
+  const screenNode = WebSG.nodeFindByName("PresentationScreen");
+  const screenMesh = WebSG.nodeGetMesh(screenNode);
+  screenMaterial = WebSG.meshGetPrimitiveMaterial(screenMesh, 0);
 
-onupdate = (dt) => {
-  if (nextButton.interactable.pressed) {
-    currentSlide = (currentSlide + 1) % slides.length;
-
-    for (const primitive of presentationScreen.mesh.primitives()) {
-      primitive.material.baseColorTexture = slides[currentSlide];
-    }
+  for (let i = 0; i < 7; i++) {
+    const slideMaterial = WebSG.materialFindByName(`Slide${i + 1}`);
+    const slideTexture = WebSG.materialGetBaseColorTexture(slideMaterial);
+    slides.push(slideTexture);
   }
 
-  if (prevButton.interactable.pressed) {
+  prevButton = WebSG.nodeFindByName("PrevButton");
+  WebSG.addInteractable(prevButton);
+  nextButton = WebSG.nodeFindByName("NextButton");
+  WebSG.addInteractable(nextButton);
+};
+
+onupdate = (dt) => {
+  if (WebSG.getInteractablePressed(nextButton)) {
+    currentSlide = (currentSlide + 1) % slides.length;
+
+    WebSG.materialSetBaseColorTexture(screenMaterial, slides[currentSlide]);
+  }
+
+  if (WebSG.getInteractablePressed(prevButton)) {
     currentSlide = currentSlide - 1;
 
     if (currentSlide < 0) {
       currentSlide = slides.length - 1;
     }
 
-    for (const primitive of presentationScreen.mesh.primitives()) {
-      primitive.material.baseColorTexture = slides[currentSlide];
-    }
+    WebSG.materialSetBaseColorTexture(screenMaterial, slides[currentSlide]);
   }
 };
