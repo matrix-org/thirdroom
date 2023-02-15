@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useMainThreadContext } from "./useMainThread";
 import { getModule } from "../../engine/module/module.common";
@@ -10,26 +10,66 @@ import {
   HierarchyChangedEvent,
   EditorLoadedEvent,
   SelectionChangedEvent,
+  buildResourceList,
 } from "../../engine/editor/editor.main";
 import { EditorNode } from "../../engine/editor/editor.common";
 import { NOOP } from "../../engine/config.common";
+import { ResourceModule, MainNode } from "../../engine/resource/resource.main";
+import { MainThreadResource } from "../../engine/resource/resource.main";
 
+export enum HierarchyTab {
+  Scenes = "Scenes",
+  Resources = "Resources",
+}
+
+export type ResourceOptions = { value: MainThreadResource; label: string }[];
 interface EditorUIState {
   loading: boolean;
   activeEntity: number;
   selectedEntities: number[];
   scene?: EditorNode;
   resources?: EditorNode;
+  resourceOptions: ResourceOptions;
+  hierarchyTab: HierarchyTab;
+  resourceType: MainThreadResource;
 }
 
-export function useEditor(): EditorUIState {
+type UseEditor = EditorUIState & {
+  setHierarchyTab: (tab: HierarchyTab) => void;
+  setResourceType: (type: MainThreadResource) => void;
+};
+
+export function useEditor(): UseEditor {
   const mainThread = useMainThreadContext();
   const editor = getModule(mainThread, EditorModule);
   const [state, setState] = useState<EditorUIState>({
     activeEntity: NOOP,
     loading: true,
     selectedEntities: [],
+    resourceOptions: [],
+    resourceType: MainNode,
+    hierarchyTab: HierarchyTab.Scenes,
   });
+
+  const setHierarchyTab = useCallback((hierarchyTab: HierarchyTab) => {
+    setState((prev) => ({
+      ...prev,
+      hierarchyTab,
+    }));
+  }, []);
+
+  const setResourceType = useCallback(
+    (resourceType: MainThreadResource) => {
+      const resources = buildResourceList(mainThread, resourceType);
+
+      setState((prev) => ({
+        ...prev,
+        resources,
+        resourceType,
+      }));
+    },
+    [mainThread]
+  );
 
   useEffect(() => {
     function onEditorLoaded({ activeEntity, selectedEntities }: EditorLoadedEvent) {
@@ -41,14 +81,13 @@ export function useEditor(): EditorUIState {
       }));
     }
 
-    function onHierarchyChanged({ activeEntity, selectedEntities, scene, resources }: HierarchyChangedEvent) {
+    function onHierarchyChanged({ activeEntity, selectedEntities, scene }: HierarchyChangedEvent) {
       setState((state) => ({
         ...state,
         loading: false,
         activeEntity,
         selectedEntities,
         scene,
-        resources,
       }));
     }
 
@@ -66,6 +105,18 @@ export function useEditor(): EditorUIState {
     editor.eventEmitter.addListener(EditorEventType.SelectionChanged, onSelectionChanged);
     loadEditor(mainThread);
 
+    const resourceModule = getModule(mainThread, ResourceModule);
+
+    const resourceOptions = resourceModule.resourceConstructors.map((resourceConstructor) => ({
+      value: resourceConstructor,
+      label: resourceConstructor.name.startsWith("Main") ? resourceConstructor.name.slice(4) : resourceConstructor.name,
+    }));
+
+    setState((prevState) => ({
+      ...prevState,
+      resourceOptions,
+    }));
+
     return () => {
       disposeEditor(mainThread);
       editor.eventEmitter.removeListener(EditorEventType.EditorLoaded, onEditorLoaded);
@@ -74,5 +125,5 @@ export function useEditor(): EditorUIState {
     };
   }, [editor, mainThread]);
 
-  return state;
+  return { ...state, setHierarchyTab, setResourceType };
 }

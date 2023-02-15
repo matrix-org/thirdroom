@@ -6,6 +6,7 @@
   background-color: var(--bg-surface);
   border-radius: var(--br-xs);
   overflow: hidden;
+  box-shadow: var(--bs-surface);
 }
 
 .HierarchyPanel li {

@@ -22,30 +22,9 @@ import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { NOOP } from "../config.common";
-import {
-  AudioDataResource,
-  AudioEmitterResource,
-  AudioSourceResource,
-  BufferResource,
-  CameraResource,
-  ImageResource,
-  InstancedMeshResource,
-  InteractableResource,
-  LightMapResource,
-  LightResource,
-  MaterialResource,
-  MeshPrimitiveResource,
-  MeshResource,
-  NametagResource,
-  NodeResource,
-  ReflectionProbeResource,
-  ResourceType,
-  SamplerResource,
-  SkinResource,
-  SparseAccessorResource,
-  TextureResource,
-} from "../resource/schema";
+import { ResourceType } from "../resource/schema";
 import { getLocalResources, MainNode, MainScene } from "../resource/resource.main";
+import { ILocalResourceConstructor } from "../resource/ResourceDefinition";
 
 /*********
  * Types *
@@ -78,7 +57,6 @@ export interface HierarchyChangedEvent {
   activeEntity: number;
   selectedEntities: number[];
   scene?: EditorNode;
-  resources?: EditorNode;
 }
 
 export interface SelectionChangedEvent {
@@ -133,7 +111,6 @@ function updateHierarchy(ctx: IMainThreadContext, editor: EditorModuleState) {
   const publicScene = ctx.worldResource.environment?.publicScene;
   const event: HierarchyChangedEvent = {
     scene: publicScene && buildEditorNode(publicScene),
-    resources: publicScene && buildResourceList(ctx, publicScene),
     activeEntity: editor.activeEntity,
     selectedEntities: editor.selectedEntities,
   };
@@ -291,48 +268,31 @@ function buildEditorNode(sceneOrNode: MainScene | MainNode, parent?: EditorNode)
   return node;
 }
 
-function buildResourceList(ctx: IMainThreadContext, scene: MainScene): EditorNode {
+export function buildResourceList(
+  ctx: IMainThreadContext,
+  resourceType: ILocalResourceConstructor<IMainThreadContext>
+): EditorNode {
+  const resourceDef = resourceType.resourceDef;
+
+  const resourceNodes: EditorNode[] = [];
+
   const rootNode: EditorNode = {
     id: 0,
-    eid: scene.eid,
-    name: scene.name,
-    children: [],
+    eid: 0,
+    name: resourceDef.name,
+    children: resourceNodes,
   };
 
-  function addResources(resources: MainNode[], parentNode: EditorNode) {
-    resources.forEach((res) => {
-      const childNode: EditorNode = {
-        id: parentNode.children.length + 1,
-        eid: res.eid,
-        name: res.name ?? "Unnamed",
-        children: [],
-      };
-      parentNode.children.push(childNode);
+  const resources = getLocalResources(ctx, resourceType);
+
+  for (const resource of resources) {
+    resourceNodes.push({
+      id: resource.eid,
+      eid: resource.eid,
+      name: "name" in resource && typeof resource.name === "string" ? resource.name : "Unknown Resource",
+      children: [],
     });
   }
-
-  addResources(getLocalResources(ctx, NametagResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, SamplerResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, BufferResource) as MainNode[], rootNode);
-  // addResources(getLocalResources(ctx, BufferViewResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, AudioDataResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, AudioSourceResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, AudioEmitterResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, ImageResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, TextureResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, ReflectionProbeResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, MaterialResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, LightResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, CameraResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, SparseAccessorResource) as MainNode[], rootNode);
-  // addResources(getLocalResources(ctx, AccessorResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, MeshPrimitiveResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, InstancedMeshResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, MeshResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, LightMapResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, SkinResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, InteractableResource) as MainNode[], rootNode);
-  addResources(getLocalResources(ctx, NodeResource) as MainNode[], rootNode);
 
   return rootNode;
 }

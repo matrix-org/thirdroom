@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
@@ -23,6 +23,9 @@ import FormattedListIC from "../../../../../res/ic/formatted-list.svg";
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/EditorHeader";
+import { HierarchyTab, ResourceOptions } from "../../../hooks/useEditor";
+import { SelectInput } from "../../components/property-panel/SelectInput";
+import { MainThreadResource } from "../../../../engine/resource/resource.main";
 
 enum DnDItemTypes {
   Node = "node",
@@ -278,45 +281,67 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
   );
 }
 
-enum HierarchyTab {
-  Scenes = "Scenes",
-  Resources = "Resources",
-}
-
 export function HierarchyPanel({
   activeEntity,
   selectedEntities,
   scene,
   resources,
+  hierarchyTab,
+  resourceType,
+  setHierarchyTab,
+  resourceOptions,
+  setResourceType,
 }: HierarchyPanelProps & {
-  resources: EditorNode;
+  resources?: EditorNode;
+  resourceType: MainThreadResource;
+  hierarchyTab: HierarchyTab;
+  setHierarchyTab: (tab: HierarchyTab) => void;
+  resourceOptions: ResourceOptions;
+  setResourceType: (type: MainThreadResource) => void;
 }) {
-  const [tab, setTab] = useState(HierarchyTab.Scenes);
-
   return (
     <div className="HierarchyPanel flex flex-column">
       <EditorHeader className="shrink-0">
-        <EditorHeaderTab active={tab === HierarchyTab.Scenes} onClick={() => setTab(HierarchyTab.Scenes)}>
-          <Icon color={tab === HierarchyTab.Scenes ? "primary" : "surface"} size="sm" src={TreeIC} />
-          <Text color={tab === HierarchyTab.Scenes ? "primary" : "surface"} variant="b2" weight="semi-bold">
+        <EditorHeaderTab
+          active={hierarchyTab === HierarchyTab.Scenes}
+          onClick={() => setHierarchyTab(HierarchyTab.Scenes)}
+        >
+          <Icon color={hierarchyTab === HierarchyTab.Scenes ? "primary" : "surface"} size="sm" src={TreeIC} />
+          <Text color={hierarchyTab === HierarchyTab.Scenes ? "primary" : "surface"} variant="b2" weight="semi-bold">
             Scenes
           </Text>
         </EditorHeaderTab>
-        <EditorHeaderTab active={tab === HierarchyTab.Resources} onClick={() => setTab(HierarchyTab.Resources)}>
-          <Icon color={tab === HierarchyTab.Resources ? "primary" : "surface"} size="sm" src={FormattedListIC} />
-          <Text color={tab === HierarchyTab.Resources ? "primary" : "surface"} variant="b2" weight="semi-bold">
+        <EditorHeaderTab
+          active={hierarchyTab === HierarchyTab.Resources}
+          onClick={() => setHierarchyTab(HierarchyTab.Resources)}
+        >
+          <Icon
+            color={hierarchyTab === HierarchyTab.Resources ? "primary" : "surface"}
+            size="sm"
+            src={FormattedListIC}
+          />
+          <Text color={hierarchyTab === HierarchyTab.Resources ? "primary" : "surface"} variant="b2" weight="semi-bold">
             Resources
           </Text>
         </EditorHeaderTab>
       </EditorHeader>
-      <div className="grow">
-        {tab === HierarchyTab.Scenes && (
+      {hierarchyTab === HierarchyTab.Resources && (
+        <>
+          <div className="shrink-0">
+            <SelectInput value={resourceType} options={resourceOptions} onChange={setResourceType} />
+          </div>
+          <div className="grow">
+            {resources && (
+              <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={resources} />
+            )}
+          </div>
+        </>
+      )}
+      {hierarchyTab === HierarchyTab.Scenes && (
+        <div className="grow">
           <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
-        )}
-        {tab === HierarchyTab.Resources && (
-          <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={resources} />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
