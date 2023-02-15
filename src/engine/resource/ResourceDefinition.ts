@@ -607,7 +607,7 @@ export type LocalResourceInstance<
   ThreadContext extends BaseThreadContext
 > = LocalResource<ThreadContext> & {
   readonly [Prop in keyof Def["schema"]]: LocalResourcePropValue<ThreadContext, Def, Prop>;
-} & { resourceType: Def["resourceType"] };
+} & { resourceType: Def["resourceType"]; resourceDef: Def };
 
 export interface ILocalResourceClass<
   Def extends ResourceDefinition = ResourceDefinition,
