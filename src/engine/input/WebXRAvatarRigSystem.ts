@@ -60,10 +60,6 @@ const remoteXRControllerQuery = defineQuery([Networked, Not(Owned), XRController
 const remoteXRHeadQuery = defineQuery([Networked, Not(Owned), XRHeadComponent]);
 const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarComponent]);
 
-// const ownedXRControllerQuery = defineQuery([Networked, Owned, XRControllerComponent]);
-// const ownedXRHeadQuery = defineQuery([Networked, Owned, XRHeadComponent]);
-// const ownedAvatarQuery = defineQuery([Networked, Owned, AvatarComponent]);
-
 const _v = vec3.create();
 const _q = quat.create();
 
