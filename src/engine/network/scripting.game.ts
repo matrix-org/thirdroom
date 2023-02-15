@@ -78,7 +78,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     get_packet_size() {
       const packets = websgNetwork.inbound;
-      return packets.length === 0 ? 0 : packets[0].byteLength;
+      return packets.length === 0 ? 0 : packets[packets.length - 1].byteLength;
     },
     receive: (packetPtr: number, maxBufLength: number) => {
       try {
