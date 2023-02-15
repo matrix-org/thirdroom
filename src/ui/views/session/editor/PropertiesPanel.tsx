@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import classNames from "classnames";
 
 import "./PropertiesPanel.css";
@@ -14,6 +14,19 @@ import { setProperty } from "../../../../engine/editor/editor.main";
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
+import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefinition";
+import { IMainThreadContext } from "../../../../engine/MainThread";
+
+function getEulerRotation(quaternion: Float32Array) {
+  const rotation = new Float32Array(3);
+  if (quaternion) setEulerFromQuaternion(rotation, quaternion);
+  return rotation;
+}
+function getQuaternionRotation(rotation: Float32Array) {
+  const quat = new Float32Array(4);
+  setQuaternionFromEuler(quat, rotation);
+  return quat;
+}
 
 interface PropertyContainerProps {
   className?: string;
@@ -33,6 +46,106 @@ export function PropertyContainer({ className, name, children }: PropertyContain
   );
 }
 
+export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
+  function setProp<T>(propName: string, value: T) {
+    setProperty(ctx, resource.eid, propName, value);
+  }
+
+  const schema = resource.resourceDef.schema;
+
+  type ComponentSchema<T extends PropTypeType, S extends Schema> = {
+    [K in keyof T]?: (propName: keyof S, propDef: T[K]) => ReactNode;
+  };
+  const PropComponents: ComponentSchema<PropTypeType, typeof schema> = {
+    bool: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "boolean") return null;
+      return (
+        <PropertyContainer name={propName}>
+          <Checkbox
+            checked={value ?? propDef.default}
+            onCheckedChange={(checked) => setProp(propName, checked)}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    vec2: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return (
+        <PropertyContainer name={propName}>
+          <VectorInput
+            value={value ?? propDef.default}
+            type="vec2"
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    vec3: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return (
+        <PropertyContainer name={propName}>
+          <VectorInput
+            value={value ?? propDef.default}
+            type="vec3"
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    quat: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return (
+        <PropertyContainer name="Rotation">
+          <VectorInput
+            value={getEulerRotation(resource.quaternion ?? propDef.default)}
+            type="vec3"
+            onChange={(value) => {
+              setProp(propName, getQuaternionRotation(value));
+            }}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    rgb: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return (
+        <PropertyContainer name={propName}>
+          <ColorInput
+            type="rgb"
+            value={value ?? propDef.default}
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    rgba: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return (
+        <PropertyContainer name={propName}>
+          <ColorInput
+            type="rgba"
+            value={value ?? propDef.default}
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+  };
+  return PropComponents;
+}
+
 interface PropertiesPanelProps {
   className?: string;
   resource: MainNode;
@@ -40,8 +153,15 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
   const ctx = useMainThreadContext();
-  const rotation = new Float32Array(3);
-  if (resource.quaternion) setEulerFromQuaternion(rotation, resource.quaternion);
+
+  const resourceDef = resource.resourceDef;
+  const schema = resourceDef.schema;
+
+  const PropComponents = useMemo(() => getPropComponents(ctx, resource), [ctx, resource]);
+
+  const properties = Object.entries(schema).map(([propName, propDef]) =>
+    PropComponents[propDef.type]?.(propName as any, propDef as any)
+  );
 
   return (
     <div className={classNames("PropertiesPanel flex flex-column", className)}>
@@ -51,78 +171,7 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
           {resource.name ?? "Unnamed"}
         </Text>
       </EditorHeader>
-      <div className="grow">
-        {resource.position && (
-          <PropertyContainer name="Translation">
-            <VectorInput
-              value={resource.position}
-              type="vec3"
-              onChange={(value) => setProperty(ctx, resource.eid, "position", value)}
-            />
-          </PropertyContainer>
-        )}
-
-        {resource.quaternion && (
-          <PropertyContainer name="Rotation">
-            <VectorInput
-              value={rotation}
-              type="vec3"
-              onChange={(value) => {
-                const quat = new Float32Array(4);
-                setQuaternionFromEuler(quat, value);
-                setProperty(ctx, resource.eid, "quaternion", quat);
-              }}
-            />
-          </PropertyContainer>
-        )}
-
-        {resource.scale && (
-          <PropertyContainer name="Scale">
-            <VectorInput
-              value={resource.scale}
-              type="vec3"
-              onChange={(value) => setProperty(ctx, resource.eid, "scale", value)}
-            />
-          </PropertyContainer>
-        )}
-
-        {"color" in resource && (
-          <PropertyContainer name="Color">
-            <ColorInput
-              type="rgb"
-              value={resource.color as Float32Array}
-              onChange={(value) => setProperty(ctx, resource.eid, "color", value)}
-            />
-          </PropertyContainer>
-        )}
-
-        {typeof resource.visible === "boolean" && (
-          <PropertyContainer name="Visible">
-            <Checkbox
-              checked={resource.visible}
-              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "visible", checked)}
-            />
-          </PropertyContainer>
-        )}
-
-        {typeof resource.enabled === "boolean" && (
-          <PropertyContainer name="Enable">
-            <Checkbox
-              checked={resource.enabled}
-              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "enabled", checked)}
-            />
-          </PropertyContainer>
-        )}
-
-        {typeof resource.isStatic === "boolean" && (
-          <PropertyContainer name="Static">
-            <Checkbox
-              checked={resource.isStatic}
-              onCheckedChange={(checked) => setProperty(ctx, resource.eid, "isStatic", checked)}
-            />
-          </PropertyContainer>
-        )}
-      </div>
+      <div className="grow">{properties}</div>
     </div>
   );
 }

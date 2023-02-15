@@ -6,10 +6,14 @@
   background-color: var(--bg-surface);
   border-radius: var(--br-xs);
   overflow: hidden;
+  box-shadow: var(--bs-surface);
 }
 
 .PropertyContainer {
   padding: var(--sp-xs);
+}
+.PropertyContainer__title {
+  text-transform: capitalize;
 }
 .PropertyContainer__children {
   width: 220px;
