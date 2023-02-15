@@ -73,11 +73,25 @@ export function useEditor(): UseEditor {
 
   useEffect(() => {
     function onEditorLoaded({ activeEntity, selectedEntities }: EditorLoadedEvent) {
+      const resourceModule = getModule(mainThread, ResourceModule);
+
+      const resourceOptions = resourceModule.resourceConstructors.map((resourceConstructor) => ({
+        value: resourceConstructor,
+        label: resourceConstructor.name.startsWith("Main")
+          ? resourceConstructor.name.slice(4)
+          : resourceConstructor.name,
+      }));
+      const resourceType = resourceOptions[0]?.value ?? MainNode;
+      const resources = buildResourceList(mainThread, resourceType);
+
       setState((state) => ({
         ...state,
         loading: false,
         activeEntity,
         selectedEntities,
+        resourceOptions,
+        resources,
+        resourceType,
       }));
     }
 
@@ -104,18 +118,6 @@ export function useEditor(): UseEditor {
     editor.eventEmitter.addListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
     editor.eventEmitter.addListener(EditorEventType.SelectionChanged, onSelectionChanged);
     loadEditor(mainThread);
-
-    const resourceModule = getModule(mainThread, ResourceModule);
-
-    const resourceOptions = resourceModule.resourceConstructors.map((resourceConstructor) => ({
-      value: resourceConstructor,
-      label: resourceConstructor.name.startsWith("Main") ? resourceConstructor.name.slice(4) : resourceConstructor.name,
-    }));
-
-    setState((prevState) => ({
-      ...prevState,
-      resourceOptions,
-    }));
 
     return () => {
       disposeEditor(mainThread);
