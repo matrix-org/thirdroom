@@ -48,7 +48,6 @@ import { setActiveInputController } from "../input/InputController";
 import { getCamera } from "../camera/camera.game";
 import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
@@ -62,8 +61,6 @@ import {
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
-import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
-
 import { XRMode } from "../renderer/renderer.common";
 import { AvatarComponent } from "../../plugins/avatars/components";
 

@@ -1,8 +1,6 @@
 import { createCursorView, moveCursorView, writeUint32 } from "../allocator/CursorView";
-import { ourPlayerQuery } from "../component/Player";
 import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
-import { XRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { getModule } from "../module/module.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { createCommandsMessage } from "./commands.game";
