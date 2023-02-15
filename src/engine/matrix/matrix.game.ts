@@ -76,7 +76,7 @@ export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContex
     },
     get_event_size() {
       const messages = matrixModule.inboundWidgetMessages;
-      return messages.length === 0 ? 0 : messages[0].byteLength;
+      return messages.length === 0 ? 0 : messages[messages.length - 1].byteLength;
     },
     receive(eventBufPtr: number, maxBufLength: number) {
       try {
