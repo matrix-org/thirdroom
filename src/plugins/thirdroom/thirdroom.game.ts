@@ -85,8 +85,6 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
-import { WebSGNetworkModule } from "../../engine/network/scripting.game";
 import { XRMode } from "../../engine/renderer/renderer.common";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
