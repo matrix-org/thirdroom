@@ -14,6 +14,7 @@ export enum NetworkAction {
   UpdateNetworkId,
   ClientPosition,
   ScriptMessage,
+  InformXRMode,
 }
 
 export const UnreliableNetworkActions = [

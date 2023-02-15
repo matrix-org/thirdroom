@@ -683,12 +683,6 @@ function updateGrabThrowXR(
     return;
   }
 
-  // if (focusedEntity) {
-  //   grabbingNode.firstChild!.visible = true;
-  // } else {
-  //   grabbingNode.firstChild!.visible = false;
-  // }
-
   // TODO: use dominant hand
   const triggerState = controller.actionStates.get(
     hand === "right" ? "primaryTrigger" : "secondaryTrigger"
@@ -698,7 +692,7 @@ function updateGrabThrowXR(
     hand === "right" ? "primarySqueeze" : "secondarySqueeze"
   ) as ButtonActionState;
 
-  if (focusedEntity && (triggerState.held || squeezeState.held)) {
+  if (focusedEntity && (triggerState.pressed || squeezeState.held)) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
@@ -725,7 +719,7 @@ function updateGrabThrowXR(
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
           }
         }
-      } else if (triggerState.held && Interactable.type[node.eid] === InteractableType.Interactable) {
+      } else if (triggerState.pressed && Interactable.type[node.eid] === InteractableType.Interactable) {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
         const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
         const interactable = remoteNode?.interactable;
@@ -744,7 +738,7 @@ function updateGrabThrowXR(
       return;
     }
 
-    grabbingNode.visible = false;
+    // grabbingNode.visible = false;
 
     const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
 
@@ -771,7 +765,7 @@ function updateGrabThrowXR(
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
   } else {
-    grabbingNode.visible = true;
+    // grabbingNode.visible = true;
   }
 }
 

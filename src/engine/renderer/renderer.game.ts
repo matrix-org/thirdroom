@@ -17,6 +17,7 @@ export interface GameRendererModuleState {
   sceneRenderedNotificationId: number;
   sceneRenderedNotificationHandlers: Map<number, Deferred<void>>;
   xrMode: Uint8Array;
+  prevXRMode: XRMode;
 }
 
 export const RendererModule = defineModule<GameState, GameRendererModuleState>({
@@ -33,6 +34,7 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
       sceneRenderedNotificationId: 0,
       sceneRenderedNotificationHandlers: new Map(),
       xrMode,
+      prevXRMode: XRMode.None,
     };
   },
   async init(ctx) {
