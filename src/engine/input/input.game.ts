@@ -80,12 +80,16 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
       if (xrRig) {
         if (inputSource.handedness === "left") {
           if (xrRig.leftNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftNetworkedEid));
+          if (xrRig.leftRayNetworkedEid)
+            removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftRayNetworkedEid));
 
           xrRig.leftControllerEid = 0;
           xrRig.leftNetworkedEid = 0;
           xrRig.leftRayNetworkedEid = 0;
         } else if (inputSource.handedness === "right") {
           if (xrRig.rightNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightNetworkedEid));
+          if (xrRig.rightRayNetworkedEid)
+            removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightRayNetworkedEid));
 
           xrRig.rightControllerEid = 0;
           xrRig.rightNetworkedEid = 0;
