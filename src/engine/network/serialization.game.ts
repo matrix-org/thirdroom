@@ -64,6 +64,7 @@ import {
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
 import { XRMode } from "../renderer/renderer.common";
 import { AvatarComponent } from "../../plugins/avatars/components";
+import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 
 export type NetPipeData = [GameState, CursorView, string];
 

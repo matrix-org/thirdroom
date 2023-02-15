@@ -48,7 +48,13 @@ import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../F
 import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
-import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
+import {
+  InteractableType,
+  SamplerMapping,
+  AudioEmitterType,
+  MaterialType,
+  MaterialAlphaMode,
+} from "../../engine/resource/schema";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_OFFSET } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
@@ -175,12 +181,12 @@ export function createXRRay(ctx: GameState, options: any) {
   const length = options.length || GRAB_DISTANCE;
   const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
     name: "Ray Material",
-    type: Schema.MaterialType.Standard,
+    type: MaterialType.Standard,
     baseColorFactor: color,
     emissiveFactor: [0.7, 0.7, 0.7],
     metallicFactor: 0,
     roughnessFactor: 0,
-    alphaMode: Schema.MaterialAlphaMode.BLEND,
+    alphaMode: MaterialAlphaMode.BLEND,
   });
   const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
   const node = new RemoteNode(ctx.resourceManager, {
