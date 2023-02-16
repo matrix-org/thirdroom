@@ -16,6 +16,7 @@ import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
 import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefinition";
 import { IMainThreadContext } from "../../../../engine/MainThread";
+import { Scroll } from "../../../atoms/scroll/Scroll";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -90,7 +91,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (typeof value !== "boolean") return null;
       return (
-        <PropertyContainer name={propName}>
+        <PropertyContainer key={propName} name={propName}>
           <Checkbox
             checked={value ?? propDef.default}
             onCheckedChange={(checked) => setProp(propName, checked)}
@@ -103,7 +104,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer name={propName}>
+        <PropertyContainer key={propName} name={propName}>
           <VectorInput
             value={value ?? propDef.default}
             type="vec2"
@@ -117,7 +118,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer name={propName}>
+        <PropertyContainer key={propName} name={propName}>
           <VectorInput
             value={value ?? propDef.default}
             type="vec3"
@@ -131,7 +132,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer name="Rotation">
+        <PropertyContainer key={propName} name={propName === "quaternion" ? "Rotation" : propName}>
           <VectorInput
             value={getEulerRotation(resource.quaternion ?? propDef.default)}
             type="vec3"
@@ -147,7 +148,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer name={propName}>
+        <PropertyContainer key={propName} name={propName}>
           <ColorInput
             type="rgb"
             value={convertRGB(value ?? propDef.default, engineToUserChannel)}
@@ -161,7 +162,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer name={propName}>
+        <PropertyContainer key={propName} name={propName}>
           <ColorInput
             type="rgba"
             value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
@@ -200,7 +201,9 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
           {resource.name ?? "Unnamed"}
         </Text>
       </EditorHeader>
-      <div className="grow">{properties}</div>
+      <div className="grow">
+        <Scroll type="scroll">{properties}</Scroll>
+      </div>
     </div>
   );
 }

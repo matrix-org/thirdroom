@@ -327,7 +327,7 @@ export function HierarchyPanel({
       </EditorHeader>
       {hierarchyTab === HierarchyTab.Resources && (
         <>
-          <div className="shrink-0">
+          <div className="shrink-0" style={{ padding: "var(--sp-xxs) var(--sp-xxs) 0" }}>
             <SelectInput value={resourceType} options={resourceOptions} onChange={setResourceType} />
           </div>
           <div className="grow">
