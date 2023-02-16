@@ -25,6 +25,7 @@ import { NOOP } from "../config.common";
 import { ResourceType } from "../resource/schema";
 import { getLocalResources, MainNode, MainScene } from "../resource/resource.main";
 import { ILocalResourceConstructor } from "../resource/ResourceDefinition";
+import kebabToPascalCase from "../utils/kebabToPascalCase";
 
 /*********
  * Types *
@@ -279,7 +280,7 @@ export function buildResourceList(
   const rootNode: EditorNode = {
     id: -1,
     eid: -1,
-    name: resourceDef.name,
+    name: kebabToPascalCase(resourceDef.name),
     children: resourceNodes,
   };
 

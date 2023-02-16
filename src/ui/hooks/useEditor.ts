@@ -16,6 +16,7 @@ import { EditorNode } from "../../engine/editor/editor.common";
 import { NOOP } from "../../engine/config.common";
 import { ResourceModule, MainNode } from "../../engine/resource/resource.main";
 import { MainThreadResource } from "../../engine/resource/resource.main";
+import kebabToPascalCase from "../../engine/utils/kebabToPascalCase";
 
 export enum HierarchyTab {
   Scenes = "Scenes",
@@ -77,9 +78,7 @@ export function useEditor(): UseEditor {
 
       const resourceOptions = resourceModule.resourceConstructors.map((resourceConstructor) => ({
         value: resourceConstructor,
-        label: resourceConstructor.name.startsWith("Main")
-          ? resourceConstructor.name.slice(4)
-          : resourceConstructor.name,
+        label: kebabToPascalCase(resourceConstructor.resourceDef.name),
       }));
       const resourceType = resourceOptions[0]?.value ?? MainNode;
       const resources = buildResourceList(mainThread, resourceType);
