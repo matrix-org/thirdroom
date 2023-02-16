@@ -277,8 +277,8 @@ export function buildResourceList(
   const resourceNodes: EditorNode[] = [];
 
   const rootNode: EditorNode = {
-    id: 0,
-    eid: 0,
+    id: -1,
+    eid: -1,
     name: resourceDef.name,
     children: resourceNodes,
   };

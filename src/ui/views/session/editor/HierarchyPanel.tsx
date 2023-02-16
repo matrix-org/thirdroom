@@ -141,7 +141,8 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
   );
 
   const onSetSelectedNode = useCallback(
-    (nodeId) => {
+    (nodeId: number) => {
+      if (nodeId < 0) return;
       setSelectedEntity(mainThread, nodeId);
     },
     [mainThread]
