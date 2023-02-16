@@ -28,6 +28,35 @@ function getQuaternionRotation(rotation: Float32Array) {
   return quat;
 }
 
+function userToEngineChannel(channel: number): number {
+  return (1 / 255) * channel;
+}
+function engineToUserChannel(channel: number): number {
+  return Math.round(channel * 255);
+}
+function userToEngineAlpha(channel: number): number {
+  return (1 / 100) * channel;
+}
+function engineToUserAlpha(channel: number): number {
+  return Math.round(channel * 100);
+}
+
+function convertRGB(rgb: Float32Array, convertChannel: (channel: number) => number): Float32Array {
+  return new Float32Array([convertChannel(rgb[0]), convertChannel(rgb[1]), convertChannel(rgb[2])]);
+}
+function convertRGBA(
+  rgba: Float32Array,
+  convertChannel: (channel: number) => number,
+  convertAlpha: (channel: number) => number
+): Float32Array {
+  return new Float32Array([
+    convertChannel(rgba[0]),
+    convertChannel(rgba[1]),
+    convertChannel(rgba[2]),
+    convertAlpha(rgba[3]),
+  ]);
+}
+
 interface PropertyContainerProps {
   className?: string;
   name: string;
@@ -121,8 +150,8 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         <PropertyContainer name={propName}>
           <ColorInput
             type="rgb"
-            value={value ?? propDef.default}
-            onChange={(value) => setProp(propName, value)}
+            value={convertRGB(value ?? propDef.default, engineToUserChannel)}
+            onChange={(value) => setProp(propName, convertRGB(value, userToEngineChannel))}
             disabled={!propDef.mutable}
           />
         </PropertyContainer>
@@ -135,8 +164,8 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         <PropertyContainer name={propName}>
           <ColorInput
             type="rgba"
-            value={value ?? propDef.default}
-            onChange={(value) => setProp(propName, value)}
+            value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
+            onChange={(value) => setProp(propName, convertRGBA(value, userToEngineChannel, userToEngineAlpha))}
             disabled={!propDef.mutable}
           />
         </PropertyContainer>

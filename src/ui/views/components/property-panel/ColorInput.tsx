@@ -146,11 +146,9 @@ export function ColorInput<T extends ColorType>({
               </Label>
             }
             className="flex grow basis-0"
-            type="f32"
+            type="u32"
             min={0}
-            max={1}
-            displayPrecision={3}
-            mdStep={0.1}
+            max={100}
             value={value[3]}
             inputSize="sm"
             onChange={(a) => setColor(3, a, value)}
