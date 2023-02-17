@@ -137,7 +137,7 @@ function handleWidgetRequest(ctx: IMainThreadContext, matrixModule: MatrixModule
         outboundRequests: new Map(),
         capabilities: new Map([
           ["m.send.event", new Set(["m.room.message#m.text"])],
-          ["m.receive.event", new Set(["m.room.message"])],
+          ["m.receive.event", new Set(["m.room.message", "org.matrix.msc3672.beacon"])],
         ]),
       };
 
@@ -211,7 +211,11 @@ async function initializeRoomEventListener(
 
   const unsubscribe = timeline.entries.subscribe({
     onAdd(index, entry, list) {
-      if (!("isPending" in entry) && "event" in entry && entry.eventType === "m.room.message") {
+      if (
+        !("isPending" in entry) &&
+        "event" in entry &&
+        widget.capabilities.get("m.receive.event")?.has(entry.eventType)
+      ) {
         send(ctx, widget, WidgetAction.SendEvent, entry.event).catch((error) => {
           console.error(error);
         });
