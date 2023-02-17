@@ -87,10 +87,14 @@ export function ColorInput<T extends ColorType>({
     <div className=" ColorInput flex items-center grow">
       <ColorPicker
         type={type}
-        value={convertRGBA(value, undefined, userToEngineAlpha)}
-        onChange={(value) => onChange(convertRGBA(value, undefined, engineToUserAlpha))}
+        value={type === "rgb" ? value : convertRGBA(value, undefined, userToEngineAlpha)}
+        onChange={(value) => onChange(type === "rgb" ? value : convertRGBA(value, undefined, engineToUserAlpha))}
       >
-        <ColorPreview label="Pick Color" color={convertRGBA(value, undefined, userToEngineAlpha)} disabled={disabled} />
+        <ColorPreview
+          label="Pick Color"
+          color={type === "rgb" ? value : convertRGBA(value, undefined, userToEngineAlpha)}
+          disabled={disabled}
+        />
       </ColorPicker>
       <NumericInput
         before={
