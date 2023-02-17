@@ -5,6 +5,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { Label } from "../../../atoms/text/Label";
 import { NumericInput } from "../../../atoms/input/NumericInput";
 import "./ColorInput.css";
+import { convertRGBA, engineToUserAlpha, userToEngineAlpha } from "../../../utils/common";
 
 type ColorPreviewProps = {
   label: string;
@@ -84,8 +85,12 @@ export function ColorInput<T extends ColorType>({
 
   return (
     <div className=" ColorInput flex items-center grow">
-      <ColorPicker type={type} value={value} onChange={onChange}>
-        <ColorPreview label="Pick Color" color={value} disabled={disabled} />
+      <ColorPicker
+        type={type}
+        value={convertRGBA(value, undefined, userToEngineAlpha)}
+        onChange={(value) => onChange(convertRGBA(value, undefined, engineToUserAlpha))}
+      >
+        <ColorPreview label="Pick Color" color={convertRGBA(value, undefined, userToEngineAlpha)} disabled={disabled} />
       </ColorPicker>
       <NumericInput
         before={

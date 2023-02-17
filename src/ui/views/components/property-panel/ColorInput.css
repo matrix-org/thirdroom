@@ -56,9 +56,6 @@
     &:not(:last-child) {
       border-right-width: 0;
     }
-    &:not(:first-child) {
-      padding: 0 var(--sp-xxs);
-    }
 
     &:first-child {
       border-radius: var(--br-xxs) 0 0 var(--br-xxs);
