@@ -14,10 +14,9 @@ interface SelectInputProps<T> {
   disabled?: boolean;
   value: T;
   onChange: (value: T) => void;
-  dropDownWidth?: number;
 }
 
-export function SelectInput<T>({ options, disabled, value, onChange, dropDownWidth }: SelectInputProps<T>) {
+export function SelectInput<T>({ options, disabled, value, onChange }: SelectInputProps<T>) {
   const selectedOption = options.find((option) => option.value === value);
 
   const { isOpen, getToggleButtonProps, getMenuProps, getItemProps } = useSelect({

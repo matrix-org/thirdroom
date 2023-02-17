@@ -18,6 +18,16 @@ import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefini
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SelectInput } from "../../components/property-panel/SelectInput";
+import { Input } from "../../../atoms/input/Input";
+import { Label } from "../../../atoms/text/Label";
+import {
+  userToEngineChannel,
+  engineToUserChannel,
+  userToEngineAlpha,
+  engineToUserAlpha,
+  convertRGB,
+  convertRGBA,
+} from "../../../utils/common";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -30,35 +40,6 @@ function getQuaternionRotation(rotation: Float32Array) {
   return quat;
 }
 
-function userToEngineChannel(channel: number): number {
-  return (1 / 255) * channel;
-}
-function engineToUserChannel(channel: number): number {
-  return Math.round(channel * 255);
-}
-function userToEngineAlpha(channel: number): number {
-  return (1 / 100) * channel;
-}
-function engineToUserAlpha(channel: number): number {
-  return Math.round(channel * 100);
-}
-
-function convertRGB(rgb: Float32Array, convertChannel: (channel: number) => number): Float32Array {
-  return new Float32Array([convertChannel(rgb[0]), convertChannel(rgb[1]), convertChannel(rgb[2])]);
-}
-function convertRGBA(
-  rgba: Float32Array,
-  convertChannel: (channel: number) => number,
-  convertAlpha: (channel: number) => number
-): Float32Array {
-  return new Float32Array([
-    convertChannel(rgba[0]),
-    convertChannel(rgba[1]),
-    convertChannel(rgba[2]),
-    convertAlpha(rgba[3]),
-  ]);
-}
-
 interface PropertyContainerProps {
   className?: string;
   name: string;
@@ -66,11 +47,9 @@ interface PropertyContainerProps {
 }
 export function PropertyContainer({ className, name, children }: PropertyContainerProps) {
   return (
-    <div className={classNames("PropertyContainer flex items-center gap-xs", className)}>
+    <div className={classNames("PropertyContainer flex flex-column gap-xxs", className)}>
       <div className="PropertyContainer__title grow flex items-center">
-        <Text className="truncate" variant="b2" weight="medium">
-          {name}
-        </Text>
+        <Label className="truncate">{name}</Label>
       </div>
       <div className="PropertyContainer__children shrink-0 flex items-center flex-wrap">{children}</div>
     </div>
@@ -98,6 +77,24 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
             onCheckedChange={(checked) => setProp(propName, checked)}
             disabled={!propDef.mutable}
           />
+        </PropertyContainer>
+      );
+    },
+    u32: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "number") return null;
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={value} disabled outlined readOnly />
+        </PropertyContainer>
+      );
+    },
+    f32: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "number") return null;
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={value} disabled outlined readOnly />
         </PropertyContainer>
       );
     },
@@ -170,6 +167,41 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
             onChange={(value) => setProp(propName, convertRGBA(value, userToEngineChannel, userToEngineAlpha))}
             disabled={!propDef.mutable}
           />
+        </PropertyContainer>
+      );
+    },
+    bitmask: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "number") return null;
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={value} disabled outlined readOnly />
+        </PropertyContainer>
+      );
+    },
+    enum: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "number") return null;
+      const enumType = propDef.enumType;
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={(enumType as any)?.[value] ?? value} disabled outlined readOnly />
+        </PropertyContainer>
+      );
+    },
+    string: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "string") return null;
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={value} disabled outlined readOnly />
+        </PropertyContainer>
+      );
+    },
+    arrayBuffer: (propName, propDef) => {
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <Input inputSize="sm" value={`size: ${propDef.size}`} disabled outlined readOnly />
         </PropertyContainer>
       );
     },

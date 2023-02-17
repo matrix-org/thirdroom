@@ -21,6 +21,5 @@
 }
 
 .EditorView__rightPanel {
-  max-width: 330px;
   right: var(--sp-md);
 }
