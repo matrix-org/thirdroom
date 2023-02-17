@@ -347,7 +347,7 @@ static JSValue js_node_get_position(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_set_position(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -383,7 +383,7 @@ static JSValue js_node_set_position(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_quaternion(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
