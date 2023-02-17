@@ -11,6 +11,14 @@
 
 .PropertyContainer {
   padding: var(--sp-xxs) var(--sp-sm);
+
+  &:first-child {
+    padding-top: var(--sp-sm);
+  }
+
+  &:last-child {
+    padding-bottom: var(--sp-xl);
+  }
 }
 .PropertyContainer__title {
   text-transform: capitalize;
