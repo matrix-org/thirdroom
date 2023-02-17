@@ -31,7 +31,7 @@ export function SelectInput<T>({ options, disabled, value, onChange, dropDownWid
   return (
     <div className="ComboInput">
       <button className="SelectInput" {...getToggleButtonProps()} disabled={disabled}>
-        <Text className="grow" variant="b3">
+        <Text className="grow truncate" variant="b3">
           {selectedOption?.label ?? "Select Item"}
         </Text>
         <Icon src={isOpen ? ChevronTopIC : ChevronBottomIC} size="sm" />
@@ -42,7 +42,7 @@ export function SelectInput<T>({ options, disabled, value, onChange, dropDownWid
             {options.map((option, index) => (
               <MenuItem
                 variant={option.value === value ? "primary" : "surface"}
-                key={option.label}
+                key={option.label + index}
                 {...getItemProps({ item: option, index })}
               >
                 {option.label}

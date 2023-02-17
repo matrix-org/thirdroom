@@ -1,5 +1,6 @@
 .ComboInput {
   position: relative;
+  width: 100%;
 }
 
 .ComboInput__menu {

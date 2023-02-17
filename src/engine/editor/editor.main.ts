@@ -17,6 +17,7 @@ import {
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
   SetPropertyMessage,
+  SetTexturePropertyMessage,
 } from "./editor.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
@@ -186,6 +187,15 @@ export function setProperty<T>(ctx: IMainThreadContext, eid: number, propName: s
     eid,
     propName,
     value,
+  });
+}
+
+export function setTextureProperty(ctx: IMainThreadContext, eid: number, propName: string, textureEid: number) {
+  ctx.sendMessage<SetTexturePropertyMessage>(Thread.Game, {
+    type: EditorMessageType.SetTextureProperty,
+    eid,
+    propName,
+    textureEid,
   });
 }
 

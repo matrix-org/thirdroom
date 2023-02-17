@@ -25,6 +25,7 @@ import {
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
   SetPropertyMessage,
+  SetTexturePropertyMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -83,6 +84,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
       registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
       registerMessageHandler(ctx, EditorMessageType.SetProperty, onSetProperty),
+      registerMessageHandler(ctx, EditorMessageType.SetTextureProperty, onSetTextureProperty),
     ]);
   },
 });
@@ -182,7 +184,18 @@ function onSetProperty(ctx: GameState, message: SetPropertyMessage<unknown>) {
     return;
   }
 
-  (resource as any)[message.propName] = message.value;
+  (resource as any)[propName] = message.value;
+}
+
+function onSetTextureProperty(ctx: GameState, message: SetTexturePropertyMessage) {
+  const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
+  const texture = getRemoteResource<RemoteResourceTypes>(ctx, message.textureEid);
+  const propName = message.propName;
+
+  if (!resource || typeof resource !== "object" || !("resourceType" in resource) || !(propName in resource)) {
+    return;
+  }
+  (resource as any)[propName] = texture;
 }
 
 /***********

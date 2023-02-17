@@ -130,7 +130,7 @@ export function MultiSelectInput<T>({ options, disabled, selected, onSelectedCha
             {inputOptions.map((option, index) => (
               <MenuItem
                 variant={index === highlightedIndex ? "primary" : "surface"}
-                key={option.label}
+                key={option.label + 1}
                 {...getItemProps({ index, item: option })}
               >
                 {option.label}

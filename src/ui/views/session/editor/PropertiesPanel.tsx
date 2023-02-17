@@ -8,15 +8,16 @@ import { VectorInput } from "../../components/property-panel/VectorInput";
 import { EditorHeader } from "../../components/editor-header/EditorHeader";
 import { ColorInput } from "../../components/property-panel/ColorInput";
 import { Checkbox } from "../../../atoms/checkbox/Checkbox";
-import { MainNode } from "../../../../engine/resource/resource.main";
+import { getLocalResources, MainNode, MainTexture } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { setProperty } from "../../../../engine/editor/editor.main";
+import { setProperty, setTextureProperty } from "../../../../engine/editor/editor.main";
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
 import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefinition";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
+import { SelectInput } from "../../components/property-panel/SelectInput";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -168,6 +169,25 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
             value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
             onChange={(value) => setProp(propName, convertRGBA(value, userToEngineChannel, userToEngineAlpha))}
             disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    ref: (propName, propDef) => {
+      const value = resource[propName];
+      if (typeof value !== "object") return null;
+      if (!(value instanceof MainTexture)) return null;
+
+      const options = getLocalResources(ctx, MainTexture).map((res) => ({
+        value: res,
+        label: res.name,
+      }));
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <SelectInput
+            value={value}
+            onChange={(changed) => setTextureProperty(ctx, resource.eid, propName, changed.eid)}
+            options={options}
           />
         </PropertyContainer>
       );

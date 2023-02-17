@@ -58,7 +58,7 @@ export function ComboInput<T>({ options, disabled, selected, onSelectedChange, d
             {inputOptions.map((option, index) => (
               <MenuItem
                 variant={index === highlightedIndex ? "primary" : "surface"}
-                key={option.label}
+                key={option.label + index}
                 {...getItemProps({ index, item: option })}
               >
                 {option.label}
