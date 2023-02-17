@@ -10,7 +10,7 @@
 }
 
 .PropertyContainer {
-  padding: var(--sp-xs);
+  padding: var(--sp-xxs) var(--sp-sm);
 }
 .PropertyContainer__title {
   text-transform: capitalize;
