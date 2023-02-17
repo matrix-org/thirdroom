@@ -2,6 +2,7 @@ import { createCursorView, moveCursorView, writeUint32 } from "../allocator/Curs
 import { NOOP, tickRate } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
+import { getXRMode } from "../renderer/renderer.game";
 import { createCommandsMessage } from "./commands.game";
 import { isHost } from "./network.common";
 import {
@@ -24,6 +25,7 @@ import {
   createCreateMessage,
   createDeleteMessage,
   createUpdateChangedMessage,
+  createInformXRMode,
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
@@ -204,6 +206,9 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
 
           // inform new peer of our avatar's networkId
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
+
+          // inform other clients of our XRMode
+          broadcastReliable(ctx, network, createInformXRMode(ctx, getXRMode(ctx)));
         }
       }
     } else {

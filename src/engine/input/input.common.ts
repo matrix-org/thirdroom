@@ -17,6 +17,10 @@ export interface SetXRReferenceSpaceMessage {
   hand: XRHandedness;
 }
 
+export const XRCameraPoseSchema = defineObjectBufferSchema({
+  matrix: [Float32Array, 16],
+});
+
 export const XRControllerPosesSchema = defineObjectBufferSchema({
   rayPose: [Float32Array, 16],
   gripPose: [Float32Array, 16],
@@ -56,6 +60,7 @@ export const XRHandPosesSchema = defineObjectBufferSchema({
   radii: [Float32Array, 25],
 });
 
+export type XRCameraPoseTripleBuffer = ObjectTripleBuffer<typeof XRCameraPoseSchema>;
 export type XRControllerPosesTripleBuffer = ObjectTripleBuffer<typeof XRControllerPosesSchema>;
 export type XRHandPosesTripleBuffer = ObjectTripleBuffer<typeof XRHandPosesSchema>;
 
@@ -63,6 +68,7 @@ export interface SharedXRInputSource {
   id: number;
   handedness: XRHandedness;
   layout: XRInputLayout;
+  cameraPose: XRCameraPoseTripleBuffer;
   controllerPoses: XRControllerPosesTripleBuffer;
   handPoses?: XRHandPosesTripleBuffer;
 }

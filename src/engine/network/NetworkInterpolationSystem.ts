@@ -36,6 +36,9 @@ const getPeerIdFromEntityId = (network: GameNetworkState, eid: number) => {
 const _vec = new Vector3();
 const _quat = new Quaternion();
 
+const _v3 = vec3.create();
+const _q = quat.create();
+
 export function NetworkInterpolationSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
 
@@ -51,7 +54,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const eid = entered[i];
     const node = getRemoteResource<RemoteNode>(ctx, eid);
     const body = RigidBody.store.get(eid);
-    if (node && body) {
+    if (node) {
       applyNetworkedToEntity(node, body);
 
       // add to historian
@@ -89,10 +92,10 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
-    if (!body) {
-      console.warn("could not find rigidbody for:", eid);
-      continue;
-    }
+    // if (!body) {
+    //   console.warn("could not find rigidbody for:", eid);
+    //   continue;
+    // }
 
     const peerId = getPeerIdFromEntityId(network, eid);
     if (peerId === undefined) {
@@ -130,33 +133,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
-    // if interpolation is disabled
-    if (!network.interpolate) {
-      // and we have new state to apply from the authority
-      if (historian.needsUpdate) {
-        // if CSP is enabled and its our entity, apply update only the position
-        if (network.clientSidePrediction && eid === network.peerIdToEntityId.get(network.peerId)) {
-          position.set(netPosition);
-          body.setTranslation(_vec.fromArray(netPosition), true);
-        } else {
-          // otherwise update the entire transform
-          applyNetworkedToEntity(node, body);
-        }
-      }
-      continue;
-    }
-
-    // if CSP enabled and its our player
-    // TODO: once Authoring is implemented, check Owned instead of checking peerId's eid
-    if (network.clientSidePrediction && eid === network.peerIdToEntityId.get(network.peerId)) {
-      // then apply the update directly (rubberbanding upon prediction error)
-      if (historian.needsUpdate) {
-        position.set(netPosition);
-        body.setTranslation(_vec.fromArray(netPosition), true);
-      }
-      continue;
-    }
-
     // TODO: optional hermite interpolation
 
     const from = historian.index || 0;
@@ -165,17 +141,17 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const pFrom = history.position.at(from);
     const pTo = history.position.at(to);
     if (pFrom && pTo) {
-      vec3.lerp(position, pFrom, pTo, historian.fractionOfTimePassed);
-      body.setTranslation(_vec.fromArray(position), true);
+      vec3.lerp(_v3, pFrom, pTo, historian.fractionOfTimePassed);
+      if (body) body.setTranslation(_vec.fromArray(_v3), true);
+      else vec3.copy(position, _v3);
     }
 
-    if (body.isDynamic()) {
-      const vFrom = history.velocity.at(from);
-      const vTo = history.velocity.at(to);
-      if (vFrom && vTo) {
-        vec3.lerp(velocity, vFrom, vTo, historian.fractionOfTimePassed);
-        body.setLinvel(_vec.fromArray(velocity), true);
-      }
+    const vFrom = history.velocity.at(from);
+    const vTo = history.velocity.at(to);
+    if (vFrom && vTo) {
+      vec3.lerp(_v3, vFrom, vTo, historian.fractionOfTimePassed);
+      if (body && body.isDynamic()) body.setLinvel(_vec.fromArray(_v3), true);
+      else vec3.copy(velocity, _v3);
     }
 
     // if CSP is enabled, skip applying rotation data from the host for our locally controlled entity
@@ -191,8 +167,9 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const qFrom = history.quaternion.at(from);
     const qTo = history.quaternion.at(to);
     if (qFrom && qTo) {
-      quat.slerp(quaternion, qFrom, qTo, historian.fractionOfTimePassed);
-      body.setRotation(_quat.fromArray(quaternion), true);
+      quat.slerp(_q, qFrom, qTo, historian.fractionOfTimePassed);
+      if (body) body.setRotation(_quat.fromArray(_q), true);
+      else quat.copy(quaternion, _q);
     }
   }
 

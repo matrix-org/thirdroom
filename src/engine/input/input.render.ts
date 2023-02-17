@@ -11,6 +11,8 @@ import {
   SetXRReferenceSpaceMessage,
   SharedXRInputSource,
   UpdateXRInputSourcesMessage,
+  XRCameraPoseSchema,
+  XRCameraPoseTripleBuffer,
   XRControllerPosesSchema,
   XRControllerPosesTripleBuffer,
   XRHandPosesSchema,
@@ -45,6 +47,7 @@ export interface RenderInputModule {
   inputRingBuffer: InputRingBuffer;
   inputProfileManager: XRInputProfileManager;
   cameraPose?: XRViewerPose;
+  cameraPoseTripleBuffer: XRCameraPoseTripleBuffer;
   leftControllerPose?: XRPose;
   rightControllerPose?: XRPose;
   updateReferenceSpaceHand?: XRHandedness;
@@ -65,16 +68,19 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
 
     const basePath = new URL("/webxr-input-profiles", import.meta.url);
 
+    const cameraPoseTripleBuffer = createObjectTripleBuffer(XRCameraPoseSchema, ctx.renderToGameTripleBufferFlags);
+
     return {
       inputProfileManager: new XRInputProfileManager(basePath.href),
       inputSourceItems: [],
       inputRingBuffer,
+      cameraPoseTripleBuffer,
     };
   },
   init(ctx) {
     const { renderer } = getModule(ctx, RendererModule);
     const input = getModule(ctx, InputModule);
-    const { inputSourceItems, inputProfileManager } = input;
+    const { inputSourceItems, inputProfileManager, cameraPoseTripleBuffer } = input;
 
     let nextInputSourceId = Object.keys(InputSourceId).length;
 
@@ -92,6 +98,7 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
           id,
           handedness: inputSource.handedness,
           layout,
+          cameraPose: cameraPoseTripleBuffer,
           controllerPoses,
           handPoses,
         }));
@@ -134,6 +141,7 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
             id,
             handedness: inputSource.handedness,
             layout,
+            cameraPose: cameraPoseTripleBuffer,
             controllerPoses,
             handPoses,
           }));
@@ -275,6 +283,11 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
   }
 
   inputModule.cameraPose = frame.getViewerPose(referenceSpace);
+
+  if (inputModule.cameraPose) {
+    const cameraPoseView = getWriteObjectBufferView(inputModule.cameraPoseTripleBuffer);
+    cameraPoseView.matrix.set(inputModule.cameraPose.transform.matrix);
+  }
 
   for (const { id: inputSourceId, inputSource, layout, controllerPoses, handPoses } of inputSourceItems) {
     const components = layout.components;
