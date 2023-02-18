@@ -1,3 +1,5 @@
+import Yoga from "@react-pdf/yoga";
+
 import { defineResource, PropType } from "./ResourceDefinition";
 
 export enum ResourceType {
@@ -32,6 +34,11 @@ export enum ResourceType {
   World,
   Avatar,
   Environment,
+  UICanvas,
+  UIText,
+  UIButton,
+  UIImage,
+  UIFlex,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -416,6 +423,75 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   released: PropType.bool({ mutableScript: false, script: true }),
 });
 
+export enum FlexDirection {
+  COLUMN = Yoga.FLEX_DIRECTION_COLUMN,
+  COLUMN_REVERSE = Yoga.FLEX_DIRECTION_COLUMN_REVERSE,
+  ROW = Yoga.FLEX_DIRECTION_ROW,
+  ROW_REVERSE = Yoga.FLEX_DIRECTION_ROW_REVERSE,
+}
+
+export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
+  value: PropType.string({ script: true }),
+  fontFamily: PropType.string({ script: true }),
+  fontSize: PropType.u32({ script: true }),
+  fontWeight: PropType.string({ script: true }),
+  fontStyle: PropType.string({ script: true }),
+  color: PropType.string({ script: true }),
+});
+
+export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
+  label: PropType.string({ script: true }),
+});
+
+export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, {
+  source: PropType.ref(ImageResource, { script: true }),
+  alt: PropType.string({ script: true }),
+});
+
+export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
+  flexDirection: PropType.enum(FlexDirection, {
+    default: FlexDirection.ROW,
+    script: true,
+    mutable: true,
+  }),
+
+  width: PropType.f32({ script: true, mutable: true }),
+  height: PropType.f32({ script: true, mutable: true }),
+
+  backgroundColor: PropType.string({ script: true, mutable: true }),
+  strokeColor: PropType.string({ script: true, mutable: true }),
+
+  opacity: PropType.f32({ default: 1, script: true, mutable: true }),
+
+  paddingTop: PropType.f32({ default: 0, script: true, mutable: true }),
+  paddingBottom: PropType.f32({ default: 0, script: true, mutable: true }),
+  paddingLeft: PropType.f32({ default: 0, script: true, mutable: true }),
+  paddingRight: PropType.f32({ default: 0, script: true, mutable: true }),
+  marginTop: PropType.f32({ default: 0, script: true, mutable: true }),
+  marginBottom: PropType.f32({ default: 0, script: true, mutable: true }),
+  marginLeft: PropType.f32({ default: 0, script: true, mutable: true }),
+  marginRight: PropType.f32({ default: 0, script: true, mutable: true }),
+
+  parent: PropType.selfRef({ backRef: true }),
+  firstChild: PropType.selfRef(),
+  prevSibling: PropType.selfRef({ backRef: true }),
+  nextSibling: PropType.selfRef(),
+
+  text: PropType.ref(UITextResource, {}),
+  button: PropType.ref(UIButtonResource, {}),
+  image: PropType.ref(UIImageResource, {}),
+});
+
+export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanvas, {
+  root: PropType.ref(UIFlexResource),
+
+  width: PropType.f32({ script: true, mutable: true }),
+  height: PropType.f32({ script: true, mutable: true }),
+
+  needsRedraw: PropType.bool({ default: true, script: true, mutable: true }),
+  // Owns a CanvasTexture
+});
+
 export const NodeResource = defineResource("node", ResourceType.Node, {
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene", { backRef: true }),
@@ -445,6 +521,9 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
+  // one root node for entire layout tree
+  // Owns a Mesh Object3D
+  uiCanvas: PropType.ref(UICanvasResource, { script: true }),
 });
 
 export enum AnimationSamplerInterpolation {

@@ -41,6 +41,11 @@ import {
   RemoteAnimation,
   RemoteEnvironment,
   RemoteWorld,
+  RemoteUIButton,
+  RemoteUICanvas,
+  RemoteUIFlex,
+  RemoteUIImage,
+  RemoteUIText,
 } from "./RemoteResources";
 import {
   ArrayBufferResourceType,
@@ -167,6 +172,11 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   init(ctx) {
     const dispose = createDisposables([
       registerResource(ctx, RemoteNode),
+      registerResource(ctx, RemoteUIButton),
+      registerResource(ctx, RemoteUICanvas),
+      registerResource(ctx, RemoteUIFlex),
+      registerResource(ctx, RemoteUIImage),
+      registerResource(ctx, RemoteUIText),
       registerResource(ctx, RemoteAudioData),
       registerResource(ctx, RemoteAudioSource),
       registerResource(ctx, RemoteAudioEmitter),

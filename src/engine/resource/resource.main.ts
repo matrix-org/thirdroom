@@ -1,3 +1,6 @@
+import Yoga from "@react-pdf/yoga";
+import { CanvasTexture } from "three";
+
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -18,6 +21,7 @@ import {
   BufferViewResource,
   CameraResource,
   EnvironmentResource,
+  FlexDirection,
   ImageResource,
   InstancedMeshResource,
   InteractableResource,
@@ -36,6 +40,11 @@ import {
   SparseAccessorResource,
   TextureResource,
   TilesRendererResource,
+  UIButtonResource,
+  UICanvasResource,
+  UIFlexResource,
+  UIImageResource,
+  UITextResource,
   WorldResource,
 } from "./schema";
 
@@ -215,6 +224,49 @@ export class MainSkin extends defineLocalResourceClass(SkinResource) {
 
 export class MainInteractable extends defineLocalResourceClass(InteractableResource) {}
 
+export class MainUIText extends defineLocalResourceClass(UITextResource) {}
+export class MainUIButton extends defineLocalResourceClass(UIButtonResource) {}
+export class MainUIImage extends defineLocalResourceClass(UIImageResource) {}
+
+export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
+  declare flexDirection: FlexDirection;
+
+  declare width: number;
+  declare height: number;
+
+  declare paddingTop: number;
+  declare paddingBottom: number;
+  declare paddingLeft: number;
+  declare paddingRight: number;
+
+  declare marginTop: number;
+  declare marginBottom: number;
+  declare marginLeft: number;
+  declare marginRight: number;
+
+  declare parent: MainUIFlex | undefined;
+  declare firstChild: MainUIFlex | undefined;
+  declare prevSibling: MainUIFlex | undefined;
+  declare nextSibling: MainUIFlex | undefined;
+
+  declare text: MainUIText;
+  declare button: MainUIButton;
+  declare image: MainUIImage;
+
+  yogaNode: Yoga.Node;
+}
+
+export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
+  declare root: MainUIFlex;
+  declare width: number;
+  declare height: number;
+  declare needsRedraw: boolean;
+
+  canvasTexture?: CanvasTexture;
+  canvas?: HTMLCanvasElement;
+  yogaNode: Yoga.Node;
+}
+
 export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare resourceType: ResourceType.Node;
   declare parentScene: MainScene | undefined;
@@ -298,6 +350,11 @@ const {
   ReturnRecycledResourcesSystem,
 } = createLocalResourceModule<IMainThreadContext>([
   MainNode,
+  MainUIButton,
+  MainUICanvas,
+  MainUIFlex,
+  MainUIImage,
+  MainUIText,
   MainAudioData,
   MainAudioSource,
   MainAudioEmitter,

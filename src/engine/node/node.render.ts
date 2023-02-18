@@ -11,6 +11,7 @@ import { updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.
 import { RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { getLocalResources, RenderNode } from "../resource/resource.render";
 import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
+import { updateNodeUICanvas } from "../ui/ui.render";
 
 const tempMatrix4 = new Matrix4();
 const tempPosition = new Vector3();
@@ -77,6 +78,7 @@ export function updateLocalNodeResources(ctx: RenderThreadState, rendererModule:
     updateNodeReflectionProbe(ctx, scene, node);
     updateNodeMesh(ctx, node);
     updateNodeTilesRenderer(ctx, scene, node);
+    updateNodeUICanvas(ctx, scene, node);
 
     node.needsUpdate = node.isStatic ? false : needsUpdate;
   }

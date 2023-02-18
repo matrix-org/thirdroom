@@ -12,7 +12,14 @@ import { XRMode } from "../renderer/renderer.common";
 import { getXRMode, RendererModule } from "../renderer/renderer.game";
 import { getModule, Thread } from "../module/module.common";
 import { createPrefabEntity } from "../prefab/prefab.game";
-import { addObjectToWorld, RemoteNode } from "../resource/RemoteResources";
+import {
+  addObjectToWorld,
+  createRemoteObject,
+  RemoteNode,
+  RemoteUICanvas,
+  RemoteUIFlex,
+  RemoteUIText,
+} from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
@@ -332,6 +339,53 @@ function updateXRController(
         rig.rightRayEid = rayNode.eid;
         rig.rightRayNetworkedEid = networkedRayNode.eid;
       }
+
+      // Example UI
+
+      const w = 0.2;
+      const h = 0.1;
+
+      const scale = 2000;
+
+      const widthPx = w * scale;
+      const heightPx = h * scale;
+
+      const root = new RemoteUIFlex(ctx.resourceManager, {
+        width: widthPx,
+        height: heightPx,
+        backgroundColor: "black",
+        opacity: 0.5,
+      });
+
+      root.firstChild = new RemoteUIFlex(ctx.resourceManager, {
+        width: widthPx,
+        height: heightPx,
+        parent: root,
+        paddingTop: 80,
+        paddingLeft: 80,
+        text: new RemoteUIText(ctx.resourceManager, {
+          value: hand,
+          fontSize: 36,
+          fontFamily: "serif",
+          fontStyle: "italic",
+          fontWeight: "bold",
+          color: "white",
+        }),
+      });
+
+      const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
+        root,
+        width: w,
+        height: h,
+      });
+
+      const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
+
+      node.position[1] = 0.1;
+
+      const obj = createRemoteObject(ctx, node);
+
+      addChild(rayNode, obj);
     }
 
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);

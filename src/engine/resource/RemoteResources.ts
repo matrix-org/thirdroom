@@ -1,5 +1,5 @@
 import { addComponent, defineComponent, hasComponent } from "bitecs";
-import { AnimationClip } from "three";
+import { AnimationClip, CanvasTexture } from "three";
 
 import { addChild, getLastSibling } from "../component/transform";
 import { GameState } from "../GameTypes";
@@ -34,6 +34,12 @@ import {
   AnimationSamplerResource,
   WorldResource,
   EnvironmentResource,
+  FlexDirection,
+  UIButtonResource,
+  UICanvasResource,
+  UIFlexResource,
+  UIImageResource,
+  UITextResource,
 } from "./schema";
 
 export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
@@ -121,6 +127,45 @@ export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
 }
 
 export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
+
+export class RemoteUIText extends defineRemoteResourceClass(UITextResource) {}
+export class RemoteUIButton extends defineRemoteResourceClass(UIButtonResource) {}
+export class RemoteUIImage extends defineRemoteResourceClass(UIImageResource) {}
+
+export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
+  declare flexDirection: FlexDirection;
+
+  declare width: number;
+  declare height: number;
+
+  declare paddingTop: number;
+  declare paddingBottom: number;
+  declare paddingLeft: number;
+  declare paddingRight: number;
+
+  declare marginTop: number;
+  declare marginBottom: number;
+  declare marginLeft: number;
+  declare marginRight: number;
+
+  declare parent: RemoteUIFlex | undefined;
+  declare firstChild: RemoteUIFlex | undefined;
+  declare prevSibling: RemoteUIFlex | undefined;
+  declare nextSibling: RemoteUIFlex | undefined;
+
+  declare text: RemoteUIText;
+  declare button: RemoteUIButton;
+  declare image: RemoteUIImage;
+}
+export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
+  declare firstChild: RemoteUIFlex;
+
+  declare width: number;
+  declare height: number;
+
+  canvasTexture?: CanvasTexture;
+  canvas?: HTMLCanvasElement;
+}
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare parentScene: RemoteScene | undefined;
