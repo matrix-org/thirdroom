@@ -29,11 +29,6 @@ export function traverseChildren(
 
   while (curChild) {
     callback(curChild, i++);
-    curChild = curChild.nextSibling;
-  }
-
-  curChild = node.firstChild;
-  while (curChild) {
     traverseChildren(curChild, callback);
     curChild = curChild.nextSibling;
   }
