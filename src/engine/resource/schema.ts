@@ -489,7 +489,6 @@ export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanva
   height: PropType.f32({ script: true, mutable: true }),
 
   needsRedraw: PropType.bool({ default: true, script: true, mutable: true }),
-  // Owns a CanvasTexture
 });
 
 export const NodeResource = defineResource("node", ResourceType.Node, {
@@ -521,8 +520,6 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
-  // one root node for entire layout tree
-  // Owns a Mesh Object3D
   uiCanvas: PropType.ref(UICanvasResource, { script: true }),
 });
 

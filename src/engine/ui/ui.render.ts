@@ -19,10 +19,7 @@ export const WebSGUIModule = defineModule<RenderThreadState, {}>({
   },
 });
 
-export function traverseChildren(
-  node: RenderUIFlex,
-  callback: (child: RenderUIFlex, index: number | undefined) => unknown | false
-) {
+export function traverseChildren(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => void) {
   let curChild = node.firstChild;
   let i = 0;
 
