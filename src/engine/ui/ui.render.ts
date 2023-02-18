@@ -19,7 +19,6 @@ export const WebSGUIModule = defineModule<RenderThreadState, {}>({
   },
 });
 
-// breadth-first traverse to canonicalize index for Yoga.Node.insertChild(child,index)
 export function traverseChildren(
   node: RenderUIFlex,
   callback: (child: RenderUIFlex, index: number | undefined) => unknown | false
