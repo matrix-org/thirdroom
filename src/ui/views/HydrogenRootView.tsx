@@ -209,7 +209,7 @@ function getSessionInfo(): ISessionInfo | undefined {
   return undefined;
 }
 
-async function loadSession(client: Client, session: Session) {
+async function loadClient(client: Client, session?: Session) {
   await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
     const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
 
@@ -224,10 +224,10 @@ async function loadSession(client: Client, session: Session) {
   const loadStatus = client.loadStatus.get();
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
-    return false;
+    throw new Error(loginFailureToMsg(client.loginFailure));
   }
 
-  await session.callHandler.loadCalls("m.room" as CallIntent);
+  await session?.callHandler.loadCalls("m.room" as CallIntent);
   return true;
 }
 
@@ -317,15 +317,16 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
       await client.startWithExistingSession(sessionInfo.id);
 
       try {
-        if (client.session && (await loadSession(client, client.session))) {
+        if (await loadClient(client, client.session)) {
           sessionRef.current = client.session;
           return;
         }
         await client.startLogout(sessionInfo.id);
+        localStorage.clear();
       } catch (error) {
-        console.error("Error loading initial session", error);
+        localStorage.clear();
+        throw error;
       }
-      localStorage.clear();
     },
     [platform, client]
   );
@@ -339,15 +340,16 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
       await client.startWithLogin(loginMethod);
 
       try {
-        if (client.session && (await loadSession(client, client.session))) {
+        if (await loadClient(client, client.session)) {
           sessionRef.current = client.session;
           return;
         }
         await client.startLogout(client.sessionId);
+        localStorage.clear();
       } catch (error) {
-        console.error("Unknown error logging in.", error);
+        localStorage.clear();
+        throw error;
       }
-      localStorage.clear();
     },
     [client]
   );
@@ -377,9 +379,7 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
 
   const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
-  let errorMsg = error?.message;
-  if (errorLoggingIn) errorMsg = loginFailureToMsg(client.loginFailure) ?? errorMsg;
-  if (oidcCompleteError) errorMsg = oidcCompleteError;
+  const errorMsg = oidcCompleteError ?? error?.message;
 
   return {
     session,
