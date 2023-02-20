@@ -209,7 +209,7 @@ function getSessionInfo(): ISessionInfo | undefined {
   return undefined;
 }
 
-async function loadClient(client: Client, session?: Session) {
+async function waitToLoadClient(client: Client) {
   await client.loadStatus.waitFor((loadStatus: LoadStatus) => {
     const isCatchupSync = loadStatus === LoadStatus.FirstSync && client.sync.status.get() === SyncStatus.CatchupSync;
 
@@ -226,15 +226,28 @@ async function loadClient(client: Client, session?: Session) {
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
     throw new Error(loginFailureToMsg(client.loginFailure));
   }
-
-  await session?.callHandler.loadCalls("m.room" as CallIntent);
-  return true;
 }
 
 function loginFailureToMsg(loginFailure: LoginFailure) {
   if (loginFailure === LoginFailure.Connection) return "Connection timeout. Please try again.";
   if (loginFailure === LoginFailure.Credentials) return "Invalid credentials. Please try again.";
   if (loginFailure === LoginFailure.Unknown) return "Unknown error. Please try again.";
+}
+
+async function loadClient(client: Client, sessionId: string): Promise<Session | undefined> {
+  try {
+    await waitToLoadClient(client);
+    if (client.session) {
+      await client.session.callHandler.loadCalls("m.room" as CallIntent);
+      return client.session;
+    }
+    await client.startLogout(sessionId);
+    localStorage.clear();
+  } catch (error) {
+    localStorage.clear();
+    throw error;
+  }
+  return undefined;
 }
 
 async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, state: string, code: string) {
@@ -315,18 +328,7 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
   } = useAsyncCallback(
     async (sessionInfo: ISessionInfo) => {
       await client.startWithExistingSession(sessionInfo.id);
-
-      try {
-        if (await loadClient(client, client.session)) {
-          sessionRef.current = client.session;
-          return;
-        }
-        await client.startLogout(sessionInfo.id);
-        localStorage.clear();
-      } catch (error) {
-        localStorage.clear();
-        throw error;
-      }
+      sessionRef.current = await loadClient(client, sessionInfo.id);
     },
     [platform, client]
   );
@@ -338,18 +340,7 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
   } = useAsyncCallback<(loginMethod: ILoginMethod) => Promise<void>, void>(
     async (loginMethod) => {
       await client.startWithLogin(loginMethod);
-
-      try {
-        if (await loadClient(client, client.session)) {
-          sessionRef.current = client.session;
-          return;
-        }
-        await client.startLogout(client.sessionId);
-        localStorage.clear();
-      } catch (error) {
-        localStorage.clear();
-        throw error;
-      }
+      sessionRef.current = await loadClient(client, client.sessionId);
     },
     [client]
   );
