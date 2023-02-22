@@ -107,9 +107,9 @@ export interface SetPropertyMessage<T = unknown> {
   propName: string;
   value: T;
 }
-export interface SetTexturePropertyMessage {
+export interface SetRefPropertyMessage {
   type: EditorMessageType.SetTextureProperty;
   eid: number;
   propName: string;
-  textureEid: number;
+  refEid: number;
 }

@@ -8,9 +8,9 @@ import { VectorInput } from "../../components/property-panel/VectorInput";
 import { EditorHeader } from "../../components/editor-header/EditorHeader";
 import { ColorInput } from "../../components/property-panel/ColorInput";
 import { Checkbox } from "../../../atoms/checkbox/Checkbox";
-import { getLocalResources, MainNode, MainTexture } from "../../../../engine/resource/resource.main";
+import { getLocalResources, MainNode } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { setProperty, setTextureProperty } from "../../../../engine/editor/editor.main";
+import { setProperty, setRefProperty } from "../../../../engine/editor/editor.main";
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
@@ -28,6 +28,7 @@ import {
   convertRGB,
   convertRGBA,
 } from "../../../utils/common";
+import { IconButton } from "../../../atoms/button/IconButton";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -207,18 +208,25 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
     },
     ref: (propName, propDef) => {
       const value = resource[propName];
-      if (typeof value !== "object") return null;
-      if (!(value instanceof MainTexture)) return null;
+      if (Array.isArray(value) || ArrayBuffer.isView(value) || typeof value !== "object") return null;
 
-      const options = getLocalResources(ctx, MainTexture).map((res) => ({
+      const options = (getLocalResources(ctx, value.resourceDef) as typeof value[]).map((res) => ({
         value: res,
-        label: res.name,
+        label: "name" in res ? res.name : "Unnamed",
       }));
       return (
         <PropertyContainer key={propName} name={propName}>
           <SelectInput
+            before={
+              <IconButton
+                size="sm"
+                iconSrc={CircleIC}
+                label="Select Resource"
+                onClick={() => console.log("select resource")}
+              />
+            }
             value={value}
-            onChange={(changed) => setTextureProperty(ctx, resource.eid, propName, changed.eid)}
+            onChange={(changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
             options={options}
           />
         </PropertyContainer>
