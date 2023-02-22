@@ -15,9 +15,13 @@ import { createPrefabEntity } from "../prefab/prefab.game";
 import {
   addObjectToWorld,
   createRemoteObject,
+  RemoteBuffer,
+  RemoteBufferView,
+  RemoteImage,
   RemoteNode,
   RemoteUICanvas,
   RemoteUIFlex,
+  RemoteUIImage,
   RemoteUIText,
 } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
@@ -260,7 +264,7 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
   }
 }
 
-function updateXRController(
+async function updateXRController(
   ctx: GameState,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
   rigNode: RemoteNode,
@@ -357,6 +361,30 @@ function updateXRController(
         opacity: 0.5,
       });
 
+      const uri = "/image/mirror-ball-icon.png";
+      const req = await fetch(uri);
+      const ab = await req.arrayBuffer();
+      const data = new SharedArrayBuffer(ab.byteLength);
+      new Uint8ClampedArray(data).set(new Uint8ClampedArray(ab));
+
+      const remoteBuffer = new RemoteBuffer(ctx.resourceManager, {
+        uri,
+        data,
+      });
+
+      const remoteBufferView = new RemoteBufferView(ctx.resourceManager, {
+        buffer: remoteBuffer,
+        byteLength: data.byteLength,
+      });
+
+      const remoteImage = new RemoteImage(ctx.resourceManager, {
+        bufferView: remoteBufferView,
+      });
+
+      const remoteUIImage = new RemoteUIImage(ctx.resourceManager, {
+        source: remoteImage,
+      });
+
       root.firstChild = new RemoteUIFlex(ctx.resourceManager, {
         width: widthPx,
         height: heightPx,
@@ -371,6 +399,7 @@ function updateXRController(
           fontWeight: "bold",
           color: "white",
         }),
+        image: remoteUIImage,
       });
 
       const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {

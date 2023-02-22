@@ -3,16 +3,24 @@ import Yoga from "@react-pdf/yoga";
 import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { Scene } from "three";
 
-import { defineModule } from "../module/module.common";
+import { defineModule, getModule, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
 import { RenderNode, RenderUIFlex } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
+import { DoneDrawingUIMessage, WebSGUIMessage } from "./ui.common";
 
-export const WebSGUIModule = defineModule<RenderThreadState, {}>({
+export const WebSGUIModule = defineModule<
+  RenderThreadState,
+  {
+    imgCache: Map<number, HTMLImageElement>;
+  }
+>({
   name: "MainWebSGUI",
   create: async () => {
-    return {};
+    return {
+      imgCache: new Map(),
+    };
   },
   async init(ctx: RenderThreadState) {
     return createDisposables([]);
@@ -30,7 +38,7 @@ export function traverseChildren(node: RenderUIFlex, callback: (child: RenderUIF
   }
 }
 
-function drawNode(ctx2d: CanvasRenderingContext2D, node: RenderUIFlex) {
+function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLImageElement>, node: RenderUIFlex) {
   // setup brush
   ctx2d.fillStyle = node.backgroundColor || "white";
   ctx2d.strokeStyle = node.strokeColor || "black";
@@ -40,6 +48,26 @@ function drawNode(ctx2d: CanvasRenderingContext2D, node: RenderUIFlex) {
   const layout = node.yogaNode.getComputedLayout();
   if (node.backgroundColor) ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
   if (node.strokeColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
+
+  // draw image
+  if (node.image && node.image.source && node.image.source.bufferView) {
+    const ab = new ArrayBuffer(node.image.source.bufferView.byteLength);
+    const view = new Uint8ClampedArray(ab);
+    view.set(new Uint8ClampedArray(node.image.source.bufferView.buffer.data));
+
+    const blob = new Blob([ab]);
+
+    let img = imgCache.get(node.image.eid);
+    if (!img) {
+      img = new Image();
+      img.src = URL.createObjectURL(blob);
+      imgCache.set(node.image.eid, img);
+    }
+
+    if (img && img.complete) {
+      ctx2d.drawImage(img, layout.left, layout.top, layout.width, layout.height);
+    }
+  }
 
   // draw text
   if (node.text) {
@@ -52,8 +80,6 @@ function drawNode(ctx2d: CanvasRenderingContext2D, node: RenderUIFlex) {
   }
 
   // TODO
-  // if (node.image) {
-  // }
   // if (node.button) {
   // }
 
@@ -80,6 +106,8 @@ function updateYogaNode(child: RenderUIFlex) {
 }
 
 export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+  const { imgCache } = getModule(ctx, WebSGUIModule);
+
   const currentUICanvasResourceId = node.currentUICanvasResourceId;
   const nextUICanvasResourceId = node.uiCanvas?.eid || 0;
 
@@ -89,7 +117,10 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     if (node.uiCanvas.root.yogaNode) {
       if (node.uiCanvas.root.yogaNode) Yoga.Node.destroy(node.uiCanvas.root.yogaNode);
       traverseChildren(node.uiCanvas.root, (child) => {
-        if (child.yogaNode) Yoga.Node.destroy(child.yogaNode);
+        if (child.yogaNode) {
+          Yoga.Node.destroy(child.yogaNode);
+          imgCache.delete(child.eid);
+        }
       });
     }
   }
@@ -147,16 +178,26 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     uiCanvas.root.yogaNode.calculateLayout(uiCanvas.root.width, uiCanvas.root.height, Yoga.DIRECTION_LTR);
 
     // draw root
-    drawNode(ctx2d, uiCanvas.root);
+    drawNode(ctx2d, imgCache, uiCanvas.root);
 
     // draw children
     traverseChildren(uiCanvas.root, (child) => {
-      drawNode(ctx2d, child);
+      drawNode(ctx2d, imgCache, child);
     });
 
     (node.uiCanvasMesh.material as MeshBasicMaterial).map!.needsUpdate = true;
 
-    // TODO: flip needsRedraw to false on game thread after draw
+    // images are lazy-loaded, so flip needsRedraw to false only after all images have loaded to ensure they were rendered
+    let allImagesLoaded = true;
+    for (const [, img] of imgCache) {
+      if (!img.complete) {
+        allImagesLoaded = false;
+        break;
+      }
+    }
+    if (allImagesLoaded) {
+      ctx.sendMessage<DoneDrawingUIMessage>(Thread.Game, { type: WebSGUIMessage.DoneDrawing, eid: node.eid });
+    }
   }
 
   // update the canvas mesh transform with the node's
