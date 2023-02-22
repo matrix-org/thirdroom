@@ -171,18 +171,6 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   // update
 
   if (uiCanvas.needsRedraw) {
-    // flip needsRedraw to false only after all images have loaded to ensure they are rendered
-    let allImagesLoaded = true;
-    for (const [, img] of imgCache) {
-      if (!img.complete) {
-        allImagesLoaded = false;
-        break;
-      }
-    }
-    if (allImagesLoaded) {
-      ctx.sendMessage<DoneDrawingUIMessage>(Thread.Game, { type: WebSGUIMessage.DoneDrawing, eid: node.eid });
-    }
-
     const ctx2d = uiCanvas.canvas.getContext("2d")!;
 
     ctx2d.clearRect(0, 0, uiCanvas.root.width, uiCanvas.root.height);
@@ -199,6 +187,18 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     });
 
     (node.uiCanvasMesh.material as MeshBasicMaterial).map!.needsUpdate = true;
+
+    // flip needsRedraw to false only after all images have loaded to ensure they are rendered
+    let allImagesLoaded = true;
+    for (const [, img] of imgCache) {
+      if (!img.complete) {
+        allImagesLoaded = false;
+        break;
+      }
+    }
+    if (allImagesLoaded) {
+      ctx.sendMessage<DoneDrawingUIMessage>(Thread.Game, { type: WebSGUIMessage.DoneDrawing, eid: node.eid });
+    }
   }
 
   // update the canvas mesh transform with the node's
