@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+import classNames from "classnames";
 import { useSelect } from "downshift";
 
 import { Icon } from "../../../atoms/icon/Icon";
@@ -10,13 +12,14 @@ import { MenuItem } from "../../../atoms/menu/MenuItem";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 
 interface SelectInputProps<T> {
+  before?: ReactNode;
   options: { value: T; label: string }[];
   disabled?: boolean;
   value: T;
   onChange: (value: T) => void;
 }
 
-export function SelectInput<T>({ options, disabled, value, onChange }: SelectInputProps<T>) {
+export function SelectInput<T>({ before, options, disabled, value, onChange }: SelectInputProps<T>) {
   const selectedOption = options.find((option) => option.value === value);
 
   const { isOpen, getToggleButtonProps, getMenuProps, getItemProps } = useSelect({
@@ -29,12 +32,19 @@ export function SelectInput<T>({ options, disabled, value, onChange }: SelectInp
 
   return (
     <div className="ComboInput">
-      <button className="SelectInput" {...getToggleButtonProps()} disabled={disabled}>
-        <Text className="grow truncate" variant="b3">
-          {selectedOption?.label ?? "Select Item"}
-        </Text>
-        <Icon src={isOpen ? ChevronTopIC : ChevronBottomIC} size="sm" />
-      </button>
+      <div className={classNames("SelectInput", { "SelectInput--disabled": disabled }, "flex items-center gap-xxs")}>
+        {before}
+        <button
+          className="SelectInput__button grow flex items-center gap-xxs"
+          {...getToggleButtonProps()}
+          disabled={disabled}
+        >
+          <Text className="grow truncate" variant="b3">
+            {selectedOption?.label ?? "Select Item"}
+          </Text>
+          <Icon src={isOpen ? ChevronTopIC : ChevronBottomIC} size="sm" />
+        </button>
+      </div>
       <div className="ComboInput__menu" {...getMenuProps()}>
         {isOpen && (
           <Scroll className="ComboInput__menu-scroll">
