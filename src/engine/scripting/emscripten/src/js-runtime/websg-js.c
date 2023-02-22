@@ -347,7 +347,7 @@ static JSValue js_node_get_position(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_set_position(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -383,7 +383,7 @@ static JSValue js_node_set_position(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_quaternion(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -419,7 +419,7 @@ static JSValue js_node_get_quaternion(JSContext *ctx, JSValueConst this_val, int
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_set_quaternion(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -455,7 +455,7 @@ static JSValue js_node_set_quaternion(JSContext *ctx, JSValueConst this_val, int
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_scale(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -491,7 +491,7 @@ static JSValue js_node_get_scale(JSContext *ctx, JSValueConst this_val, int argc
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_set_scale(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -527,7 +527,7 @@ static JSValue js_node_set_scale(JSContext *ctx, JSValueConst this_val, int argc
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_local_matrix(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -563,7 +563,7 @@ static JSValue js_node_get_local_matrix(JSContext *ctx, JSValueConst this_val, i
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_set_local_matrix(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -599,7 +599,7 @@ static JSValue js_node_set_local_matrix(JSContext *ctx, JSValueConst this_val, i
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_world_matrix(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -635,7 +635,7 @@ static JSValue js_node_get_world_matrix(JSContext *ctx, JSValueConst this_val, i
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_node_get_visible(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1284,7 +1284,7 @@ static JSValue js_material_get_base_color_factor(JSContext *ctx, JSValueConst th
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_material_set_base_color_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1320,7 +1320,7 @@ static JSValue js_material_set_base_color_factor(JSContext *ctx, JSValueConst th
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1426,7 +1426,7 @@ static JSValue js_material_get_emissive_factor(JSContext *ctx, JSValueConst this
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_material_set_emissive_factor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1462,7 +1462,7 @@ static JSValue js_material_set_emissive_factor(JSContext *ctx, JSValueConst this
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1571,7 +1571,7 @@ static JSValue js_light_get_color(JSContext *ctx, JSValueConst this_val, int arg
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_light_set_color(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -1607,7 +1607,7 @@ static JSValue js_light_set_color(JSContext *ctx, JSValueConst this_val, int arg
     return JS_EXCEPTION;
   }
 
-  return argv[1];
+  return JS_DupValue(ctx, argv[1]);
 }
 
 static JSValue js_light_get_intensity(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
