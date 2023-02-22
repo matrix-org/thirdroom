@@ -51,15 +51,16 @@ function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLIma
 
   // draw image
   if (node.image && node.image.source && node.image.source.bufferView) {
-    const ab = new ArrayBuffer(node.image.source.bufferView.byteLength);
-    const view = new Uint8ClampedArray(ab);
-    view.set(new Uint8ClampedArray(node.image.source.bufferView.buffer.data));
-
-    const blob = new Blob([ab]);
-
     let img = imgCache.get(node.image.eid);
     if (!img) {
       img = new Image();
+
+      const ab = new ArrayBuffer(node.image.source.bufferView.byteLength);
+      const view = new Uint8ClampedArray(ab);
+      view.set(new Uint8ClampedArray(node.image.source.bufferView.buffer.data));
+
+      const blob = new Blob([ab]);
+
       img.src = URL.createObjectURL(blob);
       imgCache.set(node.image.eid, img);
     }
