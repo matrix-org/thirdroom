@@ -1,9 +1,8 @@
 import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
-import { TypedArray32, TypedArrayConstructor32 } from "../utils/typedarray";
+import { TypedArrayConstructor32 } from "../utils/typedarray";
 import { BaseThreadContext } from "../module/module.common";
-import { GLTFResource } from "../gltf/gltf.game";
 
 export interface ResourceDefinition {
   name: string;
@@ -460,66 +459,6 @@ export const defineResource = <T extends number, S extends Schema>(
   return resourceDef;
 };
 
-type RemoteResourcePropValue<
-  ThreadContext extends BaseThreadContext,
-  Def extends ResourceDefinition,
-  Prop extends keyof Def["schema"]
-> = Def["schema"][Prop]["type"] extends "string"
-  ? string
-  : Def["schema"][Prop]["type"] extends "u32"
-  ? number
-  : Def["schema"][Prop]["type"] extends "arrayBuffer"
-  ? SharedArrayBuffer
-  : Def["schema"][Prop]["type"] extends "bool"
-  ? boolean
-  : Def["schema"][Prop]["type"] extends "mat4"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "f32"
-  ? number
-  : Def["schema"][Prop]["type"] extends "rgba"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "rgb"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "vec2"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "vec3"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "quat"
-  ? Float32Array
-  : Def["schema"][Prop]["type"] extends "bitmask"
-  ? number
-  : Def["schema"][Prop]["type"] extends "enum"
-  ? Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
-  : Def["schema"][Prop]["type"] extends "ref"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
-      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
-    : unknown
-  : Def["schema"][Prop]["type"] extends "refArray"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
-    : unknown[]
-  : Def["schema"][Prop]["type"] extends "refMap"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
-    : unknown[]
-  : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def, ThreadContext>
-      : RemoteResourceInstance<Def, ThreadContext> | undefined
-    : unknown
-  : never;
-
-type RemoteResourcePropValueMut<
-  ThreadContext extends BaseThreadContext,
-  Def extends ResourceDefinition,
-  Prop extends keyof Def["schema"]
-> = Def["schema"][Prop]["mutable"] extends false
-  ? Readonly<RemoteResourcePropValue<ThreadContext, Def, Prop>>
-  : RemoteResourcePropValue<ThreadContext, Def, Prop>;
-
 type LocalResourcePropValue<
   ThreadContext extends BaseThreadContext,
   Def extends ResourceDefinition,
@@ -577,41 +516,6 @@ export interface Resource {
   tripleBuffer: TripleBuffer;
 }
 
-export interface RemoteResource<ThreadContext extends BaseThreadContext> extends Resource {
-  constructor: { name: string; resourceDef: ResourceDefinition };
-  resourceDef: ResourceDefinition;
-  resourceType: number;
-  manager: IRemoteResourceManager<ThreadContext>;
-  __props: { [key: string]: TypedArray32 };
-  initialized: boolean;
-  byteView: Uint8Array;
-  refView: Uint32Array;
-  prevRefs: number[];
-  translationIndices: Uint32Array;
-  translationValues: Uint32Array;
-  ptr: number;
-  addRef(): void;
-  removeRef(): void;
-}
-
-export type RemoteResourceInstance<
-  Def extends ResourceDefinition,
-  ThreadContext extends BaseThreadContext
-> = RemoteResource<ThreadContext> & {
-  [Prop in keyof Def["schema"]]: RemoteResourcePropValueMut<ThreadContext, Def, Prop>;
-} & { resourceType: Def["resourceType"] };
-
-export interface IRemoteResourceClass<
-  Def extends ResourceDefinition = ResourceDefinition,
-  ThreadContext extends BaseThreadContext = BaseThreadContext
-> {
-  new (
-    manager: IRemoteResourceManager<ThreadContext>,
-    props?: ResourceData | InitialRemoteResourceProps<ThreadContext, Def>
-  ): RemoteResourceInstance<Def, ThreadContext>;
-  resourceDef: Def;
-}
-
 export interface LocalResource<ThreadContext extends BaseThreadContext = BaseThreadContext> extends Resource {
   resourceType: number;
   manager: ILocalResourceManager;
@@ -645,105 +549,9 @@ export interface ILocalResourceConstructor<ThreadContext extends BaseThreadConte
   resourceDef: ResourceDefinition;
 }
 
-export type IResourceClass<ThreadContext extends BaseThreadContext> =
-  | IRemoteResourceClass<ResourceDefinition>
-  | ILocalResourceClass<ResourceDefinition, ThreadContext>;
-
-type RequiredProps<Def extends ResourceDefinition> = {
+export type RequiredProps<Def extends ResourceDefinition> = {
   [Prop in keyof Def["schema"]]: Def["schema"][Prop]["required"] extends true ? Prop : never;
 }[keyof Def["schema"]];
-
-type InitialRemoteResourcePropValue<
-  ThreadContext extends BaseThreadContext,
-  Def extends ResourceDefinition,
-  Prop extends keyof Def["schema"]
-> = Def["schema"][Prop]["type"] extends "string"
-  ? string
-  : Def["schema"][Prop]["type"] extends "u32"
-  ? number
-  : Def["schema"][Prop]["type"] extends "arrayBuffer"
-  ? SharedArrayBuffer
-  : Def["schema"][Prop]["type"] extends "bool"
-  ? boolean
-  : Def["schema"][Prop]["type"] extends "mat4"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "f32"
-  ? number
-  : Def["schema"][Prop]["type"] extends "rgba"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "rgb"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "vec2"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "vec3"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "quat"
-  ? ArrayLike<number>
-  : Def["schema"][Prop]["type"] extends "bitmask"
-  ? number
-  : Def["schema"][Prop]["type"] extends "enum"
-  ? Def["schema"][Prop]["enumType"][keyof Def["schema"][Prop]["enumType"]]
-  : Def["schema"][Prop]["type"] extends "ref"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
-      : RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext> | undefined
-    : unknown
-  : Def["schema"][Prop]["type"] extends "refArray"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>[]
-    : unknown[]
-  : Def["schema"][Prop]["type"] extends "refMap"
-  ? {
-      [key: number]: Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-        ? RemoteResourceInstance<Def["schema"][Prop]["resourceDef"], ThreadContext>
-        : never;
-    }
-  : Def["schema"][Prop]["type"] extends "selfRef"
-  ? Def["schema"][Prop]["resourceDef"] extends ResourceDefinition
-    ? Def["schema"][Prop] extends { required: true; mutable: false }
-      ? RemoteResourceInstance<Def, ThreadContext>
-      : RemoteResourceInstance<Def, ThreadContext> | undefined
-    : unknown
-  : never;
-
-export type InitialRemoteResourceProps<ThreadContext extends BaseThreadContext, Def extends ResourceDefinition> = {
-  [Prop in RequiredProps<Def>]: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
-} & {
-  [Prop in keyof Def["schema"]]?: InitialRemoteResourcePropValue<ThreadContext, Def, Prop>;
-};
-
-export interface ResourceData {
-  ptr: number;
-  buffer: ArrayBuffer;
-  tripleBuffer: TripleBuffer;
-}
-
-export interface ResourceManagerGLTFCacheEntry {
-  refCount: number;
-  promise: Promise<GLTFResource>;
-}
-
-export interface IRemoteResourceManager<ThreadContext extends BaseThreadContext> {
-  getCachedGLTF(uri: string): Promise<GLTFResource> | undefined;
-  cacheGLTF(uri: string, promise: Promise<GLTFResource>): void;
-  removeGLTFRef(uri: string): boolean;
-  getString(store: Uint32Array): string;
-  setString(value: string | undefined, store: Uint32Array): void;
-  getArrayBuffer(store: Uint32Array): SharedArrayBuffer;
-  setArrayBuffer(value: SharedArrayBuffer | undefined, store: Uint32Array): void;
-  initArrayBuffer(store: Uint32Array): void;
-  allocateResource(resourceDef: ResourceDefinition): ResourceData;
-  createResource(resource: RemoteResource<ThreadContext>): number;
-  removeResourceRefs(resourceId: number): boolean;
-  getRef<T extends RemoteResource<ThreadContext>>(store: Uint32Array): T | undefined;
-  setRef(value: RemoteResource<ThreadContext> | undefined, store: Uint32Array, backRef: boolean): void;
-  setRefArray(values: RemoteResource<ThreadContext>[], store: Uint32Array): void;
-  setRefMap(values: { [key: number]: RemoteResource<ThreadContext> }, store: Uint32Array): void;
-  getRefArrayItem<T extends RemoteResource<ThreadContext>>(index: number, store: Uint32Array): T | undefined;
-  addRef(resourceId: number): void;
-  removeRef(resourceId: number): void;
-}
 
 export type LocalResourceTypes = string | SharedArrayBuffer | LocalResource;
 

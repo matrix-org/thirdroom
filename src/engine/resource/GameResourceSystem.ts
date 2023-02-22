@@ -1,17 +1,23 @@
+import { copyToWriteBuffer } from "../allocator/TripleBuffer";
 import { GameState } from "../GameTypes";
-import { scriptQuery, ScriptComponent } from "../scripting/scripting.game";
+import { getModule } from "../module/module.common";
+import { ResourceModule } from "./resource.game";
 
 export function GameResourceSystem(ctx: GameState) {
-  ctx.resourceManager.commitResources();
+  const { resources } = getModule(ctx, ResourceModule);
 
-  const scriptEntities = scriptQuery(ctx.world);
+  for (let i = 0; i < resources.length; i++) {
+    const resource = resources[i];
+    const byteView = resource.byteView;
 
-  for (let i = 0; i < scriptEntities.length; i++) {
-    const eid = scriptEntities[i];
-    const script = ScriptComponent.get(eid);
-
-    if (script) {
-      script.resourceManager.commitResources();
+    if (resource.initialized) {
+      copyToWriteBuffer(resource.tripleBuffer, byteView);
+    } else {
+      const tripleBufferByteViews = resource.tripleBuffer.byteViews;
+      tripleBufferByteViews[0].set(byteView);
+      tripleBufferByteViews[1].set(byteView);
+      tripleBufferByteViews[2].set(byteView);
+      resource.initialized = true;
     }
   }
 }

@@ -5,7 +5,7 @@
   cursor: pointer;
   transition: background-color 100ms ease-in-out;
 
-  &:disabled {
+  &[aria-disabled="true"] {
     opacity: 0.4;
     cursor: not-allowed;
   }

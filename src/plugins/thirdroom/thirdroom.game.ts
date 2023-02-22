@@ -1,7 +1,6 @@
 import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
-import murmurHash from "murmurhash-js";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild, traverse } from "../../engine/component/transform";
@@ -31,7 +30,7 @@ import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/ca
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
-import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
+import { getXRMode, waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
@@ -46,23 +45,25 @@ import {
   inputControllerQuery,
 } from "../../engine/input/InputController";
 import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
-import { addInteractableComponent, removeInteractableComponent } from "../interaction/interaction.game";
+import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
+import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
 import {
-  addScriptComponent,
-  loadJSScript,
-  loadWASMScript,
-  Script,
-  ScriptComponent,
-  ScriptExecutionEnvironment,
-} from "../../engine/scripting/scripting.game";
-import { InteractableType, SamplerMapping, AudioEmitterType } from "../../engine/resource/schema";
-import * as Schema from "../../engine/resource/schema";
-import { RemoteResource, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
+  InteractableType,
+  SamplerMapping,
+  AudioEmitterType,
+  MaterialType,
+  MaterialAlphaMode,
+} from "../../engine/resource/schema";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_OFFSET } from "../avatars/common";
 import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
-import { ResourceModule, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import {
+  ResourceModule,
+  getRemoteResource,
+  tryGetRemoteResource,
+  createRemoteResourceManager,
+} from "../../engine/resource/resource.game";
 import {
   RemoteAudioData,
   RemoteAudioEmitter,
@@ -80,6 +81,7 @@ import {
   removeObjectFromWorld,
   getObjectPrivateRoot,
   RemoteObject,
+  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -89,10 +91,14 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { ScriptResourceManager } from "../../engine/resource/ScriptResourceManager";
-import { WebSGNetworkModule } from "../../engine/network/scripting.game";
+import { XRMode } from "../../engine/renderer/renderer.common";
+import { createLineMesh } from "../../engine/mesh/mesh.game";
+import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 
 type ThirdRoomModuleState = {};
+
+const shouldUseAR = (ctx: GameState) =>
+  ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR;
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -105,15 +111,17 @@ const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number
 
 const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
+    const useAR = shouldUseAR(ctx);
+
     const spawnPoints = spawnPointQuery(ctx.world);
 
     const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
     const obj = createRemoteObject(ctx, rig);
 
-    addComponent(ctx.world, AvatarComponent, rig.eid);
     quat.fromEuler(rig.quaternion, 0, 180, 0);
     rig.position.set([0, AVATAR_OFFSET, 0]);
-    rig.scale.set([1.3, 1.3, 1.3]);
+    const s = useAR ? 1 : 1.3;
+    rig.scale.set([s, s, s]);
 
     // on container
     const characterControllerType = SceneCharacterControllerComponent.get(
@@ -129,7 +137,8 @@ const createAvatarRig =
 
     const cameraAnchor = new RemoteNode(ctx.resourceManager);
     cameraAnchor.name = "Avatar Camera Anchor";
-    cameraAnchor.position[1] = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
+    const h = AVATAR_HEIGHT - AVATAR_OFFSET - 0.15;
+    cameraAnchor.position[1] = useAR ? h / 3.333 : h;
     addChild(privateRoot, cameraAnchor);
 
     const camera = new RemoteNode(ctx.resourceManager, {
@@ -145,8 +154,73 @@ const createAvatarRig =
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
 
+    addComponent(ctx.world, AvatarComponent, obj.eid);
+    AvatarComponent.eid[obj.eid] = rig.eid;
+
     return obj;
   };
+
+export const XRControllerComponent = defineComponent();
+export const XRHeadComponent = defineComponent();
+export const XRRayComponent = defineComponent();
+
+const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
+
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.2, 1.2, 1.2]);
+
+  const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRHeadComponent, obj.eid);
+
+  return obj;
+};
+
+export function createXRRay(ctx: GameState, options: any) {
+  const color = options.color || [0, 0.3, 1, 0.3];
+  const length = options.length || GRAB_DISTANCE;
+  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+    name: "Ray Material",
+    type: MaterialType.Standard,
+    baseColorFactor: color,
+    emissiveFactor: [0.7, 0.7, 0.7],
+    metallicFactor: 0,
+    roughnessFactor: 0,
+    alphaMode: MaterialAlphaMode.BLEND,
+  });
+  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
+  const node = new RemoteNode(ctx.resourceManager, {
+    mesh,
+  });
+  node.position[2] = 0.1;
+
+  const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRRayComponent, obj.eid);
+
+  return obj;
+}
+
+const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.5, 1.5, 1.5]);
+
+  const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRControllerComponent, obj.eid);
+
+  return obj;
+};
+
+const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
+  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
+  quat.fromEuler(node.quaternion, 0, 180, 0);
+  node.scale.set([1.5, 1.5, 1.5]);
+
+  const obj = createRemoteObject(ctx, node);
+  addComponent(ctx.world, XRControllerComponent, obj.eid);
+
+  return obj;
+};
 
 const tempSpawnPoints: RemoteNode[] = [];
 
@@ -192,6 +266,30 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       name: "avatar",
       type: PrefabType.Avatar,
       create: createAvatarRig(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-head",
+      type: PrefabType.Avatar,
+      create: createXRHead(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-hand-left",
+      type: PrefabType.Avatar,
+      create: createXRHandLeft(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-hand-right",
+      type: PrefabType.Avatar,
+      create: createXRHandRight(input, physics),
+    });
+
+    registerPrefab(ctx, {
+      name: "xr-ray",
+      type: PrefabType.Avatar,
+      create: createXRRay,
     });
 
     // create out of bounds floor check
@@ -347,7 +445,7 @@ function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
 }
 
 function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
-  const resourceMap: { [key: string]: RemoteResource<GameState>[] } = {};
+  const resourceMap: { [key: string]: RemoteResource[] } = {};
 
   const { resourcesByType, resourceDefByType } = getModule(ctx, ResourceModule);
 
@@ -419,46 +517,18 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     name: "Transient Scene",
   });
 
-  let script: Script<ScriptExecutionEnvironment> | undefined;
+  const resourceManager = createRemoteResourceManager(ctx);
+
+  let script: Script | undefined;
 
   if (scriptUrl) {
-    const allowedResources = Object.values(Schema).filter((val) => "schema" in val) as ResourceDefinition[];
-    const response = await fetch(scriptUrl);
-
-    const contentType = response.headers.get("content-type");
-
-    if (contentType) {
-      if (
-        contentType === "application/javascript" ||
-        contentType === "application/x-javascript" ||
-        contentType.startsWith("text/javascript")
-      ) {
-        const scriptSource = await response.text();
-        script = await loadJSScript(ctx, scriptSource, allowedResources);
-      } else if (contentType === "application/wasm") {
-        const scriptBuffer = await response.arrayBuffer();
-        script = await loadWASMScript(ctx, scriptBuffer, allowedResources);
-      }
-    }
-  }
-
-  const resourceManager = script?.resourceManager || ctx.resourceManager;
-
-  if (script && scriptUrl) {
-    const id = murmurHash(scriptUrl);
-    (resourceManager as ScriptResourceManager).id = id;
-    const webSgNet = getModule(ctx, WebSGNetworkModule);
-    webSgNet.scriptToInbound.set(id, []);
+    script = await loadScript(ctx, resourceManager, scriptUrl);
   }
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
   })) as RemoteScene;
-
-  if (script) {
-    addScriptComponent(ctx, environmentScene, script);
-  }
 
   if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
     const defaultEnvironmentMapTexture = new RemoteTexture(resourceManager, {
@@ -517,7 +587,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   }
 
   if (script) {
-    script.ready = true;
+    addScriptComponent(ctx, environmentScene, script);
   }
 }
 
@@ -581,7 +651,7 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
     const script = ScriptComponent.get(gltfScene.eid);
 
     if (script) {
-      script.entered = true;
+      script.entered();
     }
   }
 
@@ -680,20 +750,19 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
 export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
-  const network = getModule(ctx, NetworkModule);
 
   const rigs = inputControllerQuery(ctx.world);
+
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const playerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const controller = tryGetInputController(input, eid);
-    updateThirdroom(ctx, network, physics, controller, node);
+    updateCharacterController(ctx, physics, controller, playerNode);
   }
 }
 
-function updateThirdroom(
+function updateCharacterController(
   ctx: GameState,
-  network: GameNetworkState,
   physics: PhysicsModuleState,
   controller: InputController,
   player: RemoteNode

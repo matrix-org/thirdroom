@@ -7,7 +7,7 @@ import {
   getWriteObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
-import { GameState } from "../GameTypes";
+import { GameState, RemoteResourceManager } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createMessageQueueProducer } from "./MessageQueue";
@@ -55,13 +55,7 @@ import {
   StringResourceType,
   ToGameResourceModuleStateTripleBuffer,
 } from "./resource.common";
-import {
-  InitialRemoteResourceProps,
-  IRemoteResourceClass,
-  IRemoteResourceManager,
-  RemoteResource,
-  ResourceDefinition,
-} from "./ResourceDefinition";
+import { ResourceDefinition } from "./ResourceDefinition";
 import { ResourceType } from "./schema";
 import {
   createResourceRingBuffer,
@@ -70,6 +64,7 @@ import {
   dequeueResourceRingBuffer,
   ResourceRingBufferItem,
 } from "./ResourceRingBuffer";
+import { IRemoteResourceClass, RemoteResource } from "./RemoteResourceClass";
 
 const ResourceComponent = defineComponent();
 
@@ -81,11 +76,13 @@ export interface ResourceTransformData {
   refIsBackRef: boolean[];
 }
 
+type RemoteResourceTypes = string | ArrayBuffer | RemoteResource;
+
 export interface ResourceModuleState {
+  resources: RemoteResource[];
+  resourceMap: Map<number, RemoteResourceTypes>;
   resourceInfos: Map<ResourceId, ResourceInfo>;
-  resourcesByType: Map<ResourceType, RemoteResource<GameState>[]>;
-  resourceConstructors: Map<ResourceDefinition, IRemoteResourceClass>;
-  resourceTransformData: Map<number, ResourceTransformData>;
+  resourcesByType: Map<ResourceType, RemoteResource[]>;
   resourceDefByType: Map<number, ResourceDefinition>;
   fromGameState: FromGameResourceModuleStateTripleBuffer;
   mainToGameState: ToGameResourceModuleStateTripleBuffer;
@@ -99,10 +96,7 @@ export interface ResourceModuleState {
   deferredRemovals: ResourceRingBufferItem[];
 }
 
-export type RemoteResourceTypes = string | ArrayBuffer | RemoteResource<GameState>;
-
 interface ResourceInfo {
-  resource: RemoteResourceTypes;
   refCount: number;
   dispose?: () => void;
 }
@@ -153,10 +147,10 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     );
 
     return {
-      resourceConstructors: new Map(),
-      resourceTransformData: new Map(),
       resourceDefByType: new Map(),
+      resources: [],
       resourceInfos: new Map(),
+      resourceMap: new Map(),
       resourcesByType: new Map(),
       fromGameState,
       mainToGameState,
@@ -203,6 +197,8 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteWorld),
     ]);
 
+    ctx.resourceManager = createRemoteResourceManager(ctx);
+
     ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
       persistentScene: new RemoteScene(ctx.resourceManager, {
         name: "Persistent Scene",
@@ -212,6 +208,17 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
     return dispose;
   },
 });
+
+export function createRemoteResourceManager(ctx: GameState): RemoteResourceManager {
+  const resourceModule = getModule(ctx, ResourceModule);
+
+  return {
+    ctx,
+    resourceIds: new Set(),
+    gltfCache: new Map(),
+    resourceMap: resourceModule.resourceMap,
+  };
+}
 
 function registerResource<Def extends ResourceDefinition>(
   ctx: GameState,
@@ -223,50 +230,9 @@ function registerResource<Def extends ResourceDefinition>(
 
   const resourceDef = RemoteResourceClass.resourceDef;
 
-  resourceModule.resourceConstructors.set(
-    resourceDef,
-    RemoteResourceClass as unknown as IRemoteResourceClass<ResourceDefinition>
-  );
-
   resourceModule.resourceDefByType.set(resourceDef.resourceType, resourceDef);
 
-  const buffer = new ArrayBuffer(resourceDef.byteLength);
-  const writeView = new Uint8Array(buffer);
-  const refView = new Uint32Array(buffer);
-  const refOffsets: number[] = [];
-  const refIsString: boolean[] = [];
-  const refIsBackRef: boolean[] = [];
-
-  const schema = resourceDef.schema;
-
-  for (const propName in schema) {
-    const prop = schema[propName];
-
-    if (prop.type === "ref" || prop.type === "refArray" || prop.type === "refMap" || prop.type === "string") {
-      for (let i = 0; i < prop.size; i++) {
-        const refOffset = prop.byteOffset + i * prop.arrayType.BYTES_PER_ELEMENT;
-        refOffsets.push(refOffset);
-        refIsString.push(prop.type === "string");
-        refIsBackRef.push(prop.backRef);
-      }
-    } else if (prop.type === "arrayBuffer") {
-      refOffsets.push(prop.byteOffset + Uint32Array.BYTES_PER_ELEMENT * 2);
-      refIsString.push(false);
-      refIsBackRef.push(prop.backRef);
-    }
-  }
-
-  resourceModule.resourceTransformData.set(resourceDef.resourceType, {
-    writeView,
-    refView,
-    refOffsets,
-    refIsString,
-    refIsBackRef,
-  });
-
-  return () => {
-    resourceModule.resourceConstructors.delete(RemoteResourceClass.resourceDef);
-  };
+  return () => {};
 }
 
 function createResource(
@@ -281,10 +247,11 @@ function createResource(
   addComponent(ctx.world, ResourceComponent, id);
 
   resourceModule.resourceInfos.set(id, {
-    resource,
     refCount: 0,
     dispose,
   });
+
+  resourceModule.resourceMap.set(id, resource);
 
   queueResourceMessage({
     resourceType,
@@ -296,12 +263,12 @@ function createResource(
   return id;
 }
 
-export function createRemoteResource(ctx: GameState, resource: RemoteResource<GameState>): number {
+export function createRemoteResource(ctx: GameState, resource: RemoteResource): number {
   const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
 
   addComponent(ctx.world, resource.constructor, resourceId);
 
-  const { resourcesByType } = getModule(ctx, ResourceModule);
+  const { resourcesByType, resources } = getModule(ctx, ResourceModule);
 
   const resourceType = resource.resourceType;
   let resourceArr = resourcesByType.get(resourceType);
@@ -311,7 +278,9 @@ export function createRemoteResource(ctx: GameState, resource: RemoteResource<Ga
     resourcesByType.set(resourceType, resourceArr);
   }
 
-  resourceArr.push(resource as unknown as RemoteResource<GameState>);
+  resourceArr.push(resource as unknown as RemoteResource);
+
+  resources.push(resource);
 
   return resourceId;
 }
@@ -354,10 +323,19 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
 
   resourceModule.resourceInfos.delete(resourceId);
 
-  const resource = resourceInfo.resource;
+  const resource = resourceModule.resourceMap.get(resourceId) as RemoteResourceTypes;
+
+  resourceModule.resourceMap.delete(resourceId);
 
   if (typeof resource !== "string" && "resourceType" in resource) {
     const resourceType = resource.resourceType;
+
+    const resourceIndex = resourceModule.resources.indexOf(resource);
+
+    if (resourceIndex !== -1) {
+      resourceModule.resources.splice(resourceIndex, 1);
+    }
+
     const resourceArr = resourceModule.resourcesByType.get(resourceType);
 
     if (resourceArr) {
@@ -366,9 +344,9 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
       if (index !== -1) {
         resourceArr.splice(index, 1);
       }
-
-      resource.manager.removeResourceRefs(resourceId);
     }
+
+    resource.removeResourceRefs();
   }
 
   return true;
@@ -385,7 +363,7 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
 }
 
 export function tryGetRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res {
-  const resource = getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource;
+  const resource = getModule(ctx, ResourceModule).resourceMap.get(resourceId);
 
   if (!resource) {
     throw new Error(`Resource ${resourceId} not found`);
@@ -395,17 +373,15 @@ export function tryGetRemoteResource<Res>(ctx: GameState, resourceId: ResourceId
 }
 
 export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
-  return getModule(ctx, ResourceModule).resourceInfos.get(resourceId)?.resource as Res | undefined;
+  return getModule(ctx, ResourceModule).resourceMap.get(resourceId) as Res | undefined;
 }
 
-export function getRemoteResources<Def extends ResourceDefinition, T extends RemoteResource<GameState>>(
+export function getRemoteResources<Def extends ResourceDefinition>(
   ctx: GameState,
-  resourceClass: {
-    new (manager: IRemoteResourceManager<GameState>, props?: InitialRemoteResourceProps<GameState, Def>): T;
-    resourceDef: Def;
-  }
-): T[] {
-  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) || []) as T[];
+  resourceClass: IRemoteResourceClass<Def>
+): InstanceType<IRemoteResourceClass<Def>>[] {
+  return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) ||
+    []) as InstanceType<IRemoteResourceClass<Def>>[];
 }
 
 export function ResourceTickSystem(ctx: GameState) {

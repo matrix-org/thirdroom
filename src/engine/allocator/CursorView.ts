@@ -1,13 +1,19 @@
-import { TypedArray } from "../utils/typedarray";
+import { TypedArray, TypedArrayConstructor32 } from "../utils/typedarray";
 
-export type CursorView = DataView & { cursor: number; shadowMap: Map<TypedArray, TypedArray>; byteView: Uint8Array } & {
+export type CursorView = DataView & {
+  cursor: number;
+  shadowMap: Map<TypedArray | string, TypedArray>;
+  byteView: Uint8Array;
+  littleEndian: boolean;
+} & {
   [K: string]: Function;
 };
 
-export const createCursorView = (buffer = new ArrayBuffer(100000)): CursorView => {
+export const createCursorView = (buffer = new ArrayBuffer(100000), littleEndian = false): CursorView => {
   const view = new DataView(buffer) as CursorView;
   view.cursor = 0;
   view.shadowMap = new Map();
+  view.littleEndian = littleEndian;
   return view;
 };
 
@@ -85,6 +91,29 @@ export const writePropIfChanged = (v: CursorView, prop: TypedArray, entity: numb
   }
 
   writeProp(v, prop, entity);
+
+  return true;
+};
+
+export const writeScalarPropIfChanged = (
+  v: CursorView,
+  propName: string,
+  arrayType: TypedArrayConstructor32,
+  prop: number
+) => {
+  const { shadowMap } = v;
+
+  const shadow = shadowMap.get(propName) || (shadowMap.set(propName, new arrayType(1)) && shadowMap.get(propName)!);
+
+  const changed = shadow[0] !== prop; // || shadowInit
+
+  shadow[0] = prop;
+
+  if (!changed) {
+    return false;
+  }
+
+  writeProp(v, shadow, 0);
 
   return true;
 };
@@ -266,49 +295,49 @@ export const readProp = (v: CursorView, prop: TypedArray) => {
 };
 
 export const readFloat64 = (v: CursorView) => {
-  const val = v.getFloat64(v.cursor);
+  const val = v.getFloat64(v.cursor, v.littleEndian);
   v.cursor += Float64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readFloat32 = (v: CursorView) => {
-  const val = v.getFloat32(v.cursor);
+  const val = v.getFloat32(v.cursor, v.littleEndian);
   v.cursor += Float32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readUint64 = (v: CursorView) => {
-  const val = v.getBigUint64(v.cursor);
+  const val = v.getBigUint64(v.cursor, v.littleEndian);
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readInt64 = (v: CursorView) => {
-  const val = v.getBigUint64(v.cursor);
+  const val = v.getBigUint64(v.cursor, v.littleEndian);
   v.cursor += BigInt64Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readUint32 = (v: CursorView) => {
-  const val = v.getUint32(v.cursor);
+  const val = v.getUint32(v.cursor, v.littleEndian);
   v.cursor += Uint32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readInt32 = (v: CursorView) => {
-  const val = v.getInt32(v.cursor);
+  const val = v.getInt32(v.cursor, v.littleEndian);
   v.cursor += Int32Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readUint16 = (v: CursorView) => {
-  const val = v.getUint16(v.cursor);
+  const val = v.getUint16(v.cursor, v.littleEndian);
   v.cursor += Uint16Array.BYTES_PER_ELEMENT;
   return val;
 };
 
 export const readInt16 = (v: CursorView) => {
-  const val = v.getInt16(v.cursor);
+  const val = v.getInt16(v.cursor, v.littleEndian);
   v.cursor += Int16Array.BYTES_PER_ELEMENT;
   return val;
 };

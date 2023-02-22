@@ -22,6 +22,7 @@ import {
   deserializeDeletes,
   deserializeFullChangedUpdate,
   deserializeInformPlayerNetworkId,
+  deserializeInformXRMode,
   deserializeNewPeerSnapshot,
   deserializeSnapshot,
   deserializeUpdateNetworkId,
@@ -41,6 +42,7 @@ import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { Networked, Owned } from "./NetworkComponents";
+import { XRMode } from "../renderer/renderer.common";
 
 /*********
  * Types *
@@ -61,6 +63,7 @@ export interface GameNetworkState {
   peerIdToIndex: Map<string, number>;
   peerIdToHistorian: Map<string, Historian>;
   peerIdToEntityId: Map<string, number>;
+  peerIdToXRMode: Map<string, XRMode>;
   entityIdToPeerId: Map<number, string>;
   networkIdToEntityId: Map<number, number>;
   indexToPeerId: Map<number, string>;
@@ -107,6 +110,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       peerIdToHistorian: new Map(),
       networkIdToEntityId: new Map(),
       peerIdToEntityId: new Map(),
+      peerIdToXRMode: new Map(),
       entityIdToPeerId: new Map(),
       indexToPeerId: new Map(),
       peerIdCount: 0,
@@ -115,7 +119,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       messageHandlers: {},
       cursorView: createCursorView(),
       tickRate: 10,
-      interpolate: true,
+      interpolate: false,
       clientSidePrediction: true,
       authoritative,
     };
@@ -136,6 +140,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
     registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommands);
     registerInboundMessageHandler(network, NetworkAction.ClientPosition, deserializeClientPosition);
+    registerInboundMessageHandler(network, NetworkAction.InformXRMode, deserializeInformXRMode);
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),

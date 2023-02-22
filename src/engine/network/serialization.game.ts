@@ -22,6 +22,7 @@ import {
   writeFloat32,
   writeFloat64,
   writePropIfChanged,
+  writeScalarPropIfChanged,
   writeString,
   writeUint32,
   writeUint8,
@@ -48,7 +49,6 @@ import { setActiveInputController } from "../input/InputController";
 import { getCamera } from "../camera/camera.game";
 import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { getAvatar } from "../../plugins/avatars/getAvatar";
 import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
@@ -62,6 +62,8 @@ import {
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
+import { XRMode } from "../renderer/renderer.common";
+import { AvatarComponent } from "../../plugins/avatars/components";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 
 export type NetPipeData = [GameState, CursorView, string];
@@ -188,7 +190,8 @@ export const serializeTransformChanged = defineChangedSerializer(
   (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 2),
   (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).quaternion, 3),
   // (ctx, v, eid) => writePropIfChanged(v, Networked.networkId, Transform.parent[eid]),
-  (ctx, v, eid) => writePropIfChanged(v, tryGetRemoteResource<RemoteNode>(ctx, eid).__props.skipLerp, 0)
+  (ctx, v, eid) =>
+    writeScalarPropIfChanged(v, "skipLerp", Uint32Array, tryGetRemoteResource<RemoteNode>(ctx, eid).skipLerp)
 );
 
 // export const serializeTransformChanged = (v: CursorView, eid: number) => {
@@ -264,7 +267,7 @@ export function createRemoteNetworkedEntity(
   nid: number,
   prefab: string
 ): RemoteNode {
-  const node = createPrefabEntity(ctx, prefab, { nametag: prefab === "avatar" });
+  const node = createPrefabEntity(ctx, prefab);
 
   // assign networkId
   addComponent(ctx.world, Networked, node.eid, true);
@@ -314,15 +317,16 @@ export function serializeCreates(input: NetPipeData) {
 }
 
 export function deserializeCreates(input: NetPipeData) {
-  const [state, v] = input;
-  const network = getModule(state, NetworkModule);
+  const [ctx, v] = input;
+  const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
     if (existingEntity) continue;
-    const obj = createRemoteNetworkedEntity(state, network, nid, prefabName);
+
+    const obj = createRemoteNetworkedEntity(ctx, network, nid, prefabName);
     console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
   }
   return input;
@@ -570,6 +574,34 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   return data;
 }
 
+export function createInformXRMode(ctx: GameState, xrMode: XRMode) {
+  const data: NetPipeData = [ctx, messageView, ""];
+  writeMetadata(NetworkAction.InformXRMode)(data);
+
+  serializeInformXRMode(data, xrMode);
+
+  return sliceCursorView(messageView);
+}
+export const serializeInformXRMode = (data: NetPipeData, xrMode: XRMode) => {
+  const [, v] = data;
+  writeUint8(v, xrMode);
+  return data;
+};
+export const deserializeInformXRMode = (data: NetPipeData) => {
+  const [ctx, v, peerId] = data;
+  const network = getModule(ctx, NetworkModule);
+
+  // read
+  const xrMode = readUint8(v);
+
+  console.log(`deserializeInformXRMode - peerId: ${peerId}; xrMode: ${xrMode}`);
+
+  // effect
+  network.peerIdToXRMode.set(peerId, xrMode);
+
+  return data;
+};
+
 export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
   const input: NetPipeData = [ctx, messageView, ""];
   writeMetadata(NetworkAction.InformPlayerNetworkId)(input);
@@ -587,7 +619,8 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
 
   // hide our avatar
   try {
-    const avatar = getAvatar(ctx, node);
+    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
     avatar.visible = false;
   } catch {}
 
