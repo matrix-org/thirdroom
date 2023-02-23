@@ -1410,10 +1410,10 @@
     dompurify "^2.3.0"
     off-color "^2.0.0"
 
-"@thirdroom/manifold-editor-components@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.4.tgz#4f5affc9b21a34b6ffc6d87d38dbcdda3d053285"
-  integrity sha512-YCBrFyfiqLAf81Bbs0vpVIalCi8RUrpX7xp8JB5HeGcdQ5zHtzSUsRox7LtZCZ2/Onw6nEQP2iuNk851GG/Cmw==
+"@thirdroom/manifold-editor-components@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@thirdroom/manifold-editor-components/-/manifold-editor-components-0.0.5.tgz#32c608f98a6557a63aeae36c1e4fd3394b5e5922"
+  integrity sha512-hwAVNikOoVM860oLle52P7gJHFHy7r9JlnVnKiHuZwepI7eFNiAVm+AycdpCUW7NPGteTVrV10VGSsVVKWh4Zw==
 
 "@thirdroom/ringbuffer@^0.0.1":
   version "0.0.1"

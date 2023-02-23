@@ -65,7 +65,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
   const schema = resource.resourceDef.schema;
 
   type ComponentSchema<T extends PropTypeType, S extends Schema> = {
-    [K in keyof T]?: (propName: keyof S, propDef: T[K]) => ReactNode;
+    [K in keyof T]?: (propName: keyof S, propDef: T[K], goToRef: (resourceId: number) => void) => ReactNode;
   };
   const PropComponents: ComponentSchema<PropTypeType, typeof schema> = {
     bool: (propName, propDef) => {
@@ -206,7 +206,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         </PropertyContainer>
       );
     },
-    ref: (propName, propDef) => {
+    ref: (propName, propDef, goToRef) => {
       const value = resource[propName];
       if (Array.isArray(value) || ArrayBuffer.isView(value) || typeof value !== "object") return null;
 
@@ -218,12 +218,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         <PropertyContainer key={propName} name={propName}>
           <SelectInput
             before={
-              <IconButton
-                size="sm"
-                iconSrc={CircleIC}
-                label="Select Resource"
-                onClick={() => console.log("select resource")}
-              />
+              <IconButton size="sm" iconSrc={CircleIC} label="Select Resource" onClick={() => goToRef(value.eid)} />
             }
             value={value}
             onChange={(changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
@@ -239,9 +234,10 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
 interface PropertiesPanelProps {
   className?: string;
   resource: MainNode;
+  goToRef: (resourceId: number) => void;
 }
 
-export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
+export function PropertiesPanel({ className, resource, goToRef }: PropertiesPanelProps) {
   const ctx = useMainThreadContext();
 
   const resourceDef = resource.resourceDef;
@@ -250,7 +246,7 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
   const PropComponents = useMemo(() => getPropComponents(ctx, resource), [ctx, resource]);
 
   const properties = Object.entries(schema).map(([propName, propDef]) =>
-    propDef.editor ? PropComponents[propDef.type]?.(propName as any, propDef as any) : null
+    propDef.editor ? PropComponents[propDef.type]?.(propName as any, propDef as any, goToRef) : null
   );
 
   return (
