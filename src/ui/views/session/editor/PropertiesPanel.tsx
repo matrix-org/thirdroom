@@ -250,7 +250,7 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
   const PropComponents = useMemo(() => getPropComponents(ctx, resource), [ctx, resource]);
 
   const properties = Object.entries(schema).map(([propName, propDef]) =>
-    PropComponents[propDef.type]?.(propName as any, propDef as any)
+    propDef.editor ? PropComponents[propDef.type]?.(propName as any, propDef as any) : null
   );
 
   return (

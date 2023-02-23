@@ -44,6 +44,7 @@ export interface ResourcePropDef<
   minExclusive?: number;
   maxExclusive?: number;
   backRef: boolean;
+  editor: boolean;
 }
 
 function createPropDef<
@@ -74,6 +75,7 @@ function createPropDef<
     maxExclusive?: number;
     backRef?: boolean;
     size?: number;
+    editor?: boolean;
   }
 >(defaults: Defaults, options?: Options) {
   return {
@@ -81,6 +83,7 @@ function createPropDef<
     script: false,
     resourceDef: undefined,
     backRef: false,
+    editor: true,
     size: 1,
     ...defaults,
     ...options,
@@ -99,6 +102,7 @@ interface BasePropOptions {
   mutableScript?: boolean;
   required?: boolean;
   script?: boolean;
+  editor?: boolean;
 }
 
 interface DefaultPropOptions<DefaultValue> extends BasePropOptions {
@@ -440,12 +444,15 @@ export const defineResource = <T extends number, S extends Schema>(
     const prop = resourceDef.schema[propName];
 
     if (prop.type === "selfRef") {
-      schema[propName] = PropType.ref(resourceDef, {
+      const newProps: Required<RefPropOptions> = {
         mutable: prop.mutable,
+        mutableScript: prop.mutableScript,
         required: prop.required,
         script: prop.script,
         backRef: prop.backRef,
-      }) as S[Extract<keyof S, string>];
+        editor: prop.editor,
+      };
+      schema[propName] = PropType.ref(resourceDef, newProps) as S[Extract<keyof S, string>];
       (schema[propName] as ProcessedSchema<S>[Extract<keyof S, string>]).byteOffset = cursor;
     } else {
       prop.byteOffset = cursor;
