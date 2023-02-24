@@ -1,5 +1,5 @@
 import { addComponent, defineComponent, hasComponent } from "bitecs";
-import { AnimationClip, CanvasTexture } from "three";
+import { AnimationClip } from "three";
 
 import { addChild, getLastSibling } from "../component/transform";
 import { GameState } from "../GameTypes";
@@ -138,6 +138,11 @@ export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
   declare width: number;
   declare height: number;
 
+  declare backgroundColor: string;
+  declare strokeColor: string;
+
+  declare opacity: number;
+
   declare paddingTop: number;
   declare paddingBottom: number;
   declare paddingLeft: number;
@@ -163,9 +168,6 @@ export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) 
   declare width: number;
   declare height: number;
   declare needsRedraw: boolean;
-
-  canvasTexture?: CanvasTexture;
-  canvas?: HTMLCanvasElement;
 }
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
@@ -185,6 +187,7 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+  declare uiCanvas: RemoteUICanvas | undefined;
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {

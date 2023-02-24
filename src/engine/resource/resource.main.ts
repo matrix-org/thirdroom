@@ -239,6 +239,11 @@ export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
   declare width: number;
   declare height: number;
 
+  declare backgroundColor: string;
+  declare strokeColor: string;
+
+  declare opacity: number;
+
   declare paddingTop: number;
   declare paddingBottom: number;
   declare paddingLeft: number;
@@ -291,6 +296,8 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare tilesRenderer: MainTilesRenderer | undefined;
   declare nametag: MainNametag | undefined;
   declare interactable: MainInteractable | undefined;
+  declare uiCanvas: MainUICanvas | undefined;
+
   currentAudioEmitterResourceId = 0;
   emitterInputNode?: GainNode;
   emitterPannerNode?: PannerNode;
