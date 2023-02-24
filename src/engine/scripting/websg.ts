@@ -712,6 +712,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
       return mesh?.primitives[index]?.mode || 0;
     },
+    mesh_set_primitive_draw_range(meshId: number, index: number, start: number, count: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+      const meshPrimitive = mesh?.primitives[index];
+
+      if (!meshPrimitive) {
+        console.error(`WebSG: couldn't find mesh primitive: ${index} on mesh ${meshId}`);
+        return -1;
+      }
+
+      meshPrimitive.drawStart = start;
+      meshPrimitive.drawCount = count;
+
+      return 0;
+    },
     create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
       try {
         const data = readSharedArrayBuffer(wasmCtx, dataPtr, byteLength);

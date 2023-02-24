@@ -364,6 +364,8 @@ export const MeshPrimitiveResource = defineResource("mesh-primitive", ResourceTy
   indices: PropType.ref(AccessorResource, { mutable: false, script: true }),
   material: PropType.ref(MaterialResource, { script: true }),
   mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
+  drawStart: PropType.u32({ script: true, mutable: true }),
+  drawCount: PropType.u32({ script: true, mutable: true }),
   // TODO: targets
 });
 
