@@ -188,10 +188,9 @@ export async function createDemoUI(ctx: GameState): Promise<[RemoteUICanvas, Rem
     color: [255, 255, 255, 1],
   });
 
-  root.firstChild = new RemoteUIFlex(ctx.resourceManager, {
+  const flex = new RemoteUIFlex(ctx.resourceManager, {
     width: 2000,
     height: 1500,
-    parent: root,
     paddingTop: 80,
     paddingLeft: 80,
     backgroundColor: [0, 0, 0, 1],
@@ -199,6 +198,36 @@ export async function createDemoUI(ctx: GameState): Promise<[RemoteUICanvas, Rem
     button,
     image,
   });
+
+  const flex1 = new RemoteUIFlex(ctx.resourceManager, {
+    width: 2000,
+    height: 1500,
+    backgroundColor: [0, 0, 0, 0.7],
+  });
+
+  const flex2 = new RemoteUIFlex(ctx.resourceManager, {
+    width: 500,
+    height: 500,
+    backgroundColor: [255 / 10, 255 / 10, 255 / 10, 1],
+  });
+
+  const flex3 = new RemoteUIFlex(ctx.resourceManager, {
+    width: 500,
+    height: 500,
+    backgroundColor: [255 / 5, 255 / 5, 255 / 5, 1],
+  });
+
+  const flex4 = new RemoteUIFlex(ctx.resourceManager, {
+    width: 100,
+    height: 100,
+    backgroundColor: [255 / 1.5, 255 / 1.5, 255 / 1.5, 1],
+  });
+
+  addUIFlexChild(root, flex);
+  addUIFlexChild(root, flex1);
+  addUIFlexChild(flex1, flex2);
+  addUIFlexChild(flex1, flex3);
+  addUIFlexChild(flex3, flex4);
 
   obj.position[2] = -2.5;
   obj.position[1] = 2.5;

@@ -83,6 +83,16 @@ function drawNode(
 
   // draw layout
   const layout = node.yogaNode.getComputedLayout();
+
+  // HACK?: crawl up the parent chain to calculate global top & left values, unsure if necessary or bug in yoga
+  let parent = node.parent;
+  while (parent) {
+    const parentLayout = parent.yogaNode.getComputedLayout();
+    layout.top += parentLayout.top;
+    layout.left += parentLayout.left;
+    parent = parent.parent;
+  }
+
   if (node.backgroundColor) ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
   if (node.strokeColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
 
@@ -139,6 +149,10 @@ function updateYogaNode(child: RenderUIFlex) {
   child.yogaNode.setMargin(Yoga.EDGE_BOTTOM, child.marginBottom);
   child.yogaNode.setMargin(Yoga.EDGE_LEFT, child.marginLeft);
   child.yogaNode.setMargin(Yoga.EDGE_RIGHT, child.marginRight);
+
+  // TODO: add remainder of Yoga.Node API
+  child.yogaNode.setPositionType(Yoga.POSITION_TYPE_RELATIVE);
+  child.yogaNode.setJustifyContent(Yoga.JUSTIFY_FLEX_START);
 }
 
 export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
@@ -184,6 +198,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
       // if not root
       if (child.parent) {
         // attach to parent
+        console.log(`inserting child ${child.eid} into parent ${child.parent.eid} at index ${i}`);
         child.parent.yogaNode.insertChild(child.yogaNode, i);
       }
 
