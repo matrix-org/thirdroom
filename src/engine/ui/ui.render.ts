@@ -5,7 +5,7 @@ import { Scene } from "three";
 
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { RenderImage, RenderNode, RenderUICanvas, RenderUIFlex } from "../resource/resource.render";
+import { RenderImage, RenderNode, RenderUICanvas, RenderUIFlex, RenderUIText } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
 import { UICanvasInteractionMessage, traverseUIFlex, WebSGUIMessage, UIButtonPressMessage } from "./ui.common";
@@ -17,12 +17,15 @@ export const WebSGUIModule = defineModule<
   RenderThreadState,
   {
     loadingImages: Set<RenderImage>;
+    loadingText: Set<RenderUIText>;
   }
 >({
   name: "MainWebSGUI",
   create: async () => {
     return {
       loadingImages: new Set(),
+      // HACK: figure out why sometimes text.value is undefined
+      loadingText: new Set(),
     };
   },
   async init(ctx: RenderThreadState) {
@@ -63,7 +66,12 @@ function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessa
 
 const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r},${g},${b},${a})`;
 
-function drawNode(ctx2d: CanvasRenderingContext2D, loadingImages: Set<RenderImage>, node: RenderUIFlex) {
+function drawNode(
+  ctx2d: CanvasRenderingContext2D,
+  loadingImages: Set<RenderImage>,
+  loadingText: Set<RenderUIText>,
+  node: RenderUIFlex
+) {
   if (!node.yogaNode) {
     console.warn("yoga node not found for eid", node.eid);
     return;
@@ -96,12 +104,17 @@ function drawNode(ctx2d: CanvasRenderingContext2D, loadingImages: Set<RenderImag
 
   // draw text
   if (node.text) {
-    ctx2d.textBaseline = "top";
-    ctx2d.font = `${node.text.fontStyle} ${node.text.fontWeight} ${node.text.fontSize || 12}px ${
-      node.text.fontFamily || "sans-serif"
-    }`.trim();
-    ctx2d.fillStyle = rgbaToString(node.text.color);
-    ctx2d.fillText(node.text.value, layout.left + node.paddingLeft, layout.top + node.paddingTop);
+    if (node.text.value === undefined) {
+      loadingText.add(node.text);
+    } else {
+      loadingText.delete(node.text);
+      ctx2d.textBaseline = "top";
+      ctx2d.font = `${node.text.fontStyle} ${node.text.fontWeight} ${node.text.fontSize || 12}px ${
+        node.text.fontFamily || "sans-serif"
+      }`.trim();
+      ctx2d.fillStyle = rgbaToString(node.text.color);
+      ctx2d.fillText(node.text.value, layout.left + node.paddingLeft, layout.top + node.paddingTop);
+    }
   }
 
   // TODO
@@ -189,7 +202,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
   // update
 
-  const { loadingImages } = getModule(ctx, WebSGUIModule);
+  const { loadingImages, loadingText } = getModule(ctx, WebSGUIModule);
 
   if (uiCanvas.redraw > uiCanvas.lastRedraw) {
     const ctx2d = uiCanvas.canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -200,17 +213,17 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     uiCanvas.root.yogaNode.calculateLayout(uiCanvas.root.width, uiCanvas.root.height, Yoga.DIRECTION_LTR);
 
     // draw root
-    drawNode(ctx2d, loadingImages, uiCanvas.root);
+    drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
 
     // draw children
     traverseUIFlex(uiCanvas.root, (child) => {
-      drawNode(ctx2d, loadingImages, child);
+      drawNode(ctx2d, loadingImages, loadingText, child);
     });
 
     (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.needsUpdate = true;
 
     // only stop rendering when all images have loaded
-    if (loadingImages.size === 0) {
+    if (loadingImages.size === 0 && loadingText.size === 0) {
       uiCanvas.lastRedraw = uiCanvas.redraw;
     }
   }
