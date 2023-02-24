@@ -64,7 +64,7 @@ export function readUint8Array(wasmCtx: WASMModuleContext, ptr: number, byteLeng
 }
 
 export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array: Uint8Array) {
-  wasmCtx.U32Heap.set(array, ptr);
+  wasmCtx.U32Heap.set(array, ptr / 4);
   return array.byteLength;
 }
 
@@ -73,7 +73,7 @@ export function readUint32Array(wasmCtx: WASMModuleContext, ptr: number, byteLen
 }
 
 export function writeFloat32Array(wasmCtx: WASMModuleContext, ptr: number, array: Float32Array) {
-  wasmCtx.F32Heap.set(array, ptr);
+  wasmCtx.F32Heap.set(array, ptr / 4);
   return array.byteLength;
 }
 
