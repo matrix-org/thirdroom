@@ -493,7 +493,7 @@ export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanva
   width: PropType.f32({ script: true, mutable: true }),
   height: PropType.f32({ script: true, mutable: true }),
 
-  needsRedraw: PropType.bool({ default: true, script: true, mutable: true }),
+  redraw: PropType.u32({ default: 1, script: true, mutable: true }),
 });
 
 export const NodeResource = defineResource("node", ResourceType.Node, {

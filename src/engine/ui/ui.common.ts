@@ -3,14 +3,8 @@ import { vec3 } from "gl-matrix";
 import { RenderUIFlex } from "../resource/resource.render";
 
 export enum WebSGUIMessage {
-  DoneDrawing = "websgui-done-drawing",
   ButtonPress = "websgui-button-press",
   CanvasInteraction = "websgui-canvas-interaction",
-}
-
-export interface UIDoneDrawingMessage {
-  type: WebSGUIMessage.DoneDrawing;
-  uiCanvasEid: number;
 }
 
 export interface UICanvasInteractionMessage {

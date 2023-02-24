@@ -8,13 +8,7 @@ import { RenderThreadState } from "../renderer/renderer.render";
 import { RenderImage, RenderNode, RenderUICanvas, RenderUIFlex } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
-import {
-  UICanvasInteractionMessage,
-  UIDoneDrawingMessage,
-  traverseUIFlex,
-  WebSGUIMessage,
-  UIButtonPressMessage,
-} from "./ui.common";
+import { UICanvasInteractionMessage, traverseUIFlex, WebSGUIMessage, UIButtonPressMessage } from "./ui.common";
 import { getLocalResource } from "../resource/resource.render";
 import { RenderImageDataType } from "../utils/textures";
 import { LoadStatus } from "../resource/resource.common";
@@ -85,20 +79,18 @@ function drawNode(ctx2d: CanvasRenderingContext2D, loadingImages: Set<RenderImag
   if (node.strokeColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
 
   // draw image
-  if (node.image && node.image.source.imageData) {
-    if (node.image.source.imageData.type === RenderImageDataType.ImageBitmap) {
-      if (node.image.source.loadStatus === LoadStatus.Loaded) {
-        loadingImages.delete(node.image.source);
-        ctx2d.drawImage(
-          node.image.source.imageData.data as ImageBitmap,
-          layout.left,
-          layout.top,
-          layout.width,
-          layout.height
-        );
-      } else if (node.image.source.loadStatus === LoadStatus.Loading) {
-        loadingImages.add(node.image.source);
-      }
+  if (node.image) {
+    if (!node.image.source.imageData || node.image.source.loadStatus !== LoadStatus.Loaded) {
+      loadingImages.add(node.image.source);
+    } else if (node.image.source.imageData.type === RenderImageDataType.ImageBitmap) {
+      loadingImages.delete(node.image.source);
+      ctx2d.drawImage(
+        node.image.source.imageData.data as ImageBitmap,
+        layout.left,
+        layout.top,
+        layout.width,
+        layout.height
+      );
     }
   }
 
@@ -199,7 +191,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
   const { loadingImages } = getModule(ctx, WebSGUIModule);
 
-  if (uiCanvas.needsRedraw) {
+  if (uiCanvas.redraw > uiCanvas.lastRedraw) {
     const ctx2d = uiCanvas.canvas.getContext("2d") as CanvasRenderingContext2D;
 
     ctx2d.clearRect(0, 0, uiCanvas.root.width, uiCanvas.root.height);
@@ -217,12 +209,10 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
     (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.needsUpdate = true;
 
-    if (loadingImages.size === 0)
-      // TODO: use versioned needsRedraw flag
-      ctx.sendMessage<UIDoneDrawingMessage>(Thread.Game, {
-        type: WebSGUIMessage.DoneDrawing,
-        uiCanvasEid: uiCanvas.eid,
-      });
+    // only stop rendering when all images have loaded
+    if (loadingImages.size === 0) {
+      uiCanvas.lastRedraw = uiCanvas.redraw;
+    }
   }
 
   // update the canvas mesh transform with the node's

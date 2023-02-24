@@ -650,6 +650,7 @@ export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;
+  lastRedraw = 0;
 }
 
 export class RenderNode extends defineLocalResourceClass(NodeResource) {

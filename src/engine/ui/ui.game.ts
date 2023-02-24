@@ -22,7 +22,7 @@ import {
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { InteractableType } from "../resource/schema";
 import { createDisposables } from "../utils/createDisposables";
-import { UIButtonPressMessage, UIDoneDrawingMessage, WebSGUIMessage } from "./ui.common";
+import { UIButtonPressMessage, WebSGUIMessage } from "./ui.common";
 
 export const WebSGUIModule = defineModule<GameState, {}>({
   name: "GameWebSGUI",
@@ -31,10 +31,6 @@ export const WebSGUIModule = defineModule<GameState, {}>({
   },
   async init(ctx: GameState) {
     return createDisposables([
-      registerMessageHandler(ctx, WebSGUIMessage.DoneDrawing, (ctx, message: UIDoneDrawingMessage) => {
-        const uiCanvas = tryGetRemoteResource<RemoteUICanvas>(ctx, message.uiCanvasEid);
-        uiCanvas!.needsRedraw = false;
-      }),
       registerMessageHandler(ctx, WebSGUIMessage.ButtonPress, (ctx, message: UIButtonPressMessage) => {
         const button = tryGetRemoteResource<RemoteUIButton>(ctx, message.buttonEid);
         button.interactable!.pressed = true;

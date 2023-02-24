@@ -768,7 +768,7 @@ export function ThirdroomSystem(ctx: GameState) {
     if (button.interactable!.pressed) {
       x++;
       text.value = `button pressed ${x} times`;
-      uiCanvas.needsRedraw = true;
+      uiCanvas.redraw += 1;
     }
   }
 
