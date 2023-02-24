@@ -828,30 +828,34 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
   for (int i = 0; i < count; i++) {
     JSValue primitive_obj = JS_GetPropertyUint32(ctx, primitives_arr, i);
 
-    MeshPrimitiveProps props = primitives[0];
+    MeshPrimitiveProps *props = &primitives[i];
 
     JSValue modeVal = JS_GetPropertyStr(ctx, primitive_obj, "mode");
 
+    uint32_t mode;
+
     if (!JS_IsUndefined(modeVal)) {
-      if (JS_ToUint32(ctx, (uint32_t *)&props.mode, modeVal) == -1) {
+      if (JS_ToUint32(ctx, &mode, modeVal) == -1) {
         return JS_EXCEPTION;
       }
+
+      props->mode = (MeshPrimitiveMode)mode;
     } else {
-      props.mode = MeshPrimitiveMode_TRIANGLES;
+      props->mode = MeshPrimitiveMode_TRIANGLES;
     }
 
     JSValue indicesVal = JS_GetPropertyStr(ctx, primitive_obj, "indices");
 
-    if (!JS_IsUndefined(modeVal)) {
-      if (JS_ToUint32(ctx, &props.indices, modeVal) == -1) {
+    if (!JS_IsUndefined(indicesVal)) {
+      if (JS_ToUint32(ctx, &props->indices, indicesVal) == -1) {
         return JS_EXCEPTION;
       }
     }
 
     JSValue materialVal = JS_GetPropertyStr(ctx, primitive_obj, "material");
 
-    if (!JS_IsUndefined(modeVal)) {
-      if (JS_ToUint32(ctx, &props.material, modeVal) == -1) {
+    if (!JS_IsUndefined(materialVal)) {
+      if (JS_ToUint32(ctx, &props->material, materialVal) == -1) {
         return JS_EXCEPTION;
       }
     }
@@ -859,14 +863,14 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
     JSValue attributes_obj = JS_GetPropertyStr(ctx, primitive_obj, "attributes");
 
     if (!JS_IsUndefined(attributes_obj)) {
-      JSPropertyEnum *props;
-      uint32_t prop_count;
+      JSPropertyEnum *attribute_props;
+      uint32_t attribute_count;
 
       if (
         JS_GetOwnPropertyNames(
           ctx,
-          &props,
-          &prop_count,
+          &attribute_props,
+          &attribute_count,
           attributes_obj,
           JS_GPN_STRING_MASK | JS_GPN_ENUM_ONLY
         )
@@ -874,27 +878,29 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
         return JS_EXCEPTION;
       }
 
-      MeshPrimitiveAttributeItem *attributes = js_mallocz(ctx, sizeof(MeshPrimitiveAttributeItem) * prop_count);
+      MeshPrimitiveAttributeItem *attributes = js_mallocz(ctx, sizeof(MeshPrimitiveAttributeItem) * attribute_count);
 
-      for(i = 0; i < prop_count; i++) {
-        JSAtom prop_name_atom = props[i].atom;
-        MeshPrimitiveAttributeItem attribute = attributes[i];
-        attribute.key = get_primitive_attribute_from_atom(prop_name_atom);
+      for(i = 0; i < attribute_count; i++) {
+        JSAtom prop_name_atom = attribute_props[i].atom;
+        MeshPrimitiveAttributeItem* attribute = &attributes[i];
+        attribute->key = get_primitive_attribute_from_atom(prop_name_atom);
         JSValue attribute_prop = JS_GetProperty(ctx, attributes_obj, prop_name_atom);
 
-        if (JS_ToUint32(ctx, &attribute.accessor_id, attribute_prop) == -1) {
+        if (JS_ToUint32(ctx, &attribute->accessor_id, attribute_prop) == -1) {
           return JS_EXCEPTION;
         }
       }
 
-      for(uint32_t i = 0; i < prop_count; i++) {
-        JS_FreeAtom(ctx, props[i].atom);
+      props->attribute_count = attribute_count;
+      props->attributes = attributes;
+
+      for(uint32_t i = 0; i < attribute_count; i++) {
+        JS_FreeAtom(ctx, attribute_props[i].atom);
       }
 
-      js_free(ctx, props);
+      js_free(ctx, attribute_props);
     }
   }
-  
 
   mesh_id_t mesh_id = websg_create_mesh(primitives, count);
 
@@ -1034,6 +1040,41 @@ static JSValue js_mesh_get_primitive_mode(JSContext *ctx, JSValueConst this_val,
   return JS_NewUint32(ctx, mode);
 }
 
+static JSValue js_mesh_set_primitive_draw_range(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  mesh_id_t mesh_id;
+
+  if (JS_ToUint32(ctx, &mesh_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  uint32_t index;
+
+  if (JS_ToUint32(ctx, &index, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  uint32_t start;
+
+  if (JS_ToUint32(ctx, &start, argv[2]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  uint32_t count;
+
+  if (JS_ToUint32(ctx, &count, argv[3]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_mesh_set_primitive_draw_range(mesh_id, index, start, count);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting draw range.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 JSAtom SCALAR;
 JSAtom VEC2;
 JSAtom VEC3;
@@ -1114,7 +1155,7 @@ static JSValue js_create_accessor_from(JSContext *ctx, JSValueConst this_val, in
 
   uint32_t count;
 
-  if (JS_ToUint32(ctx, &count, component_type_val) < 0) {
+  if (JS_ToUint32(ctx, &count, countVal) < 0) {
     return JS_EXCEPTION;
   }
 
@@ -1188,7 +1229,7 @@ static JSValue js_accessor_update_with(JSContext *ctx, JSValueConst this_val, in
 
   int32_t result = websg_accessor_update_with(accessor_id, data, buffer_byte_length);
 
-  if (result == 0) {
+  if (result < 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't update accessor.");
     return JS_EXCEPTION;
   }
@@ -2027,6 +2068,12 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "meshGetPrimitiveMode",
     JS_NewCFunction(ctx, js_mesh_get_primitive_mode, "meshGetPrimitiveMode", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "meshSetPrimitiveDrawRange",
+    JS_NewCFunction(ctx, js_mesh_set_primitive_draw_range, "meshSetPrimitiveDrawRange", 4)
   );
 
   // Accessor
