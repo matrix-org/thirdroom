@@ -11,7 +11,7 @@ import { updateTransformFromNode } from "../node/node.render";
 import {
   UICanvasInteractionMessage,
   UIDoneDrawingMessage,
-  traverseChildren,
+  traverseUIFlex,
   WebSGUIMessage,
   UIButtonPressMessage,
 } from "./ui.common";
@@ -43,7 +43,7 @@ function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessa
     const y = -(message.hitPoint[1] * pixelDensity - (height * pixelDensity) / 2);
 
     // TODO: optimize
-    traverseChildren(root, (child) => {
+    traverseUIFlex(root, (child) => {
       const layout = child.yogaNode.getComputedLayout();
 
       // if x and y is within this button's bounds, register a hit
@@ -151,7 +151,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     // teardown
     if (node.uiCanvas.root.yogaNode) {
       if (node.uiCanvas.root.yogaNode) Yoga.Node.destroy(node.uiCanvas.root.yogaNode);
-      traverseChildren(node.uiCanvas.root, (child) => {
+      traverseUIFlex(node.uiCanvas.root, (child) => {
         if (child.yogaNode) {
           Yoga.Node.destroy(child.yogaNode);
         }
@@ -180,7 +180,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     updateYogaNode(uiCanvas.root);
 
     // traverse root, create & update yoga nodes
-    traverseChildren(uiCanvas.root, (child, i) => {
+    traverseUIFlex(uiCanvas.root, (child, i) => {
       child.yogaNode = Yoga.Node.create();
 
       // if not root
@@ -216,7 +216,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     drawNode(ctx2d, imgCache, uiCanvas.root);
 
     // draw children
-    traverseChildren(uiCanvas.root, (child) => {
+    traverseUIFlex(uiCanvas.root, (child) => {
       drawNode(ctx2d, imgCache, child);
     });
 

@@ -24,14 +24,14 @@ export interface UIButtonPressMessage {
   buttonEid: number;
 }
 
-export function traverseChildren(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
+export function traverseUIFlex(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
   let curChild = node.firstChild;
   let i = 0;
 
   while (curChild) {
     const continueTraversal = callback(curChild, i++) !== false;
     if (continueTraversal) {
-      traverseChildren(curChild, callback);
+      traverseUIFlex(curChild, callback);
       curChild = curChild.nextSibling;
     } else {
       return;

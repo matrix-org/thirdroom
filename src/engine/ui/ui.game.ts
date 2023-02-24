@@ -91,3 +91,64 @@ export function createUICanvasNode(
 
   return obj;
 }
+
+function removeUIFlexFromLinkedList(parent: RemoteUIFlex, child: RemoteUIFlex) {
+  const prevSibling = child.prevSibling;
+  const nextSibling = child.nextSibling;
+
+  parent.firstChild = undefined;
+
+  // [prev, child, next]
+  if (prevSibling && nextSibling) {
+    prevSibling.nextSibling = nextSibling;
+    nextSibling.prevSibling = prevSibling;
+  }
+  // [prev, child]
+  if (prevSibling && !nextSibling) {
+    prevSibling.nextSibling = undefined;
+  }
+  // [child, next]
+  if (nextSibling && !prevSibling) {
+    nextSibling.prevSibling = undefined;
+    parent.firstChild = nextSibling;
+  }
+}
+
+export function getLastUIFlexChild(parent: RemoteUIFlex): RemoteUIFlex | undefined {
+  let cursor = parent.firstChild;
+
+  let last = cursor;
+
+  while (cursor) {
+    last = cursor;
+    cursor = cursor.nextSibling;
+  }
+
+  return last;
+}
+
+export function addUIFlexChild(parent: RemoteUIFlex, child: RemoteUIFlex) {
+  child.addRef();
+
+  const previousParent = child.parent;
+
+  child.parent = parent;
+
+  if (previousParent) {
+    removeUIFlexFromLinkedList(previousParent, child);
+  }
+
+  const lastChild = getLastUIFlexChild(parent);
+
+  if (lastChild) {
+    lastChild.nextSibling = child;
+    child.prevSibling = lastChild;
+    child.nextSibling = undefined;
+  } else {
+    parent.firstChild = child;
+    child.prevSibling = undefined;
+    child.nextSibling = undefined;
+  }
+
+  child.removeRef();
+}
