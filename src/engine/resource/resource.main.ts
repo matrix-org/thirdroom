@@ -21,7 +21,6 @@ import {
   BufferViewResource,
   CameraResource,
   EnvironmentResource,
-  FlexDirection,
   ImageResource,
   InstancedMeshResource,
   InteractableResource,
@@ -234,26 +233,6 @@ export class MainUIImage extends defineLocalResourceClass(UIImageResource) {
 }
 
 export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
-  declare flexDirection: FlexDirection;
-
-  declare width: number;
-  declare height: number;
-
-  declare backgroundColor: string;
-  declare strokeColor: string;
-
-  declare opacity: number;
-
-  declare paddingTop: number;
-  declare paddingBottom: number;
-  declare paddingLeft: number;
-  declare paddingRight: number;
-
-  declare marginTop: number;
-  declare marginBottom: number;
-  declare marginLeft: number;
-  declare marginRight: number;
-
   declare parent: MainUIFlex | undefined;
   declare firstChild: MainUIFlex | undefined;
   declare prevSibling: MainUIFlex | undefined;
@@ -268,10 +247,6 @@ export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
 
 export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: MainUIFlex;
-  declare pixelDensity: number;
-  declare width: number;
-  declare height: number;
-  declare needsRedraw: boolean;
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;

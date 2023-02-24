@@ -91,7 +91,6 @@ import {
   UITextResource,
   UIButtonResource,
   UIImageResource,
-  FlexDirection,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -634,24 +633,6 @@ export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {
 }
 
 export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
-  declare flexDirection: FlexDirection;
-
-  declare width: number;
-  declare height: number;
-
-  declare backgroundColor: string;
-  declare strokeColor: string;
-
-  declare paddingTop: number;
-  declare paddingBottom: number;
-  declare paddingLeft: number;
-  declare paddingRight: number;
-
-  declare marginTop: number;
-  declare marginBottom: number;
-  declare marginLeft: number;
-  declare marginRight: number;
-
   declare parent: RenderUIFlex | undefined;
   declare firstChild: RenderUIFlex | undefined;
   declare prevSibling: RenderUIFlex | undefined;
@@ -666,10 +647,6 @@ export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
 
 export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: RenderUIFlex;
-  declare pixelDensity: number;
-  declare width: number;
-  declare height: number;
-  declare needsRedraw: boolean;
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;

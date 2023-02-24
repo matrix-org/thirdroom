@@ -34,7 +34,6 @@ import {
   AnimationSamplerResource,
   WorldResource,
   EnvironmentResource,
-  FlexDirection,
   UIButtonResource,
   UICanvasResource,
   UIFlexResource,
@@ -133,26 +132,6 @@ export class RemoteUIButton extends defineRemoteResourceClass(UIButtonResource) 
 export class RemoteUIImage extends defineRemoteResourceClass(UIImageResource) {}
 
 export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
-  declare flexDirection: FlexDirection;
-
-  declare width: number;
-  declare height: number;
-
-  declare backgroundColor: string;
-  declare strokeColor: string;
-
-  declare opacity: number;
-
-  declare paddingTop: number;
-  declare paddingBottom: number;
-  declare paddingLeft: number;
-  declare paddingRight: number;
-
-  declare marginTop: number;
-  declare marginBottom: number;
-  declare marginLeft: number;
-  declare marginRight: number;
-
   declare parent: RemoteUIFlex | undefined;
   declare firstChild: RemoteUIFlex | undefined;
   declare prevSibling: RemoteUIFlex | undefined;
@@ -164,10 +143,6 @@ export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
 }
 export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
   declare root: RemoteUIFlex;
-  declare pixelDensity: number;
-  declare width: number;
-  declare height: number;
-  declare needsRedraw: boolean;
 }
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
