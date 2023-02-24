@@ -198,7 +198,6 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
       // if not root
       if (child.parent) {
         // attach to parent
-        console.log(`inserting child ${child.eid} into parent ${child.parent.eid} at index ${i}`);
         child.parent.yogaNode.insertChild(child.yogaNode, i);
       }
 
