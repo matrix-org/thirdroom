@@ -204,7 +204,7 @@ export async function createDemoUI(ctx: GameState): Promise<[RemoteUICanvas, Rem
     image,
   });
 
-  obj.position[2] = -10;
+  obj.position[2] = -2.5;
   obj.position[1] = 2.5;
 
   addObjectToWorld(ctx, obj);
