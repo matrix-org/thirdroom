@@ -3,15 +3,21 @@ import { defineQuery } from "bitecs";
 
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { GameState } from "../GameTypes";
-import { defineModule, registerMessageHandler } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addRigidBody, PhysicsModuleState } from "../physics/physics.game";
+import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import {
+  addObjectToWorld,
   createRemoteObject,
+  getObjectPublicRoot,
+  RemoteImage,
+  RemoteInteractable,
   RemoteNode,
   RemoteUIButton,
   RemoteUICanvas,
   RemoteUIFlex,
+  RemoteUIImage,
+  RemoteUIText,
 } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { InteractableType } from "../resource/schema";
@@ -151,4 +157,57 @@ export function addUIFlexChild(parent: RemoteUIFlex, child: RemoteUIFlex) {
   }
 
   child.removeRef();
+}
+
+export async function createDemoUI(ctx: GameState): Promise<[RemoteUICanvas, RemoteUIButton, RemoteUIText]> {
+  const physics = getModule(ctx, PhysicsModule);
+
+  const obj = createUICanvasNode(ctx, physics, 5, 5, 1000);
+  const node = getObjectPublicRoot(obj) as RemoteNode & { uiCanvas: RemoteUICanvas };
+
+  const root = node.uiCanvas.root;
+
+  root.backgroundColor.set([0, 0, 0, 0.5]);
+
+  const button = new RemoteUIButton(ctx.resourceManager, {
+    interactable: new RemoteInteractable(ctx.resourceManager, {
+      type: InteractableType.Interactable,
+    }),
+  });
+
+  const remoteImage = new RemoteImage(ctx.resourceManager, {
+    uri: "/image/large-crate-icon.png",
+  });
+
+  const image = new RemoteUIImage(ctx.resourceManager, {
+    source: remoteImage,
+  });
+
+  const text = new RemoteUIText(ctx.resourceManager, {
+    value: "i am a button",
+    fontSize: 118,
+    fontFamily: "serif",
+    fontStyle: "italic",
+    fontWeight: "bold",
+    color: [255, 255, 255, 1],
+  });
+
+  root.firstChild = new RemoteUIFlex(ctx.resourceManager, {
+    width: 2000,
+    height: 1500,
+    parent: root,
+    paddingTop: 80,
+    paddingLeft: 80,
+    backgroundColor: [0, 0, 0, 1],
+    text,
+    button,
+    image,
+  });
+
+  obj.position[2] = -10;
+  obj.position[1] = 2.5;
+
+  addObjectToWorld(ctx, obj);
+
+  return [node.uiCanvas, button, text];
 }

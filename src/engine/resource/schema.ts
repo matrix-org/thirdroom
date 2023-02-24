@@ -433,10 +433,10 @@ export enum FlexDirection {
 export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
   value: PropType.string({ script: true }),
   fontFamily: PropType.string({ script: true }),
-  fontSize: PropType.u32({ script: true }),
+  fontSize: PropType.f32({ script: true }),
   fontWeight: PropType.string({ script: true }),
   fontStyle: PropType.string({ script: true }),
-  color: PropType.string({ script: true }),
+  color: PropType.rgba({ script: true }),
 });
 
 export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
@@ -459,8 +459,8 @@ export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
   width: PropType.f32({ script: true, mutable: true }),
   height: PropType.f32({ script: true, mutable: true }),
 
-  backgroundColor: PropType.string({ script: true, mutable: true }),
-  strokeColor: PropType.string({ script: true, mutable: true }),
+  backgroundColor: PropType.rgba({ script: true, mutable: true }),
+  strokeColor: PropType.rgba({ script: true, mutable: true }),
 
   opacity: PropType.f32({ default: 1, script: true, mutable: true }),
 

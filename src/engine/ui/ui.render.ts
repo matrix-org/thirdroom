@@ -1,11 +1,11 @@
 // typedefs: https://github.com/facebook/yoga/blob/main/javascript/src_js/wrapAsm.d.ts
 import Yoga from "@react-pdf/yoga";
-import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
+import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
 import { Scene } from "three";
 
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { RenderNode, RenderUICanvas, RenderUIFlex } from "../resource/resource.render";
+import { RenderImage, RenderNode, RenderUICanvas, RenderUIFlex } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
 import {
@@ -16,17 +16,19 @@ import {
   UIButtonPressMessage,
 } from "./ui.common";
 import { getLocalResource } from "../resource/resource.render";
+import { RenderImageDataType } from "../utils/textures";
+import { LoadStatus } from "../resource/resource.common";
 
 export const WebSGUIModule = defineModule<
   RenderThreadState,
   {
-    imgCache: Map<number, HTMLImageElement>;
+    loadingImages: Set<RenderImage>;
   }
 >({
   name: "MainWebSGUI",
   create: async () => {
     return {
-      imgCache: new Map(),
+      loadingImages: new Set(),
     };
   },
   async init(ctx: RenderThreadState) {
@@ -65,16 +67,17 @@ function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessa
   }
 }
 
-function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLImageElement>, node: RenderUIFlex) {
+const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r},${g},${b},${a})`;
+
+function drawNode(ctx2d: CanvasRenderingContext2D, loadingImages: Set<RenderImage>, node: RenderUIFlex) {
   if (!node.yogaNode) {
     console.warn("yoga node not found for eid", node.eid);
     return;
   }
 
   // setup brush
-  ctx2d.fillStyle = node.backgroundColor || "white";
-  ctx2d.strokeStyle = node.strokeColor || "black";
-  ctx2d.globalAlpha = node.opacity !== undefined ? node.opacity : 1;
+  ctx2d.fillStyle = rgbaToString(node.backgroundColor);
+  ctx2d.strokeStyle = rgbaToString(node.strokeColor);
 
   // draw layout
   const layout = node.yogaNode.getComputedLayout();
@@ -82,25 +85,20 @@ function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLIma
   if (node.strokeColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
 
   // draw image
-  if (node.image && node.image.source && node.image.source.bufferView) {
-    let img = node.image.domElement;
-
-    if (!img) {
-      img = new Image();
-
-      const ab = new ArrayBuffer(node.image.source.bufferView.byteLength);
-      const view = new Uint8ClampedArray(ab);
-      view.set(new Uint8ClampedArray(node.image.source.bufferView.buffer.data));
-
-      const blob = new Blob([ab]);
-
-      img.src = URL.createObjectURL(blob);
-      node.image.domElement = img;
-      imgCache.set(node.image.eid, img);
-    }
-
-    if (img && img.complete) {
-      ctx2d.drawImage(img, layout.left, layout.top, layout.width, layout.height);
+  if (node.image && node.image.source.imageData) {
+    if (node.image.source.imageData.type === RenderImageDataType.ImageBitmap) {
+      if (node.image.source.loadStatus === LoadStatus.Loaded) {
+        loadingImages.delete(node.image.source);
+        ctx2d.drawImage(
+          node.image.source.imageData.data as ImageBitmap,
+          layout.left,
+          layout.top,
+          layout.width,
+          layout.height
+        );
+      } else if (node.image.source.loadStatus === LoadStatus.Loading) {
+        loadingImages.add(node.image.source);
+      }
     }
   }
 
@@ -110,15 +108,13 @@ function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLIma
     ctx2d.font = `${node.text.fontStyle} ${node.text.fontWeight} ${node.text.fontSize || 12}px ${
       node.text.fontFamily || "sans-serif"
     }`.trim();
-    ctx2d.fillStyle = node.text.color || "black";
+    ctx2d.fillStyle = rgbaToString(node.text.color);
     ctx2d.fillText(node.text.value, layout.left + node.paddingLeft, layout.top + node.paddingTop);
   }
 
   // TODO
   // if (node.button) {
   // }
-
-  ctx2d.globalAlpha = 1;
 
   return ctx2d;
 }
@@ -141,8 +137,6 @@ function updateYogaNode(child: RenderUIFlex) {
 }
 
 export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
-  const { imgCache } = getModule(ctx, WebSGUIModule);
-
   const currentUICanvasResourceId = node.currentUICanvasResourceId;
   const nextUICanvasResourceId = node.uiCanvas?.eid || 0;
 
@@ -155,7 +149,6 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
         if (child.yogaNode) {
           Yoga.Node.destroy(child.yogaNode);
         }
-        imgCache.delete(child.eid);
       });
     }
   }
@@ -204,8 +197,10 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
   // update
 
+  const { loadingImages } = getModule(ctx, WebSGUIModule);
+
   if (uiCanvas.needsRedraw) {
-    const ctx2d = uiCanvas.canvas.getContext("2d")!;
+    const ctx2d = uiCanvas.canvas.getContext("2d") as CanvasRenderingContext2D;
 
     ctx2d.clearRect(0, 0, uiCanvas.root.width, uiCanvas.root.height);
 
@@ -213,29 +208,21 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     uiCanvas.root.yogaNode.calculateLayout(uiCanvas.root.width, uiCanvas.root.height, Yoga.DIRECTION_LTR);
 
     // draw root
-    drawNode(ctx2d, imgCache, uiCanvas.root);
+    drawNode(ctx2d, loadingImages, uiCanvas.root);
 
     // draw children
     traverseUIFlex(uiCanvas.root, (child) => {
-      drawNode(ctx2d, imgCache, child);
+      drawNode(ctx2d, loadingImages, child);
     });
 
-    (node.uiCanvasMesh.material as MeshBasicMaterial).map!.needsUpdate = true;
+    (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.needsUpdate = true;
 
-    // flip needsRedraw to false only after all images have loaded to ensure they are drawn
-    let allImagesLoaded = true;
-    for (const [, img] of imgCache) {
-      if (!img.complete) {
-        allImagesLoaded = false;
-        break;
-      }
-    }
-    if (allImagesLoaded) {
+    if (loadingImages.size === 0)
+      // TODO: use versioned needsRedraw flag
       ctx.sendMessage<UIDoneDrawingMessage>(Thread.Game, {
         type: WebSGUIMessage.DoneDrawing,
         uiCanvasEid: uiCanvas.eid,
       });
-    }
   }
 
   // update the canvas mesh transform with the node's
