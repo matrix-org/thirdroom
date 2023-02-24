@@ -61,17 +61,33 @@ export function getDefaultMaterialForMeshPrimitive(ctx: RenderThreadState, meshP
     return cacheEntry.material;
   }
 
-  const material = new MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: 0x000000,
-    metalness: 1,
-    roughness: 1,
-    transparent: false,
-    depthTest: true,
-    side: FrontSide,
-    flatShading,
-    vertexColors,
-  });
+  let material;
+
+  if (meshPrimitive.mode === MeshPrimitiveMode.POINTS) {
+    material = new PointsMaterial({
+      color: 0xffffff,
+    });
+  } else if (
+    meshPrimitive.mode === MeshPrimitiveMode.LINES ||
+    meshPrimitive.mode === MeshPrimitiveMode.LINE_LOOP ||
+    meshPrimitive.mode === MeshPrimitiveMode.LINE_STRIP
+  ) {
+    material = new LineBasicMaterial({
+      color: 0xffffff,
+    });
+  } else {
+    material = new MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0x000000,
+      metalness: 1,
+      roughness: 1,
+      transparent: false,
+      depthTest: true,
+      side: FrontSide,
+      flatShading,
+      vertexColors,
+    });
+  }
 
   defaultMaterialCache.push({
     material,

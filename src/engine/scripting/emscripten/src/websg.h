@@ -190,6 +190,12 @@ import_websg(mesh_get_primitive_mode) MeshPrimitiveMode websg_mesh_get_primitive
   mesh_id_t mesh_id,
   uint32_t index
 );
+import_websg(mesh_set_primitive_draw_range) MeshPrimitiveMode websg_mesh_set_primitive_draw_range(
+  mesh_id_t mesh_id,
+  uint32_t index,
+  uint32_t start,
+  uint32_t count
+);
 
 /**
  * Accessor
