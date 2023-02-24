@@ -3,12 +3,19 @@ import Yoga from "@react-pdf/yoga";
 import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { Scene } from "three";
 
-import { defineModule, getModule, Thread } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { RenderNode, RenderUIFlex } from "../resource/resource.render";
+import { RenderNode, RenderUICanvas, RenderUIFlex } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
-import { DoneDrawingUIMessage, WebSGUIMessage } from "./ui.common";
+import {
+  UICanvasInteractionMessage,
+  UIDoneDrawingMessage,
+  traverseChildren,
+  WebSGUIMessage,
+  UIButtonPressMessage,
+} from "./ui.common";
+import { getLocalResource } from "../resource/resource.render";
 
 export const WebSGUIModule = defineModule<
   RenderThreadState,
@@ -23,22 +30,47 @@ export const WebSGUIModule = defineModule<
     };
   },
   async init(ctx: RenderThreadState) {
-    return createDisposables([]);
+    return createDisposables([registerMessageHandler(ctx, WebSGUIMessage.CanvasInteraction, onButtonPress)]);
   },
 });
 
-export function traverseChildren(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => void) {
-  let curChild = node.firstChild;
-  let i = 0;
+function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessage): void {
+  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
+  if (uiCanvas) {
+    const { pixelDensity, width, height, root } = uiCanvas;
 
-  while (curChild) {
-    callback(curChild, i++);
-    traverseChildren(curChild, callback);
-    curChild = curChild.nextSibling;
+    const x = message.hitPoint[0] * pixelDensity + (width * pixelDensity) / 2;
+    const y = -(message.hitPoint[1] * pixelDensity - (height * pixelDensity) / 2);
+
+    // TODO: optimize
+    traverseChildren(root, (child) => {
+      const layout = child.yogaNode.getComputedLayout();
+
+      // if x and y is within this button's bounds, register a hit
+      if (
+        child.button &&
+        x > layout.left &&
+        x < layout.left + layout.width &&
+        y > layout.top &&
+        y < layout.top + layout.height
+      ) {
+        ctx.sendMessage<UIButtonPressMessage>(Thread.Game, {
+          type: WebSGUIMessage.ButtonPress,
+          buttonEid: child.button.eid,
+        });
+
+        return false;
+      }
+    });
   }
 }
 
 function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLImageElement>, node: RenderUIFlex) {
+  if (!node.yogaNode) {
+    console.warn("yoga node not found for eid", node.eid);
+    return;
+  }
+
   // setup brush
   ctx2d.fillStyle = node.backgroundColor || "white";
   ctx2d.strokeStyle = node.strokeColor || "black";
@@ -51,7 +83,8 @@ function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLIma
 
   // draw image
   if (node.image && node.image.source && node.image.source.bufferView) {
-    let img = imgCache.get(node.image.eid);
+    let img = node.image.domElement;
+
     if (!img) {
       img = new Image();
 
@@ -62,6 +95,7 @@ function drawNode(ctx2d: CanvasRenderingContext2D, imgCache: Map<number, HTMLIma
       const blob = new Blob([ab]);
 
       img.src = URL.createObjectURL(blob);
+      node.image.domElement = img;
       imgCache.set(node.image.eid, img);
     }
 
@@ -120,8 +154,8 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
       traverseChildren(node.uiCanvas.root, (child) => {
         if (child.yogaNode) {
           Yoga.Node.destroy(child.yogaNode);
-          imgCache.delete(child.eid);
         }
+        imgCache.delete(child.eid);
       });
     }
   }
@@ -188,7 +222,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
     (node.uiCanvasMesh.material as MeshBasicMaterial).map!.needsUpdate = true;
 
-    // flip needsRedraw to false only after all images have loaded to ensure they are rendered
+    // flip needsRedraw to false only after all images have loaded to ensure they are drawn
     let allImagesLoaded = true;
     for (const [, img] of imgCache) {
       if (!img.complete) {
@@ -197,7 +231,10 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
       }
     }
     if (allImagesLoaded) {
-      ctx.sendMessage<DoneDrawingUIMessage>(Thread.Game, { type: WebSGUIMessage.DoneDrawing, eid: node.eid });
+      ctx.sendMessage<UIDoneDrawingMessage>(Thread.Game, {
+        type: WebSGUIMessage.DoneDrawing,
+        uiCanvasEid: uiCanvas.eid,
+      });
     }
   }
 

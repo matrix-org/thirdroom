@@ -12,18 +12,7 @@ import { XRMode } from "../renderer/renderer.common";
 import { getXRMode, RendererModule } from "../renderer/renderer.game";
 import { getModule, Thread } from "../module/module.common";
 import { createPrefabEntity } from "../prefab/prefab.game";
-import {
-  addObjectToWorld,
-  createRemoteObject,
-  RemoteBuffer,
-  RemoteBufferView,
-  RemoteImage,
-  RemoteNode,
-  RemoteUICanvas,
-  RemoteUIFlex,
-  RemoteUIImage,
-  RemoteUIText,
-} from "../resource/RemoteResources";
+import { addObjectToWorld, RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
@@ -264,7 +253,7 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
   }
 }
 
-async function updateXRController(
+function updateXRController(
   ctx: GameState,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
   rigNode: RemoteNode,
@@ -343,78 +332,6 @@ async function updateXRController(
         rig.rightRayEid = rayNode.eid;
         rig.rightRayNetworkedEid = networkedRayNode.eid;
       }
-
-      // Example UI
-
-      const w = 0.2;
-      const h = 0.1;
-
-      const scale = 2000;
-
-      const widthPx = w * scale;
-      const heightPx = h * scale;
-
-      const root = new RemoteUIFlex(ctx.resourceManager, {
-        width: widthPx,
-        height: heightPx,
-        backgroundColor: "black",
-        opacity: 0.5,
-      });
-
-      const uri = "/image/mirror-ball-icon.png";
-      const req = await fetch(uri);
-      const ab = await req.arrayBuffer();
-      const data = new SharedArrayBuffer(ab.byteLength);
-      new Uint8ClampedArray(data).set(new Uint8ClampedArray(ab));
-
-      const remoteBuffer = new RemoteBuffer(ctx.resourceManager, {
-        uri,
-        data,
-      });
-
-      const remoteBufferView = new RemoteBufferView(ctx.resourceManager, {
-        buffer: remoteBuffer,
-        byteLength: data.byteLength,
-      });
-
-      const remoteImage = new RemoteImage(ctx.resourceManager, {
-        bufferView: remoteBufferView,
-      });
-
-      const remoteUIImage = new RemoteUIImage(ctx.resourceManager, {
-        source: remoteImage,
-      });
-
-      root.firstChild = new RemoteUIFlex(ctx.resourceManager, {
-        width: widthPx,
-        height: heightPx,
-        parent: root,
-        paddingTop: 80,
-        paddingLeft: 80,
-        text: new RemoteUIText(ctx.resourceManager, {
-          value: hand,
-          fontSize: 36,
-          fontFamily: "serif",
-          fontStyle: "italic",
-          fontWeight: "bold",
-          color: "white",
-        }),
-        image: remoteUIImage,
-      });
-
-      const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
-        root,
-        width: w,
-        height: h,
-      });
-
-      const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
-
-      node.position[1] = 0.1;
-
-      const obj = createRemoteObject(ctx, node);
-
-      addChild(rayNode, obj);
     }
 
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);

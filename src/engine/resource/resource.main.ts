@@ -226,7 +226,12 @@ export class MainInteractable extends defineLocalResourceClass(InteractableResou
 
 export class MainUIText extends defineLocalResourceClass(UITextResource) {}
 export class MainUIButton extends defineLocalResourceClass(UIButtonResource) {}
-export class MainUIImage extends defineLocalResourceClass(UIImageResource) {}
+export class MainUIImage extends defineLocalResourceClass(UIImageResource) {
+  declare source: MainImage;
+  declare alt: string;
+
+  domElement?: HTMLImageElement;
+}
 
 export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
   declare flexDirection: FlexDirection;
@@ -258,6 +263,7 @@ export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
 
 export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: MainUIFlex;
+  declare pixelDensity: number;
   declare width: number;
   declare height: number;
   declare needsRedraw: boolean;

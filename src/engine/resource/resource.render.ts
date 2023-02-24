@@ -626,7 +626,12 @@ export class RenderInteractable extends defineLocalResourceClass(InteractableRes
 
 export class RenderUIText extends defineLocalResourceClass(UITextResource) {}
 export class RenderUIButton extends defineLocalResourceClass(UIButtonResource) {}
-export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {}
+export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {
+  declare source: RenderImage;
+  declare alt: string;
+
+  domElement?: HTMLImageElement;
+}
 
 export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
   declare flexDirection: FlexDirection;
@@ -661,6 +666,7 @@ export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
 
 export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: RenderUIFlex;
+  declare pixelDensity: number;
   declare width: number;
   declare height: number;
   declare needsRedraw: boolean;

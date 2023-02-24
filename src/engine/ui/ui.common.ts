@@ -1,8 +1,40 @@
+import { vec3 } from "gl-matrix";
+
+import { RenderUIFlex } from "../resource/resource.render";
+
 export enum WebSGUIMessage {
-  DoneDrawing = "done-drawing",
+  DoneDrawing = "websgui-done-drawing",
+  ButtonPress = "websgui-button-press",
+  CanvasInteraction = "websgui-canvas-interaction",
 }
 
-export interface DoneDrawingUIMessage {
+export interface UIDoneDrawingMessage {
   type: WebSGUIMessage.DoneDrawing;
-  eid: number;
+  uiCanvasEid: number;
+}
+
+export interface UICanvasInteractionMessage {
+  type: WebSGUIMessage.CanvasInteraction;
+  uiCanvasEid: number;
+  hitPoint: vec3;
+}
+
+export interface UIButtonPressMessage {
+  type: WebSGUIMessage.ButtonPress;
+  buttonEid: number;
+}
+
+export function traverseChildren(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
+  let curChild = node.firstChild;
+  let i = 0;
+
+  while (curChild) {
+    const continueTraversal = callback(curChild, i++) !== false;
+    if (continueTraversal) {
+      traverseChildren(curChild, callback);
+      curChild = curChild.nextSibling;
+    } else {
+      return;
+    }
+  }
 }

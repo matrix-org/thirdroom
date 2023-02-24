@@ -158,10 +158,11 @@ export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
   declare image: RemoteUIImage;
 }
 export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
-  declare firstChild: RemoteUIFlex;
-
+  declare root: RemoteUIFlex;
+  declare pixelDensity: number;
   declare width: number;
   declare height: number;
+  declare needsRedraw: boolean;
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;

@@ -34,9 +34,11 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physi
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
+  getObjectPublicRoot,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteInteractable,
   RemoteNode,
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
@@ -52,6 +54,7 @@ import {
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
+import { UICanvasInteractionMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -306,8 +309,6 @@ export function InteractionSystem(ctx: GameState) {
 
     if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
       addInteractableComponent(ctx, physics, remoteNode, interactable.type);
-    } else if (!interactable && hasInteractable && Interactable.type[eid] === InteractableType.Interactable) {
-      removeInteractableComponent(ctx, physics, remoteNode);
     }
   }
 
@@ -561,15 +562,17 @@ function updateGrabThrow(
           }
         } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
           playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
-          const interactable = remoteNode?.interactable;
+          const interactable = node.interactable;
 
           if (interactable) {
             interactable.pressed = true;
             interactable.released = false;
             interactable.held = true;
           }
+
+          updateNodeCanvasUI(ctx, shapecastHit, node);
         } else {
           if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
@@ -637,6 +640,23 @@ function updateGrabThrow(
   }
 }
 
+function updateNodeCanvasUI(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
+  const uiCanvas = getObjectPublicRoot(node).uiCanvas;
+  if (uiCanvas) {
+    const { x, y, z } = shapecastHit.witness1;
+
+    // convert to local space
+    const hitPoint = vec3.clone([x, y, z]);
+    vec3.sub(hitPoint, hitPoint, node.position);
+
+    ctx.sendMessage<UICanvasInteractionMessage>(Thread.Render, {
+      type: WebSGUIMessage.CanvasInteraction,
+      hitPoint,
+      uiCanvasEid: uiCanvas.eid,
+    });
+  }
+}
+
 function updateGrabThrowXR(
   ctx: GameState,
   interaction: InteractionModuleState,
@@ -674,16 +694,17 @@ function updateGrabThrowXR(
   );
 
   if (shapecastHit === null) {
+    grabbingNode.visible = true;
     return;
   }
 
   let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
 
   if (!focusedEntity) {
+    grabbingNode.visible = true;
     return;
   }
 
-  // TODO: use dominant hand
   const triggerState = controller.actionStates.get(
     hand === "right" ? "primaryTrigger" : "secondaryTrigger"
   ) as ButtonActionState;
@@ -692,45 +713,47 @@ function updateGrabThrowXR(
     hand === "right" ? "primarySqueeze" : "secondarySqueeze"
   ) as ButtonActionState;
 
-  if (focusedEntity && (triggerState.pressed || squeezeState.held)) {
-    const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
+  if (triggerState.pressed || squeezeState.held) {
+    let focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
-    if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
-      if (squeezeState.held && Interactable.type[node.eid] === InteractableType.Grabbable) {
+    if (shapecastHit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
+      if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
         const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
+          // TODO: websgui
           // ctx.sendMessage(Thread.Main, {
           //   type: ObjectCapReachedMessageType,
           // });
         } else {
           // otherwise attempt to take ownership
-          const newEid = takeOwnership(ctx, network, node);
+          const newEid = takeOwnership(ctx, network, focusedNode);
 
           if (newEid !== NOOP) {
-            // addComponent(ctx.world, GrabComponent, rig.eid);
-            // GrabComponent.grabbedEntity[rig.eid] = newEid;
             focusedEntity = newEid;
+            // TODO: websgui
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
           } else {
-            // addComponent(ctx.world, GrabComponent, rig.eid);
-            // GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
+            // TODO: websgui
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
           }
         }
-      } else if (triggerState.pressed && Interactable.type[node.eid] === InteractableType.Interactable) {
+      } else if (triggerState.pressed && Interactable.type[focusedNode.eid] === InteractableType.Interactable) {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
-        const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
-        const interactable = remoteNode?.interactable;
+        const node = tryGetRemoteResource<RemoteNode>(ctx, focusedNode.eid);
+        const interactable = node.interactable;
 
         if (interactable) {
           interactable.pressed = true;
           interactable.released = false;
           interactable.held = true;
         }
+
+        updateNodeCanvasUI(ctx, shapecastHit, node);
       } else {
-        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+        // TODO: websgui
+        // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
     }
 
@@ -738,9 +761,9 @@ function updateGrabThrowXR(
       return;
     }
 
-    // grabbingNode.visible = false;
+    grabbingNode.visible = false;
 
-    const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
+    focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
 
     const focusedPosition = focusedNode.position;
 
@@ -765,7 +788,7 @@ function updateGrabThrowXR(
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
   } else {
-    // grabbingNode.visible = true;
+    grabbingNode.visible = true;
   }
 }
 
@@ -825,6 +848,8 @@ export function addInteractableComponent(
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
   Interactable.interactionDistance[eid] = interactableType === InteractableType.Interactable ? 10 : 1;
+
+  node.interactable = new RemoteInteractable(ctx.resourceManager, { type: interactableType });
 
   const rigidBody = RigidBody.store.get(eid);
   if (!rigidBody) {

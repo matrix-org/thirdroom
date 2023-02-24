@@ -53,7 +53,7 @@ import { SetWebXRReferenceSpaceSystem, WebXRAvatarRigSystem } from "./input/WebX
 import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem";
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
-import { WebSGUIModule } from "./ui/ui.game";
+import { ResetUIButtonInteractables, WebSGUIModule } from "./ui/ui.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -109,6 +109,8 @@ export default defineConfig<GameState>({
     NetworkInterpolationSystem,
 
     ScriptingSystem,
+
+    ResetUIButtonInteractables,
 
     AnimationSystem,
 

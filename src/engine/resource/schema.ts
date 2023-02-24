@@ -441,11 +441,12 @@ export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
 
 export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
   label: PropType.string({ script: true }),
+  interactable: PropType.ref(InteractableResource, { script: true }),
 });
 
 export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, {
   source: PropType.ref(ImageResource, { script: true }),
-  alt: PropType.string({ script: true }),
+  alt: PropType.string({ script: true, required: false }),
 });
 
 export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
@@ -484,6 +485,8 @@ export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
 
 export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanvas, {
   root: PropType.ref(UIFlexResource),
+
+  pixelDensity: PropType.f32({ script: true, mutable: true }),
 
   width: PropType.f32({ script: true, mutable: true }),
   height: PropType.f32({ script: true, mutable: true }),
