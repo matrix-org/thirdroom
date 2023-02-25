@@ -40,6 +40,7 @@ import {
   RemoteAudioSource,
   RemoteInteractable,
   RemoteNode,
+  RemoteUIButton,
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
@@ -291,27 +292,12 @@ const _r = new Vector4();
 const zero = new Vector3();
 
 const remoteNodeQuery = defineQuery([RemoteNode]);
+
+const remoteUIButtonQuery = defineQuery([RemoteUIButton]);
+
 const interactableQuery = defineQuery([Interactable]);
 
-export function InteractionSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-  const interaction = getModule(ctx, InteractionModule);
-
-  const remoteNodeEntities = remoteNodeQuery(ctx.world);
-
-  for (let i = 0; i < remoteNodeEntities.length; i++) {
-    const eid = remoteNodeEntities[i];
-    const remoteNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const interactable = remoteNode.interactable;
-    const hasInteractable = hasComponent(ctx.world, Interactable, eid);
-
-    if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
-      addInteractableComponent(ctx, physics, remoteNode, interactable.type);
-    }
-  }
-
+export function ResetInteractablesSystem(ctx: GameState) {
   const interactableEntities = interactableQuery(ctx.world);
 
   for (let i = 0; i < interactableEntities.length; i++) {
@@ -321,13 +307,42 @@ export function InteractionSystem(ctx: GameState) {
       continue;
     }
 
-    const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
+    const remoteNode = getRemoteResource<RemoteNode | RemoteUIButton>(ctx, eid);
     const interactable = remoteNode?.interactable;
 
     if (interactable) {
       interactable.pressed = false;
       interactable.released = false;
     }
+  }
+}
+
+function addInteractableForScripts(ctx: GameState, physics: PhysicsModuleState, ents: number[], i: number) {
+  const eid = ents[i];
+  const remoteNode = tryGetRemoteResource<RemoteNode | RemoteUIButton>(ctx, eid);
+  const interactable = remoteNode.interactable;
+  const hasInteractable = hasComponent(ctx.world, Interactable, eid);
+
+  if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
+    addInteractableComponent(ctx, physics, remoteNode, interactable.type);
+  }
+}
+
+export function InteractionSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+  const physics = getModule(ctx, PhysicsModule);
+  const input = getModule(ctx, InputModule);
+  const interaction = getModule(ctx, InteractionModule);
+
+  // scripts add InteractableResource to a node, add the interactable component
+  // TODO: replace with addInteractable via WebSG API
+  const remoteNodeEntities = remoteNodeQuery(ctx.world);
+  for (let i = 0; i < remoteNodeEntities.length; i++) {
+    addInteractableForScripts(ctx, physics, remoteNodeEntities, i);
+  }
+  const remoteUIBtnEntities = remoteUIButtonQuery(ctx.world);
+  for (let i = 0; i < remoteUIBtnEntities.length; i++) {
+    addInteractableForScripts(ctx, physics, remoteUIBtnEntities, i);
   }
 
   const rigs = inputControllerQuery(ctx.world);
@@ -841,7 +856,7 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
 export function addInteractableComponent(
   ctx: GameState,
   physics: PhysicsModuleState,
-  node: RemoteNode,
+  node: RemoteNode | RemoteUIButton,
   interactableType: InteractableType
 ) {
   const eid = node.eid;

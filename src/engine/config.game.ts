@@ -38,7 +38,11 @@ import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/Fl
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
-import { InteractionModule, InteractionSystem } from "../plugins/interaction/interaction.game";
+import {
+  InteractionModule,
+  InteractionSystem,
+  ResetInteractablesSystem,
+} from "../plugins/interaction/interaction.game";
 import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
@@ -53,7 +57,7 @@ import { SetWebXRReferenceSpaceSystem, WebXRAvatarRigSystem } from "./input/WebX
 import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem";
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
-import { ResetUIButtonInteractables, WebSGUIModule } from "./ui/ui.game";
+import { WebSGUIModule } from "./ui/ui.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -110,8 +114,6 @@ export default defineConfig<GameState>({
 
     ScriptingSystem,
 
-    ResetUIButtonInteractables,
-
     AnimationSystem,
 
     UpdateMatrixWorldSystem,
@@ -129,6 +131,7 @@ export default defineConfig<GameState>({
     GLTFResourceDisposalSystem,
 
     ActionMapHistorianSystem, // Store this frame's player input and the state it resulted in
+    ResetInteractablesSystem,
     ResetInputSystem,
     GameWorkerStatsSystem,
 
