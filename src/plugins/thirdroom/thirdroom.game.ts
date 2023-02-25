@@ -82,9 +82,6 @@ import {
   getObjectPrivateRoot,
   RemoteObject,
   RemoteMaterial,
-  RemoteUICanvas,
-  RemoteUIButton,
-  RemoteUIText,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
@@ -97,7 +94,6 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../eng
 import { XRMode } from "../../engine/renderer/renderer.common";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
-import { createDemoUI } from "../../engine/ui/ui.game";
 
 type ThirdRoomModuleState = {};
 
@@ -409,10 +405,6 @@ function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
   }
 }
 
-let uiCanvas: RemoteUICanvas;
-let button: RemoteUIButton;
-let text: RemoteUIText;
-
 // when we join the world
 async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   try {
@@ -425,8 +417,6 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
     await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
 
     await waitForCurrentSceneToRender(ctx, 10);
-
-    [uiCanvas, button, text] = await createDemoUI(ctx);
 
     ctx.sendMessage<EnteredWorldMessage>(Thread.Main, {
       type: ThirdRoomMessageType.EnteredWorld,
@@ -757,20 +747,11 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-let x = 0;
 export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 
   const rigs = inputControllerQuery(ctx.world);
-
-  if (uiCanvas && button && text) {
-    if (button.interactable!.pressed) {
-      x++;
-      text.value = `button pressed ${x} times`;
-      uiCanvas.redraw += 1;
-    }
-  }
 
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
