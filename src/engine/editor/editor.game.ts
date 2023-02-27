@@ -26,6 +26,7 @@ import {
   ToggleSelectedEntityMessage,
   SetPropertyMessage,
   SetRefPropertyMessage,
+  SetRefArrayPropertyMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -84,7 +85,8 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
       registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
       registerMessageHandler(ctx, EditorMessageType.SetProperty, onSetProperty),
-      registerMessageHandler(ctx, EditorMessageType.SetTextureProperty, onSetRefProperty),
+      registerMessageHandler(ctx, EditorMessageType.SetRefProperty, onSetRefProperty),
+      registerMessageHandler(ctx, EditorMessageType.SetRefArrayProperty, onSetRefArrayProperty),
     ]);
   },
 });
@@ -196,6 +198,17 @@ function onSetRefProperty(ctx: GameState, message: SetRefPropertyMessage) {
     return;
   }
   (resource as any)[propName] = ref;
+}
+
+function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessage) {
+  const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
+  const refArray = message.refEids.map((eid) => getRemoteResource<RemoteResourceTypes>(ctx, eid));
+  const propName = message.propName;
+
+  if (!resource || typeof resource !== "object" || !("resourceType" in resource) || !(propName in resource)) {
+    return;
+  }
+  (resource as any)[propName] = refArray;
 }
 
 /***********

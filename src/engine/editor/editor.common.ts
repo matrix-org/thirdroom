@@ -41,7 +41,8 @@ export enum EditorMessageType {
   RenameEntity = "rename-entity",
   ReparentEntities = "reparent-entities",
   SetProperty = "set-property",
-  SetTextureProperty = "set-texture-property",
+  SetRefProperty = "set-ref-property",
+  SetRefArrayProperty = "set-ref-array-property",
 }
 
 export interface InitializeEditorStateMessage {
@@ -108,8 +109,14 @@ export interface SetPropertyMessage<T = unknown> {
   value: T;
 }
 export interface SetRefPropertyMessage {
-  type: EditorMessageType.SetTextureProperty;
+  type: EditorMessageType.SetRefProperty;
   eid: number;
   propName: string;
   refEid: number;
+}
+export interface SetRefArrayPropertyMessage {
+  type: EditorMessageType.SetRefArrayProperty;
+  eid: number;
+  propName: string;
+  refEids: number[];
 }

@@ -10,7 +10,7 @@ import { ColorInput } from "../../components/property-panel/ColorInput";
 import { Checkbox } from "../../../atoms/checkbox/Checkbox";
 import { getLocalResources, MainNode } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { setProperty, setRefProperty } from "../../../../engine/editor/editor.main";
+import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../engine/editor/editor.main";
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
@@ -29,6 +29,7 @@ import {
   convertRGBA,
 } from "../../../utils/common";
 import { IconButton } from "../../../atoms/button/IconButton";
+import { MultiSelectInput } from "../../components/property-panel/MultiSelectInput";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -40,6 +41,11 @@ function getQuaternionRotation(rotation: Float32Array) {
   setQuaternionFromEuler(quat, rotation);
   return quat;
 }
+
+const resourceToOption = (res: MainNode) => ({
+  value: res,
+  label: "name" in res ? res.name : "Unnamed",
+});
 
 interface PropertyContainerProps {
   className?: string;
@@ -210,10 +216,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (Array.isArray(value) || ArrayBuffer.isView(value) || typeof value !== "object") return null;
 
-      const options = (getLocalResources(ctx, value.resourceDef) as typeof value[]).map((res) => ({
-        value: res,
-        label: "name" in res ? res.name : "Unnamed",
-      }));
+      const options = (getLocalResources(ctx, value.resourceDef) as MainNode[]).map(resourceToOption);
       return (
         <PropertyContainer key={propName} name={propName}>
           <SelectInput
@@ -223,6 +226,34 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
             value={value}
             onChange={(changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
             options={options}
+            disabled={!propDef.mutable}
+          />
+        </PropertyContainer>
+      );
+    },
+    refArray: (propName, propDef, goToRef) => {
+      const value = resource[propName];
+      if (typeof propDef.resourceDef !== "object") return null;
+      if (!Array.isArray(value)) return null;
+
+      const selected = value.map(resourceToOption);
+      const options = (getLocalResources(ctx, propDef.resourceDef) as MainNode[]).map(resourceToOption);
+
+      return (
+        <PropertyContainer key={propName} name={propName}>
+          <MultiSelectInput
+            options={options}
+            selected={selected}
+            onSelectedChange={(changed) =>
+              setRefArrayProperty(
+                ctx,
+                resource.eid,
+                propName,
+                changed.map((op) => op.value.eid)
+              )
+            }
+            onSelectedOptionClick={(option) => goToRef(option.value.eid)}
+            disabled={!propDef.mutable}
           />
         </PropertyContainer>
       );
