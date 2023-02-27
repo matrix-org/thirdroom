@@ -30,6 +30,7 @@ import {
 } from "../../../utils/common";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { MultiSelectInput } from "../../components/property-panel/MultiSelectInput";
+import { NumericInput } from "../../../atoms/input/NumericInput";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -182,17 +183,38 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       if (typeof value !== "number") return null;
       return (
         <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={value} disabled outlined readOnly />
+          <NumericInput
+            type="u32"
+            inputSize="sm"
+            min={0}
+            // TODO: what is max={} for bitmask input?
+            value={value}
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+            outlined
+          />
         </PropertyContainer>
       );
     },
     enum: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "number") return null;
-      const enumType = propDef.enumType;
+      const enumType = propDef.enumType as Record<string, string>;
+      const options = Object.keys(enumType)
+        .filter((key) => !isNaN(parseInt(key)))
+        .map((item) => ({
+          label: enumType[item],
+          value: parseInt(item),
+        }));
+
       return (
         <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={(enumType as any)?.[value] ?? value} disabled outlined readOnly />
+          <SelectInput
+            value={value}
+            options={options}
+            onChange={(value) => setProp(propName, value)}
+            disabled={!propDef.mutable}
+          />
         </PropertyContainer>
       );
     },
