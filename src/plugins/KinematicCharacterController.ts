@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
+import { addComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 import { vec3 } from "gl-matrix";
@@ -21,6 +21,7 @@ import randomRange from "../engine/utils/randomRange";
 import { OurPlayer } from "../engine/component/Player";
 import { createClientPositionMessage } from "../engine/network/serialization.game";
 import { sendReliable } from "../engine/network/outbound.game";
+import { KinematicControls } from "./KinematicControls";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -117,7 +118,6 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
   },
 });
 
-export const KinematicControls = defineComponent();
 // TODO: remove owned for CSP
 export const kinematicControlsQuery = defineQuery([KinematicControls, Owned]);
 export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);

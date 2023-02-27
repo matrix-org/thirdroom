@@ -3,7 +3,6 @@ import { mat4, quat, vec3 } from "gl-matrix";
 
 import { FlyControls } from "../../plugins/FlyCharacterController";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
-import { KinematicControls } from "../../plugins/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState, World } from "../GameTypes";
@@ -25,6 +24,7 @@ import { createInformXRMode } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
 import { AvatarComponent } from "../../plugins/avatars/components";
+import { KinematicControls } from "../../plugins/KinematicControls";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;

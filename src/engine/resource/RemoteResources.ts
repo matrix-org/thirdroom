@@ -34,6 +34,8 @@ import {
   AnimationSamplerResource,
   WorldResource,
   EnvironmentResource,
+  ColliderResource,
+  PhysicsBodyResource,
 } from "./schema";
 
 export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
@@ -122,6 +124,12 @@ export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
 
 export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
 
+export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) {
+  declare mesh: RemoteMesh | undefined;
+}
+
+export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyResource) {}
+
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare parentScene: RemoteScene | undefined;
   declare parent: RemoteNode | undefined;
@@ -139,6 +147,8 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+  declare collider: RemoteCollider | undefined;
+  declare physicsBody: RemotePhysicsBody | undefined;
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {

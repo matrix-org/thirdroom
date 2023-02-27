@@ -17,6 +17,7 @@ import {
   BufferResource,
   BufferViewResource,
   CameraResource,
+  ColliderResource,
   EnvironmentResource,
   ImageResource,
   InstancedMeshResource,
@@ -28,6 +29,7 @@ import {
   MeshResource,
   NametagResource,
   NodeResource,
+  PhysicsBodyResource,
   ReflectionProbeResource,
   ResourceType,
   SamplerResource,
@@ -215,6 +217,12 @@ export class MainSkin extends defineLocalResourceClass(SkinResource) {
 
 export class MainInteractable extends defineLocalResourceClass(InteractableResource) {}
 
+export class MainCollider extends defineLocalResourceClass(ColliderResource) {
+  declare mesh: MainMesh | undefined;
+}
+
+export class MainPhysicsBody extends defineLocalResourceClass(PhysicsBodyResource) {}
+
 export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare resourceType: ResourceType.Node;
   declare parentScene: MainScene | undefined;
@@ -233,6 +241,8 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare tilesRenderer: MainTilesRenderer | undefined;
   declare nametag: MainNametag | undefined;
   declare interactable: MainInteractable | undefined;
+  declare collider: MainCollider | undefined;
+  declare physicsBody: MainPhysicsBody | undefined;
   currentAudioEmitterResourceId = 0;
   emitterInputNode?: GainNode;
   emitterPannerNode?: PannerNode;
@@ -314,6 +324,8 @@ const {
   MainScene,
   MainMeshPrimitive,
   MainInteractable,
+  MainCollider,
+  MainPhysicsBody,
   MainAccessor,
   MainSparseAccessor,
   MainSkin,

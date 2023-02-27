@@ -16,6 +16,7 @@ typedef uint32_t buffer_id_t;
 typedef uint32_t material_id_t;
 typedef uint32_t texture_id_t;
 typedef uint32_t light_id_t;
+typedef uint32_t collider_id_t;
 
 // Environment
 
@@ -122,6 +123,9 @@ import_websg(node_set_mesh) int32_t websg_node_set_mesh(node_id_t node_id, mesh_
 
 import_websg(node_get_light) light_id_t websg_node_get_light(node_id_t node_id);
 import_websg(node_set_light) int32_t websg_node_set_light(node_id_t node_id, light_id_t light_id);
+
+import_websg(node_get_collider) collider_id_t websg_node_get_collider(node_id_t node_id);
+import_websg(node_set_collider) int32_t websg_node_set_collider(node_id_t node_id, collider_id_t collider_id);
 
 /**
  * Mesh
@@ -326,5 +330,50 @@ import_websg(get_interactable) int32_t websg_get_interactable(node_id_t node_id,
 import_websg(get_interactable_pressed) int32_t websg_get_interactable_pressed(node_id_t node_id);
 import_websg(get_interactable_held) int32_t websg_get_interactable_held(node_id_t node_id);
 import_websg(get_interactable_released) int32_t websg_get_interactable_released(node_id_t node_id);
+
+/**
+ * Collider
+ */
+
+typedef enum ColliderType {
+  ColliderType_Box,
+  ColliderType_Sphere,
+  ColliderType_Capsule,
+  ColliderType_Cylinder,
+  ColliderType_Hull,
+  ColliderType_Trimesh,
+} ColliderType;
+
+typedef struct ColliderProps {
+  ColliderType type;
+  uint32_t is_trigger;
+  float_t size[3];
+  float_t radius;
+  float_t height;
+  mesh_id_t mesh;
+} ColliderProps;
+
+import_websg(create_collider) collider_id_t websg_create_collider(ColliderProps *props);
+
+/**
+ * PhysicsBody
+ */
+
+typedef enum PhysicsBodyType {
+  PhysicsBodyType_Static,
+  PhysicsBodyType_Kinematic,
+  PhysicsBodyType_Rigid,
+} PhysicsBodyType;
+
+typedef struct PhysicsBodyProps {
+  PhysicsBodyType type;
+  float_t linear_velocity[3];
+  float_t angular_velocity[3];
+  float_t inertia_tensor[9];
+} PhysicsBodyProps;
+
+import_websg(add_physics_body) int32_t websg_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
+import_websg(remove_physics_body) int32_t websg_remove_physics_body(node_id_t node_id);
+import_websg(has_physics_body) int32_t websg_has_physics_body(node_id_t node_id);
 
 #endif

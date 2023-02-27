@@ -1,4 +1,4 @@
-import { mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
+import { mat3, mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
 
 import { TripleBuffer } from "../allocator/TripleBuffer";
 import { TypedArrayConstructor32 } from "../utils/typedarray";
@@ -244,6 +244,20 @@ function createQuatPropDef<O extends VectorPropOptions>(options?: O) {
   );
 }
 
+function createMat3PropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "mat3",
+      arrayType: Float32Array,
+      size: 9,
+      mutable: true,
+      required: false,
+      default: mat3.create() as ArrayLike<number>,
+    },
+    options
+  );
+}
+
 function createMat4PropDef<O extends VectorPropOptions>(options?: O) {
   return createPropDef(
     {
@@ -386,6 +400,7 @@ export const PropType = {
   rgb: createRGBPropDef,
   rgba: createRGBAPropDef,
   quat: createQuatPropDef,
+  mat3: createMat3PropDef,
   mat4: createMat4PropDef,
   bitmask: createBitmaskPropDef,
   enum: createEnumPropDef,
@@ -451,6 +466,8 @@ type LocalResourcePropValue<
   ? SharedArrayBuffer
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
+  : Def["schema"][Prop]["type"] extends "mat3"
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "mat4"
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "f32"

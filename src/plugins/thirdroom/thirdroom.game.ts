@@ -57,7 +57,7 @@ import {
 } from "../../engine/resource/schema";
 import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_OFFSET } from "../avatars/common";
-import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
+import { addKinematicControls } from "../KinematicCharacterController";
 import {
   ResourceModule,
   getRemoteResource,
@@ -94,6 +94,7 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../eng
 import { XRMode } from "../../engine/renderer/renderer.common";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
+import { KinematicControls } from "../KinematicControls";
 
 type ThirdRoomModuleState = {};
 

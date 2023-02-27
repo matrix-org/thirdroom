@@ -1,3 +1,6 @@
+import { hasComponent } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
+
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
 import { getRemoteResources } from "../resource/resource.game";
@@ -13,6 +16,7 @@ import {
   RemoteAccessor,
   RemoteBuffer,
   RemoteBufferView,
+  RemoteCollider,
   RemoteInteractable,
   RemoteLight,
   RemoteMaterial,
@@ -26,15 +30,25 @@ import { addChild, removeChild } from "../component/transform";
 import {
   AccessorComponentType,
   AccessorType,
+  ColliderType,
   InteractableType,
   LightType,
   MaterialType,
   MeshPrimitiveAttributeIndex,
   MeshPrimitiveMode,
+  PhysicsBodyType,
   ResourceType,
 } from "../resource/schema";
-import { moveCursorView, readUint32, writeUint32 } from "../allocator/CursorView";
+import { moveCursorView, readFloat32, readFloat32Array, readUint32, writeUint32 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
+import {
+  addRigidBody,
+  createNodeColliderDesc,
+  PhysicsModule,
+  removeRigidBody,
+  RigidBody,
+} from "../physics/physics.game";
+import { getModule } from "../module/module.common";
 
 function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -579,6 +593,32 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    node_get_collider(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return 0; // This function returns a u32 so errors returned as 0
+      }
+
+      return getScriptResourceRef(wasmCtx, RemoteCollider, node.collider);
+    },
+    node_set_collider(nodeId: number, colliderId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      const collider = getScriptResource(wasmCtx, RemoteCollider, colliderId);
+
+      if (!collider) {
+        return -1;
+      }
+
+      node.collider = collider;
+
+      return 0;
+    },
     create_mesh(primitivesPtr: number, primitiveCount: number) {
       try {
         const primitiveProps: MeshPrimitiveProps[] = [];
@@ -1088,6 +1128,121 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       return interactable.released ? 1 : 0;
+    },
+    create_collider(colliderPropsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, colliderPropsPtr);
+
+      const type = readUint32(wasmCtx.cursorView);
+
+      if (ColliderType[type] === undefined) {
+        console.error(`WebSG: invalid collider type: ${type}`);
+        return -1;
+      }
+
+      // TODO: Add more checks for valid props per type
+      const isTrigger = !!readUint32(wasmCtx.cursorView);
+      const size = readFloat32Array(wasmCtx.cursorView, 3);
+      const radius = readFloat32(wasmCtx.cursorView);
+      const height = readFloat32(wasmCtx.cursorView);
+      const meshId = readUint32(wasmCtx.cursorView);
+      const mesh = meshId ? getScriptResource(wasmCtx, RemoteMesh, meshId) : undefined;
+
+      const collider = new RemoteCollider(wasmCtx.resourceManager, {
+        type,
+        isTrigger,
+        size,
+        radius,
+        height,
+        mesh,
+      });
+
+      return collider.eid;
+    },
+    add_physics_body(nodeId: number, propsPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      if (hasComponent(ctx.world, RigidBody, node.eid)) {
+        console.error("WebSG: node already has a rigid body.");
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+
+      const type = readUint32(wasmCtx.cursorView);
+
+      if (PhysicsBodyType[type] === undefined) {
+        console.error(`WebSG: invalid physics body type: ${type}`);
+        return -1;
+      }
+
+      let rigidBodyDesc: RAPIER.RigidBodyDesc;
+      let meshResource: RemoteMesh | undefined;
+      let primitiveResource: RemoteMeshPrimitive | undefined;
+
+      if (type === PhysicsBodyType.Rigid) {
+        rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
+      } else if (type === PhysicsBodyType.Kinematic) {
+        rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+      } else {
+        rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+      }
+
+      rigidBodyDesc.linvel.x = readFloat32(wasmCtx.cursorView);
+      rigidBodyDesc.linvel.y = readFloat32(wasmCtx.cursorView);
+      rigidBodyDesc.linvel.z = readFloat32(wasmCtx.cursorView);
+
+      rigidBodyDesc.angvel.x = readFloat32(wasmCtx.cursorView);
+      rigidBodyDesc.angvel.y = readFloat32(wasmCtx.cursorView);
+      rigidBodyDesc.angvel.z = readFloat32(wasmCtx.cursorView);
+
+      // const inertiaTensor = readFloat32Array(wasmCtx.cursorView, 9);
+
+      const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+      const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+      const nodeColliderDesc = createNodeColliderDesc(node);
+
+      if (nodeColliderDesc) {
+        physicsWorld.createCollider(nodeColliderDesc, rigidBody);
+      }
+
+      let curChild = node.firstChild;
+
+      while (curChild) {
+        if (!hasComponent(ctx.world, RigidBody, curChild.eid)) {
+          const childColliderDesc = createNodeColliderDesc(curChild);
+
+          if (childColliderDesc) {
+            physicsWorld.createCollider(childColliderDesc, rigidBody);
+          }
+        }
+
+        curChild = curChild.nextSibling;
+      }
+
+      addRigidBody(ctx, node, rigidBody, meshResource, primitiveResource);
+
+      return 0;
+    },
+    remove_physics_body(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      removeRigidBody(ctx.world, node.eid);
+
+      return 0;
+    },
+    has_physics_body(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
     },
   };
 }
