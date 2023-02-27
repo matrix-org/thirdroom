@@ -221,7 +221,10 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         <PropertyContainer key={propName} name={propName}>
           <SelectInput
             before={
-              <IconButton size="sm" iconSrc={CircleIC} label="Select Resource" onClick={() => goToRef(value.eid)} />
+              <>
+                <IconButton size="sm" iconSrc={CircleIC} label="Select Resource" onClick={() => goToRef(value.eid)} />
+                <div className="PropertiesPanel__input-divider" />
+              </>
             }
             value={value}
             onChange={(changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
