@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler } from "react";
+import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler, useRef } from "react";
 import classNames from "classnames";
 
 import "./PropertiesPanel.css";
@@ -242,6 +242,11 @@ const StringProperty = memo<
   BasePropertyProps<string, ResourcePropDef<"string", string, true, false, unknown, unknown>>
 >(
   ({ propName, value, setProp, propDef }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    if (inputRef.current && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
+
     const handleBlur: FocusEventHandler<HTMLInputElement> = (evt) => {
       const newValue = evt.currentTarget.value.trim();
       if (newValue !== "" && value !== newValue) {
@@ -261,6 +266,7 @@ const StringProperty = memo<
     return (
       <PropertyContainer key={propName} name={propName}>
         <Input
+          ref={inputRef}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           inputSize="sm"
