@@ -165,7 +165,14 @@ typedef struct MeshPrimitiveProps {
   MeshPrimitiveAttributeItem *attributes;
 } MeshPrimitiveProps;
 
+typedef struct BoxMeshProps {
+  float_t size[3];
+  uint32_t segments[3];
+  material_id_t material;
+} BoxMeshProps;
+
 import_websg(create_mesh) mesh_id_t websg_create_mesh(MeshPrimitiveProps *primitives, uint32_t count);
+import_websg(create_box_mesh) mesh_id_t websg_create_box_mesh(BoxMeshProps *props);
 import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(const char *name, uint32_t length);
 // Returns the number of mesh primitives or -1 if error
 import_websg(mesh_get_primitive_count) int32_t websg_mesh_get_primitive_count(mesh_id_t mesh_id);

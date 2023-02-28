@@ -1,5 +1,6 @@
 import { hasComponent } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
+import { BoxGeometry } from "three";
 
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
@@ -39,7 +40,14 @@ import {
   PhysicsBodyType,
   ResourceType,
 } from "../resource/schema";
-import { moveCursorView, readFloat32, readFloat32Array, readUint32, writeUint32 } from "../allocator/CursorView";
+import {
+  moveCursorView,
+  readFloat32,
+  readFloat32Array,
+  readUint32,
+  readUint32Array,
+  writeUint32,
+} from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
 import {
   addRigidBody,
@@ -49,6 +57,7 @@ import {
   RigidBody,
 } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
+import { createMesh } from "../mesh/mesh.game";
 
 function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -765,6 +774,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       meshPrimitive.drawCount = count;
 
       return 0;
+    },
+    create_box_mesh(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const size = readFloat32Array(wasmCtx.cursorView, Float32Array.BYTES_PER_ELEMENT * 3);
+      const segments = readUint32Array(wasmCtx.cursorView, Uint32Array.BYTES_PER_ELEMENT * 3);
+      const materialId = readUint32(wasmCtx.cursorView);
+
+      const geometry = new BoxGeometry(size[0], size[1], size[2], segments[0], segments[1], segments[2]);
+
+      let material: RemoteMaterial | undefined;
+
+      if (materialId) {
+        material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+        if (!material) {
+          return -1;
+        }
+      }
+
+      return createMesh(ctx, geometry, material, wasmCtx.resourceManager);
     },
     create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
       try {

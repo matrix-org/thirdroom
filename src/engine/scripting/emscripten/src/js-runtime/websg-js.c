@@ -974,6 +974,51 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
   return JS_NewUint32(ctx, mesh_id);
 }
 
+static JSValue js_create_box_mesh(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  BoxMeshProps *props = js_mallocz(ctx, sizeof(BoxMeshProps));
+
+  JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
+
+  if (!JS_IsUndefined(size_val)) {
+    float_t *size = get_typed_array_data(ctx, &size_val, sizeof(float_t) * 3);
+
+    if (size == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->size, size, sizeof(float_t) * 3);
+  }
+
+   JSValue segments_val = JS_GetPropertyStr(ctx, argv[0], "segments");
+
+  if (!JS_IsUndefined(segments_val)) {
+    float_t *segments = get_typed_array_data(ctx, &segments_val, sizeof(float_t) * 3);
+
+    if (segments == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->segments, segments, sizeof(float_t) * 3);
+  }
+
+  JSValue materialVal = JS_GetPropertyStr(ctx, argv[0], "material");
+
+  if (!JS_IsUndefined(materialVal)) {
+    if (JS_ToUint32(ctx, &props->material, materialVal) == -1) {
+      return JS_EXCEPTION;
+    }
+  }
+
+  mesh_id_t mesh_id = websg_create_box_mesh(props);
+
+  if (mesh_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create box mesh.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewUint32(ctx, mesh_id);
+}
+
 static JSValue js_mesh_find_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 
   size_t length;
@@ -2330,6 +2375,12 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "createMesh",
     JS_NewCFunction(ctx, js_create_mesh, "createMesh", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "createBoxMesh",
+    JS_NewCFunction(ctx, js_create_box_mesh, "createBoxMesh", 1)
   );
   JS_SetPropertyStr(
     ctx,

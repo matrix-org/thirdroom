@@ -182,7 +182,7 @@ export function updateKinematicControls(
   body: RAPIER.RigidBody
 ) {
   _q.fromArray(rig.quaternion);
-  body.setNextKinematicRotation(_q);
+  //body.setNextKinematicRotation(_q);
 
   const characterController = eidTocharacterController.get(rig.eid)!;
 
@@ -277,7 +277,7 @@ export function updateKinematicControls(
   translation.y += corrected.y;
   translation.z += corrected.z;
 
-  body.setNextKinematicTranslation(translation);
+  vec3.set(rig.position, translation.x, translation.y, translation.z);
 
   // TODO: computed collisions are bugged, too many are generated, causes hitching
   // for (let i = 0; i < characterController.numComputedCollisions(); i++) {

@@ -334,6 +334,16 @@ export const readUint32 = (v: CursorView) => {
   return val;
 };
 
+export const readUint32Array = (v: CursorView, length: number) => {
+  if (!v.littleEndian) {
+    throw new Error("Cannot use readUint32Array with non little endian cursor view");
+  }
+
+  const arr = new Uint32Array(v.buffer, v.cursor, length);
+  v.cursor += arr.byteLength;
+  return arr;
+};
+
 export const readInt32 = (v: CursorView) => {
   const val = v.getInt32(v.cursor, v.littleEndian);
   v.cursor += Int32Array.BYTES_PER_ELEMENT;

@@ -24,7 +24,12 @@ import {
   MaterialAlphaMode,
 } from "../resource/schema";
 
-export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: RemoteMaterial): RemoteMesh => {
+export const createMesh = (
+  ctx: GameState,
+  geometry: BufferGeometry,
+  material?: RemoteMaterial,
+  resoureManager = ctx.resourceManager
+): RemoteMesh => {
   const indicesArr = geometry.index!.array as Uint16Array;
   const posArr = geometry.attributes.position.array as Float32Array;
   const normArr = geometry.attributes.normal.array as Float32Array;
@@ -48,24 +53,24 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
     byteLength: data.byteLength,
   });
 
-  const remoteMesh = new RemoteMesh(ctx.resourceManager, {
+  const remoteMesh = new RemoteMesh(resoureManager, {
     primitives: [
-      new RemoteMeshPrimitive(ctx.resourceManager, {
-        indices: new RemoteAccessor(ctx.resourceManager, {
+      new RemoteMeshPrimitive(resoureManager, {
+        indices: new RemoteAccessor(resoureManager, {
           type: AccessorType.SCALAR,
           componentType: AccessorComponentType.Uint16,
           bufferView,
           count: indices.length,
         }),
         attributes: {
-          [MeshPrimitiveAttributeIndex.POSITION]: new RemoteAccessor(ctx.resourceManager, {
+          [MeshPrimitiveAttributeIndex.POSITION]: new RemoteAccessor(resoureManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
             byteOffset: position.byteOffset,
             count: position.length / 3,
           }),
-          [MeshPrimitiveAttributeIndex.NORMAL]: new RemoteAccessor(ctx.resourceManager, {
+          [MeshPrimitiveAttributeIndex.NORMAL]: new RemoteAccessor(resoureManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -73,7 +78,7 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
             count: normal.length / 3,
             normalized: true,
           }),
-          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: new RemoteAccessor(ctx.resourceManager, {
+          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: new RemoteAccessor(resoureManager, {
             type: AccessorType.VEC2,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -81,14 +86,7 @@ export const createMesh = (ctx: GameState, geometry: BufferGeometry, material?: 
             count: uv.length / 2,
           }),
         },
-        material:
-          material ||
-          new RemoteMaterial(ctx.resourceManager, {
-            type: MaterialType.Standard,
-            baseColorFactor: [Math.random(), Math.random(), Math.random(), 1.0],
-            roughnessFactor: 0.8,
-            metallicFactor: 0.8,
-          }),
+        material,
       }),
     ],
   });
