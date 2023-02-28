@@ -88,3 +88,36 @@ export function linkifyText(body: string) {
   msgParts.push(document.createTextNode(bodyStr));
   return msgParts;
 }
+
+export function userToEngineChannel(channel: number): number {
+  return (1 / 255) * channel;
+}
+export function engineToUserChannel(channel: number): number {
+  return Math.round(channel * 255);
+}
+export function userToEngineAlpha(channel: number): number {
+  return (1 / 100) * channel;
+}
+export function engineToUserAlpha(channel: number): number {
+  return Math.round(channel * 100);
+}
+
+export function convertRGB(rgb: Float32Array, convertChannel?: (channel: number) => number): Float32Array {
+  return new Float32Array([
+    convertChannel?.(rgb[0]) ?? rgb[0],
+    convertChannel?.(rgb[1]) ?? rgb[1],
+    convertChannel?.(rgb[2]) ?? rgb[2],
+  ]);
+}
+export function convertRGBA(
+  rgba: Float32Array,
+  convertChannel?: (channel: number) => number,
+  convertAlpha?: (channel: number) => number
+): Float32Array {
+  return new Float32Array([
+    convertChannel?.(rgba[0]) ?? rgba[0],
+    convertChannel?.(rgba[1]) ?? rgba[1],
+    convertChannel?.(rgba[2]) ?? rgba[2],
+    convertAlpha?.(rgba[3]) ?? rgba[3],
+  ]);
+}

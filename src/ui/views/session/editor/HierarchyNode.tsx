@@ -97,5 +97,5 @@ export function HierarchyNodeContent({
 }
 
 export function HierarchyNodeLeafSpacer() {
-  return <span style={{ width: "var(--sp-sm)" }} />;
+  return <span className="shrink-0" style={{ width: "var(--sp-sm)" }} />;
 }

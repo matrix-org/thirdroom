@@ -27,6 +27,11 @@
   box-shadow: inset 0 0 0 1px var(--bg-surface-low);
   outline-offset: 1.5px;
 
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   & > span {
     display: inline-block;
     width: 100%;
@@ -39,4 +44,24 @@
   background-color: var(--bg-surface);
   border-radius: var(--br-md);
   box-shadow: var(--bs-dropdown);
+}
+
+.ColorInput {
+  & > * {
+    border-radius: 0;
+    border: 1px solid var(--bg-surface-border);
+    height: 30px;
+    box-shadow: none;
+
+    &:not(:last-child) {
+      border-right-width: 0;
+    }
+
+    &:first-child {
+      border-radius: var(--br-xxs) 0 0 var(--br-xxs);
+    }
+    &:last-child {
+      border-radius: 0 var(--br-xxs) var(--br-xxs) 0;
+    }
+  }
 }

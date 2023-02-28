@@ -129,6 +129,7 @@ export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) 
 }
 
 export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyResource) {}
+const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare parentScene: RemoteScene | undefined;
@@ -149,6 +150,14 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare interactable: RemoteInteractable | undefined;
   declare collider: RemoteCollider | undefined;
   declare physicsBody: RemotePhysicsBody | undefined;
+
+  get isStatic() {
+    return !this.manager.ctx.editorLoaded && this.u32View[NodeIsStaticOffset] === 1;
+  }
+
+  set isStatic(value: boolean) {
+    this.u32View[NodeIsStaticOffset] = value ? 1 : 0;
+  }
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {

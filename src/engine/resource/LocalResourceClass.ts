@@ -162,6 +162,7 @@ export function defineLocalResourceClass<
   });
 
   Object.defineProperties(LocalResourceClass.prototype, {
+    resourceDef: { value: resourceDef },
     load: {
       value() {
         return Promise.resolve();

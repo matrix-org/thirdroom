@@ -10,6 +10,7 @@ import ChevronBottomIC from "./../../../../../res/ic/chevron-bottom.svg";
 import ChevronTopIC from "./../../../../../res/ic/chevron-top.svg";
 import CrossIC from "./../../../../../res/ic/cross.svg";
 import "./ComboInput.css";
+import { Scroll } from "../../../atoms/scroll/Scroll";
 
 interface Option<T> {
   value: T;
@@ -124,16 +125,19 @@ export function MultiSelectInput<T>({ options, disabled, selected, onSelectedCha
         {...getInputProps(getDropdownProps({ preventKeyAction: isOpen }))}
       />
       <div className="ComboInput__menu" {...getMenuProps()}>
-        {isOpen &&
-          inputOptions.map((option, index) => (
-            <MenuItem
-              variant={index === highlightedIndex ? "primary" : "surface"}
-              key={option.label}
-              {...getItemProps({ index, item: option })}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
+        {isOpen && (
+          <Scroll className="ComboInput__menu-scroll">
+            {inputOptions.map((option, index) => (
+              <MenuItem
+                variant={index === highlightedIndex ? "primary" : "surface"}
+                key={option.label + index}
+                {...getItemProps({ index, item: option })}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </Scroll>
+        )}
       </div>
     </div>
   );

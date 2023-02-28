@@ -5,9 +5,10 @@ interface VectorInputProps {
   type: "vec2" | "vec3";
   value: Float32Array;
   onChange: (value: Float32Array) => void;
+  disabled?: boolean;
 }
 
-export function VectorInput({ value, type, onChange }: VectorInputProps) {
+export function VectorInput({ value, type, onChange, disabled }: VectorInputProps) {
   const [x = 0, y = 0, z = 0] = value;
 
   const handleChange = (x: number, y: number, z: number) => {
@@ -24,12 +25,14 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             X
           </Label>
         }
-        className="flex grow"
+        className="flex grow basis-0"
         type="f32"
         value={x}
         displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(value, y, z)}
+        outlined
+        disabled={disabled}
       />
       <NumericInput
         before={
@@ -37,12 +40,14 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
             Y
           </Label>
         }
-        className="flex grow"
+        className="flex grow basis-0"
         type="f32"
         value={y}
         displayPrecision={3}
         inputSize="sm"
         onChange={(value) => handleChange(x, value, z)}
+        outlined
+        disabled={disabled}
       />
       {type === "vec3" && (
         <>
@@ -52,12 +57,14 @@ export function VectorInput({ value, type, onChange }: VectorInputProps) {
                 Z
               </Label>
             }
-            className="flex grow"
+            className="flex grow basis-0"
             type="f32"
             value={z}
             displayPrecision={3}
             inputSize="sm"
             onChange={(value) => handleChange(x, y, value)}
+            outlined
+            disabled={disabled}
           />
         </>
       )}
