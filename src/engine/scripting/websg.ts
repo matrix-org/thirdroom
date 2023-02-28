@@ -777,13 +777,13 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
     create_box_mesh(propsPtr: number) {
       moveCursorView(wasmCtx.cursorView, propsPtr);
-      const size = readFloat32Array(wasmCtx.cursorView, Float32Array.BYTES_PER_ELEMENT * 3);
-      const segments = readUint32Array(wasmCtx.cursorView, Uint32Array.BYTES_PER_ELEMENT * 3);
+      const size = readFloat32Array(wasmCtx.cursorView, 3);
+      const segments = readUint32Array(wasmCtx.cursorView, 3);
       const materialId = readUint32(wasmCtx.cursorView);
 
       const geometry = new BoxGeometry(size[0], size[1], size[2], segments[0], segments[1], segments[2]);
 
-      let material: RemoteMaterial | undefined;
+      let material: RemoteMaterial | undefined = undefined;
 
       if (materialId) {
         material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
@@ -793,7 +793,9 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         }
       }
 
-      return createMesh(ctx, geometry, material, wasmCtx.resourceManager);
+      const mesh = createMesh(ctx, geometry, material, wasmCtx.resourceManager);
+
+      return mesh.eid;
     },
     create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
       try {

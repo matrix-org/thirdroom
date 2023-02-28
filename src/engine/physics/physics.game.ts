@@ -1,5 +1,14 @@
 import { vec3, mat4, quat } from "gl-matrix";
-import { defineComponent, defineQuery, addComponent, removeComponent, enterQuery, exitQuery, Types } from "bitecs";
+import {
+  defineComponent,
+  defineQuery,
+  addComponent,
+  removeComponent,
+  enterQuery,
+  exitQuery,
+  Types,
+  hasComponent,
+} from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
@@ -12,6 +21,7 @@ import { maxEntities } from "../config.common";
 import { ColliderType, MeshPrimitiveAttributeIndex } from "../resource/schema";
 import { getAccessorArrayView } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
+import { Player } from "../component/Player";
 
 export interface PhysicsModuleState {
   physicsWorld: RAPIER.World;
@@ -179,9 +189,11 @@ export function PhysicsSystem(ctx: GameState) {
       velocity[2] = linvel.z;
     }
 
-    if (bodyType === RAPIER.RigidBodyType.Dynamic) {
+    const isPlayer = hasComponent(ctx.world, Player, eid);
+
+    if (bodyType === RAPIER.RigidBodyType.Dynamic || isPlayer) {
       applyRigidBodyToTransform(body, node);
-    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased) {
+    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer) {
       updateMatrixWorld(node);
 
       mat4.getRotation(_worldQuat, node.worldMatrix);

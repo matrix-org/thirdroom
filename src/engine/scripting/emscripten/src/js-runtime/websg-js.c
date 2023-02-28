@@ -992,13 +992,13 @@ static JSValue js_create_box_mesh(JSContext *ctx, JSValueConst this_val, int arg
    JSValue segments_val = JS_GetPropertyStr(ctx, argv[0], "segments");
 
   if (!JS_IsUndefined(segments_val)) {
-    float_t *segments = get_typed_array_data(ctx, &segments_val, sizeof(float_t) * 3);
+    uint32_t *segments = get_typed_array_data(ctx, &segments_val, sizeof(uint32_t) * 3);
 
     if (segments == NULL) {
       return JS_EXCEPTION;
     }
 
-    memcpy(props->segments, segments, sizeof(float_t) * 3);
+    memcpy(props->segments, segments, sizeof(uint32_t) * 3);
   }
 
   JSValue materialVal = JS_GetPropertyStr(ctx, argv[0], "material");
@@ -2477,6 +2477,11 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
 
   standard = JS_NewAtom(ctx, "standard");
   unlit = JS_NewAtom(ctx, "unlit");
+
+  JSValue material_type = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, material_type, "Standard", JS_AtomToValue(ctx, standard));
+  JS_SetPropertyStr(ctx, material_type, "Unlit", JS_AtomToValue(ctx, unlit));
+  JS_SetPropertyStr(ctx, websg, "MaterialType", material_type);
 
   JS_SetPropertyStr(
     ctx,

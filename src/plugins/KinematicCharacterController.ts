@@ -1,4 +1,4 @@
-import { addComponent, defineQuery, enterQuery, Not } from "bitecs";
+import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 import { vec3 } from "gl-matrix";
@@ -21,7 +21,6 @@ import randomRange from "../engine/utils/randomRange";
 import { OurPlayer } from "../engine/component/Player";
 import { createClientPositionMessage } from "../engine/network/serialization.game";
 import { sendReliable } from "../engine/network/outbound.game";
-import { KinematicControls } from "./KinematicControls";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -118,6 +117,7 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
   },
 });
 
+export const KinematicControls = defineComponent();
 // TODO: remove owned for CSP
 export const kinematicControlsQuery = defineQuery([KinematicControls, Owned]);
 export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
@@ -182,7 +182,7 @@ export function updateKinematicControls(
   body: RAPIER.RigidBody
 ) {
   _q.fromArray(rig.quaternion);
-  //body.setNextKinematicRotation(_q);
+  body.setNextKinematicRotation(_q);
 
   const characterController = eidTocharacterController.get(rig.eid)!;
 
@@ -277,7 +277,7 @@ export function updateKinematicControls(
   translation.y += corrected.y;
   translation.z += corrected.z;
 
-  vec3.set(rig.position, translation.x, translation.y, translation.z);
+  body.setNextKinematicTranslation(translation);
 
   // TODO: computed collisions are bugged, too many are generated, causes hitching
   // for (let i = 0; i < characterController.numComputedCollisions(); i++) {

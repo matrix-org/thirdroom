@@ -28,7 +28,7 @@ export const createMesh = (
   ctx: GameState,
   geometry: BufferGeometry,
   material?: RemoteMaterial,
-  resoureManager = ctx.resourceManager
+  resourceManager = ctx.resourceManager
 ): RemoteMesh => {
   const indicesArr = geometry.index!.array as Uint16Array;
   const posArr = geometry.attributes.position.array as Float32Array;
@@ -46,31 +46,31 @@ export const createMesh = (
   const uv = new Float32Array(data, normal.byteOffset + normal.byteLength, uvArr.length);
   uv.set(uvArr);
 
-  const bufferView = new RemoteBufferView(ctx.resourceManager, {
-    buffer: new RemoteBuffer(ctx.resourceManager, {
+  const bufferView = new RemoteBufferView(resourceManager, {
+    buffer: new RemoteBuffer(resourceManager, {
       data,
     }),
     byteLength: data.byteLength,
   });
 
-  const remoteMesh = new RemoteMesh(resoureManager, {
+  const remoteMesh = new RemoteMesh(resourceManager, {
     primitives: [
-      new RemoteMeshPrimitive(resoureManager, {
-        indices: new RemoteAccessor(resoureManager, {
+      new RemoteMeshPrimitive(resourceManager, {
+        indices: new RemoteAccessor(resourceManager, {
           type: AccessorType.SCALAR,
           componentType: AccessorComponentType.Uint16,
           bufferView,
           count: indices.length,
         }),
         attributes: {
-          [MeshPrimitiveAttributeIndex.POSITION]: new RemoteAccessor(resoureManager, {
+          [MeshPrimitiveAttributeIndex.POSITION]: new RemoteAccessor(resourceManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
             byteOffset: position.byteOffset,
             count: position.length / 3,
           }),
-          [MeshPrimitiveAttributeIndex.NORMAL]: new RemoteAccessor(resoureManager, {
+          [MeshPrimitiveAttributeIndex.NORMAL]: new RemoteAccessor(resourceManager, {
             type: AccessorType.VEC3,
             componentType: AccessorComponentType.Float32,
             bufferView,
@@ -78,7 +78,7 @@ export const createMesh = (
             count: normal.length / 3,
             normalized: true,
           }),
-          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: new RemoteAccessor(resoureManager, {
+          [MeshPrimitiveAttributeIndex.TEXCOORD_0]: new RemoteAccessor(resourceManager, {
             type: AccessorType.VEC2,
             componentType: AccessorComponentType.Float32,
             bufferView,
