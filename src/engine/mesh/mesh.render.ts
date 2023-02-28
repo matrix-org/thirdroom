@@ -285,12 +285,16 @@ function createMeshPrimitiveObject(
     object = mesh;
   } else if (mode === MeshPrimitiveMode.LINES) {
     object = new LineSegments(geometryObj, materialObj);
+    object.userData.reflectionsNeedUpdate = false;
   } else if (mode === MeshPrimitiveMode.LINE_STRIP) {
     object = new Line(geometryObj, materialObj);
+    object.userData.reflectionsNeedUpdate = false;
   } else if (mode === MeshPrimitiveMode.LINE_LOOP) {
     object = new LineLoop(geometryObj, materialObj);
+    object.userData.reflectionsNeedUpdate = false;
   } else if (mode === MeshPrimitiveMode.POINTS) {
     object = new Points(geometryObj, materialObj);
+    object.userData.reflectionsNeedUpdate = false;
   } else {
     throw new Error(`Primitive mode ${mode} unsupported.`);
   }
@@ -382,6 +386,10 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
       if (meshPrimitive.autoUpdateNormals) {
         // TODO: This causes flickering when used.
         primitiveObject.geometry.computeVertexNormals();
+      }
+
+      if (meshPrimitive.drawCount !== 0) {
+        meshPrimitive.geometryObj.setDrawRange(meshPrimitive.drawStart, meshPrimitive.drawCount);
       }
 
       updateTransformFromNode(ctx, node, primitiveObject);

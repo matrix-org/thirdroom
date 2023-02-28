@@ -79,6 +79,7 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
       const xrRig = XRAvatarRig.get(ourPlayer);
       if (xrRig) {
         if (inputSource.handedness === "left") {
+          if (xrRig.leftControllerEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftControllerEid));
           if (xrRig.leftNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftNetworkedEid));
           if (xrRig.leftRayNetworkedEid)
             removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftRayNetworkedEid));
@@ -87,6 +88,7 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
           xrRig.leftNetworkedEid = 0;
           xrRig.leftRayNetworkedEid = 0;
         } else if (inputSource.handedness === "right") {
+          if (xrRig.rightControllerEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightControllerEid));
           if (xrRig.rightNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightNetworkedEid));
           if (xrRig.rightRayNetworkedEid)
             removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightRayNetworkedEid));
