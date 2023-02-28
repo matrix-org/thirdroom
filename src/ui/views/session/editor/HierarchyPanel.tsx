@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { TreeView, NodeDropPosition } from "@thirdroom/manifold-editor-components";
+import { CSSProperties, memo, useCallback } from "react";
+import { TreeView, NodeDropPosition, RenderNodeProps } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
 import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
@@ -75,6 +75,104 @@ function findEntityById(node: EditorNode, eid: number): EditorNode | undefined {
 
   return undefined;
 }
+
+const compareCssProperties = (s1: CSSProperties, s2: CSSProperties): boolean => {
+  const s1Keys = Object.keys(s1) as (keyof CSSProperties)[];
+  return s1Keys.length === Object.keys(s2).length && s1Keys.every((cssPropName) => s1[cssPropName] === s2[cssPropName]);
+};
+interface UseTreeNodeDropTargetCollectedProps {
+  canDrop: boolean;
+  isOver: boolean;
+}
+const compareDropData = (i1: UseTreeNodeDropTargetCollectedProps, i2: UseTreeNodeDropTargetCollectedProps): boolean =>
+  i1.canDrop === i2.canDrop && i1.isOver === i2.isOver;
+
+const RenderNode = memo<RenderNodeProps>(
+  ({
+    id,
+    name,
+    depth,
+    isExpanded,
+    isSelected,
+    isActive,
+    isLeaf,
+    listItemProps,
+    dragContainerProps,
+    beforeDropTargetState,
+    beforeDropTargetRef,
+    afterDropTargetState,
+    afterDropTargetRef,
+    onDropTargetState,
+    onDropTargetRef,
+    toggleProps,
+  }) => (
+    <li {...listItemProps}>
+      <HierarchyNode
+        depth={depth}
+        selected={isSelected}
+        active={isActive}
+        nodeRef={dragContainerProps.ref}
+        onMouseDown={dragContainerProps.onMouseDown}
+        onKeyDown={dragContainerProps.onKeyDown}
+        tabIndex={dragContainerProps.tabIndex}
+      >
+        <HierarchyNodeDropTarget
+          placement="before"
+          dropTargetRef={beforeDropTargetRef}
+          canDrop={beforeDropTargetState.canDrop}
+          isOver={beforeDropTargetState.isOver}
+        />
+        <HierarchyNodeContent
+          className="grow flex items-center"
+          dropTargetRef={onDropTargetRef}
+          isOver={onDropTargetState.isOver}
+          canDrop={onDropTargetState.canDrop}
+        >
+          {isLeaf || depth === 0 ? (
+            <HierarchyNodeLeafSpacer />
+          ) : (
+            <IconButton
+              size="sm"
+              variant={isSelected ? "primary" : "surface"}
+              label={isExpanded ? "Collapse" : "Expand"}
+              iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
+              {...toggleProps}
+            />
+          )}
+          <div className="flex items-center gap-xs grow">
+            <Icon
+              className="shrink-0"
+              color={isSelected ? "primary" : "surface"}
+              size="sm"
+              src={depth > 0 ? CircleIC : LanguageIC}
+            />
+            <Text className="truncate" color={isSelected ? "primary" : "surface"} variant="b2" weight="medium">
+              {name}
+            </Text>
+          </div>
+        </HierarchyNodeContent>
+        <HierarchyNodeDropTarget
+          placement="after"
+          dropTargetRef={afterDropTargetRef}
+          canDrop={afterDropTargetState.canDrop}
+          isOver={afterDropTargetState.isOver}
+        />
+      </HierarchyNode>
+    </li>
+  ),
+  (prevProps, nextProps) =>
+    prevProps.id === nextProps.id &&
+    prevProps.name === nextProps.name &&
+    prevProps.depth === nextProps.depth &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.isLeaf === nextProps.isLeaf &&
+    compareCssProperties(prevProps.listItemProps.style, nextProps.listItemProps.style) &&
+    compareDropData(prevProps.beforeDropTargetState, nextProps.beforeDropTargetState) &&
+    compareDropData(prevProps.afterDropTargetState, nextProps.afterDropTargetState) &&
+    compareDropData(prevProps.onDropTargetState, nextProps.onDropTargetState)
+);
 
 interface HierarchyPanelProps {
   activeEntity: number;
@@ -189,95 +287,7 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
       canDrag={canDrag}
       getDragItem={getDragItem}
     >
-      {({
-        id,
-        name,
-        depth,
-        isExpanded,
-        isSelected,
-        isActive,
-        isLeaf,
-        isRenaming,
-        listItemProps,
-        dragContainerProps,
-        beforeDropTargetState,
-        beforeDropTargetRef,
-        afterDropTargetState,
-        afterDropTargetRef,
-        onDropTargetState,
-        onDropTargetRef,
-        toggleProps,
-        nameInputProps,
-      }) => {
-        return (
-          <li {...listItemProps}>
-            <HierarchyNode
-              depth={depth}
-              selected={isSelected}
-              active={isActive}
-              nodeRef={dragContainerProps.ref}
-              onMouseDown={dragContainerProps.onMouseDown}
-              onKeyDown={dragContainerProps.onKeyDown}
-              tabIndex={dragContainerProps.tabIndex}
-            >
-              <HierarchyNodeDropTarget
-                placement="before"
-                dropTargetRef={beforeDropTargetRef}
-                canDrop={beforeDropTargetState.canDrop}
-                isOver={beforeDropTargetState.isOver}
-              />
-              <HierarchyNodeContent
-                className="grow flex items-center"
-                dropTargetRef={onDropTargetRef}
-                isOver={onDropTargetState.isOver}
-                canDrop={onDropTargetState.canDrop}
-              >
-                {isLeaf || depth === 0 ? (
-                  <HierarchyNodeLeafSpacer />
-                ) : (
-                  <IconButton
-                    size="sm"
-                    variant={isSelected ? "primary" : "surface"}
-                    label={isExpanded ? "Collapse" : "Expand"}
-                    iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
-                    {...toggleProps}
-                  />
-                )}
-                <div className="flex items-center gap-xs grow">
-                  {isRenaming ? (
-                    <div>
-                      <input {...nameInputProps} />
-                    </div>
-                  ) : (
-                    <>
-                      <Icon
-                        className="shrink-0"
-                        color={isSelected ? "primary" : "surface"}
-                        size="sm"
-                        src={depth > 0 ? CircleIC : LanguageIC}
-                      />
-                      <Text
-                        className="truncate"
-                        color={isSelected ? "primary" : "surface"}
-                        variant="b2"
-                        weight="medium"
-                      >
-                        {name}
-                      </Text>
-                    </>
-                  )}
-                </div>
-              </HierarchyNodeContent>
-              <HierarchyNodeDropTarget
-                placement="after"
-                dropTargetRef={afterDropTargetRef}
-                canDrop={afterDropTargetState.canDrop}
-                isOver={afterDropTargetState.isOver}
-              />
-            </HierarchyNode>
-          </li>
-        );
-      }}
+      {(renderProps) => <RenderNode {...renderProps} />}
     </TreeView>
   );
 }
