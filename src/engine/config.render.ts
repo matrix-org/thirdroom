@@ -1,4 +1,5 @@
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.render";
+import { EditorModule } from "./editor/editor.render";
 import { InputModule, UpdateXRInputSourcesSystem } from "./input/input.render";
 import { UpdateRendererMaterialSystem } from "./material/UpdateRendererMaterialSystem";
 import { UpdateRendererMeshPrimitivesSystem } from "./mesh/mesh.render";
@@ -10,7 +11,7 @@ import { ResourceModule, ResourceLoaderSystem, ReturnRecycledResourcesSystem } f
 import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
 
 export default defineConfig({
-  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule],
+  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule, EditorModule],
   systems: [
     RendererIncomingTripleBufferSystem,
     UpdateXRInputSourcesSystem,

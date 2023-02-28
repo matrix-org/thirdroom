@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, memo } from "react";
 import classNames from "classnames";
 
 import "./PropertiesPanel.css";
@@ -14,7 +14,7 @@ import { setProperty, setTextureProperty } from "../../../../engine/editor/edito
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
-import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefinition";
+import { PropTypeType, ResourcePropDef, Schema } from "../../../../engine/resource/ResourceDefinition";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SelectInput } from "../../components/property-panel/SelectInput";
@@ -55,6 +55,44 @@ export function PropertyContainer({ className, name, children }: PropertyContain
     </div>
   );
 }
+
+interface Vec3InputProps {
+  propName: string;
+  value: Float32Array;
+  propDef: ResourcePropDef<"vec3", ArrayLike<number>, true, false, unknown, unknown>;
+  setProp: (propName: string, value: Float32Array) => void;
+}
+
+const EPSILON = 0.00001;
+
+const approxEqual = (a: number, b: number) => {
+  return Math.abs(a - b) < EPSILON;
+};
+
+const Vec3Input = memo<Vec3InputProps>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <VectorInput
+          value={value ?? propDef.default}
+          type="vec3"
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => {
+    const prevValue = prevProps.value;
+    const nextValue = nextProps.value;
+
+    return (
+      approxEqual(prevValue[0], nextValue[0]) &&
+      approxEqual(prevValue[1], nextValue[1]) &&
+      approxEqual(prevValue[2], nextValue[2])
+    );
+  }
+);
 
 export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
   function setProp<T>(propName: string, value: T) {
@@ -115,16 +153,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
     vec3: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <VectorInput
-            value={value ?? propDef.default}
-            type="vec3"
-            onChange={(value) => setProp(propName, value)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <Vec3Input key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     quat: (propName, propDef) => {
       const value = resource[propName];
