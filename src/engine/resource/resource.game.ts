@@ -76,7 +76,7 @@ export interface ResourceTransformData {
   refIsBackRef: boolean[];
 }
 
-type RemoteResourceTypes = string | ArrayBuffer | RemoteResource;
+export type RemoteResourceTypes = string | ArrayBuffer | RemoteResource;
 
 export interface ResourceModuleState {
   resources: RemoteResource[];

@@ -29,4 +29,5 @@ export interface GameState extends BaseThreadContext {
   world: World;
   worldResource: RemoteWorld;
   resourceManager: RemoteResourceManager;
+  editorLoaded: boolean;
 }

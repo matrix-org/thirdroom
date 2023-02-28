@@ -4,6 +4,7 @@ import { useState } from "react";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Input } from "../../../atoms/input/Input";
 import { MenuItem } from "../../../atoms/menu/MenuItem";
+import { Scroll } from "../../../atoms/scroll/Scroll";
 import ChevronBottomIC from "./../../../../../res/ic/chevron-bottom.svg";
 import ChevronTopIC from "./../../../../../res/ic/chevron-top.svg";
 import "./ComboInput.css";
@@ -52,16 +53,19 @@ export function ComboInput<T>({ options, disabled, selected, onSelectedChange, d
         {...getInputProps()}
       />
       <div className="ComboInput__menu" {...getMenuProps()}>
-        {isOpen &&
-          inputOptions.map((option, index) => (
-            <MenuItem
-              variant={index === highlightedIndex ? "primary" : "surface"}
-              key={option.label}
-              {...getItemProps({ index, item: option })}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
+        {isOpen && (
+          <Scroll className="ComboInput__menu-scroll">
+            {inputOptions.map((option, index) => (
+              <MenuItem
+                variant={index === highlightedIndex ? "primary" : "surface"}
+                key={option.label + index}
+                {...getItemProps({ index, item: option })}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </Scroll>
+        )}
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps & AllHTMLAttrib
     return (
       <div className={classNames("MenuItem", `MenuItem--${variant}`, className)} ref={ref} {...props}>
         {typeof children === "string" ? (
-          <Text variant="b2" color={variant} weight="medium">
+          <Text className="truncate" variant="b2" color={variant} weight="medium">
             {children}
           </Text>
         ) : (

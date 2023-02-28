@@ -10,7 +10,7 @@ interface ChipProps {
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function Chip({ className, size, children, onClick }: ChipProps) {
+export function Chip({ className, size = "md", children, onClick }: ChipProps) {
   const classes = classNames("Chip", `Chip--${size}`, { "Chip--clickable": onClick }, className);
 
   if (onClick)

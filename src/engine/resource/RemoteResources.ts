@@ -122,6 +122,8 @@ export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
 
 export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
 
+const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
+
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare parentScene: RemoteScene | undefined;
   declare parent: RemoteNode | undefined;
@@ -139,6 +141,14 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+
+  get isStatic() {
+    return !this.manager.ctx.editorLoaded && this.u32View[NodeIsStaticOffset] === 1;
+  }
+
+  set isStatic(value: boolean) {
+    this.u32View[NodeIsStaticOffset] = value ? 1 : 0;
+  }
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {

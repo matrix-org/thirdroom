@@ -24,6 +24,8 @@ import {
   SelectionChangedMessage,
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
+  SetPropertyMessage,
+  SetTexturePropertyMessage,
 } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
 import {
@@ -34,7 +36,7 @@ import {
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
-import { getRemoteResource } from "../resource/resource.game";
+import { getRemoteResource, RemoteResourceTypes } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 
 /*********
@@ -46,7 +48,6 @@ export interface EditorModuleState {
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
-  editorLoaded: boolean;
 }
 
 /******************
@@ -68,7 +69,6 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
-      editorLoaded: false,
     };
   },
   init(ctx) {
@@ -81,6 +81,8 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.FocusEntity, onFocusEntity),
       registerMessageHandler(ctx, EditorMessageType.RenameEntity, onRenameEntity),
       registerMessageHandler(ctx, EditorMessageType.ReparentEntities, onReparentEntities),
+      registerMessageHandler(ctx, EditorMessageType.SetProperty, onSetProperty),
+      registerMessageHandler(ctx, EditorMessageType.SetTextureProperty, onSetTextureProperty),
     ]);
   },
 });
@@ -101,7 +103,7 @@ const selectedExitQuery = exitQuery(selectedQuery);
 export function onLoadEditor(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
-  editor.editorLoaded = true;
+  ctx.editorLoaded = true;
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
@@ -111,8 +113,7 @@ export function onLoadEditor(ctx: GameState) {
 }
 
 export function onDisposeEditor(ctx: GameState) {
-  const editor = getModule(ctx, EditorModule);
-  editor.editorLoaded = false;
+  ctx.editorLoaded = false;
 }
 
 export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
@@ -171,6 +172,29 @@ export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
 
 export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
 
+function onSetProperty(ctx: GameState, message: SetPropertyMessage<unknown>) {
+  const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
+
+  const propName = message.propName;
+
+  if (!resource || typeof resource !== "object" || !("resourceType" in resource) || !(propName in resource)) {
+    return;
+  }
+
+  (resource as any)[propName] = message.value;
+}
+
+function onSetTextureProperty(ctx: GameState, message: SetTexturePropertyMessage) {
+  const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
+  const texture = getRemoteResource<RemoteResourceTypes>(ctx, message.textureEid);
+  const propName = message.propName;
+
+  if (!resource || typeof resource !== "object" || !("resourceType" in resource) || !(propName in resource)) {
+    return;
+  }
+  (resource as any)[propName] = texture;
+}
+
 /***********
  * Systems *
  ***********/
@@ -178,7 +202,7 @@ export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMess
 export function EditorStateSystem(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
-  if (!editor.editorLoaded) {
+  if (!ctx.editorLoaded) {
     return;
   }
 

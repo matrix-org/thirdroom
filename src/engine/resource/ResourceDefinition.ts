@@ -377,6 +377,26 @@ function createSelfRefPropDef<O extends RefPropOptions>(options?: O) {
   );
 }
 
+export type PropTypeType = {
+  bool: ReturnType<typeof createBoolPropDef>;
+  u32: ReturnType<typeof createU32PropDef>;
+  f32: ReturnType<typeof createF32PropDef>;
+  vec2: ReturnType<typeof createVec2PropDef>;
+  vec3: ReturnType<typeof createVec3PropDef>;
+  rgb: ReturnType<typeof createRGBPropDef>;
+  rgba: ReturnType<typeof createRGBAPropDef>;
+  quat: ReturnType<typeof createQuatPropDef>;
+  mat4: ReturnType<typeof createMat4PropDef>;
+  bitmask: ReturnType<typeof createBitmaskPropDef>;
+  enum: ReturnType<typeof createEnumPropDef>;
+  string: ReturnType<typeof createStringPropDef>;
+  arrayBuffer: ReturnType<typeof createArrayBufferPropDef>;
+  ref: ReturnType<typeof createRefPropDef>;
+  refArray: ReturnType<typeof createRefArrayPropDef>;
+  refMap: ReturnType<typeof createRefMapPropDef>;
+  selfRef: ReturnType<typeof createSelfRefPropDef>;
+};
+
 export const PropType = {
   bool: createBoolPropDef,
   u32: createU32PropDef,
@@ -511,7 +531,7 @@ export type LocalResourceInstance<
   ThreadContext extends BaseThreadContext
 > = LocalResource<ThreadContext> & {
   readonly [Prop in keyof Def["schema"]]: LocalResourcePropValue<ThreadContext, Def, Prop>;
-} & { resourceType: Def["resourceType"] };
+} & { resourceType: Def["resourceType"]; resourceDef: Def };
 
 export interface ILocalResourceClass<
   Def extends ResourceDefinition = ResourceDefinition,

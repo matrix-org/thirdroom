@@ -1,5 +1,6 @@
 .ComboInput {
   position: relative;
+  width: 100%;
 }
 
 .ComboInput__menu {
@@ -19,4 +20,9 @@
   &:not(:empty) {
     position: absolute;
   }
+}
+
+.ComboInput__menu-scroll,
+.ComboInput__menu-scroll .Scroll__viewport {
+  max-height: 250px;
 }

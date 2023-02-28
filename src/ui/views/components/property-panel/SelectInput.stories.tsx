@@ -35,7 +35,7 @@ export default function SelectInputStories() {
 
   return (
     <div style={{ backgroundColor: "white", padding: "8px", maxWidth: "380px" }}>
-      <SelectInput dropDownWidth={364} options={options} value={selected} onChange={setSelected} />
+      <SelectInput options={options} value={selected} onChange={setSelected} />
     </div>
   );
 }

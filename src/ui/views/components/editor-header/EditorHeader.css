@@ -1,16 +1,16 @@
-.HierarchyHeader {
+.EditorHeader {
   display: flex;
   min-height: 32px;
   border-bottom: 1px solid var(--bg-surface-border);
 }
 
-.HierarchyHeaderTab {
+.EditorHeaderTab {
   display: flex;
   align-items: center;
   gap: var(--sp-xxs);
   padding: 0 var(--sp-xs);
   cursor: pointer;
 }
-.HierarchyHeaderTab--active {
+.EditorHeaderTab--active {
   border-bottom: 1px solid var(--bg-primary);
 }
